@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
@@ -128,7 +128,7 @@ describe('AddressPolicy', function (): void {
     });
 
     describe('view', function (): void {
-        it('allows viewing global address without owner resolver', function (): void {
+        it('denies viewing global address without owner context', function (): void {
             $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
@@ -147,7 +147,29 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->view($this->permitted, $address))->toBeTrue();
+            expect($this->policy->view($this->permitted, $address))->toBeFalse()
+                ->and(OwnerContext::withOwner(null, fn (): bool => $this->policy->view($this->permitted, $address)))->toBeTrue();
+        });
+
+        it('allows configured global reads only when include_global is enabled', function (): void {
+            $owner = CustomersTestOwner::query()->create(['name' => 'Owner A']);
+            $address = createAddressPolicyAddress([
+                'line1' => '123 Test St',
+                'city' => 'Test City',
+                'postcode' => '12345',
+                'country' => 'MY',
+                'owner_type' => null,
+                'owner_id' => null,
+            ], null);
+
+            bindAddressPolicyOwnerResolver($owner);
+
+            expect($this->policy->view($this->permitted, $address))->toBeFalse();
+
+            config()->set('addressing.features.owner.include_global', true);
+
+            expect($this->policy->view($this->permitted, $address))->toBeTrue()
+                ->and($this->policy->update($this->permitted, $address))->toBeFalse();
         });
 
         it('denies viewing owner-scoped address without owner resolver', function (): void {
@@ -249,7 +271,7 @@ describe('AddressPolicy', function (): void {
     });
 
     describe('update', function (): void {
-        it('allows updating global address without owner resolver', function (): void {
+        it('requires explicit global context to update a global address', function (): void {
             $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
@@ -268,7 +290,8 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->update($this->permitted, $address))->toBeTrue();
+            expect($this->policy->update($this->permitted, $address))->toBeFalse()
+                ->and(OwnerContext::withOwner(null, fn (): bool => $this->policy->update($this->permitted, $address)))->toBeTrue();
         });
 
         it('denies updating an in-scope address without the update permission', function (): void {
@@ -308,7 +331,7 @@ describe('AddressPolicy', function (): void {
     });
 
     describe('delete', function (): void {
-        it('allows deleting global address without owner resolver', function (): void {
+        it('requires explicit global context to delete a global address', function (): void {
             $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
@@ -327,7 +350,8 @@ describe('AddressPolicy', function (): void {
                 'owner_id' => null,
             ], null);
 
-            expect($this->policy->delete($this->permitted, $address))->toBeTrue();
+            expect($this->policy->delete($this->permitted, $address))->toBeFalse()
+                ->and(OwnerContext::withOwner(null, fn (): bool => $this->policy->delete($this->permitted, $address)))->toBeTrue();
         });
 
         it('denies deleting an in-scope address without the delete permission', function (): void {

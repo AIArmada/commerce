@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\FilamentShipping\Pages\FulfillmentQueue;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;

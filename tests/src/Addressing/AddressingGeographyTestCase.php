@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Addressing;
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaRole;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Events\EventServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,7 +71,7 @@ abstract class AddressingGeographyTestCase extends Orchestra
      * Seed a single country row with real attributes from countries.json.
      *
      * Geography tests exercise one country at a time; seeding all 250
-     * rows via SeedAddressCountriesAction is pure overhead here.
+     * rows via CountryDatasetSeeder is pure overhead here.
      *
      * @throws JsonException
      */
@@ -169,7 +169,7 @@ abstract class AddressingGeographyTestCase extends Orchestra
 
         try {
             $country = $this->seedCountry($code);
-            $result = app(SeedCountryGeographiesAction::class)->execute($code);
+            $result = app(CountryGeographySeeder::class)->execute($code);
         } catch (Throwable $exception) {
             return ["{$code}: seeding threw {$exception->getMessage()}."];
         }
@@ -209,9 +209,9 @@ abstract class AddressingGeographyTestCase extends Orchestra
             ->flip()
             ->all();
 
-        $declaredRoles = $provider->areaRoles($country);
-        $declaredNames = $provider->areaNames($country);
-        $declaredRelationships = $provider->areaRelationships($country);
+        $declaredRoles = $provider->areaRoles();
+        $declaredNames = $provider->areaNames();
+        $declaredRelationships = $provider->areaRelationships();
 
         foreach (array_keys($declaredRoles) as $sourceId) {
             if (! isset($shipped[$sourceId])) {

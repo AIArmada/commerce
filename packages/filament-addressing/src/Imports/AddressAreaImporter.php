@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Imports;
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter as CoreAddressAreaImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\SingleAddressAreaSource;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -162,7 +162,7 @@ class AddressAreaImporter extends Importer
         $areaData = $this->buildAddressAreaData();
         $source = new SingleAddressAreaSource($areaData->source, $areaData);
 
-        $result = app(ImportAddressAreasAction::class)->execute($source);
+        $result = app(CoreAddressAreaImporter::class)->execute($source);
 
         if ($result->hasFailures()) {
             throw new RowImportFailedException(implode(

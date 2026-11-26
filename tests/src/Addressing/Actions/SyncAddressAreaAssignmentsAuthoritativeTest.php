@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Validation\ValidationException;
 
@@ -24,7 +24,7 @@ beforeEach(function (): void {
         'name' => 'Johor',
     ]);
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'state', countryCode: 'MY', type: 'state', level: 1, name: 'Johor'),
         new AddressAreaData(source: 'areas', sourceId: 'postal', countryCode: 'MY', type: 'locality', level: 2, name: 'Bangsar', parentSourceId: 'state', hierarchyType: 'postal'),
         new AddressAreaData(source: 'areas', sourceId: 'admin', countryCode: 'MY', type: 'district', level: 2, name: 'Petaling', parentSourceId: 'state', hierarchyType: 'administrative'),
@@ -49,7 +49,7 @@ it('validates against persisted country when the caller mutated country without 
 
     $address->country_code = 'SG';
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $postal->getKey(),
     ]);
 
@@ -70,7 +70,7 @@ it('rejects areas that are invalid under the persisted country of a stale model'
 
     expect($address->country_code)->toBe('MY');
 
-    expect(fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $postal->getKey(),
     ]))->toThrow(ValidationException::class);
 
@@ -96,7 +96,7 @@ it('rejects areas that are invalid under the persisted state of a stale model', 
 
     expect($address->state_id)->toBe($this->state->getKey());
 
-    expect(fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'administrative_subdivision' => $subdivision->getKey(),
     ]))->toThrow(ValidationException::class);
 
@@ -119,7 +119,7 @@ it('ignores an unsaved state change when validating hierarchy', function (): voi
     ]);
     $address->state_id = $otherState->getKey();
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'administrative_subdivision' => $subdivision->getKey(),
     ]);
 
@@ -135,7 +135,7 @@ it('rejects an explicit state that contradicts the persisted address state', fun
         'name' => 'Kedah',
     ]);
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas-b', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas-b', [
         new AddressAreaData(source: 'areas-b', sourceId: 'state-b', countryCode: 'MY', type: 'state', level: 1, name: 'Kedah'),
         new AddressAreaData(source: 'areas-b', sourceId: 'postal-b', countryCode: 'MY', type: 'locality', level: 2, name: 'Alor Setar', parentSourceId: 'state-b', hierarchyType: 'postal'),
     ]));
@@ -158,8 +158,8 @@ it('rejects an explicit state that contradicts the persisted address state', fun
     $address->state_id = $stateB->getKey();
 
     try {
-        app(SyncAddressAreaAssignmentsAction::class)->execute(
-            $address,
+        app(AddressAssignmentWriter::class)->execute(
+            (string) $address->getKey(),
             ['postal_locality' => $postalB->getKey()],
             $stateB->getKey(),
         );
@@ -192,8 +192,8 @@ it('accepts an explicit state matching the persisted state despite unsaved calle
     $address->country_code = 'SG';
     $address->state_id = $otherState->getKey();
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute(
-        $address,
+    app(AddressAssignmentWriter::class)->execute(
+        (string) $address->getKey(),
         ['postal_locality' => $postal->getKey()],
         $this->state->getKey(),
     );
@@ -201,4 +201,19 @@ it('accepts an explicit state matching the persisted state despite unsaved calle
     expect($address->areaAssignments()->where('role', 'postal_locality')->exists())->toBeTrue()
         ->and($address->fresh()?->state_id)->toBe($this->state->getKey())
         ->and($address->fresh()?->country_code)->toBe('MY');
+});
+
+it('rejects malformed assignments without removing the persisted valid selection', function (): void {
+    $address = Address::query()->create([
+        'country_code' => 'MY',
+        'state_id' => $this->state->getKey(),
+    ]);
+    $postal = AddressArea::query()->where('source_id', 'postal')->firstOrFail();
+    $writer = app(AddressAssignmentWriter::class);
+    $writer->execute((string) $address->getKey(), ['postal_locality' => $postal->getKey()]);
+
+    expect(fn () => $writer->execute((string) $address->getKey(), ['postal_locality' => ['invalid']]))
+        ->toThrow(ValidationException::class);
+
+    expect($address->areaAssignments()->where('role', 'postal_locality')->value('address_area_id'))->toBe($postal->getKey());
 });

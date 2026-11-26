@@ -1,7 +1,7 @@
 ---
 paths:
-  - packages/addressing/src/Actions/Seed*.php
-  - packages/addressing/src/Commands/Seed*.php
+  - packages/addressing/src/Features/*/Actions/Seed*.php
+  - packages/addressing/src/Features/*/EntryPoints/Commands/Seed*.php
   - packages/addressing/src/Support/CitySeedRowReader.php
   - packages/addressing/src/Support/SeedAddressingSummary.php
   - packages/addressing/database/seeders/**
@@ -13,12 +13,13 @@ paths:
 Applies to the seed actions, commands, seeders, and readers that populate
 addressing reference data.
 
-- `SeedAddressingAction` is the composition root: countries, references,
+- `AddressingDatasetSeeder` is the composition root: countries, references,
   states, cities, then every configured geography. Apps call the bundled
   `AIArmada\Addressing\Database\Seeders\AddressingSeeder`; they never
   hand-roll the orchestration.
 - The granular `address:seed-geographies` and `address:seed-postal-codes`
-  commands exist for per-country partial work only.
+  commands live in their owning features' `EntryPoints/Commands` folders and
+  exist for per-country partial work only.
 - City volume is config, not app code:
   `addressing.seed.full_city_countries` filters cities outside production.
   Production always seeds the full city dataset.
@@ -38,5 +39,5 @@ addressing reference data.
 - Streaming seed readers index raw bytes: use
   `mb_strlen($chunk, '8bit')`, never bare `mb_strlen` — Pint's
   `mb_str_functions` will otherwise corrupt multibyte parsing.
-- `SeedCountryGeographiesAction` is final: test orchestration with a tiny
+- `CountryGeographySeeder` is final: test orchestration with a tiny
   real provider (e.g. Saint-Barthélemy) plus config, not subclass fakes.

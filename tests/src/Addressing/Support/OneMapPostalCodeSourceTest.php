@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Support\OneMapClient;
+use AIArmada\Addressing\Drivers\OneMap\OneMapClient;
 use AIArmada\Addressing\Support\OneMapPostalCodeSource;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;

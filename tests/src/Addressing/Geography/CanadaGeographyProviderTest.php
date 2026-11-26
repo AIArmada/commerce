@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Canada\CanadaGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('declares postal abbreviations for all 13 provinces and territories', function (): void {
-    $names = app(CanadaGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(CanadaGeographyProvider::class)->areaNames();
 
     expect($names)->toHaveCount(13)
         ->and($names['ca:province:ontario'][0])->toBe(['name' => 'ON', 'name_type' => 'abbreviation'])

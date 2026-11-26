@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Exports;
 
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;

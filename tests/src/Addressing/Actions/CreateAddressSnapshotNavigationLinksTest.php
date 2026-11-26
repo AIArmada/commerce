@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
-    $this->action = app(CreateAddressSnapshotAction::class);
+    $this->action = app(AddressSnapshotWriter::class);
 
     $this->snapshotable = new class extends Model
     {
@@ -24,7 +25,7 @@ it('snapshot copies google_maps_url from address', function (): void {
         'google_maps_url' => 'https://maps.app.goo.gl/snapshot-test',
     ]);
 
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), (string) $address->getKey(), reason: 'test'));
 
     expect($snapshot->google_maps_url)->toBe('https://maps.app.goo.gl/snapshot-test');
 });
@@ -36,7 +37,7 @@ it('snapshot copies waze_url from address', function (): void {
         'waze_url' => 'https://waze.com/ul/snapshot-test',
     ]);
 
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), (string) $address->getKey(), reason: 'test'));
 
     expect($snapshot->waze_url)->toBe('https://waze.com/ul/snapshot-test');
 });
@@ -48,7 +49,7 @@ it('snapshot copies navigation_links from address', function (): void {
         'navigation_links' => ['apple_maps' => ['url' => 'https://maps.apple.com/test']],
     ]);
 
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), (string) $address->getKey(), reason: 'test'));
 
     expect($snapshot->navigation_links)->toBe(['apple_maps' => ['url' => 'https://maps.apple.com/test']]);
 });
@@ -63,7 +64,7 @@ it('snapshot copies nav links from AddressData', function (): void {
         'navigation_links' => ['grab' => ['url' => 'https://grab.com/directions']],
     ]);
 
-    $snapshot = $this->action->execute($this->snapshotable, $addressData, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), $addressData, reason: 'test'));
 
     expect($snapshot->google_maps_url)->toBe('https://maps.app.goo.gl/data-test');
     expect($snapshot->waze_url)->toBe('https://waze.com/ul/data-test');
@@ -80,7 +81,7 @@ it('snapshot copies google identifiers from AddressData', function (): void {
         'google_entity_id' => '/g/abc123',
     ]);
 
-    $snapshot = $this->action->execute($this->snapshotable, $addressData, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), $addressData, reason: 'test'));
 
     expect($snapshot->google_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4')
         ->and($snapshot->google_feature_id)->toBe('0x31cc:0x8e9f')

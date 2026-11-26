@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Payment;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectDriverInterface;

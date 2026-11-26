@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\FilamentAddressing\RelationManagers\AreaAliasesRelationManager;
 use AIArmada\FilamentAddressing\RelationManagers\AreaPostalCodesRelationManager;
 use AIArmada\FilamentAddressing\RelationManagers\AreaRolesRelationManager;

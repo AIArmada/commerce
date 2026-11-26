@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\FormatAddressAction;
+use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 it('formats Malaysian addresses using the country formatter', function (): void {
     // Ruled 2026-10-08: postcode joins the writer-computed partner (town
@@ -19,7 +19,7 @@ it('formats Malaysian addresses using the country formatter', function (): void 
         'components' => ['postcode_partner' => 'Kajang'],
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Lot 12 Jalan Mawar',
         '43000, Kajang',
         'Selangor',
@@ -36,7 +36,7 @@ it('formats Singapore addresses with the postcode after the country', function (
         'countryCode' => 'SG',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Blk 201 Farrer Park St 1',
         '#20-102',
         'Singapore 207226',
@@ -52,7 +52,7 @@ it('omits repeated Singapore city and state lines but keeps distinctive towns', 
         'countryCode' => 'SG',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         '10 Bukit Batok Crescent',
         'Singapore 658079',
     ]));
@@ -64,7 +64,7 @@ it('omits repeated Singapore city and state lines but keeps distinctive towns', 
         'countryCode' => 'SG',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($townAddress))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($townAddress))->toBe(implode("\n", [
         '390 Tampines Ave 7',
         'Tampines',
         'Singapore 520390',
@@ -82,7 +82,7 @@ it('formats Indonesian addresses with the postcode after the city', function ():
         'components' => ['urban_village' => 'Cempaka Baru', 'district' => 'Cempaka Putih'],
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Jl. Surya No. 10 RT 05/RW 02',
         'Cempaka Baru',
         'Cempaka Putih',
@@ -102,7 +102,7 @@ it('formats Brunei addresses with the town or district before the postcode', fun
         'countryCode' => 'BN',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'No. 7 Simpang 170, Jalan Muara',
         'Muara BT2328',
         'Brunei Darussalam',
@@ -115,7 +115,7 @@ it('formats Brunei addresses with the town or district before the postcode', fun
         'countryCode' => 'BN',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($districtAddress))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($districtAddress))->toBe(implode("\n", [
         'Pekan Bangar Lama',
         'Temburong PA1151',
         'Brunei Darussalam',
@@ -130,7 +130,7 @@ it('falls back to the generic formatter for countries without a formatter', func
         'countryCode' => 'VA',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Via della Conciliazione 1',
         '00120 Vatican City',
         'VA',
@@ -144,7 +144,7 @@ it('keeps zero street lines on the country formatter path', function (): void {
         'countryCode' => 'AR',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         '0',
         'Córdoba',
         'Argentina',
@@ -159,7 +159,7 @@ it('keeps zero street and city lines on the generic path', function (): void {
         'countryCode' => 'VA',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         '0',
         '00120 0',
         'VA',
@@ -174,7 +174,7 @@ it('keeps sparse street lines on the generic path when line1 is missing', functi
         'countryCode' => 'VA',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Unit marker two',
         '12345 City marker',
         'VA',
@@ -190,7 +190,7 @@ it('keeps non-adjacent street lines on the generic path', function (): void {
         'countryCode' => 'VA',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'First line',
         'Third line',
         '12345 City marker',
@@ -205,7 +205,7 @@ it('prints the postcode on its own line when only a trailing street line exists'
         'countryCode' => 'VA',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Third line only',
         '12345',
         'VA',
@@ -220,7 +220,7 @@ it('keeps a zero street line on the generic path when line1 is missing', functio
         'countryCode' => 'VA',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         '0',
         '12345 City marker',
         'VA',
@@ -233,7 +233,7 @@ it('abbreviates full state names regardless of letter case', function (array $in
     foreach (['title' => $input['state'], 'upper' => mb_strtoupper($input['state']), 'lower' => mb_strtolower($input['state'])] as $case => $variant) {
         $address = AddressData::from([...$input, 'state' => $variant]);
 
-        expect(app(FormatAddressAction::class)->format($address))->toBe($expected, "Failed for {$case} [{$variant}].");
+        expect(app(AddressFormatter::class)->format($address))->toBe($expected, "Failed for {$case} [{$variant}].");
     }
 })->with([
     'US California' => [
@@ -267,7 +267,7 @@ it('prints the seeded country name for provider-less countries like Macao', func
         'countryCode' => 'MO',
     ]);
 
-    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+    expect(app(AddressFormatter::class)->format($address))->toBe(implode("\n", [
         'Avenida da Praia Grande 762',
         'Macao',
         'Macau S.A.R.',

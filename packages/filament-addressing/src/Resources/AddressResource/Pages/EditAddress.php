@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Contracts\AddressWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final class EditAddress extends EditRecord
@@ -19,7 +18,7 @@ final class EditAddress extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressResource::isReadOnly();
+        return ! AddressResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Address
@@ -28,17 +27,15 @@ final class EditAddress extends EditRecord
             throw new LogicException('Expected an address record.');
         }
 
-        DB::transaction(function () use ($record, $data): void {
-            $record->update($data);
-            app(SyncAddressAreaAssignmentsAction::class)->execute(
-                $record,
-                $this->areaAssignments(),
-                $record->state_id,
-                ['source' => 'filament-addressing'],
-            );
-        });
+        $id = app(AddressWriter::class)->execute(
+            $data,
+            $this->areaAssignments(),
+            (string) $record->getKey(),
+            $record::class,
+            ['source' => 'filament-addressing'],
+        );
 
-        return $record->fresh() ?? $record;
+        return $record->newQuery()->findOrFail($id);
     }
 
     /** @return array<string, string|null> */

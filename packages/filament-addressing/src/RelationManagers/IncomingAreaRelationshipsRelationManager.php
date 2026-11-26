@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
-use AIArmada\Addressing\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;

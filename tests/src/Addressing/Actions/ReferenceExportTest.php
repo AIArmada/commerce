@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CompareAddressingReferenceExportsAction;
-use AIArmada\Addressing\Actions\ExportAddressingReferencesAction;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\CompareAddressingReferenceExportsAction;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\ExportAddressingReferencesAction;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportContract;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportFile;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaRole;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressingTableResolver;
-use AIArmada\Addressing\Support\ReferenceExportContract;
-use AIArmada\Addressing\Support\ReferenceExportFile;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
 use Illuminate\Database\Connection;

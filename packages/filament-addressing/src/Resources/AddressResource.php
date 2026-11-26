@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\CreateAddress;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\EditAddress;

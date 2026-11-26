@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderNote;

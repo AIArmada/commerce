@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Rules;
 
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 

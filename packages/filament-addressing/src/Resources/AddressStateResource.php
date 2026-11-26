@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\FilamentAddressing\Resources\AddressStateResource\Pages\EditAddressState;
 use AIArmada\FilamentAddressing\Resources\AddressStateResource\Pages\ListAddressStates;
 use AIArmada\FilamentAddressing\Resources\AddressStateResource\Pages\ViewAddressState;

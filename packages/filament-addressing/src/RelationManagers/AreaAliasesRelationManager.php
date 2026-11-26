@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
-use AIArmada\Addressing\Actions\DeleteAddressAreaAliasAction;
-use AIArmada\Addressing\Actions\SaveAddressAreaAliasAction;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
+use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
+use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -53,7 +53,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(SaveAddressAreaAliasAction::class)->handle($owner, $data);
+                        app(AddressAreaAliasWriter::class)->handle((string) $owner->getKey(), $data);
 
                         Notification::make()->title('Alias added')->success()->send();
                     }),
@@ -77,7 +77,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(SaveAddressAreaAliasAction::class)->handle($owner, $data, $record);
+                        app(AddressAreaAliasWriter::class)->handle((string) $owner->getKey(), $data, (string) $record->getKey());
 
                         Notification::make()->title('Alias updated')->success()->send();
                     }),
@@ -95,7 +95,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(DeleteAddressAreaAliasAction::class)->execute($owner, $record);
+                        app(AddressAreaAliasDeleter::class)->execute((string) $owner->getKey(), (string) $record->getKey());
 
                         Notification::make()->title('Alias deleted')->success()->send();
                     }),

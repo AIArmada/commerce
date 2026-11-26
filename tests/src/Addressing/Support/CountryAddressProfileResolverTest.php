@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 
 beforeEach(function (): void {
@@ -57,7 +57,7 @@ it('returns null for unknown countries', function (): void {
 });
 
 it('resolves every provider area role with area kind and no other', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $resolver = app(CountryAddressProfileResolver::class);
     $checked = 0;
@@ -92,7 +92,7 @@ it('resolves every provider area role with area kind and no other', function ():
 });
 
 it('resolves state_id to a state level only where providers define one', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $resolver = app(CountryAddressProfileResolver::class);
 

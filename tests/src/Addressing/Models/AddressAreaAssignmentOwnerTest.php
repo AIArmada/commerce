@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;

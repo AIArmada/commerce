@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Denmark\DenmarkGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('names region 84 Capital Region with a Hovedstaden alias', function (): void {
@@ -13,7 +12,7 @@ it('names region 84 Capital Region with a Hovedstaden alias', function (): void 
     expect($capital->name)->toBe('Capital Region')
         ->and($capital->code)->toBe('84');
 
-    $names = app(DenmarkGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(DenmarkGeographyProvider::class)->areaNames();
 
     expect($names['dk:region:capital-region'][0]['name'])->toBe('Hovedstaden');
 });

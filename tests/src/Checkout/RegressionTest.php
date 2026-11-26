@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Actions\CheckoutFinalizer;

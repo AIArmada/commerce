@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -30,7 +30,7 @@ beforeEach(function (): void {
         'name' => 'Johor',
     ]);
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'state', countryCode: 'MY', type: 'state', level: 1, name: 'Johor'),
         new AddressAreaData(source: 'areas', sourceId: 'postal', countryCode: 'MY', type: 'locality', level: 2, name: 'Bangsar', parentSourceId: 'state', hierarchyType: 'postal'),
         new AddressAreaData(source: 'areas', sourceId: 'admin', countryCode: 'MY', type: 'district', level: 2, name: 'Petaling', parentSourceId: 'state', hierarchyType: 'administrative'),
@@ -53,7 +53,7 @@ it('syncs typed postal and administrative assignments', function (): void {
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
         'administrative_district' => $areas['admin']->getKey(),
     ]);
@@ -71,11 +71,11 @@ it('replaces all persisted assignments when given an empty map', function (): vo
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
         'administrative_district' => $areas['admin']->getKey(),
     ]);
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, []);
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), []);
 
     expect($address->areaAssignments()->exists())->toBeFalse();
 });
@@ -92,13 +92,13 @@ it('rejects cross-owner assignment synchronization before mutating assignments',
     ]));
 
     OwnerContext::withOwner($ownerA, function () use ($address, $area): void {
-        app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+        app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
             'postal_locality' => $area->getKey(),
         ]);
     });
 
     expect(OwnerContext::withOwner($ownerA, fn (): int => $address->areaAssignments()->count()))->toBe(1)
-        ->and(fn (): mixed => OwnerContext::withOwner($ownerB, fn () => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [])))
+        ->and(fn (): mixed => OwnerContext::withOwner($ownerB, fn () => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [])))
         ->toThrow(AuthorizationException::class)
         ->and(OwnerContext::withOwner($ownerA, fn (): int => $address->areaAssignments()->count()))->toBe(1);
 });
@@ -112,7 +112,7 @@ it('rejects the state_id pseudo-role even for a matching state area', function (
     $stateArea = AddressArea::query()->where('source_id', 'state')->firstOrFail();
 
     try {
-        app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+        app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
             'state_id' => $stateArea->getKey(),
         ]);
 
@@ -133,7 +133,7 @@ it('rejects unknown roles as undefined by the country profile', function (): voi
     $locality = AddressArea::query()->where('source_id', 'postal')->firstOrFail();
 
     try {
-        app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+        app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
             'nope' => $locality->getKey(),
         ]);
 
@@ -153,7 +153,7 @@ it('rejects areas from another hierarchy level', function (): void {
     ]);
     $admin = AddressArea::query()->where('source_id', 'admin')->firstOrFail();
 
-    expect(fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $admin->getKey(),
     ]))->toThrow(ValidationException::class);
 });
@@ -166,7 +166,7 @@ it('allows assigning a subdivision without its parent district when state is sel
     ]);
     $subdivision = AddressArea::query()->where('source_id', 'subdivision')->firstOrFail();
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'administrative_subdivision' => $subdivision->getKey(),
     ]);
 
@@ -196,7 +196,7 @@ it('requires an active containment relationship for hierarchy assignments', func
         'hierarchy_type' => 'postal',
     ]);
 
-    expect(fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $area->getKey(),
     ]))->toThrow(ValidationException::class);
 });
@@ -283,7 +283,7 @@ it('scopes duplicate level keys to their own hierarchy and resolves a named stat
         'state_id' => $state->getKey(),
     ]);
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_district' => $postalDistrict->getKey(),
         'postal_ward' => $postalWard->getKey(),
         'administrative_district' => $administrativeDistrict->getKey(),

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Commerce\Tests\Fixtures\FilamentAddressingPanelUser;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -33,7 +33,7 @@ final class AddressCanonicalDetailsTestPolicy
 }
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     config()->set('auth.providers.users.model', FilamentAddressingPanelUser::class);
     Gate::policy(Address::class, AddressCanonicalDetailsTestPolicy::class);
 });

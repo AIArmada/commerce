@@ -2,25 +2,29 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SaveAddressAreaAction;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaHierarchyResolver;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
-    $this->action = app(SaveAddressAreaAction::class);
+    $this->action = app(AddressAreaWriter::class);
 });
 
 it('saves a top-level area with derived fields', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
-    $area = $this->action->handle([
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
-    ]);
+    ]));
 
     expect($area->country_code)->toBe('MY')
         ->and($area->level)->toBe(1)
@@ -29,21 +33,44 @@ it('saves a top-level area with derived fields', function (): void {
         ->and($area->source_id)->toStartWith('my-state-selangor-');
 });
 
+it('keeps the existing area country immutable on edits', function (): void {
+    $malaysia = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $otherCountry = AddressCountry::query()->create([
+        'iso2' => 'ZZ',
+        'name' => 'Other Country',
+        'iso3' => 'ZZZ',
+        'numeric_code' => '999',
+    ]);
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $malaysia->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+    ]));
+
+    expect(fn (): string => $this->action->handle([
+        'country_id' => $otherCountry->id,
+        'name' => 'Selangor Updated',
+    ], (string) $area->getKey()))->toThrow(ValidationException::class, 'cannot be changed');
+
+    expect($area->fresh()?->country_id)->toBe($malaysia->id)
+        ->and($area->fresh()?->name)->toBe('Selangor');
+});
+
 it('derives child level and parent source id', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $state = $this->action->handle([
+    $state = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
         'source_id' => 'state-selangor',
-    ]);
+    ]));
 
-    $district = $this->action->handle([
+    $district = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $state->id,
         'type' => 'district',
         'name' => 'Petaling',
-    ]);
+    ]));
 
     expect($district->level)->toBe(2)
         ->and($district->parent_id)->toBe($state->id)
@@ -56,13 +83,13 @@ it('rejects a parent from another country', function (): void {
         'iso2' => 'ZZ',
         'name' => 'Testland',
     ]);
-    $parent = $this->action->handle([
+    $parent = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $otherCountry->id,
         'type' => 'state',
         'name' => 'Central',
-    ]);
+    ]));
 
-    expect(fn (): AddressArea => $this->action->handle([
+    expect(fn (): string => $this->action->handle([
         'country_id' => $malaysia->id,
         'parent_id' => $parent->id,
         'type' => 'district',
@@ -72,38 +99,38 @@ it('rejects a parent from another country', function (): void {
 
 it('rejects hierarchy cycles when updating an area', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $state = $this->action->handle([
+    $state = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
-    ]);
-    $district = $this->action->handle([
+    ]));
+    $district = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $state->id,
         'type' => 'district',
         'name' => 'Petaling',
-    ]);
+    ]));
 
-    expect(fn (): AddressArea => $this->action->handle([
+    expect(fn (): string => $this->action->handle([
         'parent_id' => $district->id,
-    ], $state))->toThrow(ValidationException::class);
+    ], (string) $state->getKey()))->toThrow(ValidationException::class);
 });
 
 it('defaults new areas to active but honors an explicit flag', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
-    $defaulted = $this->action->handle([
+    $defaulted = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
-    ]);
+    ]));
 
-    $deactivated = $this->action->handle([
+    $deactivated = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Perak',
         'is_active' => false,
-    ]);
+    ]));
 
     expect($defaulted->is_active)->toBeTrue()
         ->and($deactivated->is_active)->toBeFalse();
@@ -111,40 +138,40 @@ it('defaults new areas to active but honors an explicit flag', function (): void
 
 it('honors explicit activation updates and keeps the stored value when omitted', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $area = $this->action->handle([
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
-    ]);
+    ]));
 
-    expect($this->action->handle(['is_active' => false], $area)->is_active)->toBeFalse()
-        ->and($this->action->handle(['name' => 'Selangor Darul Ehsan'], $area->fresh())->is_active)->toBeFalse()
-        ->and($this->action->handle(['is_active' => true], $area->fresh())->is_active)->toBeTrue();
+    expect(AddressArea::query()->findOrFail($this->action->handle(['is_active' => false], (string) $area->getKey()))->is_active)->toBeFalse()
+        ->and(AddressArea::query()->findOrFail($this->action->handle(['name' => 'Selangor Darul Ehsan'], (string) $area->getKey()))->is_active)->toBeFalse()
+        ->and(AddressArea::query()->findOrFail($this->action->handle(['is_active' => true], (string) $area->getKey()))->is_active)->toBeTrue();
 });
 
 it('moves source-owned containment links when the parent changes without a new hierarchy type', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $first = $this->action->handle([
+    $first = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
         'source_id' => 'state-selangor',
-    ]);
-    $second = $this->action->handle([
+    ]));
+    $second = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Perak',
         'source_id' => 'state-perak',
-    ]);
-    $area = $this->action->handle([
+    ]));
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $first->id,
         'type' => 'locality',
         'name' => 'Bangsar',
         'hierarchy_type' => 'postal',
-    ]);
+    ]));
 
-    $moved = $this->action->handle(['parent_id' => $second->id], $area);
+    $moved = AddressArea::query()->findOrFail($this->action->handle(['parent_id' => $second->id], (string) $area->getKey()));
 
     expect($moved->parent_id)->toBe($second->id)
         ->and($moved->parent_source_id)->toBe('state-perak');
@@ -159,23 +186,23 @@ it('moves source-owned containment links when the parent changes without a new h
 
 it('removes source-owned containment links and the parent pointer on detach', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $state = $this->action->handle([
+    $state = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
         'source_id' => 'state-selangor',
-    ]);
-    $area = $this->action->handle([
+    ]));
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $state->id,
         'type' => 'locality',
         'name' => 'Bangsar',
         'hierarchy_type' => 'postal',
-    ]);
+    ]));
 
     expect($area->parent_source_id)->toBe('state-selangor');
 
-    $detached = $this->action->handle(['parent_id' => null], $area);
+    $detached = AddressArea::query()->findOrFail($this->action->handle(['parent_id' => null], (string) $area->getKey()));
 
     expect($detached->parent_id)->toBeNull()
         ->and($detached->parent_source_id)->toBeNull()
@@ -184,23 +211,23 @@ it('removes source-owned containment links and the parent pointer on detach', fu
 
 it('preserves unrelated relationship sources and types when the parent changes', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $first = $this->action->handle([
+    $first = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
-    ]);
-    $second = $this->action->handle([
+    ]));
+    $second = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Perak',
-    ]);
-    $area = $this->action->handle([
+    ]));
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $first->id,
         'type' => 'locality',
         'name' => 'Bangsar',
         'hierarchy_type' => 'postal',
-    ]);
+    ]));
 
     AddressAreaRelationship::query()->create([
         'parent_address_area_id' => $first->getKey(),
@@ -217,7 +244,7 @@ it('preserves unrelated relationship sources and types when the parent changes',
         'source' => 'manual',
     ]);
 
-    $this->action->handle(['parent_id' => $second->id], $area);
+    $this->action->handle(['parent_id' => $second->id], (string) $area->getKey());
 
     $links = AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->get();
 
@@ -231,20 +258,20 @@ it('preserves unrelated relationship sources and types when the parent changes',
 
 it('leaves relationships untouched when the parent does not change', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $state = $this->action->handle([
+    $state = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
-    ]);
-    $area = $this->action->handle([
+    ]));
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $state->id,
         'type' => 'locality',
         'name' => 'Bangsar',
         'hierarchy_type' => 'postal',
-    ]);
+    ]));
 
-    $this->action->handle(['name' => 'Bangsar Baru'], $area);
+    $this->action->handle(['name' => 'Bangsar Baru'], (string) $area->getKey());
 
     $links = AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->get();
 
@@ -255,24 +282,152 @@ it('leaves relationships untouched when the parent does not change', function ()
 
 it('replaces the source-owned relationship when changing hierarchy type', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
-    $state = $this->action->handle([
+    $state = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'type' => 'state',
         'name' => 'Selangor',
         'source_id' => 'state-selangor',
-    ]);
-    $area = $this->action->handle([
+    ]));
+    $area = AddressArea::query()->findOrFail($this->action->handle([
         'country_id' => $country->id,
         'parent_id' => $state->id,
         'type' => 'locality',
         'name' => 'Bangsar',
         'hierarchy_type' => 'postal',
-    ]);
+    ]));
 
     $this->action->handle([
         'hierarchy_type' => 'administrative',
-    ], $area);
+    ], (string) $area->getKey());
 
     expect(AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->count())->toBe(1)
         ->and(AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->value('hierarchy_type'))->toBe('administrative');
+});
+
+it('rejects invalid area coordinates and non-boolean activation values atomically', function (array $invalid): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+        'latitude' => 3.1,
+        'longitude' => 101.5,
+        'is_active' => true,
+    ]));
+
+    expect(fn (): string => $this->action->handle(
+        ['name' => 'Changed'] + $invalid,
+        (string) $area->getKey(),
+    ))->toThrow(ValidationException::class);
+
+    $area->refresh();
+
+    expect($area->name)->toBe('Selangor')
+        ->and((float) $area->latitude)->toBe(3.1)
+        ->and((float) $area->longitude)->toBe(101.5)
+        ->and($area->is_active)->toBeTrue();
+})->with([
+    'latitude out of range' => [['latitude' => 90.01]],
+    'longitude out of range' => [['longitude' => -180.01]],
+    'non-finite latitude' => [['latitude' => INF]],
+    'non-numeric longitude' => [['longitude' => 'invalid']],
+    'non-boolean activation' => [['is_active' => 'false']],
+]);
+
+it('accepts coordinate boundaries and clears explicitly empty coordinates', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+        'latitude' => '-90',
+        'longitude' => '180',
+    ]));
+
+    expect((float) $area->latitude)->toBe(-90.0)
+        ->and((float) $area->longitude)->toBe(180.0);
+
+    $this->action->handle(['latitude' => null, 'longitude' => ''], (string) $area->getKey());
+
+    $area->refresh();
+
+    expect($area->latitude)->toBeNull()
+        ->and($area->longitude)->toBeNull();
+});
+
+it('rejects malformed hierarchy levels without changing the area', function (mixed $level): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'name' => 'Central',
+        'type' => 'state',
+    ]));
+
+    expect(fn () => $this->action->handle(['level' => $level], (string) $area->getKey()))
+        ->toThrow(ValidationException::class)
+        ->and($area->refresh()->level)->toBe(1);
+})->with([0, -1, 1.5, true, 'abc', '2.5', 32768]);
+
+it('rejects raising a parent to the same level as its child', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $parent = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'name' => 'Central',
+        'type' => 'state',
+    ]));
+    $child = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'parent_id' => $parent->id,
+        'name' => 'District',
+        'type' => 'district',
+    ]));
+
+    expect(fn () => $this->action->handle(['level' => 2], (string) $parent->getKey()))
+        ->toThrow(ValidationException::class)
+        ->and($parent->refresh()->level)->toBe(1)
+        ->and($child->refresh()->level)->toBe(2);
+});
+
+it('accepts integral numeric form state without truncating fractional levels', function (mixed $level): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $id = $this->action->handle([
+        'country_id' => $country->id,
+        'name' => 'Central',
+        'type' => 'state',
+        'level' => $level,
+    ]);
+
+    expect(AddressArea::query()->findOrFail($id)->level)->toBe(2);
+})->with([2, 2.0, '2', '2.0']);
+
+it('invalidates cached hierarchy and state lookups when a containment edge is removed', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $state = State::query()->create(['country_id' => $country->id, 'name' => 'Selangor']);
+    $parent = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+    ]));
+    $child = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'parent_id' => $parent->id,
+        'type' => 'district',
+        'name' => 'Petaling',
+        'hierarchy_type' => 'administrative',
+    ]));
+    AddressAreaStateLink::query()->create([
+        'address_area_id' => $parent->id,
+        'state_id' => $state->id,
+    ]);
+
+    $hierarchy = app(AddressAreaHierarchyResolver::class);
+
+    expect($hierarchy->ancestorsOf($child, 'administrative')->modelKeys())->toBe([$parent->id])
+        ->and(AddressAreaStateBridge::stateIdForArea($child))->toBe($state->id);
+
+    $this->action->handle(['hierarchy_type' => null], (string) $child->getKey());
+
+    expect($child->refresh()->parent_id)->toBe($parent->id)
+        ->and($hierarchy->ancestorsOf($child, 'administrative'))->toBeEmpty()
+        ->and(AddressAreaStateBridge::stateIdForArea($child))->toBeNull();
 });

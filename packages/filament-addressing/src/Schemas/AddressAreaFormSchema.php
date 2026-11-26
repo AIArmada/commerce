@@ -6,9 +6,9 @@ namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Support\AddressAreaHierarchy;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaHierarchy;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Filament\Forms\Components\Select;
@@ -43,7 +43,7 @@ class AddressAreaFormSchema
                             )
                             ->searchable()
                             ->required()
-                            ->disabled($isSourceManaged)
+                            ->disabled($isSourceManaged || $currentArea !== null)
                             ->live()
                             ->afterStateUpdated(function (mixed $state, callable $set): void {
                                 $set('parent_id', null);
@@ -123,10 +123,14 @@ class AddressAreaFormSchema
                         TextInput::make('latitude')
                             ->label('Latitude')
                             ->numeric()
+                            ->minValue(-90)
+                            ->maxValue(90)
                             ->step(0.000001),
                         TextInput::make('longitude')
                             ->label('Longitude')
                             ->numeric()
+                            ->minValue(-180)
+                            ->maxValue(180)
                             ->step(0.000001),
                     ])->columns(2)
                     ->disabled($isSourceManaged),

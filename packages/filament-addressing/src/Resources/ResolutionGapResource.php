@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource\Pages\ListResolutionGaps;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource\Pages\ViewResolutionGap;
@@ -42,7 +42,7 @@ final class ResolutionGapResource extends Resource
 
     public static function getModel(): string
     {
-        return config('filament-addressing.resources.resolution_gaps.model', ResolutionGap::class);
+        return config('filament-addressing.resources.resolution_gaps.model') ?? ResolutionGap::configuredClass();
     }
 
     public static function shouldRegisterNavigation(): bool

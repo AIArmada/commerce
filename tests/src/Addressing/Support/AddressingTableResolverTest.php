@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;

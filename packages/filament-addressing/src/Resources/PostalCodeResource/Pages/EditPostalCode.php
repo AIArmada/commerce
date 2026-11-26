@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages;
 
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Resources\Pages\EditRecord;
@@ -19,7 +19,7 @@ final class EditPostalCode extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! PostalCodeResource::isReadOnly();
+        return ! PostalCodeResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function mutateFormDataBeforeFill(array $data): array
@@ -51,6 +51,8 @@ final class EditPostalCode extends EditRecord
             throw new LogicException('Expected a PostalCode record.');
         }
 
-        return app(SavePostalCodeAction::class)->execute($data, $record);
+        $id = app(PostalCodeWriter::class)->execute($data, (string) $record->getKey(), $record::class);
+
+        return $record->newQuery()->with('areas')->findOrFail($id);
     }
 }

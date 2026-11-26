@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Geography\Lithuania\LithuaniaGeographyProvider;
 use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;
-use AIArmada\Addressing\Models\State;
-use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 
@@ -24,9 +25,9 @@ it('lists only the four mapped nations for GB after a full seed', function (): v
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
-    app(UnitedKingdomGeographyProvider::class)->seed($country);
-    app(SeedCountryGeographiesAction::class)->execute('GB');
+    app(StateDatasetSeeder::class)->execute($states);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(UnitedKingdomGeographyProvider::class)->stateSeedData());
+    app(CountryGeographySeeder::class)->execute('GB');
 
     $resolver = app(CountryAddressProfileResolver::class);
 
@@ -60,9 +61,9 @@ it('lists only the ten mapped counties for LT after a full seed', function (): v
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'LT',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
-    app(LithuaniaGeographyProvider::class)->seed($country);
-    app(SeedCountryGeographiesAction::class)->execute('LT');
+    app(StateDatasetSeeder::class)->execute($states);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(LithuaniaGeographyProvider::class)->stateSeedData());
+    app(CountryGeographySeeder::class)->execute('LT');
 
     $resolver = app(CountryAddressProfileResolver::class);
     $expected = ['AL', 'KU', 'KL', 'MR', 'PN', 'SA', 'TA', 'TE', 'UT', 'VL'];
@@ -104,8 +105,8 @@ it('respects the configured state subclass and its global scopes', function (): 
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
-    app(UnitedKingdomGeographyProvider::class)->seed($country);
+    app(StateDatasetSeeder::class)->execute($states);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $scopedState = new class extends State
     {

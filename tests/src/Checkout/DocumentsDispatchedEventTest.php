@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 
 beforeEach(function (): void {
@@ -25,7 +25,7 @@ beforeEach(function (): void {
         'name' => 'Johor',
     ]);
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'state', countryCode: 'MY', type: 'state', level: 1, name: 'Johor'),
         new AddressAreaData(source: 'areas', sourceId: 'postal', countryCode: 'MY', type: 'locality', level: 2, name: 'Bangsar', parentSourceId: 'state', hierarchyType: 'postal'),
         new AddressAreaData(source: 'areas', sourceId: 'admin', countryCode: 'MY', type: 'district', level: 2, name: 'Petaling', parentSourceId: 'state', hierarchyType: 'administrative'),
@@ -48,7 +48,7 @@ it('keeps assignments when unrelated address fields change', function (): void {
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
         'administrative_district' => $areas['admin']->getKey(),
     ]);
@@ -66,7 +66,7 @@ it('clears assignments that no longer belong to the new state', function (): voi
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
         'administrative_district' => $areas['admin']->getKey(),
     ]);
@@ -92,7 +92,7 @@ it('retains assignments that stay valid under the new state', function (): void 
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
         'administrative_district' => $areas['admin']->getKey(),
     ]);
@@ -122,7 +122,7 @@ it('clears assignments when the country changes', function (): void {
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
         'administrative_district' => $areas['admin']->getKey(),
     ]);
@@ -145,7 +145,7 @@ it('prunes a numeric zero role while retaining the valid role', function (): voi
     ]);
     $areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 
-    app(SyncAddressAreaAssignmentsAction::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $areas['postal']->getKey(),
     ]);
 
@@ -156,7 +156,7 @@ it('prunes a numeric zero role while retaining the valid role', function (): voi
         'is_primary' => true,
     ]);
 
-    app(SyncAddressAreaAssignmentsAction::class)->pruneIncompatibleAssignments($address);
+    app(AddressAssignmentWriter::class)->pruneIncompatibleAssignments((string) $address->getKey());
 
     expect($address->areaAssignments()->where('role', 'postal_locality')->exists())->toBeTrue()
         ->and($address->areaAssignments()->where('role', '0')->exists())->toBeFalse();

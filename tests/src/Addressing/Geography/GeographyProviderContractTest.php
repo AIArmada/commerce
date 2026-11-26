@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 
 /**
  * Generic invariants over every configured geography provider.
@@ -189,4 +190,18 @@ it('keeps every provider area row within address_areas column limits without mar
     }
 
     expect($failures)->toBe([]);
+});
+
+it('provides state seed data without database writes', function (): void {
+    foreach (geographyProviderClasses() as $providerClass) {
+        $provider = app($providerClass);
+        $data = $provider->stateSeedData();
+
+        expect($data)->toBeInstanceOf(CountryStateSeedData::class);
+
+        foreach ($data->states as $state) {
+            expect($state['code'])->not->toBeEmpty()
+                ->and($state['name'])->not->toBeEmpty();
+        }
+    }
 });

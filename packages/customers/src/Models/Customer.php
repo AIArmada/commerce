@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -397,7 +398,7 @@ class Customer extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::deleting(function (Customer $customer): void {
-            $customer->addresses()->detach();
+            app(AddressAttachmentWriter::class)->detachAll($customer->getMorphClass(), (string) $customer->getKey());
             $customer->notes()->delete();
             $customer->segments()->detach();
             $customer->groups()->detach();

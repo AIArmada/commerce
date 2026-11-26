@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SetAddressAreaBoundaryAction;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Artisan;
@@ -86,7 +86,7 @@ it('enables indexed spatial queries on existing rows and preserves address owner
                 ->and(Address::query()->inH3Cell(48, -126)->exists())->toBeFalse();
         });
 
-        $boundaries = app(SetAddressAreaBoundaryAction::class);
+        $boundaries = app(AddressAreaBoundaryWriter::class);
         $boundaries->execute($area->id, 'POLYGON((-126 48,-125 48,-125 49,-126 49,-126 48))');
         expect(AddressArea::query()->coveringPoint(48, -126)->sole()->id)->toBe($area->id)
             ->and(AddressArea::query()->coveringPoint(47, -126)->exists())->toBeFalse()

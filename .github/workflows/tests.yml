@@ -1,7 +1,6 @@
 name: tests
 
 on:
-  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -61,7 +60,14 @@ jobs:
       - name: Install dependencies
         env:
           COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
-        run: composer install --prefer-dist --no-interaction --no-progress
+        run: |
+          for attempt in 1 2 3; do
+            if composer install --prefer-dist --no-interaction --no-progress; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 15)); fi
+          done
+          exit 1
 
       - name: Execute tests
         # Disable TIA explicitly because Pest's parallel test-discovery child

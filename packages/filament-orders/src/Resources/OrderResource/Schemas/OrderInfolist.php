@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\Schemas;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Orders\Models\Order;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;

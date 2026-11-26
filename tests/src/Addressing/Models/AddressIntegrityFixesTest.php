@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\ResolutionGap;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\QueryException;
@@ -79,11 +79,11 @@ it('rejects duplicate addressable pivots and second primaries at the database', 
 });
 
 it('dedupes global resolution gaps through the dedupe hash', function (): void {
-    $action = app(LogAddressResolutionGapAction::class);
+    $action = app(ResolutionGapReporter::class);
 
     OwnerContext::withOwner(null, function () use ($action): void {
-        $action->execute('search', 'MY', 'area', 'Nowhere Town');
-        $action->execute('search', 'MY', 'area', 'Nowhere Town');
+        $action->report('search', 'MY', 'area', 'Nowhere Town');
+        $action->report('search', 'MY', 'area', 'Nowhere Town');
     });
 
     $gaps = OwnerContext::withOwner(

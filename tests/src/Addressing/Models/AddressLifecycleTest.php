@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 
@@ -69,7 +70,7 @@ it('deletes pivots through model events and detaches snapshots on delete', funct
     };
     $snapshotable->save();
 
-    $snapshot = app(CreateAddressSnapshotAction::class)->execute($snapshotable, $address);
+    $snapshot = AddressSnapshot::query()->findOrFail(app(AddressSnapshotWriter::class)->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), (string) $address->getKey()));
 
     $pivotDeletingFired = false;
     Event::listen('eloquent.deleting: ' . Addressable::class, function () use (&$pivotDeletingFired): void {
@@ -82,4 +83,32 @@ it('deletes pivots through model events and detaches snapshots on delete', funct
     expect(Addressable::query()->where('address_id', $address->getKey())->exists())->toBeFalse();
     expect($snapshot->fresh()->address_id)->toBeNull();
     expect($snapshot->fresh()->line1)->toBe('Doomed');
+});
+
+it('rolls back address reference cleanup when a later deleting observer vetoes deletion', function (): void {
+    $host = new class extends Model
+    {
+        use HasAddresses;
+
+        protected $table = 'test_owners';
+    };
+    $host->save();
+
+    $address = Address::query()->create(['line1' => 'Preserved', 'country_code' => 'MY']);
+    $attachment = $host->attachAddress($address);
+    $snapshot = AddressSnapshot::query()->findOrFail(app(AddressSnapshotWriter::class)->execute($host->getMorphClass(), $host->getKey(), (string) $address->getKey()));
+
+    $dispatcher = Address::getEventDispatcher();
+    $temporaryDispatcher = clone $dispatcher;
+    $temporaryDispatcher->listen('eloquent.deleting: ' . Address::class, static fn (): bool => false);
+    Address::setEventDispatcher($temporaryDispatcher);
+
+    try {
+        expect($address->delete())->toBeFalse()
+            ->and(Address::query()->whereKey($address->getKey())->exists())->toBeTrue()
+            ->and(Addressable::query()->whereKey($attachment->getKey())->exists())->toBeTrue()
+            ->and($snapshot->fresh()->address_id)->toBe($address->getKey());
+    } finally {
+        Address::setEventDispatcher($dispatcher);
+    }
 });

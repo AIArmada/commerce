@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\ResolveCustomerStep;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

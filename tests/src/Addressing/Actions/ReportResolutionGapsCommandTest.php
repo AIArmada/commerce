@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Data\CountryStateSeedData;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Carbon\CarbonImmutable;
 
@@ -28,7 +28,10 @@ final class GapReportFakeGeographyProvider implements CountryAddressAreaMetadata
         return 'MY';
     }
 
-    public function seed(AddressCountry $country): void {}
+    public function stateSeedData(): CountryStateSeedData
+    {
+        return new CountryStateSeedData([]);
+    }
 
     public function addressHierarchies(): array
     {
@@ -47,17 +50,17 @@ final class GapReportFakeGeographyProvider implements CountryAddressAreaMetadata
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
     }
@@ -67,12 +70,12 @@ beforeEach(function (): void {
     $this->seedCountry('MY');
     $this->seedCountry('ID');
 
-    $log = app(LogAddressResolutionGapAction::class);
-    $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
-    $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
-    $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
-    $log->execute('onemap', 'MY', 'postal_locality', 'Bangsar');
-    $log->execute('google-picker', 'ID', 'regency', 'Jakarta Pusat', 'ambiguous');
+    $log = app(ResolutionGapReporter::class);
+    $log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $log->report('onemap', 'MY', 'postal_locality', 'Bangsar');
+    $log->report('google-picker', 'ID', 'regency', 'Jakarta Pusat', 'ambiguous');
 
     ResolutionGap::query()->where('value', 'Bangsar')->update(['last_seen_at' => CarbonImmutable::now()->subDays(60)]);
 });
@@ -107,7 +110,7 @@ it('rejects invalid filter values', function (): void {
 it('counts the promotion backlog from evidence-backed candidates', function (): void {
     config()->set('addressing.geography.providers', [GapReportFakeGeographyProvider::class]);
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'kl', countryCode: 'MY', type: 'locality', level: 2, name: 'Wilayah Persekutuan Kuala Lumpur'),
     ]));
     $area = AddressArea::query()->where('source_id', 'kl')->firstOrFail();

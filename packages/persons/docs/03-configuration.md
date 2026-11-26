@@ -47,8 +47,8 @@ The host application may subclass package models. `Person` is resolved through `
 ```php
 'models' => [
     'person' => env('PERSONS_MODEL_PERSON', \AIArmada\Persons\Models\Person::class),
-    'country' => env('PERSONS_MODEL_COUNTRY', class_exists(\AIArmada\Addressing\Models\AddressCountry::class)
-        ? \AIArmada\Addressing\Models\AddressCountry::class
+    'country' => env('PERSONS_MODEL_COUNTRY', class_exists(\AIArmada\Addressing\Features\Geography\Models\AddressCountry::class)
+        ? \AIArmada\Addressing\Features\Geography\Models\AddressCountry::class
         : null),
     'institution' => env('PERSONS_MODEL_INSTITUTION'),
 ],
@@ -63,7 +63,7 @@ configured; null remains valid.
 ```php
 'integrations' => [
     'addressing' => [
-        'enabled' => (bool) env('PERSONS_ADDRESSING_ENABLED', class_exists(\AIArmada\Addressing\Models\AddressCountry::class)),
+        'enabled' => (bool) env('PERSONS_ADDRESSING_ENABLED', class_exists(\AIArmada\Addressing\Features\Geography\Models\AddressCountry::class)),
     ],
 ],
 ```

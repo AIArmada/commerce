@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportPostalCodeAdminDataAction;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Contracts\PostalCodeAdminImporter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +24,7 @@ it('imports postcode coverage without conflating root metadata and link provenan
         'slug' => 'area-two', 'source' => 'areas-two', 'source_id' => 'two',
     ]);
 
-    $postcode = app(ImportPostalCodeAdminDataAction::class)->execute(
+    $postcode = PostalCode::query()->findOrFail(app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'my',
         code: ' 47500 ',
         isActive: false,
@@ -55,7 +55,7 @@ it('imports postcode coverage without conflating root metadata and link provenan
                 'is_primary' => false,
             ],
         ],
-    );
+    ));
 
     expect($postcode->country_code)->toBe('MY')
         ->and($postcode->code)->toBe('47500')
@@ -97,7 +97,7 @@ it('replaces only coverage source scopes explicitly present in the imported payl
         'source' => 'provider-two', 'source_id' => 'two', 'relationship_type' => 'covers', 'is_primary' => false,
     ]);
 
-    app(ImportPostalCodeAdminDataAction::class)->execute(
+    app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'MY',
         code: '47500',
         isActive: true,
@@ -121,7 +121,7 @@ it('replaces only coverage source scopes explicitly present in the imported payl
             ['provider-two', $areaTwo->getKey()],
         ]);
 
-    app(ImportPostalCodeAdminDataAction::class)->execute(
+    app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'MY',
         code: '47500',
         isActive: true,
@@ -151,7 +151,7 @@ it('keeps null and empty source identifiers as distinct replacement scopes', fun
         'source' => 'provider', 'source_id' => '', 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(ImportPostalCodeAdminDataAction::class)->execute(
+    app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'MY',
         code: '47500',
         isActive: true,
@@ -180,13 +180,42 @@ it('keeps null and empty source identifiers as distinct replacement scopes', fun
         ]);
 });
 
+it('reports a conflict when a retained source id owns the same unique coverage edge', function (): void {
+    $area = AddressArea::query()->create([
+        'country_code' => 'MY', 'type' => 'locality', 'level' => 1, 'name' => 'Area One',
+        'slug' => 'area-one', 'source' => 'areas', 'source_id' => 'one',
+    ]);
+    $postcode = PostalCode::query()->create(['country_code' => 'MY', 'code' => '47500']);
+    AddressAreaPostalCode::query()->create([
+        'postal_code_id' => $postcode->getKey(), 'address_area_id' => $area->getKey(),
+        'source' => 'provider', 'source_id' => 'retained', 'relationship_type' => 'served_by', 'is_primary' => false,
+    ]);
+
+    expect(fn () => app(PostalCodeAdminImporter::class)->execute(
+        countryCode: 'MY',
+        code: '47500',
+        isActive: true,
+        metadata: null,
+        coverage: [[
+            'source' => 'provider',
+            'source_id' => 'incoming',
+            'area_source' => 'areas',
+            'area_source_id' => 'one',
+            'relationship_type' => 'served_by',
+            'is_primary' => true,
+        ]],
+    ))->toThrow(ValidationException::class, 'already owned by source');
+
+    expect(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->value('source_id'))->toBe('retained');
+});
+
 it('validates the full imported coverage set before mutating the postcode or its links', function (): void {
     $area = AddressArea::query()->create([
         'country_code' => 'MY', 'type' => 'locality', 'level' => 1, 'name' => 'Area One',
         'slug' => 'area-one', 'source' => 'areas', 'source_id' => 'one',
     ]);
 
-    expect(fn () => app(ImportPostalCodeAdminDataAction::class)->execute(
+    expect(fn () => app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'MY',
         code: '47500',
         isActive: true,
@@ -228,7 +257,7 @@ it('locks the postcode before ordered area locks for grouped coverage imports', 
         }
     });
 
-    app(ImportPostalCodeAdminDataAction::class)->execute(
+    app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'MY',
         code: '47500',
         isActive: true,

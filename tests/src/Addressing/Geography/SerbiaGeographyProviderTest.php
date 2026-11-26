@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Serbia\SerbiaGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('roles Belgrade as a city and county cities as municipalities', function (): void {
-    $roles = app(SerbiaGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(SerbiaGeographyProvider::class)->areaRoles();
 
     expect($roles['rs:city:belgrade'][0]['role'])->toBe('city')
         ->and($roles['rs:city:bor'][0]['role'])->toBe('municipality');

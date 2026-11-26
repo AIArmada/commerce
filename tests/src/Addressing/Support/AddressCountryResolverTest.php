@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressCountryResolver;
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
-    app(SeedAddressCountryReferencesAction::class)->execute();
+    app(CountryLinkSeeder::class)->execute();
     $this->resolver = app(AddressCountryResolver::class);
 });
 

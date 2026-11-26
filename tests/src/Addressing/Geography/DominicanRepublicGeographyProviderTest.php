@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\DominicanRepublic\DominicanRepublicGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('ships 31 provinces plus the Distrito Nacional under regions with parent links', function (): void {
@@ -27,7 +26,7 @@ it('ships 158 municipalities under their provinces with postal locality roles', 
         ->and($byId->get('do:municipality:higuey')->parentSourceId)->toBe('do:province:la-altagracia')
         ->and($byId->get('do:municipality:baitoa')->parentSourceId)->toBe('do:province:santiago');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['do:municipality:santiago-de-los-caballeros'][0]['role'])->toBe('postal_locality');
 });

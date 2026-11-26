@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Geography\SierraLeone\SierraLeoneGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
 
 it('ships 16 districts under the 4 provinces and Western Area', function (): void {
     $areas = app(SierraLeoneGeographyProvider::class)->addressAreaSource()->areas()->collect();
@@ -26,7 +26,7 @@ it('ships 16 districts under the 4 provinces and Western Area', function (): voi
 it('seeds the ISO 3166-2:SL provinces and area', function (): void {
     $country = $this->seedCountry('SL');
 
-    app(SierraLeoneGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(SierraLeoneGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 
@@ -49,7 +49,7 @@ it('pins the verified district names and official Western long forms', function 
         ->and($byId->get('sl:district:western-rural')->name)->toBe('Western Rural')
         ->and($byId->get('sl:district:western-urban')->name)->toBe('Western Urban');
 
-    $names = app(SierraLeoneGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(SierraLeoneGeographyProvider::class)->areaNames();
 
     expect($names['sl:district:western-rural'])->toContain(
         ['name' => 'Western Area Rural', 'name_type' => 'alternative'],

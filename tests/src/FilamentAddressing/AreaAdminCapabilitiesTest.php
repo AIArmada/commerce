@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAddressing\RelationManagers\AreaAliasesRelationManager;
 use AIArmada\FilamentAddressing\RelationManagers\AreaPostalCodesRelationManager;
@@ -204,7 +204,7 @@ it('serves the area create URL instead of treating create as a record key', func
 });
 
 it('shows provider hierarchy choices after country selection without choosing among parallel hierarchies', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     $profile = new class implements CountryAddressProfile
     {
         public function countryCode(): string
@@ -259,7 +259,7 @@ it('shows provider hierarchy choices after country selection without choosing am
 });
 
 it('renders existing area state and postcode links when sibling resources are disabled', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $area = AddressArea::factory()->create(['country_code' => 'MY']);
     $state = State::factory()->create([
@@ -304,7 +304,7 @@ it('renders existing area state and postcode links when sibling resources are di
 });
 
 it('keeps parallel area relationship and postcode coverage rows keyed by their pivots', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     $parent = AddressArea::factory()->create(['country_code' => 'MY', 'name' => 'Shared parent']);
     $child = AddressArea::factory()->create(['country_code' => 'MY', 'name' => 'Child']);
 
@@ -384,7 +384,7 @@ it('does not link incoming area relationships when the related parent is not vie
 });
 
 it('keeps provider area source identity and data when handling a forged update payload', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $record = AddressArea::factory()->create([
         'country_id' => $country->getKey(),

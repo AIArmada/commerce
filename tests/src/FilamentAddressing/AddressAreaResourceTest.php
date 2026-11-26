@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages\EditAddressArea;
@@ -42,9 +42,9 @@ it('area resource omits edit pages when read only', function (): void {
 });
 
 it('rejects cyclic parents when editing areas', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
-    $action = app(ImportAddressAreasAction::class);
+    $action = app(AddressAreaImporter::class);
 
     $action->execute(new ArrayAddressAreaSource('test', [
         new AddressAreaData(
@@ -86,7 +86,7 @@ it('rejects cyclic parents when editing areas', function (): void {
 });
 
 it('saves provider-managed areas with parents when only toggling active state', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
@@ -130,7 +130,7 @@ it('saves provider-managed areas with parents when only toggling active state', 
 });
 
 it('still requires an explicit hierarchy type for manual areas with parents', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
@@ -171,7 +171,7 @@ it('still requires an explicit hierarchy type for manual areas with parents', fu
 });
 
 it('preselects the single existing hierarchy when editing areas', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
@@ -213,7 +213,7 @@ it('preselects the single existing hierarchy when editing areas', function (): v
 
 it('preselects the sole configured hierarchy for areas without links', function (): void {
     config()->set('addressing.geography.providers', [SingleHierarchyTestProfile::class]);
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
@@ -246,7 +246,7 @@ it('preselects the sole configured hierarchy for areas without links', function 
 });
 
 it('leaves hierarchy empty when several hierarchies apply', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 

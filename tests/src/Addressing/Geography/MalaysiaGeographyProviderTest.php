@@ -2,22 +2,23 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Data\PostalCodeData;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRole;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
-use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
 
 final class ObsoleteLinkFakeGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
@@ -32,12 +33,9 @@ final class ObsoleteLinkFakeGeographyProvider implements CountryAddressAreaMetad
         return 'MY';
     }
 
-    public function seed(AddressCountry $country): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        ModelResolver::stateClass()::query()->updateOrCreate(
-            ['country_id' => $country->getKey(), 'code' => 'T1'],
-            ['name' => 'Test State', 'country_code' => 'MY'],
-        );
+        return new CountryStateSeedData([['code' => 'T1', 'name' => 'Test State']]);
     }
 
     public function addressHierarchies(): array
@@ -67,17 +65,17 @@ final class ObsoleteLinkFakeGeographyProvider implements CountryAddressAreaMetad
         ];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
     }
@@ -92,7 +90,7 @@ it('preserves globally seeded states and adds missing Malaysian states', functio
         'label' => 'Kuala Lumpur',
     ]);
 
-    app(MalaysiaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(MalaysiaGeographyProvider::class)->stateSeedData());
 
     $state->refresh();
 
@@ -104,7 +102,7 @@ it('removes obsolete provider-owned state links when reseeding', function (): vo
     $this->seedCountry('MY');
     config()->set('addressing.geography.providers', [ObsoleteLinkFakeGeographyProvider::class]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $state = State::query()->where('country_id', $country->id)->where('code', 'T1')->firstOrFail();
@@ -124,7 +122,7 @@ it('removes obsolete provider-owned state links when reseeding', function (): vo
         'metadata' => ['provider' => 'test.obsolete-links'],
     ]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     expect(AddressAreaStateLink::query()->whereKey($oldLink->id)->exists())->toBeFalse()
         ->and(AddressAreaStateLink::query()->where('metadata->provider', 'test.obsolete-links')->count())->toBe(1);
@@ -145,7 +143,10 @@ it('deactivates prior areas when a provider changes its imported source key', fu
             return 'MY';
         }
 
-        public function seed(AddressCountry $country): void {}
+        public function stateSeedData(): CountryStateSeedData
+        {
+            return new CountryStateSeedData([]);
+        }
 
         public function addressHierarchies(): array
         {
@@ -173,19 +174,19 @@ it('deactivates prior areas when a provider changes its imported source key', fu
             return [];
         }
 
-        public function areaRoles(AddressCountry $country): array
+        public function areaRoles(): array
         {
             return [
                 'region' => [['role' => 'region', 'country_code' => 'MY', 'is_primary' => true]],
             ];
         }
 
-        public function areaNames(AddressCountry $country): array
+        public function areaNames(): array
         {
             return [];
         }
 
-        public function areaRelationships(AddressCountry $country): array
+        public function areaRelationships(): array
         {
             return [];
         }
@@ -193,11 +194,11 @@ it('deactivates prior areas when a provider changes its imported source key', fu
     config()->set('addressing.geography.providers', [get_class($provider)]);
     config()->set('addressing.test_provider_source', 'test-feed-v1');
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
     $firstArea = AddressArea::query()->where('source', 'test-feed-v1')->firstOrFail();
 
     config()->set('addressing.test_provider_source', 'test-feed-v2');
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     expect($firstArea->refresh()->is_active)->toBeFalse()
         ->and(AddressArea::query()->where('source', 'test-feed-v2')->value('is_active'))->toBeTrue()
@@ -223,12 +224,11 @@ it('exposes district-parented postal localities under the region', function (): 
         ->and($paritSulong->parentSourceId)->toBe('my:district:johor:batu-pahat')
         ->and($areas->get('my:subdistrict:district:johor:segamat:pekan-chaah')->parentSourceId)->toBe('my:district:johor:segamat');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:johor:batu-pahat:parit-sulong'][0]['role'])->toBe('postal_locality');
 
-    $links = $provider->areaRelationships($country)['my:subdistrict:district:johor:batu-pahat:parit-sulong'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:johor:batu-pahat:parit-sulong'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:johor:batu-pahat', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -255,8 +255,7 @@ it('exposes the shared-postcode Batu Pahat towns as postal localities', function
         ->and($areas->get('my:subdistrict:district:johor:kluang:chamek')->parentSourceId)->toBe('my:district:johor:kluang')
         ->and($areas->get('my:subdistrict:district:johor:tangkak:tanjung-agas')->parentSourceId)->toBe('my:district:johor:tangkak');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:johor:batu-pahat:tongkang-pechah'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:johor:batu-pahat:parit-yaani'][0]['role'])->toBe('postal_locality')
@@ -266,7 +265,7 @@ it('exposes the shared-postcode Batu Pahat towns as postal localities', function
         ->and($roles['my:subdistrict:district:johor:kluang:chamek'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:johor:tangkak:tanjung-agas'][0]['role'])->toBe('postal_locality');
 
-    $links = $provider->areaRelationships($country)['my:subdistrict:district:johor:batu-pahat:parit-yaani'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:johor:batu-pahat:parit-yaani'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:johor:batu-pahat', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -287,8 +286,7 @@ it('exposes the Negeri Sembilan expansion town', function (): void {
         ->and($telokKemang->level)->toBe(3)
         ->and($telokKemang->parentSourceId)->toBe('my:district:negeri-sembilan:port-dickson');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:negeri-sembilan:port-dickson:telok-kemang'][0]['role'])->toBe('postal_locality');
 });
@@ -308,8 +306,7 @@ it('exposes the Perlis and Penang expansion towns', function (): void {
         ->and($areas->get('my:subdistrict:district:pulau-pinang:seberang-perai-selatan:batu-kawan')->parentSourceId)->toBe('my:district:pulau-pinang:seberang-perai-selatan')
         ->and($areas->get('my:subdistrict:district:pulau-pinang:seberang-perai-utara:bertam')->parentSourceId)->toBe('my:district:pulau-pinang:seberang-perai-utara');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:state:perlis:padang-besar'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:state:perlis:simpang-empat'][0]['role'])->toBe('postal_locality')
@@ -317,7 +314,7 @@ it('exposes the Perlis and Penang expansion towns', function (): void {
         ->and($roles['my:subdistrict:district:pulau-pinang:seberang-perai-selatan:batu-kawan'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:pulau-pinang:seberang-perai-utara:bertam'][0]['role'])->toBe('postal_locality');
 
-    $links = $provider->areaRelationships($country)['my:subdistrict:state:perlis:padang-besar'];
+    $links = $provider->areaRelationships()['my:subdistrict:state:perlis:padang-besar'];
 
     expect($links)->toBe([
         ['parent_source_id' => 'my:state:perlis', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -334,8 +331,7 @@ it('exposes the Kelantan expansion town', function (): void {
         ->and($kokLanas->level)->toBe(3)
         ->and($kokLanas->parentSourceId)->toBe('my:district:kelantan:kota-bharu');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:kelantan:kota-bharu:kok-lanas'][0]['role'])->toBe('postal_locality');
 });
@@ -350,8 +346,7 @@ it('exposes the Pahang, Perak, and Selangor expansion towns', function (): void 
         ->and($areas->get('my:subdistrict:district:selangor:petaling:serdang')->parentSourceId)->toBe('my:district:selangor:petaling')
         ->and($areas->get('my:subdistrict:district:selangor:hulu-langat:balakong')->parentSourceId)->toBe('my:district:selangor:hulu-langat');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     // Mengkarak left this sweep: the Pahang book-to-row pass proved it a gazetted
     // UPI pekan, so it now carries the administrative_subdivision role instead.
@@ -401,12 +396,12 @@ it('exposes Sabah daerah kecil as the administrative subdivision tier', function
 
     expect($areas->get('my:subdistrict:district:sabah:tuaran:tamparuli')->parentSourceId)->toBe('my:district:sabah:tuaran');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:sabah:tuaran:tamparuli'][0]['role'])->toBe('administrative_subdivision')
         ->and($roles['my:subdistrict:district:sabah:kudat:banggi'][0]['role'])->toBe('administrative_subdivision');
 
-    $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sabah:tuaran:tamparuli'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:sabah:tuaran:tamparuli'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:sabah:tuaran', 'relationship_type' => 'contains', 'hierarchy_type' => 'administrative'],
@@ -458,14 +453,14 @@ it('exposes the Sabah rectified towns as postal localities', function (): void {
             ->and($area->parentSourceId)->toBe('my:district:sabah:' . $district, $suffix);
     }
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:sabah:membakut:pekan-membakut'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:sabah:paitan:pamol'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:sabah:tawau:merotai-besar'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:sabah:kota-marudu:pingan-pingan'][0]['role'])->toBe('postal_locality');
 
-    $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sabah:membakut:pekan-membakut'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:sabah:membakut:pekan-membakut'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:sabah:membakut', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -573,12 +568,12 @@ it('exposes Sarawak daerah kecil as the administrative subdivision tier', functi
     expect($areas->get('my:subdistrict:district:sarawak:mukah:balingian')->parentSourceId)->toBe('my:district:sarawak:mukah')
         ->and($areas->get('my:subdistrict:district:sarawak:subis:niah-suai')->parentSourceId)->toBe('my:district:sarawak:subis');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:sarawak:betong:spaoh'][0]['role'])->toBe('administrative_subdivision')
         ->and($roles['my:subdistrict:district:sarawak:marudi:bario'][0]['role'])->toBe('administrative_subdivision');
 
-    $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sarawak:mukah:balingian'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:sarawak:mukah:balingian'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:sarawak:mukah', 'relationship_type' => 'contains', 'hierarchy_type' => 'administrative'],
@@ -664,13 +659,13 @@ it('exposes the Sarawak rectified towns as postal localities', function (): void
             ->and($area->parentSourceId)->toBe('my:district:sarawak:' . $district, $suffix);
     }
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:sarawak:pusa:pusa'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:sarawak:marudi:pekan-bario'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:sarawak:miri:lutong'][0]['role'])->toBe('postal_locality');
 
-    $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sarawak:pusa:pusa'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:sarawak:pusa:pusa'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:sarawak:pusa', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -786,7 +781,7 @@ it('exposes level-4 Borneo postal localities under the region', function (): voi
         ->and($cenderawasih->level)->toBe(4)
         ->and($cenderawasih->parentSourceId)->toBe('my:district:sabah:lahad-datu');
 
-    $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sabah:lahad-datu:cenderawasih'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:sabah:lahad-datu:cenderawasih'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:sabah:lahad-datu', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -815,7 +810,7 @@ it('exposes the Kelantan UPI bandars alongside their same-stem mukims', function
     expect($areas->get('my:subdistrict:district:kelantan:pasir-mas:pasir-mas')->type)->toBe('bandar')
         ->and($areas->has('my:subdistrict:district:kelantan:pasir-mas:bandar-pasir-mas'))->toBeFalse();
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:kelantan:tumpat:bandar-tumpat'][0]['role'])->toBe('administrative_subdivision')
         ->and($roles['my:subdistrict:district:kelantan:tanah-merah:tanah-merah'][0]['role'])->toBe('administrative_subdivision');
@@ -852,7 +847,7 @@ it('exposes the Kelantan book-to-row completed mukim tiers', function (): void {
         ->and($forParent('my:district:kelantan:lojing'))->toBe(7);
 
     // Kampung spelling choice over the UPI Kampong form, matching the two older rows.
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:kelantan:kota-bharu:kampung-sireh'])->toContain(
         ['name' => 'Kampong Sireh', 'name_type' => 'alternative'],
@@ -935,7 +930,7 @@ it('exposes the Pahang book-to-row completed bandar and pekan tiers', function (
         ->and($forParent('my:district:pahang:cameron-highlands'))->toBe(7)
         ->and($forParent('my:district:pahang:bera'))->toBe(6);
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:pahang:bentong:telemung'])->toContain(
         ['name' => 'Telemong', 'name_type' => 'alternative'],
@@ -1012,7 +1007,7 @@ it('exposes the Johor book-to-row completed bandar and pekan tiers', function ()
         ->and($forParent('my:district:johor:kulai'))->toBe(5)
         ->and($forParent('my:district:johor:tangkak'))->toBe(12);
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:johor:kluang:bandar-rengam'])->toContain(
         ['name' => 'Renggam', 'name_type' => 'alternative'],
@@ -1127,7 +1122,7 @@ it('exposes the Kedah book-to-row completed bandar and pekan tiers', function ()
         ->and($forParent('my:district:kedah:pendang'))->toBe(16)
         ->and($forParent('my:district:kedah:pokok-sena'))->toBe(8);
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:kedah:langkawi:telok-datai'])->toContain(
         ['name' => 'Teluk Datai', 'name_type' => 'alternative'],
@@ -1203,7 +1198,7 @@ it('exposes the Melaka book-to-row completed bandar and pekan tiers', function (
         ->and($forParent('my:district:melaka:jasin'))->toBe(31)
         ->and($forParent('my:district:melaka:alor-gajah'))->toBe(38);
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:melaka:melaka-tengah:pekan-sungai-udang'])->toContain(
         ['name' => 'Pekan Sungei Udang', 'name_type' => 'alternative'],
@@ -1302,7 +1297,7 @@ it('exposes the Negeri Sembilan book-to-row completed bandar and pekan tiers', f
         ->and($forParent('my:district:negeri-sembilan:tampin'))->toBe(18)
         ->and($forParent('my:district:negeri-sembilan:jempol'))->toBe(15);
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:negeri-sembilan:rembau:kampong-batu'])->toContain(
         ['name' => 'Kampung Batu', 'name_type' => 'alternative'],
@@ -1341,7 +1336,7 @@ it('places the Negeri Sembilan town-code primaries on the bandar and pekan rows'
 
 it('exposes the Perak book-to-row variant spellings as alternative names', function (): void {
     $provider = app(MalaysiaGeographyProvider::class);
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:perak:bagan-datuk:teluk-bharu'])->toContain(
         ['name' => 'Teluk Baru', 'name_type' => 'alternative'],
@@ -1391,8 +1386,7 @@ it('exposes the Perlis gazetted towns as bandar and pekan rows under the state',
         ->and($areas->get('my:subdistrict:state:perlis:kangar')->type)->toBe('bandar')
         ->and($areas->get('my:subdistrict:state:perlis:kaki-bukit')->type)->toBe('pekan');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:state:perlis:kangar'][0]['role'])->toBe('administrative_subdivision')
         ->and($roles['my:subdistrict:state:perlis:kaki-bukit'][0]['role'])->toBe('administrative_subdivision')
@@ -1431,7 +1425,7 @@ it('exposes the Penang book-to-row bandars and the Sungei Bakap spelling', funct
         ->and($areas->get('my:subdistrict:district:pulau-pinang:timur-laut:tanjong-tokong')->type)->toBe('bandar')
         ->and($areas->get('my:subdistrict:district:pulau-pinang:timur-laut:tanjong-pinang')->type)->toBe('bandar');
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:pulau-pinang:seberang-perai-selatan:bandar-sungai-bakap'])->toContain(
         ['name' => 'Bandar Sungei Bakap', 'name_type' => 'alternative'],
@@ -1456,7 +1450,7 @@ it('places the 10470 primary on Tanjong Tokong and keeps Sungai Jawi principal',
 
 it('exposes the Selangor book-to-row variant spellings as alternative names', function (): void {
     $provider = app(MalaysiaGeographyProvider::class);
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:selangor:hulu-selangor:bandar-hulu-yam-baharu'])->toContain(
         ['name' => 'Bandar Ulu Yam Baharu', 'name_type' => 'alternative'],
@@ -1518,18 +1512,17 @@ it('exposes the Pulau Indah town row with its former name', function (): void {
         ->and($pulauIndah->level)->toBe(3)
         ->and($pulauIndah->parentSourceId)->toBe('my:district:selangor:klang');
 
-    $country = new AddressCountry;
-    $roles = $provider->areaRoles($country);
+    $roles = $provider->areaRoles();
 
     expect($roles['my:subdistrict:district:selangor:klang:pulau-indah'][0]['role'])->toBe('administrative_subdivision');
 
-    $names = $provider->areaNames($country);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:selangor:klang:pulau-indah'])->toContain(
         ['name' => 'Pulau Lumut', 'name_type' => 'alternative'],
     );
 
-    $links = $provider->areaRelationships($country)['my:subdistrict:district:selangor:klang:pulau-indah'];
+    $links = $provider->areaRelationships()['my:subdistrict:district:selangor:klang:pulau-indah'];
 
     expect($links)->toContain(
         ['parent_source_id' => 'my:district:selangor:klang', 'relationship_type' => 'contains', 'hierarchy_type' => 'administrative'],
@@ -1539,7 +1532,7 @@ it('exposes the Pulau Indah town row with its former name', function (): void {
 
 it('exposes the Terengganu book-to-row postal spellings as alternative names', function (): void {
     $provider = app(MalaysiaGeographyProvider::class);
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:district:terengganu:kemaman:pekan-air-putih'])->toContain(
         ['name' => 'Ayer Puteh', 'name_type' => 'alternative'],
@@ -1583,7 +1576,7 @@ it('exposes the WPKL gazetted towns as linkless admin rows under the territory',
         ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:pekan-batu-caves')->type)->toBe('pekan')
         ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:pekan-sungai-besi')->type)->toBe('pekan');
 
-    $names = $provider->areaNames(new AddressCountry);
+    $names = $provider->areaNames();
 
     expect($names['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:bandar-bandar-baharu-sungai-besi'])->toContain(
         ['name' => 'Bandar Bandar Baru Sungai Besi', 'name_type' => 'alternative'],

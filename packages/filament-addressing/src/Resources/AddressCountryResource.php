@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\FilamentAddressing\RelationManagers\StatesRelationManager;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\EditAddressCountry;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages\ListAddressCountries;

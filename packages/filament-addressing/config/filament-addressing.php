@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\ResolutionGap;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 
 return [
     'navigation' => [
@@ -73,7 +71,7 @@ return [
         'resolution_gaps' => [
             'enabled' => true,
             'read_only' => false,
-            'model' => ResolutionGap::class,
+            'model' => null, // Defaults to the Addressing feature's configured model.
         ],
 
         'addresses' => [
@@ -84,7 +82,7 @@ return [
 
         'snapshots' => [
             'enabled' => false,
-            'model' => AddressSnapshot::class,
+            'model' => null, // Defaults to the configured AddressLifecycle snapshot model.
         ],
     ],
 ];

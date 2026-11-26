@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Addressing\Geography\Postal;
 
-use AIArmada\Addressing\Actions\ImportPostalCodesAction;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Contracts\PostalCodeImporter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Support\BundledPostalDatasets;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 use Generator;
@@ -263,7 +263,7 @@ final class PostalCsvSamples
         $stubSource = self::seedStubAreas($country, $countryCode, $codesPath, $linksPath, $sample);
         $source = new CsvPostalCodeSource($countryCode, $codesPath, $linksPath, $stubSource);
 
-        $result = app(ImportPostalCodesAction::class)->execute(new PostalCsvCodeSampledSource($source, $sample));
+        $result = app(PostalCodeImporter::class)->execute(new PostalCsvCodeSampledSource($source, $sample));
 
         $failureSample = array_slice(array_map(
             static fn ($failure): string => "[{$failure->code}] {$failure->reason}",

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address as AddressingAddress;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address as AddressingAddress;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
