@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Pages;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\Signals\Services\GoalsReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;

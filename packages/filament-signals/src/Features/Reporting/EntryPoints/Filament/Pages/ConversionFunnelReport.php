@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Pages;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Services\ConversionFunnelReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;

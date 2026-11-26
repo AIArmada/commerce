@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Pages\Concerns;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;

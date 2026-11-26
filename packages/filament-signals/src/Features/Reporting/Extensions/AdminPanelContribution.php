@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\Extensions;
 
 use AIArmada\FilamentSignals\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentSignals\Pages\AcquisitionReport;
-use AIArmada\FilamentSignals\Pages\ContentPerformanceReport;
-use AIArmada\FilamentSignals\Pages\ConversionFunnelReport;
-use AIArmada\FilamentSignals\Pages\DevicesReport;
-use AIArmada\FilamentSignals\Pages\GoalsReport;
-use AIArmada\FilamentSignals\Pages\JourneyReport;
-use AIArmada\FilamentSignals\Pages\LiveActivityReport;
-use AIArmada\FilamentSignals\Pages\PageViewsReport;
-use AIArmada\FilamentSignals\Pages\RetentionReport;
-use AIArmada\FilamentSignals\Pages\SignalsDashboard;
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\AcquisitionReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ContentPerformanceReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ConversionFunnelReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\DevicesReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\GoalsReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\JourneyReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\PageViewsReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\RetentionReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\SignalsDashboard;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
 
 final class AdminPanelContribution implements ContributionContract
 {

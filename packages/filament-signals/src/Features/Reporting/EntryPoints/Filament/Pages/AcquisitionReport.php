@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Pages;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\AcquisitionReportService;
 use AIArmada\Signals\Services\SavedSignalReportDefinition;

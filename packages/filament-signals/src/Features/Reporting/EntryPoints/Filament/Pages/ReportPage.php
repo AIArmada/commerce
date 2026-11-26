@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Pages;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\FormatsSignalsReportValues;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSignalsDateRange;
 use Filament\Pages\Page;
 use Livewire\Attributes\Url;
 

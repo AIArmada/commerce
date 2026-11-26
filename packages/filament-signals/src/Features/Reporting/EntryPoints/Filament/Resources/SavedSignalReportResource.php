@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources;
 
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Pages;
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Schemas\SavedSignalReportForm;
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Tables\SavedSignalReportTable;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Pages;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas\SavedSignalReportForm;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables\SavedSignalReportTable;
 use AIArmada\Signals\Models\SavedSignalReport;
 use BackedEnum;
 use Filament\Resources\Resource;

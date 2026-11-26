@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Tables;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables;
 
 use AIArmada\Signals\Services\SavedSignalReportDefinition;
 use Filament\Actions\BulkActionGroup;

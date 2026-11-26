@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Resources\SignalGoalResource;

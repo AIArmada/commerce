@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\FilamentSignals\Pages\AcquisitionReport;
-use AIArmada\FilamentSignals\Pages\ContentPerformanceReport;
-use AIArmada\FilamentSignals\Pages\JourneyReport;
-use AIArmada\FilamentSignals\Pages\LiveActivityReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\AcquisitionReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ContentPerformanceReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\JourneyReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
 use AIArmada\Signals\Models\SignalEvent;
 use Filament\Tables\Table;
 

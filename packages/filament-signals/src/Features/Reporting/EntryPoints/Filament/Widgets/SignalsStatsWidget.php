@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Widgets;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets;
 
-use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
 use AIArmada\Signals\Services\SignalsDashboardService;
 use Filament\Widgets\StatsOverviewWidget;

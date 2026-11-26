@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Pages;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Pages;
 
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Schemas;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Signals\Models\SavedSignalReport;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Widgets;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets;
 
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
 use AIArmada\Signals\Services\SignalsDashboardService;

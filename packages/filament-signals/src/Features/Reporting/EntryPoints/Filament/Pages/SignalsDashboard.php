@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Pages;
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\FilamentSignals\Widgets\EventTrendWidget;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\EventTrendWidget;
 use AIArmada\FilamentSignals\Features\Alerts\Api\AlertDashboardWidgets;
-use AIArmada\FilamentSignals\Widgets\SignalsStatsWidget;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\SignalsStatsWidget;
 use BackedEnum;
 use Filament\Pages\Dashboard;
 
