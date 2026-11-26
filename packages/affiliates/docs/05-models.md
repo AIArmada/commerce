@@ -42,7 +42,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 ```php
 $affiliate->conversions;      // HasMany<AffiliateConversion>
 $affiliate->attributions;     // HasMany<AffiliateAttribution>
-$affiliate->payouts;          // MorphMany<AffiliatePayout>
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader::class)->hasAffiliateHistory($affiliate->id, spl_object_id($affiliate->getConnection()));
 app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey());
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
@@ -144,7 +144,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 ```php
 $conversion->affiliate;    // BelongsTo<Affiliate>
 $conversion->attribution;  // BelongsTo<AffiliateAttribution>
-$conversion->payout;       // BelongsTo<AffiliatePayout>
+$conversion->affiliate_payout_id; // nullable payout identity
 ```
 
 `external_reference`, `value_minor`, `subject_key`, `subject_instance`, and
@@ -197,7 +197,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 **Relationships:**
 
 ```php
-$payout->conversions;  // HasMany<AffiliateConversion>
+app(\AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity::class)->summary($payout->id, $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()));
 $payout->payee;        // MorphTo (Affiliate or custom)
 ```
 

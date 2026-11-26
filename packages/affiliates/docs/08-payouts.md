@@ -100,7 +100,7 @@ reserved just because the row is pending.
 
 ## Payout Statuses
 
-Payout status is a Spatie state (`States\PayoutStatus`); assign state classes on write:
+Payout status is a Spatie state (`Features\Payouts\States\PayoutStatus`); assign state classes on write:
 
 ```php
 use AIArmada\Affiliates\Features\Payouts\States\CancelledPayout;

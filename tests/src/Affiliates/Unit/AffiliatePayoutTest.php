@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
@@ -59,7 +60,7 @@ describe('AffiliatePayout Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($payout->conversions)->toHaveCount(2);
+        expect(app(PayoutConversionIntegrity::class)->summary($payout->id, $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()))->count)->toBe(2);
     });
 
     test('has many events', function (): void {

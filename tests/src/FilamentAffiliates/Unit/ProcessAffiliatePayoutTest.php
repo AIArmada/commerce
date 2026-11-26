@@ -187,7 +187,7 @@ test('valid provider processing settles only the reserved conversions', function
 
     expect($result->isSuccess())->toBeTrue()
         ->and($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
-        ->and($payout->conversions()->firstOrFail()->status->equals(PaidConversion::class))->toBeTrue()
+        ->and(AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payout->id)->firstOrFail()->status->equals(PaidConversion::class))->toBeTrue()
         ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
 });
 
@@ -251,7 +251,7 @@ test('provider processing cannot complete a payout after its affiliate becomes D
 test('provider submission refuses drift from the reserved conversions', function (string $drift): void {
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);
-    $conversion = $payout->conversions()->firstOrFail();
+    $conversion = AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payout->id)->firstOrFail();
 
     match ($drift) {
         'payout_amount' => $payout->update(['total_minor' => 10000]),
