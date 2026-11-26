@@ -882,17 +882,17 @@ protected across entry points:
 use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
 use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 
-$alias = app(AddressAreaAliasWriter::class)->handle((string) $area->getKey(), [
+$aliasId = app(AddressAreaAliasWriter::class)->handle((string) $area->getKey(), [
     'name' => 'Shah Alam',
     'name_type' => 'alternative',
     'is_preferred' => false,
 ]);
 
-$alias = app(AddressAreaAliasWriter::class)->handle((string) $area->getKey(), [
+$aliasId = app(AddressAreaAliasWriter::class)->handle((string) $area->getKey(), [
     'name' => 'Shah Alam City',
-], (string) $alias->getKey());
+], $aliasId);
 
-app(AddressAreaAliasDeleter::class)->execute((string) $area->getKey(), (string) $alias->getKey());
+app(AddressAreaAliasDeleter::class)->execute((string) $area->getKey(), $aliasId);
 ```
 
 The actions reload and lock the area and any supplied alias before checking
@@ -945,7 +945,7 @@ $attachmentId = app(AddressAttachmentWriter::class)->execute((string) $attachmen
     'is_primary' => true,
 ]);
 
-app(AddressAttachmentWriter::class)->detach((string) $attachment->getKey());
+app(AddressAttachmentWriter::class)->detach($attachmentId);
 ```
 
 The action refuses a duplicate address/type attachment and changes primary
