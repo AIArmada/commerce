@@ -10,7 +10,7 @@ use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Commerce\Tests\Fixtures\FilamentAddressingPanelUser;

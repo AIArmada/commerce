@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
@@ -83,7 +82,7 @@ return [
 
         'snapshots' => [
             'enabled' => false,
-            'model' => AddressSnapshot::class,
+            'model' => null, // Defaults to the configured AddressLifecycle snapshot model.
         ],
     ],
 ];

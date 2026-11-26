@@ -14,7 +14,6 @@ use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
@@ -77,17 +76,6 @@ final class ModelResolver
     {
         /** @var class-string<Address> $modelClass */
         $modelClass = self::resolve('address', Address::class);
-
-        return $modelClass;
-    }
-
-    /**
-     * @return class-string<AddressSnapshot>
-     */
-    public static function snapshotClass(): string
-    {
-        /** @var class-string<AddressSnapshot> $modelClass */
-        $modelClass = self::resolve('snapshot', AddressSnapshot::class);
 
         return $modelClass;
     }

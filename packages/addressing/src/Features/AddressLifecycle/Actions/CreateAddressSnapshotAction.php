@@ -7,7 +7,7 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
-use AIArmada\Addressing\Support\ModelResolver;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
@@ -23,7 +23,7 @@ final readonly class CreateAddressSnapshotAction implements AddressSnapshotWrite
         ?string $label = null,
     ): string {
         $reason = $this->normalizeReason($reason);
-        $snapshotClass = ModelResolver::snapshotClass();
+        $snapshotClass = AddressSnapshot::configuredClass();
 
         return (new $snapshotClass)->getConnection()->transaction(function () use ($snapshotClass, $snapshotableType, $snapshotableId, $address, $reason, $label): string {
             AddressOwnerGuard::assertAddressableIsWritable($snapshotableType, $snapshotableId);

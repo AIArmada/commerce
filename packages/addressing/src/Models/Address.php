@@ -223,12 +223,6 @@ class Address extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaAssignmentClass(), 'address_id');
     }
 
-    /** @return HasMany<AddressSnapshot, $this> */
-    public function snapshots(): HasMany
-    {
-        return $this->hasMany(ModelResolver::snapshotClass(), 'address_id');
-    }
-
     /**
      * @return HasMany<Addressable, $this>
      */

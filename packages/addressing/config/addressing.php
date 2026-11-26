@@ -468,7 +468,6 @@ use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
@@ -486,7 +485,7 @@ return [
         'city' => City::class,
         'area' => AddressArea::class,
         'address' => Address::class,
-        'snapshot' => AddressSnapshot::class,
+        'snapshot' => null, // Defaults to the AddressLifecycle feature model.
         'addressable' => Addressable::class,
         'postal_code' => PostalCode::class,
         'resolution_gap' => null, // Uses the owning feature's model unless overridden.

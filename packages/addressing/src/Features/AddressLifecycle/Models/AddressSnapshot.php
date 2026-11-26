@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Models;
 
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
@@ -49,6 +49,18 @@ class AddressSnapshot extends Model
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'addressing.features.owner';
+
+    /** @return class-string<AddressSnapshot> */
+    public static function configuredClass(): string
+    {
+        $modelClass = config('addressing.models.snapshot') ?? self::class;
+
+        if (! is_string($modelClass) || ! is_a($modelClass, self::class, true)) {
+            throw new LogicException('The configured address snapshot model must extend AddressSnapshot.');
+        }
+
+        return $modelClass;
+    }
 
     protected $fillable = [
         'address_id',

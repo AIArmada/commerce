@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource\Pages\ListAddressSnapshots;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource\Pages\ViewAddressSnapshot;
@@ -47,7 +47,7 @@ final class AddressSnapshotResource extends Resource
 
     public static function getModel(): string
     {
-        return config('filament-addressing.resources.snapshots.model', AddressSnapshot::class);
+        return config('filament-addressing.resources.snapshots.model') ?? AddressSnapshot::configuredClass();
     }
 
     /**

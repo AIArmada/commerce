@@ -134,7 +134,7 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
 
     'snapshots' => [
         'enabled' => false,
-        'model' => \AIArmada\Addressing\Models\AddressSnapshot::class,
+        'model' => null, // Defaults to the AddressLifecycle snapshot model.
     ],
 ],
 ```

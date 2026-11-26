@@ -102,7 +102,7 @@ or when the two gates differ for the selected state.
     'city' => AIArmada\Addressing\Models\City::class,
     'area' => AIArmada\Addressing\Models\AddressArea::class,
     'address' => AIArmada\Addressing\Models\Address::class,
-    'snapshot' => AIArmada\Addressing\Models\AddressSnapshot::class,
+    'snapshot' => null, // Defaults to the AddressLifecycle feature model.
     'addressable' => AIArmada\Addressing\Models\Addressable::class,
     'postal_code' => AIArmada\Addressing\Models\PostalCode::class,
     'resolution_gap' => null, // Defaults to the ResolutionGaps feature model.
