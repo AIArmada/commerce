@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAddressing\Exports\AddressAreaExporter;
 use AIArmada\FilamentAddressing\Imports\AddressAreaImporter;

@@ -93,25 +93,25 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
     'countries' => [
         'enabled' => true,
         'read_only' => true,
-        'model' => \AIArmada\Addressing\Models\AddressCountry::class,
+        'model' => \AIArmada\Addressing\Features\Geography\Models\AddressCountry::class,
     ],
 
     'states' => [
         'enabled' => true,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\State::class,
+        'model' => \AIArmada\Addressing\Features\Geography\Models\State::class,
     ],
 
     'cities' => [
         'enabled' => true,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\City::class,
+        'model' => \AIArmada\Addressing\Features\Geography\Models\City::class,
     ],
 
     'areas' => [
         'enabled' => true,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\AddressArea::class,
+        'model' => \AIArmada\Addressing\Features\Geography\Models\AddressArea::class,
     ],
 
     'postal_codes' => [

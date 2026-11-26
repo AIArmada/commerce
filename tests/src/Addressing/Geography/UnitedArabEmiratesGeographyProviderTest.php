@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesGeographyProvider;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 it('pins the verified UAE tree of 7 emirates', function (): void {
     $areas = app(UnitedArabEmiratesGeographyProvider::class)->addressAreaSource()->areas()->collect();

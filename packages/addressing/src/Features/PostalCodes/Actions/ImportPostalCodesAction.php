@@ -8,19 +8,17 @@ use AIArmada\Addressing\Contracts\PostalCodeImporter;
 use AIArmada\Addressing\Contracts\PostalCodeSource;
 use AIArmada\Addressing\Data\ImportPostalCodeFailureData;
 use AIArmada\Addressing\Data\ImportPostalCodesResultData;
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\ModelResolver;
 
 final readonly class ImportPostalCodesAction implements PostalCodeImporter
 {
+    public function __construct(private AreaReferenceReader $references) {}
+
     public function execute(PostalCodeSource $source): ImportPostalCodesResultData
     {
-        $countryCodes = ModelResolver::countryClass()::query()
-            ->pluck('iso2')
-            ->map(static fn ($iso2): string => mb_strtoupper((string) $iso2))
-            ->flip()
-            ->all();
+        $countryCodes = array_fill_keys($this->references->countryCodes(), true);
 
         return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($source, $countryCodes): ImportPostalCodesResultData {
             $created = 0;
@@ -57,16 +55,12 @@ final readonly class ImportPostalCodesAction implements PostalCodeImporter
                     $areaKey = $countryCode . "\0" . ($item->areaSource ?? $source->key()) . "\0" . $item->areaSourceId;
 
                     if (! array_key_exists($areaKey, $areasByKey)) {
-                        $areasByKey[$areaKey] = ModelResolver::areaClass()::query()
-                            ->where('country_code', $countryCode)
-                            ->where('source', $item->areaSource ?? $source->key())
-                            ->where('source_id', $item->areaSourceId)
-                            ->first();
+                        $areasByKey[$areaKey] = $this->references->areaIdForSource($countryCode, $item->areaSource ?? $source->key(), $item->areaSourceId);
                     }
 
                     $area = $areasByKey[$areaKey];
 
-                    if (! $area instanceof AddressArea) {
+                    if ($area === null) {
                         $failures[] = new ImportPostalCodeFailureData($item->sourceId, "Area not found for areaSourceId: {$item->areaSourceId}", $code);
 
                         continue;
@@ -104,10 +98,10 @@ final readonly class ImportPostalCodesAction implements PostalCodeImporter
                     ->whereHas('postalCode', fn ($query) => $query->where('country_code', $countryCode))
                     ->delete();
 
-                if ($area instanceof AddressArea) {
+                if (is_string($area)) {
                     ModelResolver::areaPostalCodeClass()::query()->updateOrCreate(
                         [
-                            'address_area_id' => $area->getKey(),
+                            'address_area_id' => $area,
                             'postal_code_id' => $postalCode->getKey(),
                             'relationship_type' => $item->relationshipType,
                             'source' => $item->source,
@@ -119,9 +113,9 @@ final readonly class ImportPostalCodesAction implements PostalCodeImporter
                     );
                 }
 
-                $newCoverage = $area instanceof AddressArea
+                $newCoverage = is_string($area)
                     ? [implode('|', [
-                        $area->getKey(),
+                        $area,
                         $postalCode->getKey(),
                         $item->relationshipType,
                         (int) $item->isPrimary,

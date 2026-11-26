@@ -60,8 +60,8 @@ First-class geography models sit beside free-text address fields:
 
 ```php
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 $state = State::query()->where('code', '10')->first(); // Selangor
 $city = City::query()->where('country_id', $state->country_id)->where('name', 'Shah Alam')->first();
@@ -561,7 +561,7 @@ candidates; integrations remain responsible for translating provider
 components into the canonical area types and roles.
 
 ~~~php
-use AIArmada\Addressing\Support\AddressAreaHierarchyResolver;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaHierarchyResolver;
 
 $subdivision = app(AddressAreaHierarchyResolver::class)->resolveWithinHierarchy(
     name: 'Shah Alam',
@@ -1238,7 +1238,7 @@ Enable the corresponding [spatial option](03-configuration.md#optional-spatial-c
 ```php
 use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 
 $nearby = Address::query()->withinRadius(48.0, -126.0, 5_000)->get();
 $geohashMatches = Address::query()->inGeohash('c0w3h')->get();

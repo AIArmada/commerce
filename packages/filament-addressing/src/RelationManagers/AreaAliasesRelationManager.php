@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAddressing\RelationManagers;
 use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
 use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;

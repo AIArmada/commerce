@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryLinkSeeder;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedCurrenciesAction;
 use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedTimezonesAction;

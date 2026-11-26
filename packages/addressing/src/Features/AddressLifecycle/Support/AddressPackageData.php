@@ -8,10 +8,8 @@ use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaAddressComponents;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ModelResolver;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Builds the canonical AddressData value object used for formatted block and summary rendering.
@@ -94,7 +92,7 @@ final class AddressPackageData
         }
 
         $country = ModelResolver::countryClass()::query()->find($countryId);
-        $code = $country instanceof AddressCountry ? self::clean($country->getAttribute('iso2')) : null;
+        $code = $country instanceof (ModelResolver::countryClass()) ? self::clean($country->getAttribute('iso2')) : null;
 
         return $code === null ? null : mb_strtoupper($code);
     }
@@ -125,7 +123,7 @@ final class AddressPackageData
 
         $state = ModelResolver::stateClass()::query()->find($stateId);
 
-        return $state instanceof State ? self::clean($state->getAttribute('name')) : null;
+        return $state instanceof (ModelResolver::stateClass()) ? self::clean($state->getAttribute('name')) : null;
     }
 
     /**
@@ -138,7 +136,7 @@ final class AddressPackageData
         if ($assignment instanceof AddressAreaAssignment) {
             $area = $assignment->relationLoaded('area') ? $assignment->getRelation('area') : null;
 
-            if ($area instanceof AddressArea) {
+            if ($area instanceof (ModelResolver::areaClass())) {
                 return self::clean($area->getAttribute('name'));
             }
 
@@ -172,7 +170,7 @@ final class AddressPackageData
         if ($assignment instanceof AddressAreaAssignment) {
             $area = $assignment->relationLoaded('area') ? $assignment->getRelation('area') : null;
 
-            if ($area instanceof AddressArea) {
+            if ($area instanceof (ModelResolver::areaClass())) {
                 return [
                     'name' => self::clean($area->getAttribute('name')),
                     'type' => self::clean($area->getAttribute('type')),
@@ -226,7 +224,7 @@ final class AddressPackageData
         return self::clean(self::findArea($id)?->getAttribute('name'));
     }
 
-    private static function findArea(?string $id): ?AddressArea
+    private static function findArea(?string $id): ?Model
     {
         if ($id === null) {
             return null;
@@ -234,7 +232,7 @@ final class AddressPackageData
 
         $area = ModelResolver::areaClass()::query()->find($id);
 
-        return $area instanceof AddressArea ? $area : null;
+        return $area instanceof (ModelResolver::areaClass()) ? $area : null;
     }
 
     private static function idString(mixed $id): ?string

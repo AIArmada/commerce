@@ -17,4 +17,20 @@ interface AreaReferenceReader
      * @return list<array{parent_id: string, child_id: string, hierarchy_type: ?string}>
      */
     public function activeContainmentParents(array $childIds): array;
+
+    public function countryExists(string $countryCode): bool;
+
+    /** @return list<string> */
+    public function countryCodes(): array;
+
+    public function areaIdForSource(string $countryCode, string $source, string $sourceId): ?string;
+
+    /** @return array<string, string> */
+    public function areaIdsForSource(string $countryCode, string $source): array;
+
+    /**
+     * @param list<string> $areaIds
+     * @return array<string, array{source_id: string, name: string}>
+     */
+    public function areaMetadata(array $areaIds): array;
 }

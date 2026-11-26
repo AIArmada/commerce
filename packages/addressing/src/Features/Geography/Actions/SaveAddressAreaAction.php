@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaWriter;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Support\AddressAreaHierarchy;
-use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaHierarchy;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;

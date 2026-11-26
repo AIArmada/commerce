@@ -6,7 +6,6 @@ namespace AIArmada\Addressing\Features\PostalCodes\Models;
 
 use AIArmada\Addressing\Database\Factories\PostalCodeFactory;
 use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
-use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -45,7 +44,7 @@ class PostalCode extends TransactionalDeletionModel
         return AddressingTableResolver::resolve('postal_codes');
     }
 
-    /** @return BelongsToMany<AddressArea, $this, AddressAreaPostalCode, 'pivot'> */
+    /** @return BelongsToMany<\AIArmada\Addressing\Features\Geography\Models\AddressArea, $this, AddressAreaPostalCode, 'pivot'> */
     public function areas(): BelongsToMany
     {
         return $this->belongsToMany(

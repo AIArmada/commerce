@@ -97,10 +97,10 @@ or when the two gates differ for the selected state.
 
 ```php
 'models' => [
-    'country' => AIArmada\Addressing\Models\AddressCountry::class,
-    'state' => AIArmada\Addressing\Models\State::class,
-    'city' => AIArmada\Addressing\Models\City::class,
-    'area' => AIArmada\Addressing\Models\AddressArea::class,
+    'country' => AIArmada\Addressing\Features\Geography\Models\AddressCountry::class,
+    'state' => AIArmada\Addressing\Features\Geography\Models\State::class,
+    'city' => AIArmada\Addressing\Features\Geography\Models\City::class,
+    'area' => AIArmada\Addressing\Features\Geography\Models\AddressArea::class,
     'address' => null, // AddressLifecycle feature default; override with a subclass.
     'snapshot' => null, // Defaults to the AddressLifecycle feature model.
     'addressable' => null, // AddressLifecycle feature default; override with a subclass.

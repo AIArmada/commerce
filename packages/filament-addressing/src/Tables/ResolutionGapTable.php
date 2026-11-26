@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAddressing\Tables;
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;

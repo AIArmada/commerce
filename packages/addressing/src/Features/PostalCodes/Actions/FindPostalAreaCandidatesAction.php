@@ -6,8 +6,8 @@ namespace AIArmada\Addressing\Features\PostalCodes\Actions;
 
 use AIArmada\Addressing\Features\PostalCodes\Api\PostalAreaLookup;
 use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
-use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\ModelResolver;
+use Illuminate\Database\Eloquent\Model;
 
 final readonly class FindPostalAreaCandidatesAction implements PostalAreaLookup
 {
@@ -20,20 +20,20 @@ final readonly class FindPostalAreaCandidatesAction implements PostalAreaLookup
             ->with('areas')
             ->get()
             ->flatMap(static fn (PostalCode $postalCode) => $postalCode->areas)
-            ->filter(static fn (AddressArea $area): bool => $area->is_active !== false)
-            ->filter(static fn (AddressArea $area): bool => $countryId === null
-                || (string) $area->country_id === $countryId)
-            ->unique(static fn (AddressArea $area): string => (string) $area->getKey())
+            ->filter(static fn (Model $area): bool => $area->getAttribute('is_active') !== false)
+            ->filter(static fn (Model $area): bool => $countryId === null
+                || (string) $area->getAttribute('country_id') === $countryId)
+            ->unique(static fn (Model $area): string => (string) $area->getKey())
             ->values();
 
-        $primary = $areas->filter(static function (AddressArea $area): bool {
+        $primary = $areas->filter(static function (Model $area): bool {
             $pivot = $area->getRelation('pivot');
 
             return $pivot !== null && (bool) $pivot->is_primary;
         });
 
         return ($primary->isNotEmpty() ? $primary : $areas)
-            ->map(static fn (AddressArea $area): string => (string) $area->getKey())
+            ->map(static fn (Model $area): string => (string) $area->getKey())
             ->values()
             ->all();
     }

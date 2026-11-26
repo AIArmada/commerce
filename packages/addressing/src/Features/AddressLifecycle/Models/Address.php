@@ -10,9 +10,6 @@ use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Database\Factories\AddressFactory;
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -197,7 +194,7 @@ class Address extends TransactionalDeletionModel
     }
 
     /**
-     * @return BelongsTo<AddressCountry, $this>
+     * @return BelongsTo<\AIArmada\Addressing\Features\Geography\Models\AddressCountry, $this>
      */
     public function country(): BelongsTo
     {
@@ -205,7 +202,7 @@ class Address extends TransactionalDeletionModel
     }
 
     /**
-     * @return BelongsTo<State, $this>
+     * @return BelongsTo<\AIArmada\Addressing\Features\Geography\Models\State, $this>
      */
     public function state(): BelongsTo
     {
@@ -213,7 +210,7 @@ class Address extends TransactionalDeletionModel
     }
 
     /**
-     * @return BelongsTo<City, $this>
+     * @return BelongsTo<\AIArmada\Addressing\Features\Geography\Models\City, $this>
      */
     public function city(): BelongsTo
     {

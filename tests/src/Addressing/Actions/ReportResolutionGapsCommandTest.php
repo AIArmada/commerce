@@ -12,7 +12,7 @@ use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Carbon\CarbonImmutable;
 

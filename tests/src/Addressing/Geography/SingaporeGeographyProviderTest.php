@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Geography\Singapore\SingaporeGeographyProvider;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 it('preserves globally seeded states and adds missing Singapore districts', function (): void {
     $country = $this->seedCountry('SG');

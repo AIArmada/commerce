@@ -8,7 +8,7 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Data\PostalCodeData;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Support\BundledPostalDatasets;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -25,6 +25,7 @@ final readonly class SeedPostalCodesAction implements PostalCodeSeeder
 
     public function __construct(
         private Container $container,
+        private AreaReferenceReader $references,
     ) {}
 
     /**
@@ -62,9 +63,7 @@ final readonly class SeedPostalCodesAction implements PostalCodeSeeder
                 continue;
             }
 
-            $country = ModelResolver::countryClass()::query()->where('iso2', $code)->first();
-
-            if (! $country instanceof AddressCountry) {
+            if (! $this->references->countryExists($code)) {
                 throw new InvalidArgumentException(sprintf(
                     'Cannot seed postcodes for %s because the country has not been seeded.',
                     $code,
@@ -115,11 +114,7 @@ final readonly class SeedPostalCodesAction implements PostalCodeSeeder
             }
         }
 
-        $areaIds = ModelResolver::areaClass()::query()
-            ->where('country_code', $code)
-            ->where('source', $areaSource)
-            ->pluck('id', 'source_id')
-            ->all();
+        $areaIds = $this->references->areaIdsForSource($code, $areaSource);
 
         $failures = [];
 

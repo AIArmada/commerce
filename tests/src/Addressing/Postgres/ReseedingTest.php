@@ -11,7 +11,7 @@ use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\ExportAddressingReferencesAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportFile;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
 use Illuminate\Database\Events\QueryExecuted;

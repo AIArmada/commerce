@@ -9,10 +9,8 @@ use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Data\GooglePlaceAddressComponents;
 use AIArmada\Addressing\Features\Geography\Api\PlaceGeographyResolver;
 use AIArmada\Addressing\Features\PostalCodes\Api\PostalAreaLookup;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Support\AddressAreaHierarchyResolver;
-use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 

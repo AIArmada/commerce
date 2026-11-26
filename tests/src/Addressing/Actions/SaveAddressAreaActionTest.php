@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
-use AIArmada\Addressing\Support\AddressAreaHierarchyResolver;
-use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaHierarchyResolver;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {

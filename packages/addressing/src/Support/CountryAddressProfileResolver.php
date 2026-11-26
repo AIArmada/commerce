@@ -9,8 +9,7 @@ use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Api\AreaStateLookup;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -44,7 +43,7 @@ final class CountryAddressProfileResolver
 
         $resolvedCountry = $this->countryResolver->resolve($country);
 
-        if (! $resolvedCountry instanceof AddressCountry) {
+        if (! $resolvedCountry instanceof (ModelResolver::countryClass())) {
             $this->cache($cacheKey, null);
 
             return null;
@@ -144,13 +143,13 @@ final class CountryAddressProfileResolver
      * provider defines state-kind roots, to those codes. Provider-less
      * countries fall back to all states.
      *
-     * @return EloquentBuilder<State>|null
+     * @return EloquentBuilder<\AIArmada\Addressing\Features\Geography\Models\State>|null
      */
     public function stateOptionsQuery(mixed $country): ?EloquentBuilder
     {
         $resolved = $this->countryResolver->resolve($country);
 
-        if (! $resolved instanceof AddressCountry) {
+        if (! $resolved instanceof (ModelResolver::countryClass())) {
             return null;
         }
 
@@ -351,7 +350,7 @@ final class CountryAddressProfileResolver
             }
         }
 
-        return AddressAreaStateBridge::areaIdForState(
+        return app(AreaStateLookup::class)->areaIdForState(
             self::stringOrNull($stateId),
             self::hierarchyType($definition['hierarchy'], $definition['level']),
         );
@@ -639,7 +638,7 @@ final class CountryAddressProfileResolver
             return false;
         }
 
-        $stateAreaId = AddressAreaStateBridge::areaIdForState(
+        $stateAreaId = app(AreaStateLookup::class)->areaIdForState(
             $stateId,
             self::hierarchyType($ancestor['hierarchy'], $ancestor['level']),
         );
@@ -888,7 +887,7 @@ final class CountryAddressProfileResolver
 
     private function cacheKey(mixed $country): ?string
     {
-        if ($country instanceof AddressCountry) {
+        if ($country instanceof (ModelResolver::countryClass())) {
             return 'id:' . (string) $country->getKey();
         }
 

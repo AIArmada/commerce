@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\Geography\Models;
 
 use AIArmada\Addressing\Database\Factories\StateFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
@@ -67,7 +67,7 @@ class State extends TransactionalDeletionModel
     }
 
     /**
-     * @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink, $this>
+     * @return HasMany<AddressAreaStateLink, $this>
      */
     public function addressAreaLinks(): HasMany
     {

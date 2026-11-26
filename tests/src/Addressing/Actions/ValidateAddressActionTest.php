@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 
 it('passes a complete address', function (): void {
     $violations = app(AddressValidator::class)->validate(AddressData::from([

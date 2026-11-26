@@ -28,6 +28,7 @@ use AIArmada\Addressing\Features\Geography\Actions\GuardAddressCountryDeletionAc
 use AIArmada\Addressing\Features\Geography\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Features\Geography\Actions\PruneDuplicateManualAliasesAction;
 use AIArmada\Addressing\Features\Geography\Actions\ReadAreaReferencesAction;
+use AIArmada\Addressing\Features\Geography\Actions\ResolveAreaStateAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAliasAction;
 use AIArmada\Addressing\Features\Geography\Actions\SearchAddressAreasAction;
@@ -40,15 +41,22 @@ use AIArmada\Addressing\Features\Geography\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryStatesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
 use AIArmada\Addressing\Features\Geography\Actions\ValidateAreaAssignmentsAction;
+use AIArmada\Addressing\Features\Geography\Actions\MatchAreaAliasAction;
+use AIArmada\Addressing\Features\Geography\Api\AreaAliasMatcher;
 use AIArmada\Addressing\Features\Geography\Api\AreaAssignmentValidator;
 use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
+use AIArmada\Addressing\Features\Geography\Api\AreaStateLookup;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Api\PlaceGeographyResolver;
 use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Features\Geography\Support\GooglePlaceGeographyMatcher;
 use AIArmada\Addressing\Features\Geography\Support\GooglePlaceGeographyResolver;
 use AIArmada\Addressing\Features\Geography\Support\GooglePlaceResolutionGapLogger;
@@ -59,12 +67,18 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->instance('addressing.model-default.area', AddressArea::class);
+        $app->instance('addressing.model-default.country', AddressCountry::class);
+        $app->instance('addressing.model-default.city', City::class);
+        $app->instance('addressing.model-default.state', State::class);
+        $app->singleton(AreaStateLookup::class, ResolveAreaStateAction::class);
         $app->instance('addressing.model-default.area_name', AddressAreaName::class);
         $app->instance('addressing.model-default.area_relationship', AddressAreaRelationship::class);
         $app->instance('addressing.model-default.area_role', AddressAreaRole::class);
         $app->singleton(GooglePlaceGeographyMatcher::class);
         $app->singleton(GooglePlaceResolutionGapLogger::class);
         $app->singleton(PlaceGeographyResolver::class, GooglePlaceGeographyResolver::class);
+        $app->singleton(AreaAliasMatcher::class, MatchAreaAliasAction::class);
         $app->singleton(AreaAssignmentValidator::class, ValidateAreaAssignmentsAction::class);
         $app->singleton(AreaReferenceReader::class, ReadAreaReferencesAction::class);
         $app->instance('addressing.model-default.area_state_link', AddressAreaStateLink::class);

@@ -5,10 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
 use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -270,16 +266,16 @@ final class AddressFormState
             ? ModelResolver::cityClass()::query()->find($payload['city_id'])
             : null;
 
-        if ($country instanceof AddressCountry) {
+        if ($country instanceof (ModelResolver::countryClass())) {
             $payload['country'] = $country->name;
             $payload['country_code'] = $country->iso2;
         }
 
-        if ($state instanceof State) {
+        if ($state instanceof (ModelResolver::stateClass())) {
             $payload['state'] = $state->name;
         }
 
-        if ($city instanceof City) {
+        if ($city instanceof (ModelResolver::cityClass())) {
             $payload['city'] = $city->name;
         } elseif (empty($payload['city'])) {
             $assignments = AddressAssignments::normalize((array) ($payload['area_assignments'] ?? []));
@@ -289,7 +285,7 @@ final class AddressFormState
 
             foreach (array_reverse($assignments) as $areaId) {
                 $area = $areas->get($areaId);
-                if ($area instanceof AddressArea) {
+                if ($area instanceof (ModelResolver::areaClass())) {
                     $payload['city'] = $area->name;
 
                     break;

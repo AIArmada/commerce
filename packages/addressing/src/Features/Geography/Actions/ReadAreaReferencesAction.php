@@ -55,4 +55,39 @@ final readonly class ReadAreaReferencesAction implements AreaReferenceReader
             ->values()
             ->all();
     }
+
+    public function countryExists(string $countryCode): bool
+    {
+        return ModelResolver::countryClass()::query()->where('iso2', $countryCode)->exists();
+    }
+
+    public function countryCodes(): array
+    {
+        return ModelResolver::countryClass()::query()->pluck('iso2')
+            ->map(static fn ($code): string => mb_strtoupper((string) $code))->values()->all();
+    }
+
+    public function areaIdForSource(string $countryCode, string $source, string $sourceId): ?string
+    {
+        $id = ModelResolver::areaClass()::query()->where('country_code', $countryCode)
+            ->where('source', $source)->where('source_id', $sourceId)->value('id');
+
+        return is_string($id) ? $id : null;
+    }
+
+    public function areaIdsForSource(string $countryCode, string $source): array
+    {
+        return ModelResolver::areaClass()::query()->where('country_code', $countryCode)
+            ->where('source', $source)->pluck('id', 'source_id')->all();
+    }
+
+    public function areaMetadata(array $areaIds): array
+    {
+        return ModelResolver::areaClass()::query()->whereIn('id', $areaIds)
+            ->get(['id', 'source_id', 'name'])
+            ->mapWithKeys(static fn ($area): array => [(string) $area->getKey() => [
+                'source_id' => (string) $area->source_id,
+                'name' => (string) $area->name,
+            ]])->all();
+    }
 }

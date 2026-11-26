@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Support;
 
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
@@ -17,45 +13,53 @@ use LogicException;
 final class ModelResolver
 {
     /**
-     * @return class-string<AddressCountry>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\AddressCountry>
      */
     public static function countryClass(): string
     {
-        /** @var class-string<AddressCountry> $modelClass */
-        $modelClass = self::resolve('country', AddressCountry::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressCountry> $default */
+        $default = app('addressing.model-default.country');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressCountry> $modelClass */
+        $modelClass = self::resolve('country', $default);
 
         return $modelClass;
     }
 
     /**
-     * @return class-string<State>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\State>
      */
     public static function stateClass(): string
     {
-        /** @var class-string<State> $modelClass */
-        $modelClass = self::resolve('state', State::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\State> $default */
+        $default = app('addressing.model-default.state');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\State> $modelClass */
+        $modelClass = self::resolve('state', $default);
 
         return $modelClass;
     }
 
     /**
-     * @return class-string<City>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\City>
      */
     public static function cityClass(): string
     {
-        /** @var class-string<City> $modelClass */
-        $modelClass = self::resolve('city', City::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\City> $default */
+        $default = app('addressing.model-default.city');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\City> $modelClass */
+        $modelClass = self::resolve('city', $default);
 
         return $modelClass;
     }
 
     /**
-     * @return class-string<AddressArea>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\AddressArea>
      */
     public static function areaClass(): string
     {
-        /** @var class-string<AddressArea> $modelClass */
-        $modelClass = self::resolve('area', AddressArea::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressArea> $default */
+        $default = app('addressing.model-default.area');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressArea> $modelClass */
+        $modelClass = self::resolve('area', $default);
 
         return $modelClass;
     }

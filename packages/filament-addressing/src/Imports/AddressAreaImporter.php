@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAddressing\Imports;
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter as CoreAddressAreaImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\SingleAddressAreaSource;
 use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;

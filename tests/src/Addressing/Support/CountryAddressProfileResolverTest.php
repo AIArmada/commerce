@@ -6,7 +6,7 @@ use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 
 beforeEach(function (): void {

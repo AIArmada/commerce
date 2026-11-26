@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 it('formats Malaysian addresses using the country formatter', function (): void {
     // Ruled 2026-10-08: postcode joins the writer-computed partner (town

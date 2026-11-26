@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\StateDatasetSeeder;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 
 it('groups subdivision and locality correctly for every Malaysian state and WP', function (): void {

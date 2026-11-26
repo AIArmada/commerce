@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\Geography\Models;
 
 use AIArmada\Addressing\Database\Factories\AddressAreaFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
-use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
@@ -137,20 +137,20 @@ class AddressArea extends TransactionalDeletionModel
     }
 
     /**
-     * @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink, $this>
+     * @return HasMany<AddressAreaStateLink, $this>
      */
     public function stateLinks(): HasMany
     {
         return $this->hasMany(ModelResolver::areaStateLinkClass(), 'address_area_id');
     }
 
-    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship, $this> */
+    /** @return HasMany<AddressAreaRelationship, $this> */
     public function incomingAreaRelationships(): HasMany
     {
         return $this->hasMany(ModelResolver::areaRelationshipClass(), 'child_address_area_id');
     }
 
-    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship, $this> */
+    /** @return HasMany<AddressAreaRelationship, $this> */
     public function outgoingAreaRelationships(): HasMany
     {
         return $this->hasMany(ModelResolver::areaRelationshipClass(), 'parent_address_area_id');
@@ -162,13 +162,13 @@ class AddressArea extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaPostalCodeClass(), 'address_area_id');
     }
 
-    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaName, $this> */
+    /** @return HasMany<AddressAreaName, $this> */
     public function names(): HasMany
     {
         return $this->hasMany(ModelResolver::areaNameClass(), 'address_area_id');
     }
 
-    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole, $this> */
+    /** @return HasMany<AddressAreaRole, $this> */
     public function roles(): HasMany
     {
         return $this->hasMany(ModelResolver::areaRoleClass(), 'address_area_id');

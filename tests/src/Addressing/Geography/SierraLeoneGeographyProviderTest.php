@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Geography\SierraLeone\SierraLeoneGeographyProvider;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 it('ships 16 districts under the 4 provinces and Western Area', function (): void {
     $areas = app(SierraLeoneGeographyProvider::class)->addressAreaSource()->areas()->collect();

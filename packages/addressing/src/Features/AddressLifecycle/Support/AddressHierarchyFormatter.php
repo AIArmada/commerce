@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressFormatRenderer;
 use AIArmada\Addressing\Support\LocationLevelLabels;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -240,7 +239,7 @@ final class AddressHierarchyFormatter
 
         $country = ModelResolver::countryClass()::query()->find($countryId);
 
-        return $country instanceof AddressCountry ? self::clean($country->getAttribute('name')) : null;
+        return $country instanceof (ModelResolver::countryClass()) ? self::clean($country->getAttribute('name')) : null;
     }
 
     private static function clean(mixed $value): ?string

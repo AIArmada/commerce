@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
 use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
