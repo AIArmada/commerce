@@ -38,11 +38,11 @@ it('seeds consistently and resolves level-2 cities through the municipality role
 
     $search = app(AddressAreaSearch::class);
 
-    expect($search->execute(query: 'Batumi', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+    expect(array_column($search->execute(query: 'Batumi', countryCode: 'GE', role: 'municipality'), 'name'))
         ->toContain('Batumi')
-        ->and($search->execute(query: 'Gagra', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Gagra', countryCode: 'GE', role: 'municipality'), 'name'))
         ->toContain('Gagra')
-        ->and($search->execute(query: 'Keda', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Keda', countryCode: 'GE', role: 'municipality'), 'name'))
         ->toContain('Keda');
 });
 
@@ -51,9 +51,9 @@ it('keeps Tbilisi on the city role instead of the municipality role', function (
 
     $search = app(AddressAreaSearch::class);
 
-    expect($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'city')->pluck('name')->all())
+    expect(array_column($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'city'), 'name'))
         ->toContain('Tbilisi')
-        ->and($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'municipality'), 'name'))
         ->not->toContain('Tbilisi');
 });
 

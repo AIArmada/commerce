@@ -184,7 +184,7 @@ class PostalCodeImporter extends Importer
             }
 
             try {
-                $this->record = app(PostalCodeAdminImporter::class)->execute(
+                $id = app(PostalCodeAdminImporter::class)->execute(
                     countryCode: (string) $this->data['country_code'],
                     code: (string) $this->data['code'],
                     isActive: filter_var($this->data['is_active'] ?? ($record->exists ? $record->is_active : true), FILTER_VALIDATE_BOOLEAN),
@@ -193,6 +193,8 @@ class PostalCodeImporter extends Importer
                         : $record->metadata,
                     coverage: $coverage,
                 );
+                $postalClass = self::getModel();
+                $this->record = $postalClass::query()->with('areas')->findOrFail($id);
             } catch (ValidationException $exception) {
                 throw new RowImportFailedException(implode('; ', $exception->validator->errors()->all()), previous: $exception);
             }

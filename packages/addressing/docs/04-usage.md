@@ -551,7 +551,7 @@ $areas = app(AddressAreaSearch::class)->execute(
 
 Search supports canonical names, aliases, place type, address role, parent
 area and postcode filters. It queries the configured `addressing.models.area`
-subclass through `ModelResolver`, so custom global scopes apply.
+subclass through `ModelResolver`, so custom global scopes apply. Results are a list of immutable `AddressAreaMatchData` values; use `id` to select an area and `name` to display it.
 
 For incomplete external place-provider results, use the package hierarchy
 resolver to locate a named area below a known state root and recover its typed
@@ -799,7 +799,7 @@ $postcodeId = app(PostalCodeWriter::class)->execute([
 $postcode = \AIArmada\Addressing\Support\ModelResolver::postalCodeClass()::query()->findOrFail($postcodeId);
 ```
 
-For grouped import rows, `PostalCodeAdminImporter` accepts one postcode
+For grouped import rows, `PostalCodeAdminImporter` returns the persisted postcode ID and accepts one postcode
 and an explicit list of coverage edges. Every area is resolved by source and
 source ID within the selected country before any mutation. Each edge preserves
 its own source, source ID, relationship type, and primary flag. Only coverage

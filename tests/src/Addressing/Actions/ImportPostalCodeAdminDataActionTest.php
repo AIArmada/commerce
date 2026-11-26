@@ -24,7 +24,7 @@ it('imports postcode coverage without conflating root metadata and link provenan
         'slug' => 'area-two', 'source' => 'areas-two', 'source_id' => 'two',
     ]);
 
-    $postcode = app(PostalCodeAdminImporter::class)->execute(
+    $postcode = PostalCode::query()->findOrFail(app(PostalCodeAdminImporter::class)->execute(
         countryCode: 'my',
         code: ' 47500 ',
         isActive: false,
@@ -55,7 +55,7 @@ it('imports postcode coverage without conflating root metadata and link provenan
                 'is_primary' => false,
             ],
         ],
-    );
+    ));
 
     expect($postcode->country_code)->toBe('MY')
         ->and($postcode->code)->toBe('47500')

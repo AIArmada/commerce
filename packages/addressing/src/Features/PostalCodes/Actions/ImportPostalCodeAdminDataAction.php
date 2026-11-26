@@ -27,7 +27,7 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
         bool $isActive,
         ?array $metadata,
         array $coverage,
-    ): PostalCode {
+    ): string {
         $countryCode = mb_strtoupper(mb_trim($countryCode));
         $code = mb_trim($code);
 
@@ -43,8 +43,8 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
             ]);
         }
 
-        return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($code, $countryCode, $isActive, $metadata, $coverage): PostalCode {
-            if (! ModelResolver::countryClass()::query()->where('iso2', $countryCode)->exists()) {
+        return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($code, $countryCode, $isActive, $metadata, $coverage): string {
+            if (ModelResolver::countryClass()::query()->where('iso2', $countryCode)->lockForUpdate()->first() === null) {
                 throw ValidationException::withMessages([
                     'country_code' => 'The selected country is invalid.',
                 ]);
@@ -94,7 +94,7 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
                 }
             }
 
-            return $postalCode->fresh(['areas']) ?? $postalCode;
+            return (string) $postalCode->getKey();
         });
     }
 

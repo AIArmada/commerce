@@ -8,6 +8,7 @@ use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryPostalCodeNormalizer;
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
+use AIArmada\Addressing\Data\AddressAreaMatchData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
@@ -26,7 +27,7 @@ final class SearchAddressAreasAction implements AddressAreaSearch
     public function __construct(private readonly Container $container) {}
 
     /**
-     * @return Collection<int, AddressArea>
+     * @return list<AddressAreaMatchData>
      */
     public function execute(
         string $query,
@@ -37,21 +38,22 @@ final class SearchAddressAreasAction implements AddressAreaSearch
         ?string $hierarchyType = null,
         ?string $postalCode = null,
         int $limit = 25,
-    ): Collection {
+    ): array {
         $query = mb_trim($query);
         $limit = max(1, min(100, $limit));
 
-        if ($query === '') {
-            return new Collection;
+        if ($query === '' || mb_strlen($query) > 255) {
+            return [];
         }
 
+        $countryCode = $countryCode === null ? null : mb_strtoupper(mb_trim($countryCode));
         $needle = mb_strtolower($query);
         $escapedNeedle = LikeSearch::escape($needle);
         $containsPattern = "%{$escapedNeedle}%";
         $prefixPattern = "{$escapedNeedle}%";
 
         if ($hierarchyType !== null && mb_trim($hierarchyType) === '') {
-            return new Collection;
+            return [];
         }
 
         $areaClass = ModelResolver::areaClass();
@@ -93,12 +95,28 @@ final class SearchAddressAreasAction implements AddressAreaSearch
             })
             ->orderByRaw("CASE WHEN LOWER(name) = ? THEN 0 WHEN LOWER(name) LIKE ? {$escapeClause} THEN 1 ELSE 2 END", [$needle, $prefixPattern])
             ->orderBy('name')
-            ->limit(max(1, min($limit, 100)))
-            ->get();
+            ->orderBy((new $areaClass)->getQualifiedKeyName())
+            ->limit($limit)
+            ->get(['id', 'country_id', 'country_code', 'parent_id', 'type', 'level', 'name', 'native_name', 'code', 'slug', 'source', 'source_id', 'latitude', 'longitude']);
 
         $this->logGapOnMiss($query, $countryCode, $role, $type, $parentId, $hierarchyType, $postalCode, $results);
 
-        return $results;
+        return $results->map(static fn (AddressArea $area): AddressAreaMatchData => new AddressAreaMatchData(
+            id: (string) $area->getKey(),
+            countryId: $area->country_id,
+            countryCode: $area->country_code,
+            parentId: $area->parent_id,
+            type: $area->type,
+            level: $area->level,
+            name: $area->name,
+            nativeName: $area->native_name,
+            code: $area->code,
+            slug: $area->slug,
+            source: $area->source,
+            sourceId: $area->source_id,
+            latitude: $area->latitude,
+            longitude: $area->longitude,
+        ))->all();
     }
 
     /**

@@ -51,11 +51,11 @@ it('seeds consistently and resolves every municipal type through the municipalit
 
     $search = app(AddressAreaSearch::class);
 
-    expect($search->execute(query: 'Vilniaus miestas', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
+    expect(array_column($search->execute(query: 'Vilniaus miestas', countryCode: 'LT', role: 'municipality'), 'name'))
         ->toContain('Vilniaus miestas')
-        ->and($search->execute(query: 'Akmenė', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Akmenė', countryCode: 'LT', role: 'municipality'), 'name'))
         ->toContain('Akmenė')
-        ->and($search->execute(query: 'Marijampolė', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Marijampolė', countryCode: 'LT', role: 'municipality'), 'name'))
         ->toContain('Marijampolė');
 });
 
