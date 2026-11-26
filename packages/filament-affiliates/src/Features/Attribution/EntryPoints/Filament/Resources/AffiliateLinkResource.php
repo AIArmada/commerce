@@ -91,14 +91,14 @@ final class AffiliateLinkResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
                         ->getSearchResultsUsing(fn (string $search): array => AffiliateReferenceProjection::options($search))
-                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : AffiliateReferenceProjection::label($id))
+                        ->getOptionLabelUsing(fn (?string $value): ?string => $value === null ? null : AffiliateReferenceProjection::label($value))
                         ->disabled(fn (string $operation): bool => $operation === 'edit')->dehydrated()
                         ->searchable()
                         ->required(),
 
                     Forms\Components\Select::make('program_id')
                         ->getSearchResultsUsing(fn (string $search): array => app(ProgramReferenceReader::class)->options($search, includeGlobal: false))
-                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : app(ProgramReferenceReader::class)->label($id, includeGlobal: false))
+                        ->getOptionLabelUsing(fn (?string $value): ?string => $value === null ? null : app(ProgramReferenceReader::class)->label($value, includeGlobal: false))
                         ->searchable(),
 
                     Forms\Components\TextInput::make('destination_url')

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
@@ -73,6 +74,11 @@ final class AffiliateProgramResource extends Resource
     {
         /** @var Builder<AffiliateProgram> $query */
         $query = parent::getEloquentQuery();
+        $query->addSelect([
+            'affiliates_count' => AffiliateProgramMembership::query()
+                ->selectRaw('count(*)')
+                ->whereColumn('program_id', $query->getModel()->qualifyColumn('id')),
+        ]);
 
         if (! (bool) config('affiliates.owner.enabled', false)) {
             /** @var Builder<Model> $unscopedQuery */
@@ -235,7 +241,6 @@ final class AffiliateProgramResource extends Resource
                     ->placeholder('Default (' . (string) config('affiliates.currency.default', 'MYR') . ')'),
 
                 Tables\Columns\TextColumn::make('affiliates_count')
-                    ->counts('affiliates')
                     ->label('Members'),
 
                 Tables\Columns\TextColumn::make('starts_at')
