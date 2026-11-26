@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
@@ -87,7 +88,7 @@ class PortalDownlines extends PortalPage implements HasTable
                     ->dateTime()
                     ->sortable(),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->withCount('conversions'))
+            ->modifyQueryUsing(fn ($query) => $query->addSelect(['conversions_count' => ConversionCountProjection::query()]))
             ->defaultSort('created_at', 'desc')
             ->paginated([10, 25, 50]);
     }

@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -18,13 +19,13 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use LogicException;
-use stdClass;
 
-final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
+final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalculation
 {
+    public function __construct(private ConversionStatisticsReader $statistics) {}
+
     /**
      * Calculate one configured performance bonus commission rule type.
      *
@@ -209,11 +210,15 @@ final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
             while ($currentWeek->lte($to)) {
                 $weekEnd = $currentWeek->copy()->endOfWeek();
 
-                $conversionsThisWeek = $affiliate->conversions()
-                    ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-                    ->whereBetween('occurred_at', [max($currentWeek, $from), min($weekEnd, $to)])
-                    ->where('status', ApprovedConversion::value())
-                    ->count();
+                $conversionsThisWeek = $this->statistics->count(
+                    [(string) $affiliate->getKey()],
+                    spl_object_id($affiliate->getConnection()),
+                    max($currentWeek, $from),
+                    min($weekEnd, $to),
+                    [ApprovedConversion::value()],
+                    $includeGlobal,
+                    inclusiveUntil: true,
+                );
 
                 if ($conversionsThisWeek >= $minConversionsPerWeek) {
                     $weeksWithSales++;
@@ -271,16 +276,14 @@ final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
         $floorCurrency = mb_strtoupper((string) ($config['min_previous_revenue_currency'] ?? config('affiliates.currency.default', 'MYR')));
 
         foreach ($affiliates as $affiliate) {
-            $reference = RevenueVolume::referenceFor($affiliate);
-
             $currentRevenue = RevenueVolume::measurableIn(
-                RevenueVolume::foldRows($this->revenueByCurrency($affiliate, $from, $to, $includeGlobal), $reference),
+                $this->revenueByCurrency($affiliate, $from, $to, $includeGlobal),
                 $floorCurrency,
                 $to,
             );
 
             $previousRevenue = RevenueVolume::measurableIn(
-                RevenueVolume::foldRows($this->revenueByCurrency($affiliate, $prevFrom, $prevTo, $includeGlobal), $reference),
+                $this->revenueByCurrency($affiliate, $prevFrom, $prevTo, $includeGlobal),
                 $floorCurrency,
                 $prevTo,
             );
@@ -313,19 +316,25 @@ final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
         return $bonuses;
     }
 
-    /**
-     * @return Collection<int, stdClass>
-     */
-    private function revenueByCurrency(Affiliate $affiliate, CarbonImmutable $from, CarbonImmutable $to, bool $includeGlobal): Collection
+    /** @return array<string, int> */
+    private function revenueByCurrency(Affiliate $affiliate, CarbonImmutable $from, CarbonImmutable $to, bool $includeGlobal): array
     {
-        return $affiliate->conversions()
-            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-            ->whereBetween('occurred_at', [$from, $to])
-            ->where('status', ApprovedConversion::value())
-            ->toBase()
-            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')
-            ->get();
+        $totals = [];
+
+        foreach ($this->statistics->totals(
+            (string) $affiliate->getKey(),
+            RevenueVolume::referenceFor($affiliate),
+            spl_object_id($affiliate->getConnection()),
+            $from,
+            $to,
+            [ApprovedConversion::value()],
+            $includeGlobal,
+            inclusiveUntil: true,
+        ) as $row) {
+            $totals[$row->currency] = $row->revenueMinor;
+        }
+
+        return $totals;
     }
 
     /**

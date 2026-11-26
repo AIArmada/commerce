@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Widgets;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
@@ -63,7 +65,7 @@ final class UplineVisualizationWidget extends Widget
                 ->whereNull('parent_affiliate_id')
                 ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
                 ->addSelect(['rank_name' => RankLabelProjection::query()])
-                ->withCount(['children', 'conversions'])
+                ->withCount('children')->addSelect(['conversions_count' => ConversionCountProjection::query()])
                 ->limit(10)
                 ->get();
 
@@ -77,7 +79,7 @@ final class UplineVisualizationWidget extends Widget
             )
             ->whereKey($this->affiliateId)
             ->addSelect(['rank_name' => RankLabelProjection::query()])
-            ->withCount(['children', 'conversions'])
+            ->withCount('children')->addSelect(['conversions_count' => ConversionCountProjection::query()])
             ->first();
 
         if (! $affiliate) {
@@ -121,18 +123,18 @@ final class UplineVisualizationWidget extends Widget
             $children = $affiliate->children()
                 ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
                 ->addSelect(['rank_name' => RankLabelProjection::query()])
-                ->withCount(['children', 'conversions'])
+                ->withCount('children')->addSelect(['conversions_count' => ConversionCountProjection::query()])
                 ->limit(self::MAX_BREADTH)
                 ->get()
                 ->map(fn (Affiliate $child) => $this->buildNode($child, $currentDepth + 1))
                 ->all();
         }
 
-        $conversionsCount = is_int($affiliate->getAttribute('conversions_count'))
+        $conversionsCount = is_numeric($affiliate->getAttribute('conversions_count'))
             ? (int) $affiliate->getAttribute('conversions_count')
-            : $affiliate->conversions()->count();
+            : app(ConversionStatisticsReader::class)->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()));
 
-        $childrenCount = is_int($affiliate->getAttribute('children_count'))
+        $childrenCount = is_numeric($affiliate->getAttribute('children_count'))
             ? (int) $affiliate->getAttribute('children_count')
             : $affiliate->children()->count();
 

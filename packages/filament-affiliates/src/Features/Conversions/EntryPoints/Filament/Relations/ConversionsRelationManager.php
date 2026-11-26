@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Relations;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -17,15 +18,46 @@ use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resour
 use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Components\Attributes\Unexposed;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+use function Filament\authorize;
 
 final class ConversionsRelationManager extends RelationManager
 {
     use VerifiesRelationManagerOwnerContext;
 
     protected static string $relationship = 'conversions';
+
+    /** @return HasMany<AffiliateConversion, Model> */
+    #[Unexposed]
+    public function getRelationship(): HasMany
+    {
+        return $this->getOwnerRecord()->hasMany(AffiliateConversion::class, 'affiliate_id');
+    }
+
+    #[Unexposed]
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        if (! $ownerRecord instanceof Affiliate) {
+            return false;
+        }
+
+        if (static::shouldSkipAuthorization()) {
+            return true;
+        }
+
+        try {
+            return authorize('viewAny', AffiliateConversion::class, static::shouldCheckPolicyExistence())->allowed();
+        } catch (AuthorizationException $exception) {
+            return $exception->toResponse()->allowed();
+        }
+    }
 
     public function table(Table $table): Table
     {

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Conce
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -15,6 +16,7 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
@@ -113,7 +115,7 @@ trait InteractsWithAffiliate
             return new Collection;
         }
 
-        return $affiliate->conversions()
+        return AffiliateConversion::query()->forOwner(includeGlobal: true)->where('affiliate_id', $affiliate->getKey())
             ->orderByDesc('occurred_at')
             ->limit($limit)
             ->get();
@@ -202,20 +204,17 @@ trait InteractsWithAffiliate
      */
     private function sumConversionsByCurrency(Affiliate $affiliate, array $statuses): array
     {
-        $rows = $affiliate->conversions()
-            ->whereIn('status', $statuses)
-            ->selectRaw('commission_currency as ccy, SUM(commission_minor) as total')
-            ->groupBy('commission_currency')
-            ->pluck('total', 'ccy');
-
         $map = [];
+        $fallback = mb_strtoupper((string) ($affiliate->currency ?: config('affiliates.currency.default', 'MYR')));
 
-        foreach ($rows as $code => $total) {
-            $key = mb_strtoupper((string) ($code ?: $affiliate->currency ?? config('affiliates.currency.default', 'MYR')));
-            $map[$key] = ($map[$key] ?? 0) + (int) $total;
+        foreach (app(ConversionStatisticsReader::class)->totals(
+            (string) $affiliate->getKey(),
+            $fallback,
+            spl_object_id($affiliate->getConnection()),
+            statuses: array_values($statuses),
+        ) as $row) {
+            $map[$row->currency] = $row->commissionMinor;
         }
-
-        ksort($map);
 
         return $map;
     }
@@ -245,7 +244,7 @@ trait InteractsWithAffiliate
             return 0;
         }
 
-        return (int) $affiliate->conversions()->count();
+        return app(ConversionStatisticsReader::class)->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()));
     }
 
     /**
@@ -282,7 +281,7 @@ trait InteractsWithAffiliate
 
         return $affiliate->children()
             ->addSelect(['rank_name' => RankLabelProjection::query()])
-            ->withCount('conversions')
+            ->addSelect(['conversions_count' => ConversionCountProjection::query()])
             ->orderBy('created_at', 'desc')
             ->limit(max(1, $limit))
             ->get();

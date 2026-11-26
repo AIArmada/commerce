@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Relat
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentAffiliates\Features\Identity\Api\AffiliateAdminLinks;
+use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -74,7 +75,7 @@ final class DownlinesRelationManager extends RelationManager
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->addSelect(['rank_name' => RankLabelProjection::query()])->withCount('conversions'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->addSelect(['rank_name' => RankLabelProjection::query()])->addSelect(['conversions_count' => ConversionCountProjection::query()]))
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Action::make('view')

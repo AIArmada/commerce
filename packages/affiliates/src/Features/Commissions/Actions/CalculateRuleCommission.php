@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Queries\FindCommissionRules;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
@@ -27,6 +27,7 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
         private FindCommissionRules $rules,
         private CommissionPricing $pricing,
         private ConsumePromotionUsage $promotionUsage,
+        private ConversionStatisticsReader $statistics,
     ) {}
 
     /**
@@ -43,10 +44,11 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
 
         if ($connection !== (new AffiliateCommissionPromotion)->getConnection()
             || $connection !== (new AffiliateCommissionRule)->getConnection()
-            || $connection !== (new AffiliateVolumeTier)->getConnection()
-            || $connection !== (new AffiliateConversion)->getConnection()) {
+            || $connection !== (new AffiliateVolumeTier)->getConnection()) {
             throw new LogicException('Commission calculation requires a shared database connection.');
         }
+
+        $this->statistics->assertConnection(spl_object_id($connection));
 
         return $connection->transaction(function () use ($affiliateId, $orderAmountMinor, $context): CommissionCalculationResult {
             $affiliate = Affiliate::query()->forOwner(includeGlobal: true)->lockForUpdate()->findOrFail($affiliateId);
@@ -157,13 +159,11 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
 
             $folded = app(TrackingLinkReader::class)->programVolume((string) $affiliate->getKey(), $programId, $reference, $since)->byCurrency;
         } else {
-            $volumeRows = $affiliate->conversions()
-                ->where('occurred_at', '>=', $since)
-                ->toBase()
-                ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-                ->groupBy('commission_currency')
-                ->get();
-            $folded = RevenueVolume::foldRows($volumeRows, $reference);
+            $folded = [];
+
+            foreach ($this->statistics->totals((string) $affiliate->getKey(), $reference, spl_object_id($affiliate->getConnection()), $since) as $row) {
+                $folded[$row->currency] = $row->revenueMinor;
+            }
         }
 
         $volumeIn = [];

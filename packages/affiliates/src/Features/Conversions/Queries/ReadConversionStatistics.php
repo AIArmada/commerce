@@ -13,16 +13,16 @@ use LogicException;
 
 final readonly class ReadConversionStatistics implements ConversionStatisticsReader
 {
-    public function count(array $affiliateIds, int $connectionIdentity, ?DateTimeInterface $from = null, ?DateTimeInterface $until = null): int
+    public function count(array $affiliateIds, int $connectionIdentity, ?DateTimeInterface $from = null, ?DateTimeInterface $until = null, ?array $statuses = null, bool $includeGlobal = true, bool $inclusiveUntil = false): int
     {
-        $query = $this->query($connectionIdentity, $from, $until);
+        $query = $this->query($connectionIdentity, $from, $until, $statuses, $includeGlobal, $inclusiveUntil);
 
         return $affiliateIds === [] ? 0 : $query->whereIn('affiliate_id', $affiliateIds)->count();
     }
 
-    public function totals(string $affiliateId, string $fallbackCurrency, int $connectionIdentity, ?DateTimeInterface $from = null, ?DateTimeInterface $until = null): array
+    public function totals(string $affiliateId, string $fallbackCurrency, int $connectionIdentity, ?DateTimeInterface $from = null, ?DateTimeInterface $until = null, ?array $statuses = null, bool $includeGlobal = true, bool $inclusiveUntil = false): array
     {
-        $rows = $this->query($connectionIdentity, $from, $until)
+        $rows = $this->query($connectionIdentity, $from, $until, $statuses, $includeGlobal, $inclusiveUntil)
             ->where('affiliate_id', $affiliateId)
             ->toBase()
             ->selectRaw('commission_currency AS currency, COUNT(*) AS conversion_count, COALESCE(SUM(value_minor), 0) AS revenue_minor, COALESCE(SUM(commission_minor), 0) AS commission_minor')
@@ -49,21 +49,32 @@ final readonly class ReadConversionStatistics implements ConversionStatisticsRea
         return array_values($totals);
     }
 
-    /** @return Builder<AffiliateConversion> */
-    private function query(int $connectionIdentity, ?DateTimeInterface $from, ?DateTimeInterface $until): Builder
+    public function assertConnection(int $connectionIdentity): void
     {
         if (spl_object_id((new AffiliateConversion)->getConnection()) !== $connectionIdentity) {
             throw new LogicException('Conversion statistics require a shared database connection.');
         }
+    }
 
-        $query = AffiliateConversion::query()->forOwner(includeGlobal: true);
+    /**
+     * @param list<string>|null $statuses
+     * @return Builder<AffiliateConversion>
+     */
+    private function query(int $connectionIdentity, ?DateTimeInterface $from, ?DateTimeInterface $until, ?array $statuses, bool $includeGlobal, bool $inclusiveUntil): Builder
+    {
+        $this->assertConnection($connectionIdentity);
+        $query = AffiliateConversion::query()->forOwner(includeGlobal: $includeGlobal);
+
+        if ($statuses !== null) {
+            $query->whereIn('status', $statuses);
+        }
 
         if ($from !== null) {
             $query->where('occurred_at', '>=', $from);
         }
 
         if ($until !== null) {
-            $query->where('occurred_at', '<', $until);
+            $query->where('occurred_at', $inclusiveUntil ? '<=' : '<', $until);
         }
 
         return $query;
