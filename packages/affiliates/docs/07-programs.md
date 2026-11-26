@@ -10,6 +10,7 @@ Programs allow you to create structured affiliate offerings with different commi
 
 ```php
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 
@@ -34,7 +35,7 @@ $programId = app(ProgramAdministration::class)->create([
 ```
 
 > **warning:**
-> There is no `is_public` column. `create()` would silently drop it. Use
+> There is no `is_public` column. Use
 > `visibility` (`ProgramVisibility::Public` / `Private`).
 
 ## Program Statuses
@@ -123,10 +124,10 @@ MembershipStatus::Suspended;  // Temporarily disabled
 Provide affiliates with promotional materials:
 
 ```php
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 
-$creative = AffiliateProgramCreative::create([
-    'program_id' => $programId,
+$creatives = app(CreativeAdministration::class);
+$creativeId = $creatives->create($programId, [
     'name' => 'Summer Sale Banner',
     'type' => 'banner',
     'tracking_code' => 'SUMMER-SALE',
@@ -139,18 +140,22 @@ $creative = AffiliateProgramCreative::create([
 ]);
 ```
 
-Creative files live exclusively in Spatie Media Library's single-file `creative_asset` collection on the `public` disk. Attach a local file after creating the creative:
+Creative files live exclusively in Spatie Media Library's single-file `creative_asset` collection on the `public` disk. Supply validated upload bytes to the owning API; never attach or remove media directly:
 
 ```php
-$creative->addMedia(storage_path('app/banners/summer-sale.jpg'))
-    ->toMediaCollection('creative_asset');
+$bytes = file_get_contents(storage_path('app/banners/summer-sale.jpg'));
 
-$url = $creative->getAssetUrl(); // null when no file is attached
+if ($bytes === false) {
+    throw new RuntimeException('Creative asset could not be read.');
+}
+
+$creatives->update($programId, $creativeId, [], assetBytes: $bytes);
+
+// Remove only the creative asset:
+$creatives->update($programId, $creativeId, [], removeAsset: true);
 ```
 
-Replacing the file removes the previous media and deleting the creative removes its media. Banner embeds require an attached file; text links can use only `destination_url`.
-
-> **warning**: Breaking change: the creative URL column and URL form inputs have been removed. Create creatives with an attached file using Media Library. The existing creative migration defines the new schema; there is no compatibility path or data backfill.
+The API coordinates media changes with the database transaction, retains the previous asset on rollback, and retries detached-file cleanup after failure. Banner embeds require an attached file; text links can use only `destination_url`.
 
 ## Using the Program feature APIs
 
@@ -216,10 +221,10 @@ $templateId = $templates->createMlm(
 );
 
 // Apply template to affiliate
-$templates->applyToAffiliate($templateId, (string) $affiliate->getKey());
+$templates->applyToAffiliate($templateId, $affiliate->id);
 
 // Apply template to program
-$template->applyToProgram(\AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram::query()->findOrFail($programId));
+$templates->applyToProgram($templateId, $programId);
 ```
 
 ## Volume Tiers
@@ -229,9 +234,11 @@ bonuses. `AffiliateVolumeTier` is program-scoped (`program_id`), not
 affiliate-scoped.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 
-AffiliateVolumeTier::create([
+$volumeTiers = app(VolumeTierAdministration::class);
+
+$volumeTiers->create([
     'program_id' => $programId,
     'name' => 'Base',
     'period' => 'monthly',
@@ -241,7 +248,7 @@ AffiliateVolumeTier::create([
     'commission_rate_basis_points' => 0, // No bonus
 ]);
 
-AffiliateVolumeTier::create([
+$volumeTiers->create([
     'program_id' => $programId,
     'name' => 'Scale',
     'period' => 'monthly',
@@ -257,12 +264,11 @@ AffiliateVolumeTier::create([
 Custom rules for specific conditions:
 
 ```php
-use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 
-AffiliateCommissionRule::create([
-    'program_id' => $programId,
+app(ProgramCommissionAdministration::class)->createRule($programId, [
     'name' => 'Electronics boost',
     'rule_type' => CommissionRuleType::Category,
     'priority' => 10,
@@ -284,11 +290,10 @@ AffiliateCommissionRule::create([
 Time-limited commission boosts:
 
 ```php
-use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
 use AIArmada\Affiliates\Enums\CommissionType;
 
-AffiliateCommissionPromotion::create([
-    'program_id' => $programId,
+app(ProgramCommissionAdministration::class)->createPromotion($programId, [
     'name' => 'Holiday Bonus',
     'bonus_type' => CommissionType::Percentage,
     'bonus_value' => 500, // +5% in basis points
