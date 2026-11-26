@@ -5,28 +5,27 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Alerts\Actions;
 
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class EvaluateAlertRules
+final readonly class EvaluateAlertRules
 {
-    use AsAction;
-
     public function __construct(
-        private readonly AlertEvaluator $evaluator,
-        private readonly SignalAlertDispatcher $dispatcher,
+        private AlertEvaluator $evaluator,
+        private SignalAlertDispatcher $dispatcher,
     ) {}
 
     /**
      * @return array{processed: int, skipped: int, dispatched: int}
      */
-    public function handle(?string $trackedPropertyId = null, bool $dryRun = false): array
+    public function handle(?string $trackedPropertyId = null, bool $dryRun = false, ?string $ruleId = null): array
     {
         return $this->processRules(
             SignalAlertRule::query()
+                ->forOwner()
+                ->when(filled($ruleId), fn (Builder $query): Builder => $query->whereKey($ruleId))
                 ->where('is_active', true)
                 ->when(
                     filled($trackedPropertyId),
@@ -42,12 +41,13 @@ final class EvaluateAlertRules
         );
     }
 
-    /**
-     * @return array{processed: int, skipped: int, dispatched: int}
-     */
-    public function handleRules(Builder $query, bool $dryRun = false): array
+    /** @return array{processed: int, skipped: int, dispatched: int} */
+    public function forOwners(?string $ruleId, bool $dryRun): array
     {
-        return $this->processRules($query, $dryRun);
+        $runner = new OwnerBatchRunner(SignalAlertRule::class, ['enabled' => 'signals.owner.enabled']);
+
+        return $runner->run(fn (): array => $this->handle(dryRun: $dryRun, ruleId: $ruleId))
+            ?? ['processed' => 0, 'skipped' => 0, 'dispatched' => 0];
     }
 
     /**
@@ -80,8 +80,11 @@ final class EvaluateAlertRules
             }
 
             if (! $dryRun) {
-                $this->dispatcher->dispatch($rule, $result['metric_value'], $result['context']);
-                $dispatched++;
+                if ($this->dispatcher->dispatch($rule, $result['metric_value'], $result['context']) !== null) {
+                    $dispatched++;
+                } else {
+                    $skipped++;
+                }
             }
         });
 

@@ -6,7 +6,8 @@ namespace AIArmada\Signals\Features\Alerts\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -66,9 +67,10 @@ final class SignalAlertDelivery extends Model
     protected static function booted(): void
     {
         static::saving(function (SignalAlertDelivery $delivery): void {
-            if (SignalOwnershipGuard::ownerScopingEnabled()) {
-                $owner = SignalOwnershipGuard::resolveOwnerOrFail('save signal alert deliveries');
-                SignalOwnershipGuard::findOwnedOrFail(SignalAlertLog::class, (string) $delivery->signal_alert_log_id, $owner);
+            if ((bool) config('signals.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner, 'Owner context is required to save signal alert deliveries.');
+                OwnerWriteGuard::findOrFailForOwner(SignalAlertLog::class, (string) $delivery->signal_alert_log_id, $owner, includeGlobal: false);
             }
         });
     }

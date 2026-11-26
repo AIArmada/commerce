@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Alerts\Models;
 
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Alerts\Actions\DeleteAlertRuleHistory;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -215,7 +216,7 @@ final class SignalAlertRule extends Model implements Auditable
         });
 
         static::deleting(function (SignalAlertRule $rule): void {
-            $rule->logs()->delete();
+            app(DeleteAlertRuleHistory::class)->handle($rule);
         });
     }
 

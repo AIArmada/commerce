@@ -9,19 +9,24 @@ use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 
 final readonly class SignalAlertDispatcher
 {
     /**
      * @param  array<string, mixed>  $context
      */
-    public function dispatch(SignalAlertRule $rule, float $metricValue, array $context = []): SignalAlertLog
+    public function dispatch(SignalAlertRule $rule, float $metricValue, array $context = []): ?SignalAlertLog
     {
-        $message = $this->buildMessage($rule, $metricValue);
         $deliveries = [];
 
-        $log = DB::transaction(function () use ($rule, $metricValue, $context, $message, &$deliveries): SignalAlertLog {
+        $log = $rule->getConnection()->transaction(function () use ($rule, $metricValue, $context, &$deliveries): ?SignalAlertLog {
+            $rule = SignalAlertRule::query()->whereKey($rule->getKey())->lockForUpdate()->first();
+
+            if ($rule === null || ! $rule->is_active || $rule->isInCooldown()) {
+                return null;
+            }
+
+            $message = $this->buildMessage($rule, $metricValue);
             $log = SignalAlertLog::query()->create([
                 'signal_alert_rule_id' => $rule->id,
                 'tracked_property_id' => $rule->tracked_property_id,
@@ -68,6 +73,10 @@ final readonly class SignalAlertDispatcher
             return $log;
         });
 
+        if ($log === null) {
+            return null;
+        }
+
         foreach ($deliveries as $delivery) {
             DispatchSignalAlertDelivery::dispatch(
                 deliveryId: (string) $delivery->id,
@@ -82,7 +91,7 @@ final readonly class SignalAlertDispatcher
 
     public function refreshLogSummary(SignalAlertLog $log): void
     {
-        DB::transaction(function () use ($log): void {
+        $log->getConnection()->transaction(function () use ($log): void {
             $lockedLog = SignalAlertLog::query()->whereKey($log->id)->lockForUpdate()->firstOrFail();
             $this->writeLogSummary($lockedLog);
         });
@@ -92,24 +101,29 @@ final readonly class SignalAlertDispatcher
     {
         $deliveries = SignalAlertDelivery::query()
             ->where('signal_alert_log_id', $log->id)
+            ->select(['channel', 'status'])
+            ->selectRaw('COUNT(*) AS delivery_count')
+            ->groupBy('channel', 'status')
+            ->toBase()
             ->get();
         $results = ['database' => ['status' => 'created']];
         $notified = ['database'];
 
         foreach ($deliveries->groupBy('channel') as $channel => $channelDeliveries) {
-            $counts = $channelDeliveries->countBy('status')->all();
+            $counts = $channelDeliveries->mapWithKeys(static fn ($row): array => [(string) $row->status => (int) $row->delivery_count])->all();
+            $total = array_sum($counts);
             $status = match (true) {
                 ($counts['dead'] ?? 0) > 0 => 'failed',
                 ($counts['failed'] ?? 0) > 0 => 'retrying',
                 ($counts['processing'] ?? 0) > 0 => 'processing',
                 ($counts['pending'] ?? 0) > 0 => 'queued',
-                ($counts['sent'] ?? 0) === $channelDeliveries->count() => 'sent',
+                ($counts['sent'] ?? 0) === $total => 'sent',
                 default => 'queued',
             };
 
             $results[(string) $channel] = [
                 'status' => $status,
-                'total' => $channelDeliveries->count(),
+                'total' => $total,
                 'sent' => (int) ($counts['sent'] ?? 0),
                 'failed' => (int) (($counts['failed'] ?? 0) + ($counts['dead'] ?? 0)),
             ];
