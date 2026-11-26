@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Models\SignalAlertDelivery;
 use AIArmada\Signals\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalAlertRule;
@@ -412,4 +413,54 @@ it('still rejects same-property mismatches when owner scoping is disabled', func
 
     expect(fn () => $identity->forceFill(['tracked_property_id' => $propertyTwo->id])->save())
         ->toThrow(AuthorizationException::class, 'immutable');
+});
+
+
+it('updates alert read state atomically and rejects another owner', function (): void {
+    $ownerA = ownershipGuardOwner('alert-read-a');
+    $ownerB = ownershipGuardOwner('alert-read-b');
+
+    $makeLog = static function (User $owner, string $suffix): SignalAlertLog {
+        return OwnerContext::withOwner($owner, function () use ($suffix): SignalAlertLog {
+            $rule = SignalAlertRule::query()->create([
+                'name' => 'Alert ' . $suffix,
+                'slug' => 'alert-read-' . $suffix,
+                'metric_key' => 'events',
+                'operator' => '>=',
+                'threshold' => 1,
+            ]);
+
+            return SignalAlertLog::query()->create([
+                'signal_alert_rule_id' => $rule->id,
+                'metric_key' => 'events',
+                'operator' => '>=',
+                'metric_value' => 2,
+                'threshold_value' => 1,
+                'severity' => 'warning',
+                'title' => 'Alert ' . $suffix,
+            ]);
+        });
+    };
+
+    $logA = $makeLog($ownerA, 'a');
+    $logB = $makeLog($ownerB, 'b');
+
+    OwnerContext::withOwner($ownerA, function () use ($logA, $logB): void {
+        $action = app(AlertReadState::class);
+
+        expect(fn () => $action->set([$logA->id, $logB->id], true))->toThrow(AuthorizationException::class)
+            ->and($logA->fresh()->read_at)->toBeNull();
+
+        $action->set([$logA->id, $logA->id], true);
+        $firstRead = $logA->fresh()->read_at;
+        expect($firstRead)->not->toBeNull();
+
+        $action->set([$logA->id], true);
+        expect($logA->fresh()->read_at->equalTo($firstRead))->toBeTrue();
+
+        $action->set([$logA->id], false);
+        expect($logA->fresh()->read_at)->toBeNull();
+    });
+
+    OwnerContext::withOwner($ownerB, fn () => expect($logB->fresh()->read_at)->toBeNull());
 });

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Tables;
 
-use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
-use AIArmada\Signals\Actions\MarkSignalAlertAsUnread;
+use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Models\SignalAlertLog;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -77,12 +76,12 @@ final class SignalAlertLogTable
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
                     ->visible(fn (SignalAlertLog $record): bool => $record->read_at === null)
-                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsRead::class)($record)),
+                    ->action(fn (SignalAlertLog $record) => app(AlertReadState::class)->set([$record->id], true)),
                 Action::make('mark_unread')
                     ->label('Mark Unread')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->visible(fn (SignalAlertLog $record): bool => $record->read_at !== null)
-                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsUnread::class)($record)),
+                    ->action(fn (SignalAlertLog $record) => app(AlertReadState::class)->set([$record->id], false)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

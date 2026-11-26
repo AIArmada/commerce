@@ -11,6 +11,8 @@ use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Contracts\SignalEventIngestor;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
+use AIArmada\Signals\Features\Alerts\Actions\SetAlertReadState;
+use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Models\SignalAlertDelivery;
 use AIArmada\Signals\Models\SignalAlertLog;
@@ -75,6 +77,7 @@ final class SignalsServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->bind(SignalEventIngestor::class, IngestSignalEvent::class);
+        $this->app->bind(AlertReadState::class, SetAlertReadState::class);
         $this->app->singleton(SignalsDashboardService::class);
         $this->app->singleton(SignalMetricsAggregator::class);
         $this->app->singleton(TrackedPropertyResolver::class);

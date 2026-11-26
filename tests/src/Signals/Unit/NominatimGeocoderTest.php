@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use Illuminate\Support\Facades\Http;
+
+uses(SignalsTestCase::class);
 
 it('rejects invalid coordinates without contacting the geocoding provider', function (): void {
     Http::fake();

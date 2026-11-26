@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Models: `SavedSignalReport`, `SignalAlertDelivery`, `SignalAlertLog`, `SignalAlertRule`, `SignalDailyMetric`, `SignalEvent`, `SignalGoal`, `SignalIdentity`, `SignalInteractionRule`, `SignalSegment`, `SignalSession`, `TrackedProperty`
-- Actions/Services: `Actions/CaptureSignalGeolocation`, `Actions/CaptureSignalPageView`, `Actions/EvaluateAlertRules`, `Actions/IdentifySignalIdentity`, `Actions/IngestSignalEvent`, `Actions/IngestTrustedSignalOutcome`, `Actions/MarkAllSignalAlertsAsRead`, `Actions/MarkSignalAlertAsRead`
+- Actions/Services: `Actions/CaptureSignalGeolocation`, `Actions/CaptureSignalPageView`, `Actions/EvaluateAlertRules`, `Actions/IdentifySignalIdentity`, `Actions/IngestSignalEvent`, `Actions/IngestTrustedSignalOutcome`, `Actions/AlertReadState::set`, `Actions/AlertReadState::set`
 - Config `signals.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `tracked_properties`, `identities`, `sessions`, `events`, `interaction_rules`, `daily_metrics`
 
 ## Docs map

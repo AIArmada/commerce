@@ -7,7 +7,6 @@ namespace AIArmada\Signals\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -90,16 +89,6 @@ final class SignalAlertLog extends Model
     public function deliveries(): HasMany
     {
         return $this->hasMany(SignalAlertDelivery::class, 'signal_alert_log_id');
-    }
-
-    public function markAsRead(): void
-    {
-        $this->update(['read_at' => CarbonImmutable::now()]);
-    }
-
-    public function markAsUnread(): void
-    {
-        $this->update(['read_at' => null]);
     }
 
     public static function ownerScopingEnabled(): bool
