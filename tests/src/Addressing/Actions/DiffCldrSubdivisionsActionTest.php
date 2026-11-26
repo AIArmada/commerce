@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\DiffCldrSubdivisionsAction;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffCldrSubdivisionsAction;
 
 function cldrTestCheckout(array $subdivisions, string $version = '48.0.0'): string
 {

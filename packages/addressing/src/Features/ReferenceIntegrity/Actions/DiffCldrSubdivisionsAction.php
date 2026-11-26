@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\Actions;
 
 use AIArmada\Addressing\Data\CldrSubdivisionDiffData;
 use InvalidArgumentException;
@@ -23,7 +23,7 @@ use RuntimeException;
  * oracle stays reproducible offline. When addressing.reference.cldr_version
  * is set, checkouts at any other version are refused.
  */
-final class DiffCldrSubdivisionsAction
+final readonly class DiffCldrSubdivisionsAction
 {
     public function execute(?string $countryCode = null, ?string $cldrPath = null): CldrSubdivisionDiffData
     {
@@ -152,7 +152,7 @@ final class DiffCldrSubdivisionsAction
      */
     private function ourStates(?string $code): array
     {
-        $rows = $this->readJson(__DIR__ . '/../../resources/data/states.json');
+        $rows = $this->readJson(__DIR__ . '/../../../../resources/data/states.json');
         $coded = [];
         $nullCodes = 0;
 

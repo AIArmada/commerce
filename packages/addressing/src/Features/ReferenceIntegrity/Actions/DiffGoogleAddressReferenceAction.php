@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\Actions;
 
 use AIArmada\Addressing\Data\GoogleAddressReferenceDiffData;
 use AIArmada\Addressing\Support\AddressValidationProfiles;
-use Closure;
-use JsonException;
-use RuntimeException;
+use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
+use InvalidArgumentException;
 
 /**
  * Diff one country's validation profile against Google's address oracle.
@@ -19,14 +18,9 @@ use RuntimeException;
  * is vendored, nothing is auto-applied — the command reports and a human
  * adjudicates (Google is sometimes the wrong one).
  *
- * The fetcher is injectable so tests never touch the network; the default
- * fetcher is a plain file_get_contents call, keeping this package free of
- * HTTP client dependencies.
  */
-final class DiffGoogleAddressReferenceAction
+final readonly class DiffGoogleAddressReferenceAction
 {
-    public const string ENDPOINT = 'https://chromium-i18n.appspot.com/ssl-address/data/';
-
     private const array LETTER_FIELDS = [
         'A' => 'line1',
         'C' => 'city',
@@ -34,17 +28,16 @@ final class DiffGoogleAddressReferenceAction
         'Z' => 'postcode',
     ];
 
-    /**
-     * @param  (Closure(string): array<string, mixed>)|null  $fetcher
-     */
-    public function __construct(
-        private readonly ?Closure $fetcher = null,
-    ) {}
+    public function __construct(private GoogleAddressReferenceSource $source) {}
 
     public function execute(string $countryCode): GoogleAddressReferenceDiffData
     {
         $code = mb_strtoupper(mb_trim($countryCode));
-        $data = $this->fetch($code);
+        if (! preg_match('/^[A-Z]{2}$/D', $code)) {
+            throw new InvalidArgumentException('Country code must contain two ASCII letters.');
+        }
+
+        $data = $this->source->fetch($code);
 
         if ($data === []) {
             return new GoogleAddressReferenceDiffData($code, googleSilent: true);
@@ -124,35 +117,6 @@ final class DiffGoogleAddressReferenceAction
         }
 
         return new GoogleAddressReferenceDiffData($code, $drifts, $this->format($data));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function fetch(string $code): array
-    {
-        if ($this->fetcher !== null) {
-            return ($this->fetcher)($code);
-        }
-
-        $context = stream_context_create(['http' => ['timeout' => 15, 'ignore_errors' => true]]);
-        $raw = @file_get_contents(self::ENDPOINT . $code, false, $context);
-
-        if ($raw === false) {
-            throw new RuntimeException("Could not fetch Google address data for [{$code}].");
-        }
-
-        try {
-            $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            throw new RuntimeException("Google address data for [{$code}] is not valid JSON.", previous: $e);
-        }
-
-        if (! is_array($data)) {
-            throw new RuntimeException("Google address data for [{$code}] has an unexpected shape.");
-        }
-
-        return $data;
     }
 
     /**

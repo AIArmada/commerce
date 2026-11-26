@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing;
 
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
-use AIArmada\Addressing\Actions\DiffCldrSubdivisionsAction;
-use AIArmada\Addressing\Actions\DiffGoogleAddressReferenceAction;
 use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Actions\FetchGooglePlaceDetailsAction;
 use AIArmada\Addressing\Actions\FetchGooglePlacePhotoPreviewsAction;
@@ -31,8 +29,8 @@ use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
-use AIArmada\Addressing\Commands\DiffCldrSubdivisionsCommand;
-use AIArmada\Addressing\Commands\DiffGoogleAddressReferenceCommand;
+use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffCldrSubdivisionsCommand;
+use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffGoogleAddressReferenceCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\ExportAddressingReferencesCommand;
 use AIArmada\Addressing\Commands\ExportResolutionGapAliasesCommand;
 use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
@@ -120,8 +118,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(IgnoreResolutionGapAction::class);
         $this->app->singleton(ExportResolutionGapAliasesAction::class);
         $this->app->singleton(SaveAddressAreaAction::class);
-        $this->app->singleton(DiffGoogleAddressReferenceAction::class);
-        $this->app->singleton(DiffCldrSubdivisionsAction::class);
         $this->app->singleton(GuardAddressAreaDeletionAction::class);
         $this->app->singleton(GuardAddressCountryDeletionAction::class);
         $this->app->singleton(GoogleMapsUrlParser::class);

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Commands;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands;
 
-use AIArmada\Addressing\Actions\DiffCldrSubdivisionsAction;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffCldrSubdivisionsAction;
 use Illuminate\Console\Command;
 
 class DiffCldrSubdivisionsCommand extends Command
