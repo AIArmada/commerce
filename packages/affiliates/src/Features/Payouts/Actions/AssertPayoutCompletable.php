@@ -9,10 +9,9 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use LogicException;
 
@@ -36,6 +35,18 @@ final readonly class AssertPayoutCompletable
         // Eligibility evaluates in the payout's own owner scope, never
         // the ambient one: cross-owner console work must resolve the
         // payout's affiliate instead of failing on a scoped miss.
+        $owner = $payout->owner;
+        $connection = $payout->getConnection();
+
+        if ($payout->owner_id !== null && $owner === null) {
+            throw new PayoutCompletionBlockedException('The payout owner is missing.');
+        }
+
+        return $connection->transaction(fn (): ?string => OwnerContext::withOwner($owner, fn (): ?string => $this->check($payout, $recordCompletion)), attempts: 3);
+    }
+
+    private function check(AffiliatePayout $payout, bool $recordCompletion): ?string
+    {
         $owner = $payout->owner;
 
         try {
@@ -65,7 +76,7 @@ final readonly class AssertPayoutCompletable
             // Manual-record payouts link no conversions: eligibility
             // still resolves through the payee so bare payouts cannot
             // skip the gate.
-            $affiliateId = $this->resolvePayeeAffiliateId($payout, $owner);
+            $affiliateId = $this->resolvePayeeAffiliateId($payout);
 
             if ($affiliateId === null) {
                 throw new PayoutCompletionBlockedException(sprintf(
@@ -75,7 +86,7 @@ final readonly class AssertPayoutCompletable
             }
         }
 
-        $affiliate = Affiliate::query()->forOwner($owner)->whereKey($affiliateId)->lockForUpdate()->first();
+        $affiliate = app(AffiliateProfileReader::class)->lock((string) $affiliateId, spl_object_id($payout->getConnection()));
 
         if ($affiliate === null) {
             throw new PayoutCompletionBlockedException(sprintf(
@@ -92,7 +103,7 @@ final readonly class AssertPayoutCompletable
         // The affiliate has already been resolved and locked in the payout's owner scope.
         if (AffiliatePayoutHold::query()
             ->withoutGlobalScope('affiliate_owner')
-            ->where('affiliate_id', $affiliate->getKey())
+            ->where('affiliate_id', $affiliate->reference->id)
             ->active()
             ->exists()) {
             throw new PayoutCompletionBlockedException('An active payout hold blocks payout completion.');
@@ -116,19 +127,19 @@ final readonly class AssertPayoutCompletable
 
         $onlyRewardAwards = $summary->count > 0 && $summary->rewardAwardCount === $summary->count;
 
-        if (! $affiliate->isCommercialPurpose()
+        if (! $affiliate->commercial
             && (! $onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
             throw new PayoutCompletionBlockedException('A non-commercial affiliate payout cannot be completed.');
         }
 
-        if ($affiliate->canReceivePayout()) {
+        if ($affiliate->canReceivePayout) {
             return null;
         }
 
         $override = $payout->metadata['payout_override'] ?? null;
         $reason = is_array($override) ? ($override['reason'] ?? null) : null;
 
-        if (! $affiliate->status instanceof Disabled || ! is_string($reason) || mb_trim($reason) === '') {
+        if ($affiliate->status !== 'disabled' || ! is_string($reason) || mb_trim($reason) === '') {
             throw new PayoutCompletionBlockedException('This payout cannot be completed because the affiliate can no longer receive payouts. Cancel it and re-create with a payout_override_reason if the balance was legitimately earned.');
         }
 
@@ -146,18 +157,18 @@ final readonly class AssertPayoutCompletable
      * ambient scope: the payee morph type may name any model, so only an
      * affiliate target resolves, read in the payout owner scope.
      */
-    private function resolvePayeeAffiliateId(AffiliatePayout $payout, mixed $owner): mixed
+    private function resolvePayeeAffiliateId(AffiliatePayout $payout): ?string
     {
         if ($payout->payee_type === null || $payout->payee_id === null) {
             return null;
         }
 
-        $target = Relation::getMorphedModel($payout->payee_type) ?? $payout->payee_type;
+        $profiles = app(AffiliateProfileReader::class);
 
-        if (! is_a($target, Affiliate::class, true)) {
+        if (! $profiles->matchesMorphType($payout->payee_type)) {
             return null;
         }
 
-        return Affiliate::query()->forOwner($owner)->whereKey($payout->payee_id)->value('id');
+        return $profiles->find($payout->payee_id, spl_object_id($payout->getConnection()))?->reference->id;
     }
 }

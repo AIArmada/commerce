@@ -18,7 +18,8 @@ use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -35,9 +36,10 @@ final readonly class ProcessAffiliatePayout
 
     public function handle(AffiliatePayout $payout): PayoutResult
     {
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($payout->getConnection()));
+
         if ((new AffiliatePayoutEvent)->getConnection() !== $payout->getConnection()
             || (new AffiliatePayoutMethod)->getConnection() !== $payout->getConnection()
-            || (new Affiliate)->getConnection() !== $payout->getConnection()
             || (new AffiliatePayoutOperation)->getConnection() !== $payout->getConnection()) {
             throw new LogicException('Payout processing requires a shared database connection.');
         }
@@ -75,13 +77,16 @@ final readonly class ProcessAffiliatePayout
                     return ['error' => PayoutResult::failure('The payout has already failed.', 'PAYOUT_ALREADY_FAILED')];
                 }
 
-                $affiliate = $locked->payee;
+                $profiles = app(AffiliateProfileReader::class);
+                $affiliate = $profiles->matchesMorphType($locked->payee_type) && $locked->payee_id !== null
+                    ? $profiles->lock($locked->payee_id, spl_object_id($locked->getConnection()))
+                    : null;
 
-                if (! $affiliate instanceof Affiliate) {
+                if ($affiliate === null) {
                     return ['error' => PayoutResult::failure('The payout affiliate is missing.', 'MISSING_PAYOUT_AFFILIATE')];
                 }
 
-                if ($operation->affiliate_id !== (string) $affiliate->getKey()
+                if ($operation->affiliate_id !== $affiliate->reference->id
                     || $operation->affiliate_payout_id !== (string) $locked->getKey()) {
                     return ['error' => PayoutResult::failure('The payout payee or operation does not match the reservation.', 'PAYOUT_RESERVATION_MISMATCH')];
                 }
@@ -94,8 +99,7 @@ final readonly class ProcessAffiliatePayout
                 }
 
                 // Destination updates and provider claims serialize on the affiliate row.
-                Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
-                $method = AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())
+                $method = AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->reference->id)
                     ->where('is_default', true)->orderBy('id')->lockForUpdate()->first();
 
                 if ($method === null) {
@@ -149,7 +153,7 @@ final readonly class ProcessAffiliatePayout
                 $leaseExpiresAt = $operation->fresh()?->lease_expires_at?->toISOString();
 
                 return [
-                    'payout' => $locked->fresh(['payee']),
+                    'payout' => $locked->fresh(),
                     'processor_type' => $method->type->value,
                     'request' => PayoutRequestQuery::fromPayout($locked, $method->details),
                     'reconcile' => $needsReconciliation,

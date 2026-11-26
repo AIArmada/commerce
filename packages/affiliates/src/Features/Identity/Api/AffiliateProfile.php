@@ -20,5 +20,6 @@ final readonly class AffiliateProfile
         public bool $canReceivePayout,
         public AwardRecipient $awardRecipient,
         public ?string $parentAffiliateId,
+        public string $status,
     ) {}
 }

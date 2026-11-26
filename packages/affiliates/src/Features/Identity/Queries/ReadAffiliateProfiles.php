@@ -9,12 +9,23 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use LogicException;
 
 final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
 {
     public function __construct(private GuardAffiliateAccess $guard) {}
+
+    public function morphType(): string
+    {
+        return (new Affiliate)->getMorphClass();
+    }
+
+    public function matchesMorphType(?string $type): bool
+    {
+        return $type !== null && is_a(Relation::getMorphedModel($type) ?? $type, Affiliate::class, true);
+    }
 
     public function find(string $id, int $connectionIdentity, bool $includeGlobal = false): ?AffiliateProfile
     {
@@ -64,6 +75,7 @@ final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
                 $affiliate->owner_id === null ? null : (string) $affiliate->owner_id,
             ),
             parentAffiliateId: $affiliate->parent_affiliate_id,
+            status: $affiliate->status->getValue(),
         );
     }
 }

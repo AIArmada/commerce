@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 
 final class PayoutRequestQuery
 {
@@ -16,11 +16,14 @@ final class PayoutRequestQuery
     public static function fromPayout(AffiliatePayout $payout, ?array $methodDetails = null): PayoutRequest
     {
         $operation = PayoutOperationQuery::forPayout($payout)->first();
-        $affiliate = $payout->payee;
-        $hasAffiliate = $affiliate instanceof Affiliate;
+        $profiles = app(AffiliateProfileReader::class);
+        $affiliate = $profiles->matchesMorphType($payout->payee_type) && $payout->payee_id !== null
+            ? $profiles->find($payout->payee_id, spl_object_id($payout->getConnection()))
+            : null;
+        $hasAffiliate = $affiliate !== null;
 
-        if ($methodDetails === null && $affiliate instanceof Affiliate) {
-            $methodDetails = AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->where('is_default', true)->orderBy('id')->first()?->details;
+        if ($methodDetails === null && $affiliate !== null) {
+            $methodDetails = AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->reference->id)->where('is_default', true)->orderBy('id')->first()?->details;
         }
 
         return new PayoutRequest(

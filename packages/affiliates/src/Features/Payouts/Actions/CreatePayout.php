@@ -14,10 +14,10 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -55,7 +55,8 @@ final readonly class CreatePayout
             throw new InvalidArgumentException('A payout requires unique conversion IDs.');
         }
 
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliatePayout)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
         foreach ([new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
@@ -65,18 +66,24 @@ final readonly class CreatePayout
 
         return $connection->transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId, $connection): AffiliatePayout {
             $selection = $this->selection->manual($conversionIds, spl_object_id($connection));
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($selection->affiliateId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($selection->affiliateId, spl_object_id($connection))
+                ?? throw new InvalidArgumentException('The selected affiliate is missing or inaccessible.');
 
-            if ($expectedAffiliateId !== null && (string) $affiliate->getKey() !== $expectedAffiliateId) {
+            if (config('affiliates.owner.enabled', false)
+                && ($affiliate->reference->ownerType !== $selection->ownerType || $affiliate->reference->ownerId !== $selection->ownerId)) {
+                throw new InvalidArgumentException('Payout conversion owner must match the affiliate.');
+            }
+
+            if ($expectedAffiliateId !== null && $affiliate->reference->id !== $expectedAffiliateId) {
                 throw new InvalidArgumentException('The conversions do not belong to the selected affiliate.');
             }
 
-            if (! $affiliate->isCommercialPurpose()
+            if (! $affiliate->commercial
                 && (! $selection->onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
                 throw new InvalidArgumentException('Only commercial-purpose conversions may be paid unless reward-award settlement is explicitly enabled.');
             }
 
-            if (AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->getKey())->active()->exists()) {
+            if (AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->reference->id)->active()->exists()) {
                 throw new InvalidArgumentException('An active payout hold blocks payout reservation.');
             }
 
@@ -101,7 +108,7 @@ final readonly class CreatePayout
                 throw new InvalidArgumentException('Payout total must be greater than zero.');
             }
 
-            $balance = $this->reserveBalance($affiliate, $total, $currency);
+            $balance = $this->reserveBalance($affiliate, $total, $currency, spl_object_id($connection));
             $reference = $attributes['reference'] ?? $this->generateReference();
 
             // Handle status - accept either enum or string. Terminal states are
@@ -137,8 +144,8 @@ final readonly class CreatePayout
                 'conversion_count' => $selection->count,
                 'currency' => $currency,
                 'metadata' => $this->payoutMetadata($attributes, $payoutOverride),
-                'payee_type' => $affiliate->getMorphClass(),
-                'payee_id' => $affiliate->getKey(),
+                'payee_type' => $affiliate->awardRecipient->morphType,
+                'payee_id' => $affiliate->reference->id,
                 'scheduled_at' => $attributes['scheduled_at'] ?? null,
                 'paid_at' => $attributes['paid_at'] ?? null,
             ]);
@@ -147,7 +154,7 @@ final readonly class CreatePayout
 
             $this->reservation->reserve(
                 $balance->id,
-                (string) $affiliate->getKey(),
+                $affiliate->reference->id,
                 (string) $payout->getKey(),
                 $currency,
                 $total,
@@ -176,25 +183,25 @@ final readonly class CreatePayout
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>|null The recorded override, or null when none was needed.
      */
-    private function resolvePayoutOverride(Affiliate $affiliate, array $attributes): ?array
+    private function resolvePayoutOverride(AffiliateProfile $affiliate, array $attributes): ?array
     {
-        if ($affiliate->canReceivePayout()) {
+        if ($affiliate->canReceivePayout) {
             return null;
         }
 
         $reason = $attributes['payout_override_reason'] ?? null;
 
-        if (! $affiliate->status instanceof Disabled || ! is_string($reason) || mb_trim($reason) === '') {
+        if ($affiliate->status !== 'disabled' || ! is_string($reason) || mb_trim($reason) === '') {
             throw new InvalidArgumentException(sprintf(
                 'Affiliate "%s" cannot receive payouts (status: %s). Pending affiliates must be approved first; paused affiliates must be unpaused; disabled affiliates require a payout_override_reason to release earned balances with an audited reason.',
                 (string) $affiliate->code,
-                $affiliate->status->getValue(),
+                $affiliate->status,
             ));
         }
 
         return [
             'reason' => mb_trim($reason),
-            'affiliate_status' => $affiliate->status->getValue(),
+            'affiliate_status' => $affiliate->status,
             'overridden_at' => CarbonImmutable::now()->toIso8601String(),
             'overridden_by' => auth()->user()?->getAuthIdentifier(),
         ];
@@ -236,22 +243,22 @@ final readonly class CreatePayout
     }
 
     /** @param array<string, mixed> $attributes */
-    private function assertPayeeMatchesAffiliate(Affiliate $affiliate, array $attributes): void
+    private function assertPayeeMatchesAffiliate(AffiliateProfile $affiliate, array $attributes): void
     {
-        $type = $attributes['payee_type'] ?? $affiliate->getMorphClass();
-        $id = $attributes['payee_id'] ?? $affiliate->getKey();
+        $type = $attributes['payee_type'] ?? $affiliate->awardRecipient->morphType;
+        $id = $attributes['payee_id'] ?? $affiliate->reference->id;
 
         if (! is_string($type)
-            || (Relation::getMorphedModel($type) ?? $type) !== $affiliate::class
+            || ! app(AffiliateProfileReader::class)->matchesMorphType($type)
             || ! is_string($id)
-            || $id !== (string) $affiliate->getKey()) {
+            || $id !== $affiliate->reference->id) {
             throw new InvalidArgumentException('Payout payee must match the affiliate whose conversions are reserved.');
         }
     }
 
-    private function reserveBalance(Affiliate $affiliate, int $total, string $currency): BalanceSnapshot
+    private function reserveBalance(AffiliateProfile $affiliate, int $total, string $currency, int $connectionIdentity): BalanceSnapshot
     {
-        $balance = $this->balances->lock((string) $affiliate->getKey(), $currency, spl_object_id($affiliate->getConnection()));
+        $balance = $this->balances->lock($affiliate->reference->id, $currency, $connectionIdentity);
 
         if ($balance === null || $balance->availableMinor < $total) {
             throw new InvalidArgumentException('Affiliate available balance does not cover the payout total.');
