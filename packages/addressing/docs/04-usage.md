@@ -1143,9 +1143,9 @@ $address = AddressData::from([
 ### Building Navigation Links
 
 ```php
-use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
+use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 
-$links = app(BuildAddressNavigationLinksAction::class)->execute($address);
+$links = app(AddressNavigationLinks::class)->build(AddressData::from($address->attributesToArray()));
 
 echo $links['google_maps_url']; // manual link or generated fallback
 echo $links['google_maps_source']; // 'manual' | 'navigation_links' | 'generated_place_id' | 'generated_coordinates' | 'generated_formatted_address'

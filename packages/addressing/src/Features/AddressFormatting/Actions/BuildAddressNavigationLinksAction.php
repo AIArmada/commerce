@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressFormatting\Actions;
 
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 
-final class BuildAddressNavigationLinksAction
+final readonly class BuildAddressNavigationLinksAction implements AddressNavigationLinks
 {
     /**
      * @return array{
@@ -18,13 +18,9 @@ final class BuildAddressNavigationLinksAction
      *     links: array<string, mixed>
      * }
      */
-    public function execute(Address | AddressData $address): array
+    public function build(AddressData $address): array
     {
-        if ($address instanceof Address) {
-            $data = AddressData::from($address->attributesToArray());
-        } else {
-            $data = $address;
-        }
+        $data = AddressData::from($address->toArray());
 
         return [
             'google_maps_url' => $this->googleMapsUrl($data),
@@ -106,7 +102,9 @@ final class BuildAddressNavigationLinksAction
 
     private function coordinateQuery(AddressData $data): ?string
     {
-        if ($data->latitude === null || $data->longitude === null) {
+        if ($data->latitude === null || $data->longitude === null
+            || ! is_finite($data->latitude) || ! is_finite($data->longitude)
+            || abs($data->latitude) > 90 || abs($data->longitude) > 180) {
             return null;
         }
 
@@ -123,11 +121,11 @@ final class BuildAddressNavigationLinksAction
             return 'navigation_links';
         }
 
-        if ($data->googlePlaceId !== null) {
+        if ($data->googlePlaceId !== null && ($this->coordinateQuery($data) ?? $data->formatted ?? $data->line1) !== null) {
             return 'generated_place_id';
         }
 
-        if ($data->latitude !== null && $data->longitude !== null) {
+        if ($this->coordinateQuery($data) !== null) {
             return 'generated_coordinates';
         }
 
@@ -148,7 +146,7 @@ final class BuildAddressNavigationLinksAction
             return 'navigation_links';
         }
 
-        if ($data->latitude !== null && $data->longitude !== null) {
+        if ($this->coordinateQuery($data) !== null) {
             return 'generated_coordinates';
         }
 

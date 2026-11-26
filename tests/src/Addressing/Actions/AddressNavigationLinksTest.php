@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
+use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 
 beforeEach(function (): void {
-    $this->action = app(BuildAddressNavigationLinksAction::class);
+    $this->action = app(AddressNavigationLinks::class);
 });
 
 it('uses manual google_maps_url over generated', function (): void {
@@ -20,7 +20,7 @@ it('uses manual google_maps_url over generated', function (): void {
         'google_maps_url' => 'https://maps.app.goo.gl/manual',
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['google_maps_url'])->toBe('https://maps.app.goo.gl/manual');
     expect($links['google_maps_source'])->toBe('manual');
@@ -36,7 +36,7 @@ it('uses manual waze_url over generated', function (): void {
         'waze_url' => 'https://waze.com/ul/manual',
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['waze_url'])->toBe('https://waze.com/ul/manual');
     expect($links['waze_source'])->toBe('manual');
@@ -50,7 +50,7 @@ it('uses navigation_links.google_maps.url when direct url absent', function (): 
         'navigationLinks' => ['google_maps' => ['url' => 'https://maps.app.goo.gl/nav-link']],
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['google_maps_url'])->toBe('https://maps.app.goo.gl/nav-link');
     expect($links['google_maps_source'])->toBe('navigation_links');
@@ -64,7 +64,7 @@ it('uses navigation_links.waze.url when direct url absent', function (): void {
         'navigationLinks' => ['waze' => ['url' => 'https://waze.com/ul/nav-link']],
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['waze_url'])->toBe('https://waze.com/ul/nav-link');
     expect($links['waze_source'])->toBe('navigation_links');
@@ -79,7 +79,7 @@ it('generates google maps url from coordinates', function (): void {
         'longitude' => 101.6678,
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['google_maps_url'])->toContain('https://www.google.com/maps/search/');
     expect($links['google_maps_url'])->toContain('query=3.1712%2C101.6678');
@@ -91,7 +91,7 @@ it('generates google maps url from formatted address', function (): void {
         'formatted' => '123 Main St, KL, 50450, Malaysia',
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['google_maps_url'])->toContain('https://www.google.com/maps/search/');
     expect($links['google_maps_url'])->toContain(urlencode('123 Main St, KL, 50450, Malaysia'));
@@ -107,7 +107,7 @@ it('generates waze url from coordinates', function (): void {
         'longitude' => 101.6678,
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['waze_url'])->toContain('https://waze.com/ul?');
     expect($links['waze_url'])->toContain('ll=3.1712%2C101.6678');
@@ -120,7 +120,7 @@ it('generates waze url from formatted address', function (): void {
         'formatted' => '123 Main St, KL, Malaysia',
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['waze_url'])->toContain('https://waze.com/ul?');
     expect($links['waze_url'])->toContain('q=' . urlencode('123 Main St, KL, Malaysia'));
@@ -137,7 +137,7 @@ it('generates google maps url from place id with query and query_place_id', func
         'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['google_maps_url'])->toContain('https://www.google.com/maps/search/?');
     expect($links['google_maps_url'])->toContain('api=1');
@@ -146,7 +146,7 @@ it('generates google maps url from place id with query and query_place_id', func
     expect($links['google_maps_source'])->toBe('generated_place_id');
 });
 
-it('accepts Address model and builds links', function (): void {
+it('builds links from model attributes', function (): void {
     $address = Address::create([
         'line1' => '123 Main St',
         'country_code' => 'MY',
@@ -154,7 +154,7 @@ it('accepts Address model and builds links', function (): void {
         'longitude' => 101.6678,
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build(AddressData::from($address->attributesToArray()));
 
     expect($links['google_maps_url'])->toContain('https://www.google.com/maps/search/');
     expect($links['waze_url'])->toContain('https://waze.com/ul?');
@@ -166,7 +166,7 @@ it('returns links key with navigation_links data', function (): void {
         'navigation_links' => ['grab' => ['url' => 'https://grab.com/dir']],
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['links'])->toBe(['grab' => ['url' => 'https://grab.com/dir']]);
 });
@@ -176,10 +176,19 @@ it('returns null when no usable data exists', function (): void {
         'line1' => 'Unknown',
     ]);
 
-    $links = $this->action->execute($address);
+    $links = $this->action->build($address);
 
     expect($links['google_maps_url'])->toBeNull();
     expect($links['waze_url'])->toBeNull();
     expect($links['google_maps_source'])->toBeNull();
     expect($links['waze_source'])->toBeNull();
+});
+
+it('does not emit a source for an unusable place ID or invalid coordinates', function (): void {
+    $links = $this->action->build(AddressData::from(['google_place_id' => 'place', 'latitude' => 100, 'longitude' => 181]));
+
+    expect($links['google_maps_url'])->toBeNull()
+        ->and($links['google_maps_source'])->toBeNull()
+        ->and($links['waze_url'])->toBeNull()
+        ->and($links['waze_source'])->toBeNull();
 });

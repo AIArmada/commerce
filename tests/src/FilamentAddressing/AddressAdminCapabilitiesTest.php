@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
+use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\UpdateAddressAttachmentAction;
 use AIArmada\Addressing\Data\AddressData;
@@ -273,7 +273,7 @@ it('generates safe navigation links from live and saved address coordinates', fu
         'waze_url' => 'data:text/html,unsafe',
     ]));
 
-    $links = app(BuildAddressNavigationLinksAction::class)->execute($address);
+    $links = app(AddressNavigationLinks::class)->build(AddressData::from($address->attributesToArray()));
 
     expect($links['google_maps_url'])->toStartWith('https://www.google.com/maps/search/')
         ->and($links['waze_url'])->toStartWith('https://waze.com/ul?');
@@ -286,7 +286,7 @@ it('generates safe navigation links from live and saved address coordinates', fu
         'google_maps_url' => null,
         'waze_url' => null,
     ]));
-    $renderedLinks = app(BuildAddressNavigationLinksAction::class)->execute($renderedAddress);
+    $renderedLinks = app(AddressNavigationLinks::class)->build(AddressData::from($renderedAddress->attributesToArray()));
 
     OwnerContext::withOwner($owner, function () use ($renderedAddress, $renderedLinks): void {
         test()->get(AddressResource::getUrl('view', ['record' => $renderedAddress]))->assertOk();
@@ -306,7 +306,7 @@ it('generates safe navigation links from live and saved address coordinates', fu
         'waze_url' => null,
     ]));
 
-    $snapshotLinks = app(BuildAddressNavigationLinksAction::class)->execute(
+    $snapshotLinks = app(AddressNavigationLinks::class)->build(
         AddressData::from($snapshot->attributesToArray()),
     );
 

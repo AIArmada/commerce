@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Schemas;
 
-use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
+use AIArmada\Addressing\Contracts\AddressNavigationLinks;
+use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -74,13 +75,13 @@ class AddressInfolistSchema
                     ->schema([
                         TextEntry::make('google_maps_url')
                             ->label('Google Maps')
-                            ->state(fn (Address $record): ?string => app(BuildAddressNavigationLinksAction::class)->execute($record)['google_maps_url'])
-                            ->url(fn (Address $record): ?string => app(BuildAddressNavigationLinksAction::class)->execute($record)['google_maps_url'])
+                            ->state(fn (Address $record): ?string => app(AddressNavigationLinks::class)->build(AddressData::from($record->attributesToArray()))['google_maps_url'])
+                            ->url(fn (Address $record): ?string => app(AddressNavigationLinks::class)->build(AddressData::from($record->attributesToArray()))['google_maps_url'])
                             ->openUrlInNewTab(),
                         TextEntry::make('waze_url')
                             ->label('Waze')
-                            ->state(fn (Address $record): ?string => app(BuildAddressNavigationLinksAction::class)->execute($record)['waze_url'])
-                            ->url(fn (Address $record): ?string => app(BuildAddressNavigationLinksAction::class)->execute($record)['waze_url'])
+                            ->state(fn (Address $record): ?string => app(AddressNavigationLinks::class)->build(AddressData::from($record->attributesToArray()))['waze_url'])
+                            ->url(fn (Address $record): ?string => app(AddressNavigationLinks::class)->build(AddressData::from($record->attributesToArray()))['waze_url'])
                             ->openUrlInNewTab(),
                         TextEntry::make('google_place_id'),
                         TextEntry::make('google_feature_id'),

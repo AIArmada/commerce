@@ -13,6 +13,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 
 /**
  * Minimal client for SLA's OneMap API (search + token auth).
@@ -86,7 +87,7 @@ class OneMapClient implements PostalAddressLookup
             throw new OneMapException('OneMap authentication failed. Check ONEMAP_EMAIL and ONEMAP_PASSWORD.');
         }
 
-        if ($response->failed()) {
+        if (! $response->successful()) {
             throw new OneMapException(sprintf(
                 'OneMap search failed with status %d.',
                 $response->status(),
@@ -121,7 +122,7 @@ class OneMapClient implements PostalAddressLookup
                     throw new OneMapException('OneMap search failed: ' . $exception->getMessage(), previous: $exception);
                 }
 
-                $this->sleep($attempt, null);
+                $this->delayRetry($attempt, null);
 
                 continue;
             }
@@ -131,7 +132,7 @@ class OneMapClient implements PostalAddressLookup
             }
 
             if (($response->status() === 429 || $response->serverError()) && $attempt < $retries) {
-                $this->sleep($attempt, $response->header('Retry-After'));
+                $this->delayRetry($attempt, $response->header('Retry-After'));
 
                 continue;
             }
@@ -196,7 +197,7 @@ class OneMapClient implements PostalAddressLookup
             throw new OneMapException('OneMap authentication failed: ' . $exception->getMessage(), previous: $exception);
         }
 
-        if ($response->failed()) {
+        if (! $response->successful()) {
             throw new OneMapException(sprintf(
                 'OneMap authentication failed with status %d.',
                 $response->status(),
@@ -231,9 +232,9 @@ class OneMapClient implements PostalAddressLookup
         return $cachedUntil->greaterThan($now) ? $cachedUntil : $now;
     }
 
-    private function sleep(int $attempt, ?string $retryAfter): void
+    private function delayRetry(int $attempt, ?string $retryAfter): void
     {
-        usleep((int) (self::retryDelaySeconds($attempt, $retryAfter) * 1000000));
+        Sleep::usleep((int) (self::retryDelaySeconds($attempt, $retryAfter) * 1000000));
     }
 
     public static function retryDelaySeconds(int $attempt, ?string $retryAfter): float

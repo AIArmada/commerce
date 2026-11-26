@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing;
 
-use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
 use AIArmada\Addressing\Actions\DiffCldrSubdivisionsAction;
 use AIArmada\Addressing\Actions\DiffGoogleAddressReferenceAction;
@@ -114,7 +113,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(CountryAddressFormatterResolver::class);
         $this->app->singleton(ImportAddressAreasAction::class);
         $this->app->singleton(CreateAddressSnapshotAction::class);
-        $this->app->singleton(BuildAddressNavigationLinksAction::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
         $this->app->singleton(ResolveSingaporePostalCodesAction::class);
         $this->app->singleton(LogAddressResolutionGapAction::class);

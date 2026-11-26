@@ -359,7 +359,7 @@ the `rebuild` policy before anything is queued.
 
 The page is a stateless report: it lists up to 100 current-scope customer
 addresses that fail their country validation profile, with the violation
-messages from `ValidateAddressAction`. Nothing is stamped or stored; fixing
+messages from `AddressValidator`. Nothing is stamped or stored; fixing
 the address data removes the entry.
 
 ## Next Steps
