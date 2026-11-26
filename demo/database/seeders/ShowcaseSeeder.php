@@ -6,7 +6,7 @@ namespace Database\Seeders;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active as ActiveAffiliate;
 use AIArmada\Affiliates\States\ApprovedConversion;

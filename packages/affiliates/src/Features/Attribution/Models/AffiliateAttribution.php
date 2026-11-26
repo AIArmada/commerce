@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Attribution\Models;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;

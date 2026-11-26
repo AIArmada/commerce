@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;

@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;

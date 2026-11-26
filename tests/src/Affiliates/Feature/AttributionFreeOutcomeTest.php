@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use Illuminate\Support\Facades\Event;

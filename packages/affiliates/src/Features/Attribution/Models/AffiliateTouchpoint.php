@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Models;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;

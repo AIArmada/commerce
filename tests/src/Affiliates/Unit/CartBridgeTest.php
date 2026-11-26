@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;

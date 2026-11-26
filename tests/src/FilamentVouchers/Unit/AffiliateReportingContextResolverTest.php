@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active as ActiveAffiliate;
 use AIArmada\Affiliates\States\PendingConversion;

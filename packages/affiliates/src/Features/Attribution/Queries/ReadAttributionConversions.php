@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionRecord;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionEvidence;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 use AIArmada\Affiliates\Data\AffiliateEventReference;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionSignalReader;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionSignalRecord;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use Illuminate\Support\Str;
 
 final readonly class AttributionSignalQuery implements AttributionSignalReader

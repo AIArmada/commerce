@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;

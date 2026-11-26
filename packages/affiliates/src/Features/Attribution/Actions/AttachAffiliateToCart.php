@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Cart\Cart;

@@ -16,7 +16,7 @@ use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;

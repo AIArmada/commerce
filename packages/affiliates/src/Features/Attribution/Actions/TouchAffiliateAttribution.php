@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;

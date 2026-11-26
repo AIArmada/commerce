@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffil
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\IpHasher;
 use Illuminate\Http\Request;

@@ -70,7 +70,7 @@ app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->find((s
 Tracks when a visitor is attributed to an affiliate.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 ```
 
 **Key Attributes:**

@@ -20,7 +20,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;

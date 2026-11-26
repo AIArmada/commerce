@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;

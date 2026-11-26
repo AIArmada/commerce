@@ -21,7 +21,7 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

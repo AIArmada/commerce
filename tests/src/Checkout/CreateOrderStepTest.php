@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Contracts\CartManagerInterface;

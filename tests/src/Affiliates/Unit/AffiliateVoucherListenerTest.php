@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\AttachAffiliateFromVoucher;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Affiliates\States\Disabled;
