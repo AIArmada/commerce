@@ -26,6 +26,7 @@ use AIArmada\Addressing\Features\Geography\Actions\EditGeographyReferenceAction;
 use AIArmada\Addressing\Features\Geography\Actions\GuardAddressAreaDeletionAction;
 use AIArmada\Addressing\Features\Geography\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Features\Geography\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Features\Geography\Actions\PruneDuplicateManualAliasesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAliasAction;
 use AIArmada\Addressing\Features\Geography\Actions\SearchAddressAreasAction;
@@ -38,6 +39,7 @@ use AIArmada\Addressing\Features\Geography\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryStatesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
+use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -46,6 +48,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->singleton(GeographyReferenceMaintenance::class, ClearGeographyReferencesAction::class);
+        $app->singleton(ResolutionAliasMaintenance::class, PruneDuplicateManualAliasesAction::class);
         $app->singleton(GeographyReferenceEditor::class, EditGeographyReferenceAction::class);
         $app->singleton(CityDatasetSeeder::class, SeedAddressCitiesAction::class);
         $app->singleton(CountryDatasetSeeder::class, SeedAddressCountriesAction::class);

@@ -8,19 +8,20 @@ use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\ExportResolutionGapAliasesResultData;
+use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final readonly class ExportResolutionGapAliasesAction
 {
     public function __construct(
         private Container $container,
+        private ResolutionAliasMaintenance $aliases,
     ) {}
 
     /**
@@ -167,7 +168,7 @@ final readonly class ExportResolutionGapAliasesAction
 
         ksort($candidates);
 
-        $pruned = $prune ? $this->pruneDuplicatedManualAliases($countryCode) : 0;
+        $pruned = $prune ? $this->aliases->pruneDuplicates($countryCode) : 0;
 
         return new ExportResolutionGapAliasesResultData(
             countryCode: $countryCode,
@@ -226,43 +227,4 @@ final readonly class ExportResolutionGapAliasesAction
         return null;
     }
 
-    private function pruneDuplicatedManualAliases(string $countryCode): int
-    {
-        return DB::transaction(function () use ($countryCode): int {
-            $areaIds = ModelResolver::areaClass()::query()->where('country_code', $countryCode)->pluck('id')->all();
-
-            if ($areaIds === []) {
-                return 0;
-            }
-
-            $providerPairs = ModelResolver::areaNameClass()::query()
-                ->whereIn('address_area_id', $areaIds)
-                ->where('source', '!=', 'manual')
-                ->get(['address_area_id', 'name'])
-                ->mapToGroups(static fn (AddressAreaName $name): array => [(string) $name->address_area_id => (string) $name->name])
-                ->map(static fn (mixed $names): array => collect($names)->all())
-                ->all();
-
-            $manualAliases = ModelResolver::areaNameClass()::query()
-                ->whereIn('address_area_id', $areaIds)
-                ->where('source', 'manual')
-                ->get(['id', 'address_area_id', 'name']);
-
-            $duplicates = [];
-
-            foreach ($manualAliases as $alias) {
-                $areaId = (string) $alias->address_area_id;
-
-                if (in_array((string) $alias->name, $providerPairs[$areaId] ?? [], true)) {
-                    $duplicates[] = $alias->getKey();
-                }
-            }
-
-            if ($duplicates === []) {
-                return 0;
-            }
-
-            return ModelResolver::areaNameClass()::query()->whereIn('id', $duplicates)->delete();
-        });
-    }
 }

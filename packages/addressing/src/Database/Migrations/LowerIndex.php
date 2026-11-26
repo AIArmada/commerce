@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Database\Migrations;
 
 use Illuminate\Support\Facades\Schema;
 
@@ -18,13 +18,13 @@ final class LowerIndex
     public static function create(string $table, string $column, string $index): void
     {
         $connection = Schema::getConnection();
-        $prefixedTable = $connection->getTablePrefix() . $table;
+        $grammar = $connection->getQueryGrammar();
 
         $sql = sprintf(
-            'CREATE INDEX "%s" ON "%s" (LOWER("%s"))',
-            $index,
-            $prefixedTable,
-            $column,
+            'CREATE INDEX %s ON %s (LOWER(%s))',
+            $grammar->wrap($index),
+            $grammar->wrapTable($table),
+            $grammar->wrap($column),
         );
 
         $connection->statement($sql);

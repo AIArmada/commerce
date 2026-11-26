@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 
+use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class MatchGapToAreaAction
 {
     public function __construct(
         private CountryAddressProfileResolver $profiles,
+        private AddressAreaAliasWriter $aliases,
     ) {}
 
     /**
@@ -27,6 +31,36 @@ final readonly class MatchGapToAreaAction
      */
     public function execute(ResolutionGap $gap, AddressArea $area, ?string $matchedBy = null): ResolutionGap
     {
+        $matchedBy = $matchedBy !== null ? mb_trim($matchedBy) : null;
+
+        if ($matchedBy !== null && mb_strlen($matchedBy) > 255) {
+            throw ValidationException::withMessages([
+                'matched_by' => __('The actor identifier must not exceed 255 characters.'),
+            ]);
+        }
+
+        $attempt = fn (): ResolutionGap => $gap->getConnection()->transaction(fn (): ResolutionGap => $this->persistMatch((string) $gap->getKey(), (string) $area->getKey(), $matchedBy));
+
+        try {
+            return $attempt();
+        } catch (UniqueConstraintViolationException) {
+            return $attempt();
+        }
+    }
+
+    private function persistMatch(string $gapId, string $areaId, ?string $matchedBy): ResolutionGap
+    {
+        $gapClass = ModelResolver::resolutionGapClass();
+
+        if ($gapClass::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner($gapClass, $gapId);
+        }
+
+        $gap = $gapClass::query()->whereKey($gapId)->lockForUpdate()->firstOrFail();
+
+        ModelResolver::countryClass()::query()->where('iso2', $gap->country_code)->lockForUpdate()->first();
+        $area = ModelResolver::areaClass()::query()->whereKey($areaId)->lockForUpdate()->firstOrFail();
+
         if (! $area->is_active) {
             throw ValidationException::withMessages(['area' => __('The selected area is inactive.')]);
         }
@@ -79,48 +113,24 @@ final readonly class MatchGapToAreaAction
 
         $this->assertNoAmbiguity($gap, $area);
 
-        $matchedBy = $matchedBy !== null ? mb_trim($matchedBy) : null;
-
-        if ($matchedBy !== null && mb_strlen($matchedBy) > 255) {
-            throw ValidationException::withMessages([
-                'matched_by' => __('The actor identifier must not exceed 255 characters.'),
-            ]);
-        }
-
-        try {
-            return $gap->getConnection()->transaction(fn (): ResolutionGap => $this->persistMatch($gap, $area, $matchedBy));
-        } catch (UniqueConstraintViolationException) {
-            return $gap->getConnection()->transaction(fn (): ResolutionGap => $this->persistMatch($gap, $area, $matchedBy));
-        }
-    }
-
-    private function persistMatch(ResolutionGap $gap, AddressArea $area, ?string $matchedBy): ResolutionGap
-    {
-        $locked = ModelResolver::resolutionGapClass()::query()->whereKey($gap->getKey())->lockForUpdate()->firstOrFail();
-
-        if ($locked->status !== 'open') {
-            throw ValidationException::withMessages([
-                'gap' => __('Only open resolution gaps can be matched.'),
-            ]);
-        }
-
-        if (! $this->targetAlreadyHasValue($locked, $area)) {
-            ModelResolver::areaNameClass()::query()->create([
-                'address_area_id' => $area->getKey(),
-                'name' => mb_trim((string) $locked->value),
-                'source' => 'manual',
+        if (! $this->targetAlreadyHasValue($gap, $area)) {
+            $this->aliases->handle((string) $area->getKey(), [
+                'name' => mb_trim($gap->value),
                 'name_type' => 'common',
                 'is_preferred' => false,
             ]);
         }
 
-        $locked->status = 'matched';
-        $locked->matched_area_id = $area->getKey();
-        $locked->matched_by = $matchedBy === '' ? null : $matchedBy;
-        $locked->matched_at = CarbonImmutable::now();
-        $locked->save();
+        $gap->status = 'matched';
+        $gap->matched_area_id = $area->getKey();
+        $gap->matched_by = $matchedBy === '' ? null : $matchedBy;
+        $gap->matched_at = CarbonImmutable::now();
 
-        return $locked->fresh() ?? $locked;
+        if (! $gap->save()) {
+            throw new RuntimeException('The resolution gap could not be matched.');
+        }
+
+        return $gap;
     }
 
     private function areaMatchesDefinition(AddressArea $area, AddressLevelDefinition $definition): bool

@@ -12,7 +12,8 @@
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAliasAction",
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\DeleteAddressAreaAliasAction",
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction",
-      "AIArmada\\Addressing\\Features\\Geography\\Actions\\ClearGeographyReferencesAction"
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\ClearGeographyReferencesAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\PruneDuplicateManualAliasesAction"
     ],
     "table:address_area_relationships": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction",

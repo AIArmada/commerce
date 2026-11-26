@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Database\Migrations;
 
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Database\Connection;
 use LogicException;
 

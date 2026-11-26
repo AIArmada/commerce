@@ -8,6 +8,7 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\AddressingReferenceRecords;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportContract;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportSorter;
+use AIArmada\Addressing\Persistence\ReadOnlyReferenceSnapshot;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Database\Connection;
 use InvalidArgumentException;
@@ -93,10 +94,7 @@ final readonly class ExportAddressingReferencesAction
      */
     private function writeSnapshot(Connection $connection, mixed $stream, string $output, string $directory, array $requestedCountries, ?string $seedRevision): array
     {
-        return $connection->transaction(function () use ($connection, $stream, $directory, $requestedCountries, $seedRevision): array {
-            if ($connection->getDriverName() === 'pgsql') {
-                $connection->statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
-            }
+        return ReadOnlyReferenceSnapshot::run($connection, function () use ($connection, $stream, $directory, $requestedCountries, $seedRevision): array {
 
             $countryQuery = $connection->table(AddressingTableResolver::resolve('countries'))->select('iso2')->orderBy('iso2');
 

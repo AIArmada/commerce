@@ -7,6 +7,7 @@ namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use RuntimeException;
 
 final readonly class IgnoreResolutionGapAction
 {
@@ -28,7 +29,9 @@ final readonly class IgnoreResolutionGapAction
             }
 
             $locked->status = 'ignored';
-            $locked->save();
+            if (! $locked->save()) {
+                throw new RuntimeException('The resolution gap could not be ignored.');
+            }
 
             return $locked;
         });
