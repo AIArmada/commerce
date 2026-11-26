@@ -8,9 +8,9 @@ use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspection;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 

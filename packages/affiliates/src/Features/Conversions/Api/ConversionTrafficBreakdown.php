@@ -7,8 +7,8 @@ namespace AIArmada\Affiliates\Features\Conversions\Api;
 final readonly class ConversionTrafficBreakdown
 {
     /**
-     * @param array<string, int> $sources
-     * @param array<string, int> $campaigns
+     * @param  array<string, int>  $sources
+     * @param  array<string, int>  $campaigns
      */
     public function __construct(public array $sources, public array $campaigns) {}
 

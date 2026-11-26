@@ -6,10 +6,10 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
-use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportRow;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
@@ -263,7 +263,6 @@ final readonly class AffiliateReportQuery implements ReportingApi
             'utm' => $utm,
         ];
     }
-
 
     /**
      * Fold per-currency aggregate rows into display totals.

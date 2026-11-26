@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Cart;
 
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Features\Identity\Api\CustomerDiscount;
 use AIArmada\Affiliates\Features\Identity\Api\CustomerDiscountReader;
-use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;

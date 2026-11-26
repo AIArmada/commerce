@@ -113,7 +113,6 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             );
         }
 
-
         return $this->project($query->get());
     }
 
@@ -229,7 +228,7 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
     }
 
     /**
-     * @param Collection<int, stdClass> $rows
+     * @param  Collection<int, stdClass>  $rows
      * @return list<ConversionReportRow>
      */
     private function project(Collection $rows): array

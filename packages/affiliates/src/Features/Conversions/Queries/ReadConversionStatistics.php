@@ -70,7 +70,7 @@ final readonly class ReadConversionStatistics implements ConversionStatisticsRea
     }
 
     /**
-     * @param Collection<int, stdClass> $rows
+     * @param  Collection<int, stdClass>  $rows
      * @return list<ConversionCurrencyTotals>
      */
     private function foldTotals(Collection $rows, string $fallbackCurrency): array

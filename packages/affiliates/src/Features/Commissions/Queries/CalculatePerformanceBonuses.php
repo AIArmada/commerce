@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
-use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;

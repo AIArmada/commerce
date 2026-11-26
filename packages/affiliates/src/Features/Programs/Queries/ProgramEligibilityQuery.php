@@ -38,7 +38,7 @@ final readonly class ProgramEligibilityQuery implements ProgramEligibilityReader
     /**
      * Evaluate programs whose membership absence has already been checked by the caller.
      *
-     * @param iterable<AffiliateProgram> $programs
+     * @param  iterable<AffiliateProgram>  $programs
      * @return list<string>
      */
     public function eligibleIds(Affiliate $affiliate, iterable $programs): array

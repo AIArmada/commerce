@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Contracts\FraudRule;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudRiskProfileQuery;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Support\IpHasher;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
