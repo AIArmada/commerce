@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -14,6 +13,8 @@ use RuntimeException;
 
 final readonly class ReadPayoutExport
 {
+    public function __construct(private PayoutConversionIntegrity $conversions) {}
+
     /** @return list<array{string, string, int, string, string}>|null */
     public function find(string $reference): ?array
     {
@@ -32,18 +33,24 @@ final readonly class ReadPayoutExport
                         $query->orWhere('id', $reference);
                     }
                 })
-                ->with('conversions')
                 ->limit(2)
                 ->get();
 
-            return $payouts->map(static fn (AffiliatePayout $payout): array => $payout->conversions
-                ->map(static fn (AffiliateConversion $conversion): array => [
-                    (string) $conversion->affiliate_code,
-                    (string) $conversion->external_reference,
-                    (int) $conversion->commission_minor,
-                    (string) $conversion->commission_currency,
-                    ConversionStatus::normalize($conversion->status),
-                ])->values()->all())->values()->all();
+            return $payouts->map(function (AffiliatePayout $payout): array {
+                $rows = [];
+
+                foreach ($this->conversions->exportRows((string) $payout->getKey(), $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection())) as $conversion) {
+                    $rows[] = [
+                        $conversion->affiliateCode,
+                        (string) $conversion->externalReference,
+                        $conversion->commissionMinor,
+                        $conversion->currency,
+                        $conversion->status,
+                    ];
+                }
+
+                return $rows;
+            })->values()->all();
         });
 
         $result = null;

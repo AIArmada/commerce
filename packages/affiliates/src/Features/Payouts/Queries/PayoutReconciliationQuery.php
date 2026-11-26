@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
@@ -27,7 +28,7 @@ use Illuminate\Support\Collection;
 
 final readonly class PayoutReconciliationQuery implements PayoutReconciliationQueries
 {
-    public function __construct(private CurrencyConverter $converter, private BalanceReader $balances) {}
+    public function __construct(private CurrencyConverter $converter, private BalanceReader $balances, private PayoutConversionIntegrity $conversions) {}
 
     /** @return list<string> */
     public function payoutIdsNeedingReconciliation(): array
@@ -96,6 +97,14 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
         $asOf = $endDate !== null ? CarbonImmutable::parse($endDate) : CarbonImmutable::now();
         $summary = $this->summarizeAmounts($payouts, $completed, $failed, $asOf);
 
+        $payoutOwners = [];
+
+        foreach ($payouts as $payout) {
+            $payoutOwners[$payout->id] = ['owner_type' => $payout->owner_type, 'owner_id' => $payout->owner_id];
+        }
+
+        $conversionTotals = $this->conversions->reportTotals($payoutOwners, spl_object_id((new AffiliatePayout)->getConnection()));
+
         return [
             'period' => ['start' => $startDate, 'end' => $endDate],
             'summary' => [
@@ -110,8 +119,8 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
             ],
             'by_status' => $byStatus->all(),
             'by_currency' => $byCurrency,
-            'discrepancies' => $this->findDiscrepancies($payouts),
-            'currency_mismatches' => $this->findCurrencyMismatches($payouts),
+            'discrepancies' => $this->findDiscrepancies($payouts, $conversionTotals),
+            'currency_mismatches' => $this->findCurrencyMismatches($payouts, $conversionTotals),
         ];
     }
 
@@ -257,23 +266,19 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     }
 
     /** @return list<array<string, string>> */
-    private function findCurrencyMismatches(Collection $payouts): array
+    private function findCurrencyMismatches(Collection $payouts, array $conversionTotals): array
     {
         $mismatches = [];
 
         foreach ($payouts as $payout) {
             $expected = mb_strtoupper((string) $payout->currency);
-            $actual = $payout->conversions()
-                ->pluck('commission_currency')
-                ->map(fn (mixed $code): string => mb_strtoupper((string) $code))
-                ->unique()
-                ->values();
+            $actual = $conversionTotals[$payout->id]['currencies'] ?? [];
 
-            if ($actual->count() !== 1 || $actual->first() !== $expected) {
+            if ($actual !== [$expected]) {
                 $mismatches[] = [
                     'payout_id' => (string) $payout->id,
                     'payout_currency' => $expected,
-                    'conversion_currencies' => $actual->implode(','),
+                    'conversion_currencies' => implode(',', $actual),
                 ];
             }
         }
@@ -282,12 +287,12 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     }
 
     /** @return list<array<string, int|string>> */
-    private function findDiscrepancies(Collection $payouts): array
+    private function findDiscrepancies(Collection $payouts, array $conversionTotals): array
     {
         $discrepancies = [];
 
         foreach ($payouts as $payout) {
-            $linkedAmount = (int) $payout->conversions()->sum('commission_minor');
+            $linkedAmount = $conversionTotals[$payout->id]['total_minor'] ?? 0;
 
             if ($linkedAmount !== $payout->total_minor) {
                 $discrepancies[] = [

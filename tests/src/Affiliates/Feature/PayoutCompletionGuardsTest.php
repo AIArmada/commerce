@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
@@ -338,7 +339,7 @@ test('linking a foreign affiliate conversion is rejected before it is persisted'
     expect($foreign->fresh()->affiliate_payout_id)->toBeNull()
         ->and(AffiliateBalance::query()->where('affiliate_id', $other->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and($payout->fresh()->total_minor)->toBe(5000)
-        ->and($payout->conversions()->count())->toBe(1);
+        ->and(app(PayoutConversionIntegrity::class)->summary($payout->id, $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()))->count)->toBe(1);
 });
 
 test('changing the affiliate of a payout-linked conversion is rejected', function (): void {

@@ -7,12 +7,12 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Validation\ValidationException;
 
@@ -62,7 +62,7 @@ describe('AffiliatePayout Model', function (): void {
             ->and($payout->payee->id)->toBe($this->affiliate->id);
     });
 
-    it('has many conversions', function (): void {
+    it('reads linked conversions through the owning feature', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -73,7 +73,7 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($payout->conversions())->toBeInstanceOf(HasMany::class);
+        expect(app(PayoutConversionIntegrity::class)->hasConversions($payout->id, spl_object_id($payout->getConnection())))->toBeFalse();
     });
 
     it('reads payout events through the owning feature', function (): void {

@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Features\Payouts\Models;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
@@ -18,10 +17,8 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
@@ -50,7 +47,6 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $external_reference
  * @property-read Model|null $payee
  * @property-read Model|null $owner
- * @property-read Collection<int, AffiliateConversion> $conversions
  */
 class AffiliatePayout extends Model implements Auditable
 {
@@ -111,14 +107,6 @@ class AffiliatePayout extends Model implements Auditable
     public function payee(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    /**
-     * @return HasMany<AffiliateConversion, $this>
-     */
-    public function conversions(): HasMany
-    {
-        return $this->hasMany(AffiliateConversion::class, 'affiliate_payout_id');
     }
 
     /**

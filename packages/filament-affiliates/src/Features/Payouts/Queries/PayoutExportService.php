@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\Queries;
 
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutExportRow;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -175,13 +176,11 @@ final class PayoutExportService
     /**
      * Stream conversion rows for the payout without hydrating them all at once.
      *
-     * @return iterable<int, object>
+     * @return iterable<int, PayoutExportRow>
      */
     private function conversionRows(AffiliatePayout $payout): iterable
     {
-        foreach ($payout->conversions()->orderBy('id')->cursor() as $conversion) {
-            yield $conversion;
-        }
+        return app(PayoutConversionIntegrity::class)->exportRows((string) $payout->getKey(), $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()));
     }
 
     /**
@@ -206,15 +205,15 @@ final class PayoutExportService
      *
      * @return array<string>
      */
-    private function getRowData(object $conversion): array
+    private function getRowData(PayoutExportRow $conversion): array
     {
         return [
-            $this->sanitizeCell((string) $conversion->affiliate_code),
-            $this->sanitizeCell((string) $conversion->external_reference),
-            $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) $conversion->commission_minor, (string) $conversion->commission_currency)),
-            $this->sanitizeCell((string) $conversion->commission_currency),
-            $this->sanitizeCell($this->stringifyStatus($conversion->status)),
-            $this->sanitizeCell($conversion->created_at?->format('Y-m-d H:i:s') ?? ''),
+            $this->sanitizeCell((string) $conversion->affiliateCode),
+            $this->sanitizeCell((string) $conversion->externalReference),
+            $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) $conversion->commissionMinor, (string) $conversion->currency)),
+            $this->sanitizeCell((string) $conversion->currency),
+            $this->sanitizeCell($conversion->status),
+            $this->sanitizeCell($conversion->createdAt ?? ''),
         ];
     }
 
@@ -344,7 +343,7 @@ final class PayoutExportService
         // Authoritative payout totals: payouts hold one currency by
         // construction, so never re-sum (and never mislabel) conversions.
         $totalCommissionMinor = (int) $payout->total_minor;
-        $conversionCount = (int) $payout->conversions()->count();
+        $conversionCount = count($rows);
         $currency = (string) ($payout->currency ?? 'MYR');
         $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, $currency);
 
@@ -419,10 +418,6 @@ HTML;
 
     private function stringifyStatus(mixed $status): string
     {
-        if ($status instanceof ConversionStatus) {
-            return $status->getValue();
-        }
-
         if ($status instanceof BackedEnum) {
             return (string) $status->value;
         }

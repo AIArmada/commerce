@@ -6,13 +6,83 @@ namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSummary;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutExportRow;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use LogicException;
 
 final readonly class ReadPayoutConversionIntegrity implements PayoutConversionIntegrity
 {
+    public function reportTotals(array $payoutOwners, int $connectionIdentity): array
+    {
+        $this->assertConnection($connectionIdentity);
+        $result = [];
+        $ownerEnabled = (bool) config('affiliates.owner.enabled', false);
+
+        foreach (array_chunk(array_keys($payoutOwners), 500) as $ids) {
+            $rows = AffiliateConversion::query()->forOwner(OwnerContext::CURRENT, true)
+                ->whereIn('affiliate_payout_id', $ids)
+                ->select(['affiliate_payout_id', 'owner_type', 'owner_id', 'commission_currency'])
+                ->selectRaw('SUM(commission_minor) AS total_minor, COUNT(*) AS conversion_count')
+                ->groupBy('affiliate_payout_id', 'owner_type', 'owner_id', 'commission_currency')
+                ->toBase()->get();
+
+            foreach ($rows as $row) {
+                $id = (string) $row->affiliate_payout_id;
+                $owner = $payoutOwners[$id];
+
+                if ($ownerEnabled && ($row->owner_type !== $owner['owner_type'] || $row->owner_id !== $owner['owner_id'])) {
+                    continue;
+                }
+
+                $result[$id] ??= ['total_minor' => 0, 'currencies' => [], 'count' => 0];
+                $result[$id]['total_minor'] += (int) $row->total_minor;
+                $result[$id]['count'] += (int) $row->conversion_count;
+                $currency = mb_strtoupper((string) $row->commission_currency);
+
+                if (! in_array($currency, $result[$id]['currencies'], true)) {
+                    $result[$id]['currencies'][] = $currency;
+                }
+            }
+        }
+
+        foreach ($result as &$totals) {
+            sort($totals['currencies']);
+        }
+
+        return $result;
+    }
+
+    public function exportRows(string $payoutId, ?string $ownerType, ?string $ownerId, int $connectionIdentity): iterable
+    {
+        $this->assertConnection($connectionIdentity);
+
+        if (! Str::isUuid($payoutId)) {
+            return;
+        }
+
+        $query = AffiliateConversion::query()->forOwner(OwnerContext::CURRENT, true)
+            ->where('affiliate_payout_id', $payoutId);
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
+        }
+
+        foreach ($query->select(['id', 'affiliate_code', 'external_reference', 'commission_minor', 'commission_currency', 'status', 'created_at'])->lazyById(500) as $conversion) {
+            yield new PayoutExportRow(
+                (string) $conversion->affiliate_code,
+                $conversion->external_reference,
+                (int) $conversion->commission_minor,
+                (string) $conversion->commission_currency,
+                $conversion->status->getValue(),
+                $conversion->created_at?->format('Y-m-d H:i:s'),
+            );
+        }
+    }
+
     public function hasConversions(string $payoutId, int $connectionIdentity): bool
     {
         return $this->linked($payoutId, $connectionIdentity)->exists();
@@ -84,10 +154,15 @@ final readonly class ReadPayoutConversionIntegrity implements PayoutConversionIn
     /** @return Builder<AffiliateConversion> */
     private function linked(string $payoutId, int $connectionIdentity): Builder
     {
+        $this->assertConnection($connectionIdentity);
+
+        return AffiliateConversion::query()->withoutOwnerScope()->where('affiliate_payout_id', $payoutId);
+    }
+
+    private function assertConnection(int $connectionIdentity): void
+    {
         if (spl_object_id((new AffiliateConversion)->getConnection()) !== $connectionIdentity) {
             throw new LogicException('Payout conversion integrity requires a shared database connection.');
         }
-
-        return AffiliateConversion::query()->withoutOwnerScope()->where('affiliate_payout_id', $payoutId);
     }
 }
