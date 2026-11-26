@@ -14,6 +14,6 @@ final class SignalEventConditionMatcher
      */
     public function matches(SignalEvent $event, ?array $conditions, string $matchType = 'all'): bool
     {
-        return SignalCondition::matches($event, $conditions, $matchType);
+        return SignalCondition::matches($event->attributesToArray(), $conditions, $matchType);
     }
 }

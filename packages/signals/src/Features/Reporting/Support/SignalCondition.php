@@ -6,7 +6,6 @@ namespace AIArmada\Signals\Features\Reporting\Support;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Signals\Models\SignalEvent;
 use Illuminate\Database\Eloquent\Builder;
 use RuntimeException;
 
@@ -85,9 +84,10 @@ final class SignalCondition
     }
 
     /**
+     * @param  array<string, mixed>  $event
      * @param  array<int, array<string, mixed>>|null  $conditions
      */
-    public static function matches(SignalEvent $event, ?array $conditions, string $matchType = 'all'): bool
+    public static function matches(array $event, ?array $conditions, string $matchType = 'all'): bool
     {
         if ($conditions === null || $conditions === []) {
             return true;
@@ -154,9 +154,10 @@ final class SignalCondition
     }
 
     /**
+     * @param  array<string, mixed>  $event
      * @param  array<string, mixed>  $condition
      */
-    private static function matchesSingle(SignalEvent $event, array $condition): bool
+    private static function matchesSingle(array $event, array $condition): bool
     {
         [$field, $operator, $value] = self::normalizedCondition($condition);
 
@@ -183,6 +184,14 @@ final class SignalCondition
         if (self::operatorRequiresNumericComparison($operator)) {
             if (! is_numeric($value) || ! is_numeric($actualValue)) {
                 return false;
+            }
+
+            if (self::isPropertyField($field)) {
+                $segments = self::propertySegments($field);
+
+                if ($segments === null || data_get($event['property_types'] ?? null, implode('.', $segments)) !== 'number') {
+                    return false;
+                }
             }
 
             $actualNumber = (float) $actualValue;
@@ -222,19 +231,20 @@ final class SignalCondition
         ];
     }
 
-    private static function resolveFieldValue(SignalEvent $event, string $field): string | int | float | null
+    /** @param array<string, mixed> $event */
+    private static function resolveFieldValue(array $event, string $field): string | int | float | null
     {
         $propertySegments = self::propertySegments($field);
 
         if ($propertySegments !== null) {
-            $value = data_get($event->properties, implode('.', $propertySegments));
+            $value = data_get($event['properties'] ?? null, implode('.', $propertySegments));
 
-            return is_scalar($value) ? $value : null;
+            return is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) ? $value : null);
         }
 
         $value = data_get($event, $field);
 
-        return is_scalar($value) ? $value : null;
+        return is_bool($value) ? ($value ? 'true' : 'false') : (is_scalar($value) ? $value : null);
     }
 
     /**
@@ -351,7 +361,7 @@ final class SignalCondition
 
         return match ($driver) {
             'pgsql' => "{$column} #>> '{$postgresPath}'",
-            'sqlite' => "CAST(json_extract({$column}, '{$jsonPath}') AS TEXT)",
+            'sqlite' => "CASE json_type({$column}, '{$jsonPath}') WHEN 'true' THEN 'true' WHEN 'false' THEN 'false' ELSE CAST(json_extract({$column}, '{$jsonPath}') AS TEXT) END",
             default => throw new RuntimeException("Unsupported database driver [{$driver}] for Signals property queries."),
         };
     }

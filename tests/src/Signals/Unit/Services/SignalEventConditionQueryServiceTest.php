@@ -132,5 +132,35 @@ it('fails closed for numeric property comparisons when stored property types are
         ])
         ->count();
 
-    expect($count)->toBe(0);
+    expect($count)->toBe(0)
+        ->and(app(SignalEventConditionMatcher::class)->matches(SignalEvent::query()->firstOrFail(), [
+            ['field' => 'properties.checkout.attempt_count', 'operator' => 'greater_than', 'value' => '1'],
+        ]))->toBeFalse();
+});
+
+it('matches boolean properties consistently in SQL and in-memory evaluation', function (): void {
+    $owner = User::factory()->create();
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Boolean condition property',
+        'slug' => 'boolean-condition-property',
+    ]);
+
+    $event = SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::now(),
+        'event_name' => 'checkout.started',
+        'event_category' => 'interaction',
+        'properties' => ['enabled' => true, 'disabled' => false],
+        'property_types' => ['enabled' => 'boolean', 'disabled' => 'boolean'],
+    ]);
+
+    $conditions = [
+        ['field' => 'properties.enabled', 'operator' => 'equals', 'value' => 'true'],
+        ['field' => 'properties.disabled', 'operator' => 'equals', 'value' => 'false'],
+    ];
+
+    expect(app(SignalEventConditionQueryService::class)->apply(SignalEvent::query(), $conditions)->count())->toBe(1)
+        ->and(app(SignalEventConditionMatcher::class)->matches($event, $conditions))->toBeTrue();
 });
