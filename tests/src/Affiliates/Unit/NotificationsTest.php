@@ -47,13 +47,16 @@ describe('engine notifications', function (): void {
 
         expect(Communication::query()->where('purpose', 'affiliates.program_joined')->exists())->toBeFalse();
 
-        OwnerContext::withOwner(null, function (): void {
+        OwnerContext::withOwner(null, function () use ($affiliate, $program): void {
             $communication = Communication::query()->where('purpose', 'affiliates.program_joined')->firstOrFail();
 
             expect($communication->owner_type)->toBeNull()
                 ->and($communication->owner_id)->toBeNull()
                 ->and($communication->idempotency_key)->toStartWith('program-joined:')
-                ->and($communication->recipients()->count())->toBe(1);
+                ->and($communication->subject_id)->toBe($program->id)
+                ->and($communication->subject_type)->toBe($program->getMorphClass())
+                ->and($communication->recipients()->sole()->recipient_id)->toBe($affiliate->id)
+                ->and($communication->recipients()->sole()->recipient_type)->toBe($affiliate->getMorphClass());
         });
     });
 

@@ -103,7 +103,7 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$conversionsTable}.commission_currency");
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal();
+            $includeGlobal = $includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal();
             $owner = OwnerContext::resolve();
             OwnerContext::assertResolvedOrExplicitGlobal(
                 $owner,

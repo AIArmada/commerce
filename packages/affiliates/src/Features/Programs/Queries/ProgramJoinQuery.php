@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
@@ -32,6 +33,9 @@ final class ProgramJoinQuery implements ProgramJoinReader
             $membership->joinReference($affiliate->reference, $program),
             $affiliate->code,
             $membership->approved_at?->toIso8601String(),
+            $program->name,
+            $program->getMorphClass(),
+            $membership->status === MembershipStatus::Approved,
         );
     }
 

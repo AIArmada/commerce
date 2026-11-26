@@ -13,6 +13,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -165,6 +166,13 @@ it('honors the caller include global flag instead of overriding it from config',
         ->and($scoped[0]['affiliate_id'])->toBe($scopedAffiliate->id)
         ->and($withGlobal)->toHaveCount(2)
         ->and($withGlobal[0]['affiliate_id'])->toBe($globalAffiliate->id);
+
+    $suppressed = OwnerContext::withOwner($owner, fn (): mixed => OwnerScopeOverride::withoutIncludeGlobal(
+        fn (): array => $engine->calculatePerformanceBonuses(CommissionRuleType::TopPerformer->value, $from, $to, true),
+    ));
+
+    expect($suppressed)->toHaveCount(1)
+        ->and($suppressed[0]['affiliate_id'])->toBe($scopedAffiliate->id);
 });
 
 it('fails closed without an owner context when owner mode is enabled', function (): void {

@@ -10,5 +10,8 @@ final readonly class ProgramJoinRecord
         public ProgramJoinReference $reference,
         public string $affiliateCode,
         public ?string $approvedAt,
+        public string $programName,
+        public string $programMorphType,
+        public bool $approved,
     ) {}
 }

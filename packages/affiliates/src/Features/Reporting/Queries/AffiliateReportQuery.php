@@ -214,7 +214,6 @@ final readonly class AffiliateReportQuery implements ReportingApi
      */
     public function affiliateSummary(string $affiliateId): array
     {
-        /** @var Affiliate|null $affiliate */
         $affiliate = app(AffiliateDirectory::class)->findById($affiliateId);
 
         if (! $affiliate) {

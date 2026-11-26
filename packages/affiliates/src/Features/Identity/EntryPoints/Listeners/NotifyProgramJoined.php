@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners;
+namespace AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners;
 
-use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Features\Programs\Notifications\ProgramJoinedNotification;
-use AIArmada\Affiliates\Features\Programs\Queries\ProgramJoinQuery;
+use AIArmada\Affiliates\Features\Identity\Notifications\ProgramJoinedNotification;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReader;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
+use InvalidArgumentException;
 
 /**
  * Notifies the affiliate on program approval.
@@ -21,7 +22,7 @@ use AIArmada\Communications\Data\CommunicationContextData;
  */
 final class NotifyProgramJoined
 {
-    public function __construct(private readonly ProgramJoinQuery $joins) {}
+    public function __construct(private readonly ProgramJoinReader $joins) {}
 
     public function handle(AffiliateProgramJoined $event): void
     {
@@ -31,23 +32,33 @@ final class NotifyProgramJoined
             return;
         }
 
-        $resolved = $this->joins->resolve($event->reference);
+        $record = $this->joins->find($event->reference);
 
-        if ($resolved === null) {
+        if ($record === null) {
             return;
         }
 
-        [$affiliate, $program, $membership] = $resolved;
-        $owner = OwnerContext::fromTypeAndIdOrFail($event->reference->affiliate->ownerType, $event->reference->affiliate->ownerId);
+        $reference = $record->reference->affiliate;
+        $affiliate = Affiliate::query()->withoutOwnerScope()->find($reference->id);
+
+        if ($affiliate === null) {
+            return;
+        }
+
+        if (! $reference->matches($affiliate->lifecycleReference())) {
+            throw new InvalidArgumentException('Trusted affiliate owner or identity does not match the canonical source.');
+        }
+
+        $owner = OwnerContext::fromTypeAndIdOrFail($reference->ownerType, $reference->ownerId);
 
         OwnerContext::withOwner($owner, static fn () => $dispatcher->handle(
             $affiliate,
-            new ProgramJoinedNotification($program->name, $membership->status === MembershipStatus::Approved),
+            new ProgramJoinedNotification($record->programName, $record->approved),
             new CommunicationContextData(
                 purpose: 'affiliates.program_joined',
-                subjectType: $program->getMorphClass(),
-                subjectId: (string) $program->getKey(),
-                idempotencyKey: 'program-joined:' . $membership->getKey(),
+                subjectType: $record->programMorphType,
+                subjectId: $record->reference->programId,
+                idempotencyKey: 'program-joined:' . $record->reference->membershipId,
             ),
         ));
     }
