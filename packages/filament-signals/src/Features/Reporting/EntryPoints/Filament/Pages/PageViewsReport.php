@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Services\PageViewReportService;
-use AIArmada\Signals\Services\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Queries\PageViewReportService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;

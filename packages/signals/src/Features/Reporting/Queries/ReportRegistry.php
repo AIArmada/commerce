@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Reports;
+namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Contracts\ReportInterface;
 use InvalidArgumentException;

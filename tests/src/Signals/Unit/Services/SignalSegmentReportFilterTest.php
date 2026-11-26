@@ -11,7 +11,7 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

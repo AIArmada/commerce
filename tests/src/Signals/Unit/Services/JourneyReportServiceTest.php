@@ -11,7 +11,7 @@ use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\JourneyReportService;
+use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets;
 
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
 use Filament\Widgets\ChartWidget;
 
 final class EventTrendWidget extends ChartWidget

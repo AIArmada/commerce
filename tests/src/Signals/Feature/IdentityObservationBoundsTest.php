@@ -7,8 +7,8 @@ use AIArmada\Signals\Actions\IdentifySignalIdentity;
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\RetentionReportService;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

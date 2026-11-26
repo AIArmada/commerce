@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
-use AIArmada\Signals\Services\JourneyReportService;
-use AIArmada\Signals\Services\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

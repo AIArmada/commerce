@@ -132,7 +132,7 @@ Signals uses a `ReportRegistry` to manage pluggable report types. Reports are re
 The registry is consumed by `SignalsDashboardService` and Filament admin surfaces. Each report implements `summary(?string $trackedPropertyId, ?string $from, ?string $until): array`, making the same data available outside the admin UI:
 
 ```php
-use AIArmada\Signals\Reports\ReportRegistry;
+use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
 
 $registry = app(ReportRegistry::class);
 

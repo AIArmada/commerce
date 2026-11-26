@@ -11,7 +11,7 @@ use AIArmada\Signals\Models\SignalGoal;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\GoalsReportService;
+use AIArmada\Signals\Features\Reporting\Queries\GoalsReportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalEventConditionMatcher;
-use AIArmada\Signals\Services\SignalEventConditionQueryService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalEventConditionMatcher;
+use AIArmada\Signals\Features\Reporting\Queries\SignalEventConditionQueryService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

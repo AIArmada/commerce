@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Services;
+namespace AIArmada\Signals\Features\Reporting\Queries;
 
+use AIArmada\Signals\Services\SignalCondition;
 use Illuminate\Database\Eloquent\Builder;
 
 final class SignalEventConditionQueryService

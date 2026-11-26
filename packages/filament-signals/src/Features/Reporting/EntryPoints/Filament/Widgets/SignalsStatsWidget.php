@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widge
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

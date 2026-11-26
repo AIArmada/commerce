@@ -15,7 +15,7 @@ use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
