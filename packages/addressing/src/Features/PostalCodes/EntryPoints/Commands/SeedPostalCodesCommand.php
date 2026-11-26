@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Commands;
+namespace AIArmada\Addressing\Features\PostalCodes\EntryPoints\Commands;
 
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Support\ConsoleSeedProgress;
 use Illuminate\Console\Command;
 
@@ -15,7 +15,7 @@ class SeedPostalCodesCommand extends Command
 
     protected $description = 'Seed bundled postcode datasets and their area links';
 
-    public function handle(SeedPostalCodesAction $action): int
+    public function handle(PostalCodeSeeder $action): int
     {
         $result = $action->execute($this->argument('country'), ConsoleSeedProgress::for($this->output));
 

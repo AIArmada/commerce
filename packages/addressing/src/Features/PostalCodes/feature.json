@@ -5,12 +5,14 @@
     "table:postal_codes": [
       "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\SavePostalCodeAction",
       "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodeAdminDataAction",
-      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodesAction"
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodesAction",
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\SeedPostalCodesAction"
     ],
     "table:address_area_postal_codes": [
       "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\SavePostalCodeAction",
       "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodeAdminDataAction",
-      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodesAction"
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodesAction",
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\SeedPostalCodesAction"
     ]
   },
   "extensions": {}

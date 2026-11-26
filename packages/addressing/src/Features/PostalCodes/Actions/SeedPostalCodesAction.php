@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PostalCodes\Actions;
 
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -16,14 +17,14 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
-final class SeedPostalCodesAction
+final readonly class SeedPostalCodesAction implements PostalCodeSeeder
 {
     private const int CHUNK_SIZE = 500;
 
     private const int FAILURE_SAMPLE = 5;
 
     public function __construct(
-        private readonly Container $container,
+        private Container $container,
     ) {}
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Actions;
 
 use AIArmada\Addressing\Support\CitySeedRowReader;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 
 class SeedAddressingAction
 {
@@ -14,7 +15,7 @@ class SeedAddressingAction
         private SeedAddressStatesAction $seedStates,
         private SeedAddressCitiesAction $seedCities,
         private SeedCountryGeographiesAction $seedGeographies,
-        private SeedPostalCodesAction $seedPostalCodes,
+        private PostalCodeSeeder $seedPostalCodes,
     ) {}
 
     /**

@@ -8,7 +8,7 @@ use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
@@ -151,11 +151,11 @@ it('emits terminal codes and links on a no-op postcode reseed', function (): voi
 
     $this->seedCountry('BL');
     app(SeedCountryGeographiesAction::class)->execute('BL');
-    app(SeedPostalCodesAction::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
 
     $events = [];
 
-    app(SeedPostalCodesAction::class)->execute(
+    app(PostalCodeSeeder::class)->execute(
         'BL',
         function (string $phase, int $done, int $total, ?string $label = null) use (&$events): void {
             $events[] = [$phase, $done, $total, $label];

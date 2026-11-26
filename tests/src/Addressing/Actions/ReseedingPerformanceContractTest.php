@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -107,7 +107,7 @@ it('keeps real Saint Barthélemy geography and postcode rows unchanged on a no-o
     $country = $this->seedCountry('BL');
 
     app(SeedCountryGeographiesAction::class)->execute('BL');
-    app(SeedPostalCodesAction::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
 
     $area = AddressArea::query()->where('country_id', $country->getKey())->firstOrFail();
     $postalCode = PostalCode::query()->where('country_code', 'BL')->firstOrFail();
@@ -176,7 +176,7 @@ it('keeps real Saint Barthélemy geography and postcode rows unchanged on a no-o
     $this->travel(1)->minutes();
     $captureQueries = true;
     $geographyResult = app(SeedCountryGeographiesAction::class)->execute('BL');
-    $postalCodeResult = app(SeedPostalCodesAction::class)->execute('BL');
+    $postalCodeResult = app(PostalCodeSeeder::class)->execute('BL');
     $captureQueries = false;
 
     expect($snapshot())->toBe($before)

@@ -15,7 +15,6 @@ use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Actions\SeedAddressingAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffGoogleAddressReferenceCommand;
@@ -24,7 +23,7 @@ use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ExportResol
 use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
 use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ReportResolutionGapsCommand;
 use AIArmada\Addressing\Commands\SeedCountryGeographiesCommand;
-use AIArmada\Addressing\Commands\SeedPostalCodesCommand;
+use AIArmada\Addressing\Features\PostalCodes\EntryPoints\Commands\SeedPostalCodesCommand;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Contracts\CountryAddressFormatter;
@@ -91,7 +90,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(SeedAddressStatesAction::class);
         $this->app->singleton(SeedAddressCitiesAction::class);
         $this->app->singleton(SeedCountryGeographiesAction::class);
-        $this->app->singleton(SeedPostalCodesAction::class);
         $this->app->singleton(SearchAddressAreasAction::class);
         $this->app->singleton(CountryAddressProfileResolver::class);
         $this->app->singleton(CountryAddressFormatterResolver::class);

@@ -482,10 +482,10 @@ postcode system.
 ### Resolve Singapore postcodes
 
 ```php
-use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
+use AIArmada\Addressing\Contracts\SingaporePostalCodeResolver;
 
 // Requires ONEMAP_EMAIL and ONEMAP_PASSWORD; seed SG geographies first.
-$result = app(ResolveSingaporePostalCodesAction::class)->execute(['569933', '999999']);
+$result = app(SingaporePostalCodeResolver::class)->execute(['569933', '999999']);
 
 $result->resolved; // ['569933']
 $result->invalid;  // ['999999']
@@ -684,9 +684,9 @@ php artisan address:export-gap-aliases --country=ID --prune
 ## Address area assignments
 
 ~~~php
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 
-app(SyncAddressAreaAssignmentsAction::class)->execute(
+app(AddressAssignmentWriter::class)->execute(
     address: $address,
     assignments: [
         'postal_locality' => $bangsar->id,
@@ -774,16 +774,16 @@ Distinct-type lookups, including empty results, are memoised in request attribut
 
 ## Save and import postcode admin data
 
-Use `SavePostalCodeAction` for an operator-managed postcode row. Country and
+Use `PostalCodeWriter` for an operator-managed postcode row. Country and
 postcode code identify the row; the action validates each manual coverage area
 against the postcode country and changes only manual coverage without source
 identities. Metadata must be an array or `null`; omitting it during an update
 preserves the stored value, while explicit `null` clears it.
 
 ```php
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
 
-$postcode = app(SavePostalCodeAction::class)->execute([
+$postcode = app(PostalCodeWriter::class)->execute([
     'country_code' => 'MY',
     'code' => '47500',
     'is_active' => true,
@@ -798,7 +798,7 @@ $postcode = app(SavePostalCodeAction::class)->execute([
 ]);
 ```
 
-For grouped import rows, `ImportPostalCodeAdminDataAction` accepts one postcode
+For grouped import rows, `PostalCodeAdminImporter` accepts one postcode
 and an explicit list of coverage edges. Every area is resolved by source and
 source ID within the selected country before any mutation. Each edge preserves
 its own source, source ID, relationship type, and primary flag. Only coverage
@@ -934,18 +934,18 @@ the address and parent under the current owner, rechecks the pivot identity,
 and updates the typed relationship and primary flag transactionally.
 
 ```php
-use AIArmada\Addressing\Actions\UpdateAddressAttachmentAction;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Models\Addressable;
 
 $attachment = Addressable::query()->findOrFail($attachmentId);
 
-$attachment = app(UpdateAddressAttachmentAction::class)->execute($attachment, [
+$attachment = app(AddressAttachmentWriter::class)->execute($attachment, [
     'type' => 'billing',
     'label' => 'Accounts office',
     'is_primary' => true,
 ]);
 
-app(UpdateAddressAttachmentAction::class)->detach($attachment);
+app(AddressAttachmentWriter::class)->detach($attachment);
 ```
 
 The action refuses a duplicate address/type attachment and changes primary
@@ -1019,10 +1019,10 @@ Pass a relation name when the addressable relation is not named `addresses`.
 ## Address Snapshots
 
 ```php
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 
-$snapshot = app(CreateAddressSnapshotAction::class)->execute(
+$snapshot = app(AddressSnapshotWriter::class)->execute(
     snapshotable: $order,
     address: $shippingAddress,
     reason: 'order_placed',
