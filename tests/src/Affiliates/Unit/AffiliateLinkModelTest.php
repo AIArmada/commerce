@@ -64,8 +64,7 @@ describe('AffiliateLink Model', function (): void {
             'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
         ]);
 
-        expect($link->program())->toBeInstanceOf(BelongsTo::class)
-            ->and($link->program->id)->toBe($program->id);
+        expect($link->program_id)->toBe($program->id);
     });
 
     it('rejects malformed and missing program references even without tenancy', function (): void {

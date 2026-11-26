@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
@@ -74,7 +76,8 @@ final class AffiliateLinkResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateLink> $query */
-        $query = parent::getEloquentQuery()->with(['affiliate', 'program']);
+        $query = parent::getEloquentQuery()->with('affiliate');
+        $query->addSelect(['program_name' => AffiliateProgram::query()->forOwner()->select('name')->whereColumn('id', $query->getModel()->qualifyColumn('program_id'))]);
 
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;
@@ -98,7 +101,8 @@ final class AffiliateLinkResource extends Resource
                         ->required(),
 
                     Forms\Components\Select::make('program_id')
-                        ->relationship('program', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->getSearchResultsUsing(fn (string $search): array => app(ProgramReferenceReader::class)->options($search))
+                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : app(ProgramReferenceReader::class)->label($id))
                         ->searchable(),
 
                     Forms\Components\TextInput::make('destination_url')
@@ -155,7 +159,7 @@ final class AffiliateLinkResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('program.name')
+                Tables\Columns\TextColumn::make('program_name')
                     ->label('Program')
                     ->toggleable(),
 

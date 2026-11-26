@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Commissions\Models;
 
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -27,7 +25,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $period
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read AffiliateProgram|null $program
  */
 class AffiliateVolumeTier extends Model implements Auditable
 {
@@ -55,14 +52,6 @@ class AffiliateVolumeTier extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.volume_tiers', 'affiliate_volume_tiers');
-    }
-
-    /**
-     * @return BelongsTo<AffiliateProgram, $this>
-     */
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateProgram::class, 'program_id');
     }
 
     /**

@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Features\Commissions\Actions;
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,9 +64,7 @@ final class AdministerVolumeTier implements VolumeTierAdministration
         $query = AffiliateVolumeTier::query();
 
         if ((bool) config('affiliates.owner.enabled', false) && OwnerContext::isExplicitGlobal()) {
-            return $query->withoutGlobalScope('program_owner')->where(static function (Builder $query): void {
-                $query->whereNull('program_id')->orWhereIn('program_id', AffiliateProgram::query()->select('id'));
-            });
+            return $query->forGlobalProgramConfiguration();
         }
 
         return $query;

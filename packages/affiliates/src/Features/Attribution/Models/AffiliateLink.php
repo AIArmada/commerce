@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -49,7 +48,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
- * @property-read AffiliateProgram|null $program
  */
 class AffiliateLink extends Model implements Auditable
 {
@@ -123,14 +121,6 @@ class AffiliateLink extends Model implements Auditable
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
-     * @return BelongsTo<AffiliateProgram, $this>
-     */
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateProgram::class, 'program_id');
     }
 
     /**

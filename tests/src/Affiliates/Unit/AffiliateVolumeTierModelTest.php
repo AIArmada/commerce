@@ -6,7 +6,6 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateVolumeTier Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -43,8 +42,7 @@ describe('AffiliateVolumeTier Model', function (): void {
             'period' => 'monthly',
         ]);
 
-        expect($tier->program())->toBeInstanceOf(BelongsTo::class)
-            ->and($tier->program->id)->toBe($program->id);
+        expect($tier->program_id)->toBe($program->id);
     });
 
     it('checks if volume is within tier range', function (): void {

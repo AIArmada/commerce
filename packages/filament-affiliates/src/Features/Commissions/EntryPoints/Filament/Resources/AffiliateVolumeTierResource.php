@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\
 
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -80,12 +81,10 @@ final class AffiliateVolumeTierResource extends Resource
         $query = parent::getEloquentQuery();
 
         if ((bool) config('affiliates.owner.enabled', false) && OwnerContext::isExplicitGlobal()) {
-            $query->withoutGlobalScope('program_owner')->where(static function (Builder $query): void {
-                $query->whereNull('program_id')->orWhereIn('program_id', AffiliateProgram::query()->select('id'));
-            });
+            $query->forGlobalProgramConfiguration();
         }
 
-        return $query;
+        return $query->addSelect(['program_name' => AffiliateProgram::query()->select('name')->whereColumn('id', $query->getModel()->qualifyColumn('program_id'))]);
     }
 
     public static function form(Schema $schema): Schema
@@ -99,7 +98,8 @@ final class AffiliateVolumeTierResource extends Resource
 
                     Forms\Components\Select::make('program_id')
                         ->label('Program')
-                        ->options(fn (): array => AffiliateProgram::query()->pluck('name', 'id')->all())
+                        ->getSearchResultsUsing(fn (string $search): array => app(ProgramReferenceReader::class)->options($search))
+                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : app(ProgramReferenceReader::class)->label($id))
                         ->searchable()
                         ->nullable()
                         ->helperText('Leave empty for a global tier that applies to every program.'),
@@ -160,7 +160,7 @@ final class AffiliateVolumeTierResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('program.name')
+                Tables\Columns\TextColumn::make('program_name')
                     ->label('Program')
                     ->placeholder('Global')
                     ->sortable(),
@@ -209,7 +209,7 @@ final class AffiliateVolumeTierResource extends Resource
             Section::make('Volume Tier')
                 ->schema([
                     TextEntry::make('name'),
-                    TextEntry::make('program.name')->label('Program')->placeholder('Global'),
+                    TextEntry::make('program_name')->label('Program')->placeholder('Global'),
                     TextEntry::make('min_volume_minor')->label('Min Volume (minor units)')->numeric(),
                     TextEntry::make('max_volume_minor')->label('Max Volume (minor units)')->numeric(),
                     TextEntry::make('currency')->badge(),

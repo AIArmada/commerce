@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // AffiliateCommissionRule Tests
 test('AffiliateCommissionRule can be created with required fields', function (): void {
@@ -36,10 +35,10 @@ test('AffiliateCommissionRule can be created with required fields', function ():
     expect($rule->priority)->toBe(100);
 });
 
-test('AffiliateCommissionRule has program relationship', function (): void {
+test('AffiliateCommissionRule stores a nullable program identity', function (): void {
     $rule = new AffiliateCommissionRule;
 
-    expect($rule->program())->toBeInstanceOf(BelongsTo::class);
+    expect($rule->program_id)->toBeNull();
 });
 
 test('AffiliateCommissionRule isActive returns true when all conditions met', function (): void {

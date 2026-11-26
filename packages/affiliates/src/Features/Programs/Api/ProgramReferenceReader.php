@@ -10,6 +10,10 @@ interface ProgramReferenceReader
 
     public function assertReadable(string $id): void;
 
+    public function assertSharedConnection(int $connectionIdentity): void;
+
+    public function assertWritable(string $id, int $connectionIdentity): void;
+
     public function lockForAdministration(string $id, int $connectionIdentity): void;
 
     /** @return array<string, string> */

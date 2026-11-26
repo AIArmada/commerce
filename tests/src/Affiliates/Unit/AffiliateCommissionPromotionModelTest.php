@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateCommissionPromotion Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -47,8 +46,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'current_uses' => 0,
         ]);
 
-        expect($promo->program())->toBeInstanceOf(BelongsTo::class)
-            ->and($promo->program->id)->toBe($program->id);
+        expect($promo->program_id)->toBe($program->id);
     });
 
     it('is active when within date range', function (): void {

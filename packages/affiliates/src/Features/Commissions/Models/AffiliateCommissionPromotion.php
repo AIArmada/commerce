@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Commissions\Models;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -13,7 +12,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -34,7 +32,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<string>|null $affiliate_ids
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read AffiliateProgram|null $program
  */
 class AffiliateCommissionPromotion extends Model implements Auditable
 {
@@ -70,14 +67,6 @@ class AffiliateCommissionPromotion extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.commission_promotions', 'affiliate_commission_promotions');
-    }
-
-    /**
-     * @return BelongsTo<AffiliateProgram, $this>
-     */
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateProgram::class, 'program_id');
     }
 
     public function isActive(): bool

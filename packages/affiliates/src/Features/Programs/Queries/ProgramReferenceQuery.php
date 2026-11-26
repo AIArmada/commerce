@@ -26,6 +26,30 @@ final readonly class ProgramReferenceQuery implements ProgramReferenceReader
         AffiliateProgram::query()->findOrFail($id);
     }
 
+    public function assertSharedConnection(int $connectionIdentity): void
+    {
+        if (spl_object_id((new AffiliateProgram)->getConnection()) !== $connectionIdentity) {
+            throw new LogicException('Program references require a shared database connection.');
+        }
+    }
+
+    public function assertWritable(string $id, int $connectionIdentity): void
+    {
+        $this->assertSharedConnection($connectionIdentity);
+
+        if (! Str::isUuid($id)) {
+            throw new AuthorizationException('Invalid program reference.');
+        }
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $id);
+
+            return;
+        }
+
+        $this->assertReadable($id);
+    }
+
     public function lockForAdministration(string $id, int $connectionIdentity): void
     {
         $connection = (new AffiliateProgram)->getConnection();
