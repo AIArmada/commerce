@@ -17,6 +17,12 @@ use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
 use AIArmada\Signals\Features\Ingestion\Actions\AdministerTrackedProperty;
 use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use AIArmada\Signals\Features\Ingestion\Actions\AdministerInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Api\EventMetricQuery;
+use AIArmada\Signals\Features\Ingestion\Queries\CalculateEventMetric;
+use AIArmada\Signals\Features\Ingestion\Api\EventPropertyLookup;
+use AIArmada\Signals\Features\Ingestion\Queries\FindEventProperty;
+use AIArmada\Signals\Features\Ingestion\Api\BrowserInteractionRules;
+use AIArmada\Signals\Features\Ingestion\Queries\ActiveBrowserInteractionRules;
 use AIArmada\Signals\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -24,6 +30,9 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(BrowserInteractionRules::class, ActiveBrowserInteractionRules::class);
+        $app->bind(EventPropertyLookup::class, FindEventProperty::class);
+        $app->bind(EventMetricQuery::class, CalculateEventMetric::class);
         $app->bind(InteractionRuleAdministration::class, AdministerInteractionRule::class);
         $app->bind(PropertyAdministration::class, AdministerTrackedProperty::class);
         $app->singleton(CommerceSignalsRecorder::class);

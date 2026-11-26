@@ -7,7 +7,7 @@ namespace AIArmada\Signals\Features\Alerts\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Api\EventPropertyLookup;
 use AIArmada\Signals\Features\Alerts\Actions\EvaluateAlertRules;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -41,28 +41,14 @@ final class EvaluateSignalAlertsForEvent implements OwnerScopedJob, ShouldQueue
 
     protected function performJob(): void
     {
-        $event = SignalEvent::query()
-            ->find($this->signalEventId);
+        $propertyId = app(EventPropertyLookup::class)->propertyId($this->signalEventId);
 
-        if (! $event instanceof SignalEvent) {
-            if (SignalEvent::query()->withoutOwnerScope()->whereKey($this->signalEventId)->exists()) {
-                throw new RuntimeException(
-                    sprintf(
-                        'Signal event owner context mismatch. [job=%s signal_event_id=%s owner_type=%s owner_id=%s owner_is_global=%s]',
-                        static::class,
-                        $this->signalEventId,
-                        (string) ($this->ownerType ?? 'null'),
-                        (string) ($this->ownerId ?? 'null'),
-                        $this->ownerIsGlobal ? 'true' : 'false',
-                    ),
-                );
-            }
-
+        if ($propertyId === null) {
             return;
         }
 
         try {
-            app(EvaluateAlertRules::class)->handle((string) $event->tracked_property_id);
+            app(EvaluateAlertRules::class)->handle($propertyId);
         } catch (Throwable $exception) {
             throw new RuntimeException(
                 sprintf(
