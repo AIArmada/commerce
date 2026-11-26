@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -132,6 +133,6 @@ it('returns aggregated page views for the current owner only', function (): void
         ->and((int) ($result?->views ?? 0))->toBe(2)
         ->and((int) ($result?->visitors ?? 0))->toBe(2)
         ->and($result?->trackedProperty?->name)->toBe('Owner A Property')
-        ->and(app(PageViewReportService::class)->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Property']);
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
@@ -121,7 +122,7 @@ final class JourneyReport extends ReportPage implements HasTable
     {
         return [
             ...$this->getDateRangeHeaderActions(
-                app(JourneyReportService::class)->getTrackedPropertyOptions(),
+                app(TelemetryRead::class)->propertyOptions(),
                 app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedJourney')

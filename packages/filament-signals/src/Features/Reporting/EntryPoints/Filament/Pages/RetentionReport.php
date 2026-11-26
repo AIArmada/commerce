@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
@@ -101,7 +102,7 @@ final class RetentionReport extends ReportPage
     {
         return [
             ...$this->getDateRangeHeaderActions(
-                app(RetentionReportService::class)->getTrackedPropertyOptions(),
+                app(TelemetryRead::class)->propertyOptions(),
                 app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedRetention')

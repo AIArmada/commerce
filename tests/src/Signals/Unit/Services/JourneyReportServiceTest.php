@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -116,7 +117,7 @@ it('builds an owner-safe journey report', function (): void {
         ->and((int) ($row?->sessions ?? 0))->toBe(2)
         ->and((int) ($row?->bounced_sessions ?? 0))->toBe(1)
         ->and(round((float) ($row?->avg_duration_seconds ?? 0), 2))->toBe(90.0)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Journey Property']);
 });
 

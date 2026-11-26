@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -153,7 +154,7 @@ it('builds an owner-safe conversion funnel summary', function (): void {
         ->and($summary['paid_label'])->toBe('Completed Outcome')
         ->and($stages[2]['label'])->toBe('Completed Outcome')
         ->and($stages[2]['revenue_minor'])->toBe(12900)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Funnel Property']);
 });
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -139,7 +140,7 @@ it('builds an owner-safe content performance report', function (): void {
         ->and($rows[0]['conversions'])->toBe(1)
         ->and($rows[0]['revenue_minor'])->toBe(12000)
         ->and($rows[0]['conversion_rate'])->toBe(50.0)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Content Property']);
 });
 

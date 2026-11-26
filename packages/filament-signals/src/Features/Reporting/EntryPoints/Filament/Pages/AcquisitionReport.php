@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\AcquisitionReportService;
@@ -154,7 +155,7 @@ final class AcquisitionReport extends ReportPage implements HasTable
     {
         return [
             ...$this->getDateRangeHeaderActions(
-                app(AcquisitionReportService::class)->getTrackedPropertyOptions(),
+                app(TelemetryRead::class)->propertyOptions(),
                 app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedReport')

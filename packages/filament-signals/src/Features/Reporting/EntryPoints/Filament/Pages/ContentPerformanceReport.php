@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\ContentPerformanceReportService;
@@ -128,7 +129,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
     {
         return [
             ...$this->getDateRangeHeaderActions(
-                app(ContentPerformanceReportService::class)->getTrackedPropertyOptions(),
+                app(TelemetryRead::class)->propertyOptions(),
                 app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedContentReport')

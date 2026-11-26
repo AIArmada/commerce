@@ -7,7 +7,6 @@ namespace AIArmada\Signals\Features\Reporting\Queries;
 use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 
 final class JourneyReportService
@@ -61,16 +60,6 @@ final class JourneyReportService
             ->groupByRaw($this->groupByExpression($dimension));
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function getTrackedPropertyOptions(): array
-    {
-        return TrackedProperty::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @return array<string, string>

@@ -8,8 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
-use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Carbon\CarbonImmutable;
@@ -19,6 +18,7 @@ final class SignalsDashboardService implements DashboardRead
     public function __construct(
         private readonly ReportRegistry $reportRegistry,
         private readonly AlertSummary $alertSummary,
+        private readonly TelemetryRead $telemetry,
     ) {}
 
     /**
@@ -27,23 +27,15 @@ final class SignalsDashboardService implements DashboardRead
     public function summary(?string $trackedPropertyId = null, ?CarbonImmutable $startAt = null, ?CarbonImmutable $endAt = null): array
     {
         return $this->withResolvedOwnerOrExplicitGlobal(function () use ($trackedPropertyId, $startAt, $endAt): array {
-            $trackedProperty = $trackedPropertyId === null
-                ? null
-                : TrackedProperty::query()->forOwner()->whereKey($trackedPropertyId)->firstOrFail(['id', 'currency']);
+            $propertyCurrency = $trackedPropertyId === null ? null : $this->telemetry->requirePropertyCurrency($trackedPropertyId);
 
             [$startAt, $endAt] = $this->resolvePeriod($startAt, $endAt);
 
-            $trackedProperties = TrackedProperty::query();
-            $identities = SignalIdentity::query();
             $dailyMetrics = SignalDailyMetric::query()->whereBetween('date', [$startAt->toDateString(), $endAt->toDateString()]);
 
-            if ($trackedProperty instanceof TrackedProperty) {
-                $trackedProperties->whereKey($trackedProperty->getKey());
-                $identities->where('tracked_property_id', $trackedProperty->id);
-                $dailyMetrics->where('tracked_property_id', $trackedProperty->id);
+            if ($trackedPropertyId !== null) {
+                $dailyMetrics->where('tracked_property_id', $trackedPropertyId);
             }
-
-            $identities->whereBetween('last_seen_at', [$startAt, $endAt]);
 
             $metricTotals = (clone $dailyMetrics)
                 ->selectRaw('COALESCE(SUM(sessions), 0) as sessions')
@@ -60,16 +52,15 @@ final class SignalsDashboardService implements DashboardRead
                 ->get();
 
             return [
-                'tracked_properties' => $trackedProperties->count(),
-                'identities' => $identities->count(),
+                ...$this->telemetry->counts($trackedPropertyId, $startAt, $endAt),
                 'sessions' => (int) ($metricTotals->sessions ?? 0),
                 'events' => (int) ($metricTotals->events ?? 0),
                 'conversions' => (int) ($metricTotals->conversions ?? 0),
-                ...$this->alertSummary->counts($trackedProperty?->id),
+                ...$this->alertSummary->counts($trackedPropertyId),
                 ...SignalReportRevenue::shape(
-                    $trackedProperty?->id,
+                    $trackedPropertyId,
                     SignalReportRevenue::fromCurrencyRows($revenueRows->all()),
-                    $trackedProperty instanceof TrackedProperty ? SignalCurrency::code($trackedProperty->currency) : null,
+                    $propertyCurrency,
                 ),
             ];
         });
@@ -81,9 +72,7 @@ final class SignalsDashboardService implements DashboardRead
     public function trend(?string $trackedPropertyId = null, ?CarbonImmutable $startAt = null, ?CarbonImmutable $endAt = null): array
     {
         return $this->withResolvedOwnerOrExplicitGlobal(function () use ($trackedPropertyId, $startAt, $endAt): array {
-            $trackedProperty = $trackedPropertyId === null
-                ? null
-                : TrackedProperty::query()->forOwner()->whereKey($trackedPropertyId)->firstOrFail(['id', 'currency']);
+            $propertyCurrency = $trackedPropertyId === null ? null : $this->telemetry->requirePropertyCurrency($trackedPropertyId);
 
             [$startAt, $endAt] = $this->resolvePeriod($startAt, $endAt);
 
@@ -104,9 +93,9 @@ final class SignalsDashboardService implements DashboardRead
                 ->groupByRaw('UPPER(currency)')
                 ->orderBy('date');
 
-            if ($trackedProperty instanceof TrackedProperty) {
-                $countQuery->where('tracked_property_id', $trackedProperty->id);
-                $revenueQuery->where('tracked_property_id', $trackedProperty->id);
+            if ($trackedPropertyId !== null) {
+                $countQuery->where('tracked_property_id', $trackedPropertyId);
+                $revenueQuery->where('tracked_property_id', $trackedPropertyId);
             }
 
             $revenueByPeriod = [];
@@ -129,20 +118,16 @@ final class SignalsDashboardService implements DashboardRead
 
             unset($currencyTotals);
 
-            $propertyCurrency = $trackedProperty instanceof TrackedProperty
-                ? SignalCurrency::code($trackedProperty->currency)
-                : null;
-
             return $countQuery
                 ->get()
-                ->map(static function ($row) use ($revenueByPeriod, $trackedProperty, $propertyCurrency): array {
+                ->map(static function ($row) use ($revenueByPeriod, $trackedPropertyId, $propertyCurrency): array {
                     $period = (string) $row->getAttribute('period');
 
                     return [
                         'date' => $period,
                         'events' => (int) $row->getAttribute('events'),
                         'conversions' => (int) $row->getAttribute('conversions'),
-                        ...SignalReportRevenue::shape($trackedProperty?->id, $revenueByPeriod[$period] ?? [], $propertyCurrency),
+                        ...SignalReportRevenue::shape($trackedPropertyId, $revenueByPeriod[$period] ?? [], $propertyCurrency),
                     ];
                 })
                 ->values()
@@ -161,7 +146,7 @@ final class SignalsDashboardService implements DashboardRead
     {
         return $this->withResolvedOwnerOrExplicitGlobal(function () use ($type, $trackedPropertyId, $from, $until): array {
             if ($trackedPropertyId !== null) {
-                TrackedProperty::query()->forOwner()->whereKey($trackedPropertyId)->firstOrFail(['id']);
+                $this->telemetry->requirePropertyCurrency($trackedPropertyId);
             }
 
             return $this->reportRegistry->get($type)->summary($trackedPropertyId, $from, $until);

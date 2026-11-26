@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -59,14 +58,4 @@ final class PageViewReportService
             ->when($until !== null, fn (Builder $q): Builder => $q->where('occurred_at', '<=', $until));
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function getTrackedPropertyOptions(): array
-    {
-        return TrackedProperty::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 }

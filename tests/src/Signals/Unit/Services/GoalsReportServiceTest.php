@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -146,7 +147,7 @@ it('builds an owner-safe goals report', function (): void {
         ->and($rows[0]['revenue_minor'])->toBe(12000)
         ->and($rows[0]['goal_rate'])->toBe(100.0)
         ->and($rows[0]['tracked_property_name'])->toBe('Owner A Goals Property')
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Goals Property']);
 });
 

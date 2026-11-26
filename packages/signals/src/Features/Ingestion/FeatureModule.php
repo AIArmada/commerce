@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion;
 
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Queries\ReadTelemetry;
 use AIArmada\Signals\Contracts\UserAgentParser;
 use AIArmada\Signals\Drivers\MatomoUserAgentParser;
 use AIArmada\Signals\Features\Ingestion\Actions\CommerceSignalsRecorder;
@@ -30,6 +32,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(TelemetryRead::class, ReadTelemetry::class);
         $app->bind(BrowserInteractionRules::class, ActiveBrowserInteractionRules::class);
         $app->bind(EventPropertyLookup::class, FindEventProperty::class);
         $app->bind(EventMetricQuery::class, CalculateEventMetric::class);

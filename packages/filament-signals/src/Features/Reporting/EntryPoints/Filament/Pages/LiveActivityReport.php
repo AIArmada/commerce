@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\LiveActivityReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
@@ -151,7 +152,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
     protected function getHeaderActions(): array
     {
         return $this->getDateRangeHeaderActions(
-            app(LiveActivityReportService::class)->getTrackedPropertyOptions(),
+            app(TelemetryRead::class)->propertyOptions(),
             app(SegmentOptions::class)->getSegmentOptions(),
         );
     }

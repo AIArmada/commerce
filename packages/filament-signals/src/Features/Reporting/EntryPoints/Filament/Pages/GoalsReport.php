@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Reporting\Queries\GoalsReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
@@ -61,7 +62,7 @@ final class GoalsReport extends ReportPage
     protected function getHeaderActions(): array
     {
         return $this->getDateRangeHeaderActions(
-            app(GoalsReportService::class)->getTrackedPropertyOptions(),
+            app(TelemetryRead::class)->propertyOptions(),
             app(SegmentOptions::class)->getSegmentOptions(),
         );
     }

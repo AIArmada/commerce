@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -91,6 +92,6 @@ it('builds an owner-safe live activity report', function (): void {
         ->and($firstRow)->not()->toBeNull()
         ->and($firstRow?->tracked_property_id)->toBe($propertyA->id)
         ->and($firstRow?->event_name)->toBe('order.paid')
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Live Property']);
 });

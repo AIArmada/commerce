@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\PageViewReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
@@ -81,7 +82,7 @@ final class PageViewsReport extends ReportPage implements HasTable
             ->filters([
                 SelectFilter::make('tracked_property_id')
                     ->label('Property')
-                    ->options(app(PageViewReportService::class)->getTrackedPropertyOptions()),
+                    ->options(app(TelemetryRead::class)->propertyOptions()),
                 SelectFilter::make('signal_segment_id')
                     ->label('Segment')
                     ->options(app(SegmentOptions::class)->getSegmentOptions())

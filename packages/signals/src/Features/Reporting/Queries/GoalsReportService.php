@@ -6,7 +6,6 @@ namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
@@ -90,16 +89,6 @@ final class GoalsReportService
             ->all();
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function getTrackedPropertyOptions(): array
-    {
-        return TrackedProperty::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @return Builder<SignalEvent>

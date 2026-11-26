@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -157,7 +158,7 @@ it('builds an owner-safe acquisition report', function (): void {
         ->and((int) ($row?->visitors ?? 0))->toBe(1)
         ->and((int) ($row?->conversions ?? 0))->toBe(1)
         ->and((int) ($row?->revenue_minor ?? 0))->toBe(15000)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Acquisition Property']);
 });
 

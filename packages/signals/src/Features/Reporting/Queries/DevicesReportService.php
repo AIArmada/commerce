@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 
 final class DevicesReportService
@@ -113,16 +112,6 @@ final class DevicesReportService
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public function getTrackedPropertyOptions(): array
-    {
-        return TrackedProperty::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @return Builder<SignalSession>
