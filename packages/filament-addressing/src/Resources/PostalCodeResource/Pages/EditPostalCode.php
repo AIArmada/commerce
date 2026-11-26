@@ -19,7 +19,7 @@ final class EditPostalCode extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! PostalCodeResource::isReadOnly();
+        return ! PostalCodeResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

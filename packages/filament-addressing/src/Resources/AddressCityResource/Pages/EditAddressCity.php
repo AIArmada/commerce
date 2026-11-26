@@ -14,7 +14,7 @@ final class EditAddressCity extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressCityResource::isReadOnly();
+        return ! AddressCityResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Model

@@ -22,7 +22,7 @@ final class EditAddressArea extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressAreaResource::isReadOnly();
+        return ! AddressAreaResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function getHeaderActions(): array

@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -61,7 +60,7 @@ class AddressCountry extends Model
 
     public function delete(): ?bool
     {
-        return DB::transaction(fn (): ?bool => parent::delete());
+        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
     }
 
     protected $fillable = [

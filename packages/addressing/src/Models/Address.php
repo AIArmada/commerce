@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -116,7 +115,7 @@ class Address extends Model
         });
 
         static::deleting(function (Address $address): void {
-            DB::transaction(function () use ($address): void {
+            $address->getConnection()->transaction(function () use ($address): void {
                 foreach ($address->areaAssignments()->get() as $assignment) {
                     $assignment->delete();
                 }

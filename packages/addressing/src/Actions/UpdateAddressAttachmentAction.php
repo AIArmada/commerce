@@ -7,7 +7,6 @@ namespace AIArmada\Addressing\Actions;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -16,7 +15,7 @@ final class UpdateAddressAttachmentAction
     /** @param array{type: string, label?: string|null, is_primary: bool} $data */
     public function execute(Addressable $pivot, array $data): Addressable
     {
-        return DB::transaction(function () use ($pivot, $data): Addressable {
+        return $pivot->getConnection()->transaction(function () use ($pivot, $data): Addressable {
             $candidate = ModelResolver::addressableClass()::query()->whereKey($pivot->getKey())->firstOrFail();
             $address = $candidate->address()->firstOrFail();
             $addressable = $candidate->addressable()->firstOrFail();
@@ -78,7 +77,7 @@ final class UpdateAddressAttachmentAction
 
     public function detach(Addressable $pivot): void
     {
-        DB::transaction(function () use ($pivot): void {
+        $pivot->getConnection()->transaction(function () use ($pivot): void {
             $candidate = ModelResolver::addressableClass()::query()->whereKey($pivot->getKey())->firstOrFail();
             $address = $candidate->address()->firstOrFail();
             $addressable = $candidate->addressable()->firstOrFail();

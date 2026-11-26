@@ -16,7 +16,6 @@ use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class SyncAddressAreaAssignmentsAction
@@ -35,19 +34,10 @@ final class SyncAddressAreaAssignmentsAction
         ?string $stateId = null,
         array $metadata = [],
     ): void {
-        AddressOwnerGuard::assertAddressIsWritable($address->getKey());
-
-        if ($assignments === []) {
-            ModelResolver::areaAssignmentClass()::query()
-                ->where('address_id', $address->getKey())
-                ->delete();
-
-            return;
-        }
-
-        $selectedAssignments = $this->validate($this->persistedAddress($address), $assignments, $stateId);
-
-        DB::transaction(function () use ($address, $selectedAssignments, $metadata): void {
+        $address->getConnection()->transaction(function () use ($address, $assignments, $stateId, $metadata): void {
+            AddressOwnerGuard::assertAddressIsWritable($address->getKey());
+            $address = $this->persistedAddress($address, lock: true);
+            $selectedAssignments = $assignments === [] ? [] : $this->validate($address, $assignments, $stateId);
             ModelResolver::areaAssignmentClass()::query()
                 ->where('address_id', $address->getKey())
                 ->delete();
@@ -251,7 +241,7 @@ final class SyncAddressAreaAssignmentsAction
      * must never widen or narrow validation, and this reload must not persist
      * them back.
      */
-    private function persistedAddress(Address $address): Address
+    private function persistedAddress(Address $address, bool $lock = false): Address
     {
         $addressClass = ModelResolver::addressClass();
         $query = $addressClass::query();
@@ -260,7 +250,7 @@ final class SyncAddressAreaAssignmentsAction
             $query->withoutGlobalScope(OwnerScope::class);
         }
 
-        return $query->whereKey($address->getKey())->firstOrFail();
+        return $query->whereKey($address->getKey())->when($lock, fn ($query) => $query->lockForUpdate())->firstOrFail();
     }
 
     private function areaMatchesDefinition(AddressArea $area, AddressLevelDefinition $definition): bool

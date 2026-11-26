@@ -13,6 +13,6 @@ final class EditAddressCountry extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressCountryResource::isReadOnly();
+        return ! AddressCountryResource::isReadOnly() && parent::canAccess($parameters);
     }
 }

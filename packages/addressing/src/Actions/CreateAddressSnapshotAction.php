@@ -32,7 +32,7 @@ class CreateAddressSnapshotAction
             $data = AddressData::from($address->attributesToArray());
             $addressId = $address->id;
         } else {
-            $data = $address;
+            $data = AddressData::from($address->toArray());
             $addressId = null;
         }
 

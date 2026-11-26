@@ -14,7 +14,7 @@ final class EditAddressState extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressStateResource::isReadOnly();
+        return ! AddressStateResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array

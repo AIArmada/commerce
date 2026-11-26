@@ -17,7 +17,7 @@ final class CreatePostalCode extends CreateRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! PostalCodeResource::isReadOnly();
+        return ! PostalCodeResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function handleRecordCreation(array $data): Model
