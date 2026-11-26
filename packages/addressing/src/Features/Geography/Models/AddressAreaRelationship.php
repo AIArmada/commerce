@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\Geography\Models;
 
+use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;

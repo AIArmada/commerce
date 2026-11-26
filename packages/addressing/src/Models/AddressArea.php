@@ -144,13 +144,13 @@ class AddressArea extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaStateLinkClass(), 'address_area_id');
     }
 
-    /** @return HasMany<AddressAreaRelationship, $this> */
+    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship, $this> */
     public function incomingAreaRelationships(): HasMany
     {
         return $this->hasMany(ModelResolver::areaRelationshipClass(), 'child_address_area_id');
     }
 
-    /** @return HasMany<AddressAreaRelationship, $this> */
+    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship, $this> */
     public function outgoingAreaRelationships(): HasMany
     {
         return $this->hasMany(ModelResolver::areaRelationshipClass(), 'parent_address_area_id');
@@ -162,7 +162,7 @@ class AddressArea extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaPostalCodeClass(), 'address_area_id');
     }
 
-    /** @return HasMany<AddressAreaName, $this> */
+    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaName, $this> */
     public function names(): HasMany
     {
         return $this->hasMany(ModelResolver::areaNameClass(), 'address_area_id');

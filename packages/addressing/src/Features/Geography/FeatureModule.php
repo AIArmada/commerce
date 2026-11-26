@@ -27,6 +27,7 @@ use AIArmada\Addressing\Features\Geography\Actions\GuardAddressAreaDeletionActio
 use AIArmada\Addressing\Features\Geography\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Features\Geography\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Features\Geography\Actions\PruneDuplicateManualAliasesAction;
+use AIArmada\Addressing\Features\Geography\Actions\ReadAreaReferencesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAliasAction;
 use AIArmada\Addressing\Features\Geography\Actions\SearchAddressAreasAction;
@@ -38,8 +39,11 @@ use AIArmada\Addressing\Features\Geography\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryStatesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
@@ -49,7 +53,10 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->instance('addressing.model-default.area_name', AddressAreaName::class);
+        $app->instance('addressing.model-default.area_relationship', AddressAreaRelationship::class);
         $app->instance('addressing.model-default.area_role', AddressAreaRole::class);
+        $app->singleton(AreaReferenceReader::class, ReadAreaReferencesAction::class);
         $app->instance('addressing.model-default.area_state_link', AddressAreaStateLink::class);
         $app->singleton(GeographyReferenceMaintenance::class, ClearGeographyReferencesAction::class);
         $app->singleton(ResolutionAliasMaintenance::class, PruneDuplicateManualAliasesAction::class);

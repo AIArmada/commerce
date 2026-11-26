@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Data\AddressAreaMatchData;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Geography\Argentina\ArgentinaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\PostalCode;
 

@@ -7,12 +7,16 @@ namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\ModelResolver;
 
 final readonly class GooglePlaceResolutionGapLogger
 {
-    public function __construct(private GooglePlaceGeographyMatcher $matcher) {}
+    public function __construct(
+        private GooglePlaceGeographyMatcher $matcher,
+        private AreaReferenceReader $references,
+    ) {}
 
     /**
      * @param  array<string, list<string>>  $misses
@@ -90,9 +94,7 @@ final readonly class GooglePlaceResolutionGapLogger
             return $names;
         }
 
-        $aliases = ModelResolver::areaNameClass()::query()
-            ->whereIn('address_area_id', array_values(array_unique($areaIds)))
-            ->pluck('name');
+        $aliases = array_column($this->references->aliases(array_values(array_unique($areaIds))), 'name');
 
         foreach ($aliases as $alias) {
             if (! is_string($alias)) {

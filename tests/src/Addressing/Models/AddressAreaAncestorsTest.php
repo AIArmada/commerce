@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;

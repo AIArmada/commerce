@@ -8,9 +8,7 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
@@ -112,12 +110,14 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<AddressAreaName>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaName>
      */
     public static function areaNameClass(): string
     {
-        /** @var class-string<AddressAreaName> $modelClass */
-        $modelClass = self::resolve('area_name', AddressAreaName::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaName> $default */
+        $default = app('addressing.model-default.area_name');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaName> $modelClass */
+        $modelClass = self::resolve('area_name', $default);
 
         return $modelClass;
     }
@@ -160,12 +160,14 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<AddressAreaRelationship>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship>
      */
     public static function areaRelationshipClass(): string
     {
-        /** @var class-string<AddressAreaRelationship> $modelClass */
-        $modelClass = self::resolve('area_relationship', AddressAreaRelationship::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship> $default */
+        $default = app('addressing.model-default.area_relationship');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship> $modelClass */
+        $modelClass = self::resolve('area_relationship', $default);
 
         return $modelClass;
     }

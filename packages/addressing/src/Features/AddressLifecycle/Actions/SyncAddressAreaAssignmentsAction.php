@@ -7,8 +7,8 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
@@ -22,6 +22,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
 {
     public function __construct(
         private CountryAddressProfileResolver $profiles,
+        private AreaReferenceReader $references,
     ) {}
 
     /**
@@ -375,7 +376,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
     }
 
     /**
-     * @param  Collection<string, Collection<int, AddressAreaRelationship>>  $parents
+     * @param  Collection<string, Collection<int, array{parent_id: string, child_id: string, hierarchy_type: ?string}>>  $parents
      * @return list<string>
      */
     private function ancestorIds(string $areaId, Collection $parents, ?string $hierarchyType): array
@@ -393,11 +394,11 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             $ancestors[$currentId] = true;
 
             foreach ($parents->get($currentId, []) as $relationship) {
-                if ($hierarchyType !== null && $relationship->hierarchy_type !== $hierarchyType) {
+                if ($hierarchyType !== null && $relationship['hierarchy_type'] !== $hierarchyType) {
                     continue;
                 }
 
-                $parentId = (string) $relationship->parent_address_area_id;
+                $parentId = $relationship['parent_id'];
 
                 if (! isset($ancestors[$parentId])) {
                     $pending[] = $parentId;
@@ -418,7 +419,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * by hierarchy depth while avoiding unrelated country data.
      *
      * @param  list<string>  $areaIds
-     * @return Collection<string, Collection<int, AddressAreaRelationship>>
+     * @return Collection<string, Collection<int, array{parent_id: string, child_id: string, hierarchy_type: ?string}>>
      */
     private function loadAncestorRelationships(array $areaIds): Collection
     {
@@ -441,12 +442,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
                 $visited[$areaId] = true;
             }
 
-            $relationships = ModelResolver::areaRelationshipClass()::query()
-                ->whereIn('child_address_area_id', $frontier)
-                ->where('relationship_type', 'contains')
-                ->whereHas('parent', static fn ($query) => $query->where('is_active', true))
-                ->where(function ($query): void {
-                    $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', CarbonImmutable::now());
+            $relationships = $this->references->activeContainmentParents($frontier);
                 })
                 ->where(function ($query): void {
                     $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', CarbonImmutable::now());
@@ -455,10 +451,10 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
 
             foreach ($relationships as $relationship) {
                 $parents->put(
-                    (string) $relationship->child_address_area_id,
-                    $parents->get((string) $relationship->child_address_area_id, collect())->push($relationship),
+                    $relationship['child_id'],
+                    $parents->get($relationship['child_id'], collect())->push($relationship),
                 );
-                $pending[] = (string) $relationship->parent_address_area_id;
+                $pending[] = $relationship['parent_id'];
             }
         }
 

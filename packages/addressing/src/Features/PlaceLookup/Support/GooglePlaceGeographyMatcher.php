@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
 
 final class GooglePlaceGeographyMatcher
 {
+    public function __construct(private readonly AreaReferenceReader $references) {}
+
     public function resolveCountry(GooglePlaceAddressComponents $components): ?AddressCountry
     {
         $countryComponent = $components->component(['country']);
@@ -110,16 +112,9 @@ final class GooglePlaceGeographyMatcher
             return null;
         }
 
-        $matched = ModelResolver::areaNameClass()::query()
-            ->whereIn('address_area_id', $areaIds)
-            ->get()
-            ->filter(function (AddressAreaName $alias) use ($normalized, $countryCode): bool {
-                $aliasName = $alias->getAttribute('name');
-
-                return is_string($aliasName)
-                    && $this->normalizeLocationName($aliasName, $countryCode) === $normalized;
-            })
-            ->map(static fn (AddressAreaName $alias): string => (string) $alias->getAttribute('address_area_id'))
+        $matched = collect($this->references->aliases($areaIds))
+            ->filter(fn (array $alias): bool => $this->normalizeLocationName($alias['name'], $countryCode) === $normalized)
+            ->map(static fn (array $alias): string => $alias['area_id'])
             ->unique()
             ->values();
 
@@ -163,16 +158,9 @@ final class GooglePlaceGeographyMatcher
         $matchedIds = $areas
             ->filter(fn (AddressArea $area): bool => $this->placeNameContainsAreaName($placeName, $area->name, $countryCode))
             ->map(static fn (AddressArea $area): string => (string) $area->getKey())
-            ->merge(ModelResolver::areaNameClass()::query()
-                ->whereIn('address_area_id', $areaIds)
-                ->get()
-                ->filter(function (AddressAreaName $alias) use ($placeName, $countryCode): bool {
-                    $aliasName = $alias->getAttribute('name');
-
-                    return is_string($aliasName)
-                        && $this->placeNameContainsAreaName($placeName, $aliasName, $countryCode);
-                })
-                ->map(static fn (AddressAreaName $alias): string => (string) $alias->getAttribute('address_area_id')))
+            ->merge(collect($this->references->aliases($areaIds))
+                ->filter(fn (array $alias): bool => $this->placeNameContainsAreaName($placeName, $alias['name'], $countryCode))
+                ->map(static fn (array $alias): string => $alias['area_id']))
             ->unique()
             ->values();
 

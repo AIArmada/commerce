@@ -8,10 +8,10 @@ use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\ExportResolutionGapAliasesResultData;
+use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Contracts\Container\Container;
@@ -22,6 +22,7 @@ final readonly class ExportResolutionGapAliasesAction
     public function __construct(
         private Container $container,
         private ResolutionAliasMaintenance $aliases,
+        private AreaReferenceReader $references,
     ) {}
 
     /**
@@ -96,11 +97,10 @@ final readonly class ExportResolutionGapAliasesAction
             ->with('matchedArea')
             ->get();
 
-        $manualAliases = ModelResolver::areaNameClass()::query()
-            ->whereIn('address_area_id', $gaps->map(fn (ResolutionGap $gap): mixed => $gap->matched_area_id)->unique()->all())
-            ->where('source', 'manual')
-            ->get()
-            ->groupBy(fn (AddressAreaName $alias): string => (string) $alias->address_area_id);
+        $manualAliases = collect($this->references->aliases(
+            $gaps->map(fn (ResolutionGap $gap): string => (string) $gap->matched_area_id)->unique()->values()->all(),
+            'manual',
+        ))->groupBy('area_id');
 
         foreach ($gaps as $gap) {
             $area = $gap->matchedArea;
@@ -128,9 +128,9 @@ final readonly class ExportResolutionGapAliasesAction
             $normalized = (string) $gap->normalized;
             $alias = $manualAliases
                 ->get((string) $area->getKey(), collect())
-                ->first(fn (AddressAreaName $candidate): bool => mb_strtolower((string) $candidate->name) === $normalized);
+                ->first(fn (array $candidate): bool => mb_strtolower($candidate['name']) === $normalized);
 
-            if (! $alias instanceof AddressAreaName) {
+            if ($alias === null) {
                 $skippedMissingAlias++;
 
                 continue;
@@ -144,7 +144,7 @@ final readonly class ExportResolutionGapAliasesAction
                 continue;
             }
 
-            $dedupeKey = $sourceId . "\0" . mb_strtolower((string) $alias->name);
+            $dedupeKey = $sourceId . "\0" . mb_strtolower($alias['name']);
 
             if (isset($emitted[$dedupeKey])) {
                 $skippedDuplicates++;
@@ -155,9 +155,9 @@ final readonly class ExportResolutionGapAliasesAction
             $emitted[$dedupeKey] = true;
             $candidates[$providerClass][] = [
                 'source_id' => $sourceId,
-                'name' => (string) $alias->name,
-                'name_type' => (string) $alias->name_type,
-                'is_preferred' => (bool) $alias->is_preferred,
+                'name' => $alias['name'],
+                'name_type' => $alias['name_type'],
+                'is_preferred' => $alias['is_preferred'],
             ];
         }
 

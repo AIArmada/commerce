@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\CompareAddressingReferenceExportsAction;
@@ -10,8 +12,6 @@ use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportContr
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportFile;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
