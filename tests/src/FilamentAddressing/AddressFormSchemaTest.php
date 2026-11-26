@@ -8,12 +8,12 @@ use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;
-use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 
 beforeEach(function (): void {

@@ -8,9 +8,9 @@ use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Data\GooglePlaceAddressComponents;
 use AIArmada\Addressing\Features\Geography\Api\PlaceGeographyResolver;
-use AIArmada\Addressing\Features\PostalCodes\Api\PostalAreaLookup;
 use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\PostalCodes\Api\PostalAreaLookup;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 

@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 beforeEach(function (): void {
     $this->action = app(AddressSnapshotWriter::class);
 
-    $this->snapshotable = new class extends Model {
+    $this->snapshotable = new class extends Model
+    {
         protected $table = 'test_models';
     };
     $this->snapshotable->save();

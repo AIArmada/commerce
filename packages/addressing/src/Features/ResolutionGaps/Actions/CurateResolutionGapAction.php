@@ -111,5 +111,4 @@ final readonly class CurateResolutionGapAction implements ResolutionGapCuration
             throw new RuntimeException('The resolution gap could not be matched.');
         }
     }
-
 }

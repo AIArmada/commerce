@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
-use AIArmada\Addressing\Features\Geography\Api\AreaAssignmentValidator;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Api\AreaAssignmentValidator;
 use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;

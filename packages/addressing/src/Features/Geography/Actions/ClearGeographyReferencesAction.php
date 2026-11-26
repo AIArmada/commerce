@@ -6,8 +6,8 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
-use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
 use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 

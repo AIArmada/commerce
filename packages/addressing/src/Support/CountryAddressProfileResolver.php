@@ -10,6 +10,7 @@ use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Features\Geography\Api\AreaStateLookup;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -143,7 +144,7 @@ final class CountryAddressProfileResolver
      * provider defines state-kind roots, to those codes. Provider-less
      * countries fall back to all states.
      *
-     * @return EloquentBuilder<\AIArmada\Addressing\Features\Geography\Models\State>|null
+     * @return EloquentBuilder<State>|null
      */
     public function stateOptionsQuery(mixed $country): ?EloquentBuilder
     {

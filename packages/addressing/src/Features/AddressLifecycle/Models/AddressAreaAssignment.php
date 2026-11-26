@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Models;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAreaAssignmentOwnerScope;
 use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -53,7 +54,7 @@ class AddressAreaAssignment extends Model
         return $this->belongsTo(ModelResolver::addressClass());
     }
 
-    /** @return BelongsTo<\AIArmada\Addressing\Features\Geography\Models\AddressArea, $this> */
+    /** @return BelongsTo<AddressArea, $this> */
     public function area(): BelongsTo
     {
         return $this->belongsTo(ModelResolver::areaClass(), 'address_area_id');

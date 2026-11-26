@@ -29,7 +29,7 @@ interface AreaReferenceReader
     public function areaIdsForSource(string $countryCode, string $source): array;
 
     /**
-     * @param list<string> $areaIds
+     * @param  list<string>  $areaIds
      * @return array<string, array{source_id: string, name: string}>
      */
     public function areaMetadata(array $areaIds): array;

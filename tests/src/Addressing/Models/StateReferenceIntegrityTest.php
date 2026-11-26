@@ -11,12 +11,12 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider;
-use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\City;
 use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -182,7 +182,8 @@ it('clears cross-owner references through a real provider cleanup and keeps late
 });
 
 it('prunes only state-dependent assignments across owners when a state is deleted', function (): void {
-    $profile = new class implements CountryAddressProfile {
+    $profile = new class implements CountryAddressProfile
+    {
         public function countryCode(): string
         {
             return 'MY';
@@ -293,7 +294,8 @@ it('prunes only state-dependent assignments across owners when a state is delete
 });
 
 it('prunes assignments cross-owner without owner resolution when owner mode is disabled at runtime', function (): void {
-    $profile = new class implements CountryAddressProfile {
+    $profile = new class implements CountryAddressProfile
+    {
         public function countryCode(): string
         {
             return 'MY';

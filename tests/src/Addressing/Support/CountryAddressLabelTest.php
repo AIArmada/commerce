@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
-use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

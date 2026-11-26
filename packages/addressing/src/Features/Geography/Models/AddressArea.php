@@ -7,6 +7,8 @@ namespace AIArmada\Addressing\Features\Geography\Models;
 use AIArmada\Addressing\Database\Factories\AddressAreaFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -156,7 +158,7 @@ class AddressArea extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaRelationshipClass(), 'parent_address_area_id');
     }
 
-    /** @return HasMany<\AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode, $this> */
+    /** @return HasMany<AddressAreaPostalCode, $this> */
     public function postalCodeCoverage(): HasMany
     {
         return $this->hasMany(ModelResolver::areaPostalCodeClass(), 'address_area_id');
@@ -198,7 +200,7 @@ class AddressArea extends TransactionalDeletionModel
         )->withPivot(['relationship_type', 'hierarchy_type', 'source', 'valid_from', 'valid_until', 'metadata']);
     }
 
-    /** @return BelongsToMany<\AIArmada\Addressing\Features\PostalCodes\Models\PostalCode, $this, \AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode, 'pivot'> */
+    /** @return BelongsToMany<PostalCode, $this, AddressAreaPostalCode, 'pivot'> */
     public function postalCodes(): BelongsToMany
     {
         return $this->belongsToMany(

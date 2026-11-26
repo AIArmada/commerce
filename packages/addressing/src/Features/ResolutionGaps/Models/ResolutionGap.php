@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\ResolutionGaps\Models;
 
 use AIArmada\Addressing\Database\Factories\ResolutionGapFactory;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -35,7 +36,7 @@ use LogicException;
  * @property string|null $matched_area_id
  * @property string|null $matched_by
  * @property CarbonImmutable|null $matched_at
- * @property-read \AIArmada\Addressing\Features\Geography\Models\AddressArea|null $matchedArea
+ * @property-read AddressArea|null $matchedArea
  */
 class ResolutionGap extends Model
 {
@@ -127,7 +128,7 @@ class ResolutionGap extends Model
         return AddressingTableResolver::resolve('resolution_gaps');
     }
 
-    /** @return BelongsTo<\AIArmada\Addressing\Features\Geography\Models\AddressArea, $this> */
+    /** @return BelongsTo<AddressArea, $this> */
     public function matchedArea(): BelongsTo
     {
         return $this->belongsTo(ModelResolver::areaClass(), 'matched_area_id');

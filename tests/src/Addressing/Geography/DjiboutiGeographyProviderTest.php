@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
-use AIArmada\Addressing\Geography\Djibouti\DjiboutiGeographyProvider;
 use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Geography\Djibouti\DjiboutiGeographyProvider;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('ships 20 sub-prefectures under regions with parent links', function (): void {

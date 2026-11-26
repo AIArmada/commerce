@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;

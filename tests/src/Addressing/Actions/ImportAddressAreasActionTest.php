@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Support\Facades\DB;

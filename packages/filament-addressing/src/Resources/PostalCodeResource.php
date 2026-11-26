@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Rules\ValidPostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\CreatePostalCode;
