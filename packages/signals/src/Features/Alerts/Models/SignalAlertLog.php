@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Alerts\Models;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -33,7 +33,6 @@ use RuntimeException;
  * @property array<string, mixed>|null $delivery_results
  * @property Carbon|null $read_at
  * @property-read SignalAlertRule $alertRule
- * @property-read TrackedProperty|null $trackedProperty
  */
 final class SignalAlertLog extends Model
 {
@@ -80,14 +79,6 @@ final class SignalAlertLog extends Model
         return $this->belongsTo(SignalAlertRule::class, 'signal_alert_rule_id');
     }
 
-    /**
-     * @return BelongsTo<TrackedProperty, $this>
-     */
-    public function trackedProperty(): BelongsTo
-    {
-        return $this->belongsTo(TrackedProperty::class, 'tracked_property_id');
-    }
-
     /** @return HasMany<SignalAlertDelivery, $this> */
     public function deliveries(): HasMany
     {
@@ -123,10 +114,7 @@ final class SignalAlertLog extends Model
             }
 
             if ($log->tracked_property_id !== '' && $log->tracked_property_id !== null) {
-                $propertyExists = TrackedProperty::query()
-                    ->forOwner($owner, includeGlobal: false)
-                    ->whereKey($log->tracked_property_id)
-                    ->exists();
+                $propertyExists = app(TelemetryRead::class)->propertyCurrency((string) $log->tracked_property_id) !== null;
 
                 if (! $propertyExists) {
                     throw new RuntimeException('Invalid tracked_property_id: does not belong to the current owner scope.');

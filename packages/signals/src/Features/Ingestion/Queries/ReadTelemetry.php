@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Queries;
 
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -16,6 +17,19 @@ final readonly class ReadTelemetry implements TelemetryRead
     public function propertyOptions(): array
     {
         return TrackedProperty::query()->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    public function searchPropertyOptions(string $search): array
+    {
+        $query = TrackedProperty::query()->forOwner();
+        LikeSearch::whereLike($query, 'name', LikeSearch::contains($search));
+
+        return $query->orderBy('name')->limit(50)->pluck('name', 'id')->all();
+    }
+
+    public function propertyLabel(string $id): ?string
+    {
+        return TrackedProperty::query()->forOwner()->whereKey($id)->value('name');
     }
 
     public function propertyCurrency(string $id): ?string

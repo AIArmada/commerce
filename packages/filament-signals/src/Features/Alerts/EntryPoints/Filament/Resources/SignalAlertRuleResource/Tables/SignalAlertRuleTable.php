@@ -28,7 +28,7 @@ final class SignalAlertRuleTable
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
+                Tables\Columns\TextColumn::make('tracked_property_name')
                     ->label('Property')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('metric_key')

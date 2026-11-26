@@ -55,3 +55,26 @@ it('scopes signal alert rules to the current owner', function (): void {
     expect($query->count())->toBe(1)
         ->and($query->first()?->id)->toBe($ruleA->id);
 });
+
+it('projects property names without loading cross-feature relations', function (): void {
+    $owner = \AIArmada\Commerce\Tests\Fixtures\Models\User::factory()->create();
+
+    \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, function (): void {
+        $property = \AIArmada\Signals\Features\Ingestion\Models\TrackedProperty::query()->create([
+            'name' => 'Alert property',
+            'slug' => 'alert-property-name',
+        ]);
+
+        $rule = \AIArmada\Signals\Features\Alerts\Models\SignalAlertRule::query()->create([
+            'name' => 'Alert',
+            'slug' => 'alert-property-projection',
+            'tracked_property_id' => $property->id,
+            'metric_key' => 'events',
+            'operator' => 'gte',
+            'threshold' => 1,
+        ]);
+
+        $record = SignalAlertRuleResource::getEloquentQuery()->findOrFail($rule->id);
+        expect($record->getAttribute('tracked_property_name'))->toBe('Alert property');
+    });
+});

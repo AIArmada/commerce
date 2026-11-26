@@ -33,7 +33,7 @@ final class SignalAlertLogTable
                 Tables\Columns\TextColumn::make('alertRule.name')
                     ->label('Rule')
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
+                Tables\Columns\TextColumn::make('tracked_property_name')
                     ->label('Property')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('metric_value')

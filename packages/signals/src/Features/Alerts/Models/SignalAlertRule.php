@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Alerts\Models;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Alerts\Actions\DeleteAlertRuleHistory;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -17,7 +17,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -45,7 +44,6 @@ use RuntimeException;
  * @property int $priority
  * @property Carbon|null $last_triggered_at
  * @property bool $is_active
- * @property-read TrackedProperty|null $trackedProperty
  * @property-read Collection<int, SignalAlertLog> $logs
  */
 final class SignalAlertRule extends Model implements Auditable
@@ -124,14 +122,6 @@ final class SignalAlertRule extends Model implements Auditable
     }
 
     /**
-     * @return BelongsTo<TrackedProperty, $this>
-     */
-    public function trackedProperty(): BelongsTo
-    {
-        return $this->belongsTo(TrackedProperty::class, 'tracked_property_id');
-    }
-
-    /**
      * @return HasMany<SignalAlertLog, $this>
      */
     public function logs(): HasMany
@@ -170,7 +160,7 @@ final class SignalAlertRule extends Model implements Auditable
         }
 
         if (filled($this->tracked_property_id)) {
-            return SignalCurrency::code($this->trackedProperty?->currency);
+            return app(TelemetryRead::class)->requirePropertyCurrency((string) $this->tracked_property_id);
         }
 
         return SignalCurrency::normalize($this->event_filters['currency'] ?? null);
@@ -204,10 +194,7 @@ final class SignalAlertRule extends Model implements Auditable
             );
 
             if ($rule->tracked_property_id !== '' && $rule->tracked_property_id !== null) {
-                $exists = TrackedProperty::query()
-                    ->forOwner($owner, includeGlobal: false)
-                    ->whereKey($rule->tracked_property_id)
-                    ->exists();
+                $exists = app(TelemetryRead::class)->propertyCurrency((string) $rule->tracked_property_id) !== null;
 
                 if (! $exists) {
                     throw new RuntimeException('Invalid tracked_property_id: does not belong to the current owner scope.');

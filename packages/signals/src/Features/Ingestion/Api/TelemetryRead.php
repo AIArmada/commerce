@@ -11,6 +11,11 @@ interface TelemetryRead
     /** @return array<string, string> */
     public function propertyOptions(): array;
 
+    /** @return array<string, string> */
+    public function searchPropertyOptions(string $search): array;
+
+    public function propertyLabel(string $id): ?string;
+
     public function propertyCurrency(string $id): ?string;
 
     public function requirePropertyCurrency(string $id): string;

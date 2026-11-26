@@ -8,6 +8,7 @@ use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\Sign
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Schemas\SignalAlertLogForm;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Tables\SignalAlertLogTable;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -26,7 +27,13 @@ final class SignalAlertLogResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return SignalAlertLog::query()->forOwner()->with(['alertRule', 'trackedProperty']);
+        $query = SignalAlertLog::query()->forOwner()->with('alertRule');
+
+        $property = TrackedProperty::query()->forOwner();
+        $property->select($property->getModel()->qualifyColumn('name'))
+            ->whereColumn($property->getModel()->qualifyColumn('id'), $query->getModel()->qualifyColumn('tracked_property_id'));
+
+        return $query->select($query->getModel()->qualifyColumn('*'))->addSelect(['tracked_property_name' => $property]);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

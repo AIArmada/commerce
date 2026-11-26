@@ -8,6 +8,7 @@ use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\Sign
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Schemas\SignalAlertRuleForm;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Tables\SignalAlertRuleTable;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -28,7 +29,13 @@ final class SignalAlertRuleResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return SignalAlertRule::query()->forOwner()->with('trackedProperty');
+        $query = SignalAlertRule::query()->forOwner();
+
+        $property = TrackedProperty::query()->forOwner();
+        $property->select($property->getModel()->qualifyColumn('name'))
+            ->whereColumn($property->getModel()->qualifyColumn('id'), $query->getModel()->qualifyColumn('tracked_property_id'));
+
+        return $query->select($query->getModel()->qualifyColumn('*'))->addSelect(['tracked_property_name' => $property]);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

@@ -7,13 +7,12 @@ namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resource
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
 
@@ -38,16 +37,9 @@ final class SignalAlertRuleForm
 
                     Forms\Components\Select::make('tracked_property_id')
                         ->label('Tracked Property')
-                        ->relationship(
-                            name: 'trackedProperty',
-                            titleAttribute: 'name',
-                            modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn(
-                                'id',
-                                TrackedProperty::query()->forOwner()->select('id')
-                            ),
-                        )
+                        ->getSearchResultsUsing(fn (string $search): array => app(TelemetryRead::class)->searchPropertyOptions($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_scalar($value) ? app(TelemetryRead::class)->propertyLabel((string) $value) : null)
                         ->searchable()
-                        ->preload()
                         ->live(),
 
                     Forms\Components\Select::make('metric_key')

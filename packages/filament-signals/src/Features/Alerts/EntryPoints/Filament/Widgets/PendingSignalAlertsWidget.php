@@ -47,7 +47,7 @@ final class PendingSignalAlertsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('title')
                     ->limit(40)
                     ->tooltip(fn (SignalAlertLog $record): ?string => $record->message),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
+                Tables\Columns\TextColumn::make('tracked_property_name')
                     ->label('Property')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -78,8 +78,7 @@ final class PendingSignalAlertsWidget extends BaseWidget
     protected function getPendingAlertsQuery(): Builder
     {
         $queryFactory = function (): Builder {
-            return SignalAlertLog::query()->forOwner()
-                ->with(['alertRule', 'trackedProperty'])
+            return SignalAlertLogResource::getEloquentQuery()
                 ->whereNull('read_at')
                 ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
                 ->orderByDesc('created_at');
