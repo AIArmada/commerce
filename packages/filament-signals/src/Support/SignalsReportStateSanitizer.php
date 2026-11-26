@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;

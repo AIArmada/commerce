@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
-use AIArmada\Signals\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 
 uses(FilamentSignalsTestCase::class);
 

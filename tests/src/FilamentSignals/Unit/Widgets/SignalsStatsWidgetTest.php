@@ -12,7 +12,7 @@ use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets\Pendin
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\SignalsStatsWidget;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;

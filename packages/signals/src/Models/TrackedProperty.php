@@ -6,6 +6,7 @@ namespace AIArmada\Signals\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
+use AIArmada\Signals\Features\Reporting\Api\DetachPropertyReports;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -38,9 +39,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Collection<int, SignalSession> $sessions
  * @property-read Collection<int, SignalEvent> $events
  * @property-read Collection<int, SignalInteractionRule> $interactionRules
- * @property-read Collection<int, SignalDailyMetric> $dailyMetrics
- * @property-read Collection<int, SignalGoal> $goals
- * @property-read Collection<int, SavedSignalReport> $savedReports
  */
 final class TrackedProperty extends Model implements Auditable
 {
@@ -135,30 +133,6 @@ final class TrackedProperty extends Model implements Auditable
         return $this->hasMany(SignalInteractionRule::class, 'tracked_property_id');
     }
 
-    /**
-     * @return HasMany<SignalDailyMetric, $this>
-     */
-    public function dailyMetrics(): HasMany
-    {
-        return $this->hasMany(SignalDailyMetric::class, 'tracked_property_id');
-    }
-
-    /**
-     * @return HasMany<SignalGoal, $this>
-     */
-    public function goals(): HasMany
-    {
-        return $this->hasMany(SignalGoal::class, 'tracked_property_id');
-    }
-
-    /**
-     * @return HasMany<SavedSignalReport, $this>
-     */
-    public function savedReports(): HasMany
-    {
-        return $this->hasMany(SavedSignalReport::class, 'tracked_property_id');
-    }
-
     protected static function booted(): void
     {
         static::creating(function (TrackedProperty $trackedProperty): void {
@@ -197,10 +171,8 @@ final class TrackedProperty extends Model implements Auditable
                 }
             }
 
-            $trackedProperty->goals()->update(['tracked_property_id' => null]);
-            $trackedProperty->savedReports()->update(['tracked_property_id' => null]);
+            app(DetachPropertyReports::class)->detach((string) $trackedProperty->getKey());
             app(DetachPropertyAlerts::class)->detach((string) $trackedProperty->getKey());
-            $trackedProperty->dailyMetrics()->delete();
             $trackedProperty->events()->delete();
             $trackedProperty->interactionRules()->delete();
             $trackedProperty->sessions()->delete();

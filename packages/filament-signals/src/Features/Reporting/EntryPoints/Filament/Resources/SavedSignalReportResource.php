@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resou
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Pages;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas\SavedSignalReportForm;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables\SavedSignalReportTable;
-use AIArmada\Signals\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

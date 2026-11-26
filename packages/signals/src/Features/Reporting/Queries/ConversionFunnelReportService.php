@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
-use AIArmada\Signals\Services\SignalRouteCatalog;
-use AIArmada\Signals\Services\SavedSignalReportDefinition;
-use AIArmada\Signals\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
+use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\AcquisitionReportService;
-use AIArmada\Signals\Services\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
 use BackedEnum;
 use Filament\Actions\Action;

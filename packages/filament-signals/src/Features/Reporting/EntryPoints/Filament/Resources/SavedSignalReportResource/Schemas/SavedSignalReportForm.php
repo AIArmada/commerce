@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalGoal;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SavedSignalReportDefinition;
-use AIArmada\Signals\Services\SignalRouteCatalog;
+use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;

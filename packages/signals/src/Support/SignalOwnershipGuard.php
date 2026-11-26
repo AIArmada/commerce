@@ -6,7 +6,6 @@ namespace AIArmada\Signals\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
@@ -114,15 +113,6 @@ final class SignalOwnershipGuard
         self::findPropertyOrFail((string) $identity->tracked_property_id, $owner);
     }
 
-    public static function assertDailyMetricWrite(SignalDailyMetric $metric): void
-    {
-        $property = self::ownerScopingEnabled()
-            ? self::findPropertyOrFail((string) $metric->tracked_property_id, self::resolveOwnerOrFail('save signal daily metrics'))
-            : self::findPropertyUnscopedOrFail((string) $metric->tracked_property_id);
-
-        self::assertDailyMetricCurrency($metric, $property);
-    }
-
     public static function assertInteractionRuleWrite(?string $trackedPropertyId): void
     {
         if (! self::ownerScopingEnabled()) {
@@ -214,7 +204,7 @@ final class SignalOwnershipGuard
         }
     }
 
-    private static function findPropertyUnscopedOrFail(string $propertyId): TrackedProperty
+    public static function findPropertyUnscopedOrFail(string $propertyId): TrackedProperty
     {
         $property = $propertyId !== ''
             ? TrackedProperty::query()->withoutOwnerScope()->whereKey($propertyId)->first()
@@ -260,21 +250,4 @@ final class SignalOwnershipGuard
         ));
     }
 
-    private static function assertDailyMetricCurrency(SignalDailyMetric $metric, TrackedProperty $property): void
-    {
-        $propertyCurrency = SignalCurrency::code($property->currency);
-        $metricCurrency = SignalCurrency::normalize($metric->currency);
-
-        if ($metricCurrency === null || $metricCurrency === $propertyCurrency || (int) $metric->revenue_minor === 0) {
-            $metric->currency = $propertyCurrency;
-
-            return;
-        }
-
-        throw new InvalidArgumentException(sprintf(
-            'Signal daily metric revenue in [%s] cannot be recorded on a tracked property reporting in [%s].',
-            $metricCurrency,
-            $propertyCurrency,
-        ));
-    }
 }

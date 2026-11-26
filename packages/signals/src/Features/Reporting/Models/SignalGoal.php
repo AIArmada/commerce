@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Reporting\Models;
 
+use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Signals\Services\SignalEventConditionDefinition;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\Signals\Features\Reporting\Support\SignalEventConditionDefinition;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use RuntimeException;
@@ -23,22 +23,19 @@ use RuntimeException;
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string|null $tracked_property_id
  * @property string $name
  * @property string $slug
  * @property string|null $description
- * @property string $match_type
+ * @property string $goal_type
+ * @property string $event_name
+ * @property string|null $event_category
  * @property array<int, array<string, mixed>>|null $conditions
  * @property bool $is_active
- * @property-read Collection<int, SavedSignalReport> $savedReports
+ * @property-read TrackedProperty|null $trackedProperty
  */
-final class SignalSegment extends Model implements Auditable
+final class SignalGoal extends Model implements Auditable
 {
-    /** @var list<string> */
-    private const SUPPORTED_MATCH_TYPES = [
-        'all',
-        'any',
-    ];
-
     use HasCommerceAudit;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -46,14 +43,19 @@ final class SignalSegment extends Model implements Auditable
     use HasUuids;
     use LogsCommerceActivity;
 
+    protected $table = 'signal_goals';
+
     protected static string $ownerScopeConfigKey = 'signals.owner';
 
     /** @var list<string> */
     protected $fillable = [
+        'tracked_property_id',
         'name',
         'slug',
         'description',
-        'match_type',
+        'goal_type',
+        'event_name',
+        'event_category',
         'conditions',
         'is_active',
         'owner_type',
@@ -63,10 +65,13 @@ final class SignalSegment extends Model implements Auditable
     public function getAuditInclude(): array
     {
         return [
+            'tracked_property_id',
             'name',
             'slug',
             'description',
-            'match_type',
+            'goal_type',
+            'event_name',
+            'event_category',
             'conditions',
             'is_active',
             'owner_type',
@@ -80,69 +85,67 @@ final class SignalSegment extends Model implements Auditable
         'is_active' => 'boolean',
     ];
 
-    /** @var array<string, mixed> */
-    protected $attributes = [
-        'match_type' => 'all',
-        'is_active' => true,
-    ];
+    public static function ownerScopingEnabled(): bool
+    {
+        return static::resolveOwnerScopeConfig()->enabled;
+    }
 
     public function getTable(): string
     {
         $tables = config('signals.database.tables', []);
         $prefix = config('signals.database.table_prefix', 'signal_');
 
-        return $tables['segments'] ?? $prefix . 'segments';
+        return $tables['goals'] ?? $prefix . 'goals';
     }
 
     /**
-     * @return HasMany<SavedSignalReport, $this>
+     * @return BelongsTo<TrackedProperty, $this>
      */
-    public function savedReports(): HasMany
+    public function trackedProperty(): BelongsTo
     {
-        return $this->hasMany(SavedSignalReport::class, 'signal_segment_id');
+        return $this->belongsTo(TrackedProperty::class, 'tracked_property_id');
     }
 
     protected static function booted(): void
     {
-        static::saving(function (SignalSegment $segment): void {
-            if (! self::ownerScopingEnabled()) {
-                self::assertSegmentDefinitionIsValid($segment);
+        static::saving(function (SignalGoal $goal): void {
+            self::assertConditionsAreValid($goal);
 
+            if (! self::ownerScopingEnabled()) {
                 return;
             }
 
             $owner = OwnerContext::resolve();
 
             if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-                throw new RuntimeException('Owner scoping is enabled but no owner or explicit global context was resolved while saving a signal segment.');
+                throw new RuntimeException('Owner scoping is enabled but no owner or explicit global context was resolved while saving a signal goal.');
             }
 
-            self::assertSegmentDefinitionIsValid($segment);
-        });
+            if ($goal->tracked_property_id !== '' && $goal->tracked_property_id !== null) {
+                $propertyQuery = TrackedProperty::query();
+                $propertyExists = ($owner === null
+                    ? $propertyQuery->globalOnly()
+                    : $propertyQuery->forOwner($owner, includeGlobal: false))
+                    ->whereKey($goal->tracked_property_id)
+                    ->exists();
 
-        static::deleting(function (SignalSegment $segment): void {
-            $segment->savedReports()->update(['signal_segment_id' => null]);
+                if (! $propertyExists) {
+                    throw new RuntimeException('Invalid tracked_property_id: does not belong to the current owner scope.');
+                }
+            }
+
         });
     }
 
-    public static function ownerScopingEnabled(): bool
+    private static function assertConditionsAreValid(SignalGoal $goal): void
     {
-        return static::resolveOwnerScopeConfig()->enabled;
-    }
-
-    private static function assertSegmentDefinitionIsValid(SignalSegment $segment): void
-    {
-        if (! in_array($segment->match_type, self::SUPPORTED_MATCH_TYPES, true)) {
-            throw new InvalidArgumentException("Invalid signal segment match type [{$segment->match_type}].");
-        }
-
-        if ($segment->conditions === null) {
+        if ($goal->conditions === null) {
             return;
         }
 
-        foreach ($segment->conditions as $index => $condition) {
+        foreach ($goal->conditions as $index => $condition) {
             if (! is_array($condition)) {
-                throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: each condition must be an array.");
+                throw new InvalidArgumentException("Invalid goal condition at index {$index}: each condition must be an array.");
             }
 
             $field = is_string($condition['field'] ?? null) ? mb_trim($condition['field']) : '';
@@ -150,23 +153,23 @@ final class SignalSegment extends Model implements Auditable
             $value = is_string($condition['value'] ?? null) ? mb_trim($condition['value']) : '';
 
             if ($field === '' || ! self::isSupportedField($field)) {
-                throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: unsupported field [{$field}].");
+                throw new InvalidArgumentException("Invalid goal condition at index {$index}: unsupported field [{$field}].");
             }
 
             if ($operator === '' || ! SignalEventConditionDefinition::isSupportedOperator($operator)) {
-                throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: unsupported operator [{$operator}].");
+                throw new InvalidArgumentException("Invalid goal condition at index {$index}: unsupported operator [{$operator}].");
             }
 
             if ($value === '') {
-                throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: value is required.");
+                throw new InvalidArgumentException("Invalid goal condition at index {$index}: value is required.");
             }
 
             if (SignalEventConditionDefinition::operatorRequiresNumericComparison($operator) && ! SignalEventConditionDefinition::fieldSupportsNumericComparison($field)) {
-                throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: operator [{$operator}] requires a numeric field.");
+                throw new InvalidArgumentException("Invalid goal condition at index {$index}: operator [{$operator}] requires a numeric field.");
             }
 
             if ($operator === 'in' && array_values(array_filter(array_map('trim', explode(',', $value)), static fn (string $item): bool => $item !== '')) === []) {
-                throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: in-list conditions require at least one value.");
+                throw new InvalidArgumentException("Invalid goal condition at index {$index}: in-list conditions require at least one value.");
             }
         }
     }

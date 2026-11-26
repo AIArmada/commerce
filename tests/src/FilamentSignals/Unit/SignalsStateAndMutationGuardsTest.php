@@ -9,9 +9,9 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentSignals\Support\SavedSignalReportMutationGuard;
 use AIArmada\FilamentSignals\Support\SignalsReportStateSanitizer;
 use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalGoal;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Validation\ValidationException;
 

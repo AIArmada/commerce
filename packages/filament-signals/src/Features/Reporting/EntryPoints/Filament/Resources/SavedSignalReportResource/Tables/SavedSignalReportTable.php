@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables;
 
-use AIArmada\Signals\Services\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;

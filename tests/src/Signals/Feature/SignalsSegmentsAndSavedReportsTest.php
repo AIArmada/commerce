@@ -6,10 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 
 uses(SignalsTestCase::class);
 

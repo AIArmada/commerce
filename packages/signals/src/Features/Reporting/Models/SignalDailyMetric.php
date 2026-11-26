@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Reporting\Models;
 
+use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Support\SignalCurrency;
+use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +35,8 @@ final class SignalDailyMetric extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected $table = 'signal_daily_metrics';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 
@@ -82,7 +87,22 @@ final class SignalDailyMetric extends Model
     protected static function booted(): void
     {
         static::saving(function (SignalDailyMetric $metric): void {
-            SignalOwnershipGuard::assertDailyMetricWrite($metric);
+            $property = SignalOwnershipGuard::ownerScopingEnabled()
+                ? SignalOwnershipGuard::findPropertyOrFail((string) $metric->tracked_property_id, SignalOwnershipGuard::resolveOwnerOrFail('save signal daily metrics'))
+                : SignalOwnershipGuard::findPropertyUnscopedOrFail((string) $metric->tracked_property_id);
+
+            $propertyCurrency = SignalCurrency::code($property->currency);
+            $metricCurrency = SignalCurrency::normalize($metric->currency);
+
+            if ($metricCurrency !== null && $metricCurrency !== $propertyCurrency && (int) $metric->revenue_minor !== 0) {
+                throw new InvalidArgumentException(sprintf(
+                    'Signal daily metric revenue in [%s] cannot be recorded on a tracked property reporting in [%s].',
+                    $metricCurrency,
+                    $propertyCurrency,
+                ));
+            }
+
+            $metric->currency = $propertyCurrency;
         });
     }
 }

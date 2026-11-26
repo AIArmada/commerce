@@ -56,7 +56,7 @@ $revenueByCurrency = SignalReportRevenue::byCurrency($query);
 `SignalRouteCatalog` can convert named routes into path conditions that are safe to reuse in reports or segments:
 
 ```php
-use AIArmada\Signals\Services\SignalRouteCatalog;
+use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
 
 // Returns null for unknown or ineligible routes.
 $condition = app(SignalRouteCatalog::class)->conditionForRouteName('pricing.show');

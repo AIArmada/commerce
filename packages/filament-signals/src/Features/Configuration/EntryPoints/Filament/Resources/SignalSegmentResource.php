@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\R
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Pages;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Schemas\SignalSegmentForm;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Tables\SignalSegmentTable;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

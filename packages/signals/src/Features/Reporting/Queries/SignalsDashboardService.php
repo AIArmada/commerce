@@ -6,7 +6,7 @@ namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
-use AIArmada\Signals\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Support\SignalCurrency;

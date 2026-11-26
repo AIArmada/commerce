@@ -6,7 +6,7 @@ namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Models\SignalSession;
 use Illuminate\Database\Eloquent\Builder;
 

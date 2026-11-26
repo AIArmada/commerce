@@ -9,9 +9,9 @@ use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Policie
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Policies\SignalInteractionRulePolicy;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Policies\SignalSegmentPolicy;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Policies\TrackedPropertyPolicy;
-use AIArmada\Signals\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Models\SignalInteractionRule;
-use AIArmada\Signals\Models\SignalSegment;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;

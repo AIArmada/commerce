@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\R
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Pages;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Schemas\SignalGoalForm;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Tables\SignalGoalTable;
-use AIArmada\Signals\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
