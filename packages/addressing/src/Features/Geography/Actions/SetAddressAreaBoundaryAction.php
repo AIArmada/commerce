@@ -8,6 +8,7 @@ use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SetAddressAreaBoundaryAction implements AddressAreaBoundaryWriter
 {
@@ -37,6 +38,8 @@ final readonly class SetAddressAreaBoundaryAction implements AddressAreaBoundary
         }
 
         $area->setAttribute('boundary', $boundary);
-        $area->saveOrFail();
+        if (! $area->saveOrFail()) {
+            throw new RuntimeException('The address area boundary could not be saved.');
+        }
     }
 }

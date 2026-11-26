@@ -327,3 +327,36 @@ it('accepts coordinate boundaries and clears explicitly empty coordinates', func
     expect($area->latitude)->toBeNull()
         ->and($area->longitude)->toBeNull();
 });
+
+it('rejects malformed hierarchy levels without changing the area', function (mixed $level): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'name' => 'Central',
+        'type' => 'state',
+    ]));
+
+    expect(fn () => $this->action->handle(['level' => $level], (string) $area->getKey()))
+        ->toThrow(ValidationException::class)
+        ->and($area->refresh()->level)->toBe(1);
+})->with([0, -1, 1.5, true, 'abc', '2.5', 32768]);
+
+it('rejects raising a parent to the same level as its child', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $parent = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'name' => 'Central',
+        'type' => 'state',
+    ]));
+    $child = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'parent_id' => $parent->id,
+        'name' => 'District',
+        'type' => 'district',
+    ]));
+
+    expect(fn () => $this->action->handle(['level' => 2], (string) $parent->getKey()))
+        ->toThrow(ValidationException::class)
+        ->and($parent->refresh()->level)->toBe(1)
+        ->and($child->refresh()->level)->toBe(2);
+});

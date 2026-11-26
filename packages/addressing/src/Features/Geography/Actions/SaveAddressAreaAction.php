@@ -100,6 +100,13 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
                 }
             }
 
+            if ($record->exists && $record->isDirty('level') && $record->level !== null
+                && $record->children()->whereNotNull('level')->where('level', '<=', $record->level)->exists()) {
+                throw ValidationException::withMessages([
+                    'level' => __('The area level must be lower than every direct child level.'),
+                ]);
+            }
+
             $previousParentId = $record->exists ? $record->getOriginal('parent_id') : null;
             $previousParentId = $previousParentId !== null ? (string) $previousParentId : null;
 
@@ -158,7 +165,7 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
             });
 
             return (string) $record->getKey();
-        });
+        }, attempts: 3);
     }
 
     /**
@@ -184,7 +191,7 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
     {
         if (! array_key_exists('parent_id', $attributes)) {
             return $record->parent_id !== null
-                ? ModelResolver::areaClass()::query()->find($record->parent_id)
+                ? ModelResolver::areaClass()::query()->lockForUpdate()->findOrFail($record->parent_id)
                 : null;
         }
 
@@ -200,7 +207,7 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
             ]);
         }
 
-        return ModelResolver::areaClass()::query()->findOrFail(mb_trim($parentId));
+        return ModelResolver::areaClass()::query()->lockForUpdate()->findOrFail(mb_trim($parentId));
     }
 
     /**
@@ -281,19 +288,22 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
      */
     private function resolveLevel(array $attributes, AddressArea $record, ?AddressArea $parent): ?int
     {
-        if (array_key_exists('level', $attributes)) {
-            return $attributes['level'] === null ? null : (int) $attributes['level'];
+        $value = array_key_exists('level', $attributes)
+            ? $attributes['level']
+            : ($record->level ?? ($parent?->level !== null ? $parent->level + 1 : 1));
+
+        if ($value === null) {
+            return null;
         }
 
-        if ($record->level !== null) {
-            return (int) $record->level;
+        if ((! is_int($value) && ! is_string($value))
+            || filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 32767]]) === false) {
+            throw ValidationException::withMessages([
+                'level' => __('The area level must be a positive integer no greater than 32767.'),
+            ]);
         }
 
-        if ($parent instanceof AddressArea && $parent->level !== null) {
-            return (int) $parent->level + 1;
-        }
-
-        return 1;
+        return (int) $value;
     }
 
     /**

@@ -31,8 +31,7 @@ final readonly class SaveAddressAction implements AddressWriter
 
         return $address->getConnection()->transaction(function () use ($address, $recordId, $data, $areaAssignments): string {
             if ($recordId !== null) {
-                AddressOwnerGuard::assertAddressIsWritable($recordId);
-                $address = $address->newQuery()->whereKey($recordId)->lockForUpdate()->firstOrFail();
+                $address = AddressOwnerGuard::lockAddressForWrite($recordId, $address::class);
             }
 
             $address->fill($data);

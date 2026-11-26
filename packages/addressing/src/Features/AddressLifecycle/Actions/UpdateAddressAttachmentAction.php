@@ -215,10 +215,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
     private function lockAddressable(string $addressId, string $addressableType, string $addressableId): void
     {
         $this->lockHost($addressableType, $addressableId);
-        AddressOwnerGuard::assertAddressIsWritable($addressId);
-
-        $addressClass = ModelResolver::addressClass();
-        $addressClass::query()->forOwner()->whereKey($addressId)->lockForUpdate()->firstOrFail();
+        AddressOwnerGuard::lockAddressForWrite($addressId);
     }
 
     private function lockHost(string $addressableType, string $addressableId): void

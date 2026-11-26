@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Traits\HasAddresses;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -137,4 +139,27 @@ it('never demotes or detaches global attachments when mutating an owned host att
 
     expect(OwnerContext::withOwner(null, fn () => Addressable::query()->findOrFail($global->getKey())->is_primary))->toBeTrue()
         ->and(OwnerContext::withOwner($owner, fn () => Addressable::query()->forOwner()->count()))->toBe(0);
+});
+
+it('rejects mutations of visible global addresses by tenant owners', function (): void {
+    config()->set('addressing.features.owner.include_global', true);
+    $owner = User::factory()->create();
+    $global = OwnerContext::withOwner(null, fn (): Address => Address::query()->create([
+        'line1' => 'Global address',
+        'country_code' => 'MY',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Address::query()->whereKey($global->getKey())->exists())->toBeTrue()
+            ->and(fn () => app(AddressWriter::class)->execute(['line1' => 'Unauthorized edit'], null, (string) $global->getKey()))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => app(AddressAssignmentWriter::class)->execute((string) $global->getKey(), []))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($global): void {
+        expect($global->refresh()->line1)->toBe('Global address');
+        app(AddressWriter::class)->execute(['line1' => 'Authorized edit'], null, (string) $global->getKey());
+        expect($global->refresh()->line1)->toBe('Authorized edit');
+    });
 });

@@ -7,14 +7,12 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -39,8 +37,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
         $addressClass = ModelResolver::addressClass();
 
         (new $addressClass)->getConnection()->transaction(function () use ($addressId, $assignments, $stateId, $metadata): void {
-            AddressOwnerGuard::assertAddressIsWritable($addressId);
-            $address = $this->persistedAddress($addressId, lock: true);
+            $address = AddressOwnerGuard::lockAddressForWrite($addressId);
             $selectedAssignments = $assignments === [] ? [] : $this->validate($address->country_code, $address->state_id, $assignments, $stateId);
             ModelResolver::areaAssignmentClass()::query()
                 ->where('address_id', $address->getKey())
@@ -154,8 +151,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
         $addressClass = ModelResolver::addressClass();
 
         (new $addressClass)->getConnection()->transaction(function () use ($addressId): void {
-            AddressOwnerGuard::assertAddressIsWritable($addressId);
-            $persisted = $this->persistedAddress($addressId, lock: true);
+            $persisted = AddressOwnerGuard::lockAddressForWrite($addressId);
 
             /** @var array<string, string> $current */
             $current = ModelResolver::areaAssignmentClass()::query()
@@ -264,21 +260,6 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             $assignments,
             static fn (mixed $areaId): bool => is_string($areaId) && isset($usable[$areaId]),
         );
-    }
-
-    /**
-     * Resolve the authoritative persisted row within the current owner scope.
-     */
-    private function persistedAddress(string $addressId, bool $lock = false): Address
-    {
-        $addressClass = ModelResolver::addressClass();
-        $query = $addressClass::query();
-
-        if (! $addressClass::ownerScopeConfig()->enabled) {
-            $query->withoutGlobalScope(OwnerScope::class);
-        }
-
-        return $query->whereKey($addressId)->when($lock, fn ($query) => $query->lockForUpdate())->firstOrFail();
     }
 
     private function areaMatchesDefinition(AddressArea $area, AddressLevelDefinition $definition): bool

@@ -8,7 +8,6 @@ use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
@@ -38,15 +37,7 @@ final readonly class CreateAddressSnapshotAction implements AddressSnapshotWrite
             $snapshotableClass::query()->whereKey($snapshotableId)->lockForUpdate()->firstOrFail();
 
             if (is_string($address)) {
-                AddressOwnerGuard::assertAddressIsWritable($address);
-                $addressClass = ModelResolver::addressClass();
-                $query = $addressClass::query();
-
-                if (! $addressClass::ownerScopeConfig()->enabled) {
-                    $query->withoutGlobalScope(OwnerScope::class);
-                }
-
-                $record = $query->whereKey($address)->lockForUpdate()->firstOrFail();
+                $record = AddressOwnerGuard::lockAddressForWrite($address);
                 $data = AddressData::from($record->attributesToArray());
                 $addressId = (string) $record->getKey();
             } else {

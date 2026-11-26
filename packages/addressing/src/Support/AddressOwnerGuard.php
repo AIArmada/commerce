@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Support;
 
+use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -44,19 +45,54 @@ final class AddressOwnerGuard
 
     public static function assertAddressIsWritable(mixed $addressId): void
     {
-        $addressClass = ModelResolver::addressClass();
+        self::findWritableAddress($addressId, ModelResolver::addressClass(), false);
+    }
 
-        if (! $addressClass::ownerScopeConfig()->enabled) {
-            $addressClass::query()->withoutGlobalScope(OwnerScope::class)->whereKey($addressId)->firstOrFail();
+    /** @param class-string<Address>|null $modelClass */
+    public static function lockAddressForWrite(string $addressId, ?string $modelClass = null): Address
+    {
+        return self::findWritableAddress($addressId, $modelClass ?? ModelResolver::addressClass(), true);
+    }
 
-            return;
-        }
-
+    /** @param class-string<Address> $modelClass */
+    private static function findWritableAddress(mixed $addressId, string $modelClass, bool $lock): Address
+    {
         if (! is_int($addressId) && ! is_string($addressId)) {
             throw new AuthorizationException('A valid address is required.');
         }
 
-        OwnerWriteGuard::findOrFailForOwner($addressClass, $addressId);
+        $config = $modelClass::ownerScopeConfig();
+        $query = $modelClass::query()->withoutGlobalScope(OwnerScope::class)->whereKey($addressId);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        if (! $config->enabled) {
+            return $query->firstOrFail();
+        }
+
+        $owner = OwnerContext::resolveConfigured($config);
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            sprintf('%s requires an owner context or explicit global context.', $modelClass),
+        );
+
+        OwnerQuery::applyToEloquentBuilder(
+            $query,
+            $owner,
+            false,
+            $config->ownerTypeColumn,
+            $config->ownerIdColumn,
+        );
+
+        $address = $query->first();
+
+        if (! $address instanceof Address) {
+            throw new AuthorizationException('Referenced record is not accessible in the current owner scope.');
+        }
+
+        return $address;
     }
 
     public static function assertAddressableIsWritable(mixed $addressableType, mixed $addressableId): void
