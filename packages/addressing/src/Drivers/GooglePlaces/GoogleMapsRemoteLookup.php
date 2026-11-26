@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\GooglePlaces;
+namespace AIArmada\Addressing\Drivers\GooglePlaces;
 
+use AIArmada\Addressing\Contracts\GoogleMapsLookup;
+use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
+use AIArmada\Addressing\GooglePlaces\GoogleMapsUrlParser;
+use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use AIArmada\Addressing\Support\GeoDistance;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-final readonly class GoogleMapsRemoteLookup
+final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
 {
     public function __construct(
         private GoogleMapsUrlParser $urls,

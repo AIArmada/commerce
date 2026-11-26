@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Exceptions\OneMapException;
-use AIArmada\Addressing\Support\OneMapClient;
+use AIArmada\Addressing\Drivers\OneMap\OneMapClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 

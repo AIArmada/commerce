@@ -23,7 +23,7 @@ final class OneMapPostalCodeSource implements PostalCodeSource
 
     /** @param list<string> $postcodes */
     public function __construct(
-        private readonly OneMapClient $client,
+        private readonly PostalAddressLookup $client,
         private readonly array $postcodes,
     ) {}
 

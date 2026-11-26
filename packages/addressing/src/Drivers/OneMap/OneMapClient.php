@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Drivers\OneMap;
 
+use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Exceptions\OneMapException;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Http;
  * reported expiry. No token state is held in memory, keeping this safe for
  * long-lived workers.
  */
-class OneMapClient
+class OneMapClient implements PostalAddressLookup
 {
     private const string TOKEN_CACHE_KEY = 'aiarmada.addressing.onemap.token';
 
@@ -56,10 +57,11 @@ class OneMapClient
             $rows = $response->json('results', []);
 
             if (is_array($rows)) {
-                $results = [...$results, ...array_values(array_filter(
-                    $rows,
-                    static fn (mixed $row): bool => is_array($row),
-                ))];
+                foreach ($rows as $row) {
+                    if (is_array($row)) {
+                        $results[] = $row;
+                    }
+                }
             }
 
             $page++;
@@ -100,7 +102,7 @@ class OneMapClient
     private function sendSearch(string $query, int $page = 1): Response
     {
         $token = $this->token();
-        $retries = max(0, (int) config('addressing.onemap.retries', 2));
+        $retries = min(5, max(0, (int) config('addressing.onemap.retries', 2)));
 
         $response = null;
 
@@ -224,9 +226,9 @@ class OneMapClient
             : CarbonImmutable::now()->addDays(3);
 
         $cachedUntil = $expiresAt->subSeconds(self::TOKEN_EXPIRY_BUFFER_SECONDS);
-        $minimum = CarbonImmutable::now()->addMinutes(5);
+        $now = CarbonImmutable::now();
 
-        return $cachedUntil->greaterThan($minimum) ? $cachedUntil : $minimum;
+        return $cachedUntil->greaterThan($now) ? $cachedUntil : $now;
     }
 
     private function sleep(int $attempt, ?string $retryAfter): void
@@ -257,6 +259,7 @@ class OneMapClient
     private function http(): PendingRequest
     {
         return Http::acceptJson()
+            ->withOptions(['allow_redirects' => false])
             ->connectTimeout((int) config('addressing.onemap.connect_timeout', 5))
             ->timeout((int) config('addressing.onemap.timeout', 10));
     }

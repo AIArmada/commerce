@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Actions;
 
 use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
-use AIArmada\Addressing\GooglePlaces\GoogleMapsRemoteLookup;
+use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsUrlParser;
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,7 +22,7 @@ class NormalizeGoogleMapsInputAction
 
     public function __construct(
         private readonly GoogleMapsUrlParser $urls,
-        private readonly GoogleMapsRemoteLookup $remoteLookup,
+        private readonly GoogleMapsLookup $remoteLookup,
     ) {}
 
     /**

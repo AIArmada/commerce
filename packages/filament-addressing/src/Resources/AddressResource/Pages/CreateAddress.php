@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Actions\SaveAddressAction;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\DB;
-use LogicException;
 
 final class CreateAddress extends CreateRecord
 {
@@ -18,31 +16,16 @@ final class CreateAddress extends CreateRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressResource::isReadOnly();
+        return ! AddressResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function handleRecordCreation(array $data): Address
     {
-        return DB::transaction(function () use ($data): Address {
-            $modelClass = AddressResource::getModel();
-            $address = new $modelClass;
-
-            if (! $address instanceof Address) {
-                throw new LogicException('Configured address model must extend Address.');
-            }
-
-            $address->fill($data);
-            $address->save();
-
-            app(SyncAddressAreaAssignmentsAction::class)->execute(
-                $address,
-                $this->areaAssignments(),
-                $address->state_id,
-                ['source' => 'filament-addressing'],
-            );
-
-            return $address;
-        });
+        return app(SaveAddressAction::class)->execute(
+            $data,
+            $this->areaAssignments(),
+            modelClass: AddressResource::getModel(),
+        );
     }
 
     /** @return array<string, string|null> */

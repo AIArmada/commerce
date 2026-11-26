@@ -24,8 +24,13 @@ final class FilamentAddressingPlugin implements Plugin
 
     public static function get(): static
     {
-        /* @phpstan-ignore return.type */
-        return filament(app(self::class)->getId());
+        $plugin = filament(app(self::class)->getId());
+
+        if (! $plugin instanceof self) {
+            throw new \LogicException('The registered addressing plugin has an unexpected type.');
+        }
+
+        return $plugin;
     }
 
     public function getId(): string

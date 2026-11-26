@@ -6,14 +6,14 @@ namespace AIArmada\Addressing\Actions;
 
 use AIArmada\Addressing\Data\ResolveSingaporePostalCodesResultData;
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\Addressing\Support\OneMapClient;
+use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Support\OneMapPostalCodeSource;
 use InvalidArgumentException;
 
 final class ResolveSingaporePostalCodesAction
 {
     public function __construct(
-        private readonly OneMapClient $oneMap,
+        private readonly PostalAddressLookup $oneMap,
         private readonly ImportPostalCodesAction $importPostalCodes,
     ) {}
 
