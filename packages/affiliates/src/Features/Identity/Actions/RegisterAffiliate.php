@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Features\Identity\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 
 final readonly class RegisterAffiliate implements RegistrationApi
@@ -23,6 +24,20 @@ final readonly class RegisterAffiliate implements RegistrationApi
 
     public function register(array $data, RecordReference $owner, ?string $referralCode, ?string $cookie): AffiliateRecord
     {
+        if (! config('affiliates.registration.enabled', true)) {
+            throw new InvalidArgumentException('Affiliate registration is disabled.');
+        }
+
+        $data = Validator::make($data, [
+            'name' => ['required', 'string', 'max:120'],
+            'handle' => ['nullable', 'string', 'max:40'],
+            'code' => ['nullable', 'string', 'alpha_dash:ascii', 'max:64'],
+            'description' => ['nullable', 'string'],
+            'contact_email' => ['nullable', 'email', 'max:255'],
+            'website_url' => ['nullable', 'url:http,https', 'max:2048'],
+            'phone' => ['nullable', 'string', 'max:32'],
+        ])->validate();
+
         $ownerModel = EloquentRecordReference::resolve($owner);
         $connection = (new Affiliate)->getConnection();
 
@@ -40,7 +55,18 @@ final readonly class RegisterAffiliate implements RegistrationApi
                 }
             }
 
-            unset($data['parent_affiliate_id']);
+            if ($sponsor !== null) {
+                $sponsor = Affiliate::query()->forOwner()->whereKey($sponsor->getKey())->lockForUpdate()->first();
+
+                if ($sponsor === null || ! $sponsor->canBeAttributed() || ! $sponsor->isCommercialPurpose()) {
+                    if ($referralCode !== null && mb_trim($referralCode) !== '') {
+                        throw new InvalidArgumentException('The referral code does not identify an eligible affiliate.');
+                    }
+
+                    $sponsor = null;
+                }
+            }
+
             if ($sponsor !== null) {
                 $data['parent_affiliate_id'] = (string) $sponsor->getKey();
             }

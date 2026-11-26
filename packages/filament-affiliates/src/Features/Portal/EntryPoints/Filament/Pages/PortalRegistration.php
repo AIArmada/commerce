@@ -170,7 +170,7 @@ class PortalRegistration extends FilamentRegister
 
                 return __('Choose your own affiliate code, or leave blank for auto-generated.');
             })
-            ->maxLength(255)
+            ->maxLength(64)
             ->alphaDash()
             ->live(debounce: 500)
             ->afterStateUpdated(function (?string $state): void {
@@ -206,7 +206,7 @@ class PortalRegistration extends FilamentRegister
                 : [],
             )
             ->unique(
-                table: config('affiliates.database.tables.affiliates', 'affiliate_affiliates'),
+                table: config('affiliates.database.tables.affiliates', 'affiliates'),
                 column: 'code',
             );
     }
@@ -248,7 +248,7 @@ class PortalRegistration extends FilamentRegister
 
                 return __('If you were referred by an affiliate, enter their code here.');
             })
-            ->maxLength(255)
+            ->maxLength(64)
             ->live(debounce: 500)
             ->afterStateUpdated(function (?string $state): void {
                 $this->checkReferralCode($state);
@@ -311,7 +311,7 @@ class PortalRegistration extends FilamentRegister
         return TextInput::make('affiliate_name')
             ->label(__('Affiliate / Business Name'))
             ->required()
-            ->maxLength(255);
+            ->maxLength(120);
     }
 
     protected function getPhoneFormComponent(): Component

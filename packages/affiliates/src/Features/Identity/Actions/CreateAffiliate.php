@@ -15,6 +15,7 @@ use AIArmada\Contacting\Data\ContactMethodData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
@@ -37,7 +38,6 @@ final readonly class CreateAffiliate
         $name = $this->resolveName($data);
         $commissionType = $this->resolveCommissionType($data);
         $commissionRate = $this->resolveCommissionRate($data, $commissionType);
-        $parentId = $this->resolveParentId($data);
 
         $codeProvided = array_key_exists('code', $data) && $data['code'] !== null;
         $attempts = $codeProvided ? 1 : 3;
@@ -45,7 +45,8 @@ final readonly class CreateAffiliate
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return (new Affiliate)->getConnection()->transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $parentId, $mode): Affiliate {
+                return (new Affiliate)->getConnection()->transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $mode): Affiliate {
+                    $parentId = $this->resolveParentId($data);
                     $status = $mode->defaultStatus();
 
                     $affiliate = new Affiliate([
@@ -168,24 +169,26 @@ final readonly class CreateAffiliate
             return null;
         }
 
-        if (! is_string($parentId) && ! is_int($parentId)) {
+        if (! is_string($parentId) || ! Str::isUuid($parentId)) {
             throw new InvalidArgumentException('Parent affiliate id is invalid.');
         }
 
         if (config('affiliates.owner.enabled', false)) {
-            $parent = OwnerWriteGuard::findOrFailForOwner(
+            OwnerWriteGuard::findOrFailForOwner(
                 Affiliate::class,
                 $parentId,
                 message: 'Parent affiliate is not accessible in the current owner scope.',
             );
-
-            return (string) $parent->getKey();
         }
 
-        $parent = Affiliate::query()->find($parentId);
+        $parent = Affiliate::query()->forOwner()->whereKey($parentId)->lockForUpdate()->first();
 
         if (! $parent instanceof Affiliate) {
             throw new InvalidArgumentException('Parent affiliate does not exist.');
+        }
+
+        if (! $parent->isCommercialPurpose()) {
+            throw new InvalidArgumentException('Parent affiliate is not a commercial profile.');
         }
 
         return (string) $parent->getKey();
