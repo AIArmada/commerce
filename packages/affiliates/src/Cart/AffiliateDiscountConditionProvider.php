@@ -79,8 +79,21 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
 
         $expected = $this->getConditionsFor($cart)[0] ?? null;
 
-        return $expected !== null
-            && $condition->toArray() === $expected->toArray();
+        if ($expected === null) {
+            return false;
+        }
+
+        $actualAttributes = $condition->getAttributes();
+        $expectedAttributes = $expected->getAttributes();
+        ksort($actualAttributes);
+        ksort($expectedAttributes);
+
+        return $condition->getName() === $expected->getName()
+            && $condition->getValue() === $expected->getValue()
+            && $condition->getOrder() === $expected->getOrder()
+            && $condition->getTargetDefinition()->toArray() === $expected->getTargetDefinition()->toArray()
+            && $actualAttributes === $expectedAttributes
+            && $condition->getRules() === null;
     }
 
     /**

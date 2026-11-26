@@ -402,9 +402,10 @@ test('failed post-commit creative cleanup is retained and can be retried', funct
 
     $this->mock(CreativeAssetFilesystem::class)->shouldReceive('removeDetached')->once()->andThrow(new RuntimeException('storage unavailable'));
 
-    expect($api->delete(null, $id))->toBeTrue()
+    expect(app(CreativeAdministration::class)->delete(null, $id))->toBeTrue()
         ->and($asset->fresh())->toBeNull()
-        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(1);
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(1)
+        ->and(AffiliateCreativeAssetCleanup::query()->firstOrFail()->attempt_count)->toBe(1);
     Storage::disk('public')->assertExists($path);
 
     app()->instance(CreativeAssetFilesystem::class, new SpatieCreativeAssetFilesystem);

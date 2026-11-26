@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Drivers\Media;
 
 use AIArmada\Affiliates\Contracts\CreativeAssetFilesystem;
+use Illuminate\Support\Facades\Storage;
 use LogicException;
 use RuntimeException;
 use Spatie\MediaLibrary\MediaCollections\Filesystem;
@@ -30,6 +31,14 @@ final class SpatieCreativeAssetFilesystem implements CreativeAssetFilesystem
             throw new RuntimeException('Creative cleanup refused to remove files belonging to a live media record.');
         }
 
+        $originalPath = $asset->getPathRelativeToRoot();
+
         app(Filesystem::class)->removeAllFiles($asset);
+
+        foreach (array_unique(array_filter([$asset->disk, $asset->conversions_disk])) as $disk) {
+            if (Storage::disk($disk)->fileExists($originalPath)) {
+                throw new RuntimeException('Detached creative media file still exists after cleanup.');
+            }
+        }
     }
 }

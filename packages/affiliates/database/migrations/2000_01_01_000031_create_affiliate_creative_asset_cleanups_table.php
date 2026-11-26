@@ -14,8 +14,9 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('media_class');
             $table->text('media_attributes');
+            $table->unsignedBigInteger('attempt_count')->default(0);
             $table->timestampsTz();
-            $table->index(['created_at', 'id']);
+            $table->index(['attempt_count', 'created_at', 'id'], 'affiliate_creative_cleanup_retry_index');
         });
     }
 

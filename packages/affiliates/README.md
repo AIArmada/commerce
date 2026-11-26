@@ -148,3 +148,14 @@ composer test -- --group=affiliates
 ## License
 
 Released under the [MIT license](../../LICENSE).
+
+
+### Creative media cleanup
+
+Creative replacements and deletions persist detached-file cleanup records in the same database transaction. A post-commit attempt removes the files; failed attempts remain available for retry. Register the command in the application's scheduler for recovery after storage or worker failures:
+
+```php
+Schedule::command('affiliates:retry-creative-cleanup --limit=100')->everyFiveMinutes()->withoutOverlapping();
+```
+
+The command also runs manually and exits unsuccessfully if any attempted cleanup fails. Keep the media model, disk and path-generator configuration stable while cleanup records are outstanding.

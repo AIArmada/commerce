@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property string $id
+ * @property int $attempt_count
  * @property string $media_class
  * @property array<string, mixed> $media_attributes
  */
@@ -29,6 +30,6 @@ final class AffiliateCreativeAssetCleanup extends Model
 
     protected function casts(): array
     {
-        return ['media_attributes' => 'encrypted:array'];
+        return ['media_attributes' => 'encrypted:array', 'attempt_count' => 'integer'];
     }
 }

@@ -37,7 +37,7 @@ final readonly class ProcessCreativeAssetCleanup implements CreativeCleanupQueue
     {
         $failures = 0;
 
-        $ids = AffiliateCreativeAssetCleanup::query()->oldest('created_at')->orderBy('id')
+        $ids = AffiliateCreativeAssetCleanup::query()->orderBy('attempt_count')->oldest('created_at')->orderBy('id')
             ->limit(max(1, $limit))->pluck('id');
 
         foreach ($ids as $id) {
@@ -54,18 +54,26 @@ final readonly class ProcessCreativeAssetCleanup implements CreativeCleanupQueue
         try {
             $connection = (new AffiliateCreativeAssetCleanup)->getConnection();
 
-            $connection->transaction(function () use ($id, $connection): void {
+            return $connection->transaction(function () use ($id, $connection): bool {
                 $record = AffiliateCreativeAssetCleanup::query()->lockForUpdate()->find($id);
 
                 if ($record === null) {
-                    return;
+                    return true;
                 }
 
-                $this->filesystem->removeDetached($record->media_class, $record->media_attributes, spl_object_id($connection));
-                $record->delete();
-            });
+                try {
+                    $this->filesystem->removeDetached($record->media_class, $record->media_attributes, spl_object_id($connection));
+                } catch (Throwable $exception) {
+                    $record->increment('attempt_count');
+                    report($exception);
 
-            return true;
+                    return false;
+                }
+
+                $record->delete();
+
+                return true;
+            });
         } catch (Throwable $exception) {
             report($exception);
 
