@@ -35,11 +35,11 @@ final class CommissionRateInput
 
         $fraction = $matches[2] ?? '';
 
-        if (strlen($fraction) > $precision) {
+        if (mb_strlen($fraction) > $precision) {
             throw self::invalidRate();
         }
 
-        $digits = ltrim($matches[1] . str_pad($fraction, $precision, '0'), '0');
+        $digits = mb_ltrim($matches[1] . mb_str_pad($fraction, $precision, '0'), '0');
         $minor = filter_var($digits === '' ? '0' : $digits, FILTER_VALIDATE_INT);
 
         if ($minor === false) {
