@@ -7,9 +7,8 @@ namespace AIArmada\Affiliates\Features\Commissions\EntryPoints\Console;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Support\BonusMonth;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Throwable;
@@ -51,11 +50,7 @@ final class AwardPerformanceBonusesCommand extends Command
 
         [$from, $to] = $range;
 
-        $runner = new OwnerBatchRunner(
-            Affiliate::class,
-            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        );
-        $summary = $runner->run(fn (): array => $this->processScoped($from, $to, $type, $dryRun))
+        $summary = app(AffiliateReportingReader::class)->summarizeForOwners(fn (): array => $this->processScoped($from, $to, $type, $dryRun))
             ?? ['calculated' => 0, 'awarded' => 0, 'errors' => 0];
 
         $this->info("Calculated: {$summary['calculated']}");

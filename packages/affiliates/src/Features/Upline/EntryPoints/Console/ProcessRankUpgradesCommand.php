@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Upline\EntryPoints\Console;
 
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use Illuminate\Console\Command;
 
 final class ProcessRankUpgradesCommand extends Command
@@ -24,12 +23,8 @@ final class ProcessRankUpgradesCommand extends Command
 
         $this->info('Processing rank qualifications...');
 
-        $runner = new OwnerBatchRunner(
-            Affiliate::class,
-            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        );
 
-        $upgraded = $runner->run(fn (): int => $service->processAllRankUpgrades((bool) $this->option('dry-run'))) ?? 0;
+        $upgraded = app(AffiliateReportingReader::class)->runForOwners(fn (): int => $service->processAllRankUpgrades((bool) $this->option('dry-run')));
 
         $this->info($this->option('dry-run') ? "Would change ranks for {$upgraded} affiliates." : "Processed rank changes for {$upgraded} affiliates.");
 

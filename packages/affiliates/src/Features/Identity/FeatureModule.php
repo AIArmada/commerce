@@ -22,6 +22,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\AffiliateProfileReader::class, Queries\ReadAffiliateProfiles::class);
         $app->bind(Api\AffiliateAccessGuard::class, Queries\GuardAffiliateAccess::class);
         $app->bind(Api\AffiliateReportingReader::class, Queries\ReadAffiliateReporting::class);
+        $app->bind(Api\AffiliateBonusReader::class, Queries\ReadAffiliateBonusCandidates::class);
         $app->bind(Api\AffiliateLifecycleReader::class, Queries\AffiliateLifecycleQuery::class);
         $app->bind(Api\AffiliateVoucherProvisioning::class, Actions\ProvisionAffiliateVoucher::class);
         $app->bind(Api\RegistrationApi::class, Actions\RegisterAffiliate::class);

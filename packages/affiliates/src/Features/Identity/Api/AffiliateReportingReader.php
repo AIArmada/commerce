@@ -10,7 +10,10 @@ interface AffiliateReportingReader
 {
     public function available(): bool;
 
-    /** @param list<string> $ids @return array<string, string> */
+    /**
+     * @param list<string> $ids
+     * @return array<string, string>
+     */
     public function names(array $ids): array;
 
     /** @return iterable<string> */
@@ -21,6 +24,13 @@ interface AffiliateReportingReader
 
     /** @param callable(): int $callback */
     public function runForOwners(callable $callback): int;
+
+    /**
+     * @template T of array<string, int>
+     * @param callable(): T $callback
+     * @return T|null
+     */
+    public function summarizeForOwners(callable $callback): ?array;
 
     public function nameFor(string $affiliateId, ?string $ownerType, ?string $ownerId, int $connectionIdentity): ?string;
 

@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\EntryPoints\Console;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use Illuminate\Console\Command;
 
 final class ProcessCommissionMaturityCommand extends Command
@@ -32,12 +31,8 @@ final class ProcessCommissionMaturityCommand extends Command
             $this->warn('Running in dry-run mode - no changes will be made.');
         }
 
-        $runner = new OwnerBatchRunner(
-            Affiliate::class,
-            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        );
 
-        $matured = $runner->run(fn (): int => $this->processConversionMaturity->process($dryRun)) ?? 0;
+        $matured = app(AffiliateReportingReader::class)->runForOwners(fn (): int => $this->processConversionMaturity->process($dryRun));
 
         $this->info($dryRun ? "Would mature {$matured} conversions." : "Matured {$matured} conversions.");
 

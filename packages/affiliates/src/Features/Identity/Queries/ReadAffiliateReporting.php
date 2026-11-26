@@ -70,10 +70,21 @@ final readonly class ReadAffiliateReporting implements AffiliateReportingReader
 
     public function runForOwners(callable $callback): int
     {
-        return (int) (new OwnerBatchRunner(
+        return (int) $this->ownerRunner()->run($callback);
+    }
+
+    public function summarizeForOwners(callable $callback): ?array
+    {
+        return $this->ownerRunner()->run($callback);
+    }
+
+    /** @return OwnerBatchRunner<Affiliate> */
+    private function ownerRunner(): OwnerBatchRunner
+    {
+        return new OwnerBatchRunner(
             Affiliate::class,
             ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        ))->run($callback);
+        );
     }
 
     public function available(): bool

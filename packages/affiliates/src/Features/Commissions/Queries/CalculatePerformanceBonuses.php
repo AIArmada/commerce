@@ -9,15 +9,13 @@ use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusCandidate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusReader;
 use AIArmada\Affiliates\Support\BonusConfig;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
 
 final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalculation
@@ -124,37 +122,12 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
 
         $minimumRecruits = (int) ($config['min_recruits'] ?? 3);
 
-        $recruiters = Affiliate::query()
-            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-            ->where('status', AffiliateStatus::normalize(Active::class))
-            ->whereCommercialPurpose()
-            ->withCount([
-                'children' => function (Builder $query) use ($from, $to, $includeGlobal): void {
-                    /** @var Builder<Affiliate> $query */
-                    $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
-                        ->whereBetween('created_at', [$from, $to])
-                        ->where('status', AffiliateStatus::normalize(Active::class))
-                        ->whereCommercialPurpose();
-                },
-            ])
-            ->whereHas(
-                'children',
-                function (Builder $query) use ($from, $to, $includeGlobal): void {
-                    /** @var Builder<Affiliate> $query */
-                    $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
-                        ->whereBetween('created_at', [$from, $to])
-                        ->where('status', AffiliateStatus::normalize(Active::class))
-                        ->whereCommercialPurpose();
-                },
-                '>=',
-                $minimumRecruits,
-            )
-            ->get();
+        $recruiters = app(AffiliateBonusReader::class)->recruiters($from, $to, $minimumRecruits, $includeGlobal);
 
         $bonuses = [];
 
         foreach ($recruiters as $recruiter) {
-            $recruitCount = (int) $recruiter->children_count;
+            $recruitCount = (int) $recruiter->recruitCount;
             $bonusAmount = min(
                 $recruitCount * ($config['bonus_per_recruit'] ?? 2500),
                 $config['max_bonus'] ?? 25000,
@@ -195,11 +168,7 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
         $minWeeks = $config['min_weeks'] ?? 4;
         $minConversionsPerWeek = $config['min_conversions_per_week'] ?? 1;
 
-        $affiliates = Affiliate::query()
-            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-            ->where('status', AffiliateStatus::normalize(Active::class))
-            ->whereCommercialPurpose()
-            ->get();
+        $affiliates = app(AffiliateBonusReader::class)->candidates($includeGlobal);
 
         foreach ($affiliates as $affiliate) {
             $weeksWithSales = 0;
@@ -209,8 +178,8 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
                 $weekEnd = $currentWeek->copy()->endOfWeek();
 
                 $conversionsThisWeek = $this->statistics->count(
-                    [(string) $affiliate->getKey()],
-                    spl_object_id($affiliate->getConnection()),
+                    [$affiliate->id],
+                    app(MerchantIdentity::class)->ownerTable()->connectionIdentity,
                     max($currentWeek, $from),
                     min($weekEnd, $to),
                     [ConversionStatus::Approved->value],
@@ -265,11 +234,7 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
         $prevTo = $from->subMonth()->endOfMonth();
         $bonuses = [];
 
-        $affiliates = Affiliate::query()
-            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-            ->where('status', AffiliateStatus::normalize(Active::class))
-            ->whereCommercialPurpose()
-            ->get();
+        $affiliates = app(AffiliateBonusReader::class)->candidates($includeGlobal);
 
         $floorCurrency = mb_strtoupper((string) ($config['min_previous_revenue_currency'] ?? config('affiliates.currency.default', 'MYR')));
 
@@ -315,14 +280,14 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
     }
 
     /** @return array<string, int> */
-    private function revenueByCurrency(Affiliate $affiliate, CarbonImmutable $from, CarbonImmutable $to, bool $includeGlobal): array
+    private function revenueByCurrency(AffiliateBonusCandidate $affiliate, CarbonImmutable $from, CarbonImmutable $to, bool $includeGlobal): array
     {
         $totals = [];
 
         foreach ($this->statistics->totals(
-            (string) $affiliate->getKey(),
-            RevenueVolume::referenceFor($affiliate),
-            spl_object_id($affiliate->getConnection()),
+            $affiliate->id,
+            $affiliate->currency !== null && mb_trim($affiliate->currency) !== '' ? mb_strtoupper(mb_trim($affiliate->currency)) : RevenueVolume::default(),
+            app(MerchantIdentity::class)->ownerTable()->connectionIdentity,
             $from,
             $to,
             [ConversionStatus::Approved->value],

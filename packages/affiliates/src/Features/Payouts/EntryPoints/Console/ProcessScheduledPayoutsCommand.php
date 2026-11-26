@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\EntryPoints\Console;
 
 use AIArmada\Affiliates\Features\Payouts\Actions\RunScheduledPayoutSweep;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use Illuminate\Console\Command;
 
 final class ProcessScheduledPayoutsCommand extends Command
@@ -30,11 +29,7 @@ final class ProcessScheduledPayoutsCommand extends Command
         $override = $this->option('min-amount');
         $minimum = $override !== null && $override !== '' ? (int) $override : 0;
 
-        $runner = new OwnerBatchRunner(
-            Affiliate::class,
-            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        );
-        $summary = $runner->run(fn (): array => $this->sweep->run($dryRun, $affiliateId, $minimum, function (string $outcome, string $id, string $currency) use ($dryRun): void {
+        $summary = app(AffiliateReportingReader::class)->summarizeForOwners(fn (): array => $this->sweep->run($dryRun, $affiliateId, $minimum, function (string $outcome, string $id, string $currency) use ($dryRun): void {
             if ($dryRun && $outcome === 'processed') {
                 $this->line("Would atomically claim {$currency} payout for affiliate {$id}");
             } elseif ($outcome === 'errors') {
