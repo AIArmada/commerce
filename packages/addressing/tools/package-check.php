@@ -220,7 +220,7 @@ try {
             }
         }
 
-        $checkDependency = static function (string $target, int $line) use (
+        $checkDependency = static function (string $target, int $line, bool $isImport = false) use (
             $pkgPrefix,
             $sourceDir,
             $layout,
@@ -228,6 +228,7 @@ try {
             $isPlatform,
             $isDriver,
             $isPublicContract,
+            $isFeatureModel,
             $inSrc,
             $srcRel,
             $relative,
@@ -286,6 +287,13 @@ try {
             if ($layout === 'modular') {
                 $targetFeature = $featureOf($target);
 
+                // Eloquent relationship generics and configured model class-string annotations
+                // need model type imports. Resolved executable references are checked separately.
+                $isModelAnnotationImport = $isImport
+                    && $targetFeature !== null
+                    && str_starts_with($target, $pkgPrefix . "Features\\{$targetFeature}\\Models\\")
+                    && ($isFeatureModel || in_array($srcRel, ['Support/ModelResolver.php', 'Support/CountryAddressProfileResolver.php'], true));
+
                 if ($targetFeature !== null && ! isset($features[$targetFeature])) {
                     $report(
                         'missing-feature',
@@ -315,6 +323,7 @@ try {
                 } elseif ($targetFeature !== null
                     && $targetFeature !== $sourceFeature
                     && ! str_ends_with($srcRel, 'ServiceProvider.php')
+                    && ! $isModelAnnotationImport
                     && ! str_starts_with($target, $pkgPrefix . "Features\\{$targetFeature}\\Api\\")) {
                     $report(
                         'feature-private',
@@ -330,12 +339,12 @@ try {
         foreach ($finder->find($ast, static fn (Node $node): bool => true) as $node) {
             if ($node instanceof Node\Stmt\Use_) {
                 foreach ($node->uses as $use) {
-                    $checkDependency($use->name->toString(), $use->getStartLine());
+                    $checkDependency($use->name->toString(), $use->getStartLine(), true);
                 }
             }
             if ($node instanceof Node\Stmt\GroupUse) {
                 foreach ($node->uses as $use) {
-                    $checkDependency($node->prefix->toString() . '\\' . $use->name->toString(), $use->getStartLine());
+                    $checkDependency($node->prefix->toString() . '\\' . $use->name->toString(), $use->getStartLine(), true);
                 }
             }
             if ($node instanceof Node\Name\FullyQualified) {
