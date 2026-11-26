@@ -61,14 +61,14 @@ If using `aiarmada/cart`, attach attribution through the current cart action. Th
 
 ```php
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
 $cart = app(CartManagerInterface::class)->getCurrentCart();
-$affiliate = app(AffiliateLookupQuery::class)->findByCode('CODE123');
+$affiliate = app(AffiliateDirectory::class)->findByCode('CODE123');
 
 if ($affiliate !== null) {
-    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
+    app(CartAttribution::class)->attach($affiliate->id, $cart);
 }
 ```
 

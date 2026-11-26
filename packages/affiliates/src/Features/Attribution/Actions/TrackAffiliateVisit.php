@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -25,16 +25,22 @@ use LogicException;
 final readonly class TrackAffiliateVisit implements AttributionTracking
 {
     public function __construct(
-        private AffiliateLookupQuery $affiliateLookup,
+        private AffiliateDirectory $affiliateLookup,
         private ReadAttributions $attributions,
         private FraudApi $fraud,
     ) {}
 
     public function track(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
     {
-        $affiliate = $this->affiliateLookup->findByCode($code);
+        $identity = $this->affiliateLookup->findByCode($code);
 
-        if (! $affiliate || ! $affiliate->canBeAttributed()) {
+        if ($identity === null || ! $identity->canBeAttributed) {
+            return null;
+        }
+
+        $affiliate = Affiliate::query()->forOwner()->find($identity->id);
+
+        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
             return null;
         }
 
@@ -63,7 +69,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         return $connection->transaction(function () use ($affiliate, $context, $cookieValue): ?AffiliateAttributionData {
             $locked = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliate->getKey());
 
-            if (! $locked instanceof Affiliate || ! $locked->canBeAttributed() || $this->isFingerprintBlocked($locked, $context)) {
+            if (! $locked instanceof Affiliate || ! $locked->canBeAttributed() || $this->isSelfReferral($locked) || $this->isFingerprintBlocked($locked, $context)) {
                 return null;
             }
 

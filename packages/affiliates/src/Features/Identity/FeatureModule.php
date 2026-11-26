@@ -17,6 +17,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(QualifiesForOpenApproval::class, Queries\OpenApprovalPolicy::class);
         $app->bind(Api\AffiliateLifecycle::class, Actions\TransitionAffiliateStatus::class);
         $app->bind(Api\AffiliateDirectory::class, Queries\AffiliateDirectoryQuery::class);
+        $app->bind(Api\CustomerDiscountReader::class, Queries\ReadCustomerDiscount::class);
         $app->bind(Api\AffiliateReferenceReader::class, Queries\AffiliateReferenceQuery::class);
         $app->bind(Api\AffiliateLifecycleReader::class, Queries\AffiliateLifecycleQuery::class);
         $app->bind(Api\AffiliateVoucherProvisioning::class, Actions\ProvisionAffiliateVoucher::class);

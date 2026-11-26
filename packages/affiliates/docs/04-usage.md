@@ -12,14 +12,14 @@ This guide covers common workflows for tracking affiliates, recording conversion
 
 ```php
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
 $cart = app(CartManagerInterface::class)->getCurrentCart();
-$affiliate = app(AffiliateLookupQuery::class)->findByCode('PARTNER42');
+$affiliate = app(AffiliateDirectory::class)->findByCode('PARTNER42');
 
 if ($affiliate !== null) {
-    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
+    app(CartAttribution::class)->attach($affiliate->id, $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
     'subject_type' => 'product',
@@ -34,15 +34,15 @@ if ($affiliate !== null) {
 
 ```php
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 
-$affiliateLookup = app(AffiliateLookupQuery::class);
+$affiliateLookup = app(AffiliateDirectory::class);
 
 // Find affiliate by code
 $affiliate = $affiliateLookup->findByCode('PARTNER42');
 
 // Attach to cart with context
-$attribution = app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
+$attribution = app(CartAttribution::class)->attach($affiliate->id, $cart, [
     'source' => 'instagram',
     'campaign' => 'summer-sale',
 ]);

@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 
 final readonly class AffiliateDirectoryQuery implements AffiliateDirectory
 {
