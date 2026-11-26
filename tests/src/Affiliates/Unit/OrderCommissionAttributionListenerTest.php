@@ -161,8 +161,8 @@ it('uses the explicit checkout idempotency key for frozen commercial conversions
         'total' => 10_000,
         'commission_currency' => 'MYR',
     ];
-    $first = $action->recordCommercialForFrozenAttribution($cart, $attribution, $payload);
-    $retry = $action->recordCommercialForFrozenAttribution($cart, $attribution, $payload);
+    $first = $action->recordFrozen($cart, (string) $attribution->getKey(), $payload);
+    $retry = $action->recordFrozen($cart, (string) $attribution->getKey(), $payload);
 
     $storedIdempotencyKey = hash('sha256', implode('|', [
         'affiliate-conversion',
@@ -217,11 +217,11 @@ it('namespaces explicit idempotency keys by affiliate', function (): void {
         'commission_currency' => 'MYR',
     ];
 
-    $first = $action->recordCommercialForFrozenAttribution($cart, $firstAttribution, [
+    $first = $action->recordFrozen($cart, (string) $firstAttribution->getKey(), [
         ...$common,
         'external_reference' => 'ticket:first-affiliate',
     ]);
-    $second = $action->recordCommercialForFrozenAttribution($cart, $secondAttribution, [
+    $second = $action->recordFrozen($cart, (string) $secondAttribution->getKey(), [
         ...$common,
         'external_reference' => 'ticket:second-affiliate',
     ]);
@@ -257,7 +257,7 @@ it('rejects payload attribution overrides that disagree with the frozen row', fu
         'affiliate_link_id' => (string) Str::uuid(),
         'affiliate_program_id' => (string) Str::uuid(),
     ] as $key => $value) {
-        expect(fn () => app(RecordAffiliateConversion::class)->recordCommercialForFrozenAttribution($cart, $attribution, [
+        expect(fn () => app(RecordAffiliateConversion::class)->recordFrozen($cart, (string) $attribution->getKey(), [
             'external_reference' => 'ticket:frozen-override:' . $key,
             $key => $value,
             'subtotal' => 10_000,
@@ -288,9 +288,9 @@ it('rejects frozen commercial conversion recording for a Dawah-purpose affiliate
         ->where('cart_identifier', $cart->getIdentifier())
         ->firstOrFail();
 
-    expect(fn () => app(RecordAffiliateConversion::class)->recordCommercialForFrozenAttribution(
+    expect(fn () => app(RecordAffiliateConversion::class)->recordFrozen(
         $cart,
-        $attribution,
+        (string) $attribution->getKey(),
         ['external_reference' => 'dawah-ticket-registration'],
     ))->toThrow(InvalidArgumentException::class, 'commercial-purpose');
 

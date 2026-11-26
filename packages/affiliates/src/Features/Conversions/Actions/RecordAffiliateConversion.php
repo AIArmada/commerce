@@ -7,6 +7,8 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionRecord;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
@@ -15,7 +17,6 @@ use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -42,6 +43,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         private ApplyConversionAccounting $accounting,
         private FraudApi $fraud,
         private TouchpointReader $touchpoints,
+        private AttributionConversionReader $attributions,
     ) {}
 
     public function record(Cart $cart, array $payload = []): ?AffiliateConversionData
@@ -51,16 +53,18 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
 
     public function recordFrozen(Cart $cart, string $attributionId, array $payload = []): ?AffiliateConversionData
     {
-        $attribution = AffiliateAttribution::query()->forOwner()->findOrFail($attributionId);
+        $connection = (new AffiliateConversion)->getConnection();
 
-        return $this->recordCommercialForFrozenAttribution($cart, $attribution, $payload);
+        return $connection->transaction(fn (): ?AffiliateConversionData => $this->recordCommercialForFrozenAttribution(
+            $cart,
+            $this->attributions->frozen($attributionId, spl_object_id($connection)),
+            $payload,
+        ));
     }
 
     public function attributionTouchFor(Cart $cart): ?CarbonImmutable
     {
-        $seen = $this->resolveAttributionFor($cart)?->last_referred_at;
-
-        return $seen === null ? null : CarbonImmutable::instance($seen);
+        return $this->resolveAttribution($cart, [])?->lastReferredAt;
     }
 
     /**
@@ -73,12 +77,12 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
      *
      * @param  array<string, mixed>  $payload
      */
-    public function recordCommercialForFrozenAttribution(
+    private function recordCommercialForFrozenAttribution(
         Cart $cart,
-        AffiliateAttribution $attribution,
+        AttributionConversionRecord $attribution,
         array $payload = [],
     ): ?AffiliateConversionData {
-        $affiliate = $attribution->affiliate;
+        $affiliate = Affiliate::query()->find($attribution->affiliateId);
 
         if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
             throw new InvalidArgumentException('Frozen commission attribution must belong to a commercial-purpose affiliate.');
@@ -89,9 +93,9 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         }
 
         foreach ([
-            'affiliate_code' => $attribution->affiliate_code ?? $affiliate->code,
-            'affiliate_link_id' => $attribution->affiliate_link_id,
-            'affiliate_program_id' => $attribution->affiliate_program_id,
+            'affiliate_code' => $attribution->affiliateCode,
+            'affiliate_link_id' => $attribution->affiliateLinkId,
+            'affiliate_program_id' => $attribution->affiliateProgramId,
         ] as $key => $frozenValue) {
             if (array_key_exists($key, $payload)
                 && ($payload[$key] === null ? null : (string) $payload[$key]) !== ($frozenValue === null ? null : (string) $frozenValue)) {
@@ -99,23 +103,12 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             }
         }
 
-        $payload['affiliate_attribution_id'] = (string) $attribution->getKey();
+        $payload['affiliate_attribution_id'] = (string) $attribution->id;
 
-        return (new AffiliateConversion)->getConnection()->transaction(fn (): ?AffiliateConversionData => $this->recordConversion($cart, $payload, $attribution));
+        return $this->recordConversion($cart, $payload, $attribution);
     }
 
-    /**
-     * Resolve the active attribution for a cart without recording.
-     *
-     * Lets order listeners compare touch times before deciding whether
-     * this conversion should exist at all (cross-system winner rule).
-     */
-    public function resolveAttributionFor(Cart $cart): ?AffiliateAttribution
-    {
-        return $this->resolveAttribution($cart, []);
-    }
-
-    private function recordConversion(Cart $cart, array $payload = [], ?AffiliateAttribution $frozenAttribution = null): ?AffiliateConversionData
+    private function recordConversion(Cart $cart, array $payload = [], ?AttributionConversionRecord $frozenAttribution = null): ?AffiliateConversionData
     {
         $attribution = $frozenAttribution ?? $this->resolveAttribution($cart, $payload);
         $affiliate = $this->resolveAffiliate($payload, $attribution);
@@ -135,10 +128,10 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $statusEnum = ConversionStatus::fromString($status);
         $autoApprove = config('affiliates.commissions.auto_approve', false);
 
-        $weights = $frozenAttribution instanceof AffiliateAttribution
+        $weights = $frozenAttribution instanceof AttributionConversionRecord
             ? [$affiliate->getKey() => 1.0]
             : $this->attributionModel->distribute(
-                $attribution === null ? [] : $this->touchpoints->distributionTouches((string) $attribution->getKey()),
+                $attribution === null ? [] : $this->touchpoints->distributionTouches((string) $attribution->id),
             );
 
         if ($weights === []) {
@@ -235,24 +228,24 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             $conversionMetadata = $this->buildConversionMetadata(
                 $payload['metadata'] ?? [],
                 $weight,
-                $payload['subject_type'] ?? $attribution?->subject_type,
-                $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot,
+                $payload['subject_type'] ?? $attribution?->subjectType,
+                $payload['subject_title_snapshot'] ?? $attribution?->subjectTitleSnapshot,
             );
 
             $conversionAttributes = [
                 'affiliate_id' => $affiliateId,
                 'affiliate_code' => $beneficiary->code,
-                'affiliate_attribution_id' => $attribution?->getKey(),
-                'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution?->affiliate_link_id,
-                'affiliate_program_id' => $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id,
-                'subject_type' => $payload['subject_type'] ?? $attribution?->subject_type,
-                'subject_key' => $payload['subject_key'] ?? $attribution?->subject_key ?? $cart->getIdentifier(),
-                'subject_id' => $payload['subject_id'] ?? $attribution?->subject_id,
-                'subject_instance' => $payload['subject_instance'] ?? $attribution?->subject_instance ?? $cart->instance(),
-                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot,
-                'voucher_code' => $payload['voucher_code'] ?? $attribution?->voucher_code,
-                'commission_override' => $payload['commission_override'] ?? $attribution?->commission_override,
-                'upline_levels' => $payload['upline_levels'] ?? $attribution?->upline_levels,
+                'affiliate_attribution_id' => $attribution?->id,
+                'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution?->affiliateLinkId,
+                'affiliate_program_id' => $payload['affiliate_program_id'] ?? $attribution?->affiliateProgramId,
+                'subject_type' => $payload['subject_type'] ?? $attribution?->subjectType,
+                'subject_key' => $payload['subject_key'] ?? $attribution?->subjectKey ?? $cart->getIdentifier(),
+                'subject_id' => $payload['subject_id'] ?? $attribution?->subjectId,
+                'subject_instance' => $payload['subject_instance'] ?? $attribution?->subjectInstance ?? $cart->instance(),
+                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subjectTitleSnapshot,
+                'voucher_code' => $payload['voucher_code'] ?? $attribution?->voucherCode,
+                'commission_override' => $payload['commission_override'] ?? $attribution?->commissionOverride,
+                'upline_levels' => $payload['upline_levels'] ?? $attribution?->uplineLevels,
                 'external_reference' => $externalReference,
                 'conversion_type' => $conversionType,
                 'subtotal_minor' => $subtotalMinor ?? 0,
@@ -263,7 +256,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 'channel' => $channel,
                 'origin' => $payload['origin'] ?? $attribution?->origin,
                 'source_ref' => $payload['source_ref'] ?? null,
-                'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharer_user_id,
+                'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharerUserId,
                 'actor_user_id' => $payload['actor_user_id'] ?? null,
                 'metadata' => $conversionMetadata,
                 'owner_type' => $ownerType,
@@ -321,7 +314,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         }
 
         if ($conversions !== []) {
-            $this->allocateUpline->handle($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
+            $this->allocateUpline->handle($conversions, $autoApprove, $statusEnum, $attribution?->id);
         }
 
         return $firstConversion;
@@ -377,7 +370,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         Affiliate $affiliate,
         int $baseAmount,
         array $payload,
-        ?AffiliateAttribution $attribution,
+        ?AttributionConversionRecord $attribution,
     ): int {
         if (! $affiliate->isCommercialPurpose()) {
             return 0;
@@ -387,13 +380,13 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             return $this->commissionPricing->clamp($this->resolveMinorAmount($payload['commission'], fn () => 0) ?? 0);
         }
 
-        $voucherOverride = $payload['commission_override'] ?? $attribution?->commission_override;
+        $voucherOverride = $payload['commission_override'] ?? $attribution?->commissionOverride;
 
         if (is_array($voucherOverride) && isset($voucherOverride['type'], $voucherOverride['value'])) {
             return $this->commissionPricing->clamp($this->calculateVoucherCommission($voucherOverride, $baseAmount));
         }
 
-        $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id;
+        $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliateProgramId;
 
         if ($programId) {
             $result = $this->ruleEngine->calculate((string) $affiliate->getKey(), $baseAmount, [
@@ -420,30 +413,23 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         return (int) max(0, round(($baseAmount * $value) / ($scale * 100)));
     }
 
-    private function resolveAttribution(Cart $cart, array $payload): ?AffiliateAttribution
+    private function resolveAttribution(Cart $cart, array $payload): ?AttributionConversionRecord
     {
         $attributionId = $payload['affiliate_attribution_id'] ?? null;
 
-        $query = AffiliateAttribution::query()->active();
-
-        if ($attributionId !== null) {
-            $query->whereKey($attributionId);
-        } else {
-            $query
-                ->where('cart_identifier', $cart->getIdentifier())
-                ->where('cart_instance', $cart->instance())
-                ->latest('last_seen_at')
-                ->latest('id');
+        if ($attributionId !== null && ! is_string($attributionId)) {
+            throw new InvalidArgumentException('Invalid attribution identity.');
         }
 
-        if (config('affiliates.owner.enabled', false)) {
-            $query->forOwner(includeGlobal: true);
-        }
-
-        return $query->first();
+        return $this->attributions->active(
+            $attributionId,
+            $cart->getIdentifier(),
+            $cart->instance(),
+            spl_object_id((new AffiliateConversion)->getConnection()),
+        );
     }
 
-    private function resolveAffiliate(array $payload, ?AffiliateAttribution $attribution): ?Affiliate
+    private function resolveAffiliate(array $payload, ?AttributionConversionRecord $attribution): ?Affiliate
     {
         if (isset($payload['affiliate_id'])) {
             $query = Affiliate::query();
@@ -470,7 +456,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             return $query->first();
         }
 
-        return $attribution?->affiliate;
+        return $attribution === null ? null : Affiliate::query()->find($attribution->affiliateId);
     }
 
     private function resolveMinorAmount(mixed $value, callable $fallback): ?int

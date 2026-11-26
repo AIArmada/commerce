@@ -18,6 +18,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\TouchpointReader::class, Queries\ReadTouchpoints::class);
         $app->bind(Api\AttributionActivity::class, Actions\TouchAffiliateAttribution::class);
         $app->bind(Api\AttributionSignalReader::class, Queries\AttributionSignalQuery::class);
+        $app->bind(Api\AttributionConversionReader::class, Queries\ReadAttributionConversions::class);
         $app->singleton(Api\AttributionDistribution::class, Queries\DistributeAttribution::class);
         $app->tag([
             Extensions\LastTouchAttribution::class,

@@ -162,10 +162,10 @@ describe('attribution decision', function (): void {
         $cartManager = mock(CartManagerInterface::class);
         $cartManager->shouldReceive('getById')->once()->with($cartId)->andReturn($cart);
         app()->instance(CartManagerInterface::class, $cartManager);
-        $engineAttribution = OwnerContext::withOwner($owner, fn () => app(RecordAffiliateConversion::class)
-            ->resolveAttributionFor($cart));
+        $engineTouch = OwnerContext::withOwner($owner, fn () => app(RecordAffiliateConversion::class)
+            ->attributionTouchFor($cart));
 
-        expect($engineAttribution)->toBeInstanceOf(AffiliateAttribution::class);
+        expect($engineTouch)->not->toBeNull();
 
         $networkTouch = now()->subMinute()->toIso8601String();
         $order = OwnerContext::withOwner($owner, fn (): Order => Order::factory()->paid()->create([
