@@ -115,7 +115,7 @@ Report, alert, and command paths are owner-scoped. Global rows require explicit 
 
 ## ReportRegistry
 
-Signals uses a `ReportRegistry` to manage pluggable report types. Reports are registered in `SignalsServiceProvider` via anonymous classes implementing `ReportInterface`:
+Signals uses a `ReportRegistry` to manage pluggable report types. Reports are registered in the Reporting feature module via anonymous classes implementing `ReportInterface`:
 
 | Report Type | Backing Service |
 |---|---|
@@ -129,19 +129,16 @@ Signals uses a `ReportRegistry` to manage pluggable report types. Reports are re
 | `goals` | `GoalsReportService` |
 | `live_activity` | `LiveActivityReportService` |
 
-The registry is consumed by `SignalsDashboardService` and Filament admin surfaces. Each report implements `summary(?string $trackedPropertyId, ?string $from, ?string $until): array`, making the same data available outside the admin UI:
+The registry is consumed by the Reporting feature's `DashboardRead` implementation. Each report implements `summary(?string $trackedPropertyId, ?string $from, ?string $until): array`, making the same data available outside the admin UI:
 
 ```php
-use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 
-$registry = app(ReportRegistry::class);
+$dashboard = app(DashboardRead::class);
+$summary = $dashboard->report('page_view', trackedPropertyId: $property->id);
 
-/** @var \AIArmada\Signals\Contracts\ReportInterface $report */
-$report = $registry->get('page_view');
-$summary = $report->summary(trackedPropertyId: $property->id);
-
-foreach ($registry->all() as $report) {
-    $data = $report->summary();
+foreach ($dashboard->availableReports() as $type => $name) {
+    $data = $dashboard->report($type);
 }
 ```
 
