@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -69,6 +70,23 @@ final readonly class ProgramReferenceQuery implements ProgramReferenceReader
         AffiliateProgram::query()->lockForUpdate()->findOrFail($id);
     }
 
+    public function existsForOwner(string $id, ?string $ownerType, string | int | null $ownerId, int $connectionIdentity, bool $includeGlobal = false): bool
+    {
+        $this->assertSharedConnection($connectionIdentity);
+
+        if (! Str::isUuid($id)) {
+            return false;
+        }
+
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return AffiliateProgram::query()->whereKey($id)->exists();
+        }
+
+        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
+
+        return AffiliateProgram::query()->forOwner($owner, $includeGlobal)->whereKey($id)->exists();
+    }
+
     public function exists(string $id): bool
     {
         if (! Str::isUuid($id)) {
@@ -93,9 +111,9 @@ final readonly class ProgramReferenceQuery implements ProgramReferenceReader
     }
 
     /** @return array<string, string> */
-    public function options(string $search = '', int $limit = 50): array
+    public function options(string $search = '', int $limit = 50, ?bool $includeGlobal = null): array
     {
-        $query = AffiliateProgram::query()->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false));
+        $query = AffiliateProgram::query()->forOwner(includeGlobal: $includeGlobal ?? (bool) config('affiliates.owner.include_global', false));
         $search = mb_trim($search);
 
         if ($search !== '') {
@@ -110,13 +128,13 @@ final readonly class ProgramReferenceQuery implements ProgramReferenceReader
         return $options;
     }
 
-    public function label(string $id): ?string
+    public function label(string $id, ?bool $includeGlobal = null): ?string
     {
         if (! Str::isUuid($id)) {
             return null;
         }
 
-        $name = AffiliateProgram::query()->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false))->whereKey($id)->value('name');
+        $name = AffiliateProgram::query()->forOwner(includeGlobal: $includeGlobal ?? (bool) config('affiliates.owner.include_global', false))->whereKey($id)->value('name');
 
         return is_string($name) ? $name : null;
     }

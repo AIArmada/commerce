@@ -17,7 +17,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
@@ -382,10 +382,13 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         }
 
         if ($attribution->affiliate_program_id !== null
-            && ! AffiliateProgram::query()
-                ->forOwner($affiliate->owner, includeGlobal: true)
-                ->whereKey($attribution->affiliate_program_id)
-                ->exists()) {
+            && ! app(ProgramReferenceReader::class)->existsForOwner(
+                $attribution->affiliate_program_id,
+                $affiliate->owner_type,
+                $affiliate->owner_id,
+                spl_object_id($affiliate->getConnection()),
+                includeGlobal: true,
+            )) {
             throw new InvalidArgumentException('The attribution program is outside the affiliate owner scope.');
         }
     }
@@ -408,10 +411,13 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             throw new InvalidArgumentException('The outcome link does not belong to its affiliate.');
         }
 
-        if ($programId !== null && ! AffiliateProgram::query()
-            ->forOwner($affiliate->owner, includeGlobal: true)
-            ->whereKey($programId)
-            ->exists()) {
+        if ($programId !== null && (! is_string($programId) || ! app(ProgramReferenceReader::class)->existsForOwner(
+            $programId,
+            $affiliate->owner_type,
+            $affiliate->owner_id,
+            spl_object_id($affiliate->getConnection()),
+            includeGlobal: true,
+        ))) {
             throw new InvalidArgumentException('The outcome program is outside the affiliate owner scope.');
         }
     }
