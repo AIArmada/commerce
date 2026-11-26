@@ -25,7 +25,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
-use LogicException;
 
 class AddressesRelationManager extends RelationManager
 {
@@ -150,7 +149,7 @@ class AddressesRelationManager extends RelationManager
                         Gate::forUser(Filament::auth()->user())->authorize('update', $record);
                         abort_unless(OwnerUiScope::canMutateRecord($record), 403);
 
-                        app(AddressWriter::class)->execute($data, null, (string) $record->getKey());
+                        app(AddressWriter::class)->execute($data, null, (string) $record->getKey(), $record::class);
 
                         return $record->refresh();
                     }),
@@ -166,11 +165,8 @@ class AddressesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        $customer = $this->getOwnerRecord();
-
-                        if (! $customer instanceof Customer) {
-                            throw new LogicException('Customer address actions require a customer owner record.');
-                        }
+                        $customer = $this->authorizedCustomer();
+                        abort_unless(OwnerUiScope::canMutateRecord($record), 403);
 
                         app(SetDefaultCustomerAddress::class)->execute($customer, $record, 'billing');
                     })
@@ -187,11 +183,8 @@ class AddressesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        $customer = $this->getOwnerRecord();
-
-                        if (! $customer instanceof Customer) {
-                            throw new LogicException('Customer address actions require a customer owner record.');
-                        }
+                        $customer = $this->authorizedCustomer();
+                        abort_unless(OwnerUiScope::canMutateRecord($record), 403);
 
                         app(SetDefaultCustomerAddress::class)->execute($customer, $record, 'shipping');
                     })

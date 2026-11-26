@@ -18,6 +18,7 @@ use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignmentWriter
 {
@@ -45,14 +46,21 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
                 ->where('address_id', $address->getKey())
                 ->delete();
 
+            $assignmentClass = ModelResolver::areaAssignmentClass();
+
             foreach ($selectedAssignments as $role => $areaId) {
-                ModelResolver::areaAssignmentClass()::query()->create([
+                $assignment = new $assignmentClass;
+                $assignment->fill([
                     'address_id' => $address->getKey(),
                     'address_area_id' => $areaId,
                     'role' => $role,
                     'is_primary' => true,
                     'metadata' => $metadata !== [] ? $metadata : null,
                 ]);
+
+                if (! $assignment->save()) {
+                    throw new RuntimeException('The address area assignment could not be saved.');
+                }
             }
         });
     }

@@ -202,3 +202,18 @@ it('accepts an explicit state matching the persisted state despite unsaved calle
         ->and($address->fresh()?->state_id)->toBe($this->state->getKey())
         ->and($address->fresh()?->country_code)->toBe('MY');
 });
+
+it('rejects malformed assignments without removing the persisted valid selection', function (): void {
+    $address = Address::query()->create([
+        'country_code' => 'MY',
+        'state_id' => $this->state->getKey(),
+    ]);
+    $postal = AddressArea::query()->where('source_id', 'postal')->firstOrFail();
+    $writer = app(AddressAssignmentWriter::class);
+    $writer->execute((string) $address->getKey(), ['postal_locality' => $postal->getKey()]);
+
+    expect(fn () => $writer->execute((string) $address->getKey(), ['postal_locality' => ['invalid']]))
+        ->toThrow(ValidationException::class);
+
+    expect($address->areaAssignments()->where('role', 'postal_locality')->value('address_area_id'))->toBe($postal->getKey());
+});

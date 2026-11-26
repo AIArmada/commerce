@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class CreateAddressSnapshotAction implements AddressSnapshotWriter
 {
@@ -53,7 +54,8 @@ final readonly class CreateAddressSnapshotAction implements AddressSnapshotWrite
                 $addressId = null;
             }
 
-            $snapshot = $snapshotClass::create([
+            $snapshot = new $snapshotClass;
+            $snapshot->fill([
                 'address_id' => $addressId,
                 'snapshotable_type' => $snapshotableType,
                 'snapshotable_id' => $snapshotableId,
@@ -83,6 +85,10 @@ final readonly class CreateAddressSnapshotAction implements AddressSnapshotWrite
                 'waze_url' => $data->wazeUrl,
                 'navigation_links' => $data->navigationLinks !== [] ? $data->navigationLinks : null,
             ]);
+
+            if (! $snapshot->save()) {
+                throw new RuntimeException('The address snapshot could not be created.');
+            }
 
             return (string) $snapshot->getKey();
         });

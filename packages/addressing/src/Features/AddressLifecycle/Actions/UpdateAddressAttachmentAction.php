@@ -161,7 +161,8 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
                 return (string) $existing->getKey();
             }
 
-            $pivot = $pivotClass::query()->create([
+            $pivot = new $pivotClass;
+            $pivot->fill([
                 'id' => (string) Str::orderedUuid(),
                 'address_id' => $addressId,
                 'addressable_type' => $addressableType,
@@ -170,6 +171,10 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
                 'is_primary' => $isPrimary,
                 'label' => $label,
             ]);
+
+            if (! $pivot->save()) {
+                throw new RuntimeException('The address attachment could not be created.');
+            }
 
             return (string) $pivot->getKey();
         });

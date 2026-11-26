@@ -115,3 +115,35 @@ it('does not report a cancelled attachment deletion as successful', function ():
 
     expect(Addressable::query()->whereKey($pivot->getKey())->exists())->toBeTrue();
 });
+
+it('selects a different primary attachment without changing other types', function (): void {
+    $first = $this->host->attachAddress($this->address, type: 'shipping', isPrimary: true);
+    $otherAddress = Address::query()->create(['line1' => '9 Market Street', 'country_code' => 'MY']);
+    $second = $this->host->attachAddress($otherAddress, type: 'shipping');
+    $billing = $this->host->attachAddress($this->address, type: 'billing', isPrimary: true);
+
+    $selected = $this->host->setPrimaryAddress($otherAddress, 'shipping');
+
+    expect($selected->getKey())->toBe($second->getKey())
+        ->and($selected->is_primary)->toBeTrue()
+        ->and($first->fresh()->is_primary)->toBeFalse()
+        ->and($billing->fresh()->is_primary)->toBeTrue();
+});
+
+it('rolls back demotion when an attachment creation is vetoed', function (): void {
+    $first = $this->host->attachAddress($this->address, type: 'shipping', isPrimary: true);
+    $otherAddress = Address::query()->create(['line1' => '9 Market Street', 'country_code' => 'MY']);
+    $dispatcher = Event::getFacadeRoot();
+    $event = 'eloquent.creating: ' . Addressable::class;
+    $dispatcher->listen($event, static fn (): bool => false);
+
+    try {
+        expect(fn () => $this->host->attachAddress($otherAddress, type: 'shipping', isPrimary: true))
+            ->toThrow(RuntimeException::class, 'could not be created');
+    } finally {
+        $dispatcher->forget($event);
+    }
+
+    expect($first->fresh()->is_primary)->toBeTrue()
+        ->and($this->host->addressAttachments()->count())->toBe(1);
+});

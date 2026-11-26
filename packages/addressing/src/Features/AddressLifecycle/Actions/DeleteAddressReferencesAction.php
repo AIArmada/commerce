@@ -8,6 +8,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use RuntimeException;
 
 final readonly class DeleteAddressReferencesAction implements AddressDeletionCleanup
 {
@@ -26,11 +27,15 @@ final readonly class DeleteAddressReferencesAction implements AddressDeletionCle
             $address = $query->whereKey($addressId)->lockForUpdate()->firstOrFail();
 
             foreach ($address->areaAssignments()->get() as $assignment) {
-                $assignment->delete();
+                if (! $assignment->delete()) {
+                    throw new RuntimeException('An address area assignment could not be removed.');
+                }
             }
 
             foreach ($address->addressableLinks()->get() as $link) {
-                $link->delete();
+                if (! $link->delete()) {
+                    throw new RuntimeException('An address attachment could not be removed.');
+                }
             }
 
             $address->snapshots()->update(['address_id' => null]);

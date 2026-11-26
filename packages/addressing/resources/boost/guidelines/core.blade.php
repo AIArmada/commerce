@@ -5,7 +5,9 @@
 - Resolve formatting, validation, normalization, navigation links and lookup through the contracts in `AIArmada\Addressing\Contracts`.
 - Keep geography providers declarative: return CountryStateSeedData and area metadata; do not write database rows from a provider.
 - Use CountryGeographySeeder and AddressingDatasetSeeder to orchestrate the reference imports.
-- Attach, update, detach and select primary addresses using the lifecycle feature. Pass persisted identifiers; revalidate owner scope on every mutation.
+- Use AddressWriter, AddressAreaWriter, PostalCodeWriter and AddressSnapshotWriter for mutations; they return persisted IDs. Pass null as AddressWriter's assignment map to preserve existing compatible assignments, or an explicit map to replace them.
+- Attach, update, detach and select primary addresses through AddressAttachmentWriter. Pass persisted identifiers; revalidate owner scope on every mutation.
+- AddressAreaSearch returns a list of immutable AddressAreaMatchData values, not Eloquent models.
 - Keep external HTTP requests in Drivers. Do not call Google or OneMap directly from Filament components.
 - Use immutable AddressData for formatting, validation and navigation. Do not duplicate the normalization rules in consuming packages.
 
