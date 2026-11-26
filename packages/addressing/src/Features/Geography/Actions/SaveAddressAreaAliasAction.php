@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-final class SaveAddressAreaAliasAction
+final readonly class SaveAddressAreaAliasAction implements AddressAreaAliasWriter
 {
     /**
      * @param  array{name: mixed, name_type?: mixed, is_preferred?: mixed}  $attributes
@@ -32,7 +33,7 @@ final class SaveAddressAreaAliasAction
             ]);
         }
 
-        return DB::transaction(function () use ($area, $attributes, $name, $record): AddressAreaName {
+        return $area->getConnection()->transaction(function () use ($area, $attributes, $name, $record): AddressAreaName {
             $areaClass = ModelResolver::areaClass();
             $persistedArea = $areaClass::query()->lockForUpdate()->findOrFail($area->getKey());
             $aliasClass = ModelResolver::areaNameClass();

@@ -853,9 +853,9 @@ Existing rows are updated through Eloquent `save()`, so model observers may muta
 ### Saving a single area
 
 ```php
-use AIArmada\Addressing\Actions\SaveAddressAreaAction;
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
 
-$area = app(SaveAddressAreaAction::class)->handle([
+$area = app(AddressAreaWriter::class)->handle([
     'country_id' => $country->id,
     'parent_id' => $district->id,
     'type' => 'mukim',
@@ -879,20 +879,20 @@ Manual area aliases use their own core actions so provider-owned names remain
 protected across entry points:
 
 ```php
-use AIArmada\Addressing\Actions\DeleteAddressAreaAliasAction;
-use AIArmada\Addressing\Actions\SaveAddressAreaAliasAction;
+use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
+use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 
-$alias = app(SaveAddressAreaAliasAction::class)->handle($area, [
+$alias = app(AddressAreaAliasWriter::class)->handle($area, [
     'name' => 'Shah Alam',
     'name_type' => 'alternative',
     'is_preferred' => false,
 ]);
 
-$alias = app(SaveAddressAreaAliasAction::class)->handle($area, [
+$alias = app(AddressAreaAliasWriter::class)->handle($area, [
     'name' => 'Shah Alam City',
 ], $alias);
 
-app(DeleteAddressAreaAliasAction::class)->execute($area, $alias);
+app(AddressAreaAliasDeleter::class)->execute($area, $alias);
 ```
 
 The actions reload and lock the area and any supplied alias before checking
@@ -1239,7 +1239,7 @@ AddressAreaPostalCode::query()->where('source', 'pos_malaysia_v1')->delete();
 Enable the corresponding [spatial option](03-configuration.md#optional-spatial-columns) and run its migration before calling these scopes. All coordinate arguments use WGS 84 degrees in latitude, longitude order. The address scopes preserve the package's owner boundary.
 
 ```php
-use AIArmada\Addressing\Actions\SetAddressAreaBoundaryAction;
+use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 
@@ -1248,7 +1248,7 @@ $geohashMatches = Address::query()->inGeohash('c0w3h')->get();
 $cellMatches = Address::query()->inH3Cell(48.0, -126.0)->get();
 
 $area = AddressArea::query()->where('slug', 'example-area')->firstOrFail();
-app(SetAddressAreaBoundaryAction::class)->execute(
+app(AddressAreaBoundaryWriter::class)->execute(
     $area->id,
     'POLYGON((-126 48,-125 48,-125 49,-126 49,-126 48))',
 );

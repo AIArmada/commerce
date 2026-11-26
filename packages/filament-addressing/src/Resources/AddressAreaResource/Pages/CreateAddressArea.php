@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages;
 
-use AIArmada\Addressing\Actions\SaveAddressAreaAction;
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
@@ -23,7 +23,7 @@ final class CreateAddressArea extends CreateRecord
     {
         unset($data['source'], $data['source_id'], $data['parent_source_id']);
 
-        $area = app(SaveAddressAreaAction::class)->handle($data);
+        $area = app(AddressAreaWriter::class)->handle($data);
 
         AddressingFilterOptions::forgetAreaOptions();
 

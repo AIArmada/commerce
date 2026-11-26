@@ -2,20 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-final class DeleteAddressAreaAliasAction
+final readonly class DeleteAddressAreaAliasAction implements AddressAreaAliasDeleter
 {
     public function execute(AddressArea $area, AddressAreaName $alias): void
     {
-        DB::transaction(function () use ($area, $alias): void {
+        $area->getConnection()->transaction(function () use ($area, $alias): void {
             $areaClass = ModelResolver::areaClass();
             $persistedArea = $areaClass::query()->lockForUpdate()->findOrFail($area->getKey());
             $aliasClass = ModelResolver::areaNameClass();

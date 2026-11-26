@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
 
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
 use InvalidArgumentException;
 
-final class SetAddressAreaBoundaryAction
+final readonly class SetAddressAreaBoundaryAction implements AddressAreaBoundaryWriter
 {
     public function execute(string $areaId, ?string $wkt): void
     {

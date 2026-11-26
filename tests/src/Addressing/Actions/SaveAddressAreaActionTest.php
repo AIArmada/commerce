@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SaveAddressAreaAction;
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
-    $this->action = app(SaveAddressAreaAction::class);
+    $this->action = app(AddressAreaWriter::class);
 });
 
 it('saves a top-level area with derived fields', function (): void {

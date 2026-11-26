@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "Geography",
+  "owns": {
+    "table:address_areas": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SetAddressAreaBoundaryAction"
+    ],
+    "table:address_area_names": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAliasAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\DeleteAddressAreaAliasAction"
+    ],
+    "table:address_area_relationships": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction"
+    ]
+  },
+  "extensions": {}
+}

@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Addressing\Features\Geography;
+
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
+use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
+use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
+use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
+use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAction;
+use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAliasAction;
+use AIArmada\Addressing\Features\Geography\Actions\DeleteAddressAreaAliasAction;
+use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
+use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
+use Illuminate\Contracts\Foundation\Application;
+
+final class FeatureModule implements FeatureModuleContract
+{
+    public function register(Application $app): void
+    {
+        $app->singleton(AddressAreaWriter::class, SaveAddressAreaAction::class);
+        $app->singleton(AddressAreaAliasWriter::class, SaveAddressAreaAliasAction::class);
+        $app->singleton(AddressAreaAliasDeleter::class, DeleteAddressAreaAliasAction::class);
+        $app->singleton(AddressAreaBoundaryWriter::class, SetAddressAreaBoundaryAction::class);
+    }
+
+    public function boot(Application $app): void {}
+}

@@ -2,24 +2,26 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\Addressing\Support\ModelResolver;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-final class SaveAddressAreaAction
+final readonly class SaveAddressAreaAction implements AddressAreaWriter
 {
     /**
      * @param  array<string, mixed>  $attributes
      */
     public function handle(array $attributes, ?AddressArea $record = null): AddressArea
     {
-        $record ??= new AddressArea;
+        $modelClass = ModelResolver::areaClass();
+        $record ??= new $modelClass;
 
         $countryId = $this->resolveCountryId($attributes, $record);
         $country = ModelResolver::countryClass()::query()->findOrFail($countryId);
@@ -90,7 +92,7 @@ final class SaveAddressAreaAction
         $previousParentId = $record->exists ? $record->getOriginal('parent_id') : null;
         $previousParentId = $previousParentId !== null ? (string) $previousParentId : null;
 
-        DB::transaction(function () use ($record, $attributes, $parent, $previousSource, $previousParentId): void {
+        $record->getConnection()->transaction(function () use ($record, $attributes, $parent, $previousSource, $previousParentId): void {
             $record->save();
 
             $hierarchyTypeProvided = array_key_exists('hierarchy_type', $attributes);

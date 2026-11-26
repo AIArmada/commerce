@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\DeleteAddressAreaAliasAction;
-use AIArmada\Addressing\Actions\SaveAddressAreaAliasAction;
+use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
+use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use Illuminate\Support\Facades\Event;
@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 it('creates and updates only manually sourced aliases', function (): void {
     $this->seedCountry('MY');
     $area = AddressArea::factory()->create(['country_code' => 'MY']);
-    $action = app(SaveAddressAreaAliasAction::class);
+    $action = app(AddressAreaAliasWriter::class);
 
     $alias = $action->handle($area, ['name' => 'Kuala Lumpur City']);
 
@@ -35,7 +35,7 @@ it('preserves optional alias fields when an update omits them', function (): voi
         'is_preferred' => true,
     ]);
 
-    $updated = app(SaveAddressAreaAliasAction::class)->handle($area, ['name' => 'Renamed'], $alias);
+    $updated = app(AddressAreaAliasWriter::class)->handle($area, ['name' => 'Renamed'], $alias);
 
     expect($updated->name_type)->toBe('official')
         ->and($updated->is_preferred)->toBeTrue();
@@ -43,7 +43,7 @@ it('preserves optional alias fields when an update omits them', function (): voi
 
 it('validates alias name size and strict preferred booleans', function (): void {
     $area = AddressArea::factory()->create(['country_code' => 'MY']);
-    $action = app(SaveAddressAreaAliasAction::class);
+    $action = app(AddressAreaAliasWriter::class);
 
     expect(fn () => $action->handle($area, ['name' => str_repeat('a', 256)]))
         ->toThrow(ValidationException::class)
@@ -62,7 +62,7 @@ it('reports observer-cancelled alias saves and deletes as failures', function ()
     Event::listen($savingEvent, static fn (): bool => false);
 
     try {
-        expect(fn () => app(SaveAddressAreaAliasAction::class)->handle($area, ['name' => 'Changed'], $alias))
+        expect(fn () => app(AddressAreaAliasWriter::class)->handle($area, ['name' => 'Changed'], $alias))
             ->toThrow(DomainException::class);
     } finally {
         Event::forget($savingEvent);
@@ -72,7 +72,7 @@ it('reports observer-cancelled alias saves and deletes as failures', function ()
     Event::listen($deletingEvent, static fn (): bool => false);
 
     try {
-        expect(fn () => app(DeleteAddressAreaAliasAction::class)->execute($area, $alias))
+        expect(fn () => app(AddressAreaAliasDeleter::class)->execute($area, $alias))
             ->toThrow(DomainException::class);
     } finally {
         Event::forget($deletingEvent);
@@ -90,7 +90,7 @@ it('refuses to update a provider sourced alias', function (): void {
         'source' => 'my.provider',
     ]);
 
-    expect(fn () => app(SaveAddressAreaAliasAction::class)->handle(
+    expect(fn () => app(AddressAreaAliasWriter::class)->handle(
         $area,
         ['name' => 'Changed name'],
         $alias,
@@ -107,7 +107,7 @@ it('refuses to delete a provider sourced alias', function (): void {
         'source' => 'my.provider',
     ]);
 
-    expect(fn () => app(DeleteAddressAreaAliasAction::class)->execute($area, $alias))
+    expect(fn () => app(AddressAreaAliasDeleter::class)->execute($area, $alias))
         ->toThrow(ValidationException::class);
 
     expect($alias->fresh())->not->toBeNull();
@@ -121,7 +121,7 @@ it('deletes a manually sourced alias', function (): void {
         'source' => 'manual',
     ]);
 
-    app(DeleteAddressAreaAliasAction::class)->execute($area, $alias);
+    app(AddressAreaAliasDeleter::class)->execute($area, $alias);
 
     expect($alias->fresh())->toBeNull();
 });
@@ -139,7 +139,7 @@ it('checks provider ownership from the persisted alias instead of the submitted 
     $forgedAlias->source = 'manual';
     $forgedAlias->address_area_id = $area->getKey();
 
-    expect(fn () => app(SaveAddressAreaAliasAction::class)->handle(
+    expect(fn () => app(AddressAreaAliasWriter::class)->handle(
         $area,
         ['name' => 'Changed name'],
         $forgedAlias,
