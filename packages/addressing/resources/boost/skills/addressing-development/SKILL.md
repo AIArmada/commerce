@@ -11,6 +11,7 @@ description: Develop Addressing integrations using the core addressing feature b
 - Use AddressWriter, AddressAreaWriter, PostalCodeWriter and AddressSnapshotWriter for mutations; they return persisted IDs. Pass null as AddressWriter's assignment map to preserve existing compatible assignments, or an explicit map to replace them.
 - Attach, update, detach and select primary addresses through AddressAttachmentWriter. Pass persisted identifiers; revalidate owner scope on every mutation.
 - AddressAreaSearch returns a list of immutable AddressAreaMatchData values, not Eloquent models.
+- Report unresolved values through ResolutionGapReporter::report(), which returns a persisted gap ID. Use ResolutionGapCuration to match or ignore that ID; do not write gap records from adapters.
 - Keep external HTTP requests in Drivers. Do not call Google or OneMap directly from Filament components.
 - Use immutable AddressData for formatting, validation and navigation. Do not duplicate the normalization rules in consuming packages.
 

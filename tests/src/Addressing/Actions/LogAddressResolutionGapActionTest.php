@@ -129,3 +129,12 @@ it('ignores open and matched gaps idempotently', function (): void {
     expect($again->status)->toBe('ignored')
         ->and(ResolutionGap::query()->where('status', 'ignored')->count())->toBe(2);
 });
+
+it('returns the same persisted identifier for repeated reports', function (): void {
+    $first = $this->log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $second = $this->log->report('google-picker', 'MY', 'postal_locality', '  KUALA   LUMPUR  ');
+
+    expect($first)->toBeString()->not->toBeEmpty()
+        ->and($second)->toBe($first)
+        ->and((int) ResolutionGap::query()->findOrFail($first)->hits)->toBe(2);
+});

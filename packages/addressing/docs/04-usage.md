@@ -618,7 +618,7 @@ so the naming gap is visible instead of silently degrading to a partial match.
 ~~~php
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 
-app(ResolutionGapReporter::class)->report(
+$gapId = app(ResolutionGapReporter::class)->report(
     source: 'google-picker',
     countryCode: 'ID',
     role: 'regency',
@@ -628,7 +628,7 @@ app(ResolutionGapReporter::class)->report(
 );
 ~~~
 
-Logging upserts on `(owner, source, country_code, role, normalized)`: repeats
+Reporting returns the persisted gap ID. Logging upserts on `(owner, source, country_code, role, normalized)`: repeats
 bump `hits` and refresh the `context` sample instead of duplicating rows.
 Each owner curates their own gap stream; callers without a resolved owner
 (public widgets, import probes) land as global rows inside explicit global
