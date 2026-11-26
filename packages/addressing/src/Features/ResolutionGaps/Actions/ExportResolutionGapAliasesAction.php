@@ -69,7 +69,7 @@ final readonly class ExportResolutionGapAliasesAction
 
             $declared = [];
 
-            foreach ($provider->areaNames($country) as $sourceId => $names) {
+            foreach ($provider->areaNames() as $sourceId => $names) {
                 foreach ($names as $name) {
                     $declared[(string) $sourceId][LogAddressResolutionGapAction::normalize((string) ($name['name'] ?? ''))] = true;
                 }

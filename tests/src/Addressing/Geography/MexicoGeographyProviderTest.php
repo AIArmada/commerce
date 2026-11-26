@@ -7,7 +7,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('declares traditional abbreviations for all 32 states', function (): void {
-    $names = app(MexicoGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(MexicoGeographyProvider::class)->areaNames();
 
     expect($names)->toHaveCount(32)
         ->and($names['mx:state:ciudad-de-mexico'][0])->toBe(['name' => 'CDMX', 'name_type' => 'abbreviation'])

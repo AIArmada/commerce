@@ -50,7 +50,7 @@ it('pins the verified district names and official Western long forms', function 
         ->and($byId->get('sl:district:western-rural')->name)->toBe('Western Rural')
         ->and($byId->get('sl:district:western-urban')->name)->toBe('Western Urban');
 
-    $names = app(SierraLeoneGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(SierraLeoneGeographyProvider::class)->areaNames();
 
     expect($names['sl:district:western-rural'])->toContain(
         ['name' => 'Western Area Rural', 'name_type' => 'alternative'],

@@ -23,7 +23,7 @@ it('ships 92 villages under their parishes with village roles', function (): voi
         ->and($byId->get('kn:village:sandy-point-town')->parentSourceId)->toBe('kn:parish:saint-anne-sandy-point')
         ->and($byId->get('kn:village:saint-james-windward:camps')->parentSourceId)->toBe('kn:parish:saint-james-windward');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['kn:village:sandy-point-town'][0]['role'])->toBe('village')
         ->and($roles['kn:parish:saint-anne-sandy-point'][0]['role'])->toBe('parish');

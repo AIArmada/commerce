@@ -18,7 +18,7 @@ it('exposes corrected Slovenian municipality names', function (): void {
 });
 
 it('roles urban municipalities with the municipality selector', function (): void {
-    $roles = app(SloveniaGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(SloveniaGeographyProvider::class)->areaRoles();
 
     expect($roles['si:urban_municipality:celje'][0]['role'])->toBe('municipality');
 });

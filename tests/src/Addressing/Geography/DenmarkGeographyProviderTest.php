@@ -13,7 +13,7 @@ it('names region 84 Capital Region with a Hovedstaden alias', function (): void 
     expect($capital->name)->toBe('Capital Region')
         ->and($capital->code)->toBe('84');
 
-    $names = app(DenmarkGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(DenmarkGeographyProvider::class)->areaNames();
 
     expect($names['dk:region:capital-region'][0]['name'])->toBe('Hovedstaden');
 });

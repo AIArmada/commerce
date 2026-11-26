@@ -12,7 +12,7 @@ it('names the island department Islas de la Bahía with a Bay Islands alias', fu
         ->and($areas->get('hn:department:islas-de-la-bahia')->code)->toBe('IB')
         ->and($areas->has('hn:department:bay-islands'))->toBeFalse();
 
-    $names = app(HondurasGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(HondurasGeographyProvider::class)->areaNames();
 
     expect($names['hn:department:islas-de-la-bahia'][0]['name'])->toBe('Bay Islands');
 });

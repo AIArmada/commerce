@@ -18,7 +18,7 @@ it('uses ISO district names with aliases for the renamed districts', function ()
         ->and($areas->has('bs:district:san-salvador-island'))->toBeFalse()
         ->and($areas->has('bs:district:new-providence'))->toBeFalse();
 
-    $names = app(BahamasGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(BahamasGeographyProvider::class)->areaNames();
 
     expect($names['bs:district:crooked-island-and-long-cay'][0]['name'])->toBe('Crooked Island')
         ->and($names['bs:district:city-of-freeport'][0]['name'])->toBe('Freeport')

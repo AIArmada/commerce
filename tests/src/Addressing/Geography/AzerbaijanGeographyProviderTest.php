@@ -13,7 +13,7 @@ it('assigns LA to Lankaran city and LAN to Lankaran district', function (): void
         ->and($areas->get('az:district:lankaran')->code)->toBe('LAN')
         ->and($areas->get('az:district:khojavend')->code)->toBe('XVD');
 
-    $names = app(AzerbaijanGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(AzerbaijanGeographyProvider::class)->areaNames();
 
     expect($names['az:district:khojavend'][0]['name'])->toBe('Martuni');
 });
@@ -48,7 +48,7 @@ it('ships 685 local municipalities under districts and cities', function (): voi
 });
 
 it('roles first-level cities with the district selector', function (): void {
-    $roles = app(AzerbaijanGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(AzerbaijanGeographyProvider::class)->areaRoles();
 
     expect($roles['az:municipality:baku'][0]['role'])->toBe('district')
         ->and($roles['az:autonomous_republic:nakhchivan'][0]['role'])->toBe('autonomous_republic');

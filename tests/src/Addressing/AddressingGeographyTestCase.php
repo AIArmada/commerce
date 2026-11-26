@@ -209,9 +209,9 @@ abstract class AddressingGeographyTestCase extends Orchestra
             ->flip()
             ->all();
 
-        $declaredRoles = $provider->areaRoles($country);
-        $declaredNames = $provider->areaNames($country);
-        $declaredRelationships = $provider->areaRelationships($country);
+        $declaredRoles = $provider->areaRoles();
+        $declaredNames = $provider->areaNames();
+        $declaredRelationships = $provider->areaRelationships();
 
         foreach (array_keys($declaredRoles) as $sourceId) {
             if (! isset($shipped[$sourceId])) {

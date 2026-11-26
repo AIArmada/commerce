@@ -77,21 +77,21 @@ final class ReseedingContractGeographyProvider implements CountryAddressAreaMeta
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [
             'area-0' => [['role' => 'locality', 'country_code' => 'BL', 'is_primary' => true]],
         ];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [
             'area-0' => [['name' => 'Source alias', 'name_type' => 'common', 'is_preferred' => false]],
         ];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return self::$areaCount < 2 ? [] : [
             'area-1' => [[

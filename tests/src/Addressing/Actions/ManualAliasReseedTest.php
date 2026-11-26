@@ -48,12 +48,12 @@ final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadata
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [
             'kl' => [
@@ -62,7 +62,7 @@ final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadata
         ];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
     }

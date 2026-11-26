@@ -141,7 +141,7 @@ final readonly class SeedCountryGeographiesAction implements CountryGeographySee
                 ->where('is_active', true)
                 ->keyBy('source_id');
 
-            $rolesBySource = $provider->areaRoles($country);
+            $rolesBySource = $provider->areaRoles();
             $rolesTotal = count($rolesBySource);
             $rolesDone = 0;
 
@@ -171,7 +171,7 @@ final readonly class SeedCountryGeographiesAction implements CountryGeographySee
             }
             $this->syncSourceRows(AddressingTableResolver::resolve('area_roles'), $providerKey, $roles, ['address_area_id', 'role', 'country_code'], ['is_primary'], (string) $country->getKey(), $providerKey, 'address_area_id');
 
-            $namesBySource = $provider->areaNames($country);
+            $namesBySource = $provider->areaNames();
             $namesTotal = count($namesBySource);
             $namesDone = 0;
 
@@ -201,7 +201,7 @@ final readonly class SeedCountryGeographiesAction implements CountryGeographySee
             }
             $this->syncSourceRows(AddressingTableResolver::resolve('area_names'), $providerKey, $names, ['address_area_id', 'name', 'name_type'], ['is_preferred'], (string) $country->getKey(), $providerKey, 'address_area_id');
 
-            $relationshipsBySource = $provider->areaRelationships($country);
+            $relationshipsBySource = $provider->areaRelationships();
             $relationshipsTotal = count($relationshipsBySource);
             $relationshipsDone = 0;
 

@@ -51,17 +51,17 @@ final class GapReportFakeGeographyProvider implements CountryAddressAreaMetadata
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
     }

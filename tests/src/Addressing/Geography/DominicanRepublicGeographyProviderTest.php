@@ -27,7 +27,7 @@ it('ships 158 municipalities under their provinces with postal locality roles', 
         ->and($byId->get('do:municipality:higuey')->parentSourceId)->toBe('do:province:la-altagracia')
         ->and($byId->get('do:municipality:baitoa')->parentSourceId)->toBe('do:province:santiago');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['do:municipality:santiago-de-los-caballeros'][0]['role'])->toBe('postal_locality');
 });

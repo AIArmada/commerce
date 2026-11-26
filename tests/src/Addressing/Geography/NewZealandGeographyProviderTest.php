@@ -29,7 +29,7 @@ it('ships 1229 localities under their districts with postal locality roles', fun
         ->and($byId->get('nz:locality:waioruarangi')->parentSourceId)->toBe('nz:district:kaikoura')
         ->and($byId->get('nz:locality:oamaru')->parentSourceId)->toBe('nz:district:waitaki');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['nz:locality:summerhill'][0]['role'])->toBe('postal_locality');
 });

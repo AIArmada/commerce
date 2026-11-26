@@ -7,7 +7,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('roles Phnom Penh as a province and krong cities as districts', function (): void {
-    $roles = app(CambodiaGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(CambodiaGeographyProvider::class)->areaRoles();
 
     expect($roles['kh:municipality:phnom-penh'][0]['role'])->toBe('province')
         ->and($roles['kh:municipality:poipet'][0]['role'])->toBe('district')

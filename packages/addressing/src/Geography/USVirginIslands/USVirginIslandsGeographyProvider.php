@@ -13,7 +13,6 @@ use AIArmada\Addressing\Contracts\CountryPostalCodeNormalizer;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\UsZipCodeKeys;
 
@@ -91,7 +90,7 @@ class USVirginIslandsGeographyProvider implements CountryAddressAreaMetadataProv
     }
 
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         $roles = [];
 
@@ -112,13 +111,13 @@ class USVirginIslandsGeographyProvider implements CountryAddressAreaMetadataProv
     }
 
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         $relationships = [];
 

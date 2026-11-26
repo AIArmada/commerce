@@ -12,7 +12,7 @@ it('renames Csongrád County and types Zalaegerszeg as a city', function (): voi
     expect($areas->get('hu:county:csongrad-csanad-county')->name)->toBe('Csongrád-Csanád County')
         ->and($areas->get('hu:city_with_county_rights:zalaegerszeg')->code)->toBe('ZE');
 
-    $names = app(HungaryGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(HungaryGeographyProvider::class)->areaNames();
 
     expect($names['hu:county:csongrad-csanad-county'][0]['name'])->toBe('Csongrád County');
 });

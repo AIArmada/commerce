@@ -30,7 +30,7 @@ it('ships 3,143 counties and county equivalents under their states', function ()
 });
 
 it('declares USPS abbreviations for all 56 states, territories, and DC', function (): void {
-    $names = app(UnitedStatesGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(UnitedStatesGeographyProvider::class)->areaNames();
 
     expect($names)->toHaveCount(56)
         ->and($names['us:state:california'][0])->toBe(['name' => 'CA', 'name_type' => 'abbreviation'])

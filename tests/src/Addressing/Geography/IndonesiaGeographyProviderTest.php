@@ -69,14 +69,14 @@ it('pins the verified regency, city, and district counts', function (): void {
 it('exposes village roles when the villages flag is on', function (): void {
     config()->set('addressing.geography.indonesia.villages', true);
 
-    $roles = app(IndonesiaGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(IndonesiaGeographyProvider::class)->areaRoles();
 
     expect($roles['id:village:1101012001'][0]['role'])->toBe('village')
         ->and($roles['id:urban_village:1201011001'][0]['role'])->toBe('village');
 });
 
 it('links deep areas to their province ancestor', function (): void {
-    $relationships = app(IndonesiaGeographyProvider::class)->areaRelationships(new AddressCountry);
+    $relationships = app(IndonesiaGeographyProvider::class)->areaRelationships();
 
     expect($relationships['id:district:110101'])->toHaveCount(2)
         ->and($relationships['id:district:110101'][0]['parent_source_id'])->toBe('id:regency:1101')
