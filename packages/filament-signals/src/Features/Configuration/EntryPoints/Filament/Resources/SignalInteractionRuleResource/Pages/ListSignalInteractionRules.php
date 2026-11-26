@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages;
 
-use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
+use AIArmada\FilamentSignals\Features\Configuration\Persistence\ScanPreviewStore;
 use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use AIArmada\FilamentSignals\Platform\SignalsModelReferenceGuard;
 use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Placeholder;
@@ -22,7 +20,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Throwable;
 
@@ -50,13 +47,13 @@ final class ListSignalInteractionRules extends ListRecords
                 ->icon('heroicon-o-check-badge')
                 ->color('success')
                 ->authorize('create', SignalInteractionRule::class)
-                ->visible(fn (): bool => $this->scanPreviewPayload()['candidates'] !== [])
+                ->visible(fn (): bool => app(ScanPreviewStore::class)->get()['candidates'] !== [])
                 ->modalHeading('Create rules from scan preview')
                 ->modalDescription('Review detected candidates and choose which ones to turn into interaction rules.')
                 ->form([
                     Placeholder::make('preview_source')
                         ->label('Preview source')
-                        ->content(fn (): string => (string) ($this->scanPreviewPayload()['meta']['source_label'] ?? 'Unknown source')),
+                        ->content(fn (): string => (string) (app(ScanPreviewStore::class)->get()['meta']['source_label'] ?? 'Unknown source')),
                     CheckboxList::make('candidate_indexes')
                         ->label('Detected candidates')
                         ->options(fn (): array => $this->previewCandidateOptions())
@@ -70,7 +67,7 @@ final class ListSignalInteractionRules extends ListRecords
                         ->default(false),
                 ])
                 ->action(function (array $data): void {
-                    $payload = $this->scanPreviewPayload();
+                    $payload = app(ScanPreviewStore::class)->get();
                     $candidates = $payload['candidates'];
 
                     if ($candidates === []) {
@@ -106,7 +103,7 @@ final class ListSignalInteractionRules extends ListRecords
                         $trackedPropertyId = $this->resolveTrackedPropertyId($meta['tracked_property_id'] ?? null);
                     } catch (Throwable $exception) {
                         report($exception);
-                        $this->clearScanPreview();
+                        app(ScanPreviewStore::class)->forget();
 
                         Notification::make()
                             ->title('The selected website or app is no longer available')
@@ -131,7 +128,7 @@ final class ListSignalInteractionRules extends ListRecords
                         ->success()
                         ->send();
 
-                    $this->clearScanPreview();
+                    app(ScanPreviewStore::class)->forget();
                 }),
             Actions\Action::make('scanPage')
                 ->label('Scan page')
@@ -278,7 +275,7 @@ final class ListSignalInteractionRules extends ListRecords
                         ? ((string) ($data['route_path'] ?? '/local-source'))
                         : ((string) ($data['page_url'] ?? 'scanned URL')));
 
-                    $this->storeScanPreview(
+                    app(ScanPreviewStore::class)->put(
                         candidates: $candidates,
                         meta: [
                             'tracked_property_id' => $trackedPropertyId,
@@ -323,6 +320,8 @@ final class ListSignalInteractionRules extends ListRecords
                         $isActive,
                         $candidates,
                     );
+
+                    app(ScanPreviewStore::class)->forget();
 
                     Notification::make()
                         ->title('Interaction rules created')
@@ -425,7 +424,7 @@ final class ListSignalInteractionRules extends ListRecords
 
                     $sourceLabel = (string) $data['route_path'];
 
-                    $this->storeScanPreview(
+                    app(ScanPreviewStore::class)->put(
                         candidates: $candidates,
                         meta: [
                             'tracked_property_id' => $trackedPropertyId,
@@ -446,10 +445,10 @@ final class ListSignalInteractionRules extends ListRecords
                 ->label('Clear preview')
                 ->icon('heroicon-o-trash')
                 ->color('gray')
-                ->visible(fn (): bool => $this->scanPreviewPayload()['candidates'] !== [])
+                ->visible(fn (): bool => app(ScanPreviewStore::class)->get()['candidates'] !== [])
                 ->requiresConfirmation()
                 ->action(function (): void {
-                    $this->clearScanPreview();
+                    app(ScanPreviewStore::class)->forget();
 
                     Notification::make()
                         ->title('Scan preview cleared')
@@ -457,54 +456,6 @@ final class ListSignalInteractionRules extends ListRecords
                         ->send();
                 }),
         ];
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $candidates
-     * @param  array<string, mixed>  $meta
-     */
-    private function storeScanPreview(array $candidates, array $meta): void
-    {
-        OwnerCache::put($this->scanPreviewOwner(), $this->scanPreviewLogicalKey(), [
-            'candidates' => $candidates,
-            'meta' => $meta,
-        ], CarbonImmutable::now()->addMinutes(30));
-    }
-
-    /**
-     * @return array{candidates: list<array<string, mixed>>, meta: array<string, mixed>}
-     */
-    private function scanPreviewPayload(): array
-    {
-        $payload = OwnerCache::get($this->scanPreviewOwner(), $this->scanPreviewLogicalKey());
-
-        if (! is_array($payload)) {
-            return ['candidates' => [], 'meta' => []];
-        }
-
-        $candidates = is_array($payload['candidates'] ?? null) ? $payload['candidates'] : [];
-        $meta = is_array($payload['meta'] ?? null) ? $payload['meta'] : [];
-
-        /** @var list<array<string, mixed>> $candidates */
-        return ['candidates' => array_values($candidates), 'meta' => $meta];
-    }
-
-    private function clearScanPreview(): void
-    {
-        OwnerCache::forget($this->scanPreviewOwner(), $this->scanPreviewLogicalKey());
-    }
-
-    private function scanPreviewOwner(): ?Model
-    {
-        return OwnerUiScope::resolveOwner(SignalInteractionRule::class);
-    }
-
-    private function scanPreviewLogicalKey(): string
-    {
-        $userIdentifier = auth()->id();
-        $userKey = is_scalar($userIdentifier) ? (string) $userIdentifier : 'guest';
-
-        return 'filament-signals.interaction-rule-scan-preview.user-' . hash('sha256', $userKey);
     }
 
     private function resolveTrackedPropertyId(mixed $id): string
@@ -528,7 +479,7 @@ final class ListSignalInteractionRules extends ListRecords
      */
     private function previewCandidateOptions(): array
     {
-        $candidates = $this->scanPreviewPayload()['candidates'];
+        $candidates = app(ScanPreviewStore::class)->get()['candidates'];
         $options = [];
 
         foreach ($candidates as $index => $candidate) {
@@ -549,7 +500,7 @@ final class ListSignalInteractionRules extends ListRecords
      */
     private function previewCandidateDescriptions(): array
     {
-        $candidates = $this->scanPreviewPayload()['candidates'];
+        $candidates = app(ScanPreviewStore::class)->get()['candidates'];
         $descriptions = [];
 
         foreach ($candidates as $index => $candidate) {

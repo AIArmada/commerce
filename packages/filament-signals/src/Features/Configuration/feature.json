@@ -1,7 +1,11 @@
 {
   "schema": 1,
   "name": "Configuration",
-  "owns": {},
+  "owns": {
+    "store:filament-signals.interaction-rule-scan-preview": [
+      "AIArmada\\FilamentSignals\\Features\\Configuration\\Persistence\\ScanPreviewStore"
+    ]
+  },
   "extensions": {
     "admin.panel.contributions": [
       "AIArmada\\FilamentSignals\\Features\\Configuration\\Extensions\\AdminPanelContribution"

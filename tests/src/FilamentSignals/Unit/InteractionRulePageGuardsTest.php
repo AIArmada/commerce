@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentSignals\Features\Configuration\Persistence\ScanPreviewStore;
+use Illuminate\Auth\AuthenticationException;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ConversionFunnelReport;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\SignalsDashboard;
@@ -104,4 +106,34 @@ it('derives a fresh slug when the base slug is taken', function (): void {
 
     expect($created)->toBe(1)
         ->and(SignalInteractionRule::query()->where('slug', 'track-signup-2')->exists())->toBeTrue();
+});
+
+it('isolates scan previews by authenticated operator and owner', function (): void {
+    $operatorA = User::factory()->create();
+    $operatorB = User::factory()->create();
+    $store = app(ScanPreviewStore::class);
+    $candidates = [['name' => 'Signup']];
+    $meta = ['source_label' => '/signup'];
+
+    expect($store->get()['candidates'])->toBe([]);
+    expect(fn () => $store->put($candidates, $meta))->toThrow(AuthenticationException::class);
+
+    $this->actingAs($operatorA);
+
+    OwnerContext::withOwner($operatorA, function () use ($store, $candidates, $meta): void {
+        $store->put($candidates, $meta);
+        expect($store->get())->toBe(['candidates' => $candidates, 'meta' => $meta]);
+    });
+
+    OwnerContext::withOwner($operatorB, fn () => expect($store->get()['candidates'])->toBe([]));
+
+    $this->actingAs($operatorB);
+    OwnerContext::withOwner($operatorA, fn () => expect($store->get()['candidates'])->toBe([]));
+
+    $this->actingAs($operatorA);
+    OwnerContext::withOwner($operatorA, function () use ($store, $candidates): void {
+        expect($store->get()['candidates'])->toBe($candidates);
+        $store->forget();
+        expect($store->get()['candidates'])->toBe([]);
+    });
 });

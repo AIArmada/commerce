@@ -150,16 +150,22 @@ final class SignalsDashboardService implements DashboardRead
         });
     }
 
+    /** @return array<string, string> */
     public function availableReports(): array
     {
         return $this->reportRegistry->options();
     }
 
+    /** @return array<string, mixed> */
     public function report(string $type, ?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
     {
-        $report = $this->reportRegistry->get($type);
+        return $this->withResolvedOwnerOrExplicitGlobal(function () use ($type, $trackedPropertyId, $from, $until): array {
+            if ($trackedPropertyId !== null) {
+                TrackedProperty::query()->forOwner()->whereKey($trackedPropertyId)->firstOrFail(['id']);
+            }
 
-        return $report->summary($trackedPropertyId, $from, $until);
+            return $this->reportRegistry->get($type)->summary($trackedPropertyId, $from, $until);
+        });
     }
 
     private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
