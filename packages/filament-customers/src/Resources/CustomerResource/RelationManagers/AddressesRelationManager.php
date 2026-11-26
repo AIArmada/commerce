@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Models\Customer;
 use Filament\Actions\Action;
-use Filament\Actions\AttachAction;
-use Filament\Actions\DetachAction;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -104,15 +106,54 @@ class AddressesRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->headerActions([
-                AttachAction::make()
+                Action::make('attach')
                     ->label('Add Address')
-                    ->preloadRecordSelect()
-                    ->recordSelectOptionsQuery(
-                        fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
-                    ),
+                    ->form([
+                        Forms\Components\Select::make('address_id')
+                            ->label('Address')
+                            ->searchable()
+                            ->required()
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $needle = LikeSearch::contains($search);
+
+                                return $this->availableAddresses()
+                                    ->where(function (Builder $query) use ($needle): void {
+                                        LikeSearch::whereLike($query, 'line1', $needle);
+                                        LikeSearch::orWhereLike($query, 'city', $needle);
+                                        LikeSearch::orWhereLike($query, 'label', $needle);
+                                    })
+                                    ->orderBy('line1')
+                                    ->limit(50)
+                                    ->get()
+                                    ->mapWithKeys(fn (Address $address): array => [
+                                        (string) $address->getKey() => $address->formatted_address ?: (string) $address->line1,
+                                    ])->all();
+                            })
+                            ->getOptionLabelUsing(function (mixed $value): ?string {
+                                $address = $this->availableAddresses()->whereKey($value)->first();
+
+                                return $address instanceof Address ? ($address->formatted_address ?: (string) $address->line1) : null;
+                            }),
+                    ])
+                    ->action(function (array $data): void {
+                        $customer = $this->authorizedCustomer();
+                        $address = $this->availableAddresses()->whereKey($data['address_id'] ?? null)->firstOrFail();
+
+                        Gate::forUser(Filament::auth()->user())->authorize('view', $address);
+                        $customer->attachAddress($address);
+                    }),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                    ->using(function (Address $record, array $data): Address {
+                        $this->authorizedCustomer();
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+                        abort_unless(OwnerUiScope::canMutateRecord($record), 403);
+
+                        app(AddressWriter::class)->execute($data, null, (string) $record->getKey());
+
+                        return $record->refresh();
+                    }),
                 Action::make('set_billing')
                     ->label('Set as Billing')
                     ->icon('heroicon-o-credit-card')
@@ -155,9 +196,39 @@ class AddressesRelationManager extends RelationManager
                         app(SetDefaultCustomerAddress::class)->execute($customer, $record, 'shipping');
                     })
                     ->visible(fn (Address $record): bool => ! self::isPrimaryForType($record, 'shipping')),
-                DetachAction::make()
-                    ->label('Remove'),
+                Action::make('detach')
+                    ->label('Remove')
+                    ->requiresConfirmation()
+                    ->action(function (Address $record): void {
+                        $this->authorizedCustomer();
+                        Gate::forUser(Filament::auth()->user())->authorize('update', $record);
+                        abort_unless(OwnerUiScope::canMutateRecord($record), 403);
+
+                        $pivotId = $record->pivot?->getKey();
+                        abort_unless(is_string($pivotId) && $pivotId !== '', 403);
+                        app(AddressAttachmentWriter::class)->detach($pivotId);
+                    }),
             ]);
+    }
+
+    private function authorizedCustomer(): Customer
+    {
+        $customer = $this->getOwnerRecord();
+        $user = Filament::auth()->user();
+
+        abort_unless($user !== null && $customer instanceof Customer, 403);
+        Gate::forUser($user)->authorize('update', $customer);
+        abort_unless(OwnerUiScope::canMutateRecord($customer), 403);
+
+        return $customer;
+    }
+
+    /** @return Builder<Address> */
+    private function availableAddresses(): Builder
+    {
+        $customer = $this->authorizedCustomer();
+
+        return OwnerUiScope::applyForRecordOwner(ModelResolver::addressClass()::query(), $customer);
     }
 
     private static function isPrimaryForType(Address $address, string $type): bool

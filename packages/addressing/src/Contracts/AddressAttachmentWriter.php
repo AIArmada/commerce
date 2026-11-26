@@ -11,6 +11,8 @@ interface AddressAttachmentWriter
 
     public function detach(string $pivotId): void;
 
+    public function detachAll(string $addressableType, string $addressableId): void;
+
     public function attach(string $addressId, string $addressableType, string $addressableId, string $type = 'primary', bool $isPrimary = false, ?string $label = null): string;
 
     public function setPrimary(string $addressId, string $addressableType, string $addressableId, string $type = 'primary'): string;

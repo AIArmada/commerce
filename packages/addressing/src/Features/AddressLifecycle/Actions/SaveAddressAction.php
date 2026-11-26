@@ -17,10 +17,10 @@ final readonly class SaveAddressAction implements AddressWriter
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array<string, string|null>  $areaAssignments
+     * @param  array<string, string|null>|null  $areaAssignments
      * @param  class-string<Address>|null  $modelClass
      */
-    public function execute(array $data, array $areaAssignments, ?string $recordId = null, ?string $modelClass = null): string
+    public function execute(array $data, ?array $areaAssignments, ?string $recordId = null, ?string $modelClass = null): string
     {
         $modelClass ??= ModelResolver::addressClass();
         if (! is_a($modelClass, Address::class, true)) {
@@ -41,7 +41,7 @@ final readonly class SaveAddressAction implements AddressWriter
                 throw new LogicException('The address could not be saved.');
             }
 
-            if ($recordId !== null || $areaAssignments !== []) {
+            if ($areaAssignments !== null && ($recordId !== null || $areaAssignments !== [])) {
                 $this->assignments->execute((string) $address->getKey(), $areaAssignments, $address->state_id, ['source' => 'filament-addressing']);
             }
 

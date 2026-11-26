@@ -105,6 +105,20 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
         });
     }
 
+    public function detachAll(string $addressableType, string $addressableId): void
+    {
+        $pivotClass = ModelResolver::addressableClass();
+
+        (new $pivotClass)->getConnection()->transaction(function () use ($pivotClass, $addressableType, $addressableId): void {
+            $this->lockHost($addressableType, $addressableId);
+
+            $pivotClass::query()
+                ->where('addressable_type', $addressableType)
+                ->where('addressable_id', $addressableId)
+                ->delete();
+        });
+    }
+
     public function attach(string $addressId, string $addressableType, string $addressableId, string $type = 'primary', bool $isPrimary = false, ?string $label = null): string
     {
         $pivotClass = ModelResolver::addressableClass();
@@ -190,6 +204,11 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
     private function lockAddressable(string $addressId, string $addressableType, string $addressableId): void
     {
         AddressOwnerGuard::assertAddressIsWritable($addressId);
+        $this->lockHost($addressableType, $addressableId);
+    }
+
+    private function lockHost(string $addressableType, string $addressableId): void
+    {
         AddressOwnerGuard::assertAddressableIsWritable($addressableType, $addressableId);
 
         $class = Relation::getMorphedModel($addressableType) ?? $addressableType;

@@ -8,8 +8,8 @@ interface AddressWriter
 {
     /**
      * @param  array<string, mixed>  $data
-     * @param  array<string, string|null>  $areaAssignments
+     * @param  array<string, string|null>|null  $areaAssignments
      * @param  class-string|null  $modelClass
      */
-    public function execute(array $data, array $areaAssignments, ?string $recordId = null, ?string $modelClass = null): string;
+    public function execute(array $data, ?array $areaAssignments, ?string $recordId = null, ?string $modelClass = null): string;
 }
