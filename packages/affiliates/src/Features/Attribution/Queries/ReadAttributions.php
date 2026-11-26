@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,9 +17,18 @@ final readonly class ReadAttributions implements AttributionLookup
 {
     public function affiliateIdForCookie(string $cookieValue): ?string
     {
-        $affiliate = $this->findActiveAttributionByCookie($cookieValue)?->affiliate;
+        $attribution = $this->findActiveAttributionByCookie($cookieValue);
 
-        return $affiliate?->canBeAttributed() ? (string) $affiliate->getKey() : null;
+        if ($attribution === null) {
+            return null;
+        }
+
+        $affiliate = app(AffiliateProfileReader::class)->find($attribution->affiliate_id, spl_object_id($attribution->getConnection()));
+
+        return $affiliate !== null && $affiliate->canBeAttributed
+            && $affiliate->reference->ownerType === $attribution->owner_type
+            && $affiliate->reference->ownerId === $attribution->owner_id
+            ? $affiliate->reference->id : null;
     }
 
     public function attached(string $identifier, string $instance): ?AffiliateAttributionData
@@ -58,7 +68,6 @@ final readonly class ReadAttributions implements AttributionLookup
         }
 
         $query = AffiliateAttribution::query()
-            ->with('affiliate')
             ->whereIn('cookie_value', array_values(array_unique($candidates)))
             ->active()
             ->latest('last_cookie_seen_at')
@@ -75,10 +84,8 @@ final readonly class ReadAttributions implements AttributionLookup
             return;
         }
 
-        OwnerQuery::applyToEloquentBuilder(
-            $query,
-            OwnerContext::resolve(),
-            (bool) config('affiliates.owner.include_global', false),
-        );
+        $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+        OwnerQuery::applyToEloquentBuilder($query, $owner, false);
     }
 }

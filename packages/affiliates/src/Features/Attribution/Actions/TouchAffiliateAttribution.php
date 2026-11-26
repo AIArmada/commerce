@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 
@@ -26,6 +27,12 @@ final readonly class TouchAffiliateAttribution implements AttributionActivity
         }
 
         return $attribution->getConnection()->transaction(function () use ($attribution, $context): ?AffiliateAttributionData {
+            $affiliate = app(AffiliateProfileReader::class)->lock($attribution->affiliate_id, spl_object_id($attribution->getConnection()));
+
+            if ($affiliate === null || ! $affiliate->canBeAttributed) {
+                return null;
+            }
+
             $locked = AffiliateAttribution::query()
                 ->forOwner()
                 ->where('cookie_value', $attribution->cookie_value)
@@ -33,7 +40,9 @@ final readonly class TouchAffiliateAttribution implements AttributionActivity
                 ->lockForUpdate()
                 ->find($attribution->getKey());
 
-            if (! $locked instanceof AffiliateAttribution || ! $locked->affiliate?->canBeAttributed()) {
+            if ($locked === null || $locked->affiliate_id !== $affiliate->reference->id
+                || $locked->owner_type !== $affiliate->reference->ownerType
+                || $locked->owner_id !== $affiliate->reference->ownerId) {
                 return null;
             }
 

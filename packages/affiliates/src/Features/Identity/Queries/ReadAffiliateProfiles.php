@@ -76,6 +76,7 @@ final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
             ),
             parentAffiliateId: $affiliate->parent_affiliate_id,
             status: $affiliate->status->getValue(),
+            data: $affiliate->toData(),
         );
     }
 }

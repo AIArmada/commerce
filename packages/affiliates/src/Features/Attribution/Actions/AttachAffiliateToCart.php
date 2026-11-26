@@ -12,7 +12,9 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -22,6 +24,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use LogicException;
@@ -37,14 +40,16 @@ final readonly class AttachAffiliateToCart implements CartAttribution
 
     public function attach(string $affiliateId, Cart $cart, array $context = []): ?AffiliateAttributionData
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateAttribution)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
-        if ($connection !== (new AffiliateAttribution)->getConnection() || $connection !== (new AffiliateTouchpoint)->getConnection()) {
+        if ($connection !== (new AffiliateTouchpoint)->getConnection()) {
             throw new LogicException('Cart attribution requires a shared database connection.');
         }
 
-        return $connection->transaction(function () use ($affiliateId, $cart, $context): ?AffiliateAttributionData {
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+        return $connection->transaction(function () use ($affiliateId, $cart, $context, $connection): ?AffiliateAttributionData {
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id($connection))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
 
             return $this->attachLocked($affiliate, $cart, $context);
         }, attempts: 3);
@@ -54,7 +59,15 @@ final readonly class AttachAffiliateToCart implements CartAttribution
     {
         $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
 
-        if (! $attribution || ! $attribution->affiliate || ! $attribution->affiliate->canBeAttributed()) {
+        if ($attribution === null) {
+            return null;
+        }
+
+        $affiliate = app(AffiliateProfileReader::class)->find($attribution->affiliate_id, spl_object_id($attribution->getConnection()));
+
+        if ($affiliate === null || ! $affiliate->canBeAttributed
+            || $affiliate->reference->ownerType !== $attribution->owner_type
+            || $affiliate->reference->ownerId !== $attribution->owner_id) {
             return null;
         }
 
@@ -69,7 +82,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
             'referrer_url' => $context['referrer_url'] ?? $attribution->referrer_url,
         ], $context);
 
-        return $this->attach((string) $attribution->affiliate->getKey(), $cart, $context);
+        return $this->attach($affiliate->reference->id, $cart, $context);
     }
 
     public function detach(Cart $cart): void
@@ -81,9 +94,9 @@ final readonly class AttachAffiliateToCart implements CartAttribution
             ->update(['expires_at' => CarbonImmutable::now()]);
     }
 
-    private function attachLocked(Affiliate $affiliate, Cart $cart, array $context): ?AffiliateAttributionData
+    private function attachLocked(AffiliateProfile $affiliate, Cart $cart, array $context): ?AffiliateAttributionData
     {
-        if (! $affiliate->canBeAttributed()) {
+        if (! $affiliate->canBeAttributed) {
             throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
         }
 
@@ -95,7 +108,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         $instance = $cart->instance();
 
         $attributionQuery = AffiliateAttribution::query()
-            ->where('affiliate_id', $affiliate->getKey())
+            ->where('affiliate_id', $affiliate->reference->id)
             ->where('cart_identifier', $identifier)
             ->where('cart_instance', $instance);
 
@@ -110,7 +123,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
             $attribution = $this->findAttributionByCookie((string) $payload['cookie_value']);
         }
 
-        if ($attribution && ($attribution->owner_type !== $affiliate->owner_type || (string) $attribution->owner_id !== (string) $affiliate->owner_id)) {
+        if ($attribution && ($attribution->owner_type !== $affiliate->reference->ownerType || (string) $attribution->owner_id !== (string) $affiliate->reference->ownerId)) {
             $attribution = null;
         }
 
@@ -134,12 +147,12 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         $attribution->expires_at = $payload['expires_at'];
         $attribution->save();
         $this->recordTouchpoint($attribution, $affiliate, $payload);
-        $this->pruneAttributionOverflow($identifier, $instance, $affiliate->owner_type, $affiliate->owner_id);
+        $this->pruneAttributionOverflow($identifier, $instance, $affiliate->reference->ownerType, $affiliate->reference->ownerId);
 
         if ($this->shouldDispatch('dispatch_attributed')) {
             $this->events?->dispatch(
                 new AffiliateAttributed(
-                    $affiliate->toData(),
+                    $affiliate->data,
                     $attribution->toData()
                 )
             );
@@ -154,7 +167,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         return $attributionData;
     }
 
-    private function buildAttributionPayload(Affiliate $affiliate, ?Cart $cart, array $context): array
+    private function buildAttributionPayload(AffiliateProfile $affiliate, ?Cart $cart, array $context): array
     {
         $expiresAt = null;
         $ttl = (int) config('affiliates.tracking.attribution_ttl_days', 30);
@@ -182,7 +195,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         }
 
         return [
-            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_id' => $affiliate->reference->id,
             'affiliate_code' => $affiliate->code,
             'subject_type' => $subjectType,
             'subject_key' => $subjectKey,
@@ -214,20 +227,20 @@ final readonly class AttachAffiliateToCart implements CartAttribution
             'ip_address' => IpHasher::hash($context['ip_address'] ?? null),
             'user_id' => $context['user_id'] ?? $this->resolveUserId(),
             'metadata' => $this->mergeMetadata($context),
-            'owner_type' => $affiliate->owner_type,
-            'owner_id' => $affiliate->owner_id,
+            'owner_type' => $affiliate->reference->ownerType,
+            'owner_id' => $affiliate->reference->ownerId,
             'expires_at' => $expiresAt,
         ];
     }
 
     private function recordTouchpoint(
         AffiliateAttribution $attribution,
-        Affiliate $affiliate,
+        AffiliateProfile $affiliate,
         array $payload
     ): void {
         $touchpoint = new AffiliateTouchpoint([
             'affiliate_attribution_id' => $attribution->getKey(),
-            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_id' => $affiliate->reference->id,
             'affiliate_code' => $affiliate->code,
             'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
             'subject_key' => $payload['subject_key'] ?? $attribution->subject_key,
@@ -255,8 +268,8 @@ final readonly class AttachAffiliateToCart implements CartAttribution
             'touched_at' => CarbonImmutable::now(),
         ]);
         $touchpoint->forceFill([
-            'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
-            'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
+            'owner_type' => $attribution->owner_type ?? $affiliate->reference->ownerType,
+            'owner_id' => $attribution->owner_id ?? $affiliate->reference->ownerId,
         ]);
         $touchpoint->save();
     }
@@ -285,7 +298,6 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         }
 
         $query = AffiliateAttribution::query()
-            ->with('affiliate')
             ->whereIn('cookie_value', $cookieCandidates)
             ->active()
             ->latest('last_cookie_seen_at');
@@ -360,7 +372,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         $this->removal->deleteMany(array_map('strval', $toDelete));
     }
 
-    private function isSelfReferral(Affiliate $affiliate): bool
+    private function isSelfReferral(AffiliateProfile $affiliate): bool
     {
         if (! config('affiliates.tracking.block_self_referral', false)) {
             return false;
@@ -368,12 +380,12 @@ final readonly class AttachAffiliateToCart implements CartAttribution
 
         $owner = $this->resolveOwner();
 
-        if (! $owner || ! $affiliate->owner_id || ! $affiliate->owner_type) {
+        if (! $owner || ! $affiliate->reference->ownerId || ! $affiliate->reference->ownerType) {
             return false;
         }
 
-        return $owner->getMorphClass() === $affiliate->owner_type
-            && (string) $owner->getKey() === (string) $affiliate->owner_id;
+        return $owner->getMorphClass() === $affiliate->reference->ownerType
+            && (string) $owner->getKey() === (string) $affiliate->reference->ownerId;
     }
 
     private function applyOwnerScope(Builder $query): Builder
@@ -383,9 +395,9 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         }
 
         $owner = $this->resolveOwner();
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
-        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, false);
     }
 
     private function resolveOwner(): ?Model

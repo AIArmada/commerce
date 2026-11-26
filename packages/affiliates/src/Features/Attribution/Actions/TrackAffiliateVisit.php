@@ -10,7 +10,8 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -20,7 +21,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use LogicException;
 
 final readonly class TrackAffiliateVisit implements AttributionTracking
 {
@@ -38,9 +38,11 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
             return null;
         }
 
-        $affiliate = Affiliate::query()->forOwner()->find($identity->id);
+        $connection = (new AffiliateAttribution)->getConnection();
+        $profiles = app(AffiliateProfileReader::class);
+        $affiliate = $profiles->find($identity->id, spl_object_id($connection));
 
-        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
+        if ($affiliate === null || ! $affiliate->canBeAttributed) {
             return null;
         }
 
@@ -56,20 +58,14 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
             return null;
         }
 
-        if (! $this->fraud->analyzeClick((string) $affiliate->getKey(), is_string($context['ip_address'] ?? null) ? $context['ip_address'] : null, is_string($context['user_agent'] ?? null) ? $context['user_agent'] : null)->allowed) {
+        if (! $this->fraud->analyzeClick($affiliate->reference->id, is_string($context['ip_address'] ?? null) ? $context['ip_address'] : null, is_string($context['user_agent'] ?? null) ? $context['user_agent'] : null)->allowed) {
             return null;
         }
 
-        $connection = $affiliate->getConnection();
+        return $connection->transaction(function () use ($affiliate, $context, $cookieValue, $profiles, $connection): ?AffiliateAttributionData {
+            $locked = $profiles->lock($affiliate->reference->id, spl_object_id($connection));
 
-        if ($connection !== (new AffiliateAttribution)->getConnection()) {
-            throw new LogicException('Attribution tracking requires a shared database connection.');
-        }
-
-        return $connection->transaction(function () use ($affiliate, $context, $cookieValue): ?AffiliateAttributionData {
-            $locked = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliate->getKey());
-
-            if (! $locked instanceof Affiliate || ! $locked->canBeAttributed() || $this->isSelfReferral($locked) || $this->isFingerprintBlocked($locked, $context)) {
+            if ($locked === null || ! $locked->canBeAttributed || $this->isSelfReferral($locked) || $this->isFingerprintBlocked($locked, $context)) {
                 return null;
             }
 
@@ -77,7 +73,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         }, attempts: 3);
     }
 
-    private function storeCookieAttribution(Affiliate $affiliate, array $context, ?string $cookieValue): AffiliateAttribution
+    private function storeCookieAttribution(AffiliateProfile $affiliate, array $context, ?string $cookieValue): AffiliateAttribution
     {
         $payload = $this->buildAttributionPayload($affiliate, $context);
 
@@ -96,8 +92,8 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
             ->find($candidate->getKey());
 
         if ($candidate !== null && ($attribution === null
-            || $attribution->owner_type !== $affiliate->owner_type
-            || (string) $attribution->owner_id !== (string) $affiliate->owner_id
+            || $attribution->owner_type !== $affiliate->reference->ownerType
+            || (string) $attribution->owner_id !== (string) $affiliate->reference->ownerId
             || ! $this->fingerprintMatches($attribution, $payload['fingerprint'] ?? null))) {
             $cookieValue = (string) Str::uuid();
             $payload['cookie_value'] = $cookieValue;
@@ -131,7 +127,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         return $attribution;
     }
 
-    private function buildAttributionPayload(Affiliate $affiliate, array $context): array
+    private function buildAttributionPayload(AffiliateProfile $affiliate, array $context): array
     {
         $expiresAt = null;
         $ttl = (int) config('affiliates.tracking.attribution_ttl_days', 30);
@@ -146,7 +142,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         );
 
         return [
-            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_id' => $affiliate->reference->id,
             'affiliate_code' => $affiliate->code,
             'subject_type' => $subjectType,
             'subject_key' => $context['subject_key'] ?? null,
@@ -175,8 +171,8 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
             'sharer_user_id' => $context['sharer_user_id'] ?? null,
             'fingerprint' => $this->resolveFingerprint($context),
             'metadata' => $this->mergeMetadata($context),
-            'owner_type' => $affiliate->owner_type,
-            'owner_id' => $affiliate->owner_id,
+            'owner_type' => $affiliate->reference->ownerType,
+            'owner_id' => $affiliate->reference->ownerId,
             'expires_at' => $expiresAt,
         ];
     }
@@ -203,9 +199,9 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         }
 
         $owner = $this->resolveOwner();
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
-        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, false);
     }
 
     private function resolveOwner(): ?Model
@@ -234,7 +230,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         return null;
     }
 
-    private function isRateLimited(Affiliate $affiliate, array $context): bool
+    private function isRateLimited(AffiliateProfile $affiliate, array $context): bool
     {
         $config = config('affiliates.tracking.ip_rate_limit', []);
 
@@ -255,7 +251,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
             return false;
         }
 
-        $key = sprintf('affiliates:ip-rate:%s:%s', $affiliate->getKey(), IpHasher::hash($ip));
+        $key = sprintf('affiliates:ip-rate:%s:%s', $affiliate->reference->id, IpHasher::hash($ip));
 
         if (Cache::store()->add($key, 1, CarbonImmutable::now()->addMinutes($decay))) {
             return false;
@@ -273,7 +269,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         return hash_equals($attribution->fingerprint, $fingerprint);
     }
 
-    private function isSelfReferral(Affiliate $affiliate): bool
+    private function isSelfReferral(AffiliateProfile $affiliate): bool
     {
         if (! config('affiliates.tracking.block_self_referral', false)) {
             return false;
@@ -281,15 +277,15 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
 
         $owner = $this->resolveOwner();
 
-        if (! $owner || ! $affiliate->owner_id || ! $affiliate->owner_type) {
+        if (! $owner || ! $affiliate->reference->ownerId || ! $affiliate->reference->ownerType) {
             return false;
         }
 
-        return $owner->getMorphClass() === $affiliate->owner_type
-            && (string) $owner->getKey() === (string) $affiliate->owner_id;
+        return $owner->getMorphClass() === $affiliate->reference->ownerType
+            && (string) $owner->getKey() === (string) $affiliate->reference->ownerId;
     }
 
-    private function isFingerprintBlocked(Affiliate $affiliate, array $context): bool
+    private function isFingerprintBlocked(AffiliateProfile $affiliate, array $context): bool
     {
         $fingerprintConfig = config('affiliates.tracking.fingerprint', []);
 
@@ -308,7 +304,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
         }
 
         $query = AffiliateAttribution::query()
-            ->where('affiliate_id', $affiliate->getKey())
+            ->where('affiliate_id', $affiliate->reference->id)
             ->where('fingerprint', $fingerprint)
             ->active();
 

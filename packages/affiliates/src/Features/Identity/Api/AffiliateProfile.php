@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Api;
 
+use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Data\AwardRecipient;
 
 final readonly class AffiliateProfile
@@ -21,5 +22,6 @@ final readonly class AffiliateProfile
         public AwardRecipient $awardRecipient,
         public ?string $parentAffiliateId,
         public string $status,
+        public AffiliateData $data,
     ) {}
 }
