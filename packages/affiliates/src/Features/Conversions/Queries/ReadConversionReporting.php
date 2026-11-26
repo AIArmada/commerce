@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportRow;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionTrafficBreakdown;
 use AIArmada\Affiliates\Features\Conversions\Api\VoucherConversionRecord;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -26,7 +27,7 @@ use Throwable;
 
 final readonly class ReadConversionReporting implements ConversionReportingReader
 {
-    public function __construct(private AttributionReportingReader $attributions) {}
+    public function __construct(private AttributionReportingReader $attributions, private AffiliateReportingReader $affiliates) {}
 
     public function available(): bool
     {
@@ -178,7 +179,7 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             return null;
         }
 
-        $query = AffiliateConversion::query()->forOwner()->with('affiliate')
+        $query = AffiliateConversion::query()->forOwner()
             ->whereRaw('LOWER(voucher_code) = ?', [mb_strtolower($voucherCode)])
             ->orderByDesc('occurred_at')->orderByDesc('created_at')->orderByDesc('id');
 
@@ -194,12 +195,12 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             return null;
         }
 
-        $affiliate = $row->affiliate;
-        $affiliateName = $affiliate !== null
-            && $affiliate->owner_type === $row->owner_type
-            && (string) $affiliate->owner_id === (string) $row->owner_id
-            ? $affiliate->name
-            : null;
+        $affiliateName = $this->affiliates->nameFor(
+            $row->affiliate_id,
+            $row->owner_type,
+            $row->owner_id,
+            spl_object_id($row->getConnection()),
+        );
 
         return new VoucherConversionRecord(
             affiliateId: $row->affiliate_id,

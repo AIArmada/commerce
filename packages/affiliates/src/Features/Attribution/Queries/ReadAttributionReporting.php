@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingRecord;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -15,6 +16,8 @@ use Throwable;
 
 final readonly class ReadAttributionReporting implements AttributionReportingReader
 {
+    public function __construct(private AffiliateReportingReader $affiliates) {}
+
     public function available(): bool
     {
         try {
@@ -32,7 +35,7 @@ final readonly class ReadAttributionReporting implements AttributionReportingRea
             return null;
         }
 
-        $row = AffiliateAttribution::query()->forOwner()->with('affiliate')->find($id);
+        $row = AffiliateAttribution::query()->forOwner()->find($id);
 
         return $row === null ? null : $this->record($row);
     }
@@ -46,11 +49,9 @@ final readonly class ReadAttributionReporting implements AttributionReportingRea
         }
 
         $query = AffiliateAttribution::query()->forOwner(includeGlobal: true)
-            ->where('affiliate_id', $affiliateId)->with('affiliate');
+            ->where('affiliate_id', $affiliateId);
 
-        if (config('affiliates.owner.enabled', false)) {
-            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
-        }
+        $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
 
         $row = $query->find($id);
 
@@ -63,7 +64,7 @@ final readonly class ReadAttributionReporting implements AttributionReportingRea
             return null;
         }
 
-        $row = AffiliateAttribution::query()->forOwner()->with('affiliate')
+        $row = AffiliateAttribution::query()->forOwner()
             ->whereRaw('LOWER(voucher_code) = ?', [mb_strtolower($voucherCode)])
             ->orderByDesc('last_seen_at')
             ->orderByDesc('created_at')
@@ -145,6 +146,13 @@ final readonly class ReadAttributionReporting implements AttributionReportingRea
 
     private function record(AffiliateAttribution $row): AttributionReportingRecord
     {
-        return new AttributionReportingRecord($row->affiliate_code, $row->affiliate?->name, $row->source, $row->medium, $row->campaign);
+        $name = $this->affiliates->nameFor(
+            $row->affiliate_id,
+            $row->owner_type,
+            $row->owner_id,
+            spl_object_id($row->getConnection()),
+        );
+
+        return new AttributionReportingRecord($row->affiliate_code, $name, $row->source, $row->medium, $row->campaign);
     }
 }

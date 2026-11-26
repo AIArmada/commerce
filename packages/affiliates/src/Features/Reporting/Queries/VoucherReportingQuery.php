@@ -9,13 +9,11 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\VoucherConversionRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingContext;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingReader;
-use AIArmada\Affiliates\Models\Affiliate;
-use Illuminate\Database\Eloquent\Model;
-use Throwable;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 
 final readonly class VoucherReportingQuery implements VoucherReportingReader
 {
-    public function __construct(private AttributionReportingReader $attributions, private ConversionReportingReader $conversions) {}
+    public function __construct(private AttributionReportingReader $attributions, private ConversionReportingReader $conversions, private AffiliateReportingReader $affiliates) {}
 
     public function available(): bool
     {
@@ -49,29 +47,9 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
     /** @return array<string, string> */
     public function affiliateOptions(): array
     {
-        if ($this->hasTableFor(Affiliate::class)) {
-            /** @var array<string, string> $options */
-            $options = Affiliate::query()->forOwner()
-                ->orderBy('name')
-                ->orderBy('code')
-                ->get(['code', 'name'])
-                ->mapWithKeys(function (Model $affiliate): array {
-                    $code = $this->normalizeString($affiliate->getAttribute('code'));
-
-                    if ($code === null) {
-                        return [];
-                    }
-
-                    $name = $this->normalizeString($affiliate->getAttribute('name'));
-
-                    return [$code => $name !== null ? "{$name} ({$code})" : $code];
-                })
-                ->all();
-
-            return $options;
-        }
-
-        return $this->attributions->options('affiliate_code');
+        return $this->affiliates->available()
+            ? $this->affiliates->codeOptions()
+            : $this->attributions->options('affiliate_code');
     }
 
     /**
@@ -140,21 +118,4 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
         return in_array($column, ['source', 'medium', 'campaign'], true) ? $this->attributions->options($column) : [];
     }
 
-    /**
-     * @param  class-string<Model>  $modelClass
-     */
-    private function hasTableFor(string $modelClass): bool
-    {
-        if (! class_exists($modelClass)) {
-            return false;
-        }
-
-        try {
-            $model = new $modelClass;
-
-            return $model instanceof Model && $model->getConnection()->getSchemaBuilder()->hasTable($model->getTable());
-        } catch (Throwable) {
-            return false;
-        }
-    }
 }

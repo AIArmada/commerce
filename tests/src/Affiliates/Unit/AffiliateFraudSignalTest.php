@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
@@ -56,6 +57,41 @@ describe('AffiliateFraudSignal Model', function (): void {
         expect($record?->id)->toBe($conversion->id)
             ->and($record?->affiliateId)->toBe($this->affiliate->id)
             ->and(app(ConversionInspectionReader::class)->find('invalid'))->toBeNull();
+    });
+
+    test('review refuses to void a conversion belonging to another affiliate', function (): void {
+        $other = Affiliate::create([
+            'code' => 'FRAUD-OTHER-' . Str::uuid(),
+            'name' => 'Unrelated Affiliate',
+            'status' => Active::class,
+        ]);
+
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $other->id,
+            'affiliate_code' => $other->code,
+            'value_minor' => 10000,
+            'commission_minor' => 500,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        $signal = AffiliateFraudSignal::create([
+            'affiliate_id' => $this->affiliate->id,
+            'conversion_id' => $conversion->id,
+            'rule_code' => 'MISMATCH',
+            'risk_points' => 80,
+            'severity' => FraudSeverity::High,
+            'description' => 'Unrelated conversion',
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => now(),
+        ]);
+
+        $result = app(FraudReviewApi::class)->execute($signal->id, FraudSignalStatus::Confirmed, null, rejectLinkedConversion: true);
+
+        expect($result->linkedRejectionError)->not->toBeNull()
+            ->and($signal->fresh()->status)->toBe(FraudSignalStatus::Confirmed)
+            ->and($conversion->fresh()->status->equals(PendingConversion::class))->toBeTrue();
     });
 
     test('resolves its touchpoint through attribution when set', function (): void {
