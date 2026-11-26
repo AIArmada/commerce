@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\RequestCache;
 use AIArmada\Addressing\Support\SchemaTableCache;
 use Illuminate\Support\Facades\DB;
