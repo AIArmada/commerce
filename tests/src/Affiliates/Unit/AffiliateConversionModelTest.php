@@ -144,7 +144,7 @@ describe('AffiliateConversion Model', function (): void {
             ->and($balance?->lifetime_earnings_minor)->toBe(1000);
     });
 
-    test('belongs to affiliate', function (): void {
+    test('stores the affiliate identity', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -156,8 +156,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($conversion->affiliate->id)->toBe($this->affiliate->id);
+        expect($conversion->affiliate_id)->toBe($this->affiliate->id);
     });
 
     test('belongs to attribution when set', function (): void {

@@ -99,7 +99,7 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 **Relationships:**
 
 ```php
-$attribution->affiliate;    // BelongsTo<Affiliate>
+$attribution->affiliate_id; // Resolve identity through AffiliateReferenceReader.
 // Query conversion records by affiliate_attribution_id.  // HasMany<AffiliateConversion>
 app(\AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader::class)->distributionTouches($attribution->id);
 ```
@@ -142,8 +142,8 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 **Relationships:**
 
 ```php
-$conversion->affiliate;    // BelongsTo<Affiliate>
-$conversion->affiliate_attribution_id;  // BelongsTo<AffiliateAttribution>
+$conversion->affiliate_id; // Resolve identity through AffiliateReferenceReader.
+$conversion->affiliate_attribution_id; // Nullable attribution identity
 $conversion->affiliate_payout_id; // nullable payout identity
 ```
 
@@ -236,7 +236,7 @@ Program tiers and memberships are internal Programs feature records. Use `Progra
 Affiliate enrollment in a program.
 
 ```php
-$membership->affiliate;  // BelongsTo<Affiliate>
+$membership->affiliate_id; // Resolve identity through AffiliateReferenceReader.
 $membership->program;    // BelongsTo<AffiliateProgram>
 $membership->tier;       // BelongsTo<AffiliateProgramTier>
 ```

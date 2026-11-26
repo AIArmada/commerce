@@ -64,7 +64,7 @@ test('reversing a held conversion voids holding and lifetime', function (): void
         ->and($reversal->commission_minor)->toBe(-5000)
         ->and($reversal->status->equals(ReversedConversion::class))->toBeTrue();
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
@@ -78,7 +78,7 @@ test('reversing an approved conversion voids available and lifetime', function (
 
     app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'refund');
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($balance->holding_minor)->toBe(0)
@@ -93,11 +93,11 @@ test('reversing a paid conversion claws back below zero and cuts lifetime', func
 
     $conversion = markConversionPaid($conversion->fresh());
 
-    expect(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh()->available_minor)->toBe(0);
+    expect(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh()->available_minor)->toBe(0);
 
     app(ReverseAffiliateConversion::class)->handle($conversion, 'chargeback');
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($balance->available_minor)->toBe(-5000)
@@ -114,7 +114,7 @@ test('reversal is idempotent and moves money once', function (): void {
 
     expect($second->getKey())->toBe($first->getKey());
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
@@ -126,7 +126,7 @@ test('reversing a zero-commission conversion only flips status', function (): vo
 
     app(ReverseAffiliateConversion::class)->handle($conversion, 'void');
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first();
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($balance?->holding_minor ?? 0)->toBe(0)

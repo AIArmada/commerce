@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Attribution\Models;
 
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
@@ -44,7 +43,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read AffiliateAttribution $attribution
- * @property-read Affiliate $affiliate
  */
 class AffiliateTouchpoint extends Model
 {
@@ -100,11 +98,4 @@ class AffiliateTouchpoint extends Model
         return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
     }
 
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
-    }
 }

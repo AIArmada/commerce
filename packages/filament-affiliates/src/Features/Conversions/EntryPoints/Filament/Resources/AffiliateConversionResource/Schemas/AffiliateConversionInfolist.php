@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Schemas;
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -50,7 +52,13 @@ final class AffiliateConversionInfolist
             Section::make('Affiliate')
                 ->schema([
                     Grid::make(3)->schema([
-                        TextEntry::make('affiliate.name')
+                        TextEntry::make('affiliate_name')
+                            ->state(fn (AffiliateConversion $record): ?string => app(AffiliateReportingReader::class)->nameFor(
+                                $record->affiliate_id,
+                                $record->owner_type,
+                                $record->owner_id,
+                                spl_object_id($record->getConnection()),
+                            ))
                             ->label('Affiliate Name')
                             ->placeholder('—'),
                         TextEntry::make('affiliate_code')

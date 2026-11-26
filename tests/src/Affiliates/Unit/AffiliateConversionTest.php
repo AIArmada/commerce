@@ -6,12 +6,11 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-test('AffiliateConversion has affiliate relationship', function (): void {
+test('AffiliateConversion stores an affiliate identity instead of an ORM relation', function (): void {
     $conversion = new AffiliateConversion;
 
-    expect($conversion->affiliate())->toBeInstanceOf(BelongsTo::class);
+    expect(method_exists($conversion, 'affiliate'))->toBeFalse();
 });
 
 test('AffiliateConversion stores a nullable attribution identity', function (): void {

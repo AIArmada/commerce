@@ -12,7 +12,6 @@ use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -23,7 +22,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
 use Spatie\ModelStates\HasStates;
 
@@ -70,7 +68,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $paid_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read Affiliate $affiliate
  */
 class AffiliateConversion extends Model
 {
@@ -159,13 +156,6 @@ class AffiliateConversion extends Model
         return config('affiliates.database.tables.conversions', parent::getTable());
     }
 
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
-    }
 
     /**
      * Refuse to leave Approved while an open payout reserves this row.

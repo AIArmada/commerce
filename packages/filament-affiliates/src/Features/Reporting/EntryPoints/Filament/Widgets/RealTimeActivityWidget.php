@@ -6,11 +6,11 @@ namespace AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Wi
 
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 final class RealTimeActivityWidget extends BaseWidget
 {
@@ -24,19 +24,9 @@ final class RealTimeActivityWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
-        /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false)
-            ? OwnerContext::resolve()
-            : null;
-
         return $table
             ->query(
-                AffiliateConversion::query()
-                    ->when(
-                        (bool) config('affiliates.owner.enabled', false),
-                        fn ($query) => $query->forOwner($owner),
-                    )
-                    ->with('affiliate')
+                AffiliateReferenceProjection::apply(AffiliateConversion::query()->forOwner())
                     ->latest('occurred_at')
                     ->limit(10)
             )
@@ -46,9 +36,9 @@ final class RealTimeActivityWidget extends BaseWidget
                     ->dateTime('H:i:s')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('affiliate.name')
+                Tables\Columns\TextColumn::make('affiliate_name')
                     ->label('Affiliate')
-                    ->searchable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search)),
 
                 Tables\Columns\TextColumn::make('external_reference')
                     ->label('Reference')

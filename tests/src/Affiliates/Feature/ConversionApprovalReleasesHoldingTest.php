@@ -50,11 +50,11 @@ function createHeldConversion(string $code, int $commissionMinor = 5000): Affili
 test('approving a conversion releases its commission from holding', function (): void {
     $conversion = createHeldConversion('HOLD001');
 
-    expect(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->holding_minor)->toBe(5000);
+    expect(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->holding_minor)->toBe(5000);
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000)
@@ -67,7 +67,7 @@ test('approving twice credits available only once', function (): void {
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
     expect(AffiliateConversionsTable::updateStatus($conversion->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000);
@@ -78,7 +78,7 @@ test('rejecting a conversion voids its held commission', function (): void {
 
     expect(AffiliateConversionsTable::updateStatus($conversion, RejectedConversion::class))->toBeTrue();
 
-    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
