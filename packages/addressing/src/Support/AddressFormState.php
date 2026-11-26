@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Support;
 
-use AIArmada\Addressing\Actions\NormalizeGoogleMapsInputAction;
+use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
@@ -39,7 +39,7 @@ final class AddressFormState
             ]);
         }
 
-        return array_merge($data, app(NormalizeGoogleMapsInputAction::class)->handle([
+        return array_merge($data, app(GoogleMapsInputNormalizer::class)->handle([
             'google_maps_url' => $data['google_maps_url'] ?? null,
             'google_place_id' => $data['google_place_id'] ?? null,
             'google_feature_id' => $data['google_feature_id'] ?? null,

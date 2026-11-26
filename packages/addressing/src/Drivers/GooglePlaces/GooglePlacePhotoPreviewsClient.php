@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Drivers\GooglePlaces;
+
+use AIArmada\Addressing\Contracts\GooglePlacePhotoLookup;
 
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use Illuminate\Support\Facades\Http;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-final class FetchGooglePlacePhotoPreviewsAction
+final readonly class GooglePlacePhotoPreviewsClient implements GooglePlacePhotoLookup
 {
-    use AsAction;
-
     private const int MAX_PREVIEWS = 3;
 
     /**

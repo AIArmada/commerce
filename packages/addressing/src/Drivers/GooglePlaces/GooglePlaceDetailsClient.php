@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Drivers\GooglePlaces;
+
+use AIArmada\Addressing\Contracts\GooglePlaceDetailsLookup;
 
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
+use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class FetchGooglePlaceDetailsAction
+final readonly class GooglePlaceDetailsClient implements GooglePlaceDetailsLookup
 {
-    use AsAction;
-
     /**
      * @return array<string, mixed>
      */
@@ -21,7 +21,7 @@ class FetchGooglePlaceDetailsAction
     {
         $placeId = mb_trim($placeId);
 
-        if ($placeId === '' || mb_strlen($placeId) > 255 || preg_match('/[\x00-\x1F]/', $placeId) === 1) {
+        if (GoogleMapsInputValues::placeId($placeId) !== $placeId) {
             $this->rejectSelection($validationKey);
         }
 
@@ -59,7 +59,7 @@ class FetchGooglePlaceDetailsAction
         );
         $location = is_array($place['location'] ?? null) ? $place['location'] : [];
 
-        if (! $hasCountry || ! is_numeric($location['latitude'] ?? null) || ! is_numeric($location['longitude'] ?? null)) {
+        if (! $hasCountry || GoogleMapsInputValues::latitude($location['latitude'] ?? null) === null || GoogleMapsInputValues::longitude($location['longitude'] ?? null) === null) {
             $this->rejectSelection($validationKey);
         }
 

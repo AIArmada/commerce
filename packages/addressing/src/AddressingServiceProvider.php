@@ -6,8 +6,6 @@ namespace AIArmada\Addressing;
 
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
 use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
-use AIArmada\Addressing\Actions\FetchGooglePlaceDetailsAction;
-use AIArmada\Addressing\Actions\FetchGooglePlacePhotoPreviewsAction;
 use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
 use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
@@ -15,8 +13,6 @@ use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
 use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Actions\MatchGapToAreaAction;
-use AIArmada\Addressing\Actions\NormalizeGoogleMapsInputAction;
-use AIArmada\Addressing\Actions\ResolveGooglePlaceSelectionAction;
 use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
 use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Actions\SearchAddressAreasAction;
@@ -125,10 +121,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(GooglePlaceGeographyMatcher::class);
         $this->app->singleton(GooglePlaceResolutionGapLogger::class);
         $this->app->singleton(GooglePlaceGeographyResolver::class);
-        $this->app->singleton(FetchGooglePlaceDetailsAction::class);
-        $this->app->singleton(FetchGooglePlacePhotoPreviewsAction::class);
-        $this->app->singleton(NormalizeGoogleMapsInputAction::class);
-        $this->app->singleton(ResolveGooglePlaceSelectionAction::class);
 
     }
 

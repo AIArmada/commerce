@@ -94,6 +94,10 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
         ?float $lng,
         ?string $countryCode,
     ): ?array {
+        if (GooglePlacesConfiguration::serverApiKey() === null) {
+            return null;
+        }
+
         try {
             $response = Http::withHeaders([
                 'X-Goog-Api-Key' => GooglePlacesConfiguration::serverApiKey(),
@@ -128,16 +132,20 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
         /** @var array<int, mixed> $places */
         $places = $response->json('places', []);
 
+        if (! is_array($places)) {
+            return null;
+        }
+
         $matches = collect($places)
             ->filter(static fn (mixed $place): bool => is_array($place))
             ->map(static function (array $place): array {
-                $location = $place['location'] ?? [];
+                $location = is_array($place['location'] ?? null) ? $place['location'] : [];
 
                 return [
                     'place_id' => GoogleMapsInputValues::placeId($place['id'] ?? null),
                     'display_name' => GoogleMapsInputValues::displayName($place['displayName'] ?? null),
-                    'lat' => GoogleMapsInputValues::number($location['latitude'] ?? null),
-                    'lng' => GoogleMapsInputValues::number($location['longitude'] ?? null),
+                    'lat' => GoogleMapsInputValues::latitude($location['latitude'] ?? null),
+                    'lng' => GoogleMapsInputValues::longitude($location['longitude'] ?? null),
                 ];
             })
             ->filter(static fn (array $place): bool => $place['place_id'] !== null && $place['display_name'] !== null)
@@ -181,14 +189,14 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
             return null;
         }
 
-        if (! $response->successful()) {
+        if (! $response->successful() || $response->json('id') !== $placeId) {
             return null;
         }
 
         return [
             'display_name' => GoogleMapsInputValues::displayName($response->json('displayName')),
-            'lat' => GoogleMapsInputValues::number($response->json('location.latitude')),
-            'lng' => GoogleMapsInputValues::number($response->json('location.longitude')),
+            'lat' => GoogleMapsInputValues::latitude($response->json('location.latitude')),
+            'lng' => GoogleMapsInputValues::longitude($response->json('location.longitude')),
         ];
     }
 

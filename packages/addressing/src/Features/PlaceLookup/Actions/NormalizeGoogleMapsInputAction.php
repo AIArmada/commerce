@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PlaceLookup\Actions;
+
+use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
 
 use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsUrlParser;
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class NormalizeGoogleMapsInputAction
+final readonly class NormalizeGoogleMapsInputAction implements GoogleMapsInputNormalizer
 {
-    use AsAction;
-
     private const string PartialStatus = 'partial';
 
     private const string ResolvedStatus = 'resolved';
@@ -21,7 +20,7 @@ class NormalizeGoogleMapsInputAction
     private const string UnresolvedStatus = 'unresolved';
 
     public function __construct(
-        private readonly GoogleMapsUrlParser $urls,
+        private GoogleMapsUrlParser $urls,
         private readonly GoogleMapsLookup $remoteLookup,
     ) {}
 
@@ -50,8 +49,8 @@ class NormalizeGoogleMapsInputAction
         $featureId = GoogleMapsInputValues::string($input['google_feature_id'] ?? null);
         $cid = GoogleMapsInputValues::string($input['google_cid'] ?? null);
         $entityId = GoogleMapsInputValues::string($input['google_entity_id'] ?? null);
-        $lat = GoogleMapsInputValues::number($input['lat'] ?? null);
-        $lng = GoogleMapsInputValues::number($input['lng'] ?? null);
+        $lat = GoogleMapsInputValues::latitude($input['lat'] ?? null);
+        $lng = GoogleMapsInputValues::longitude($input['lng'] ?? null);
         $remoteLookupEnabled = $this->remoteLookupEnabled($input['google_maps_remote_lookup_enabled'] ?? null);
         $source = $this->normalizeSource($input['google_resolution_source'] ?? $input['resolution_source'] ?? null);
         $previousStatus = $this->normalizeStatus($input['google_resolution_status'] ?? null);
@@ -144,6 +143,8 @@ class NormalizeGoogleMapsInputAction
             }
         }
 
+        $lat = GoogleMapsInputValues::latitude($lat);
+        $lng = GoogleMapsInputValues::longitude($lng);
         $canonicalUrl = $this->urls->canonicalUrl($placeId, $lat, $lng, $displayName);
         $normalizedUrl = $canonicalUrl ?? $currentUrl;
         $normalizedFingerprint = $this->fingerprint($normalizedUrl);

@@ -2,20 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PlaceLookup\Actions;
+
+use AIArmada\Addressing\Contracts\GooglePlaceSelectionResolver;
 
 use AIArmada\Addressing\GooglePlaces\GooglePlaceAddressComponents;
 use AIArmada\Addressing\GooglePlaces\GooglePlaceGeographyResolver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class ResolveGooglePlaceSelectionAction
+final readonly class ResolveGooglePlaceSelectionAction implements GooglePlaceSelectionResolver
 {
-    use AsAction;
-
     public function __construct(
-        private readonly NormalizeGoogleMapsInputAction $normalizeGoogleMapsInputAction,
+        private NormalizeGoogleMapsInputAction $normalizeGoogleMapsInputAction,
         private readonly GooglePlaceGeographyResolver $geography,
     ) {}
 
