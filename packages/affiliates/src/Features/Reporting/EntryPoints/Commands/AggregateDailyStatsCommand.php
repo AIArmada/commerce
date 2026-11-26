@@ -6,8 +6,7 @@ namespace AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands;
 
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
@@ -33,12 +32,7 @@ final class AggregateDailyStatsCommand extends Command
 
         $this->info("Aggregating stats for {$date->toDateString()}...");
 
-        $runner = new OwnerBatchRunner(
-            Affiliate::class,
-            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        );
-
-        $count = $runner->run(fn (): int => $service->aggregate($date)) ?? 0;
+        $count = app(AffiliateReportingReader::class)->runForOwners(fn (): int => $service->aggregate($date));
 
         $this->info("Aggregated stats for {$count} affiliates.");
 
@@ -59,12 +53,7 @@ final class AggregateDailyStatsCommand extends Command
 
         $this->info("Backfilling stats from {$from->toDateString()} to {$to->toDateString()}...");
 
-        $runner = new OwnerBatchRunner(
-            Affiliate::class,
-            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
-        );
-
-        $totalProcessed = $runner->run(fn (): int => $service->aggregateRange($from, $to)) ?? 0;
+        $totalProcessed = app(AffiliateReportingReader::class)->runForOwners(fn (): int => $service->aggregateRange($from, $to));
 
         $this->info("Backfill complete. Processed {$totalProcessed} affiliate-days.");
 

@@ -7,8 +7,12 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateCohortMember;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use Illuminate\Database\Connection;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -55,15 +59,16 @@ final class CohortQuery implements CohortApi
         $from = $from ?? CarbonImmutable::now()->subYear()->startOfMonth();
         $to = $to ?? CarbonImmutable::now()->endOfMonth();
 
-        $cohorts = $this->getCohorts($from, $to);
+        $cohorts = app(AffiliateReportingReader::class)->cohorts($from, $to);
         $results = [];
 
-        $allAffiliateIds = $cohorts->flatten()->unique()->values()->all();
+        $allAffiliateIds = collect($cohorts)->flatten(1)->map(static fn (AffiliateCohortMember $member): string => $member->id)->unique()->values()->all();
         $totalsByAffiliate = $this->getConversionTotalsByAffiliate($allAffiliateIds);
 
-        foreach ($cohorts as $cohortMonth => $affiliateIds) {
+        foreach ($cohorts as $cohortMonth => $members) {
             $cohortDate = CarbonImmutable::parse($cohortMonth . '-01');
-            $affiliates = Affiliate::whereIn('id', $affiliateIds)->get();
+            $affiliates = collect($members);
+            $affiliateIds = $affiliates->map(static fn (AffiliateCohortMember $member): string => $member->id)->all();
 
             $monthlyBreakdown = $this->calculateMonthlyBreakdown(
                 $affiliateIds,
@@ -89,7 +94,7 @@ final class CohortQuery implements CohortApi
             }
 
             $activeAffiliates = $affiliates
-                ->filter(fn (Affiliate $affiliate): bool => $affiliate->status->equals(Active::class))
+                ->filter(fn (AffiliateCohortMember $affiliate): bool => $affiliate->active)
                 ->count();
 
             $results[$cohortMonth] = [
@@ -298,9 +303,9 @@ final class CohortQuery implements CohortApi
         $from = $from ?? CarbonImmutable::now()->subYear();
         $to = $to ?? CarbonImmutable::now();
 
-        $affiliatesTable = (new Affiliate)->getTable();
+        $affiliatesTable = app(MerchantIdentity::class)->ownerTable()->table;
         $conversionsTable = $this->conversionTable();
-        $connection = (new Affiliate)->getConnection();
+        $connection = $this->connection();
 
         $this->attributions->assertSharedConnection(spl_object_id($connection));
         $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
@@ -330,7 +335,7 @@ final class CohortQuery implements CohortApi
                 $owner,
                 'Cohort queries require an owner context or explicit global context.',
             );
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal();
 
             OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'a.owner_type', 'a.owner_id');
         }
@@ -360,51 +365,6 @@ final class CohortQuery implements CohortApi
     }
 
     /**
-     * Get affiliate IDs grouped by acquisition month.
-     *
-     * @return Collection<string, array<int, string>>
-     */
-    private function getCohorts(CarbonImmutable $from, CarbonImmutable $to): Collection
-    {
-        $affiliatesTable = (new Affiliate)->getTable();
-        $driver = ConnectionDriver::name((new Affiliate)->getConnection());
-
-        $dateFormat = match ($driver) {
-            'pgsql' => "to_char(created_at, 'YYYY-MM')",
-            'sqlite' => "strftime('%Y-%m', created_at)",
-            default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
-        };
-
-        $cohortQuery = (new Affiliate)->getConnection()->table($affiliatesTable)
-            ->select('id')->selectRaw("$dateFormat as cohort_month")
-            ->whereBetween('created_at', [$from, $to])->orderBy('cohort_month');
-
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            OwnerContext::assertResolvedOrExplicitGlobal(
-                $owner,
-                'Cohort queries require an owner context or explicit global context.',
-            );
-
-            OwnerQuery::applyToQueryBuilder(
-                $cohortQuery,
-                $owner,
-                (bool) config('affiliates.owner.include_global', false),
-                "{$affiliatesTable}.owner_type",
-                "{$affiliatesTable}.owner_id",
-            );
-        }
-
-        $cohorts = $cohortQuery->get()
-            ->filter(fn (object $row): bool => isset($row->cohort_month) && is_string($row->cohort_month))
-            ->groupBy(fn (object $row): string => (string) $row->cohort_month)
-            ->map(fn (Collection $group): array => $group->pluck('id')->map(fn (mixed $id): string => (string) $id)->values()->all());
-
-        /** @var Collection<string, array<int, string>> $cohorts */
-        return $cohorts;
-    }
-
-    /**
      * Calculate monthly breakdown for a cohort.
      *
      * Active counts are computed in memory from the already-loaded affiliates,
@@ -412,7 +372,7 @@ final class CohortQuery implements CohortApi
      * two queries per cohort-month.
      *
      * @param  array<string>  $affiliateIds
-     * @param  Collection<int, Affiliate>  $affiliates
+     * @param  Collection<int, AffiliateCohortMember>  $affiliates
      * @return array<int, array{month: int, active: int, conversions: int, revenue: int, commissions: int}>
      */
     private function calculateMonthlyBreakdown(
@@ -445,8 +405,8 @@ final class CohortQuery implements CohortApi
             $periodEnd = $cohortDate->copy()->addMonths($month)->endOfMonth();
 
             $activeCount = $affiliates
-                ->filter(fn (Affiliate $affiliate): bool => $affiliate->status->equals(Active::class)
-                    && ($affiliate->deactivated_at === null || $affiliate->deactivated_at->greaterThan($periodEnd)))
+                ->filter(fn (AffiliateCohortMember $affiliate): bool => $affiliate->active
+                    && ($affiliate->deactivatedAt === null || $affiliate->deactivatedAt->greaterThan($periodEnd)))
                 ->count();
 
             $conversions = $conversionsByMonth[$month] ?? ['count' => 0, 'revenue' => 0, 'commissions' => 0];
@@ -477,7 +437,7 @@ final class CohortQuery implements CohortApi
 
         $conversionsTable = $this->conversionTable();
 
-        $query = (new Affiliate)->getConnection()->table($conversionsTable)
+        $query = $this->connection()->table($conversionsTable)
             ->whereIn('affiliate_id', $affiliateIds)
             ->select('affiliate_id')
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions')
@@ -514,7 +474,7 @@ final class CohortQuery implements CohortApi
         }
 
         $conversionsTable = $this->conversionTable();
-        $driver = ConnectionDriver::name((new Affiliate)->getConnection());
+        $driver = ConnectionDriver::name($this->connection());
 
         $monthExpression = match ($driver) {
             'pgsql' => "to_char(occurred_at, 'YYYY-MM')",
@@ -525,7 +485,7 @@ final class CohortQuery implements CohortApi
         $rangeStart = $cohortDate->copy()->startOfMonth();
         $rangeEnd = $cohortDate->copy()->addMonths($maxMonth - 1)->endOfMonth();
 
-        $query = (new Affiliate)->getConnection()->table($conversionsTable)
+        $query = $this->connection()->table($conversionsTable)
             ->whereIn('affiliate_id', $affiliateIds)
             ->whereBetween('occurred_at', [$rangeStart, $rangeEnd])
             ->selectRaw("{$monthExpression} as month_key")
@@ -558,9 +518,20 @@ final class CohortQuery implements CohortApi
         return $aggregates;
     }
 
+    private function connection(): Connection
+    {
+        $connection = (new AffiliateDailyStat)->getConnection();
+
+        if (app(MerchantIdentity::class)->ownerTable()->connectionIdentity !== spl_object_id($connection)) {
+            throw new RuntimeException('Cohort reporting requires a shared database connection.');
+        }
+
+        return $connection;
+    }
+
     private function conversionTable(): string
     {
-        $this->conversions->assertConnection(spl_object_id((new Affiliate)->getConnection()));
+        $this->conversions->assertConnection(spl_object_id($this->connection()));
 
         return (string) config('affiliates.database.tables.conversions', 'affiliate_conversions');
     }
@@ -580,7 +551,7 @@ final class CohortQuery implements CohortApi
         OwnerQuery::applyToQueryBuilder(
             $query,
             $owner,
-            (bool) config('affiliates.owner.include_global', false),
+            (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal(),
             "{$conversionsTable}.owner_type",
             "{$conversionsTable}.owner_id",
         );

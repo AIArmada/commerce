@@ -9,7 +9,8 @@ use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportRow;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
@@ -47,10 +48,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
     {
         $rows = collect($this->conversions->byAffiliate($startDate, $endDate));
 
-        $affiliateNamesById = Affiliate::query()
-            ->forOwner()
-            ->whereIn('id', $rows->pluck('affiliateId')->all())
-            ->pluck('name', 'id');
+        $affiliateNamesById = app(AffiliateReportingReader::class)->names($rows->map(static fn (ConversionReportRow $row): string => (string) $row->affiliateId)->values()->all());
 
         $default = $this->defaultCurrency();
 
@@ -217,7 +215,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
     public function affiliateSummary(string $affiliateId): array
     {
         /** @var Affiliate|null $affiliate */
-        $affiliate = Affiliate::query()->forOwner()->find($affiliateId);
+        $affiliate = app(AffiliateDirectory::class)->findById($affiliateId);
 
         if (! $affiliate) {
             return [];
@@ -246,7 +244,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
 
         return [
             'affiliate' => [
-                'id' => $affiliate->getKey(),
+                'id' => $affiliate->id,
                 'code' => $affiliate->code,
                 'name' => $affiliate->name,
             ],

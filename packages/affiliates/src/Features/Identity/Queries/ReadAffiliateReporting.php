@@ -4,13 +4,78 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateCohortMember;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use RuntimeException;
 use LogicException;
 
 final readonly class ReadAffiliateReporting implements AffiliateReportingReader
 {
+    public function names(array $ids): array
+    {
+        $names = [];
+        $ids = array_values(array_unique(array_filter($ids, static fn (string $id): bool => Str::isUuid($id))));
+
+        foreach (array_chunk($ids, 500) as $chunk) {
+            foreach (Affiliate::query()->forOwner()->whereKey($chunk)->pluck('name', 'id') as $id => $name) {
+                $names[(string) $id] = (string) $name;
+            }
+        }
+
+        return $names;
+    }
+
+    public function scopedIds(int $connectionIdentity): iterable
+    {
+        if (spl_object_id((new Affiliate)->getConnection()) !== $connectionIdentity) {
+            throw new LogicException('Affiliate reporting requires a shared database connection.');
+        }
+
+        foreach (Affiliate::query()->forOwner(includeGlobal: false)->select('id')->toBase()->lazyById(100) as $row) {
+            yield (string) $row->id;
+        }
+    }
+
+    public function cohorts(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $driver = ConnectionDriver::name((new Affiliate)->getConnection());
+        $dateFormat = match ($driver) {
+            'pgsql' => "to_char(created_at, 'YYYY-MM')",
+            'sqlite' => "strftime('%Y-%m', created_at)",
+            default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
+        };
+
+        $cohorts = [];
+
+        foreach (Affiliate::query()->forOwner(includeGlobal: true)
+            ->select(['id', 'status', 'deactivated_at'])
+            ->selectRaw("{$dateFormat} as cohort_month")
+            ->whereBetween('created_at', [$from, $to])
+            ->orderBy('cohort_month')->orderBy('id')->cursor() as $affiliate) {
+            $month = (string) $affiliate->getAttribute('cohort_month');
+            $cohorts[$month][] = new AffiliateCohortMember(
+                (string) $affiliate->getKey(),
+                $affiliate->isActive(),
+                $affiliate->deactivated_at === null ? null : CarbonImmutable::instance($affiliate->deactivated_at),
+            );
+        }
+
+        return $cohorts;
+    }
+
+    public function runForOwners(callable $callback): int
+    {
+        return (int) (new OwnerBatchRunner(
+            Affiliate::class,
+            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+        ))->run($callback);
+    }
+
     public function available(): bool
     {
         $affiliate = new Affiliate;

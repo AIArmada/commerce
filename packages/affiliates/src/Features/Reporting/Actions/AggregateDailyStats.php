@@ -10,10 +10,11 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
-use LogicException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class AggregateDailyStats implements DailyStatsWriter
 {
@@ -26,13 +27,12 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
     {
         $affiliateCount = 0;
 
-        Affiliate::query()
-            ->chunkById(100, function ($affiliates) use ($date, &$affiliateCount): void {
-                foreach ($affiliates as $affiliate) {
-                    $this->aggregateForAffiliate((string) $affiliate->getKey(), $date);
-                    $affiliateCount++;
-                }
-            });
+        $connectionIdentity = spl_object_id((new AffiliateDailyStat)->getConnection());
+
+        foreach (app(AffiliateReportingReader::class)->scopedIds($connectionIdentity) as $id) {
+            $this->aggregateForAffiliate($id, $date);
+            $affiliateCount++;
+        }
 
         return $affiliateCount;
     }
@@ -50,15 +50,12 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
     {
         $connection = (new AffiliateDailyStat)->getConnection();
 
-        if ($connection !== (new Affiliate)->getConnection()) {
-            throw new LogicException('Daily affiliate aggregation requires a shared database connection.');
-        }
-
-        return $connection->transaction(function () use ($affiliateId, $date): array {
-            $affiliate = Affiliate::query()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
+        return $connection->transaction(function () use ($affiliateId, $date, $connection): array {
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id($connection))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
             $dayStart = $date->startOfDay();
             $dayEnd = $date->endOfDay();
-            $reference = $this->referenceCurrency($affiliate);
+            $reference = $this->referenceCurrency($affiliate->currency);
 
             $touchpointStats = $this->touchpoints->clickStats($affiliateId, $dayStart, $dayEnd);
             $clicks = $touchpointStats['clicks'];
@@ -68,7 +65,7 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
 
             $legs = [];
 
-            foreach ($this->conversions->totals($affiliateId, $reference, spl_object_id($affiliate->getConnection()), $dayStart, $dayStart->addDay()) as $row) {
+            foreach ($this->conversions->totals($affiliateId, $reference, spl_object_id($connection), $dayStart, $dayStart->addDay()) as $row) {
                 $legs[$row->currency] = [
                     'conversions' => $row->count,
                     'revenue' => $row->revenueMinor,
@@ -82,7 +79,7 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
 
             $totalConversions = array_sum(array_column($legs, 'conversions'));
             $conversionRate = $clicks > 0 ? $totalConversions / $clicks : 0;
-            $breakdown = json_encode($this->buildBreakdown($affiliate, $dayStart, $dayEnd), JSON_THROW_ON_ERROR);
+            $breakdown = json_encode($this->touchpoints->breakdown($affiliateId, $dayStart, $dayEnd), JSON_THROW_ON_ERROR);
             $now = CarbonImmutable::now();
             $upsertRows = [];
 
@@ -91,11 +88,11 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
 
                 $upsertRows[] = [
                     'id' => (string) Str::uuid(),
-                    'affiliate_id' => $affiliate->id,
+                    'affiliate_id' => $affiliate->reference->id,
                     'date' => $date->toDateString(),
                     'currency' => $currency,
-                    'owner_type' => $affiliate->owner_type,
-                    'owner_id' => $affiliate->owner_id,
+                    'owner_type' => $affiliate->reference->ownerType,
+                    'owner_id' => $affiliate->reference->ownerId,
                     'clicks' => $primary ? $clicks : 0,
                     'unique_clicks' => $primary ? $uniqueClicks : 0,
                     'attributions' => $primary ? $attributions : 0,
@@ -118,10 +115,10 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
                 ['owner_type', 'owner_id', 'clicks', 'unique_clicks', 'attributions', 'conversions', 'revenue_cents', 'commission_cents', 'conversion_rate', 'epc_cents', 'breakdown', 'updated_at'],
             );
 
-            AffiliateDailyStat::query()->where('affiliate_id', $affiliate->id)->where('date', $date->toDateString())->whereNotIn('currency', array_keys($legs))->delete();
+            AffiliateDailyStat::query()->where('affiliate_id', $affiliate->reference->id)->where('date', $date->toDateString())->whereNotIn('currency', array_keys($legs))->delete();
 
             return AffiliateDailyStat::query()
-                ->where('affiliate_id', $affiliate->id)
+                ->where('affiliate_id', $affiliate->reference->id)
                 ->where('date', $date->toDateString())
                 ->orderBy('currency')
                 ->get()->map(static fn (AffiliateDailyStat $stat): DailyStatRecord => new DailyStatRecord(
@@ -158,18 +155,10 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
         $this->delete->execute($affiliateId);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildBreakdown(Affiliate $affiliate, CarbonImmutable $dayStart, CarbonImmutable $dayEnd): array
+    private function referenceCurrency(?string $currency): string
     {
-        return $this->touchpoints->breakdown((string) $affiliate->getKey(), $dayStart, $dayEnd);
-    }
-
-    private function referenceCurrency(Affiliate $affiliate): string
-    {
-        if (is_string($affiliate->currency) && mb_trim($affiliate->currency) !== '') {
-            return mb_strtoupper(mb_trim($affiliate->currency));
+        if (is_string($currency) && mb_trim($currency) !== '') {
+            return mb_strtoupper(mb_trim($currency));
         }
 
         return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
