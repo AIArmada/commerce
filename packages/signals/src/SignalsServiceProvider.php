@@ -7,7 +7,9 @@ namespace AIArmada\Signals;
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Console\Commands\ProcessSignalAlertsCommand;
+use AIArmada\Signals\Contracts\AlertTransport;
 use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
+use AIArmada\Signals\Drivers\DefaultAlertTransport;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Contracts\SignalEventIngestor;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
@@ -78,6 +80,7 @@ final class SignalsServiceProvider extends PackageServiceProvider
     {
         $this->app->bind(SignalEventIngestor::class, IngestSignalEvent::class);
         $this->app->bind(AlertReadState::class, SetAlertReadState::class);
+        $this->app->bind(AlertTransport::class, DefaultAlertTransport::class);
         $this->app->singleton(SignalsDashboardService::class);
         $this->app->singleton(SignalMetricsAggregator::class);
         $this->app->singleton(TrackedPropertyResolver::class);
