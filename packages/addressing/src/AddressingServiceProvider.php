@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Addressing;
 
 use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
-use AIArmada\Addressing\Actions\CompareAddressingReferenceExportsAction;
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
 use AIArmada\Addressing\Actions\DiffCldrSubdivisionsAction;
 use AIArmada\Addressing\Actions\DiffGoogleAddressReferenceAction;
-use AIArmada\Addressing\Actions\ExportAddressingReferencesAction;
 use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Actions\FetchGooglePlaceDetailsAction;
 use AIArmada\Addressing\Actions\FetchGooglePlacePhotoPreviewsAction;
@@ -36,10 +34,10 @@ use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Actions\ValidateAddressAction;
-use AIArmada\Addressing\Commands\CompareAddressingReferenceExportsCommand;
+use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
 use AIArmada\Addressing\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Commands\DiffGoogleAddressReferenceCommand;
-use AIArmada\Addressing\Commands\ExportAddressingReferencesCommand;
+use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\ExportAddressingReferencesCommand;
 use AIArmada\Addressing\Commands\ExportResolutionGapAliasesCommand;
 use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
 use AIArmada\Addressing\Commands\ReportResolutionGapsCommand;
@@ -59,8 +57,9 @@ use AIArmada\Addressing\GooglePlaces\GooglePlaceResolutionGapLogger;
 use AIArmada\Addressing\Support\CountryAddressFormatterResolver;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Drivers\OneMap\OneMapClient;
-use AIArmada\Addressing\Support\ReferenceExportFile;
-use AIArmada\Addressing\Support\ReferenceExportSorter;
+use AIArmada\Addressing\Platform\ExtensionRegistry;
+use AIArmada\Addressing\Platform\FeatureCatalog;
+use AIArmada\Addressing\Platform\FeatureModule;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -87,12 +86,25 @@ final class AddressingServiceProvider extends PackageServiceProvider
             );
     }
 
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function packageRegistered(): void
     {
-        $this->app->singleton(ReferenceExportFile::class);
-        $this->app->singleton(ReferenceExportSorter::class);
-        $this->app->singleton(ExportAddressingReferencesAction::class);
-        $this->app->singleton(CompareAddressingReferenceExportsAction::class);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid addressing feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
+
         $this->app->singleton(SeedAddressingAction::class);
         $this->app->singleton(SeedAddressCountriesAction::class);
         $this->app->singleton(SeedAddressCountryReferencesAction::class);
@@ -154,6 +166,13 @@ final class AddressingServiceProvider extends PackageServiceProvider
             if (is_string($source)) {
                 $this->app->singleton($source);
             }
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
         }
     }
 

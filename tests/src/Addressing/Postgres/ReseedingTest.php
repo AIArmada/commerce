@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ExportAddressingReferencesAction;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\ExportAddressingReferencesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -12,7 +12,7 @@ use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
-use AIArmada\Addressing\Support\ReferenceExportFile;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportFile;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;

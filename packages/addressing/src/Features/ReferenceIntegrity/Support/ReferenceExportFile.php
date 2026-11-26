@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\Support;
 
 use Generator;
 use InvalidArgumentException;

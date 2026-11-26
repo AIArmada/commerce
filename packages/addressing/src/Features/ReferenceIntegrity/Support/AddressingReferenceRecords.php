@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\Support;
 
+use AIArmada\Addressing\Support\ModelResolver;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\CommerceSupport\Features\ReferenceData\Api\ReferenceDataApi;
 use Generator;
 use Illuminate\Database\Connection;

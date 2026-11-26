@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\Actions;
 
-use AIArmada\Addressing\Support\ReferenceExportContract;
-use AIArmada\Addressing\Support\ReferenceExportFile;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportContract;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportFile;
 use Generator;
 use InvalidArgumentException;
 
-final class CompareAddressingReferenceExportsAction
+final readonly class CompareAddressingReferenceExportsAction
 {
     private const EXAMPLE_LIMIT = 100;
 
-    public function __construct(private readonly ReferenceExportFile $files) {}
+    public function __construct(private ReferenceExportFile $files) {}
 
     /** @return array{counts: array<string, array<string, int>>, examples: list<array<string, mixed>>, scopes: array{before: array<string, mixed>, after: array<string, mixed>}} */
     public function execute(string $beforePath, string $afterPath): array

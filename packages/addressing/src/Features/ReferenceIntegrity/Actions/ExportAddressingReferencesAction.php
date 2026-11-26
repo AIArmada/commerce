@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ReferenceIntegrity\Actions;
 
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
-use AIArmada\Addressing\Support\AddressingReferenceRecords;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\AddressingReferenceRecords;
 use AIArmada\Addressing\Support\AddressingTableResolver;
-use AIArmada\Addressing\Support\ReferenceExportContract;
-use AIArmada\Addressing\Support\ReferenceExportSorter;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportContract;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportSorter;
 use Illuminate\Database\Connection;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
-final class ExportAddressingReferencesAction
+final readonly class ExportAddressingReferencesAction
 {
     public function __construct(
-        private readonly AddressingReferenceRecords $records,
-        private readonly ReferenceExportSorter $sorter,
+        private AddressingReferenceRecords $records,
+        private ReferenceExportSorter $sorter,
     ) {}
 
     /**
