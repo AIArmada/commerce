@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Support\Models;
 
 use AIArmada\Affiliates\Features\Support\Models\Concerns\ScopesByTicketAffiliateOwner;
-use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +20,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read AffiliateSupportTicket $ticket
- * @property-read Affiliate|null $affiliate
  */
 class AffiliateSupportMessage extends Model
 {
@@ -51,13 +49,5 @@ class AffiliateSupportMessage extends Model
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(AffiliateSupportTicket::class, 'ticket_id');
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class, 'affiliate_id');
     }
 }

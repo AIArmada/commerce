@@ -13,6 +13,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -192,6 +193,68 @@ it('rejects cross-tenant ticket_id writes when owner mode is enabled', function 
         'message' => 'Cross-tenant write should be blocked',
         'is_staff_reply' => true,
     ]))->toThrow(AuthorizationException::class);
+});
+
+it('rejects support message owner laundering and global message mutations', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', true);
+
+    $owner = AffiliateOwnerForeignKeyGuardTestOwner::create(['name' => 'Scoped owner']);
+    [$globalTicket, $message] = OwnerContext::withOwner(null, function (): array {
+        $affiliate = Affiliate::create([
+            'code' => 'SUPPORT-GLOBAL',
+            'name' => 'Global support affiliate',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+        $ticket = AffiliateSupportTicket::create([
+            'affiliate_id' => $affiliate->id,
+            'subject' => 'Global ticket',
+            'category' => 'general',
+            'priority' => 'normal',
+            'status' => 'open',
+        ]);
+
+        return [$ticket, AffiliateSupportMessage::create([
+            'ticket_id' => $ticket->id,
+            'message' => 'Original message',
+            'is_staff_reply' => true,
+        ])];
+    });
+
+    OwnerContext::withOwner($owner, function () use ($globalTicket, $message): void {
+        $affiliate = Affiliate::create([
+            'code' => 'SUPPORT-OWNED',
+            'name' => 'Scoped support affiliate',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+        $ticket = AffiliateSupportTicket::create([
+            'affiliate_id' => $affiliate->id,
+            'subject' => 'Scoped ticket',
+            'category' => 'general',
+            'priority' => 'normal',
+            'status' => 'open',
+        ]);
+        $attempt = clone $message;
+        $attempt->ticket_id = $ticket->id;
+
+        expect(fn () => $attempt->save())->toThrow(AuthorizationException::class)
+            ->and(fn () => $attempt->delete())->toThrow(AuthorizationException::class)
+            ->and(fn () => AffiliateSupportMessage::create([
+                'ticket_id' => $globalTicket->id,
+                'message' => 'Not authorized',
+                'is_staff_reply' => true,
+            ]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($message, $globalTicket): void {
+        expect($message->fresh()->ticket_id)->toBe($globalTicket->id);
+    });
 });
 
 class AffiliateOwnerForeignKeyGuardTestOwner extends Model

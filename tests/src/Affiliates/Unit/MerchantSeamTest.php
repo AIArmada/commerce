@@ -242,6 +242,18 @@ describe('merchant seam', function (): void {
             ->toBeFalse();
     });
 
+    test('identity rejects ambiguous verified emails instead of selecting an arbitrary payee', function (): void {
+        $email = 'ambiguous-' . uniqid() . '@example.com';
+        merchantSeamVerifiedAffiliate($email);
+        merchantSeamVerifiedAffiliate($email);
+
+        expect(app(MerchantIdentity::class)->findIdForEmail($email))->toBeNull()
+            ->and(app(MerchantLedger::class)->postExternalConversion(merchantSeamDraft(
+                (string) Str::uuid(),
+                ['affiliateEmail' => $email],
+            )))->toBeNull();
+    });
+
     test('catalog snapshots programs for mirrors', function (): void {
         $program = merchantSeamProgram();
         $catalog = app(MerchantCatalog::class);

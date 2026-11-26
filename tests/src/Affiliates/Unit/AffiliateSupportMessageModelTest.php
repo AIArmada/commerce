@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -51,7 +52,7 @@ describe('AffiliateSupportMessage Model', function (): void {
             ->and($message->ticket->id)->toBe($this->ticket->id);
     });
 
-    it('belongs to affiliate', function (): void {
+    it('resolves affiliate identity without an ORM relationship', function (): void {
         $message = AffiliateSupportMessage::create([
             'ticket_id' => $this->ticket->id,
             'affiliate_id' => $this->affiliate->id,
@@ -59,8 +60,10 @@ describe('AffiliateSupportMessage Model', function (): void {
             'is_staff_reply' => false,
         ]);
 
-        expect($message->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($message->affiliate->id)->toBe($this->affiliate->id);
+        $affiliate = app(AffiliateDirectory::class)->findById((string) $message->affiliate_id);
+
+        expect($affiliate?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($message, 'affiliate'))->toBeFalse();
     });
 
     it('can be created as staff reply', function (): void {

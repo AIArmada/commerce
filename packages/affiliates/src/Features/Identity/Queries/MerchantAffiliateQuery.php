@@ -85,15 +85,17 @@ final class MerchantAffiliateQuery implements MerchantIdentity
         $owner = OwnerContext::resolve();
 
         if ($owner !== null) {
-            $query->orderByRaw('CASE WHEN owner_type = ? AND owner_id = ? THEN 0 ELSE 1 END', [
-                $owner->getMorphClass(),
-                (string) $owner->getKey(),
-            ]);
+            $owned = (clone $query)->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', $owner->getKey())->limit(2)->pluck('id');
+
+            if ($owned->isNotEmpty()) {
+                return $owned->count() === 1 ? (string) $owned->first() : null;
+            }
         }
 
-        $affiliate = $query->orderBy('id')->first();
+        $matches = $query->limit(2)->pluck('id');
 
-        return $affiliate instanceof Affiliate ? (string) $affiliate->getKey() : null;
+        return $matches->count() === 1 ? (string) $matches->first() : null;
     }
 
     private static function toMerchantAffiliate(Affiliate $affiliate): MerchantAffiliate
