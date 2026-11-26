@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource;
@@ -18,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Facades\Gate;
+use LogicException;
 
 final class PayoutQueueWidget extends BaseWidget
 {
@@ -31,10 +33,31 @@ final class PayoutQueueWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        $payout = new AffiliatePayout;
+        $conversion = new AffiliateConversion;
+
+        if ($payout->getConnection() !== $conversion->getConnection()) {
+            throw new LogicException('Payout queue requires a shared database connection.');
+        }
+
+        $count = AffiliateConversion::query()->forOwner(includeGlobal: true)
+            ->whereColumn($conversion->qualifyColumn('affiliate_payout_id'), $payout->qualifyColumn('id'))
+            ->selectRaw('COUNT(*)');
+
+        if (config('affiliates.owner.enabled', false)) {
+            foreach (['owner_type', 'owner_id'] as $column) {
+                $left = $conversion->qualifyColumn($column);
+                $right = $payout->qualifyColumn($column);
+                $count->where(static fn ($query) => $query->whereColumn($left, $right)
+                    ->orWhere(static fn ($query) => $query->whereNull($left)->whereNull($right)));
+            }
+        }
+
         return $table
             ->query(
                 AffiliatePayout::query()
                     ->with('payee')
+                    ->addSelect(['conversions_count' => $count])
                     ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
                     ->whereHas('payee', static function ($query): void {
                         $query->whereCommercialPurpose();
@@ -65,7 +88,7 @@ final class PayoutQueueWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('conversions_count')
                     ->label('Conversions')
-                    ->counts('conversions'),
+                    ->numeric(),
             ])
             ->actions([
                 Action::make('process')

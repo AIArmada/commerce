@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
@@ -187,7 +188,7 @@ describe('Affiliate Model - Relationships', function (): void {
         expect(app(AttributionReportingReader::class)->count((string) $affiliate->getKey()))->toBe(0);
     });
 
-    test('has conversions relationship', function (): void {
+    test('reads conversion counts through the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate',
@@ -196,7 +197,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        expect($affiliate->conversions())->toBeInstanceOf(HasMany::class);
+        expect(app(ConversionStatisticsReader::class)->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection())))->toBe(0);
     });
 
     test('has parent relationship', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Queries;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 final readonly class RankQualificationQuery
 {
-    public function __construct(private UplineApi $upline) {}
+    public function __construct(private UplineApi $upline, private ConversionStatisticsReader $conversions) {}
 
     public function evaluate(Affiliate $affiliate, bool $lockRanks = false): ?AffiliateRank
     {
@@ -59,15 +60,13 @@ final readonly class RankQualificationQuery
         $reference = RevenueVolume::referenceFor($affiliate);
         $currency ??= $reference;
 
-        $rows = $affiliate->conversions()->toBase()
-            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total, COALESCE(SUM(CASE WHEN occurred_at >= ? THEN COALESCE(value_minor, 0) ELSE 0 END), 0) as personal', [$from])
-            ->groupBy('commission_currency')->get();
+        $revenue = $this->conversions->revenueWindow((string) $affiliate->getKey(), $reference, spl_object_id($affiliate->getConnection()), $from);
 
         return [
-            'personal_sales' => RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference, amountKey: 'personal'), $currency),
+            'personal_sales' => RevenueVolume::measurableIn($revenue->personalByCurrency, $currency),
             'team_sales' => $this->upline->teamSales((string) $affiliate->getKey(), $from, null, $currency),
             'active_downlines' => $this->upline->activeDownlineCount((string) $affiliate->getKey()),
-            'lifetime_value' => RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency),
+            'lifetime_value' => RevenueVolume::measurableIn($revenue->lifetimeByCurrency, $currency),
         ];
     }
 }

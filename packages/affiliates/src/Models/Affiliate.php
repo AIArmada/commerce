@@ -79,7 +79,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read string|null $website_url Alias for the primary website contact method
  * @property-read Affiliate|null $parent
  * @property-read Collection<int, Affiliate> $children
- * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
@@ -187,14 +186,6 @@ class Affiliate extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.affiliates', parent::getTable());
-    }
-
-    /**
-     * @return HasMany<AffiliateConversion, $this>
-     */
-    public function conversions(): HasMany
-    {
-        return $this->hasMany(AffiliateConversion::class);
     }
 
     /**

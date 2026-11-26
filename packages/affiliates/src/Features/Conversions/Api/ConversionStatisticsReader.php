@@ -8,6 +8,10 @@ use DateTimeInterface;
 
 interface ConversionStatisticsReader
 {
+    public function revenueWindow(string $affiliateId, string $fallbackCurrency, int $connectionIdentity, DateTimeInterface $from): ConversionRevenueWindow;
+
+    public function balanceAudit(string $affiliateId, string $currency, int $connectionIdentity): ConversionBalanceAudit;
+
     public function assertConnection(int $connectionIdentity): void;
 
     /**

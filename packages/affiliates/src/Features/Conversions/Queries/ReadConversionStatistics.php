@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionBalanceAudit;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionCurrencyTotals;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionRevenueWindow;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\ReversedConversion;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use LogicException;
@@ -47,6 +52,62 @@ final readonly class ReadConversionStatistics implements ConversionStatisticsRea
         ksort($totals);
 
         return array_values($totals);
+    }
+
+    public function revenueWindow(string $affiliateId, string $fallbackCurrency, int $connectionIdentity, DateTimeInterface $from): ConversionRevenueWindow
+    {
+        $rows = $this->query($connectionIdentity, null, null, null, true, false)
+            ->where('affiliate_id', $affiliateId)
+            ->toBase()
+            ->selectRaw('commission_currency AS currency, COALESCE(SUM(value_minor), 0) AS lifetime, COALESCE(SUM(CASE WHEN occurred_at >= ? THEN COALESCE(value_minor, 0) ELSE 0 END), 0) AS personal', [$from])
+            ->groupBy('commission_currency')
+            ->get();
+
+        $personal = [];
+        $lifetime = [];
+
+        foreach ($rows as $row) {
+            $currency = mb_strtoupper(mb_trim((string) $row->currency));
+            $currency = $currency === '' ? $fallbackCurrency : $currency;
+            $personal[$currency] = ($personal[$currency] ?? 0) + (int) $row->personal;
+            $lifetime[$currency] = ($lifetime[$currency] ?? 0) + (int) $row->lifetime;
+        }
+
+        return new ConversionRevenueWindow($personal, $lifetime);
+    }
+
+    public function balanceAudit(string $affiliateId, string $currency, int $connectionIdentity): ConversionBalanceAudit
+    {
+        $rows = $this->query($connectionIdentity, null, null, null, true, false)
+            ->where('affiliate_id', $affiliateId)
+            ->whereRaw('UPPER(commission_currency) = ?', [mb_strtoupper($currency)])
+            ->where(static function (Builder $query): void {
+                $query->where('status', ApprovedConversion::value())
+                    ->orWhere(static fn (Builder $query): Builder => $query->where('status', PaidConversion::value())->whereNotNull('affiliate_payout_id'))
+                    ->orWhere(static fn (Builder $query): Builder => $query->where('status', ReversedConversion::value())->whereNull('affiliate_payout_id')->whereNotNull('paid_at'));
+            })
+            ->toBase()
+            ->selectRaw('status, affiliate_payout_id, COALESCE(SUM(commission_minor), 0) AS total')
+            ->groupBy('status', 'affiliate_payout_id')
+            ->get();
+
+        $approved = 0;
+        $clawbacks = 0;
+        $paid = [];
+
+        foreach ($rows as $row) {
+            $amount = (int) $row->total;
+
+            if ($row->status === ApprovedConversion::value()) {
+                $approved += $amount;
+            } elseif ($row->status === ReversedConversion::value()) {
+                $clawbacks += $amount;
+            } elseif ($row->affiliate_payout_id !== null) {
+                $paid[(string) $row->affiliate_payout_id] = $amount;
+            }
+        }
+
+        return new ConversionBalanceAudit($approved, $clawbacks, $paid);
     }
 
     public function assertConnection(int $connectionIdentity): void

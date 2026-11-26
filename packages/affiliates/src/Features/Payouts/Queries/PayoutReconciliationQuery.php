@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
@@ -15,9 +16,6 @@ use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
@@ -25,10 +23,11 @@ use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use LogicException;
 
 final readonly class PayoutReconciliationQuery implements PayoutReconciliationQueries
 {
-    public function __construct(private CurrencyConverter $converter, private BalanceReader $balances, private PayoutConversionIntegrity $conversions) {}
+    public function __construct(private CurrencyConverter $converter, private BalanceReader $balances, private PayoutConversionIntegrity $conversions, private ConversionStatisticsReader $statistics) {}
 
     /** @return list<string> */
     public function payoutIdsNeedingReconciliation(): array
@@ -221,20 +220,29 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     private function auditBalance(Affiliate $affiliate, string $currency): array
     {
         $currency = mb_strtoupper($currency);
-        $approvedCommissions = (int) $affiliate->conversions()->where('status', ApprovedConversion::value())->where('commission_currency', $currency)->sum('commission_minor');
-        $completedPayoutConversions = (int) $affiliate->conversions()
-            ->where('status', PaidConversion::value())
-            ->where('commission_currency', $currency)
-            ->whereIn('affiliate_payout_id', AffiliatePayout::query()->forOwner()
+        $connection = $affiliate->getConnection();
+
+        if ((new AffiliatePayout)->getConnection() !== $connection || (new AffiliatePayoutOperation)->getConnection() !== $connection) {
+            throw new LogicException('Balance reconciliation requires a shared database connection.');
+        }
+
+        $audit = $this->statistics->balanceAudit((string) $affiliate->getKey(), $currency, spl_object_id($connection));
+        $approvedCommissions = $audit->approvedMinor;
+        $directPaidClawbacks = $audit->directPaidClawbacksMinor;
+        $completedPayoutConversions = 0;
+
+        foreach (array_chunk(array_keys($audit->paidByPayout), 500) as $ids) {
+            $completed = AffiliatePayout::query()->forOwner()
+                ->whereKey($ids)
                 ->where('status', CompletedPayout::value())
-                ->where('currency', $currency)->select('id'))
-            ->sum('commission_minor');
-        $directPaidClawbacks = (int) $affiliate->conversions()
-            ->where('status', ReversedConversion::value())
-            ->whereNull('affiliate_payout_id')
-            ->whereNotNull('paid_at')
-            ->where('commission_currency', $currency)
-            ->sum('commission_minor');
+                ->whereRaw('UPPER(currency) = ?', [$currency])
+                ->pluck('id');
+
+            foreach ($completed as $id) {
+                $completedPayoutConversions += $audit->paidByPayout[(string) $id];
+            }
+        }
+
         $reservedOperations = AffiliatePayoutOperation::query()
             ->where('affiliate_id', $affiliate->getKey())
             ->where('currency', $currency)

@@ -40,7 +40,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 **Relationships:**
 
 ```php
-$affiliate->conversions;      // HasMany<AffiliateConversion>
+app(\AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader::class)
+    ->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()));
 app(\AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader::class)->count($affiliate->id);
 app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader::class)->hasAffiliateHistory($affiliate->id, spl_object_id($affiliate->getConnection()));
 app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey());
