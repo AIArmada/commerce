@@ -39,7 +39,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
     /**
      * Get affiliate discount conditions applicable to the cart.
      *
-     * Reads affiliate from cart metadata and creates discount conditions
+     * Reads the active persisted cart attribution and creates discount conditions
      * if the affiliate has customer discount configuration.
      *
      * @return array<CartCondition>
@@ -77,19 +77,10 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return true;
         }
 
-        $affiliateCode = $condition->getAttribute('affiliate_code');
+        $expected = $this->getConditionsFor($cart)[0] ?? null;
 
-        if (! is_string($affiliateCode)) {
-            return false;
-        }
-
-        $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
-
-        if ($affiliate === null || ! $affiliate->isActive()) {
-            return false;
-        }
-
-        return $this->getAffiliateDiscountFromModel($affiliate) !== null;
+        return $expected !== null
+            && $condition->toArray() === $expected->toArray();
     }
 
     /**
@@ -122,7 +113,11 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
         $customerDiscount = $metadata['customer_discount'] ?? null;
 
         if (! is_array($customerDiscount)) {
-            return app(RankDirectory::class)->customerDiscount($affiliate->rank_id);
+            $customerDiscount = app(RankDirectory::class)->customerDiscount($affiliate->rank_id);
+        }
+
+        if ($customerDiscount === null) {
+            return null;
         }
 
         $value = filter_var($customerDiscount['value'] ?? null, FILTER_VALIDATE_INT);

@@ -209,11 +209,26 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('valid-active-test');
-        $condition = createTestAffiliateCondition('affiliate_discount', 'VALID-DISCOUNT-TEST');
-
         $provider = app(AffiliateDiscountConditionProvider::class);
 
-        expect($provider->validate($condition, $cart))->toBeTrue();
+        expect($provider->validate(createTestAffiliateCondition('affiliate_discount', 'VALID-DISCOUNT-TEST'), $cart))->toBeFalse();
+
+        app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
+        $condition = $provider->getConditionsFor($cart)[0];
+
+        expect($provider->validate($condition, $cart))->toBeTrue()
+            ->and($provider->validate($condition->with(['value' => '-90%']), $cart))->toBeFalse()
+            ->and($provider->validate($condition->with(['order' => 1]), $cart))->toBeFalse()
+            ->and($provider->validate($condition, createAffiliateTestCart('unattributed-cart')))->toBeFalse();
+
+        config(['affiliates.cart.customer_discounts_enabled' => false]);
+        expect($provider->validate($condition, $cart))->toBeFalse();
+
+        config(['affiliates.cart.customer_discounts_enabled' => true]);
+        $affiliate->update(['metadata' => ['customer_discount' => ['type' => 'percentage', 'value' => 250]]]);
+
+        expect($provider->validate($condition, $cart))->toBeFalse()
+            ->and($provider->validate($provider->getConditionsFor($cart)[0], $cart))->toBeTrue();
     });
 
     it('ignores zero or negative discount values', function (): void {

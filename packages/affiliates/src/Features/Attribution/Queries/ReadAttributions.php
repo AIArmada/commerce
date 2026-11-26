@@ -61,7 +61,8 @@ final readonly class ReadAttributions implements AttributionLookup
             ->with('affiliate')
             ->whereIn('cookie_value', array_values(array_unique($candidates)))
             ->active()
-            ->latest('last_cookie_seen_at');
+            ->latest('last_cookie_seen_at')
+            ->latest('id');
 
         $this->applyOwnerScope($query);
 
