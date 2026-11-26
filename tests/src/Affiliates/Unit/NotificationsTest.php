@@ -6,9 +6,10 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Features\Conversions\Notifications\ConversionRecordedNotification;
+use AIArmada\Affiliates\Features\Identity\Notifications\ConversionRecordedNotification;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -73,6 +74,22 @@ describe('engine notifications', function (): void {
         expect(Communication::query()->where('purpose', 'affiliates.conversion_recorded')->exists())->toBeTrue();
     });
 
+    test('forged conversion events do not send affiliate notifications', function (): void {
+        $affiliate = createTestAffiliate(['contact_email' => 'forged-notify-' . uniqid() . '@example.com']);
+
+        event(new AffiliateConversionRecorded(new AffiliateConversionData(
+            id: (string) \Illuminate\Support\Str::uuid(),
+            affiliateId: $affiliate->id,
+            affiliateCode: $affiliate->code,
+            commissionMinor: 500000,
+            commissionCurrency: 'MYR',
+            ownerType: $affiliate->owner_type,
+            ownerId: $affiliate->owner_id,
+        )));
+
+        expect(Communication::query()->withoutOwnerScope()->where('purpose', 'affiliates.conversion_recorded')->exists())->toBeFalse();
+    });
+
     test('notifications stay silent when disabled', function (): void {
         config(['affiliates.notifications.enabled' => false]);
 
@@ -91,13 +108,7 @@ describe('engine notifications', function (): void {
 });
 
 test('conversion notification uses the currency minor-unit precision', function (): void {
-    $notification = new ConversionRecordedNotification(new AffiliateConversionData(
-        id: 'conversion',
-        affiliateId: 'affiliate',
-        affiliateCode: 'AFF',
-        commissionMinor: 1500,
-        commissionCurrency: 'JPY',
-    ));
+    $notification = new ConversionRecordedNotification('JPY', 1500);
 
     expect($notification->toMail(null)->subject)->toBe('New commission: JPY 1,500');
 });

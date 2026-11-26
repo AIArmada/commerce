@@ -38,7 +38,7 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Conversions\Api\OrderCommissionRegistration;
-use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\NotifyConversionRecorded;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;

@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Features\Conversions\Notifications;
+namespace AIArmada\Affiliates\Features\Identity\Notifications;
 
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,7 +14,8 @@ final class ConversionRecordedNotification extends Notification
     use Queueable;
 
     public function __construct(
-        private readonly AffiliateConversionData $conversion,
+        private readonly string $currency,
+        private readonly int $commissionMinor,
     ) {}
 
     /**
@@ -28,10 +28,10 @@ final class ConversionRecordedNotification extends Notification
 
     public function toMail(mixed $notifiable): MailMessage
     {
-        $amount = MoneyFormatter::decimalFromMinor($this->conversion->commissionMinor, $this->conversion->commissionCurrency);
+        $amount = MoneyFormatter::decimalFromMinor($this->commissionMinor, $this->currency);
 
         return (new MailMessage)
-            ->subject("New commission: {$this->conversion->commissionCurrency} {$amount}")
-            ->line("A conversion earned you {$this->conversion->commissionCurrency} {$amount}.");
+            ->subject("New commission: {$this->currency} {$amount}")
+            ->line("A conversion earned you {$this->currency} {$amount}.");
     }
 }
