@@ -816,6 +816,23 @@ test('identity write guard rejects foreign owners and mismatched connections', f
         expect(fn () => $connection->transaction(fn () => $guard->lockForWrite($affiliate->id, $identity)))
             ->toThrow(AuthorizationException::class);
     });
+
+    $global = OwnerContext::withOwner(null, fn (): Affiliate => Affiliate::create([
+        'code' => 'IDENTITY-GUARD-GLOBAL',
+        'name' => 'Global Identity Guard Affiliate',
+        'status' => Active::class,
+    ]));
+
+    OwnerContext::withOwner($ownerA, function () use ($guard, $global, $connection, $identity): void {
+        expect(Affiliate::query()->forOwner(includeGlobal: true)->whereKey($global->id)->exists())->toBeTrue()
+            ->and(fn () => $guard->assertCanWrite($global->id, $identity))->toThrow(AuthorizationException::class)
+            ->and(fn () => $connection->transaction(fn () => $guard->lockForWrite($global->id, $identity)))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($guard, $global, $connection, $identity): void {
+        $guard->assertCanWrite($global->id, $identity);
+        $connection->transaction(fn () => $guard->lockForWrite($global->id, $identity));
+    });
 });
 
 test('affiliate-derived owner scope protects retained records against cross-tenant writes', function (): void {

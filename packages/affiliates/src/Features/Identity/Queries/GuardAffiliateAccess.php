@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use LogicException;
@@ -43,16 +43,20 @@ final readonly class GuardAffiliateAccess implements AffiliateAccessGuard
             throw (new ModelNotFoundException)->setModel(Affiliate::class, [$affiliateId]);
         }
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
-        }
-
-        $query = Affiliate::query()->forOwner()->whereKey($affiliateId);
+        $query = Affiliate::query()->forOwner(includeGlobal: false)->whereKey($affiliateId);
 
         if ($lock) {
             $query->lockForUpdate();
         }
 
-        $query->firstOrFail(['id']);
+        if ($query->first(['id']) !== null) {
+            return;
+        }
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            throw new AuthorizationException('Referenced record is not accessible in the current owner scope.');
+        }
+
+        throw (new ModelNotFoundException)->setModel(Affiliate::class, [$affiliateId]);
     }
 }
