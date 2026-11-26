@@ -541,9 +541,9 @@ never updates application data or package sources.
 ## Search Areas
 
 ~~~php
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
 
-$areas = app(SearchAddressAreasAction::class)->execute(
+$areas = app(AddressAreaSearch::class)->execute(
     query: 'KL',
     countryCode: 'MY',
 );

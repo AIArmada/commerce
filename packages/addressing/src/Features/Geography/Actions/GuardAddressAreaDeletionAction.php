@@ -2,20 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Contracts\AddressAreaDeletionGuard;
+
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
 use Illuminate\Validation\ValidationException;
 
-final readonly class GuardAddressAreaDeletionAction
+final readonly class GuardAddressAreaDeletionAction implements AddressAreaDeletionGuard
 {
     public function handle(AddressArea $addressArea): void
     {
         $key = (string) $addressArea->getKey();
 
-        if (AddressAreaRelationship::query()
+        if (ModelResolver::areaRelationshipClass()::query()
             ->where('parent_address_area_id', $key)
             ->where('relationship_type', 'contains')
             ->exists()) {
@@ -24,9 +25,9 @@ final readonly class GuardAddressAreaDeletionAction
             ]);
         }
 
-        if (Address::query()->whereHas(
+        if (ModelResolver::addressClass()::query()->withoutOwnerScope()->whereHas(
             'areaAssignments',
-            static fn ($query) => $query->where('address_area_id', $key),
+            static fn ($query) => $query->withoutGlobalScope(\AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope::class)->where('address_area_id', $key),
         )->exists()) {
             throw ValidationException::withMessages([
                 'address_area' => 'This address area is still referenced by one or more addresses.',

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
 
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 
@@ -15,7 +17,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
-final class SearchAddressAreasAction
+final class SearchAddressAreasAction implements AddressAreaSearch
 {
     /** @var array<string, ?class-string> */
     private array $postalCodeNormalizers = [];
@@ -39,6 +41,7 @@ final class SearchAddressAreasAction
         int $limit = 25,
     ): Collection {
         $query = mb_trim($query);
+        $limit = max(1, min(100, $limit));
 
         if ($query === '') {
             return new Collection;

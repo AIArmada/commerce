@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Geography\Lithuania\LithuaniaGeographyProvider;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
@@ -49,7 +49,7 @@ it('seeds consistently and resolves every municipal type through the municipalit
 
     expect($resolver->definitionForRole('LT', 'municipality'))->not->toBeNull();
 
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
 
     expect($search->execute(query: 'Vilniaus miestas', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
         ->toContain('Vilniaus miestas')

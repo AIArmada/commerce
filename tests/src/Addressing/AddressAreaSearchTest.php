@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Geography\Argentina\ArgentinaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -93,7 +93,7 @@ beforeEach(function (): void {
 });
 
 it('searches localities by name and role', function (): void {
-    $results = app(SearchAddressAreasAction::class)->execute(
+    $results = app(AddressAreaSearch::class)->execute(
         query: 'Wangsa',
         countryCode: 'MY',
         role: 'postal_locality',
@@ -104,7 +104,7 @@ it('searches localities by name and role', function (): void {
 });
 
 it('searches area aliases', function (): void {
-    $results = app(SearchAddressAreasAction::class)->execute(query: 'KL', countryCode: 'MY');
+    $results = app(AddressAreaSearch::class)->execute(query: 'KL', countryCode: 'MY');
 
     expect($results)->toHaveCount(1)
         ->and($results->first()->name)->toBe('Wilayah Persekutuan Kuala Lumpur');
@@ -113,7 +113,7 @@ it('searches area aliases', function (): void {
 it('finds localities under a postal parent', function (): void {
     $kl = AddressArea::query()->where('name', 'Wilayah Persekutuan Kuala Lumpur')->firstOrFail();
 
-    $results = app(SearchAddressAreasAction::class)->execute(
+    $results = app(AddressAreaSearch::class)->execute(
         query: 'Wangsa',
         countryCode: 'MY',
         parentId: $kl->getKey(),
@@ -129,7 +129,7 @@ it('keeps administrative relationships separate from postal relationships', func
         ->where('type', 'district')
         ->firstOrFail();
 
-    $results = app(SearchAddressAreasAction::class)->execute(
+    $results = app(AddressAreaSearch::class)->execute(
         query: $district->name,
         countryCode: 'MY',
         hierarchyType: 'administrative',
@@ -140,13 +140,13 @@ it('keeps administrative relationships separate from postal relationships', func
 });
 
 it('excludes other-hierarchy branches but keeps root areas', function (): void {
-    $admin = app(SearchAddressAreasAction::class)->execute(
+    $admin = app(AddressAreaSearch::class)->execute(
         query: 'Wangsa',
         countryCode: 'MY',
         hierarchyType: 'administrative',
     );
 
-    $roots = app(SearchAddressAreasAction::class)->execute(
+    $roots = app(AddressAreaSearch::class)->execute(
         query: 'Kuala Lumpur',
         countryCode: 'MY',
         hierarchyType: 'administrative',
@@ -163,14 +163,14 @@ it('does not cross hierarchy branches when filtering by parent', function (): vo
         ->where('name', 'Johor')
         ->firstOrFail();
 
-    $results = app(SearchAddressAreasAction::class)->execute(
+    $results = app(AddressAreaSearch::class)->execute(
         query: 'Johor Bahru',
         countryCode: 'MY',
         parentId: $state->getKey(),
         hierarchyType: 'postal',
     );
 
-    $unfiltered = app(SearchAddressAreasAction::class)->execute(
+    $unfiltered = app(AddressAreaSearch::class)->execute(
         query: 'Johor Bahru',
         countryCode: 'MY',
     );
@@ -216,13 +216,13 @@ it('finds a cross-boundary area under either administrative parent', function ()
         ]);
     }
 
-    $underFirst = app(SearchAddressAreasAction::class)->execute(
+    $underFirst = app(AddressAreaSearch::class)->execute(
         query: 'Split Mukim',
         countryCode: 'MY',
         parentId: $firstParent->getKey(),
         hierarchyType: 'administrative',
     );
-    $underSecond = app(SearchAddressAreasAction::class)->execute(
+    $underSecond = app(AddressAreaSearch::class)->execute(
         query: 'Split Mukim',
         countryCode: 'MY',
         parentId: $secondParent->getKey(),
@@ -276,7 +276,7 @@ it('resolves full Argentine CPA codes through their base code', function (): voi
         'is_primary' => true,
     ]);
 
-    $action = app(SearchAddressAreasAction::class);
+    $action = app(AddressAreaSearch::class);
 
     expect($action->execute(query: 'Comuna 10', countryCode: 'AR', postalCode: 'C1406DOB')->pluck('name')->all())
         ->toContain('Comuna 10')
@@ -301,7 +301,7 @@ it('respects the configured area subclass and its global scopes', function (): v
 
     config()->set('addressing.models.area', $scopedArea::class);
 
-    $results = app(SearchAddressAreasAction::class)->execute(query: 'Johor', countryCode: 'MY');
+    $results = app(AddressAreaSearch::class)->execute(query: 'Johor', countryCode: 'MY');
 
     expect($results->pluck('name')->all())->toContain('Johor')
         ->not->toContain('Johor Bahru')

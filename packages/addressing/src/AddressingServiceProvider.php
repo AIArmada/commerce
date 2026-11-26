@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing;
 
-use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
-use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
 use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
@@ -89,13 +86,10 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(SeedAddressStatesAction::class);
         $this->app->singleton(SeedAddressCitiesAction::class);
         $this->app->singleton(SeedCountryGeographiesAction::class);
-        $this->app->singleton(SearchAddressAreasAction::class);
         $this->app->singleton(CountryAddressProfileResolver::class);
         $this->app->singleton(CountryAddressFormatterResolver::class);
         $this->app->singleton(ImportAddressAreasAction::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
-        $this->app->singleton(GuardAddressAreaDeletionAction::class);
-        $this->app->singleton(GuardAddressCountryDeletionAction::class);
         $this->app->singleton(GoogleMapsUrlParser::class);
         $this->app->singleton(GoogleMapsLookup::class, GoogleMapsRemoteLookup::class);
         $this->app->singleton(GooglePlaceGeographyMatcher::class);

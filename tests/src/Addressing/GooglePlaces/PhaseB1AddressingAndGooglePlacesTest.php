@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
-use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
+use AIArmada\Addressing\Contracts\AddressAreaDeletionGuard;
+use AIArmada\Addressing\Contracts\AddressCountryDeletionGuard;
 use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
 use AIArmada\Addressing\Contracts\GooglePlaceSelectionResolver;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
@@ -62,12 +62,12 @@ test('guard address country and area deletion actions prevent deleting reference
         'hierarchy_type' => 'administrative',
     ]);
 
-    expect(fn () => app(GuardAddressCountryDeletionAction::class)->handle($country))
+    expect(fn () => app(AddressCountryDeletionGuard::class)->handle($country))
         ->toThrow(ValidationException::class)
-        ->and(fn () => app(GuardAddressAreaDeletionAction::class)->handle($parentArea))
+        ->and(fn () => app(AddressAreaDeletionGuard::class)->handle($parentArea))
         ->toThrow(ValidationException::class);
 
-    expect(fn () => app(GuardAddressAreaDeletionAction::class)->handle($childArea))
+    expect(fn () => app(AddressAreaDeletionGuard::class)->handle($childArea))
         ->not->toThrow(ValidationException::class);
 });
 

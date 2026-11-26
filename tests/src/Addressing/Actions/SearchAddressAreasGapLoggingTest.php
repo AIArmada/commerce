@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
@@ -26,7 +26,7 @@ function searchGapCount(): int
 }
 
 it('logs an unfiltered miss as a search gap', function (): void {
-    $results = app(SearchAddressAreasAction::class)->execute('Xyzzy No Such Place', countryCode: 'MY', role: 'postal_locality');
+    $results = app(AddressAreaSearch::class)->execute('Xyzzy No Such Place', countryCode: 'MY', role: 'postal_locality');
 
     expect($results)->toBeEmpty();
 
@@ -40,13 +40,13 @@ it('logs an unfiltered miss as a search gap', function (): void {
 });
 
 it('defaults the search gap role to area', function (): void {
-    app(SearchAddressAreasAction::class)->execute('Xyzzy No Such Place', countryCode: 'MY');
+    app(AddressAreaSearch::class)->execute('Xyzzy No Such Place', countryCode: 'MY');
 
     expect(ResolutionGap::query()->where('source', 'search')->firstOrFail()->role)->toBe('area');
 });
 
 it('bumps hits when the same miss repeats', function (): void {
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
 
     $search->execute('Xyzzy No Such Place', countryCode: 'MY');
     $search->execute('Xyzzy No Such Place', countryCode: 'MY');
@@ -56,26 +56,26 @@ it('bumps hits when the same miss repeats', function (): void {
 });
 
 it('logs nothing on a hit', function (): void {
-    $results = app(SearchAddressAreasAction::class)->execute('Wangsa Maju', countryCode: 'MY');
+    $results = app(AddressAreaSearch::class)->execute('Wangsa Maju', countryCode: 'MY');
 
     expect($results)->not->toBeEmpty()
         ->and(searchGapCount())->toBe(0);
 });
 
 it('logs nothing without a country', function (): void {
-    app(SearchAddressAreasAction::class)->execute('Xyzzy No Such Place');
+    app(AddressAreaSearch::class)->execute('Xyzzy No Such Place');
 
     expect(searchGapCount())->toBe(0);
 });
 
 it('logs nothing for short queries', function (): void {
-    app(SearchAddressAreasAction::class)->execute('Xy', countryCode: 'MY');
+    app(AddressAreaSearch::class)->execute('Xy', countryCode: 'MY');
 
     expect(searchGapCount())->toBe(0);
 });
 
 it('logs nothing for unloggable telemetry input', function (): void {
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
 
     $search->execute(str_repeat('Xyzzy ', 50), countryCode: 'MY');
     $search->execute('Xyzzy No Such Place', countryCode: 'MY', role: str_repeat('r', 51));
@@ -84,7 +84,7 @@ it('logs nothing for unloggable telemetry input', function (): void {
 });
 
 it('logs nothing for filter-scoped misses', function (): void {
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
     $wangsaId = (string) $this->areas['wangsa']->getKey();
 
     $search->execute('Xyzzy No Such Place', countryCode: 'MY', type: 'locality');
