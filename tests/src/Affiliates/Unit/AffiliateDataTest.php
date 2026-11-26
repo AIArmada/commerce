@@ -3,17 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
 
 test('AffiliateData toArray returns array representation', function (): void {
     $data = new AffiliateData(
         id: '1',
         code: 'AFF1',
         name: 'Test Affiliate',
-        status: AffiliateStatus::fromString(Active::class),
-        commissionType: CommissionType::Percentage,
+        status: 'active',
+        commissionType: 'percentage',
         commissionRate: 500,
         currency: 'USD',
         defaultVoucherCode: 'VOUCHER',
@@ -22,8 +19,7 @@ test('AffiliateData toArray returns array representation', function (): void {
 
     $array = $data->toArray();
 
-    expect($array['status'])->toBeInstanceOf(Active::class);
-    expect($array['status']->equals(Active::class))->toBeTrue();
+    expect($array['status'])->toBe('active');
     expect($array)->toMatchArray([
         'id' => '1',
         'code' => 'AFF1',

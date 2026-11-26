@@ -8,17 +8,17 @@ final class Active extends AffiliateStatus
 {
     public static string $name = 'active';
 
-    public function label(): string
+    public static function label(): string
     {
         return 'Active';
     }
 
-    public function description(): string
+    public static function description(): string
     {
         return 'Affiliate can earn commissions';
     }
 
-    public function color(): string
+    public static function color(): string
     {
         return 'success';
     }

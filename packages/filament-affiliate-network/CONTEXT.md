@@ -32,6 +32,7 @@ keywords:
 ## Guardrails
 - Adapter only: never add domain models, actions, calculations, or money math here. Call `aiarmada/affiliate-network` `Features\<Feature>\Actions\*` / `Queries\*` / `Api\*`.
 - Cross-package boundary: import from `AIArmada\AffiliateNetwork\Features\<Feature>\{Models,Api,Actions}` and `Data`/`Platform` only. Never reach into another package's `EntryPoints` or `Drivers`.
+- Postback delivery is lease-based (`attempt_token`, `lease_expires_at`); retries are safe to overlap but are not an external exactly-once guarantee.
 - Owner scoping: resources return owner-safe queries; every action handler revalidates the submitted ID server-side. Admin surfaces (`MerchantStatementResource`, network widgets) intentionally use `withoutOwnerScope()` behind `NetworkAdminAccess::allows()`.
 - If behaviour or calculations change, move them into `affiliate-network` and keep this package presentational.
 - Update `docs/*.md` in the same pass when public behavior or config changes.

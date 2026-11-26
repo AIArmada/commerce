@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 use Carbon\CarbonImmutable;
 
 describe('AffiliatePayout Model', function (): void {
@@ -59,7 +60,7 @@ describe('AffiliatePayout Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($payout->conversions)->toHaveCount(2);
+        expect(app(PayoutConversionIntegrity::class)->summary($payout->id, $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()))->count)->toBe(2);
     });
 
     test('has many events', function (): void {
@@ -86,7 +87,7 @@ describe('AffiliatePayout Model', function (): void {
             'metadata' => ['note' => 'Payout approved'],
         ]);
 
-        expect($payout->events)->toHaveCount(2);
+        expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->id)->get())->toHaveCount(2);
     });
 
     test('casts scheduled_at as datetime', function (): void {

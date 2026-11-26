@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentLinks\Resources\LinkResource;
@@ -118,7 +118,7 @@ test('affiliate tracking links are protected from slug and destination edits and
 test('affiliate subjects are protected by default and explicit config overrides that default', function (): void {
     config(['filament-links.protected_subject_types' => null]);
     $link = new Link;
-    $link->subject_type = AffiliateLink::class;
+    $link->subject_type = 'affiliate_link';
     $link->subject_id = (string) Str::uuid();
 
     expect(LinkForm::isProtectedSubject($link))->toBeTrue();

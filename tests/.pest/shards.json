@@ -101,7 +101,7 @@
         "Tests\\src\\Affiliates\\Unit\\PerformanceBonusServiceTest": 40.0091,
         "Tests\\src\\Affiliates\\Unit\\ProcessScheduledPayoutsCommandTest": 33.7488,
         "Tests\\src\\Affiliates\\Unit\\ProgramDerivedOwnerScopingTest": 1.7568,
-        "Tests\\src\\Affiliates\\Unit\\ProgramServiceTest": 48.5492,
+        "Tests\\src\\Affiliates\\Unit\\ProgramFeatureApisTest": 48.5492,
         "Tests\\src\\Affiliates\\Unit\\PublicAffiliateReferralTest": 11.1661,
         "Tests\\src\\Affiliates\\Unit\\RankQualificationServiceTest": 41.5213,
         "Tests\\src\\Affiliates\\Unit\\ServicesAndDtosTest": 27.0856,

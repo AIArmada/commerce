@@ -8,11 +8,11 @@ Merchant stores that sell through an affiliate-network marketplace use two
 small pieces instead of hand-rolled HTTP:
 
 ```php
-use AIArmada\Affiliates\Merchant\CaptureNetworkReferral;
-use AIArmada\Affiliates\Merchant\NetworkPostbackClient;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkReferral;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionAdministration;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Carbon\CarbonImmutable;
 
 // 1. Capture the ?anl= code in the web group (AppServiceProvider::boot)
@@ -24,10 +24,9 @@ $linkCode = $request->session()->get($sessionKey);
 $networkClickedAt = $request->session()->get($sessionKey . '_clicked_at');
 
 if (is_string($linkCode) && is_string($networkClickedAt)) {
-    $engineAttribution = app(RecordAffiliateConversion::class)->resolveAttributionFor($cart);
-    $engineTouchAt = $engineAttribution?->last_referred_at;
+    $engineTouchAt = app(CartConversionRecording::class)->attributionTouchFor($cart);
 
-    $result = app(NetworkPostbackClient::class)->report(
+    $result = app(NetworkPostbackGateway::class)->report(
         $linkCode,
         (string) $order->number,
         (int) $order->total_minor,
@@ -36,15 +35,15 @@ if (is_string($linkCode) && is_string($networkClickedAt)) {
         (string) $order->currency,
     );
 
-    $decision = $result['decision'];
+    $decision = $result->decision;
 
-    if ($result['ok'] && ($decision['winner'] ?? null) === 'network') {
+    if ($result->ok && ($decision['winner'] ?? null) === 'network') {
         $engineConversion = AffiliateConversion::query()
             ->where('external_reference', (string) $order->number)
             ->first();
 
         if ($engineConversion instanceof AffiliateConversion) {
-            VoidAffiliateConversion::run($engineConversion, 'network_attribution_won');
+            app(ConversionAdministration::class)->voidConversion((string) $engineConversion->getKey(), 'network_attribution_won');
         }
     }
 }
@@ -75,7 +74,7 @@ outbox.
 The host engine and network are separate decision-makers for remote reports.
 If the response says `winner: network`, do not keep the local engine conversion
 payable: skip `RecordAffiliateConversion` if it has not run yet, or settle an
-existing conversion with `VoidAffiliateConversion::run($conversion,
+existing conversion with `app(ConversionAdministration::class)->voidConversion($conversionId,
 'network_attribution_won')`. The SDK does not suppress engine conversion
 recording for the host.
 

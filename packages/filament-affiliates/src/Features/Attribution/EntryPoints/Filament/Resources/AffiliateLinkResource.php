@@ -1,0 +1,268 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources;
+
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\ListAffiliateLinks;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\ViewAffiliateLink;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
+use BackedEnum;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
+
+final class AffiliateLinkResource extends Resource
+{
+    protected static ?string $model = AffiliateLink::class;
+
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-link';
+
+    protected static ?string $navigationLabel = 'Affiliate Links';
+
+    protected static ?string $modelLabel = 'Affiliate Link';
+
+    protected static ?string $pluralModelLabel = 'Affiliate Links';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.delete')
+            && $record instanceof AffiliateLink
+            && ! app(LinkConversionReader::class)->hasLinkHistory((string) $record->getKey(), spl_object_id($record->getConnection()));
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<AffiliateLink> $query */
+        $query = AffiliateReferenceProjection::apply(parent::getEloquentQuery());
+        $query->addSelect(['program_name' => AffiliateProgram::query()->forOwner()->select('name')->whereColumn('id', $query->getModel()->qualifyColumn('program_id'))]);
+
+        return $query;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('Link Details')
+                ->schema([
+                    Forms\Components\Select::make('affiliate_id')
+                        ->getSearchResultsUsing(fn (string $search): array => AffiliateReferenceProjection::options($search))
+                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : AffiliateReferenceProjection::label($id))
+                        ->disabled(fn (string $operation): bool => $operation === 'edit')->dehydrated()
+                        ->searchable()
+                        ->required(),
+
+                    Forms\Components\Select::make('program_id')
+                        ->getSearchResultsUsing(fn (string $search): array => app(ProgramReferenceReader::class)->options($search, includeGlobal: false))
+                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : app(ProgramReferenceReader::class)->label($id, includeGlobal: false))
+                        ->searchable(),
+
+                    Forms\Components\TextInput::make('destination_url')
+                        ->url()
+                        ->required()
+                        ->maxLength(2048)
+                        ->disabled(fn (?AffiliateLink $record): bool => ! self::canEditDestination($record))
+                        ->dehydrated(fn (?AffiliateLink $record): bool => self::canEditDestination($record)),
+
+                    Forms\Components\TextInput::make('tracking_url')
+                        ->disabled()->dehydrated(false)->visible(fn (string $operation): bool => $operation !== 'create'),
+                    Forms\Components\Select::make('link_style')
+                        ->label('Link Style')->options(['short' => 'Short', 'branded' => 'Branded'])
+                        ->default(config('affiliates.links.default_style', 'short'))->required()->visible(fn (string $operation): bool => $operation === 'create')
+                        ->dehydrated(fn (string $operation): bool => $operation === 'create'),
+                    Forms\Components\TextInput::make('link_label')
+                        ->label('Campaign Name')->maxLength(60)->visible(fn (string $operation): bool => $operation === 'create')
+                        ->dehydrated(fn (string $operation): bool => $operation === 'create'),
+                ])
+                ->columns(2),
+
+            Section::make('Campaign')
+                ->schema([
+                    Forms\Components\TextInput::make('campaign')
+                        ->maxLength(255),
+
+                    Forms\Components\TextInput::make('sub_id')
+                        ->label('Sub ID')
+                        ->maxLength(255),
+
+                    Forms\Components\TextInput::make('sub_id_2')
+                        ->label('Sub ID 2')
+                        ->maxLength(255),
+
+                    Forms\Components\TextInput::make('sub_id_3')
+                        ->label('Sub ID 3')
+                        ->maxLength(255),
+
+                    Forms\Components\DateTimePicker::make('deactivated_at')
+                        ->label('Deactivated At')
+                        ->helperText('Leave empty for active links, set a date to deactivate')
+                        ->native(false),
+                ])
+                ->columns(2),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('affiliate_code')
+                    ->label('Affiliate')
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search, byCode: true))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_code', $direction)),
+
+                Tables\Columns\TextColumn::make('program_name')
+                    ->label('Program')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('campaign')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('destination_url')
+                    ->label('Destination')
+                    ->limit(40)
+                    ->tooltip(fn (AffiliateLink $record): string => $record->destination_url),
+
+                Tables\Columns\TextColumn::make('tracking_url')
+                    ->label('Tracking')
+                    ->limit(40)
+                    ->tooltip(fn (AffiliateLink $record): string => $record->tracking_url),
+
+                Tables\Columns\TextColumn::make('clicks')
+                    ->numeric()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('conversions')
+                    ->numeric()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('deactivated_at')
+                    ->label('Status')
+                    ->formatStateUsing(fn (?string $state): string => $state === null ? 'Active' : 'Inactive')
+                    ->badge()
+                    ->color(fn (?string $state): string => $state === null ? 'success' : 'gray'),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'active' => 'Active',
+                        'inactive' => 'Inactive',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if ($data['value'] === 'active') {
+                            return $query->whereNull('deactivated_at');
+                        }
+                        if ($data['value'] === 'inactive') {
+                            return $query->whereNotNull('deactivated_at');
+                        }
+
+                        return $query;
+                    }),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+            ])
+            ->bulkActions([]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('Link Details')
+                ->schema([
+                    TextEntry::make('destination_url')
+                        ->label('Destination URL'),
+                    TextEntry::make('tracking_url')
+                        ->label('Tracking URL'),
+                    TextEntry::make('short_url')
+                        ->label('Short URL')
+                        ->placeholder('—'),
+                    TextEntry::make('campaign')
+                        ->label('Campaign')
+                        ->placeholder('—'),
+                ])
+                ->columns(2),
+        ]);
+    }
+
+    private static function canEditDestination(?AffiliateLink $record): bool
+    {
+        return $record === null || (app(AffiliateProfileReader::class)->find($record->affiliate_id, spl_object_id($record->getConnection()))?->commercial ?? false);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListAffiliateLinks::route('/'),
+            'create' => CreateAffiliateLink::route('/create'),
+            'view' => ViewAffiliateLink::route('/{record}'),
+            'edit' => EditAffiliateLink::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.resources.navigation_sort.affiliate_links', 65);
+    }
+}

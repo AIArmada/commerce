@@ -17,7 +17,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\AffiliateProfileGuard;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Models\Link;
@@ -160,7 +160,6 @@ describe('affiliate profile requirement for network writes', function (): void {
     test('standalone UserKey identity bypasses the profile gate and keeps owner-off writes', function (): void {
         app()->instance(AffiliateIdentityResolver::class, new UserKeyIdentityDriver);
         app()->forgetInstance(AffiliateProfileGuard::class);
-        config(['affiliate-network.models.affiliate' => User::class]);
 
         $actor = affiliateProfileRequiredUser('Standalone Creator');
         [, $offer] = affiliateProfileRequiredFixtures($actor, 'standalone-profile.example');

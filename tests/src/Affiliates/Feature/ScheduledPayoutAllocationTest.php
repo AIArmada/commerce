@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
@@ -114,16 +114,21 @@ test('allocation stops at the first unfundable conversion and excludes later che
 });
 
 test('allocation normalizes commission currency case', function (): void {
-    [$affiliate] = f05CreateAffiliate('F05CASE', 10_000);
+    [$affiliate, $balance] = f05CreateAffiliate('F05CASE', 10_000);
     $base = CarbonImmutable::now()->subDays(60);
 
     f05InsertConversions($affiliate, [
         [6_000, 'usd'],
     ], $base);
 
-    // The FIFO selector uppercases before comparing, so a lowercase
-    // stored currency still funds the snapshot.
-    expect(app(ClaimScheduledPayout::class)->isEligibleSnapshot((string) $affiliate->id, 5_000, 'USD'))->toBeTrue();
+    $claim = app(ClaimScheduledPayout::class);
+    expect($claim->isEligibleSnapshot((string) $affiliate->id, 5_000, 'USD'))->toBeTrue();
+
+    $operation = $claim->handle((string) $affiliate->id, 5_000, 'USD');
+
+    expect($operation?->amount_minor)->toBe(6_000)
+        ->and($balance->refresh()->available_minor)->toBe(4_000)
+        ->and(AffiliateConversion::query()->where('affiliate_id', $affiliate->id)->where('affiliate_payout_id', $operation?->affiliate_payout_id)->count())->toBe(1);
 });
 
 test('allocation hydrates at most one batch when the prefix breaks early', function (): void {
@@ -193,4 +198,19 @@ test('allocation pages large scans in fixed-size batches', function (): void {
     // 2,100 traversed rows in batches of 1,000 → 3 chunk selects. The old
     // ->get() issued a single unbounded select.
     expect($paged)->toHaveCount(3);
+});
+
+test('direct scheduled claims reject paused and deactivated affiliates without reserving funds', function (): void {
+    foreach (['paused_at', 'deactivated_at'] as $column) {
+        [$affiliate, $balance] = f05CreateAffiliate('F05INELIGIBLE', 10_000);
+        f05InsertConversions($affiliate, [[6_000, 'USD']], CarbonImmutable::now()->subDays(60));
+        $affiliate->forceFill([$column => CarbonImmutable::now()])->save();
+
+        $claim = app(ClaimScheduledPayout::class);
+
+        expect($claim->isEligibleSnapshot((string) $affiliate->id, 5_000, 'USD'))->toBeFalse()
+            ->and($claim->handle((string) $affiliate->id, 5_000, 'USD'))->toBeNull()
+            ->and($balance->refresh()->available_minor)->toBe(10_000)
+            ->and(AffiliateConversion::query()->where('affiliate_id', $affiliate->id)->whereNotNull('affiliate_payout_id')->count())->toBe(0);
+    }
 });

@@ -3,15 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionRemoval;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 describe('AffiliateAttribution Model', function (): void {
@@ -40,15 +43,15 @@ describe('AffiliateAttribution Model', function (): void {
             ->and($attribution->cart_instance)->toBe('default');
     });
 
-    it('belongs to affiliate', function (): void {
+    it('references the affiliate through its identity directory', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
         ]);
 
-        expect($attribution->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($attribution->affiliate->id)->toBe($this->affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($attribution->affiliate_id)?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($attribution, 'affiliate'))->toBeFalse();
     });
 
     it('has many conversions', function (): void {
@@ -58,17 +61,30 @@ describe('AffiliateAttribution Model', function (): void {
             'cart_instance' => 'default',
         ]);
 
-        expect($attribution->conversions())->toBeInstanceOf(HasMany::class);
+        expect(AffiliateConversion::query()->where('affiliate_attribution_id', $attribution->id)->count())->toBe(0);
     });
 
-    it('has many touchpoints', function (): void {
+    it('reads touchpoints through the attribution feature', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
         ]);
 
-        expect($attribution->touchpoints())->toBeInstanceOf(HasMany::class);
+        $reader = app(TouchpointReader::class);
+        expect($reader->distributionTouches((string) $attribution->getKey()))->toBe([]);
+
+        AffiliateTouchpoint::create([
+            'affiliate_attribution_id' => $attribution->id,
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'touched_at' => CarbonImmutable::now(),
+        ]);
+
+        $touches = $reader->distributionTouches((string) $attribution->getKey());
+        expect($touches)->toHaveCount(1)
+            ->and($touches[0]->affiliateId)->toBe($this->affiliate->id)
+            ->and($touches[0]->touchedAt)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     it('stores UTM parameters', function (): void {
@@ -226,11 +242,12 @@ describe('AffiliateAttribution Model', function (): void {
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
             'last_seen_at' => Carbon::now()->subHour(),
+            'cookie_value' => 'refresh-model-last-seen',
         ]);
 
         $originalLastSeen = $attribution->last_seen_at;
 
-        $attribution->refreshLastSeen();
+        app(AttributionActivity::class)->touch('refresh-model-last-seen');
         $attribution->refresh();
 
         expect($attribution->last_seen_at->gt($originalLastSeen))->toBeTrue();
@@ -250,7 +267,7 @@ describe('AffiliateAttribution Model', function (): void {
             'touchpoint_type' => 'click',
         ]);
 
-        $attribution->delete();
+        app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]);
 
         expect(AffiliateTouchpoint::where('affiliate_attribution_id', $attribution->id)->count())->toBe(0);
     });
@@ -273,10 +290,34 @@ describe('AffiliateAttribution Model', function (): void {
             'status' => PendingConversion::class,
         ]);
 
-        $attribution->delete();
+        app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]);
         $conversion->refresh();
 
         expect($conversion->affiliate_attribution_id)->toBeNull();
+    });
+
+    it('rolls back touchpoint deletion when conversion cleanup fails', function (): void {
+        $attribution = AffiliateAttribution::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'cart_instance' => 'default',
+        ]);
+
+        $touchpoint = AffiliateTouchpoint::create([
+            'affiliate_attribution_id' => $attribution->id,
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'touchpoint_type' => 'click',
+        ]);
+
+        $this->mock(ConversionAttributionMaintenance::class)
+            ->shouldReceive('detachAttribution')->with((string) $attribution->getKey(), spl_object_id($attribution->getConnection()))
+            ->andThrow(new RuntimeException('cleanup failed'));
+
+        expect(fn () => app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]))
+            ->toThrow(RuntimeException::class, 'cleanup failed')
+            ->and($attribution->fresh())->not->toBeNull()
+            ->and($touchpoint->fresh())->not->toBeNull();
     });
 
     it('stores user id', function (): void {

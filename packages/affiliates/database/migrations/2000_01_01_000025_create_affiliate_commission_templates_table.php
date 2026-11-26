@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('slug');
             $table->text('description')->nullable();
             $table->boolean('is_default')->default(false);
+            $table->string('default_owner_key', 64)->nullable()->unique();
             $table->boolean('is_active')->default(true);
             $table->{$jsonType}('rules');
             $table->{$jsonType}('metadata')->nullable();

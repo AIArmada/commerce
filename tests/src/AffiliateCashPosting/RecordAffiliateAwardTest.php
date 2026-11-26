@@ -2,27 +2,29 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateAward;
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Exceptions\AffiliateAwardPolicyLimitException;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateUpline;
-use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateAward;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Disabled;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\Affiliates\Support\Awards\AffiliateAwardKey;
 use AIArmada\Affiliates\Support\Awards\NullAffiliateAwardPolicy;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\CashPostingTestCase;
@@ -39,6 +41,11 @@ function bindCashPostAllow(?int $min = null, ?int $max = null): void
     app()->bind(AffiliateAwardPolicy::class, fn (): FixtureAffiliateAwardPolicy => FixtureAffiliateAwardPolicy::allow($min, $max));
 }
 
+function cashPostAwardRecipient(Affiliate $affiliate): AwardRecipient
+{
+    return app(AffiliateProfileReader::class)->find((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))->awardRecipient;
+}
+
 function cashPostBalanceFor(Affiliate $affiliate, string $currency): ?AffiliateBalance
 {
     return AffiliateBalance::query()
@@ -53,7 +60,7 @@ test('posts the exact amount below the commercial minimum without clamping', fun
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('below-min'), 100, 'MYR');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('below-min'), 100, 'MYR');
 
     expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and($result->conversion?->commissionMinor)->toBe(100)
@@ -72,7 +79,7 @@ test('posts the exact amount above the commercial maximum without clamping', fun
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('above-max'), 250000, 'MYR');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('above-max'), 250000, 'MYR');
 
     expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and($result->conversion?->commissionMinor)->toBe(250000);
@@ -86,8 +93,8 @@ test('approved awards credit available with a dedicated UTC approved timestamp',
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle(
-        $recipient,
+    $result = app(RecordAffiliateAward::class)->post(
+        (string) $recipient->getKey(),
         $this->awardKey('approved'),
         1500,
         'MYR',
@@ -115,8 +122,8 @@ test('pending awards hold funds with a held stamp and no approved timestamp', fu
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle(
-        $recipient,
+    $result = app(RecordAffiliateAward::class)->post(
+        (string) $recipient->getKey(),
         $this->awardKey('pending'),
         2200,
         'MYR',
@@ -139,7 +146,7 @@ test('omitted status posts approved with exact accounting', function (): void {
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('default-status'), 700, 'MYR');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('default-status'), 700, 'MYR');
 
     $stored = AffiliateConversion::query()->whereKey($result->conversion->id)->firstOrFail();
     expect($stored->status->equals(ApprovedConversion::class))->toBeTrue()
@@ -151,7 +158,7 @@ test('lowercase currency is normalized to uppercase ISO code', function (): void
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('ccy'), 300, 'myr');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('ccy'), 300, 'myr');
 
     expect($result->conversion?->commissionCurrency)->toBe('MYR')
         ->and(cashPostBalanceFor($recipient, 'MYR'))->not->toBeNull();
@@ -164,7 +171,7 @@ test('paid reversed unknown and non-string statuses are refused at creation', fu
 
     foreach ([PaidConversion::class, ReversedConversion::class, 'paid', 'reversed', 'nope', 42] as $status) {
         try {
-            $action->handle($recipient, $this->awardKey('bad-status'), 100, 'MYR', ['status' => $status]);
+            $action->post((string) $recipient->getKey(), $this->awardKey('bad-status'), 100, 'MYR', ['status' => $status]);
             $this->fail('Status refusal expected.');
         } catch (InvalidArgumentException) {
         }
@@ -181,7 +188,7 @@ test('non-positive amounts are refused with zero effects', function (): void {
 
     foreach ([0, -1, -999999] as $amount) {
         try {
-            $action->handle($recipient, $this->awardKey('bad-amount'), $amount, 'MYR');
+            $action->post((string) $recipient->getKey(), $this->awardKey('bad-amount'), $amount, 'MYR');
             $this->fail('Amount refusal expected.');
         } catch (InvalidArgumentException) {
         }
@@ -197,7 +204,7 @@ test('malformed currencies are refused with zero effects', function (): void {
 
     foreach (['', 'US', 'USDD', '12$', 'M Y R'] as $currency) {
         try {
-            $action->handle($recipient, $this->awardKey('bad-ccy'), 100, $currency);
+            $action->post((string) $recipient->getKey(), $this->awardKey('bad-ccy'), 100, $currency);
             $this->fail('Currency refusal expected.');
         } catch (InvalidArgumentException) {
         }
@@ -213,7 +220,7 @@ test('malformed award keys are refused with zero effects', function (): void {
 
     foreach (['', '   ', str_repeat('k', 192), "bad\0key"] as $key) {
         try {
-            $action->handle($recipient, $key, 100, 'MYR');
+            $action->post((string) $recipient->getKey(), $key, 100, 'MYR');
             $this->fail('Key refusal expected.');
         } catch (InvalidArgumentException) {
         }
@@ -243,7 +250,7 @@ test('unknown and attribution-bearing attributes are refused', function (): void
 
     foreach ($forbidden as $name => $value) {
         try {
-            $action->handle($recipient, $this->awardKey('bad-attr'), 100, 'MYR', [$name => $value]);
+            $action->post((string) $recipient->getKey(), $this->awardKey('bad-attr'), 100, 'MYR', [$name => $value]);
             $this->fail("Attribute [{$name}] refusal expected.");
         } catch (InvalidArgumentException) {
         }
@@ -273,7 +280,7 @@ test('malformed metadata references and occurred_at are refused', function (): v
 
     foreach ($badShapes as $attributes) {
         try {
-            $action->handle($recipient, $this->awardKey('bad-shape'), 100, 'MYR', $attributes);
+            $action->post((string) $recipient->getKey(), $this->awardKey('bad-shape'), 100, 'MYR', $attributes);
             $this->fail('Shape refusal expected.');
         } catch (InvalidArgumentException) {
         }
@@ -287,7 +294,7 @@ test('unbound host policy returns a truthful refusal with zero effects', functio
     $recipient = $this->makeRecipient();
     $key = $this->awardKey('unbound');
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $key, 100, 'MYR');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $key, 100, 'MYR');
 
     expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Rejected)
         ->and($result->conversion)->toBeNull()
@@ -301,7 +308,7 @@ test('explicit host denial returns a refusal with zero effects', function (): vo
     app()->bind(AffiliateAwardPolicy::class, fn (): FixtureAffiliateAwardPolicy => FixtureAffiliateAwardPolicy::deny());
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('denied'), 100, 'MYR');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('denied'), 100, 'MYR');
 
     expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Rejected)
         ->and($result->conversion)->toBeNull()
@@ -319,8 +326,8 @@ test('inactive and missing recipients return no-affiliate with zero effects', fu
     $missing = new Affiliate;
     $missing->id = (string) Str::uuid();
 
-    $first = $action->handle($inactive, $this->awardKey('inactive'), 100, 'MYR');
-    $second = $action->handle($missing, $this->awardKey('missing'), 100, 'MYR');
+    $first = $action->post((string) $inactive->getKey(), $this->awardKey('inactive'), 100, 'MYR');
+    $second = $action->post((string) $missing->getKey(), $this->awardKey('missing'), 100, 'MYR');
 
     expect($first->disposition)->toBe(AffiliateOutcomeDisposition::NoAffiliate)
         ->and($first->conversion)->toBeNull()
@@ -337,13 +344,13 @@ test('identical retry replays the frozen row with zero new effects and a silent 
     $key = $this->awardKey('replay');
     $action = app(RecordAffiliateAward::class);
 
-    $first = $action->handle($recipient, $key, 900, 'MYR', ['source_ref' => 'ledger-1']);
+    $first = $action->post((string) $recipient->getKey(), $key, 900, 'MYR', ['source_ref' => 'ledger-1']);
     $storedBefore = AffiliateConversion::query()->whereKey($first->conversion->id)->firstOrFail();
     $updatedBefore = $storedBefore->updated_at->toIso8601String();
 
     usleep(1500);
 
-    $second = $action->handle($recipient, $key, 900, 'MYR', ['source_ref' => 'ledger-1']);
+    $second = $action->post((string) $recipient->getKey(), $key, 900, 'MYR', ['source_ref' => 'ledger-1']);
 
     expect($second->disposition)->toBe(AffiliateOutcomeDisposition::Replayed)
         ->and($second->conversion?->id)->toBe($first->conversion?->id)
@@ -374,13 +381,13 @@ test('mismatched recipient owner amount currency or backing fails explicitly wit
     $key = $this->awardKey('mismatch');
     $action = app(RecordAffiliateAward::class);
 
-    $created = $action->handle($winner, $key, 1200, 'MYR');
+    $created = $action->post((string) $winner->getKey(), $key, 1200, 'MYR');
     $winnerConversionId = $created->conversion->id;
 
     $attempts = [
-        fn (): mixed => $action->handle($rival, $key, 1200, 'MYR'),
-        fn (): mixed => $action->handle($winner, $key, 1201, 'MYR'),
-        fn (): mixed => $action->handle($winner, $key, 1200, 'USD'),
+        fn (): mixed => $action->post((string) $rival->getKey(), $key, 1200, 'MYR'),
+        fn (): mixed => $action->post((string) $winner->getKey(), $key, 1201, 'MYR'),
+        fn (): mixed => $action->post((string) $winner->getKey(), $key, 1200, 'USD'),
     ];
 
     foreach ($attempts as $attempt) {
@@ -416,7 +423,7 @@ test('key recorded under another backing type cannot be reused as an award', fun
     ]);
 
     try {
-        app(RecordAffiliateAward::class)->handle($recipient, $key, 1200, 'MYR');
+        app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $key, 1200, 'MYR');
         $this->fail('Backing-type mismatch failure expected.');
     } catch (InvalidArgumentException) {
     }
@@ -432,7 +439,7 @@ test('caller policy limits reject outside amounts with zero accounting and accep
 
     foreach ([999, 5001] as $amount) {
         try {
-            $action->handle($recipient, $this->awardKey('policy'), $amount, 'MYR');
+            $action->post((string) $recipient->getKey(), $this->awardKey('policy'), $amount, 'MYR');
             $this->fail('Policy-limit rejection expected.');
         } catch (AffiliateAwardPolicyLimitException $exception) {
             expect($exception->getMessage())->toContain((string) $amount);
@@ -442,8 +449,8 @@ test('caller policy limits reject outside amounts with zero accounting and accep
     expect(AffiliateConversion::query()->where('affiliate_id', $recipient->getKey())->count())->toBe(0)
         ->and(cashPostBalanceFor($recipient, 'MYR'))->toBeNull();
 
-    $low = $action->handle($recipient, $this->awardKey('policy-low'), 1000, 'MYR');
-    $high = $action->handle($recipient, $this->awardKey('policy-high'), 5000, 'MYR');
+    $low = $action->post((string) $recipient->getKey(), $this->awardKey('policy-low'), 1000, 'MYR');
+    $high = $action->post((string) $recipient->getKey(), $this->awardKey('policy-high'), 5000, 'MYR');
 
     expect($low->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and($high->disposition)->toBe(AffiliateOutcomeDisposition::Created)
@@ -459,7 +466,7 @@ test('pre-write balance failure prevents any reservation and the retry commits e
     CashPostingFailureInjector::armOnce();
 
     try {
-        $action->handle($recipient, $key, 1750, 'MYR');
+        $action->post((string) $recipient->getKey(), $key, 1750, 'MYR');
         $this->fail('Injected failure expected.');
     } catch (RuntimeException $exception) {
         expect($exception->getMessage())->toBe('cashpost-injected-pre-write-failure');
@@ -468,7 +475,7 @@ test('pre-write balance failure prevents any reservation and the retry commits e
     expect(AffiliateConversion::query()->where('idempotency_key', hash('sha256', $key))->count())->toBe(0)
         ->and(cashPostBalanceFor($recipient, 'MYR'))->toBeNull();
 
-    $retry = $action->handle($recipient, $key, 1750, 'MYR');
+    $retry = $action->post((string) $recipient->getKey(), $key, 1750, 'MYR');
 
     expect($retry->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and(AffiliateConversion::query()->where('idempotency_key', hash('sha256', $key))->count())->toBe(1)
@@ -482,7 +489,7 @@ test('post-mutation failure rolls back the conversion and balance writes and the
     $action = app(RecordAffiliateAward::class);
 
     $pendingKey = $this->awardKey('pre-hold');
-    $pending = $action->handle($recipient, $pendingKey, 2200, 'MYR', ['status' => PendingConversion::class]);
+    $pending = $action->post((string) $recipient->getKey(), $pendingKey, 2200, 'MYR', ['status' => PendingConversion::class]);
     expect($pending->disposition)->toBe(AffiliateOutcomeDisposition::Created);
 
     $before = cashPostBalanceFor($recipient, 'MYR');
@@ -495,7 +502,7 @@ test('post-mutation failure rolls back the conversion and balance writes and the
     CashPostingFailureInjector::armAfterFirstBalanceWrite();
 
     try {
-        $action->handle($recipient, $key, 1750, 'MYR');
+        $action->post((string) $recipient->getKey(), $key, 1750, 'MYR');
         $this->fail('Injected post-mutation failure expected.');
     } catch (RuntimeException $exception) {
         expect($exception->getMessage())->toBe('cashpost-injected-post-mutation-failure');
@@ -511,7 +518,7 @@ test('post-mutation failure rolls back the conversion and balance writes and the
         ->and((int) $rolledBack->lifetime_earnings_minor)->toBe(2200)
         ->and((int) AffiliateConversion::query()->where('idempotency_key', hash('sha256', $pendingKey))->firstOrFail()->held_minor)->toBe(2200);
 
-    $retry = $action->handle($recipient, $key, 1750, 'MYR');
+    $retry = $action->post((string) $recipient->getKey(), $key, 1750, 'MYR');
 
     expect($retry->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and(AffiliateConversion::query()->where('idempotency_key', hash('sha256', $key))->count())->toBe(1);
@@ -530,10 +537,10 @@ test('connection mismatch fails closed with zero effects', function (): void {
         config()->get('database.connections.cashpost'),
         ['name' => 'cashpost_other']
     ));
-    $recipient->setConnection('cashpost_other');
+    $otherConnection = app('db')->connection('cashpost_other');
 
     try {
-        app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('conn'), 100, 'MYR');
+        app(AffiliateProfileReader::class)->lock((string) $recipient->getKey(), spl_object_id($otherConnection));
         $this->fail('Connection failure expected.');
     } catch (LogicException) {
     }
@@ -558,8 +565,8 @@ test('awards create no attribution fraud upline payout or zero-fact mutation', f
     $zeroBefore = $zeroFact->refresh()->toArray();
 
     $key = $this->awardKey('clean');
-    $result = app(RecordAffiliateAward::class)->handle(
-        $recipient,
+    $result = app(RecordAffiliateAward::class)->post(
+        (string) $recipient->getKey(),
         $key,
         800,
         'MYR',
@@ -600,7 +607,7 @@ test('explicit references channel origin and occurred_at are stored bounded', fu
     $recipient = $this->makeRecipient();
     $occurred = CarbonImmutable::now('UTC')->subHour()->startOfSecond();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('refs'), 450, 'USD', [
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('refs'), 450, 'USD', [
         'external_reference' => 'EXT-9',
         'source_ref' => 'SRC-9',
         'channel' => 'test-channel',
@@ -626,7 +633,7 @@ test('non-UTC occurred_at round-trips the exact instant as UTC', function (): vo
     $recipient = $this->makeRecipient();
     $occurred = CarbonImmutable::now('Asia/Kuala_Lumpur')->subDay()->startOfSecond();
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $this->awardKey('tz'), 450, 'MYR', [
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $this->awardKey('tz'), 450, 'MYR', [
         'occurred_at' => $occurred,
     ]);
 
@@ -640,8 +647,8 @@ test('dispatch_event false suppresses the creation announcement', function (): v
     bindCashPostAllow();
     $recipient = $this->makeRecipient();
 
-    $result = app(RecordAffiliateAward::class)->handle(
-        $recipient,
+    $result = app(RecordAffiliateAward::class)->post(
+        (string) $recipient->getKey(),
         $this->awardKey('silent'),
         600,
         'MYR',
@@ -675,14 +682,14 @@ test('award decisions validate authorization proof and policy limits', function 
         ->and($allow->policyMinMinor)->toBe(10)
         ->and($allow->policyMaxMinor)->toBe(20);
 
-    expect(FixtureAffiliateAwardPolicy::deny()->decide($this->makeRecipient(), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
+    expect(FixtureAffiliateAwardPolicy::deny()->decide(cashPostAwardRecipient($this->makeRecipient()), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
 
     expect(fn (): AffiliateAwardDecision => AffiliateAwardDecision::deny(''))->toThrow(InvalidArgumentException::class);
     expect(fn (): AffiliateAwardDecision => AffiliateAwardDecision::allow(-1))->toThrow(InvalidArgumentException::class);
     expect(fn (): AffiliateAwardDecision => AffiliateAwardDecision::allow(20, 10))->toThrow(InvalidArgumentException::class);
 
     $null = new NullAffiliateAwardPolicy;
-    expect($null->decide($this->makeRecipient(), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
+    expect($null->decide(cashPostAwardRecipient($this->makeRecipient()), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
 });
 
 test('host authorization runs inside the posting transaction on the award connection', function (): void {
@@ -691,7 +698,7 @@ test('host authorization runs inside the posting transaction on the award connec
     $recipient = $this->makeRecipient();
     $key = $this->awardKey('txn-member');
 
-    $result = app(RecordAffiliateAward::class)->handle($recipient, $key, 500, 'MYR');
+    $result = app(RecordAffiliateAward::class)->post((string) $recipient->getKey(), $key, 500, 'MYR');
 
     expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Created);
 
@@ -714,7 +721,7 @@ test('identical retry still settles the earned award after recipient deactivatio
     $key = $this->awardKey('settle-after-deactivate');
     $action = app(RecordAffiliateAward::class);
 
-    $first = $action->handle($recipient, $key, 900, 'MYR');
+    $first = $action->post((string) $recipient->getKey(), $key, 900, 'MYR');
     expect($first->disposition)->toBe(AffiliateOutcomeDisposition::Created);
 
     $updatedBefore = AffiliateConversion::query()->whereKey($first->conversion->id)->firstOrFail()->updated_at->toIso8601String();
@@ -723,7 +730,7 @@ test('identical retry still settles the earned award after recipient deactivatio
 
     usleep(1500);
 
-    $second = $action->handle($recipient->fresh(), $key, 900, 'MYR');
+    $second = $action->post((string) $recipient->getKey(), $key, 900, 'MYR');
 
     expect($second->disposition)->toBe(AffiliateOutcomeDisposition::Replayed)
         ->and($second->conversion?->id)->toBe($first->conversion?->id)
@@ -739,7 +746,7 @@ test('identical retry still settles the earned award after recipient deactivatio
 
     Event::assertDispatched(AffiliateConversionRecorded::class, 1);
 
-    $third = $action->handle($recipient->fresh(), $this->awardKey('new-after-deactivate'), 100, 'MYR');
+    $third = $action->post((string) $recipient->getKey(), $this->awardKey('new-after-deactivate'), 100, 'MYR');
 
     expect($third->disposition)->toBe(AffiliateOutcomeDisposition::NoAffiliate)
         ->and($third->conversion)->toBeNull()
@@ -752,28 +759,28 @@ test('identical retry still settles without new effects when the host later deni
     $key = $this->awardKey('settle-after-deny');
     $action = app(RecordAffiliateAward::class);
 
-    $first = $action->handle($recipient, $key, 700, 'MYR');
+    $first = $action->post((string) $recipient->getKey(), $key, 700, 'MYR');
     expect($first->disposition)->toBe(AffiliateOutcomeDisposition::Created);
 
     app()->bind(AffiliateAwardPolicy::class, fn (): FixtureAffiliateAwardPolicy => FixtureAffiliateAwardPolicy::deny());
 
-    $second = $action->handle($recipient, $key, 700, 'MYR');
+    $second = $action->post((string) $recipient->getKey(), $key, 700, 'MYR');
     expect($second->disposition)->toBe(AffiliateOutcomeDisposition::Replayed)
         ->and($second->conversion?->id)->toBe($first->conversion?->id)
         ->and((int) cashPostBalanceFor($recipient, 'MYR')->available_minor)->toBe(700);
 
-    $freshDenied = $action->handle($recipient, $this->awardKey('new-after-deny'), 100, 'MYR');
+    $freshDenied = $action->post((string) $recipient->getKey(), $this->awardKey('new-after-deny'), 100, 'MYR');
     expect($freshDenied->disposition)->toBe(AffiliateOutcomeDisposition::Rejected)
         ->and($freshDenied->conversion)->toBeNull();
 
     app()->offsetUnset(AffiliateAwardPolicy::class);
     expect(app()->bound(AffiliateAwardPolicy::class))->toBeFalse();
 
-    $third = $action->handle($recipient, $key, 700, 'MYR');
+    $third = $action->post((string) $recipient->getKey(), $key, 700, 'MYR');
     expect($third->disposition)->toBe(AffiliateOutcomeDisposition::Replayed)
         ->and($third->conversion?->id)->toBe($first->conversion?->id);
 
-    $freshUnbound = $action->handle($recipient, $this->awardKey('new-after-unbind'), 100, 'MYR');
+    $freshUnbound = $action->post((string) $recipient->getKey(), $this->awardKey('new-after-unbind'), 100, 'MYR');
     expect($freshUnbound->disposition)->toBe(AffiliateOutcomeDisposition::Rejected)
         ->and($freshUnbound->conversion)->toBeNull()
         ->and((int) cashPostBalanceFor($recipient, 'MYR')->available_minor)->toBe(700);

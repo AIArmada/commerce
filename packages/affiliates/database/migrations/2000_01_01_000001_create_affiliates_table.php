@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,10 +13,15 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.affiliates', 'affiliates');
         $jsonType = commerce_json_column_type('affiliates');
+        $connection = Schema::getConnection();
+
+        if (! in_array(ConnectionDriver::name($connection), ['pgsql', 'sqlite'], true)) {
+            throw new RuntimeException('Affiliate code uniqueness requires PostgreSQL or SQLite; MySQL and MariaDB are not supported.');
+        }
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->string('code', 64)->unique();
+            $table->string('code', 64)->index();
             $table->string('handle', 40)->unique();
             $table->string('name', 120);
             $table->text('description')->nullable();
@@ -38,6 +44,9 @@ return new class extends Migration
             $table->string('payout_terms')->nullable();
             $table->string('tracking_domain')->nullable();
             $table->nullableUuidMorphs('owner');
+            $table->string('registration_actor_type')->nullable();
+            $table->string('registration_actor_id', 64)->nullable();
+            $table->index(['registration_actor_type', 'registration_actor_id']);
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampTz('activated_at')->nullable();
             $table->timestampTz('deactivated_at')->nullable();
@@ -47,5 +56,14 @@ return new class extends Migration
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
             $table->index(['registration_approval_mode', 'status'], 'affiliates_open_approval_idx');
         });
+
+        $grammar = $connection->getQueryGrammar();
+        $indexName = mb_substr($tableName, 0, 40) . '_code_ci_unique';
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (LOWER(%s))',
+            $grammar->wrap($indexName),
+            $grammar->wrapTable($tableName),
+            $grammar->wrap('code'),
+        ));
     }
 };

@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas;
+
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use WeakMap;
+
+final class AffiliateInfolist
+{
+    /** @var WeakMap<Affiliate, BalanceSnapshot|null>|null */
+    private static ?WeakMap $balances = null;
+
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make('Affiliate')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextEntry::make('code')
+                            ->label('Code')
+                            ->copyable()
+                            ->icon(Heroicon::OutlinedIdentification),
+
+                        TextEntry::make('name')
+                            ->label('Name'),
+
+                        TextEntry::make('status')
+                            ->label('Status')
+                            ->badge()
+                            ->color(fn (AffiliateStatus | string $state): string => AffiliateStatus::colorFor($state))
+                            ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::labelFor($state)),
+                    ]),
+
+                    TextEntry::make('description')
+                        ->label('Description')
+                        ->placeholder('—'),
+                ]),
+
+            Section::make('Contact & Tracking')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextEntry::make('contact_email')->label('Email'),
+                        TextEntry::make('website_url')->label('Website'),
+                        TextEntry::make('default_voucher_code')->label('Voucher'),
+                        TextEntry::make('parent.name')
+                            ->label('Parent')
+                            ->placeholder('—'),
+                    ]),
+                ])
+                ->collapsed(),
+
+            Section::make('Metadata')
+                ->schema([
+                    KeyValueEntry::make('metadata')
+                        ->label('Metadata')
+                        ->hidden(fn ($state): bool => empty($state ?? [])),
+                ])
+                ->collapsed(),
+
+            Section::make('Finance')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextEntry::make('balance_available_minor')
+                            ->state(fn (Affiliate $record): ?int => self::balance($record)?->availableMinor)
+                            ->label('Available')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('balance_holding_minor')
+                            ->state(fn (Affiliate $record): ?int => self::balance($record)?->holdingMinor)
+                            ->label('Holding')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('balance_minimum_payout_minor')
+                            ->state(fn (Affiliate $record): ?int => self::balance($record)?->minimumPayoutMinor)
+                            ->label('Minimum Payout')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('balance_lifetime_earnings_minor')
+                            ->state(fn (Affiliate $record): ?int => self::balance($record)?->lifetimeEarningsMinor)
+                            ->label('Lifetime Earnings')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('payout_holds_count')
+                            ->label('Payout Holds')
+                            ->state(fn ($record): int => app(PayoutHoldReader::class)->count((string) $record->getKey()))
+                            ->numeric(),
+
+                        TextEntry::make('has_active_payout_hold')
+                            ->label('Active Hold')
+                            ->state(fn ($record): string => app(PayoutHoldReader::class)->hasActive((string) $record->getKey()) ? 'Yes' : 'No')
+                            ->badge()
+                            ->color(fn (string $state): string => $state === 'Yes' ? 'warning' : 'success'),
+                    ]),
+                ])
+                ->collapsed(),
+        ]);
+    }
+
+    private static function balance(Affiliate $affiliate): ?BalanceSnapshot
+    {
+        self::$balances ??= new WeakMap;
+
+        if (! self::$balances->offsetExists($affiliate)) {
+            self::$balances[$affiliate] = app(BalanceReader::class)->find((string) $affiliate->getKey(), $affiliate->currency);
+        }
+
+        return self::$balances[$affiliate];
+    }
+}

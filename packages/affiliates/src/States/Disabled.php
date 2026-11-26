@@ -8,17 +8,17 @@ final class Disabled extends AffiliateStatus
 {
     public static string $name = 'disabled';
 
-    public function label(): string
+    public static function label(): string
     {
         return 'Disabled';
     }
 
-    public function description(): string
+    public static function description(): string
     {
         return 'Affiliate is disabled and cannot earn commissions';
     }
 
-    public function color(): string
+    public static function color(): string
     {
         return 'danger';
     }

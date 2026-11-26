@@ -30,7 +30,7 @@ display them to network affiliates alongside the mirrored offers.
   `creative_asset` collection on the `public` disk. There is no URL column;
   `getAssetUrl()` returns `?string` (null when no file attached). Allowed
   mimes: jpeg/png/gif/webp/svg, mp4/webm, pdf, zip.
-- `getEmbedCode(Affiliate)` bakes one affiliate's ref code into the HTML.
+- `getEmbedCode(string $affiliateCode)` bakes one affiliate's ref code into the HTML.
   Banner embeds return null without an attached file.
 - Owner scoping is program-derived (`ScopesByProgramOwner`).
 - `AffiliateProgram::creatives()` is the HasMany; program delete cascades

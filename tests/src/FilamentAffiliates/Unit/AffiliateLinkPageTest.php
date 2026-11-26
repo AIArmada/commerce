@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -176,4 +177,12 @@ it('rejects program ids outside the current owner scope during link create', fun
             'tracking_url' => 'https://track.example.com/a/123',
         ]))->toThrow(ValidationException::class, 'The selected program is not accessible in the current owner scope.');
     });
+});
+
+it('rejects malformed affiliate ids in both link form entry points before querying the database', function (): void {
+    foreach ([new CreateAffiliateLink, new EditAffiliateLink] as $page) {
+        $method = new ReflectionMethod($page, $page instanceof CreateAffiliateLink ? 'mutateFormDataBeforeCreate' : 'mutateFormDataBeforeSave');
+        $method->setAccessible(true);
+        expect(fn () => $method->invoke($page, ['affiliate_id' => 'not-a-uuid']))->toThrow(ValidationException::class, 'The selected affiliate is invalid.');
+    }
 });

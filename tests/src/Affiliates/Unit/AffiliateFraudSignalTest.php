@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 describe('AffiliateFraudSignal Model', function (): void {
     beforeEach(function (): void {
@@ -25,7 +29,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         ]);
     });
 
-    test('belongs to conversion when set', function (): void {
+    test('reads its conversion through the owning feature', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -48,11 +52,49 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        expect($signal->conversion)->toBeInstanceOf(AffiliateConversion::class);
-        expect($signal->conversion->id)->toBe($conversion->id);
+        $record = app(ConversionInspectionReader::class)->find($signal->conversion_id);
+
+        expect($record?->id)->toBe($conversion->id)
+            ->and($record?->affiliateId)->toBe($this->affiliate->id)
+            ->and(app(ConversionInspectionReader::class)->find('invalid'))->toBeNull();
     });
 
-    test('belongs to touchpoint when set', function (): void {
+    test('review refuses to void a conversion belonging to another affiliate', function (): void {
+        $other = Affiliate::create([
+            'code' => 'FRAUD-OTHER-' . Str::uuid(),
+            'name' => 'Unrelated Affiliate',
+            'status' => Active::class,
+        ]);
+
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $other->id,
+            'affiliate_code' => $other->code,
+            'value_minor' => 10000,
+            'commission_minor' => 500,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        $signal = AffiliateFraudSignal::create([
+            'affiliate_id' => $this->affiliate->id,
+            'conversion_id' => $conversion->id,
+            'rule_code' => 'MISMATCH',
+            'risk_points' => 80,
+            'severity' => FraudSeverity::High,
+            'description' => 'Unrelated conversion',
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => now(),
+        ]);
+
+        $result = app(FraudReviewApi::class)->execute($signal->id, FraudSignalStatus::Confirmed, null, rejectLinkedConversion: true);
+
+        expect($result->linkedRejectionError)->not->toBeNull()
+            ->and($signal->fresh()->status)->toBe(FraudSignalStatus::Confirmed)
+            ->and($conversion->fresh()->status->equals(PendingConversion::class))->toBeTrue();
+    });
+
+    test('resolves its touchpoint through attribution when set', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -84,8 +126,8 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        expect($signal->touchpoint)->toBeInstanceOf(AffiliateTouchpoint::class);
-        expect($signal->touchpoint->id)->toBe($touchpoint->id);
+        expect(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, $signal->affiliate_id))->toBeTrue()
+            ->and(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, (string) Str::uuid()))->toBeFalse();
     });
 
     test('scopeHighSeverity returns high and critical signals', function (): void {

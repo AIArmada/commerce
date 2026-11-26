@@ -8,17 +8,17 @@ final class Draft extends AffiliateStatus
 {
     public static string $name = 'draft';
 
-    public function label(): string
+    public static function label(): string
     {
         return 'Draft';
     }
 
-    public function description(): string
+    public static function description(): string
     {
         return 'Affiliate has not been submitted for approval';
     }
 
-    public function color(): string
+    public static function color(): string
     {
         return 'gray';
     }

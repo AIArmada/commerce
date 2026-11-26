@@ -4,22 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\States;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;
 
-/**
- * @method Affiliate getModel()
- */
 abstract class AffiliateStatus extends State
 {
-    abstract public function label(): string;
+    abstract public static function label(): string;
 
-    abstract public function description(): string;
+    abstract public static function description(): string;
 
-    abstract public function color(): string;
+    abstract public static function color(): string;
 
     public function isDraft(): bool
     {
@@ -62,73 +57,35 @@ abstract class AffiliateStatus extends State
     /**
      * @return array<string, string>
      */
-    public static function options(?Model $model = null): array
+    public static function options(): array
     {
-        $model ??= new Affiliate;
-
         $options = [];
 
         /** @var class-string<AffiliateStatus> $stateClass */
         foreach (self::all()->all() as $stateClass) {
-            $state = new $stateClass($model);
-            $options[$state->getValue()] = $state->label();
+            $options[$stateClass::getMorphClass()] = $stateClass::label();
         }
 
         return $options;
     }
 
-    public static function labelFor(string | AffiliateStatus $status, ?Model $model = null): string
+    public static function labelFor(string | AffiliateStatus $status): string
     {
-        if ($status instanceof AffiliateStatus) {
-            return $status->label();
-        }
-
-        $model ??= new Affiliate;
-        $stateClass = self::resolveStateClassFor($status, $model);
-
-        return (new $stateClass($model))->label();
+        return self::resolveStateClassFor($status)::label();
     }
 
-    public static function descriptionFor(string | AffiliateStatus $status, ?Model $model = null): string
+    public static function descriptionFor(string | AffiliateStatus $status): string
     {
-        if ($status instanceof AffiliateStatus) {
-            return $status->description();
-        }
-
-        $model ??= new Affiliate;
-        $stateClass = self::resolveStateClassFor($status, $model);
-
-        return (new $stateClass($model))->description();
+        return self::resolveStateClassFor($status)::description();
     }
 
-    public static function colorFor(string | AffiliateStatus $status, ?Model $model = null): string
+    public static function colorFor(string | AffiliateStatus $status): string
     {
-        if ($status instanceof AffiliateStatus) {
-            return $status->color();
-        }
-
-        $model ??= new Affiliate;
-        $stateClass = self::resolveStateClassFor($status, $model);
-
-        return (new $stateClass($model))->color();
+        return self::resolveStateClassFor($status)::color();
     }
 
-    public static function fromString(string | AffiliateStatus $status, ?Model $model = null): AffiliateStatus
-    {
-        if ($status instanceof AffiliateStatus) {
-            return $status;
-        }
-
-        $model ??= new Affiliate;
-        $stateClass = self::resolveStateClassFor($status, $model);
-
-        return new $stateClass($model);
-    }
-
-    /**
-     * @return class-string<AffiliateStatus>
-     */
-    public static function resolveStateClassFor(string | AffiliateStatus $status, ?Model $model = null): string
+    /** @return class-string<AffiliateStatus> */
+    private static function resolveStateClassFor(string | AffiliateStatus $status): string
     {
         if ($status instanceof AffiliateStatus) {
             return $status::class;
@@ -138,12 +95,9 @@ abstract class AffiliateStatus extends State
             return $status;
         }
 
-        $model ??= new Affiliate;
-
         /** @var class-string<AffiliateStatus> $stateClass */
         foreach (self::all()->all() as $stateClass) {
-            $state = new $stateClass($model);
-            if ($state->getValue() === $status) {
+            if ($stateClass::getMorphClass() === $status) {
                 return $stateClass;
             }
         }

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Merchant\CaptureNetworkReferral;
-use AIArmada\Affiliates\Merchant\NetworkPostbackClient;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkReferral;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -50,7 +50,7 @@ describe('Merchant SDK', function (): void {
 
         $networkClickedAt = CarbonImmutable::parse('2026-10-17T01:00:00+00:00');
         $engineTouchAt = CarbonImmutable::parse('2026-10-17T00:59:00+00:00');
-        $result = app(NetworkPostbackClient::class)->report(
+        $result = app(NetworkPostbackGateway::class)->report(
             'link123',
             'ORDER-7',
             89900,
@@ -59,9 +59,9 @@ describe('Merchant SDK', function (): void {
             'MYR',
         );
 
-        expect($result['ok'])->toBeTrue()
-            ->and($result['status'])->toBe(200)
-            ->and($result['decision'])->toBe(['winner' => 'network', 'reason' => 'last_touch']);
+        expect($result->ok)->toBeTrue()
+            ->and($result->status)->toBe(200)
+            ->and($result->decision)->toBe(['winner' => 'network', 'reason' => 'last_touch']);
 
         Http::assertSent(static function ($request) use ($engineTouchAt, $networkClickedAt): bool {
             return $request->url() === 'https://network.example/api/affiliate-network/conversions'
@@ -83,14 +83,14 @@ describe('Merchant SDK', function (): void {
 
         Http::fake(['*' => Http::response(['ok' => true, 'duplicate' => false], 200)]);
 
-        $result = app(NetworkPostbackClient::class)->report(
+        $result = app(NetworkPostbackGateway::class)->report(
             'link123',
             'ORDER-0',
             0,
             CarbonImmutable::parse('2026-10-17T01:00:00+00:00'),
         );
 
-        expect($result['ok'])->toBeTrue();
+        expect($result->ok)->toBeTrue();
 
         Http::assertSent(static function ($request): bool {
             $data = $request->data();
@@ -107,14 +107,14 @@ describe('Merchant SDK', function (): void {
         config()->set('affiliates.merchant.site', null);
         config()->set('affiliates.merchant.token', null);
 
-        $result = app(NetworkPostbackClient::class)->report(
+        $result = app(NetworkPostbackGateway::class)->report(
             'link123',
             'ORDER-7',
             100,
             CarbonImmutable::now(),
         );
 
-        expect($result['ok'])->toBeFalse()->and($result['error'])->not->toBeEmpty();
+        expect($result->ok)->toBeFalse()->and($result->error)->not->toBeEmpty();
     });
 
     test('postback client voids reported conversions on refund', function (): void {
@@ -128,11 +128,11 @@ describe('Merchant SDK', function (): void {
             'leg_status' => 'reversed',
         ], 200)]);
 
-        $result = app(NetworkPostbackClient::class)->voidConversion('link123', 'ORDER-7', 'customer_refund');
+        $result = app(NetworkPostbackGateway::class)->voidConversion('link123', 'ORDER-7', 'customer_refund');
 
-        expect($result['ok'])->toBeTrue()
-            ->and($result['status'])->toBe(200)
-            ->and($result['leg_status'])->toBe('reversed');
+        expect($result->ok)->toBeTrue()
+            ->and($result->status)->toBe(200)
+            ->and($result->legStatus)->toBe('reversed');
 
         Http::assertSent(static function ($request): bool {
             return $request->url() === 'https://network.example/api/affiliate-network/conversions/void'
@@ -149,8 +149,14 @@ describe('Merchant SDK', function (): void {
         config()->set('affiliates.merchant.site', null);
         config()->set('affiliates.merchant.token', null);
 
-        $result = app(NetworkPostbackClient::class)->voidConversion('link123', 'ORDER-7');
+        $result = app(NetworkPostbackGateway::class)->voidConversion('link123', 'ORDER-7');
 
-        expect($result['ok'])->toBeFalse()->and($result['error'])->not->toBeEmpty();
+        expect($result->ok)->toBeFalse()->and($result->error)->not->toBeEmpty();
+    });
+    test('never sends merchant credentials over insecure HTTP', function (): void {
+        config(['affiliates.merchant.network_url' => 'http://network.example', 'affiliates.merchant.site' => 'merchant.example', 'affiliates.merchant.token' => 'site-secret']);
+        Http::fake();
+        expect(app(NetworkPostbackGateway::class)->report('link123', 'ORDER-7', 100, CarbonImmutable::now())->ok)->toBeFalse();
+        Http::assertNothingSent();
     });
 });

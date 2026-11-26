@@ -18,10 +18,11 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
-use AIArmada\Affiliates\States\RejectedConversion;
 use Illuminate\Support\Facades\Event;
 
 function booksFixtures(array $offerAttributes = []): AffiliateOfferLink
@@ -369,14 +370,14 @@ test('reversing a leg voids the merchant posting with balanced money', function 
         linkId: (string) $link->getKey(),
     );
 
-    expect($affiliate->balanceFor('MYR')->holding_minor)->toBeGreaterThan(0);
+    expect(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->holding_minor)->toBeGreaterThan(0);
 
     app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'refund');
 
     expect($leg->fresh()->status)->toBe(LegStatus::Reversed);
 
     $conversion = AffiliateConversion::query()->where('external_reference', 'VOID-E2E-1')->firstOrFail();
-    $balance = $affiliate->balanceFor('MYR')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->fresh();
 
     expect($conversion->status->equals(RejectedConversion::class))->toBeTrue()
         ->and($balance->holding_minor)->toBe(0)

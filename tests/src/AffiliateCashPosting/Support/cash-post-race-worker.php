@@ -9,9 +9,9 @@ declare(strict_types=1);
  * given identity. Writes a JSON result file. Not a Pest test file.
  */
 
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateAward;
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateAward;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\CashPostingRaceWorkerBoot;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\FixtureAffiliateAwardPolicy;
 
@@ -75,8 +75,8 @@ try {
     }
 
     try {
-        $result = app(RecordAffiliateAward::class)->handle(
-            $affiliate,
+        $result = app(RecordAffiliateAward::class)->post(
+            (string) $affiliate->getKey(),
             (string) $options['key'],
             (int) $options['amount'],
             (string) $options['currency'],

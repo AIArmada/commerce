@@ -2,25 +2,26 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\AllocateUplineCommissions;
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
-use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateUpline;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
-use AIArmada\Affiliates\Services\RankQualificationService;
-use AIArmada\Affiliates\Services\UplineService;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\QualifiedConversion;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Conversions\Actions\AllocateUplineCommissions;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
@@ -56,19 +57,19 @@ test('direct rank operations cannot assign ranks to purpose-tagged affiliates', 
         'min_active_downlines' => 0,
         'currency' => 'USD',
     ]);
-    $service = app(RankQualificationService::class);
+    $service = app(RankQualificationApi::class);
 
-    expect($service->evaluate($tagged))->toBeNull();
-    $service->processRankChange($tagged);
+    expect($service->evaluate((string) $tagged->getKey()))->toBeNull();
+    $service->processRankChange((string) $tagged->getKey());
 
-    expect(fn () => $service->assignRank($tagged, $rank))
+    expect(fn () => $service->assignRank((string) $tagged->getKey(), (string) $rank->getKey()))
         ->toThrow(InvalidArgumentException::class);
     expect($tagged->fresh()->rank_id)->toBeNull();
 
     $alreadyRanked = createTestAffiliate(['code' => 'PURP-RANK-KEEP']);
-    $service->assignRank($alreadyRanked, $rank);
+    $service->assignRank((string) $alreadyRanked->getKey(), (string) $rank->getKey());
     $alreadyRanked->forceFill(['purpose' => 'host_attribution_only'])->save();
-    $service->processRankChange($alreadyRanked->refresh());
+    $service->processRankChange((string) $alreadyRanked->refresh()->getKey());
 
     expect($alreadyRanked->fresh()->rank_id)->toBe($rank->getKey());
 });
@@ -76,15 +77,15 @@ test('direct rank operations cannot assign ranks to purpose-tagged affiliates', 
 test('upline operations exclude tagged affiliates and reject direct enrollment', function (): void {
     config(['affiliates.upline.enabled' => true]);
 
-    $service = app(UplineService::class);
+    $service = app(UplineApi::class);
     $root = createTestAffiliate(['code' => 'PURP-UPROOT']);
     $commercial = createTestAffiliate(['code' => 'PURP-UPCHILD']);
     $tagged = createTestAffiliate(['code' => 'PURP-UPTAGGED', 'purpose' => 'host_attribution_only']);
 
-    $service->addToUpline($root);
-    $service->addToUpline($commercial, $root);
+    $service->add((string) $root->getKey());
+    $service->add((string) $commercial->getKey(), (string) $root->getKey());
 
-    expect(fn () => $service->addToUpline($tagged, $root))
+    expect(fn () => $service->add((string) $tagged->getKey(), (string) $root->getKey()))
         ->toThrow(InvalidArgumentException::class);
 
     AffiliateUpline::query()->create([
@@ -93,9 +94,9 @@ test('upline operations exclude tagged affiliates and reject direct enrollment',
         'depth' => 1,
     ]);
 
-    expect($service->getActiveDownlineCount($root))->toBe(1)
-        ->and(AffiliateUpline::getDescendantCount($root))->toBe(1)
-        ->and($service->getTeamSales($tagged))->toBe(0);
+    expect($service->activeDownlineCount((string) $root->getKey()))->toBe(1)
+        ->and(app(UplineApi::class)->descendantCount((string) $root->getKey()))->toBe(1)
+        ->and($service->teamSales((string) $tagged->getKey()))->toBe(0);
 });
 
 test('scheduled payout claims refuse purpose-tagged affiliates', function (): void {
@@ -133,7 +134,7 @@ test('manual payout creation refuses approved conversions for purpose-tagged aff
         'commission_currency' => 'USD',
     ]);
 
-    expect(fn () => CreatePayout::run([(string) $conversion->getKey()]))
+    expect(fn () => app(CreatePayout::class)->handle([(string) $conversion->getKey()]))
         ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 
@@ -163,7 +164,7 @@ test('reward-award backings remain payable through the separate award settlement
         'minimum_payout_minor' => 0,
     ]);
 
-    $payout = CreatePayout::run([(string) $conversion->getKey()]);
+    $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
 
     expect($payout->conversion_count)->toBe(1)
         ->and($payout->total_minor)->toBe(1000);
@@ -186,7 +187,7 @@ test('reward-award settlement is blocked when the explicit switch is off', funct
         'commission_currency' => 'USD',
     ]);
 
-    expect(fn () => CreatePayout::run([(string) $conversion->getKey()]))
+    expect(fn () => app(CreatePayout::class)->handle([(string) $conversion->getKey()]))
         ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 
@@ -208,7 +209,7 @@ test('reward-award settlement switch never permits mixed purchase payouts', func
         'commission_currency' => 'USD',
     ]));
 
-    expect(fn () => CreatePayout::run($conversions->map(fn (AffiliateConversion $conversion): string => (string) $conversion->getKey())->all()))
+    expect(fn () => app(CreatePayout::class)->handle($conversions->map(fn (AffiliateConversion $conversion): string => (string) $conversion->getKey())->all()))
         ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 
@@ -233,7 +234,7 @@ test('performance bonus awards skip purpose-tagged affiliates', function (): voi
         ],
     ];
 
-    $awarded = app(PerformanceBonusService::class)->awardBonuses($bonuses);
+    $awarded = app(PerformanceBonusPosting::class)->award($bonuses);
 
     expect($awarded)->toBe(1)
         ->and(AffiliateConversion::query()->where('affiliate_id', $commercial->getKey())->whereNotNull('performance_bonus_key')->exists())->toBeTrue()
@@ -256,7 +257,7 @@ test('conversion maturity skips purpose-tagged affiliates', function (): void {
         'occurred_at' => CarbonImmutable::now()->subDays(60),
     ]);
 
-    $matured = app(ProcessConversionMaturity::class)->handle();
+    $matured = app(ConversionMaturity::class)->process();
 
     expect($matured)->toBe(0)
         ->and($conversion->fresh()->status->getValue())->toBe(QualifiedConversion::value());
@@ -276,7 +277,7 @@ test('upline allocation skips purpose-tagged earners and ancestors', function ()
 
     $action = new AllocateUplineCommissions(
         app(Dispatcher::class),
-        app(WebhookDispatcher::class),
+        app(WebhookApi::class),
         app(ApplyConversionAccounting::class),
     );
 
@@ -327,12 +328,12 @@ test('leaderboard excludes purpose-tagged affiliates', function (): void {
         'occurred_at' => CarbonImmutable::now(),
     ]);
 
-    $rows = app(PerformanceBonusService::class)->getLeaderboard(
+    $rows = app(PerformanceBonusQueries::class)->getLeaderboard(
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );
 
-    $ids = $rows->map(fn ($row): string => (string) $row['affiliate_id'])->all();
+    $ids = array_column($rows, 'affiliate_id');
 
     expect($ids)->not->toContain((string) $tagged->getKey());
 });

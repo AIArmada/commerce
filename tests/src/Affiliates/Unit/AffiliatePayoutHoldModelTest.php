@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 
 describe('AffiliatePayoutHold Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -33,7 +36,7 @@ describe('AffiliatePayoutHold Model', function (): void {
             ->and($hold->placed_by)->toBe('admin@example.com');
     });
 
-    it('belongs to an affiliate', function (): void {
+    it('references an affiliate through its identity directory', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -48,8 +51,8 @@ describe('AffiliatePayoutHold Model', function (): void {
             'reason' => 'verification_needed',
         ]);
 
-        expect($hold->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($hold->affiliate->id)->toBe($affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($hold->affiliate_id)?->id)->toBe($affiliate->id)
+            ->and(method_exists($hold, 'affiliate'))->toBeFalse();
     });
 
     it('is active when not released and not expired', function (): void {
@@ -138,18 +141,26 @@ describe('AffiliatePayoutHold Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        $hold = AffiliatePayoutHold::create([
-            'affiliate_id' => $affiliate->id,
-            'reason' => 'to_be_released',
-        ]);
+        $administration = app(PayoutHoldAdministration::class);
+        $holdId = $administration->place((string) $affiliate->getKey(), 'to_be_released');
+        $hold = AffiliatePayoutHold::query()->findOrFail($holdId);
 
         expect($hold->isActive())->toBeTrue();
 
-        $hold->release();
+        expect(fn () => $administration->release((string) Str::uuid(), $holdId))->toThrow(ModelNotFoundException::class);
+        expect($hold->fresh()->isActive())->toBeTrue();
+
+        $administration->release((string) $affiliate->getKey(), $holdId, 'Reviewed');
 
         $hold->refresh();
         expect($hold->isActive())->toBeFalse()
-            ->and($hold->released_at)->not->toBeNull();
+            ->and($hold->released_at)->not->toBeNull()
+            ->and($hold->notes)->toBe('Reviewed');
+
+        $releasedAt = $hold->released_at;
+        $administration->release((string) $affiliate->getKey(), $holdId, 'Duplicate release');
+        expect($hold->fresh()->released_at->equalTo($releasedAt))->toBeTrue()
+            ->and($hold->fresh()->notes)->toBe('Reviewed');
     });
 
     it('casts dates correctly', function (): void {

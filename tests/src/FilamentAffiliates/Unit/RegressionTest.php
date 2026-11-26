@@ -2,40 +2,37 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
-use AIArmada\Affiliates\Models\AffiliateUpline;
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\FailedPayout;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
-use AIArmada\Cart\Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Actions\BulkPayoutAction;
-use AIArmada\FilamentAffiliates\Actions\ResolveAffiliateLinkedOwner;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
-use AIArmada\FilamentAffiliates\Pages\ReportsPage;
-use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
-use AIArmada\FilamentAffiliates\Services\PayoutExportService;
-use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateCommissionSettings;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions\BulkPayoutAction;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalConversions;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalLinks;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalRegistration;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Pages\ReportsPage;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Widgets\UplineVisualizationWidget;
 use Filament\Actions\Enums\ActionStatus;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -130,16 +127,17 @@ it('rejects payouts through the domain action and returns conversions to approve
     $this->actingAs($user);
 
     $affiliate = createRepairAffiliate();
-    $payout = createRepairPayout($affiliate);
+    $payout = createRepairPayout($affiliate, ['total_minor' => 1000, 'conversion_count' => 1]);
 
     $balance = AffiliateBalance::create([
         'affiliate_id' => $affiliate->getKey(),
         'currency' => 'USD',
         'available_minor' => 0,
         'minimum_payout_minor' => 0,
+        'payout_sequence' => 7,
     ]);
 
-    $payout->operation->forceFill(['payout_sequence' => 7])->save();
+    AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->forceFill(['payout_sequence' => 7])->save();
 
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $affiliate->getKey(),
@@ -164,7 +162,7 @@ it('rejects payouts through the domain action and returns conversions to approve
     expect($payout->status)->toBeInstanceOf(FailedPayout::class)
         ->and($payout->failed_at)->not->toBeNull()
         ->and($payout->metadata['notes'] ?? null)->toBe('Failed verification')
-        ->and($payout->events()->count())->toBeGreaterThanOrEqual(1)
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1)
         ->and($balance->available_minor)->toBe($payout->total_minor)
         ->and($conversion->affiliate_payout_id)->toBeNull();
 });
@@ -205,39 +203,6 @@ it('validates commission rates and caps level rows', function (): void {
 // Registration creates users from explicit fields only.
 it('registers users from explicit fields and ignores stray input', function (): void {
     config(['affiliates.registration.enabled' => true]);
-
-    app()->instance(AffiliateLookup::class, new class implements AffiliateLookup
-    {
-        public function findByCode(string $code): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findById(string $id): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findActiveAffiliateByCookie(string $cookieValue): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findActiveAttributionByCookie(string $cookieValue): ?AffiliateAttribution
-        {
-            return null;
-        }
-
-        public function findAttachedAttribution(Cart $cart): ?AffiliateAttribution
-        {
-            return null;
-        }
-    });
 
     $page = new PortalRegistration;
     $method = new ReflectionMethod(PortalRegistration::class, 'handleRegistration');
@@ -415,7 +380,7 @@ it('uses js-safe clipboard handlers in portal blades', function (): void {
             ->and($source)->toContain('writeText(@js(');
     }
 
-    $form = (string) file_get_contents($root . '/packages/filament-affiliates/src/Resources/AffiliateResource/Schemas/AffiliateForm.php');
+    $form = (string) file_get_contents($root . '/packages/filament-affiliates/src/Features/Identity/EntryPoints/Filament/Resources/AffiliateResource/Schemas/AffiliateForm.php');
 
     expect($form)->toContain('->alphaDash()');
 });
@@ -423,7 +388,7 @@ it('uses js-safe clipboard handlers in portal blades', function (): void {
 // Payout affiliate picker is lazy and owner-aware.
 it('searches payout affiliates lazily instead of preloading every row', function (): void {
     $source = (string) file_get_contents(
-        dirname(__DIR__, 4) . '/packages/filament-affiliates/src/Resources/AffiliatePayoutResource.php'
+        dirname(__DIR__, 4) . '/packages/filament-affiliates/src/Features/Payouts/EntryPoints/Filament/Resources/AffiliatePayoutResource.php'
     );
 
     expect($source)->toContain('getSearchResultsUsing')
@@ -433,7 +398,7 @@ it('searches payout affiliates lazily instead of preloading every row', function
 
 // Malformed custom report dates fall back instead of throwing.
 it('falls back to sane defaults for malformed custom report dates', function (): void {
-    app()->instance(AffiliateReportService::class, new class
+    app()->instance(ReportingApi::class, new class
     {
         public function getSummary($startDate, $endDate): array
         {
@@ -469,7 +434,7 @@ it('falls back to sane defaults for malformed custom report dates', function ():
 it('orders swapped custom report dates instead of querying an empty range', function (): void {
     $captured = ['start' => null, 'end' => null];
 
-    app()->instance(AffiliateReportService::class, new class($captured)
+    app()->instance(ReportingApi::class, new class($captured)
     {
         /** @var array{start:mixed, end:mixed} */
         public array $captured;

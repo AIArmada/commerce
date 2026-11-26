@@ -1,0 +1,174 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources;
+
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource\Pages\ListAffiliateTaxDocuments;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource\Pages\ViewAffiliateTaxDocument;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
+
+final class AffiliateTaxDocumentResource extends Resource
+{
+    protected static ?string $model = AffiliateTaxDocument::class;
+
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
+
+    protected static ?string $navigationLabel = 'Tax Documents';
+
+    protected static ?string $modelLabel = 'Tax Document';
+
+    protected static ?string $pluralModelLabel = 'Tax Documents';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return AffiliateReferenceProjection::apply(parent::getEloquentQuery());
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('affiliate_name')
+                    ->label('Affiliate')
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_name', $direction)),
+
+                TextColumn::make('document_type')
+                    ->badge(),
+
+                TextColumn::make('tax_year')
+                    ->numeric()
+                    ->sortable(),
+
+                TextColumn::make('status')
+                    ->badge(),
+
+                TextColumn::make('total_amount_minor')
+                    ->label('Total')
+                    ->numeric()
+                    ->sortable(),
+
+                TextColumn::make('generated_at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('status')
+                    ->options([
+                        'pending_info' => 'Pending Info',
+                        'generated' => 'Generated',
+                        'sent' => 'Sent',
+                    ]),
+            ])
+            ->actions([
+                ViewAction::make(),
+                Action::make('mark_sent')
+                    ->label('Mark Sent')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->visible(fn (AffiliateTaxDocument $record): bool => $record->isGenerated())
+                    ->action(fn (AffiliateTaxDocument $record) => app(TaxDocumentApi::class)->markSent((string) $record->getKey())),
+                Action::make('regenerate')
+                    ->label('Regenerate')
+                    ->icon('heroicon-o-arrow-path')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->visible(fn (AffiliateTaxDocument $record): bool => ! $record->isSent())
+                    ->action(fn (AffiliateTaxDocument $record) => app(TaxDocumentApi::class)->regenerate((string) $record->getKey())),
+            ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('Tax Document')
+                ->schema([
+                    TextEntry::make('affiliate_name')->label('Affiliate'),
+                    TextEntry::make('document_type'),
+                    TextEntry::make('tax_year')->numeric(),
+                    TextEntry::make('status')->badge(),
+                    TextEntry::make('total_amount_minor')->label('Total')->numeric(),
+                    TextEntry::make('currency')->badge(),
+                    TextEntry::make('document_path')->placeholder('—'),
+                    TextEntry::make('notes')->placeholder('—')->columnSpanFull(),
+                ])
+                ->columns(2),
+        ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListAffiliateTaxDocuments::route('/'),
+            'view' => ViewAffiliateTaxDocument::route('/{record}'),
+        ];
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.resources.navigation_sort.affiliate_tax_documents', 72);
+    }
+}

@@ -4,11 +4,19 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 describe('AffiliateLink Model', function (): void {
     beforeEach(function (): void {
@@ -34,15 +42,15 @@ describe('AffiliateLink Model', function (): void {
             ->and($link->tracking_url)->toBe('https://track.example.com/go/' . $this->affiliate->code);
     });
 
-    it('belongs to affiliate', function (): void {
+    it('references the affiliate through its identity directory', function (): void {
         $link = AffiliateLink::create([
             'affiliate_id' => $this->affiliate->id,
             'destination_url' => 'https://example.com/product',
             'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
         ]);
 
-        expect($link->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($link->affiliate->id)->toBe($this->affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($link->affiliate_id)?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($link, 'affiliate'))->toBeFalse();
     });
 
     it('belongs to program', function (): void {
@@ -61,8 +69,47 @@ describe('AffiliateLink Model', function (): void {
             'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
         ]);
 
-        expect($link->program())->toBeInstanceOf(BelongsTo::class)
-            ->and($link->program->id)->toBe($program->id);
+        expect($link->program_id)->toBe($program->id);
+    });
+
+    it('rejects malformed and missing program references even without tenancy', function (): void {
+        config(['affiliates.owner.enabled' => false]);
+
+        foreach (['malformed', (string) Str::uuid()] as $programId) {
+            expect(fn () => AffiliateLink::create([
+                'affiliate_id' => $this->affiliate->id,
+                'program_id' => $programId,
+                'destination_url' => 'https://example.com/product',
+                'tracking_url' => 'https://track.example.com/go/test',
+            ]))->toThrow(AuthorizationException::class);
+        }
+    });
+
+    it('blocks deletion when conversion history references the link through an attribution', function (): void {
+        $link = AffiliateLink::create([
+            'affiliate_id' => $this->affiliate->id,
+            'destination_url' => 'https://example.com/product',
+            'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
+        ]);
+        $attribution = AffiliateAttribution::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'affiliate_link_id' => $link->id,
+        ]);
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'affiliate_attribution_id' => $attribution->id,
+            'value_minor' => 1000,
+            'commission_minor' => 100,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        expect(app(LinkConversionReader::class)->hasLinkHistory($link->id, spl_object_id($link->getConnection())))->toBeTrue()
+            ->and(fn () => app(TrackingLinkAdministration::class)->delete($link->id))->toThrow(ValidationException::class);
+        expect(AffiliateLink::query()->find($link->id))->not->toBeNull();
     });
 
     it('increments clicks', function (): void {
@@ -73,12 +120,12 @@ describe('AffiliateLink Model', function (): void {
             'clicks' => 0,
         ]);
 
-        $link->incrementClicks();
+        app(TrackingLinkAdministration::class)->recordClick((string) $link->getKey());
         $link->refresh();
 
         expect($link->clicks)->toBe(1);
 
-        $link->incrementClicks();
+        app(TrackingLinkAdministration::class)->recordClick((string) $link->getKey());
         $link->refresh();
 
         expect($link->clicks)->toBe(2);
@@ -92,12 +139,12 @@ describe('AffiliateLink Model', function (): void {
             'conversions' => 0,
         ]);
 
-        $link->incrementConversions();
+        app(TrackingLinkAdministration::class)->recordConversion((string) $link->getKey());
         $link->refresh();
 
         expect($link->conversions)->toBe(1);
 
-        $link->incrementConversions();
+        app(TrackingLinkAdministration::class)->recordConversion((string) $link->getKey());
         $link->refresh();
 
         expect($link->conversions)->toBe(2);

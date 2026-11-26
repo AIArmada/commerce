@@ -1,0 +1,179 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Attribution\Models;
+
+use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
+use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\Links\Models\Link;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * Tracking links created by affiliates for campaigns.
+ *
+ * @property string $id
+ * @property string $affiliate_id
+ * @property string|null $program_id
+ * @property string $destination_url
+ * @property string $tracking_url
+ * @property string|null $short_url
+ * @property string|null $custom_slug
+ * @property string|null $campaign
+ * @property string|null $sub_id
+ * @property string|null $sub_id_2
+ * @property string|null $sub_id_3
+ * @property string|null $subject_type
+ * @property string|null $subject_key
+ * @property string|null $subject_id
+ * @property string|null $subject_instance
+ * @property string|null $subject_title_snapshot
+ * @property array<string, mixed>|null $subject_metadata
+ * @property string|null $origin
+ * @property int $clicks
+ * @property int $conversions
+ * @property CarbonImmutable|null $deactivated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+class AffiliateLink extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasUuids;
+    use LogsCommerceActivity;
+    use ScopesByAffiliateOwner;
+
+    protected $fillable = [
+        'affiliate_id',
+        'program_id',
+        'destination_url',
+        'tracking_url',
+        'short_url',
+        'custom_slug',
+        'campaign',
+        'sub_id',
+        'sub_id_2',
+        'sub_id_3',
+        'subject_type',
+        'subject_key',
+        'subject_id',
+        'subject_instance',
+        'subject_title_snapshot',
+        'subject_metadata',
+        'origin',
+        'clicks',
+        'conversions',
+        'deactivated_at',
+    ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'affiliate_id',
+            'program_id',
+            'destination_url',
+            'tracking_url',
+            'short_url',
+            'custom_slug',
+            'campaign',
+            'sub_id',
+            'sub_id_2',
+            'sub_id_3',
+            'subject_type',
+            'subject_key',
+            'subject_instance',
+            'subject_title_snapshot',
+            'clicks',
+            'conversions',
+            'deactivated_at',
+        ];
+    }
+
+    protected $casts = [
+        'subject_metadata' => 'array',
+        'clicks' => 'integer',
+        'conversions' => 'integer',
+        'origin' => 'string',
+        'deactivated_at' => 'immutable_datetime',
+    ];
+
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.links', 'affiliate_links');
+    }
+
+    /**
+     * @return HasMany<AffiliateAttribution, $this>
+     */
+    public function attributions(): HasMany
+    {
+        return $this->hasMany(AffiliateAttribution::class, 'affiliate_link_id');
+    }
+
+    /** @return MorphOne<Link, $this> */
+    public function trackedLink(): MorphOne
+    {
+        return $this->morphOne(Link::class, 'subject');
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
+    public function getConversionRate(): float
+    {
+        if ($this->clicks === 0) {
+            return 0.0;
+        }
+
+        return ($this->conversions / $this->clicks) * 100;
+    }
+
+    public function getDisplayUrl(): string
+    {
+        return $this->short_url ?? $this->tracking_url;
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $link): void {
+            self::guardProgramReference($link);
+        });
+
+        static::updating(function (self $link): void {
+            self::guardProgramReference($link);
+        });
+    }
+
+    private static function guardProgramReference(self $link): void
+    {
+        if ($link->program_id !== null) {
+            app(TrackingProgramGuard::class)->assertReference(
+                $link->program_id,
+                spl_object_id($link->getConnection()),
+            );
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
+}

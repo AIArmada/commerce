@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Support\Models;
+
+use AIArmada\Affiliates\Features\Support\Actions\DeleteTicketMessages;
+use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string $affiliate_id
+ * @property string $subject
+ * @property string $category
+ * @property string $priority
+ * @property string $status
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, AffiliateSupportMessage> $messages
+ */
+class AffiliateSupportTicket extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasUuids;
+    use LogsCommerceActivity;
+    use ScopesByAffiliateOwner;
+
+    protected $fillable = [
+        'affiliate_id',
+        'subject',
+        'category',
+        'priority',
+        'status',
+    ];
+
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.support_tickets', 'affiliate_support_tickets');
+    }
+
+    /**
+     * @return HasMany<AffiliateSupportMessage, $this>
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(AffiliateSupportMessage::class, 'ticket_id')
+            ->orderBy('created_at');
+    }
+
+    protected static function booted(): void
+    {
+        self::deleting(function (self $ticket): void {
+            app(DeleteTicketMessages::class)->execute((string) $ticket->getKey());
+        });
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
+}

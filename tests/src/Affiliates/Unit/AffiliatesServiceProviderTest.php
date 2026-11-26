@@ -3,20 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Listeners\AutoApproveOpenAffiliate;
-use AIArmada\Affiliates\Listeners\IncrementAffiliateLinkClicks;
-use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
-use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
-use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
-use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
-use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
-use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyConversionRecorded;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyProgramJoined;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Contracts\CartManagerInterface;
@@ -186,7 +186,7 @@ it('registers one engine conversion listener across affiliate-network checkout g
         $affiliate = createTestAffiliate();
         $cart = new Cart(new InMemoryStorage, 'w1-cart-' . uniqid(), events: null, eventsEnabled: false);
         $cart->add('w1-item-' . uniqid(), 'Commission item', 10000, 1);
-        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+        app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
 
         $cartManager = mock(CartManagerInterface::class);
         $cartManager->shouldReceive('getById')->once()->with($cart->getId())->andReturn($cart);

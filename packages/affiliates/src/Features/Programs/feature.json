@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "Programs",
+  "owns": {
+    "table:affiliate_program_memberships": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramMembership",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ManageProgramEnrollment",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ReviewProgramMembership",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\UpgradeProgramTier",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramTier"
+    ],
+    "table:affiliate_programs": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram"
+    ],
+    "table:affiliate_program_tiers": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramTier"
+    ],
+    "table:affiliate_program_creatives": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerCreative"
+    ],
+    "table:affiliate_creative_asset_cleanups": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ProcessCreativeAssetCleanup"
+    ]
+  },
+  "extensions": {}
+}

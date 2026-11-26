@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Commissions\EntryPoints\Console;
+
+use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use AIArmada\Affiliates\Support\BonusMonth;
+use Carbon\CarbonImmutable;
+use Illuminate\Console\Command;
+use Throwable;
+
+final class AwardPerformanceBonusesCommand extends Command
+{
+    protected $signature = 'affiliates:award-bonuses
+        {--dry-run : Show what would be awarded without writing}
+        {--month= : Month to calculate as YYYY-MM (default: current month)}
+        {--type= : Only this bonus type: top_performer, recruitment, consistency, growth}';
+
+    protected $description = 'Calculate and award monthly affiliate performance bonuses';
+
+    public function __construct(
+        private readonly PerformanceBonusCalculation $engine,
+        private readonly PerformanceBonusPosting $bonuses,
+    ) {
+        parent::__construct();
+    }
+
+    public function handle(): int
+    {
+        $dryRun = (bool) $this->option('dry-run');
+        $range = BonusMonth::parse($this->option('month'));
+
+        if ($range === null) {
+            $this->error('Invalid --month. Expected YYYY-MM, e.g. 2026-09.');
+
+            return self::FAILURE;
+        }
+
+        $type = $this->parseType($this->option('type'));
+
+        if ($type === false) {
+            $this->error('Invalid --type. Expected one of: top_performer, recruitment, consistency, growth.');
+
+            return self::FAILURE;
+        }
+
+        [$from, $to] = $range;
+
+        $summary = app(AffiliateReportingReader::class)->summarizeForOwners(fn (): array => $this->processScoped($from, $to, $type, $dryRun))
+            ?? ['calculated' => 0, 'awarded' => 0, 'errors' => 0];
+
+        $this->info("Calculated: {$summary['calculated']}");
+
+        if (! $dryRun) {
+            $this->info("Awarded: {$summary['awarded']}");
+        }
+
+        if ($summary['errors'] > 0) {
+            $this->error("Errors: {$summary['errors']}");
+        }
+
+        return $summary['errors'] === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function parseType(mixed $option): CommissionRuleType | false | null
+    {
+        if ($option === null || $option === '') {
+            return null;
+        }
+
+        if (! is_string($option)) {
+            return false;
+        }
+
+        $type = CommissionRuleType::tryFrom($option);
+
+        return $type instanceof CommissionRuleType && $type->isPerformanceBonus() ? $type : false;
+    }
+
+    /**
+     * @return array{calculated:int,awarded:int,errors:int}
+     */
+    private function processScoped(
+        CarbonImmutable $from,
+        CarbonImmutable $to,
+        ?CommissionRuleType $type,
+        bool $dryRun,
+    ): array {
+        $summary = ['calculated' => 0, 'awarded' => 0, 'errors' => 0];
+        $types = $type === null ? CommissionRuleType::performanceBonusCases() : [$type];
+
+        foreach ($types as $bonusType) {
+            try {
+                $bonuses = $this->engine->calculatePerformanceBonuses($bonusType->value, $from, $to);
+            } catch (Throwable) {
+                $summary['errors']++;
+
+                continue;
+            }
+
+            $summary['calculated'] += count($bonuses);
+            $this->line(sprintf('%s: %d bonus(es)%s', $bonusType->value, count($bonuses), $dryRun ? ' (dry run)' : ''));
+
+            if ($dryRun || $bonuses === []) {
+                continue;
+            }
+
+            try {
+                $summary['awarded'] += $this->bonuses->award($bonuses);
+            } catch (Throwable) {
+                $summary['errors']++;
+            }
+        }
+
+        return $summary;
+    }
+}

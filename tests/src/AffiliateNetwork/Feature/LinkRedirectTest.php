@@ -7,7 +7,7 @@ use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Events\LinkBlocked;

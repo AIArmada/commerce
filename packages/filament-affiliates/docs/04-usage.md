@@ -40,7 +40,7 @@ Registration is config-driven:
 The Affiliate Payouts create page requires an affiliate and one or more
 approved, unlinked conversions. Search results show each conversion's
 reference, commission amount, and currency. The page calls the core
-`CreatePayout` action, which derives the total, currency, payee, and initial
+`PayoutAdministration::create()` API, which derives the total, currency, payee, and initial
 status from the selected conversions and reserves their available balance.
 The client cannot set those accounting fields. A payout can include only one
 affiliate and one currency. Failed or cancelled payouts release the
@@ -112,7 +112,7 @@ commission, and status columns, plus two provenance columns:
 - **Source Ref** — the upstream pointer (network link code, etc.).
 
 Row actions approve, reject, mark paid, and **reverse**. Reverse asks for
-a reason and routes through `ReverseAffiliateConversion`: the original is
+a reason and routes through `ConversionAdministration::reverse()`: the original is
 marked reversed and a negated companion conversion posts, so readers that
 sum posted rows stay correct. All mutations authorize through the
 conversion policy (`affiliate_conversion.update` / `affiliate.approve`)

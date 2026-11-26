@@ -1,0 +1,133 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Attribution\Actions;
+
+use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Support\AffiliateLinkDestination;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
+use AIArmada\Links\Actions\CreatePublicLink;
+use AIArmada\Links\Actions\GenerateLinkUrl;
+use AIArmada\Links\LinksServiceProvider;
+use AIArmada\Links\Models\Link;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use LogicException;
+
+final readonly class CreateTrackingLink
+{
+    public function __construct(private TrackingProgramGuard $programs) {}
+
+    public function handle(string $affiliateId, string $destinationUrl, array $attributes = []): AffiliateLink
+    {
+        $programId = Arr::get($attributes, 'program_id');
+
+        $params = Arr::get($attributes, 'params', []);
+
+        if (! is_array($params)) {
+            $params = [];
+        }
+
+        $subjectMetadata = Arr::get($attributes, 'subject_metadata');
+
+        if (! is_array($subjectMetadata)) {
+            $subjectMetadata = null;
+        } else {
+            $subjectMetadata = $this->sanitizeSubjectMetadata($subjectMetadata);
+        }
+
+        if (! class_exists(CreatePublicLink::class) || ! app()->providerIsLoaded(LinksServiceProvider::class)) {
+            throw new LogicException('Install and enable aiarmada/links to create affiliate tracking links.');
+        }
+
+        $allowedHosts = AffiliateLinkDestination::allowedHosts($destinationUrl);
+
+        Validator::make($attributes, [
+            'program_id' => ['nullable', 'string', 'uuid'],
+            'deactivated_at' => ['nullable', 'date'],
+            'tracking_url' => ['prohibited'],
+            'short_url' => ['prohibited'],
+            'custom_slug' => ['nullable', 'string', 'min:8', 'max:64', 'regex:/^[a-z0-9]+$/'],
+            'ttl_seconds' => ['prohibited'],
+            'link_style' => ['sometimes', 'string', 'in:short,branded'],
+            'link_label' => ['nullable', 'string', 'max:60'],
+        ])->validate();
+
+        $connection = (new AffiliateLink)->getConnection();
+        if ($connection !== (new Link)->getConnection()) {
+            throw new LogicException('Tracking link creation requires a shared database connection.');
+        }
+
+        return $connection->transaction(function () use ($affiliateId, $connection, $destinationUrl, $attributes, $programId, $params, $subjectMetadata, $allowedHosts): AffiliateLink {
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id($connection))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
+            if (! $affiliate->canBeAttributed) {
+                throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
+            }
+
+            if (is_string($programId)) {
+                $this->programs->lockForTracking($programId, spl_object_id($connection));
+            }
+
+            $affiliateLink = AffiliateLink::query()->create([
+                'affiliate_id' => $affiliate->reference->id,
+                'program_id' => $programId,
+                'destination_url' => $destinationUrl,
+                'tracking_url' => '',
+                'custom_slug' => Arr::get($attributes, 'custom_slug'),
+                'campaign' => Arr::get($attributes, 'campaign'),
+                'sub_id' => Arr::get($attributes, 'sub_id'),
+                'sub_id_2' => Arr::get($attributes, 'sub_id_2'),
+                'sub_id_3' => Arr::get($attributes, 'sub_id_3'),
+                'subject_type' => Arr::get($attributes, 'subject_type'),
+                'subject_key' => Arr::get($attributes, 'subject_key'),
+                'subject_id' => Arr::get($attributes, 'subject_id'),
+                'subject_instance' => Arr::get($attributes, 'subject_instance'),
+                'subject_title_snapshot' => Str::limit((string) Arr::get($attributes, 'subject_title_snapshot', ''), 200, ''),
+                'subject_metadata' => $subjectMetadata,
+                'origin' => Arr::get($attributes, 'origin'),
+                'deactivated_at' => Arr::get($attributes, 'deactivated_at'),
+            ]);
+
+            $tracked = CreatePublicLink::run(
+                [
+                    'name' => $attributes['campaign'] ?? $affiliate->name,
+                    'destination_url' => $destinationUrl,
+                    'parameters' => array_merge($params, ['aff_link' => (string) $affiliateLink->getKey()]),
+                    'subject_type' => $affiliateLink->getMorphClass(),
+                    'subject_id' => (string) $affiliateLink->getKey(),
+                    'expires_at' => $attributes['expires_at'] ?? null,
+                    'max_clicks' => $attributes['max_clicks'] ?? null,
+                ],
+                $attributes['link_style'] ?? config('affiliates.links.default_style', 'short'),
+                $affiliate->handle,
+                $attributes['link_label'] ?? $attributes['campaign'] ?? 'link',
+                false,
+                $allowedHosts
+            );
+
+            $affiliateLink->update(['tracking_url' => GenerateLinkUrl::run($tracked)]);
+
+            return $affiliateLink;
+        });
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function sanitizeSubjectMetadata(array $metadata): ?array
+    {
+        $promotedKeys = [
+            'affiliate_id', 'affiliate_code', 'affiliate_attribution_id',
+            'subject_type', 'subject_key', 'subject_id', 'subject_instance',
+            'subject_title_snapshot', 'origin', 'voucher_code', 'program_id',
+        ];
+
+        $metadata = Arr::except($metadata, $promotedKeys);
+
+        return $metadata === [] ? null : $metadata;
+    }
+}

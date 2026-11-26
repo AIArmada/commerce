@@ -4,15 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork;
 
-use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\MerchantStatementResource;
-use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
-use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
+use AIArmada\FilamentAffiliateNetwork\Contracts\PanelContribution;
+use AIArmada\FilamentAffiliateNetwork\Platform\ExtensionRegistry;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -38,22 +31,14 @@ final class FilamentAffiliateNetworkPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel
-            ->resources([
-                AffiliateSiteResource::class,
-                AffiliateOfferResource::class,
-                AffiliateOfferCategoryResource::class,
-                AffiliateOfferApplicationResource::class,
-                MerchantStatementResource::class,
-                CreatorPostbackResource::class,
-            ])
-            ->pages([
-                MerchantDashboardPage::class,
-            ])
-            ->widgets([
-                NetworkStatsWidget::class,
-                TopOffersWidget::class,
-            ]);
+        $contributions = app(ExtensionRegistry::class)->resolve('panel.contributions', PanelContribution::class);
+        usort($contributions, static fn (PanelContribution $a, PanelContribution $b): int => $a->priority() <=> $b->priority());
+
+        foreach ($contributions as $contribution) {
+            $panel->resources($contribution->resources())
+                ->pages($contribution->pages())
+                ->widgets($contribution->widgets());
+        }
     }
 
     public function boot(Panel $panel): void

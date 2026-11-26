@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Pages\MerchantDashboardPage;
 
 describe('MerchantDashboardPage', function (): void {
     test('owner-enabled site counts stay inside the current merchant owner', function (): void {

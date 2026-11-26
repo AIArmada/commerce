@@ -3,15 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingPayout;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Validation\ValidationException;
 
 describe('AffiliatePayout Model', function (): void {
     beforeEach(function (): void {
@@ -59,7 +62,7 @@ describe('AffiliatePayout Model', function (): void {
             ->and($payout->payee->id)->toBe($this->affiliate->id);
     });
 
-    it('has many conversions', function (): void {
+    it('reads linked conversions through the owning feature', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -70,10 +73,10 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($payout->conversions())->toBeInstanceOf(HasMany::class);
+        expect(app(PayoutConversionIntegrity::class)->hasConversions($payout->id, spl_object_id($payout->getConnection())))->toBeFalse();
     });
 
-    it('has many events', function (): void {
+    it('reads payout events through the owning feature', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -84,7 +87,17 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($payout->events())->toBeInstanceOf(HasMany::class);
+        $history = app(PayoutEventHistory::class);
+
+        expect($history->hasEvents($payout->id))->toBeFalse();
+
+        AffiliatePayoutEvent::create([
+            'affiliate_payout_id' => $payout->id,
+            'to_status' => 'pending',
+        ]);
+
+        expect($history->hasEvents($payout->id))->toBeTrue()
+            ->and($history->forPayout($payout->id))->toHaveCount(1);
     });
 
     it('returns affiliate accessor when payee is affiliate', function (): void {
@@ -161,14 +174,14 @@ describe('AffiliatePayout Model', function (): void {
             ->and($payout->metadata['key'])->toBe('value');
     });
 
-    it('cascade deletes events on delete', function (): void {
+    it('removes events only when an unused payout is deleted', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
             'status' => PendingPayout::class,
-            'total_minor' => 50000,
-            'conversion_count' => 5,
+            'total_minor' => 0,
+            'conversion_count' => 0,
             'currency' => 'USD',
         ]);
 
@@ -178,12 +191,15 @@ describe('AffiliatePayout Model', function (): void {
             'to_status' => 'pending',
         ]);
 
-        $payout->delete();
+        expect(fn () => $payout->delete())->toThrow(InvalidArgumentException::class);
 
-        expect(AffiliatePayoutEvent::where('affiliate_payout_id', $payout->id)->count())->toBe(0);
+        expect(app(PayoutRemoval::class)->deleteUnused((string) $payout->getKey()))->toBeTrue();
+
+        expect(AffiliatePayoutEvent::where('affiliate_payout_id', $payout->id)->count())->toBe(0)
+            ->and($payout->fresh())->toBeNull();
     });
 
-    it('nulls affiliate_payout_id on conversions when deleted', function (): void {
+    it('preserves payouts and their paid conversion references', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -205,10 +221,11 @@ describe('AffiliatePayout Model', function (): void {
             'status' => PaidConversion::class,
         ]);
 
-        $payout->delete();
-        $conversion->refresh();
-
-        expect($conversion->affiliate_payout_id)->toBeNull();
+        expect(fn () => app(PayoutRemoval::class)->deleteUnused((string) $payout->getKey()))
+            ->toThrow(ValidationException::class)
+            ->and(fn () => $payout->delete())->toThrow(InvalidArgumentException::class)
+            ->and($payout->fresh())->not->toBeNull()
+            ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id);
     });
 
     it('uses correct table name from config', function (): void {

@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 
@@ -21,7 +22,7 @@ beforeEach(function (): void {
     // Settings cache outlives RefreshDatabase rollbacks within a process.
     Artisan::call('settings:clear-cache');
 
-    $this->service = app(PerformanceBonusService::class);
+    $this->service = app(PerformanceBonusQueries::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'PERF-' . uniqid(),
@@ -34,13 +35,13 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('PerformanceBonusService', function (): void {
+describe('PerformanceBonusQueries', function (): void {
     describe('calculateBonuses', function (): void {
         // calculateBonuses uses HAVING clauses that are not compatible with the
         // SQLite test connection. These tests verify the method signature only.
 
         test('method signature accepts nullable Carbon parameters', function (): void {
-            $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateBonuses');
+            $reflection = new ReflectionMethod(PerformanceBonusQueries::class, 'calculateBonuses');
             $params = $reflection->getParameters();
 
             expect($params)->toHaveCount(2);
@@ -51,7 +52,7 @@ describe('PerformanceBonusService', function (): void {
         });
 
         test('method returns array', function (): void {
-            $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateBonuses');
+            $reflection = new ReflectionMethod(PerformanceBonusQueries::class, 'calculateBonuses');
             $returnType = $reflection->getReturnType();
 
             expect($returnType)->not->toBeNull();
@@ -72,7 +73,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $result = $this->service->awardBonuses($bonuses);
+            $result = app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect($result)->toBe(1);
         });
@@ -89,8 +90,8 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            expect($this->service->awardBonuses($bonuses))->toBe(1)
-                ->and($this->service->awardBonuses($bonuses))->toBe(0)
+            expect(app(PerformanceBonusPosting::class)->award($bonuses))->toBe(1)
+                ->and(app(PerformanceBonusPosting::class)->award($bonuses))->toBe(0)
                 ->and(AffiliateConversion::where('affiliate_id', $this->affiliate->id)->count())->toBe(1);
         });
 
@@ -115,7 +116,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
             expect($balance->available_minor)->toBe(3500); // 1000 + 2500
@@ -142,7 +143,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
             expect($balance->lifetime_earnings_minor)->toBe(6000);
@@ -169,7 +170,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             $conversion = AffiliateConversion::where('affiliate_id', $this->affiliate->id)
                 ->where('commission_minor', 5000)
@@ -195,7 +196,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $result = $this->service->awardBonuses($bonuses);
+            $result = app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect($result)->toBe(0);
         });
@@ -212,7 +213,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $result = $this->service->awardBonuses($bonuses);
+            $result = app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect($result)->toBe(0);
         });
@@ -231,26 +232,26 @@ describe('PerformanceBonusService', function (): void {
 
             expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeFalse();
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeTrue();
         });
 
         test('returns zero for empty bonus array', function (): void {
-            $result = $this->service->awardBonuses([]);
+            $result = app(PerformanceBonusPosting::class)->award([]);
 
             expect($result)->toBe(0);
         });
     });
 
     describe('getLeaderboard', function (): void {
-        test('returns collection', function (): void {
+        test('returns an array', function (): void {
             $result = $this->service->getLeaderboard();
 
-            expect($result)->toBeCollection();
+            expect($result)->toBeArray();
         });
 
-        test('returns empty collection when no conversions', function (): void {
+        test('returns an empty array when no conversions', function (): void {
             $result = $this->service->getLeaderboard();
 
             expect($result)->toBeEmpty();
@@ -272,7 +273,7 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard();
 
             expect($result)->toHaveCount(1);
-            expect($result->first()['affiliate_id'])->toBe($this->affiliate->id);
+            expect($result[0]['affiliate_id'])->toBe($this->affiliate->id);
         });
 
         test('excludes pending conversions', function (): void {
@@ -335,8 +336,8 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard();
 
             expect($result)->toHaveCount(2);
-            expect($result->first()['affiliate_id'])->toBe($affiliate2->id);
-            expect($result->first()['rank'])->toBe(1);
+            expect($result[0]['affiliate_id'])->toBe($affiliate2->id);
+            expect($result[0]['rank'])->toBe(1);
         });
 
         test('respects limit parameter', function (): void {
@@ -384,7 +385,7 @@ describe('PerformanceBonusService', function (): void {
             ]);
 
             $result = $this->service->getLeaderboard();
-            $entry = $result->first();
+            $entry = $result[0];
 
             expect($entry)->toHaveKeys([
                 'rank',
@@ -437,7 +438,7 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard($from, $to);
 
             expect($result)->toHaveCount(1);
-            expect($result->first()['total_revenue'])->toBe(8000); // Only in-range conversion
+            expect($result[0]['total_revenue'])->toBe(8000); // Only in-range conversion
         });
 
         test('calculates revenue from value_minor', function (): void {
@@ -453,7 +454,7 @@ describe('PerformanceBonusService', function (): void {
             ]);
 
             $result = $this->service->getLeaderboard();
-            $entry = $result->first();
+            $entry = $result[0];
 
             expect($entry['total_revenue'])->toBe(7000)
                 ->and($entry['avg_order_value'])->toBe(7000.0);
@@ -493,8 +494,8 @@ describe('PerformanceBonusService', function (): void {
                 'occurred_at' => CarbonImmutable::now()->startOfMonth()->addDay(),
             ]);
 
-            $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
-                CommissionRuleType::Growth,
+            $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
+                CommissionRuleType::Growth->value,
                 CarbonImmutable::now()->startOfMonth()->toImmutable(),
                 CarbonImmutable::now()->endOfMonth()->toImmutable(),
             );
@@ -503,4 +504,32 @@ describe('PerformanceBonusService', function (): void {
                 ->toHaveCount(0);
         });
     });
+});
+
+test('lists distinct awarded bonus types without including ordinary conversions', function (): void {
+    foreach (['top_performer', 'recruitment', 'top_performer'] as $index => $type) {
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'performance_bonus_key' => 'filter-' . $index,
+            'commission_minor' => 100,
+            'commission_currency' => 'USD',
+            'status' => ApprovedConversion::class,
+            'metadata' => ['bonus_type' => $type],
+        ]);
+    }
+
+    AffiliateConversion::create([
+        'affiliate_id' => $this->affiliate->id,
+        'affiliate_code' => $this->affiliate->code,
+        'commission_minor' => 100,
+        'commission_currency' => 'USD',
+        'status' => ApprovedConversion::class,
+        'metadata' => ['bonus_type' => 'growth'],
+    ]);
+
+    expect($this->service->awardedTypes())->toBe([
+        'recruitment' => CommissionRuleType::Recruitment->label(),
+        'top_performer' => CommissionRuleType::TopPerformer->label(),
+    ]);
 });

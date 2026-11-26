@@ -1,0 +1,149 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Payouts\Models;
+
+use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string $affiliate_id
+ * @property PayoutMethodType $type
+ * @property array<string, mixed> $details
+ * @property bool $is_default
+ * @property CarbonInterface|null $verified_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ * @property-read string $label Computed label from type and details
+ */
+class AffiliatePayoutMethod extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasUuids;
+    use LogsCommerceActivity;
+    use ScopesByAffiliateOwner;
+
+    protected $fillable = [
+        'affiliate_id',
+        'type',
+        'details',
+        'is_default',
+        'verified_at',
+    ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'affiliate_id',
+            'type',
+            'is_default',
+            'verified_at',
+        ];
+    }
+
+    protected $casts = [
+        'type' => PayoutMethodType::class,
+        'details' => 'encrypted:array',
+        'is_default' => 'boolean',
+        'verified_at' => 'immutable_datetime',
+    ];
+
+    protected $hidden = [
+        'details',
+    ];
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('affiliates.database.tables.payout_methods', 'affiliate_payout_methods');
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verified_at !== null;
+    }
+
+    public function getMaskedDetails(): array
+    {
+        $details = $this->details ?? [];
+
+        return match ($this->type) {
+            PayoutMethodType::BankTransfer => [
+                'bank_name' => $details['bank_name'] ?? null,
+                'account_last_4' => isset($details['account_number'])
+                    ? '****' . mb_substr((string) $details['account_number'], -4)
+                    : null,
+            ],
+            PayoutMethodType::PayPal => [
+                'email' => isset($details['email'])
+                    ? $this->maskEmail((string) $details['email'])
+                    : null,
+            ],
+            PayoutMethodType::StripeConnect => [
+                'account_id' => isset($details['stripe_account_id'])
+                    ? mb_substr((string) $details['stripe_account_id'], 0, 8) . '...'
+                    : null,
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Get a human-readable label for this payout method.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function label(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $details = $this->details ?? [];
+
+                return match ($this->type) {
+                    PayoutMethodType::BankTransfer => $details['bank_name'] ?? 'Bank Transfer',
+                    PayoutMethodType::PayPal => $details['email'] ?? 'PayPal',
+                    PayoutMethodType::StripeConnect => 'Stripe Connect',
+                    default => $this->type?->value ?? 'Unknown',
+                };
+            },
+        );
+    }
+
+    private function maskEmail(string $email): string
+    {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2) {
+            return '***@***';
+        }
+
+        $name = $parts[0];
+        $domain = $parts[1];
+
+        $maskedName = mb_strlen($name) > 2
+            ? mb_substr($name, 0, 2) . str_repeat('*', mb_strlen($name) - 2)
+            : str_repeat('*', mb_strlen($name));
+
+        return $maskedName . '@' . $domain;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
+}

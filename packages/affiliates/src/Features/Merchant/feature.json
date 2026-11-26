@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Merchant",
+  "owns": {
+    "store:merchant-referral-session": [
+      "AIArmada\\Affiliates\\Features\\Merchant\\Actions\\CaptureMerchantReferral"
+    ]
+  },
+  "extensions": {}
+}

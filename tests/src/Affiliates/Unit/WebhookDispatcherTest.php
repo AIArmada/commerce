@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Jobs\DispatchAffiliateWebhook;
-use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
+use AIArmada\Affiliates\Features\Webhooks\EntryPoints\Jobs\DispatchAffiliateWebhook;
+use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 
@@ -17,7 +17,7 @@ beforeEach(function (): void {
 test('webhook dispatcher does nothing when webhooks are disabled', function (): void {
     Config::set('affiliates.events.dispatch_webhooks', false);
 
-    app(WebhookDispatcher::class)->dispatch('test', ['key' => 'value']);
+    app(WebhookApi::class)->dispatch('test', ['key' => 'value']);
 
     expect(AffiliateWebhookDelivery::query()->count())->toBe(0);
     Queue::assertNothingPushed();
@@ -28,7 +28,7 @@ test('webhook dispatcher persists immutable signed deliveries before queueing', 
     Config::set('affiliates.webhooks.endpoints.test', ['https://example.com/webhook']);
     Config::set('affiliates.webhooks.headers', ['Authorization' => 'Bearer token']);
 
-    app(WebhookDispatcher::class)->dispatch('test', ['key' => 'value']);
+    app(WebhookApi::class)->dispatch('test', ['key' => 'value']);
 
     $delivery = AffiliateWebhookDelivery::query()->sole();
     $body = json_decode($delivery->body_json, true, flags: JSON_THROW_ON_ERROR);
@@ -51,23 +51,24 @@ test('webhook dispatcher creates one delivery per distinct configured destinatio
     Config::set('affiliates.webhooks.endpoints.test', [
         'https://example.com/one',
         'https://example.com/two',
+        'https://example.com/One',
         'https://example.com/one',
         '',
         'mailto:ops@example.com',
     ]);
 
-    app(WebhookDispatcher::class)->dispatch('test', ['key' => 'value']);
+    app(WebhookApi::class)->dispatch('test', ['key' => 'value']);
 
-    expect(AffiliateWebhookDelivery::query()->count())->toBe(2)
+    expect(AffiliateWebhookDelivery::query()->count())->toBe(3)
         ->and(AffiliateWebhookDelivery::query()->distinct()->count('event_id'))->toBe(1);
-    Queue::assertPushed(DispatchAffiliateWebhook::class, 2);
+    Queue::assertPushed(DispatchAffiliateWebhook::class, 3);
 });
 
 test('unsafe endpoints become durable failures in the queued delivery path', function (): void {
     Config::set('affiliates.events.dispatch_webhooks', true);
     Config::set('affiliates.webhooks.endpoints.test', ['http://127.0.0.1/internal']);
 
-    app(WebhookDispatcher::class)->dispatch('test', ['key' => 'value']);
+    app(WebhookApi::class)->dispatch('test', ['key' => 'value']);
 
     expect(AffiliateWebhookDelivery::query()->sole()->endpoint)->toBe('http://127.0.0.1/internal');
     Queue::assertPushed(DispatchAffiliateWebhook::class, 1);

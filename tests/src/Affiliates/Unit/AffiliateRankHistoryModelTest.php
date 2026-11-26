@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -67,8 +68,8 @@ describe('AffiliateRankHistory Model', function (): void {
             'qualified_at' => now(),
         ]);
 
-        expect($history->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($history->affiliate->id)->toBe($affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($history->affiliate_id)?->id)->toBe($affiliate->id)
+            ->and(method_exists($history, 'affiliate'))->toBeFalse();
     });
 
     it('belongs to from rank and to rank', function (): void {
@@ -122,14 +123,14 @@ describe('AffiliateRankHistory Model', function (): void {
         $silverRank = AffiliateRank::create([
             'name' => 'Silver',
             'slug' => 'silver-promo-' . uniqid(),
-            'level' => 2, // Lower level = higher rank
+            'level' => 2, // Higher level = higher rank
             'commission_rate_basis_points' => 1000,
         ]);
 
         $goldRank = AffiliateRank::create([
             'name' => 'Gold',
             'slug' => 'gold-promo-' . uniqid(),
-            'level' => 1,
+            'level' => 3,
             'commission_rate_basis_points' => 1500,
         ]);
 
@@ -165,7 +166,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $silverRank = AffiliateRank::create([
             'name' => 'Silver',
             'slug' => 'silver-demo-' . uniqid(),
-            'level' => 4,
+            'level' => 2,
             'commission_rate_basis_points' => 1000,
         ]);
 

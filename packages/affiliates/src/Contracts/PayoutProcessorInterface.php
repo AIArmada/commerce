@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Contracts;
 
+use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Data\PayoutStatusResult;
 use DateTimeInterface;
 
 interface PayoutProcessorInterface
@@ -13,22 +14,22 @@ interface PayoutProcessorInterface
     /**
      * Process a payout.
      */
-    public function process(AffiliatePayout $payout): PayoutResult;
+    public function process(PayoutRequest $payout): PayoutResult;
 
     /**
      * Get the current status of a payout from the processor.
      */
-    public function getStatus(AffiliatePayout $payout): string;
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult;
 
     /**
      * Cancel a pending payout.
      */
-    public function cancel(AffiliatePayout $payout): bool;
+    public function cancel(PayoutRequest $payout): bool;
 
     /**
      * Get the estimated arrival time for a payout.
      */
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface;
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface;
 
     /**
      * Get the processing fees for a given amount.

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Tax",
+  "owns": {
+    "table:affiliate_tax_documents": [
+      "AIArmada\\Affiliates\\Features\\Tax\\Actions\\GenerateTaxDocument",
+      "AIArmada\\Affiliates\\Features\\Tax\\Actions\\MarkTaxDocumentSent"
+    ]
+  },
+  "extensions": {}
+}

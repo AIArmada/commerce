@@ -5,7 +5,7 @@ title: Program Catalog
 # Program Catalog (network sync source)
 
 Read-only snapshot consumed by `affiliate-network` over shared DB or HTTP.
-See `ProgramCatalogService::snapshot()` for the implementation.
+See `Features/Programs/Api/MerchantCatalog::snapshotById()` for the implementation.
 
 ## Enable
 
@@ -69,7 +69,7 @@ app(PromotableRegistry::class)->register(new ProductPromotables);
 
 > **warning**
 > Snapshot uses `getApplicableRules()` + base math only. It never calls
-> `CommissionRuleEngine::calculate()`, which would increment promotion usage.
+> `CommissionRuleCalculation::calculate()`, which would increment promotion usage.
 
 ## Creative snapshot contract
 

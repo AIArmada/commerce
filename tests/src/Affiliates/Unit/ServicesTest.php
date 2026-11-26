@@ -2,22 +2,24 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\ApproveAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\RejectAffiliate;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Services\DailyAggregationService;
-use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Actions\CreateAffiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Pending;
 use Carbon\CarbonImmutable;
@@ -38,7 +40,7 @@ test('CreateAffiliate creates an affiliate', function (): void {
     expect($affiliate->code)->toBe('REG001');
 });
 
-test('ApproveAffiliate activates an affiliate', function (): void {
+test('affiliate lifecycle approves a pending affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'APPROVE001',
         'name' => 'Pending Affiliate',
@@ -48,12 +50,12 @@ test('ApproveAffiliate activates an affiliate', function (): void {
         'currency' => 'USD',
     ]);
 
-    $result = app(ApproveAffiliate::class)->handle($affiliate);
-
-    expect($result->status->equals(Active::class))->toBeTrue();
+    expect(app(AffiliateLifecycle::class)->approve($affiliate->id))->toBeTrue()
+        ->and(app(AffiliateLifecycle::class)->approve($affiliate->id))->toBeFalse()
+        ->and($affiliate->refresh()->status->equals(Active::class))->toBeTrue();
 });
 
-test('RejectAffiliate disables an affiliate', function (): void {
+test('affiliate lifecycle rejects a pending affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'REJECT001',
         'name' => 'Pending Affiliate',
@@ -63,14 +65,14 @@ test('RejectAffiliate disables an affiliate', function (): void {
         'currency' => 'USD',
     ]);
 
-    $result = app(RejectAffiliate::class)->handle($affiliate);
-
-    expect($result->status->equals(Disabled::class))->toBeTrue();
+    expect(app(AffiliateLifecycle::class)->reject($affiliate->id))->toBeTrue()
+        ->and(app(AffiliateLifecycle::class)->reject($affiliate->id))->toBeFalse()
+        ->and($affiliate->refresh()->status->equals(Disabled::class))->toBeTrue();
 });
 
-// DailyAggregationService Tests
-test('DailyAggregationService aggregateForAffiliate creates or updates daily stats', function (): void {
-    $service = app(DailyAggregationService::class);
+// DailyStatsWriter Tests
+test('DailyStatsWriter aggregateForAffiliate creates or updates daily stats', function (): void {
+    $service = app(DailyStatsWriter::class);
 
     $affiliate = Affiliate::create([
         'code' => 'AGG001',
@@ -82,19 +84,19 @@ test('DailyAggregationService aggregateForAffiliate creates or updates daily sta
     ]);
 
     // Test aggregation without touchpoints (simpler test)
-    $stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::now());
+    $stats = $service->aggregateForAffiliate((string) $affiliate->getKey(), CarbonImmutable::now());
 
     expect($stats)->toHaveCount(1);
 
-    $stat = $stats->first();
+    $stat = $stats[0];
 
-    expect($stat)->toBeInstanceOf(AffiliateDailyStat::class);
+    expect($stat)->toBeInstanceOf(DailyStatRecord::class);
     expect($stat->clicks)->toBe(0);
     expect($stat->currency)->toBe('USD');
 });
 
-test('DailyAggregationService aggregateForAffiliate prefers neutral conversion values', function (): void {
-    $service = app(DailyAggregationService::class);
+test('DailyStatsWriter aggregateForAffiliate prefers neutral conversion values', function (): void {
+    $service = app(DailyStatsWriter::class);
 
     $affiliate = Affiliate::create([
         'code' => 'AGG006',
@@ -120,20 +122,20 @@ test('DailyAggregationService aggregateForAffiliate prefers neutral conversion v
         'occurred_at' => CarbonImmutable::now(),
     ]);
 
-    $stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::now());
+    $stats = $service->aggregateForAffiliate((string) $affiliate->getKey(), CarbonImmutable::now());
 
     expect($stats)->toHaveCount(1);
 
-    $stat = $stats->first();
+    $stat = $stats[0];
 
     expect($stat->conversions)->toBe(1)
-        ->and($stat->revenue_cents)->toBe(4200)
-        ->and($stat->commission_cents)->toBe(420)
+        ->and($stat->revenueMinor)->toBe(4200)
+        ->and($stat->commissionMinor)->toBe(420)
         ->and($stat->currency)->toBe('USD');
 });
 
-test('DailyAggregationService aggregateForAffiliate writes one row per currency', function (): void {
-    $service = app(DailyAggregationService::class);
+test('DailyStatsWriter aggregateForAffiliate writes one row per currency', function (): void {
+    $service = app(DailyStatsWriter::class);
 
     $affiliate = Affiliate::create([
         'code' => 'AGG007',
@@ -164,15 +166,15 @@ test('DailyAggregationService aggregateForAffiliate writes one row per currency'
         ]);
     }
 
-    $stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::now());
-    $byCurrency = $stats->mapWithKeys(fn (AffiliateDailyStat $stat): array => [$stat->currency => $stat]);
+    $stats = $service->aggregateForAffiliate((string) $affiliate->getKey(), CarbonImmutable::now());
+    $byCurrency = collect($stats)->keyBy('currency');
 
     expect($stats)->toHaveCount(2)
-        ->and($byCurrency['USD']->revenue_cents)->toBe(10000)
-        ->and($byCurrency['MYR']->revenue_cents)->toBe(47000)
-        ->and($byCurrency['MYR']->commission_cents)->toBe(4700);
+        ->and($byCurrency['USD']->revenueMinor)->toBe(10000)
+        ->and($byCurrency['MYR']->revenueMinor)->toBe(47000)
+        ->and($byCurrency['MYR']->commissionMinor)->toBe(4700);
 
-    $period = $service->getAggregatedStats($affiliate, CarbonImmutable::now()->subDay(), CarbonImmutable::now()->addDay());
+    $period = app(DailyStatsReader::class)->getAggregatedStats((string) $affiliate->getKey(), CarbonImmutable::now()->subDay(), CarbonImmutable::now()->addDay());
 
     expect($period['conversions'])->toBe(2)
         ->and($period['revenue_cents'])->toBeNull()
@@ -180,8 +182,28 @@ test('DailyAggregationService aggregateForAffiliate writes one row per currency'
         ->and($period['by_currency'])->toHaveKeys(['USD', 'MYR']);
 });
 
-test('DailyAggregationService aggregate processes all affiliates', function (): void {
-    $service = app(DailyAggregationService::class);
+test('daily aggregation removes stale currency rows after source conversions change', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'AGG-STALE', 'name' => 'Recalculation', 'status' => Active::class,
+        'commission_type' => 'percentage', 'commission_rate' => 1000, 'currency' => 'USD',
+    ]);
+    $date = CarbonImmutable::now();
+    AffiliateDailyStat::create([
+        'affiliate_id' => $affiliate->id, 'date' => $date->toDateString(), 'currency' => 'EUR',
+        'clicks' => 0, 'unique_clicks' => 0, 'attributions' => 0, 'conversions' => 1,
+        'revenue_cents' => 500, 'commission_cents' => 50, 'refunds' => 0, 'refund_amount_cents' => 0,
+        'conversion_rate' => 0, 'epc_cents' => 0,
+    ]);
+
+    $records = app(DailyStatsWriter::class)->aggregateForAffiliate((string) $affiliate->getKey(), $date);
+
+    expect($records)->toHaveCount(1)
+        ->and($records[0]->currency)->toBe('USD')
+        ->and(AffiliateDailyStat::query()->where('affiliate_id', $affiliate->id)->where('currency', 'EUR')->exists())->toBeFalse();
+});
+
+test('DailyStatsWriter aggregate processes all affiliates', function (): void {
+    $service = app(DailyStatsWriter::class);
 
     Affiliate::create([
         'code' => 'AGG002',
@@ -206,8 +228,8 @@ test('DailyAggregationService aggregate processes all affiliates', function (): 
     expect($count)->toBeGreaterThanOrEqual(2);
 });
 
-test('DailyAggregationService getAggregatedStats returns aggregated data', function (): void {
-    $service = app(DailyAggregationService::class);
+test('DailyStatsWriter getAggregatedStats returns aggregated data', function (): void {
+    $service = app(DailyStatsWriter::class);
 
     $affiliate = Affiliate::create([
         'code' => 'AGG004',
@@ -250,7 +272,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
         'epc_cents' => 50.0,
     ]);
 
-    $stats = $service->getAggregatedStats($affiliate, CarbonImmutable::now()->subDays(5), CarbonImmutable::now());
+    $stats = app(DailyStatsReader::class)->getAggregatedStats((string) $affiliate->getKey(), CarbonImmutable::now()->subDays(5), CarbonImmutable::now());
 
     expect($stats['clicks'])->toBe(250);
     expect($stats['conversions'])->toBe(25);
@@ -258,8 +280,8 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
     expect($stats['commission_cents'])->toBe(12500);
 });
 
-test('DailyAggregationService backfill processes date range', function (): void {
-    $service = app(DailyAggregationService::class);
+test('DailyStatsWriter backfill processes date range', function (): void {
+    $service = app(DailyStatsWriter::class);
 
     Affiliate::create([
         'code' => 'AGG005',
@@ -270,7 +292,7 @@ test('DailyAggregationService backfill processes date range', function (): void 
         'currency' => 'USD',
     ]);
 
-    $count = $service->backfill(CarbonImmutable::now()->subDays(2), CarbonImmutable::now());
+    $count = $service->aggregateRange(CarbonImmutable::now()->subDays(2), CarbonImmutable::now());
 
     // Should process 3 days worth of stats for at least 1 affiliate = 3+ records
     expect($count)->toBeGreaterThanOrEqual(3);
@@ -279,8 +301,6 @@ test('DailyAggregationService backfill processes date range', function (): void 
 // ProgramService Tests
 test('ProgramService joinProgram creates membership', function (): void {
     Event::fake([AffiliateProgramJoined::class]);
-
-    $service = app(ProgramService::class);
 
     $affiliate = Affiliate::create([
         'code' => 'JOIN001',
@@ -302,18 +322,18 @@ test('ProgramService joinProgram creates membership', function (): void {
         'cookie_lifetime_days' => 30,
     ]);
 
-    $membership = $service->joinProgram($affiliate, $program);
+    $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    expect($membership)->toBeInstanceOf(AffiliateProgramMembership::class);
-    expect($membership->status)->toBe(MembershipStatus::Approved);
+    expect($membership)->toBeInstanceOf(MembershipRecord::class);
+    expect($membership->status)->toBe(MembershipStatus::Approved->value);
 
-    Event::assertDispatched(AffiliateProgramJoined::class);
+    Event::assertDispatched(AffiliateProgramJoined::class, fn (AffiliateProgramJoined $event): bool => $event->reference->membershipId === $membership->id
+        && $event->reference->affiliate->id === $affiliate->id
+        && $event->reference->programId === $program->id);
 });
 
 test('ProgramService joinProgram with approval required sets pending status', function (): void {
     Event::fake([AffiliateProgramJoined::class]);
-
-    $service = app(ProgramService::class);
 
     $affiliate = Affiliate::create([
         'code' => 'JOIN002',
@@ -335,15 +355,14 @@ test('ProgramService joinProgram with approval required sets pending status', fu
         'cookie_lifetime_days' => 30,
     ]);
 
-    $membership = $service->joinProgram($affiliate, $program);
+    $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    expect($membership->status)->toBe(MembershipStatus::Pending);
+    expect($membership->status)->toBe(MembershipStatus::Pending->value)
+        ->and($membership->isPending())->toBeTrue();
     Event::assertNotDispatched(AffiliateProgramJoined::class);
 });
 
 test('ProgramService leaveProgram removes membership', function (): void {
-    $service = app(ProgramService::class);
-
     $affiliate = Affiliate::create([
         'code' => 'LEAVE001',
         'name' => 'Leave Test',
@@ -364,18 +383,16 @@ test('ProgramService leaveProgram removes membership', function (): void {
         'cookie_lifetime_days' => 30,
     ]);
 
-    $service->joinProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    expect($service->isMember($affiliate, $program))->toBeTrue();
+    expect((app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false))->toBeTrue();
 
-    $service->leaveProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
 
-    expect($service->isMember($affiliate, $program))->toBeFalse();
+    expect((app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false))->toBeFalse();
 });
 
 test('ProgramService getMembership returns membership details', function (): void {
-    $service = app(ProgramService::class);
-
     $affiliate = Affiliate::create([
         'code' => 'MEMBD001',
         'name' => 'Membership Details Test',
@@ -396,11 +413,11 @@ test('ProgramService getMembership returns membership details', function (): voi
         'cookie_lifetime_days' => 30,
     ]);
 
-    $service->joinProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    $membership = $service->getMembership($affiliate, $program);
+    $membership = app(ProgramMembershipReader::class)->find($affiliate->id, $program->id);
 
-    expect($membership)->toBeInstanceOf(AffiliateProgramMembership::class);
-    expect($membership->affiliate_id)->toBe($affiliate->id);
-    expect($membership->program_id)->toBe($program->id);
+    expect($membership)->toBeInstanceOf(MembershipRecord::class);
+    expect($membership->affiliateId)->toBe($affiliate->id);
+    expect($membership->programId)->toBe($program->id);
 });

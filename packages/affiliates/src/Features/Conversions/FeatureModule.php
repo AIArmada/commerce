@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Conversions;
+
+use AIArmada\Affiliates\Contracts\MerchantLedger;
+use AIArmada\Affiliates\Platform\FeatureModule as FeatureModuleContract;
+use Illuminate\Contracts\Foundation\Application;
+
+final class FeatureModule implements FeatureModuleContract
+{
+    public function register(Application $app): void
+    {
+        $app->bind(Api\BalanceReader::class, Queries\ReadBalances::class);
+        $app->bind(Api\ConversionHistoryReader::class, Queries\ReadConversionHistory::class);
+        $app->bind(Api\ConversionInspectionReader::class, Queries\InspectConversion::class);
+        $app->bind(Api\ConversionReportingReader::class, Queries\ReadConversionReporting::class);
+        $app->bind(Api\ConversionStatisticsReader::class, Queries\ReadConversionStatistics::class);
+        $app->bind(Api\LinkConversionReader::class, Queries\ReadLinkConversions::class);
+        $app->bind(Api\ConversionAdministration::class, Actions\AdministerConversion::class);
+        $app->bind(Api\ConversionSignalReader::class, Queries\ConversionSignalQuery::class);
+        $app->bind(Api\UnusedAffiliateBalanceRemoval::class, Actions\RemoveUnusedAffiliateBalances::class);
+        $app->bind(Api\ConversionAttributionMaintenance::class, Actions\DetachConversionAttribution::class);
+        $app->bind(Api\CartConversionRecording::class, Actions\RecordAffiliateConversion::class);
+        $app->bind(Api\OrderCommissionRegistration::class, EntryPoints\Listeners\RegisterOrderCommissionListener::class);
+        $app->bind(Api\AwardPosting::class, Actions\RecordAffiliateAward::class);
+        $app->bind(Api\OutcomePosting::class, Actions\RecordAffiliateOutcome::class);
+        $app->bind(Api\PerformanceBonusPosting::class, Actions\AwardPerformanceBonuses::class);
+        $app->bind(Api\PerformanceBonusQueries::class, Queries\QueryPerformanceBonuses::class);
+        $app->bind(Api\ConversionMaturity::class, Actions\ProcessConversionMaturity::class);
+        $app->bind(Api\PayoutConversionIntegrity::class, Queries\ReadPayoutConversionIntegrity::class);
+        $app->bind(Api\PayoutConversionSelection::class, Queries\SelectPayoutConversions::class);
+        $app->bind(Api\PayoutReservation::class, Actions\ReservePayoutFunds::class);
+        $app->bind(Api\PayoutConversionSettlement::class, Actions\SettlePayoutConversions::class);
+        $app->scoped(MerchantLedger::class, Actions\ExternalConversionLedger::class);
+    }
+
+    public function boot(Application $app): void {}
+}

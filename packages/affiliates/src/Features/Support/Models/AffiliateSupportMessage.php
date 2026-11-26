@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Support\Models;
+
+use AIArmada\Affiliates\Features\Support\Models\Concerns\ScopesByTicketAffiliateOwner;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $ticket_id
+ * @property string|null $affiliate_id
+ * @property string|null $staff_id
+ * @property string $message
+ * @property bool $is_staff_reply
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read AffiliateSupportTicket $ticket
+ */
+class AffiliateSupportMessage extends Model
+{
+    use HasUuids;
+    use ScopesByTicketAffiliateOwner;
+
+    protected $fillable = [
+        'ticket_id',
+        'affiliate_id',
+        'staff_id',
+        'message',
+        'is_staff_reply',
+    ];
+
+    protected $casts = [
+        'is_staff_reply' => 'boolean',
+    ];
+
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.support_messages', 'affiliate_support_messages');
+    }
+
+    /**
+     * @return BelongsTo<AffiliateSupportTicket, $this>
+     */
+    public function ticket(): BelongsTo
+    {
+        return $this->belongsTo(AffiliateSupportTicket::class, 'ticket_id');
+    }
+}

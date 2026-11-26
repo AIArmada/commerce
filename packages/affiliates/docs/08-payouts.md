@@ -19,11 +19,10 @@ Conversions → Qualified / Holding → Maturity Check → Approved / Available 
 ### Using Actions (Canonical API)
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 
 // Create payout from conversion IDs
-$payout = CreatePayout::run($conversionIds, [
+$payoutId = app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $conversionIds, [
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
     'metadata' => ['note' => 'Monthly payout for January'],
@@ -33,17 +32,17 @@ $payout = CreatePayout::run($conversionIds, [
 `CreatePayout` reads only `reference`, `status`, `currency`, `metadata`,
 `payee_type`, `payee_id`, `scheduled_at`, `paid_at`, `owner_type`, and
 `owner_id` from `$attributes`. There is no `method` or `notes` key — both are
-silently ignored. The payout method is chosen later at processing time.
+silently ignored. The payout method is chosen later at processing time. A supplied payee must identify the same affiliate whose conversions are being reserved; the canonical affiliate morph type and ID are persisted. Substituted payees are rejected before reservation and again before provider submission or completion.
 
 ### One Currency Per Payout
 
 Every payout reserves exactly one per-currency balance, so all conversions in a payout must share one `commission_currency`. Mixed-currency sets throw an `InvalidArgumentException` instead of summing silently — schedule one payout per currency. A `currency` attribute that disagrees with the conversions also throws.
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 
 // Throws: conversions span USD and MYR.
-$payout = CreatePayout::run($mixedConversionIds, [
+$payoutId = app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $mixedConversionIds, [
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
 ]);
@@ -51,14 +50,14 @@ $payout = CreatePayout::run($mixedConversionIds, [
 // Correct: group conversion IDs by commission_currency first, then run
 // one payout per group.
 foreach ($conversionIdsByCurrency as $currency => $ids) {
-    CreatePayout::run($ids, [
+    app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $ids, [
         'payee_type' => $affiliate->getMorphClass(),
         'payee_id' => $affiliate->getKey(),
     ]);
 }
 
 // Update payout status
-UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
+app(PayoutAdministration::class)->updateStatus($payoutId, 'completed', 'Processed successfully');
 ```
 
 ### Purpose Gate and Reward-Award Settlement
@@ -91,7 +90,7 @@ referral fulfillment is also disabled in `config/referrals.php`.
 Creating an `AffiliatePayout` model directly records a payout row only. It
 does not reserve an affiliate balance, claim conversions, or synchronize
 conversion status. Do not use direct model creation or manual conversion
-linking to settle commission. Use `CreatePayout` so eligibility, owner,
+linking to settle commission. Use `PayoutAdministration::create()` so eligibility, owner,
 currency, balance reservation, and atomic conversion claims are enforced.
 
 Existing manually created payout rows are not rewritten or backfilled. Before
@@ -101,14 +100,14 @@ reserved just because the row is pending.
 
 ## Payout Statuses
 
-Payout status is a Spatie state (`States\PayoutStatus`); assign state classes on write:
+Payout status is a Spatie state (`Features\Payouts\States\PayoutStatus`); assign state classes on write:
 
 ```php
-use AIArmada\Affiliates\States\CancelledPayout;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\FailedPayout;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CancelledPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 
 PendingPayout::class;     // Awaiting processing
 ProcessingPayout::class;  // Currently being processed
@@ -124,40 +123,23 @@ CancelledPayout::class;   // Cancelled by admin
 ### Configuring Methods
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 
-// PayPal
-AffiliatePayoutMethod::create([
-    'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::PayPal,
-    'is_default' => true,
-    'verified_at' => now(),
-    'details' => [
-        'email' => 'affiliate@paypal.com',
-    ],
+$methods = app(PayoutMethodAdministration::class);
+
+$paypalId = $methods->create($affiliate->id, 'paypal', [
+    'email' => 'affiliate@paypal.com',
+], default: true);
+$methods->verify($affiliate->id, $paypalId);
+
+$methods->create($affiliate->id, 'bank_transfer', [
+    'account_name' => 'John Partner',
+    'account_number' => '123456789',
+    'bank_name' => 'First National Bank',
 ]);
 
-// Bank Transfer
-AffiliatePayoutMethod::create([
-    'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::BankTransfer,
-    'is_default' => false,
-    'details' => [
-        'account_name' => 'John Partner',
-        'account_number' => '****1234',
-        'routing_number' => '****5678',
-        'bank_name' => 'First National Bank',
-    ],
-]);
-
-// Stripe Connect
-AffiliatePayoutMethod::create([
-    'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::StripeConnect,
-    'details' => [
-        'account_id' => 'acct_1234567890',
-    ],
+$methods->create($affiliate->id, 'stripe_connect', [
+    'stripe_account_id' => 'acct_1234567890',
 ]);
 ```
 
@@ -185,35 +167,32 @@ There is no `Stripe` case; use `StripeConnect`. Both
 `PayoutMethodType::Manual` and the string `manual` resolve through
 `PayoutProcessorFactory` to `ManualPayoutProcessor`.
 
+Default method changes are blocked while a provider operation is submitting, unknown or submitted. Resolve that operation first. Provider details are validated and encrypted; changing the destination clears verification.
+
 ## Payout Holds
 
 Place temporary holds on affiliate payouts:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 
-// Create hold
-$hold = AffiliatePayoutHold::create([
-    'affiliate_id' => $affiliate->id,
-    'reason' => 'Fraud investigation pending',
-    'notes' => 'Ticket FR-42',
-    'expires_at' => now()->addDays(30),
-    'placed_by' => 'admin-1',
-]);
+$holds = app(PayoutHoldAdministration::class);
+$holdId = $holds->place(
+    (string) $affiliate->getKey(),
+    'Fraud investigation pending',
+    notes: 'Ticket FR-42',
+    expiresAt: now()->addDays(30)->toImmutable(),
+    placedBy: 'admin-1',
+);
 
-// Release hold
-$hold->update([
-    'released_at' => now(),
-    'notes' => 'Investigation complete, no issues found',
-]);
+$holds->release((string) $affiliate->getKey(), $holdId, 'Investigation complete, no issues found');
 
-// Check for active holds
-$hasHolds = $affiliate->payoutHolds()
-    ->whereNull('released_at')
-    ->exists();
+$hasHolds = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey());
 ```
 
 > **warning:**
+> An active hold blocks scheduled and manual reservations, provider submission, and completion until released or expired. A disabled-affiliate override does not bypass a hold.
+>
 > A hold is a gate, not an amount. `amount_minor` and `held_at` are not
 > columns and would be silently dropped. Use `expires_at` for the hold
 > deadline and `notes` for the release note.
@@ -225,14 +204,13 @@ Conversions must mature before payout eligibility:
 ### Using Actions (Canonical API)
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
-use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 
 // Promote all qualified conversions that have reached maturity
-$results = ProcessConversionMaturity::run();
+$results = app(ConversionMaturity::class)->process();
 
 // Mature a specific conversion (returns bool)
-$matured = MatureConversion::run($conversion);
+$matured = app(ConversionMaturity::class)->mature($conversionId);
 ```
 
 Configure in `config/affiliates.php`:
@@ -248,22 +226,24 @@ Configure in `config/affiliates.php`:
 Balances are per currency: each affiliate holds one `AffiliateBalance` row per currency earned. Conversion accounting routes every approved commission into the balance matching its `commission_currency`, creating the row on first use.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+
+$reader = app(BalanceReader::class);
 
 // All balances for the affiliate, keyed by row.
-$balances = $affiliate->balances;
+$balances = $reader->forAffiliate((string) $affiliate->getKey());
 
 // The USD balance, or null when the affiliate never earned USD.
-$balance = $affiliate->balanceFor('USD');
+$balance = $reader->find((string) $affiliate->getKey(), 'USD');
 
 // Available for withdrawal
-$available = $balance->available_minor; // In cents
+$available = $balance?->availableMinor; // In cents
 
 // On hold (maturity, fraud review)
-$holding = $balance->holding_minor;
+$holding = $balance?->holdingMinor;
 
 // Total lifetime earnings
-$lifetime = $balance->lifetime_earnings_minor;
+$lifetime = $balance?->lifetimeEarningsMinor;
 
 // Combined holding + available balance
 $total = $balance->getTotalBalanceMinor();
@@ -299,76 +279,35 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ],
 ```
 
-### Processing with PayoutProcessorFactory
+### Processing payouts
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
-use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 
-$factory = app(PayoutProcessorFactory::class);
-
-// Get a processor by method type (or its string value)
-$processor = $factory->make($method->type);
-$processor = $factory->make('stripe_connect');
-
-// Process payout
-$payout->assertHomogeneousConversions();
-AssertPayoutCompletable::run($payout, false);
-$result = $processor->process($payout);
-
-if ($result->isSuccess()) {
-    $payout = UpdatePayoutStatus::run($payout, 'completed', 'Provider outcome: completed', [
-        'provider' => $result->metadata['provider'] ?? null,
-        'provider_status' => $result->getStatus(),
-    ]);
-
-    // The 4th argument lands ONLY on the payout event. Persist the
-    // provider reference on the payout itself, like the real
-    // ProcessAffiliatePayout path does.
-    $payout->forceFill([
-        'external_reference' => $result->externalReference,
-        'metadata' => array_merge($payout->metadata ?? [], [
-            'provider' => $result->metadata['provider'] ?? null,
-            'provider_status' => $result->getStatus(),
-        ]),
-    ])->save();
-}
+$result = app(PayoutAdministration::class)->process($payoutId);
 ```
 
-Prefer `ProcessAffiliatePayout` for the full claim, validation, provider, and
-reconciliation flow.
+The action claims the payout, validates eligibility, constructs an immutable
+provider request, and persists the result only while its lease is current.
+Provider drivers accept `PayoutRequest` and return `PayoutResult` or
+`PayoutStatusResult`; they do not read or write Eloquent models.
 
 `AffiliatePayout` has no `method` column — resolve the method from the
-affiliate's `payoutMethods` relation. `PayoutResult` exposes
+affiliate's default payout method through `PayoutMethodReader`. `PayoutResult` exposes
 `isSuccess()` / `isPending()` / `isUnknown()` and `getStatus()`; there is no
 `isSuccessful()` or `getTransactionId()`.
 
 > [!WARNING]
-> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `UpdatePayoutStatus::run($payout, 'completed', ...)` (or `AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout::handle($payout)` for the full claim/processor flow).
+> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `app(PayoutAdministration::class)->updateStatus($payoutId, 'completed', ...)` (or `app(PayoutAdministration::class)->process($payoutId)` for the full claim/processor flow).
 
 ## Payout Events
 
-Track payout history with events:
+Payout actions record events in the payout transaction. Read the latest owner-scoped history as immutable records:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 
-// Events are automatically recorded
-$events = $payout->events()->orderBy('created_at')->get();
-
-// Manual event recording
-AffiliatePayoutEvent::create([
-    'affiliate_payout_id' => $payout->id,
-    'from_status' => PayoutStatus::Pending,
-    'to_status' => PayoutStatus::Processing,
-    'notes' => 'Sent to provider',
-    'metadata' => [
-        'processor' => 'paypal',
-        'batch_id' => 'BATCH-123',
-    ],
-]);
+$events = app(PayoutEventHistory::class)->forPayout($payoutId, limit: 100);
 ```
 
 > **warning:**
@@ -380,15 +319,15 @@ AffiliatePayoutEvent::create([
 Reconcile payouts with external payment data:
 
 ```php
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 
-$service = app(PayoutReconciliationService::class);
+$service = app(PayoutReconciliationQueries::class);
 
 // Get payouts still needing reconciliation
-$pending = $service->getPayoutsNeedingReconciliation();
+$pending = $service->payoutIdsNeedingReconciliation();
 
 // Reconcile with a provider status string
-$changed = $service->reconcilePayout($payout, 'paid', [
+$changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::class)->reconcile($payoutId, 'paid', [
     'reference' => 'TXN-456',
     'status' => 'settled',
 ]);
@@ -396,7 +335,7 @@ $changed = $service->reconcilePayout($payout, 'paid', [
 
 Provider statuses map case-insensitively: `completed`/`paid`/`success`/`succeeded` → completed, `failed`/`declined`/`rejected`/`error` → failed, `pending`/`created` → pending, `processing`/`in_progress` → processing, `cancelled`/`canceled` → cancelled. Unknown strings return `false` without touching the payout.
 
-Reconciliation is guarded by the payout state machine: the payout row is locked, and only declared transitions run — stale or out-of-order provider events (including ones targeting terminal payouts) are ignored rather than forced, so a `Completed` payout can never be resurrected to `Failed`. On completion the linked conversions sync to `Paid`; on failure or cancellation reserved funds are released in the same transaction and conversions detach back to `Approved`. The boolean return tells you whether anything changed.
+Reconciliation is guarded by the payout state machine: the payout row and its operation are locked, and only declared transitions run — stale or out-of-order provider events (including ones targeting terminal payouts) are ignored rather than forced, so a `Completed` payout can never be resurrected to `Failed`. An operation with an active processing lease (`submitting`, `submitted`, `unknown`, or `reversing`) is left to its worker and returns `false`; the reconciliation queue applies the same exclusion. On completion the linked conversions sync to `Paid`; on failure or cancellation reserved funds are released in the same transaction and conversions detach back to `Approved`. The boolean return tells you whether anything changed.
 
 `generateReport()` folds amounts without blending currencies. Single-currency sets pass raw sums through; mixed sets convert to `affiliates.currency.default` with the rates effective at the period end, and legs without an exchange rate null the whole total — read `by_currency` for the exact per-currency amounts:
 
@@ -410,7 +349,7 @@ $report['summary']['conversion'];         // ['currency', 'as_of', 'source'] pro
 $report['by_currency']['USD']['total_minor'];
 ```
 
-Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `reconcilePayout()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
+Use `summarizePayoutIds($payoutIds, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `PayoutReconciliation::reconcile()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
 
 ## Artisan Commands
 
@@ -435,7 +374,7 @@ php artisan affiliates:payout:export PAY-REF-1234
 php artisan affiliates:payout:export 2d8ce0f4-... --path=/path/to/payout.csv
 ```
 
-Exports a single payout (reference or ID) with its linked conversions. There is
+Exports a single payout (reference or UUID) with its linked conversions. The local CSV writer publishes atomically and fails on ambiguous references or filesystem errors. There is
 no `affiliates:export-payouts` command and no `--from`/`--to` date range.
 
 ## Multi-Level Payouts
@@ -452,27 +391,29 @@ For MLM/upline structures, distribute commissions to uplines:
 ],
 ```
 
-When a conversion is recorded, the UplineService resolves the upline chain so multi-level commissions credit upline affiliates:
+When a conversion is recorded, the upline API exposes the upline chain so multi-level commissions credit upline affiliates:
 
 ```php
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 
-$uplineService = app(UplineService::class);
+$uplineService = app(UplineApi::class);
 
 // Upline chain for a conversion's affiliate
-$uplines = $uplineService->getUpline($conversion->affiliate);
+$uplines = $uplineService->ancestors((string) $conversion->affiliate_id);
 ```
 
 
 ## Atomic scheduled claims
 
-`affiliates:process-payouts` scans active affiliates in chunks. For each eligible affiliate, `ClaimScheduledPayout` locks the affiliate and balance, rechecks active holds and active payouts, locks approved unlinked conversions, creates one unique operation, reserves the balance, and links the conversions in a single transaction. Repeated or concurrent workers therefore observe the existing pending payout and cannot reserve the same funds twice. External Stripe, PayPal, or manual processing occurs after the claim transaction.
+`affiliates:process-payouts` scans active affiliates in chunks. Both the Filament and console sweeps invoke the Payouts feature. For each eligible affiliate, `ClaimScheduledPayout` locks the affiliate and balance, rechecks active holds and active payouts, locks approved unlinked conversions, creates one unique operation, reserves the balance, and links the conversions through the Conversions reservation API in a single transaction, checking the linked count and amount before committing. Repeated or concurrent workers therefore observe the existing pending payout and cannot reserve the same funds twice. External Stripe, PayPal, or manual processing occurs after the claim transaction.
 
 ## Provider idempotency and reconciliation
 
-Every provider submission is tied to the durable `AffiliatePayoutOperation`. Stripe receives the operation UUID as its `Idempotency-Key`; PayPal receives a stable 30-character identity derived from that UUID as both `sender_batch_id` and `sender_item_id`. Provider calls use bounded connect/read timeouts and retries. Retryable HTTP failures, transport exceptions, and ambiguous duplicate responses are recorded as `unknown`, while the payout remains processing for reconciliation. Raw provider or exception messages are never persisted or shown to operators. Stripe reversals reuse a deterministic reversal idempotency key and are recorded locally as `reversed`.
+Every provider submission is tied to the durable `AffiliatePayoutOperation`. Stripe receives the operation UUID as its `Idempotency-Key`; PayPal receives a stable 30-character identity derived from that UUID as both `sender_batch_id` and `sender_item_id`. Provider calls use bounded connect/read timeouts and retries. Retryable HTTP failures, transport exceptions, and ambiguous duplicate responses are recorded as `unknown`, while the payout remains processing for reconciliation. Provider references are persisted on both the payout and its operation, including completion-blocked and status-lookup outcomes. Raw provider or exception messages are never persisted or shown to operators.
 
-`PayoutReconciliationService::auditAffiliateBalance()` compares available
+Stripe reversals reuse a deterministic reversal idempotency key and are recorded locally as `reversed`. The reversal claims a short operation lease before calling Stripe outside the database transaction, then finalizes only if the lease is still current. A successful reversal releases the payout reservation through the canonical failed-payout path; an ambiguous provider outcome clears the lease and leaves the payout processing with `REVERSAL_OUTCOME_UNKNOWN`. Retry the reversal using the same operation so the original idempotency key is reused.
+
+`PayoutReconciliationQueries::auditAffiliateBalance()` compares available
 balance with approved commissions, open payout reservations, completed payout
 debits, and paid conversions attached to completed payouts. Reservation and
 debit amounts come from unreleased operations with a balance sequence, using
@@ -480,3 +421,15 @@ the operation's affiliate and currency even when the payout has another payee.
 Directly marked paid conversions are already removed from the approved total; a later direct
 paid reversal remains a negative available-balance clawback. This audit does
 not infer reservations for record-only payout rows.
+
+### Verify or select an existing payout method
+
+Call the owning feature API from authorized administrative code. Both operations require the affiliate ID and the payout method ID.
+
+```php
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
+
+$methods = app(PayoutMethodAdministration::class);
+$methods->verify($affiliateId, $methodId);
+$methods->selectDefault($affiliateId, $methodId);
+```

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Cart;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
-use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
+use AIArmada\Affiliates\Features\Identity\Api\CustomerDiscount;
+use AIArmada\Affiliates\Features\Identity\Api\CustomerDiscountReader;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
@@ -30,13 +30,14 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
     private const int PRIORITY = 120;
 
     public function __construct(
-        private AffiliateLookup $affiliateLookup,
+        private CustomerDiscountReader $discounts,
+        private AttributionLookup $attributions,
     ) {}
 
     /**
      * Get affiliate discount conditions applicable to the cart.
      *
-     * Reads affiliate from cart metadata and creates discount conditions
+     * Reads the active persisted cart attribution and creates discount conditions
      * if the affiliate has customer discount configuration.
      *
      * @return array<CartCondition>
@@ -47,21 +48,10 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return [];
         }
 
-        $affiliate = $this->affiliateLookup->findAttachedAttribution($cart)?->affiliate;
+        $attribution = $this->attributions->attached($cart->getIdentifier(), $cart->instance());
+        $discount = $attribution === null ? null : $this->discounts->find($attribution->affiliateId);
 
-        if (! $affiliate instanceof Affiliate) {
-            return [];
-        }
-
-        $affiliateData = AffiliateData::fromModel($affiliate);
-
-        $discount = $this->getAffiliateDiscountFromData($affiliateData);
-
-        if ($discount === null) {
-            return [];
-        }
-
-        return [$this->createConditionFromAffiliateData($affiliateData, $discount)];
+        return $discount === null ? [] : [$this->createCondition($discount)];
     }
 
     /**
@@ -73,19 +63,23 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return true;
         }
 
-        $affiliateCode = $condition->getAttribute('affiliate_code');
+        $expected = $this->getConditionsFor($cart)[0] ?? null;
 
-        if (! is_string($affiliateCode)) {
+        if ($expected === null) {
             return false;
         }
 
-        $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
+        $actualAttributes = $condition->getAttributes();
+        $expectedAttributes = $expected->getAttributes();
+        ksort($actualAttributes);
+        ksort($expectedAttributes);
 
-        if ($affiliate === null || ! $affiliate->isActive()) {
-            return false;
-        }
-
-        return $this->getAffiliateDiscountFromModel($affiliate) !== null;
+        return $condition->getName() === $expected->getName()
+            && $condition->getValue() === $expected->getValue()
+            && $condition->getOrder() === $expected->getOrder()
+            && $condition->getTargetDefinition()->toArray() === $expected->getTargetDefinition()->toArray()
+            && $actualAttributes === $expectedAttributes
+            && $condition->getRules() === null;
     }
 
     /**
@@ -105,143 +99,30 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
         return self::PRIORITY;
     }
 
-    /**
-     * Get discount configuration from AffiliateData.
-     *
-     * @return array{type: string, value: int}|null
-     */
-    private function getAffiliateDiscountFromData(AffiliateData $affiliateData): ?array
+    private function createCondition(CustomerDiscount $discount): CartCondition
     {
-        $metadata = $affiliateData->metadata ?? [];
-
-        // Check for customer discount in affiliate metadata
-        $customerDiscount = $metadata['customer_discount'] ?? null;
-
-        if (! is_array($customerDiscount)) {
-            return null;
-        }
-
-        $value = $customerDiscount['value'] ?? null;
-        $type = $customerDiscount['type'] ?? 'percentage';
-
-        if (! is_numeric($value) || (int) $value <= 0) {
-            return null;
-        }
-
-        return [
-            'type' => $type,
-            'value' => (int) $value,
-        ];
-    }
-
-    /**
-     * Get discount configuration from Affiliate model.
-     *
-     * @return array{type: string, value: int}|null
-     */
-    private function getAffiliateDiscountFromModel(Affiliate $affiliate): ?array
-    {
-        $metadata = $affiliate->metadata ?? [];
-
-        // Check for customer discount in affiliate metadata
-        $customerDiscount = $metadata['customer_discount'] ?? null;
-
-        if (! is_array($customerDiscount)) {
-            // Fall back to rank-based discount if available
-            $rank = $affiliate->rank;
-
-            if ($rank !== null) {
-                $rankMetadata = $rank->metadata ?? [];
-                $customerDiscount = $rankMetadata['customer_discount'] ?? null;
-            }
-        }
-
-        if (! is_array($customerDiscount)) {
-            return null;
-        }
-
-        $value = $customerDiscount['value'] ?? null;
-        $type = $customerDiscount['type'] ?? 'percentage';
-
-        if (! is_numeric($value) || (int) $value <= 0) {
-            return null;
-        }
-
-        return [
-            'type' => $type,
-            'value' => (int) $value,
-        ];
-    }
-
-    /**
-     * Create a CartCondition from AffiliateData.
-     *
-     * @param  array{type: string, value: int}  $discount
-     */
-    private function createConditionFromAffiliateData(AffiliateData $affiliateData, array $discount): CartCondition
-    {
-        $value = $this->formatDiscountValue($discount);
+        $value = $discount->type === 'percentage'
+            ? '-' . ($discount->value / 100) . '%'
+            : '-' . (string) $discount->value;
 
         return new CartCondition(
-            name: 'affiliate_discount_' . $affiliateData->code,
+            name: 'affiliate_discount_' . $discount->affiliateCode,
             type: self::CONDITION_TYPE,
-            target: $this->buildTargetDefinition(),
+            target: [
+                'scope' => ConditionScope::CART->value,
+                'phase' => ConditionPhase::CART_SUBTOTAL->value,
+                'application' => ConditionApplication::AGGREGATE->value,
+            ],
             value: $value,
-            attributes: $this->buildAttributesFromData($affiliateData, $discount),
-            order: self::PRIORITY
+            attributes: [
+                'affiliate_id' => $discount->affiliateId,
+                'affiliate_code' => $discount->affiliateCode,
+                'affiliate_name' => $discount->affiliateName,
+                'discount_type' => $discount->type,
+                'discount_value' => $discount->value,
+                'description' => sprintf('Affiliate discount from %s', $discount->affiliateName),
+            ],
+            order: self::PRIORITY,
         );
-    }
-
-    /**
-     * Format discount value for cart condition.
-     *
-     * @param  array{type: string, value: int}  $discount
-     */
-    private function formatDiscountValue(array $discount): string
-    {
-        if ($discount['type'] === 'percentage') {
-            // Value is in basis points (e.g., 500 = 5%)
-            $percentage = $discount['value'] / 100;
-
-            return '-' . $percentage . '%';
-        }
-
-        // Fixed amount in minor units (cents)
-        return '-' . (string) $discount['value'];
-    }
-
-    /**
-     * Build the target definition for the condition.
-     *
-     * @return array<string, mixed>
-     */
-    private function buildTargetDefinition(): array
-    {
-        return [
-            'scope' => ConditionScope::CART->value,
-            'phase' => ConditionPhase::CART_SUBTOTAL->value,
-            'application' => ConditionApplication::AGGREGATE->value,
-        ];
-    }
-
-    /**
-     * Build condition attributes from AffiliateData.
-     *
-     * @param  array{type: string, value: int}  $discount
-     * @return array<string, mixed>
-     */
-    private function buildAttributesFromData(AffiliateData $affiliateData, array $discount): array
-    {
-        return [
-            'affiliate_id' => $affiliateData->id,
-            'affiliate_code' => $affiliateData->code,
-            'affiliate_name' => $affiliateData->name,
-            'discount_type' => $discount['type'],
-            'discount_value' => $discount['value'],
-            'description' => sprintf(
-                'Affiliate discount from %s',
-                $affiliateData->name
-            ),
-        ];
     }
 }

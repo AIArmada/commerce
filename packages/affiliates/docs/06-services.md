@@ -12,34 +12,29 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 
 | Action | Purpose |
 |--------|---------|
-| `ApproveAffiliate::run($affiliate)` | Approve a pending affiliate |
-| `AttachAffiliateToCart::run($affiliate, $cart, $context)` | Attach an affiliate to a cart |
-| `AttachAffiliateFromCookie::run($cart, $cookieValue, $context)` | Attach from cookie tracking |
-| `CapturePublicAffiliateReferral::run($request, $affiliateCode)` | Capture public referral |
-| `CreateAffiliate::run($data, $owner)` | Create a new affiliate |
-| `CreateTrackingLink::run($affiliate, $destinationUrl, $attributes)` | Create a tracking link |
-| `GenerateAffiliateCode::run($name)` | Generate a unique code |
-| `RejectAffiliate::run($affiliate)` | Reject an affiliate |
-| `DisableAffiliate::run($affiliate)` | Disable an affiliate |
-| `PauseAffiliate::run($affiliate)` | Pause an affiliate |
-| `DetachAffiliateFromCart::run($cart)` | Detach the affiliate from a cart |
-| `ResolvePublicAffiliateReferralContext::run($request)` | Resolve referral context |
-| `TouchAffiliateAttribution::run($cookieValue, $context)` | Touch cookie attribution |
-| `TrackAffiliateVisit::run($code, $context, $cookieValue)` | Track a visit by code |
+| `app(AffiliateLifecycle::class)->approve($affiliateId)` | Approve a pending affiliate |
+| `app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, $context)` | Attach an affiliate to a cart |
+| `app(CartAttribution::class)->attachFromCookie($cart, $cookieValue, $context)` | Attach from cookie tracking |
+| `app(AffiliateAdministration::class)->create($data)` | Create a new affiliate |
+| `app(TrackingLinkAdministration::class)->create((string) $affiliate->getKey(), $destinationUrl, $attributes)` | Create a tracking link |
+| `app(AffiliateLifecycle::class)->reject($affiliateId)` | Reject an affiliate |
+| `app(AffiliateLifecycle::class)->disable($affiliateId)` | Disable an affiliate |
+| `app(AffiliateLifecycle::class)->pause($affiliateId)` | Pause an affiliate |
+| `app(CartAttribution::class)->detach($cart)` | Detach the affiliate from a cart |
+| `app(AttributionActivity::class)->touch($cookieValue, $context)` | Touch cookie attribution |
+| `app(AttributionTracking::class)->track($code, $context, $cookieValue)` | Track a visit by code |
 
-`CapturePublicAffiliateReferral::run($request, $affiliateCode)` takes two
-arguments and returns a `RedirectResponse`.
+Public referral path capture and view context are handled by the Attribution feature's middleware. Use the `affiliates.referral_path` and `affiliates.public_context` aliases.
 
 ### Conversions Actions (`Actions/Conversions/`)
 
 | Action | Purpose |
 |--------|---------|
-| `AllocateUplineCommissions::run($baseConversions, $autoApprove, $statusEnum, $attributionId)` | Distribute upline commissions |
-| `MatureConversion::run($conversion)` | Mature a single conversion |
-| `ProcessConversionMaturity::run()` | Process batch maturity |
-| `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
-| `ReverseAffiliateConversion::run($conversion, $reason)` | Reverse a conversion (negated companion) |
-| `VoidAffiliateConversion::run($conversion, $reason)` | Settle a conversion as not payable |
+| `app(ConversionMaturity::class)->mature($conversionId)` | Mature a single conversion |
+| `app(ConversionMaturity::class)->process()` | Process batch maturity |
+| `app(CartConversionRecording::class)->record($cart, $payload)` | Record a conversion |
+| `app(ConversionAdministration::class)->reverse($conversionId, $reason)` | Reverse a conversion (negated companion) |
+| `app(ConversionAdministration::class)->voidConversion($conversionId, $reason)` | Settle a conversion as not payable |
 
 `RecordAffiliateConversion` accepts `origin` and `source_ref` in the
 payload to stamp provenance (e.g. `origin: network` with the network
@@ -57,9 +52,8 @@ refuse conversions reserved by an open payout — see
 
 | Action | Purpose |
 |--------|---------|
-| `AssertPayoutCompletable::run($payout)` | Completion gate (shared by manual + reconcile paths) |
-| `CreatePayout::run($conversionIds, $attributes)` | Create a payout batch |
-| `UpdatePayoutStatus::run($payout, $status, $notes, $metadata)` | Update payout status |
+| `app(PayoutAdministration::class)->create($affiliateId, $conversionIds, $attributes)` | Create a payout batch |
+| `app(PayoutAdministration::class)->updateStatus($payoutId, $status, $notes)` | Update payout status |
 
 Manual commission payout creation rejects purpose-tagged affiliates. A payout
 containing only the fixed `reward_award` backing conversion can use the rewards
@@ -80,7 +74,7 @@ then refuses affiliates that can no longer receive payouts
 `InvalidArgumentException`) — unless the payout was created with a
 `payout_override_reason` for a disabled affiliate. The validated reason
 is stamped onto `metadata.payout_override` at creation, either via
-`CreatePayout::run($ids, ['payout_override_reason' => ...])` or via the
+`app(PayoutAdministration::class)->create($affiliateId, $ids, ['payout_override_reason' => ...])` or via the
 payout create form's override field (caller-supplied metadata can never
 forge it), and the completion time is recorded as
 `override_completed_at`. Completing a reserved payout also asserts
@@ -91,181 +85,179 @@ eligibility gate applies, but no balance is debited because no funds
 were reserved — see the reconciliation caveat in
 [Troubleshooting](99-troubleshooting.md).
 
-## CommissionCalculator
+## CommissionPricing
 
-Calculates a commission from a single affiliate and a subtotal. It has exactly
-one method.
+Calculates a commission from a single affiliate and a subtotal. It also exposes the shared commission clamp.
 
 ```php
-use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 
-$calculator = app(CommissionCalculator::class);
+$calculator = app(CommissionPricing::class);
 
-// calculate(Affiliate $affiliate, int $subtotalMinor): int
-$commissionMinor = $calculator->calculate($affiliate, 14000);
+// calculateBase(CommissionType $type, int $rate, int $subtotalMinor): int
+$commissionMinor = $calculator->calculateBase($affiliate->commission_type, $affiliate->commission_rate, 14000);
 ```
 
 A fixed-rate affiliate returns `commission_rate` verbatim; a percentage
 affiliate multiplies by `commission_rate / (affiliates.currency.percentage_scale * 100)`
 (default `100`, so `1000` = 10%). Multi-level/upline allocation, volume tiers,
-promotions, and rule context live in `Services\Commissions\CommissionRuleEngine`
+promotions, and rule context live in `Features\Commissions\Api\CommissionRuleCalculation`
 and `AllocateUplineCommissions`, not here.
 
 Per-program rules, volume tiers, and promotions are evaluated by
-`CommissionRuleEngine::calculate()` with the affiliate's program rules;
+`CommissionRuleCalculation::calculate()` with the affiliate's program rules;
 see [Programs](07-programs.md).
 
-## PayoutReconciliationService
+## PayoutReconciliationQueries
 
 Reconciles payouts with external payment providers.
 
 ```php
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 
-$service = app(PayoutReconciliationService::class);
+$service = app(PayoutReconciliationQueries::class);
 
 // Reconcile with provider — true when the payout actually changed
-$changed = $service->reconcilePayout($payout, 'paid', ['reference' => 'TXN-456']);
+$changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::class)->reconcile($payoutId, 'paid', ['reference' => 'TXN-456']);
 
-// Release funds still reserved by a failed/cancelled payout
-$service->releaseReservedFunds($payout);
+// Failed or cancelled outcomes release reserved funds atomically.
 
 // Get payouts still needing reconciliation
-$pending = $service->getPayoutsNeedingReconciliation();
+$pending = $service->payoutIdsNeedingReconciliation();
 ```
 
-## FraudDetectionService
+## FraudApi
 
 Real-time fraud detection. Rules are tagged `affiliates.fraud_rule`; both
-entrypoints return the same `['allowed' => bool, 'score' => int, 'signals' => array]`
-shape where each signal is a persisted `AffiliateFraudSignal`.
+entrypoints return an immutable `FraudAssessment` containing `allowed`, `score`, and `signals` (a list of immutable `FraudSignalRecord` DTOs).
 
 ```php
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 
-$service = app(FraudDetectionService::class);
+$service = app(FraudApi::class);
 
 // Analyze an inbound click
-$result = $service->analyzeClick($affiliate, request());
-$result['allowed'];  // false once score >= affiliates.fraud.blocking_threshold
-$result['score'];
-$result['signals'];   // AffiliateFraudSignal[]
+$result = $service->analyzeClick((string) $affiliate->getKey(), request()->ip(), request()->userAgent());
+$result->allowed;  // false once score >= affiliates.fraud.blocking_threshold
+$result->score;
+$result->signals;   // FraudSignalRecord[]
 
 // Analyze a recorded conversion
-$result = $service->analyzeConversion($conversion);
+$result = $service->analyzeConversion((string) $conversion->getKey());
 
 // 30-day rolling risk profile for an affiliate
-$profile = $service->getRiskProfile($affiliate);
+$profile = $service->getRiskProfile((string) $affiliate->getKey());
 // ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 ```
 
-Individual checks live in `Rules/` (velocity, self-referral, device
+Individual checks live in `Features/Fraud/Extensions/` (velocity, self-referral, device
 fingerprint, geo anomaly, unusual amount, rapid conversion). See
 [Fraud Detection](09-fraud-detection.md).
 
-## UplineService
+## UplineApi
 
 Manages affiliate upline hierarchies (MLM).
 
 ```php
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 
-$service = app(UplineService::class);
+$service = app(UplineApi::class);
 ```
 
 ### Methods
 
 ```php
 // Add an affiliate under a sponsor
-$service->addToUpline($affiliate, $sponsor);
+$service->add((string) $affiliate->getKey(), (string) $sponsor->getKey());
 
 // Get upline affiliates
-$uplines = $service->getUpline($affiliate);
+$uplines = $service->ancestors((string) $affiliate->getKey());
 
 // Get downline affiliates
-$downlines = $service->getDownline($affiliate);
+$downlines = $service->descendants((string) $affiliate->getKey());
 
 // Team sales for a period, measured in the affiliate currency
-$teamSales = $service->getTeamSales($affiliate, $from, $to);
+$teamSales = $service->teamSales((string) $affiliate->getKey(), $from, $to);
 ```
 
 Revenue thresholds (team sales, rank metrics, volume tiers, program eligibility) measure volume in the affiliate's currency via `RevenueVolume`: legs convert when exchange rates exist, otherwise only the affiliate-currency leg counts. The top-performer leaderboard ranks raw sums when every affiliate earns one currency, and converts to `affiliates.currency.default` when currencies mix — entries without a rate sink below ranked ones and never earn the bonus.
 
-## RankQualificationService
+## RankQualificationApi
 
 Manages affiliate rank progression.
 
 ```php
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 
-$service = app(RankQualificationService::class);
+$service = app(RankQualificationApi::class);
 ```
 
 ### Methods
 
 ```php
 // Highest rank the affiliate currently qualifies for (or null)
-$rank = $service->evaluate($affiliate);
+$rank = $service->evaluate((string) $affiliate->getKey());
 
 // Qualification metrics, measured in the affiliate currency
-$metrics = $service->calculateMetrics($affiliate);
+$metrics = $service->calculateMetrics((string) $affiliate->getKey());
 // ['personal_sales', 'team_sales', 'active_downlines', 'lifetime_value']
 
 // Re-evaluate every affiliate (returns upgrade count)
 $upgraded = $service->processAllRankUpgrades();
 
 // Manually pin or clear an affiliate's rank
-$service->assignRank($affiliate, $rank);
+$service->assignRank((string) $affiliate->getKey(), (string) $rank->getKey());
 ```
 
-## ProgramService
+## Program feature APIs
 
 Manages affiliate programs and memberships.
 
 ```php
-use AIArmada\Affiliates\Services\ProgramService;
-
-$service = app(ProgramService::class);
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
 // Join (enroll) an affiliate in a program
-$membership = $service->joinProgram($affiliate, $program);
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
 if ($membership !== null) {
-    $service->leaveProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
 }
 
 // Approve a pending membership
-$service->approveMembership($membership, approvedBy: 'admin-1');
+app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve($membership->id, approvedBy: 'admin-1');
 
 // Upgrade tier — takes the affiliate + program, not the membership
-$service->upgradeTier($affiliate, $program, $goldTier);
+app(ProgramTierManagement::class)->upgrade($affiliate->id, $program->id, $goldTier->id);
 
 // Membership lookups
-$service->isMember($affiliate, $program);            // bool
-$service->getMembership($affiliate, $program);       // ?AffiliateProgramMembership
-$service->getAffiliatePrograms($affiliate);          // Collection
-$service->getAvailablePrograms();                    // Collection — no affiliate argument
-$service->processTierUpgrades($program);             // int
+app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false;            // bool
+app(ProgramMembershipReader::class)->find($affiliate->id, $program->id);       // ?MembershipRecord
+app(ProgramMembershipReader::class)->programIds($affiliate->id);          // list of program IDs
+app(MerchantCatalog::class)->availablePrograms();                    // list of program IDs — no affiliate argument
+app(ProgramTierManagement::class)->processUpgrades($program->id);             // int
 ```
 
-## DailyAggregationService
+## DailyStatsWriter
 
 Aggregates daily statistics for reporting. Stats are stored one row per affiliate, date, and currency; money never blends across currencies.
 
 ```php
-use AIArmada\Affiliates\Services\DailyAggregationService;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use Carbon\CarbonImmutable;
 
-$service = app(DailyAggregationService::class);
+$service = app(DailyStatsWriter::class);
 
 // Aggregate every affiliate for one date (returns affiliate count).
 $service->aggregate(CarbonImmutable::today());
 
 // Aggregate one affiliate for one date (returns one stat per currency).
-$stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::today());
+$stats = $service->aggregateForAffiliate((string) $affiliate->getKey(), CarbonImmutable::today());
 
 // Backfill a date range (returns total affiliate-days processed).
-$service->backfill($startDate, $endDate);
+$service->aggregateRange($startDate, $endDate);
 
 // Summarize an affiliate over a period.
 $stats = $service->getAggregatedStats($affiliate, $startDate, $endDate);
@@ -280,15 +272,15 @@ $stats['converted'];     // true when FX math was applied
 $stats['by_currency'];   // ['USD' => ['conversions' => ..., ...], ...]
 ```
 
-## AffiliateReportService
+## ReportingApi
 
 Generates reports and analytics. Money legs group by conversion currency; totals convert to `affiliates.currency.default` only when legs span currencies, and null when an exchange rate is missing — `by_currency` always holds the exact legs.
 
 ```php
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use Carbon\CarbonImmutable;
 
-$service = app(AffiliateReportService::class);
+$service = app(ReportingApi::class);
 $from = CarbonImmutable::now()->subMonth();
 $to = CarbonImmutable::now();
 
@@ -310,14 +302,14 @@ $one = $service->affiliateSummary($affiliateId);
 // Totals carry 'currency', 'converted', and 'by_currency' like getSummary().
 ```
 
-## CohortAnalyzer
+## CohortApi
 
 Analyzes affiliate cohorts for trends.
 
 ```php
-use AIArmada\Affiliates\Services\CohortAnalyzer;
+use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 
-$analyzer = app(CohortAnalyzer::class);
+$analyzer = app(CohortApi::class);
 
 // Monthly cohort breakdown over a window
 $monthly = $analyzer->analyzeMonthly($from, $to, monthsToTrack: 12);
@@ -335,45 +327,41 @@ $comparison = $analyzer->compareCohorts($from, $to);
 $sources = $analyzer->analyzeBySource($from, $to);
 ```
 
-## PerformanceBonusService
+## PerformanceBonusQueries
 
-Calculates performance bonuses, awards them as approved bonus conversions, and exposes leaderboards based on approved revenue.
+Calculates performance bonuses and exposes owner-scoped leaderboards based on approved revenue. Posting is owned separately by `PerformanceBonusPosting`.
 
 ```php
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 
-$service = app(PerformanceBonusService::class);
+$service = app(PerformanceBonusQueries::class);
 
 // Calculate all configured bonuses for a period
 $bonuses = $service->calculateBonuses($from, $to);
 
 // Award the calculated bonuses as approved conversions
-$awarded = $service->awardBonuses($bonuses);
+$awarded = app(\AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting::class)->award($bonuses);
 
 // Get the owner-scoped approved-revenue leaderboard
 $leaderboard = $service->getLeaderboard($from, $to, 10);
 ```
 
-The service uses approved conversions and treats `value_minor` as the revenue field.
+The query returns native arrays and uses approved conversions and treats `value_minor` as the revenue field.
 
-## AttributionModel
+## AttributionDistribution
 
 Implements attribution logic (first-touch, last-touch, linear).
 
 ```php
-use AIArmada\Affiliates\Services\AttributionModel;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
 
-$model = app(AttributionModel::class);
+$model = app(AttributionDistribution::class);
 
-// Registered strategies (last_touch, first_touch, linear)
-$model->strategies();
+// Select first_touch, last_touch, linear, or the configured default.
+$linear = $model->distribute($touches, 'linear');
 
-// Resolve a strategy, or the configured default
-$strategy = $model->resolve();          // e.g. resolve('first_touch')
-$strategy = $model->resolve('linear');
-
-// Distribute credit across a touchpoint collection
-$distribution = $model->distribute($touchpoints);
+// Distribute credit across immutable AttributionTouch records
+$distribution = $model->distribute($touches);
 ```
 
 ## Merchant Seam Contracts

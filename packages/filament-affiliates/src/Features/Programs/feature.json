@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Programs",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Programs\\Extensions\\AdminPanelContribution"
+    ],
+    "identity.relations": [
+      "AIArmada\\FilamentAffiliates\\Features\\Programs\\Extensions\\AffiliateRelations"
+    ]
+  }
+}

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Contracts;
 
-use Illuminate\Support\Collection;
+use AIArmada\Affiliates\Data\AttributionTouch;
 
 interface AttributionStrategy
 {
@@ -12,5 +12,9 @@ interface AttributionStrategy
 
     public function label(): string;
 
-    public function distribute(Collection $touches): array;
+    /**
+     * @param  list<AttributionTouch>  $touches
+     * @return array<string, float>
+     */
+    public function distribute(array $touches): array;
 }

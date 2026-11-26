@@ -2,46 +2,51 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\DisableAffiliate;
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
+use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Data\PayoutStatusResult;
+use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\ProcessAffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\ProcessingPayout;
-use AIArmada\Affiliates\States\ReversedConversion;
 use Illuminate\Support\Facades\DB;
 
 class ProcessAffiliatePayoutFakeSuccessProcessor implements PayoutProcessorInterface
 {
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
-        return PayoutResult::success('PROV-REF-' . $payout->getKey());
+        return PayoutResult::success('PROV-REF-' . $payout->id);
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        return 'completed';
+        return new PayoutStatusResult('completed');
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return null;
     }
@@ -97,36 +102,36 @@ function createProcessPayout(Affiliate $affiliate, array $attributes = []): Affi
         'occurred_at' => now(),
     ]);
 
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
 
-    return CreatePayout::run([$conversion->id], $attributes);
+    return app(CreatePayout::class)->handle([$conversion->id], $attributes);
 }
 
 function useFakeSuccessProcessor(): void
 {
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeSuccessProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 }
 
 final class ProcessAffiliatePayoutFakeThrowingProcessor implements PayoutProcessorInterface
 {
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
         throw new InvalidArgumentException('Processor exploded.');
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        return 'failed';
+        return new PayoutStatusResult('failed');
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return null;
     }
@@ -151,7 +156,7 @@ test('a gate-blocked completion parks as unknown with the gate reason', function
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);
 
-    DisableAffiliate::run($affiliate->fresh());
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
     useFakeSuccessProcessor();
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
     $processor->shouldNotReceive('process');
@@ -161,10 +166,10 @@ test('a gate-blocked completion parks as unknown with the gate reason', function
 
     expect($result->isUnknown())->toBeTrue();
 
-    $operation = $payout->operation()->first()->fresh();
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh();
     // Same-second events tie on created_at: select the blocked outcome
     // by its notes prefix instead of relying on latest() order.
-    $blockedEvent = $payout->events()->where('notes', 'like', 'Completion blocked:%')->first();
+    $blockedEvent = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->first();
 
     expect($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
         ->and($operation->status)->toBe('unknown')
@@ -182,8 +187,8 @@ test('valid provider processing settles only the reserved conversions', function
 
     expect($result->isSuccess())->toBeTrue()
         ->and($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
-        ->and($payout->conversions()->firstOrFail()->status->equals(PaidConversion::class))->toBeTrue()
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+        ->and(AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payout->id)->firstOrFail()->status->equals(PaidConversion::class))->toBeTrue()
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
 });
 
 test('corrupt conversion links never reach a provider submission', function (bool $foreignAffiliate, bool $retry): void {
@@ -200,20 +205,20 @@ test('corrupt conversion links never reach a provider submission', function (boo
         'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
     DB::table($conversion->getTable())->where('id', $conversion->id)
         ->update(['affiliate_payout_id' => $payout->id]);
 
     if ($retry) {
         $payout->forceFill(['status' => ProcessingPayout::class])->save();
-        $payout->operation()->firstOrFail()->update(['status' => 'unknown', 'lease_expires_at' => null]);
+        AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->update(['status' => 'unknown', 'lease_expires_at' => null]);
     }
 
     useFakeSuccessProcessor();
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
     $processor->shouldNotReceive('process');
     if ($retry) {
-        $processor->shouldReceive('getStatus')->once()->andReturn('not_found');
+        $processor->shouldReceive('getStatus')->once()->andReturn(new PayoutStatusResult('not_found'));
     }
     app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
 
@@ -221,7 +226,7 @@ test('corrupt conversion links never reach a provider submission', function (boo
 
     expect($result->isUnknown())->toBeTrue()
         ->and($result->failureCode)->toBe('PAYOUT_COMPLETION_BLOCKED')
-        ->and($payout->operation()->firstOrFail()->funds_released_at)->toBeNull()
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->funds_released_at)->toBeNull()
         ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
 })->with([true, false])->with([false, true]);
 
@@ -235,18 +240,18 @@ test('provider processing cannot complete a payout after its affiliate becomes D
     app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
 
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
-    $blockedEvent = $payout->events()->where('notes', 'like', 'Completion blocked:%')->first();
+    $blockedEvent = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->first();
 
     expect($result->isUnknown())->toBeTrue()
         ->and($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
-        ->and($payout->operation()->firstOrFail()->last_error_code)->toBe('PAYOUT_COMPLETION_BLOCKED')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->last_error_code)->toBe('PAYOUT_COMPLETION_BLOCKED')
         ->and($blockedEvent?->notes)->toContain('non-commercial affiliate payout cannot be completed');
 });
 
 test('provider submission refuses drift from the reserved conversions', function (string $drift): void {
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);
-    $conversion = $payout->conversions()->firstOrFail();
+    $conversion = AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payout->id)->firstOrFail();
 
     match ($drift) {
         'payout_amount' => $payout->update(['total_minor' => 10000]),
@@ -269,12 +274,12 @@ test('provider submission refuses drift from the reserved conversions', function
 
 test('a valid disabled-affiliate override is stamped only after provider completion', function (): void {
     $affiliate = createProcessPayoutAffiliate();
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
     $payout = createProcessPayout($affiliate->fresh(), ['payout_override_reason' => 'Earned before closure']);
     useFakeSuccessProcessor();
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
-    $processor->shouldReceive('process')->once()->andReturnUsing(function (AffiliatePayout $claimed): PayoutResult {
-        expect($claimed->fresh()->metadata['payout_override']['override_completed_at'] ?? null)->toBeNull();
+    $processor->shouldReceive('process')->once()->andReturnUsing(function (PayoutRequest $claimed): PayoutResult {
+        expect(AffiliatePayout::query()->findOrFail($claimed->id)->metadata['payout_override']['override_completed_at'] ?? null)->toBeNull();
 
         return PayoutResult::success('OVERRIDE-REF');
     });
@@ -292,13 +297,13 @@ test('a non-gate processor exception keeps the generic processing code', functio
 
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeThrowingProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
     expect($result->isUnknown())->toBeTrue()
-        ->and($payout->operation()->first()->fresh()->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION')
-        ->and($payout->events()->where('notes', 'like', 'Completion blocked:%')->exists())->toBeFalse();
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION')
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->exists())->toBeFalse();
 });
 
 test('a late provider response cannot overwrite a newer payout lease', function (): void {
@@ -307,12 +312,12 @@ test('a late provider response cannot overwrite a newer payout lease', function 
 
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeSuccessProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
-    $processor->shouldReceive('process')->once()->andReturnUsing(function (AffiliatePayout $claimedPayout): PayoutResult {
+    $processor->shouldReceive('process')->once()->andReturnUsing(function (PayoutRequest $claimedPayout): PayoutResult {
         AffiliatePayoutOperation::query()
-            ->where('affiliate_payout_id', $claimedPayout->getKey())
+            ->where('affiliate_payout_id', $claimedPayout->id)
             ->update(['lease_expires_at' => now()->addHour()]);
 
         return PayoutResult::unknown('LATE_PROVIDER_RESPONSE');
@@ -320,7 +325,7 @@ test('a late provider response cannot overwrite a newer payout lease', function 
     app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
 
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
-    $operation = $payout->operation()->firstOrFail()->fresh();
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh();
 
     expect($result->isUnknown())->toBeTrue()
         ->and($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
@@ -335,15 +340,15 @@ test('a late provider response cannot revert a completed payout', function (): v
 
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeSuccessProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
-    $processor->shouldReceive('process')->once()->andReturnUsing(function (AffiliatePayout $claimedPayout): PayoutResult {
+    $processor->shouldReceive('process')->once()->andReturnUsing(function (PayoutRequest $claimedPayout): PayoutResult {
         $operation = AffiliatePayoutOperation::query()
-            ->where('affiliate_payout_id', $claimedPayout->getKey())
+            ->where('affiliate_payout_id', $claimedPayout->id)
             ->firstOrFail();
         $operation->forceFill(['status' => 'completed', 'lease_expires_at' => null])->save();
-        $claimedPayout->forceFill(['status' => CompletedPayout::class])->save();
+        AffiliatePayout::query()->findOrFail($claimedPayout->id)->forceFill(['status' => CompletedPayout::class])->save();
 
         return PayoutResult::unknown('LATE_PROVIDER_RESPONSE');
     });
@@ -352,15 +357,15 @@ test('a late provider response cannot revert a completed payout', function (): v
     app(ProcessAffiliatePayout::class)->handle($payout);
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
-        ->and($payout->operation()->firstOrFail()->fresh()->status)->toBe('completed');
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->status)->toBe('completed');
 });
 
 test('missing payout method does not release funds after provider submission', function (): void {
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);
-    $operation = $payout->operation()->firstOrFail();
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id);
 
-    $affiliate->payoutMethods()->delete();
+    AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->delete();
     $payout->forceFill(['status' => ProcessingPayout::class])->save();
     $operation->forceFill([
         'status' => 'submitted',
@@ -376,4 +381,54 @@ test('missing payout method does not release funds after provider submission', f
         ->and($operation->status)->toBe('unknown')
         ->and($operation->last_error_code)->toBe('NO_DEFAULT_PAYOUT_METHOD')
         ->and($operation->funds_released_at)->toBeNull();
+});
+
+test('status lookup failures persist the canonical provider reference', function (): void {
+    $affiliate = createProcessPayoutAffiliate();
+    $payout = createProcessPayout($affiliate);
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id);
+    $payout->forceFill(['status' => ProcessingPayout::class])->save();
+    $operation->forceFill([
+        'status' => 'submitted',
+        'provider_reference' => null,
+        'lease_expires_at' => null,
+    ])->save();
+
+    useFakeSuccessProcessor();
+    $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
+    $processor->shouldReceive('getStatus')->once()->andReturn(new PayoutStatusResult('failed', 'provider-failed-ref'));
+    $processor->shouldNotReceive('process');
+    app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
+
+    $result = app(ProcessAffiliatePayout::class)->handle($payout);
+
+    expect($result->isSuccess())->toBeFalse()
+        ->and($payout->fresh()->external_reference)->toBe('provider-failed-ref')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->provider_reference)->toBe('provider-failed-ref');
+});
+
+test('completion-blocked reconciliation keeps the known provider reference', function (): void {
+    $affiliate = createProcessPayoutAffiliate();
+    $payout = createProcessPayout($affiliate);
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id);
+    $payout->forceFill(['status' => ProcessingPayout::class, 'external_reference' => null])->save();
+    $operation->forceFill([
+        'status' => 'submitted',
+        'provider_reference' => 'provider-ref-known',
+        'lease_expires_at' => null,
+    ])->save();
+
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
+    useFakeSuccessProcessor();
+    $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
+    $processor->shouldReceive('getStatus')->once()->andReturn(new PayoutStatusResult('not_found'));
+    $processor->shouldNotReceive('process');
+    app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
+
+    $result = app(ProcessAffiliatePayout::class)->handle($payout);
+
+    expect($result->isUnknown())->toBeTrue()
+        ->and($result->failureCode)->toBe('PAYOUT_COMPLETION_BLOCKED')
+        ->and($payout->fresh()->external_reference)->toBe('provider-ref-known')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->provider_reference)->toBe('provider-ref-known');
 });

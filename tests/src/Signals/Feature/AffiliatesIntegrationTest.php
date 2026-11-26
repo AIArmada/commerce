@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Attribution\FeatureModule;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -25,6 +25,10 @@ use Illuminate\Support\Facades\Schema;
 uses(SignalsTestCase::class);
 
 beforeEach(function (): void {
+    (new FeatureModule)->register(app());
+    (new AIArmada\Affiliates\Features\Identity\FeatureModule)->register(app());
+    (new AIArmada\Affiliates\Features\Conversions\FeatureModule)->register(app());
+
     Schema::dropIfExists('affiliate_conversions');
     Schema::dropIfExists('affiliate_attributions');
     Schema::dropIfExists('affiliates');
@@ -88,6 +92,10 @@ beforeEach(function (): void {
         $table->nullableUuidMorphs('owner');
         $table->json('metadata')->nullable();
         $table->timestamp('occurred_at')->nullable();
+        $table->timestamp('approved_at')->nullable();
+        $table->timestamp('rejected_at')->nullable();
+        $table->timestamp('reversed_at')->nullable();
+        $table->timestamp('paid_at')->nullable();
         $table->timestamps();
     });
 });
@@ -158,8 +166,8 @@ it('records an affiliate attributed signal for the matching owner property', fun
     ])->save();
 
     Event::dispatch(new AffiliateAttributed(
-        AffiliateData::fromModel($affiliate),
-        AffiliateAttributionData::fromModel($attribution),
+        $affiliate->toData(),
+        $attribution->toData(),
     ));
 
     $event = SignalEvent::query()->withoutOwnerScope()->sole();
@@ -271,7 +279,7 @@ it('records an affiliate conversion signal for the matching owner property', fun
     ])->save();
 
     Event::dispatch(new AffiliateConversionRecorded(
-        AffiliateConversionData::fromModel($conversion),
+        $conversion->toData(),
     ));
 
     $event = SignalEvent::query()->withoutOwnerScope()->sole();
@@ -372,7 +380,7 @@ it('ignores forged affiliate events that target another owner model id', functio
     ])->save();
 
     Event::dispatch(new AffiliateAttributed(
-        AffiliateData::fromModel($affiliateB),
+        $affiliateB->toData(),
         new AffiliateAttributionData(
             id: $targetAttribution->id,
             affiliateId: $affiliateB->id,
@@ -408,6 +416,23 @@ it('ignores forged affiliate events that target another owner model id', functio
             subjectInstance: 'share',
             ownerType: $ownerB->getMorphClass(),
             ownerId: (string) $ownerB->getKey(),
+        ),
+    ));
+
+    Event::dispatch(new AffiliateAttributed(
+        $affiliateA->toData(),
+        new AffiliateAttributionData(
+            id: $targetAttribution->id,
+            affiliateId: $affiliateA->id,
+            affiliateCode: $affiliateA->code,
+        ),
+    ));
+
+    Event::dispatch(new AffiliateConversionRecorded(
+        new AffiliateConversionData(
+            id: $mismatchedConversion->id,
+            affiliateId: $affiliateA->id,
+            affiliateCode: $affiliateA->code,
         ),
     ));
 
@@ -464,13 +489,13 @@ it('deduplicates affiliate conversion retries without collapsing distinct conver
     };
 
     $first = $makeConversion('RETRY-REF-1');
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($first)));
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($first)));
+    Event::dispatch(new AffiliateConversionRecorded($first->toData()));
+    Event::dispatch(new AffiliateConversionRecorded($first->toData()));
 
     expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'affiliate.conversion.recorded')->count())->toBe(1);
 
     $second = $makeConversion('RETRY-REF-2');
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($second)));
+    Event::dispatch(new AffiliateConversionRecorded($second->toData()));
 
     expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'affiliate.conversion.recorded')->count())->toBe(2);
 });

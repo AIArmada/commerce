@@ -5,11 +5,12 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Listeners\AttachAffiliateFromVoucher;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\AttachAffiliateFromVoucher;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
+use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
@@ -127,4 +128,33 @@ test('listener preserves affiliate commission and program overrides from voucher
             ['level' => 1, 'share' => 0.05],
             ['level' => 2, 'share' => 0.025],
         ]);
+});
+
+test('voucher code matching ignores disabled affiliates', function (): void {
+    $this->affiliate->update([
+        'status' => Disabled::class,
+        'default_voucher_code' => 'PROMO-1',
+    ]);
+
+    dispatchVoucherApplied([]);
+
+    expect(AffiliateAttribution::count())->toBe(0);
+});
+
+test('an explicitly linked disabled affiliate cannot transfer voucher attribution to a different affiliate', function (): void {
+    $this->affiliate->update(['status' => Disabled::class]);
+
+    Affiliate::create([
+        'code' => 'VOUCHER-OTHER',
+        'name' => 'Other Partner',
+        'status' => AffiliateActive::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 150,
+        'currency' => 'USD',
+        'default_voucher_code' => 'PROMO-1',
+    ]);
+
+    dispatchVoucherApplied([], $this->affiliate->id);
+
+    expect(AffiliateAttribution::count())->toBe(0);
 });

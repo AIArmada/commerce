@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Events;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-final class AffiliateProgramLeft
+final readonly class AffiliateProgramLeft
 {
     use Dispatchable;
-    use SerializesModels;
 
     public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly AffiliateProgram $program
+        public string $affiliateId,
+        public string $programId,
+        public string $membershipId
     ) {}
 }

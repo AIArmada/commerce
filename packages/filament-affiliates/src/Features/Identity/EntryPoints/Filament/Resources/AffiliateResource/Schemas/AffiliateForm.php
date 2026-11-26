@@ -1,0 +1,294 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas;
+
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\CommerceSupport\Support\PublicHandle;
+use BackedEnum;
+use Closure;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Auth\User;
+
+final class AffiliateForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        $currency = (string) config('affiliates.currency.default', 'MYR');
+
+        return $schema->components([
+            Section::make('Affiliate Details')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextInput::make('code')
+                            ->label('Tracking Code')
+                            ->required()
+                            ->alphaDash()
+                            ->maxLength(64)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record))
+                            ->rule(fn (mixed $component): Closure => function (string $attribute, string $value, Closure $fail) use ($component): void {
+                                $record = method_exists($component, 'getRecord') ? $component->getRecord() : null;
+                                $ignore = $record instanceof Affiliate ? (string) $record->getKey() : null;
+
+                                if (! app(AffiliateDirectory::class)->codeAvailable($value, $ignore)) {
+                                    $fail('The code is invalid or has already been taken.');
+                                }
+                            }),
+
+                        TextInput::make('handle')
+                            ->label('Public Handle')
+                            ->placeholder('Assigned automatically if left empty')
+                            ->rules(['nullable', ...array_slice(PublicHandle::rules(), 1)])
+                            ->required(fn (string $operation): bool => $operation === 'edit')
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record)
+                                || ! config('affiliates.handles.allow_custom', true))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)
+                                && config('affiliates.handles.allow_custom', true)),
+
+                        TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                            ->maxLength(120)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        Select::make('status')
+                            ->label('Status')
+                            ->required()
+                            ->options(AffiliateStatus::options())
+                            ->default(AffiliateStatus::normalize(Draft::class)),
+
+                        Select::make('parent_affiliate_id')
+                            ->label('Parent Affiliate')
+                            ->relationship('parent', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                            ->searchable()
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        Select::make('rank_id')
+                            ->label('Rank')
+                            ->getSearchResultsUsing(fn (string $search): array => app(RankDirectory::class)->options($search))
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => app(RankDirectory::class)->label(is_string($value) ? $value : null))
+                            ->searchable()
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+                    ]),
+
+                    Textarea::make('description')
+                        ->label('Description')
+                        ->rows(3),
+
+                    Grid::make(3)->schema([
+                        TextInput::make('default_voucher_code')
+                            ->label('Default Voucher Code')
+                            ->maxLength(64)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        TextInput::make('tracking_domain')
+                            ->label('Tracking Domain')
+                            ->placeholder('track.example.com')
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        TextInput::make('payout_terms')
+                            ->label('Payout Terms')
+                            ->placeholder('Net-30')
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+                    ]),
+                ]),
+
+            Section::make('Commission Policy')
+                ->schema([
+                    Grid::make(3)->schema([
+                        Select::make('apply_template')
+                            ->label('Commission Template')
+                            ->helperText('Select a template to auto-fill commission type and rate.')
+                            ->getSearchResultsUsing(fn (string $search): array => app(CommissionTemplateReader::class)->search($search))
+                            ->getOptionLabelUsing(fn ($value): ?string => app(CommissionTemplateReader::class)->find((string) $value)?->name)
+                            ->searchable()
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->afterStateUpdated(function (?string $state, Get $get, Set $set) use ($currency): void {
+                                if ($state === null || $state === '') {
+                                    return;
+                                }
+
+                                $template = app(CommissionTemplateReader::class)->find($state);
+
+                                if ($template === null || $template->commissionType === null || $template->rate === null) {
+                                    return;
+                                }
+
+                                $set('commission_type', $template->commissionType);
+
+                                $set('commission_rate', CommissionRateInput::format($template->rate, $template->commissionType, (string) ($get('currency') ?? $currency)));
+                            })
+                            ->dehydrated(false),
+
+                        Select::make('commission_type')
+                            ->label('Type')
+                            ->required()
+                            ->options(self::enumOptions(CommissionType::class))
+                            ->default(CommissionType::Percentage->value)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        TextInput::make('commission_rate')
+                            ->label('Rate')
+                            ->numeric()
+                            ->required()
+                            ->suffix(fn (Get $get): string => $get('commission_type') === CommissionType::Percentage->value ? '%' : $get('currency') ?? $currency)
+                            ->formatStateUsing(fn (?int $state, Get $get): ?string => CommissionRateInput::format($state, (string) $get('commission_type'), (string) ($get('currency') ?? $currency)))
+                            ->dehydrateStateUsing(fn (?string $state, Get $get): ?int => CommissionRateInput::parse($state, (string) $get('commission_type'), (string) ($get('currency') ?? $currency)))
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        Select::make('currency')
+                            ->label('Currency')
+                            ->options([
+                                'USD' => 'USD',
+                                'MYR' => 'MYR',
+                                'SGD' => 'SGD',
+                                'IDR' => 'IDR',
+                            ])
+                            ->default($currency)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+
+                        TextInput::make('network_depth')
+                            ->label('Network Depth')
+                            ->numeric()
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->helperText('Position in the upline tree. Computed automatically on placement.')
+                            ->suffix('levels'),
+                    ]),
+                ])
+                ->collapsible(),
+
+            Section::make('Communication')
+                ->schema([
+                    Grid::make(2)->schema([
+                        TextInput::make('contact_email')
+                            ->label('Contact Email')
+                            ->email()
+                            ->maxLength(120),
+
+                        TextInput::make('website_url')
+                            ->label('Website')
+                            ->url()
+                            ->maxLength(255),
+                    ]),
+                ])
+                ->collapsed(),
+
+            Section::make('Portal Access')
+                ->description('Link a user to this affiliate for self-service portal access.')
+                ->schema([
+                    Hidden::make('owner_type')
+                        ->dehydrated(false),
+                    Hidden::make('owner_id')
+                        ->dehydrated(false),
+                    Grid::make(1)->schema([
+                        Select::make('linked_user')
+                            ->label('Linked User')
+                            ->searchable()
+                            ->placeholder('No linked user')
+                            ->helperText('Leave empty for admin-managed affiliates without portal access.')
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $userModel = config('auth.providers.users.model', User::class);
+                                $query = $userModel::query();
+                                $pattern = LikeSearch::contains($search);
+
+                                LikeSearch::whereLike($query, 'email', $pattern);
+                                LikeSearch::orWhereLike($query, 'name', $pattern);
+
+                                return $query
+                                    ->limit(50)
+                                    ->pluck('email', 'id')
+                                    ->toArray();
+                            })
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                $userModel = config('auth.providers.users.model', User::class);
+
+                                return $userModel::find($value)?->email;
+                            })
+                            ->afterStateHydrated(function (Select $component): void {
+                                $record = $component->getRecord();
+                                $userModelClass = (string) config('auth.providers.users.model', User::class);
+                                $userMorphClass = (new $userModelClass)->getMorphClass();
+
+                                if ($record instanceof Affiliate && $record->owner_type === $userMorphClass && $record->owner_id) {
+                                    $component->state($record->owner_id);
+                                }
+                            })
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                if ($state) {
+                                    $userModelClass = (string) config('auth.providers.users.model', User::class);
+                                    $set('owner_type', (new $userModelClass)->getMorphClass());
+                                    $set('owner_id', $state);
+                                } else {
+                                    $set('owner_type', null);
+                                    $set('owner_id', null);
+                                }
+                            })
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+                    ]),
+                ])
+                ->collapsible(),
+
+            Section::make('Metadata')
+                ->schema([
+                    KeyValue::make('metadata')
+                        ->label('Metadata')
+                        ->keyLabel('Key')
+                        ->valueLabel('Value')
+                        ->addActionLabel('Add entry')
+                        ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                        ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
+                ])
+                ->collapsed(),
+        ]);
+    }
+
+    /**
+     * @param  class-string<BackedEnum>  $enum
+     * @return array<string, string>
+     */
+    private static function enumOptions(string $enum): array
+    {
+        /** @var array<int, BackedEnum> $cases */
+        $cases = $enum::cases();
+
+        return collect($cases)
+            ->mapWithKeys(static fn ($case): array => [$case->value => method_exists($case, 'label') ? $case->label() : ucfirst($case->value)])
+            ->toArray();
+    }
+
+    private static function hasNonCommercialPurpose(?Affiliate $affiliate): bool
+    {
+        return $affiliate !== null && ! $affiliate->isCommercialPurpose();
+    }
+}

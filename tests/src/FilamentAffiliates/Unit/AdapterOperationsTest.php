@@ -5,28 +5,28 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Services\ProgramCatalogService;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\FilamentAffiliates\Actions\RunScheduledPayoutSweep;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliateBonusSettings;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliatePayoutSettings;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAffiliates\Pages\PerformanceBonusesPage;
-use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\ViewAffiliateProgram;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
-use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateBonusSettings;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\PerformanceBonusesPage;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\ManageAffiliatePayoutSettings;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateCreativeResource;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\Pages\ViewAffiliateProgram;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
+use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
@@ -102,7 +102,7 @@ it('program view page exposes a catalog preview action', function (): void {
 
 it('catalog preview renders the program snapshot subjects', function (): void {
     $program = adapterOperationsProgram();
-    $snapshot = app(ProgramCatalogService::class)->snapshot($program);
+    $snapshot = app(MerchantCatalog::class)->previewById((string) $program->getKey())->payload;
 
     $html = view('filament-affiliates::catalog-preview', ['snapshot' => $snapshot])->render();
 
@@ -194,7 +194,7 @@ function adapterSweepAffiliate(): Affiliate
 it('sweep dry run counts eligible balances without writing', function (): void {
     adapterSweepAffiliate();
 
-    $summary = app(RunScheduledPayoutSweep::class)->handle(dryRun: true);
+    $summary = app(ScheduledPayoutSweep::class)->sweep(dryRun: true);
 
     expect($summary['processed'])->toBe(1)
         ->and($summary['errors'])->toBe(0)
@@ -204,7 +204,7 @@ it('sweep dry run counts eligible balances without writing', function (): void {
 it('sweep run claims payouts for eligible balances', function (): void {
     $affiliate = adapterSweepAffiliate();
 
-    $summary = app(RunScheduledPayoutSweep::class)->handle(dryRun: false);
+    $summary = app(ScheduledPayoutSweep::class)->sweep(dryRun: false);
 
     expect($summary['processed'])->toBe(1)
         ->and($summary['errors'])->toBe(0)
@@ -215,8 +215,8 @@ it('sweep run claims payouts for eligible balances', function (): void {
 it('sweep respects the affiliate filter and minimum floor', function (): void {
     $affiliate = adapterSweepAffiliate();
 
-    $filtered = app(RunScheduledPayoutSweep::class)->handle(dryRun: true, affiliateId: (string) $affiliate->id);
-    $floored = app(RunScheduledPayoutSweep::class)->handle(dryRun: true, minimum: 20000);
+    $filtered = app(ScheduledPayoutSweep::class)->sweep(dryRun: true, affiliateId: (string) $affiliate->id);
+    $floored = app(ScheduledPayoutSweep::class)->sweep(dryRun: true, minimum: 20000);
 
     expect($filtered['processed'])->toBe(1)
         ->and($floored['processed'])->toBe(0)
@@ -279,8 +279,8 @@ it('creative forms use media uploads and admin asset links resolve attached medi
         Schema::make(new AdapterOperationsHostComponent)->model($creative)->statePath('data')
     );
     $upload = $schema->getComponent('asset');
-    expect($upload)->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
-        ->and($upload->getCollection())->toBe('creative_asset')
+    expect($upload)->toBeInstanceOf(FileUpload::class)
+        ->and($upload->shouldStoreFiles())->toBeFalse()
         ->and($upload->getMaxSize())->toBe(9766)
         ->and($schema->getComponent('asset_url'))->toBeNull();
 
@@ -288,7 +288,8 @@ it('creative forms use media uploads and admin asset links resolve attached medi
     $programSchema = $manager->form(
         Schema::make(new AdapterOperationsHostComponent)->model($creative)->statePath('data')
     );
-    expect($programSchema->getComponent('asset'))->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+    expect($programSchema->getComponent('asset'))->toBeInstanceOf(FileUpload::class)
+        ->and($programSchema->getComponent('asset')->shouldStoreFiles())->toBeFalse()
         ->and($programSchema->getComponent('asset_url'))->toBeNull();
 
     $host = new AdapterOperationsTableHost;

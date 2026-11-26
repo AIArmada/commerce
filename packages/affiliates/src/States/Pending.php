@@ -8,17 +8,17 @@ final class Pending extends AffiliateStatus
 {
     public static string $name = 'pending';
 
-    public function label(): string
+    public static function label(): string
     {
         return 'Pending Approval';
     }
 
-    public function description(): string
+    public static function description(): string
     {
         return 'Affiliate is awaiting approval';
     }
 
-    public function color(): string
+    public static function color(): string
     {
         return 'warning';
     }

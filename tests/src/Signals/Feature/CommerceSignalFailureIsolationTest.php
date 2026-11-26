@@ -5,10 +5,11 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Attribution\FeatureModule;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -35,6 +36,10 @@ use Illuminate\Support\Facades\Schema;
 uses(SignalsTestCase::class);
 
 beforeEach(function (): void {
+    (new FeatureModule)->register(app());
+    (new AIArmada\Affiliates\Features\Identity\FeatureModule)->register(app());
+    (new AIArmada\Affiliates\Features\Conversions\FeatureModule)->register(app());
+
     Schema::dropIfExists('affiliate_conversions');
     Schema::dropIfExists('affiliate_attributions');
     Schema::dropIfExists('affiliates');
@@ -98,6 +103,10 @@ beforeEach(function (): void {
         $table->nullableUuidMorphs('owner');
         $table->json('metadata')->nullable();
         $table->timestamp('occurred_at')->nullable();
+        $table->timestamp('approved_at')->nullable();
+        $table->timestamp('rejected_at')->nullable();
+        $table->timestamp('reversed_at')->nullable();
+        $table->timestamp('paid_at')->nullable();
         $table->timestamps();
     });
 
@@ -212,7 +221,7 @@ it('records a later valid event after a failure', function (): void {
     ])->save();
 
     Event::dispatch(new AffiliateConversionRecorded(malformedConversionData()));
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+    Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
 
     expect(SignalEvent::query()->withoutOwnerScope()->sole()->event_name)->toBe('affiliate.conversion.recorded')
         ->and(reportedFailures())->toHaveCount(1);
@@ -268,7 +277,7 @@ it('rolls back only the recording attempt inside an outer transaction', function
 
     DB::transaction(function () use ($conversion): void {
         Event::dispatch(new AffiliateConversionRecorded(malformedConversionData()));
-        Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+        Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
     });
 
     expect(SignalEvent::query()->withoutOwnerScope()->sole()->event_name)->toBe('affiliate.conversion.recorded')
@@ -485,7 +494,7 @@ it('rolls recording writes back with an outer transaction rollback', function ()
 
     try {
         DB::transaction(function () use ($conversion): void {
-            Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+            Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
 
             // The recording must exist before the rollback; otherwise this
             // test would also pass if recording silently became a no-op.
@@ -689,7 +698,7 @@ function ingestConversionForAlerts(string $code): ?SignalEvent
     ])->save();
 
     return app(CommerceSignalsRecorder::class)->recordAffiliateConversionRecorded(
-        AffiliateConversionData::fromModel($conversion)
+        $conversion->toData()
     );
 }
 

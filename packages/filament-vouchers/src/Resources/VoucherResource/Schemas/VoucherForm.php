@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
@@ -26,7 +26,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Validation\Rules\Unique;
 
@@ -269,23 +268,18 @@ final class VoucherForm
             // and has been removed from the current application schema.
         ];
 
-        if (class_exists(Affiliate::class)) {
+        if (interface_exists(AffiliateReferenceReader::class) && app()->bound(AffiliateReferenceReader::class)
+            && interface_exists(ProgramReferenceReader::class) && app()->bound(ProgramReferenceReader::class)) {
             $sections[] = Section::make('Affiliate')
                 ->description('Optionally link this voucher to an affiliate for tracking and attribution.')
                 ->schema([
                     Grid::make(1)->schema([
                         Select::make('affiliate_id')
                             ->label('Linked Affiliate')
-                            ->relationship(
-                                'affiliate',
-                                'name',
-                                modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply(
-                                    $query,
-                                    includeGlobal: (bool) config('affiliates.owner.include_global', false),
-                                ),
-                            )
+                            ->options(fn (): array => app(AffiliateReferenceReader::class)->options())
+                            ->getSearchResultsUsing(fn (string $search): array => app(AffiliateReferenceReader::class)->options($search))
+                            ->getOptionLabelUsing(fn ($value): ?string => app(AffiliateReferenceReader::class)->label((string) $value))
                             ->searchable()
-                            ->preload()
                             ->placeholder('Not linked to any affiliate')
                             ->helperText('Used for affiliate conversion tracking when this voucher is redeemed.'),
                     ]),
@@ -336,16 +330,10 @@ final class VoucherForm
 
                             Select::make('affiliate_program_id')
                                 ->label('Commission Program')
-                                ->relationship(
-                                    'affiliateProgram',
-                                    'name',
-                                    modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply(
-                                        $query,
-                                        includeGlobal: (bool) config('affiliates.owner.include_global', false),
-                                    ),
-                                )
+                                ->options(fn (): array => app(ProgramReferenceReader::class)->options())
+                                ->getSearchResultsUsing(fn (string $search): array => app(ProgramReferenceReader::class)->options($search))
+                                ->getOptionLabelUsing(fn ($value): ?string => app(ProgramReferenceReader::class)->label((string) $value))
                                 ->searchable()
-                                ->preload()
                                 ->placeholder('No program (use affiliate default)')
                                 ->helperText('Applies program commission rules when no per-voucher override is set.'),
                         ]),

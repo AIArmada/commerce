@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Commissions",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Commissions\\Extensions\\AdminPanelContribution"
+    ]
+  }
+}

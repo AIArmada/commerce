@@ -15,8 +15,8 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 
 function fulfillmentLink(string $affiliateId, array $offerAttributes = []): AffiliateOfferLink
@@ -47,7 +47,7 @@ function makeAffiliate(string $code = 'FUL'): Affiliate
 
 describe('fulfillment', function (): void {
     test('host fulfillment records runs idempotently', function (): void {
-        $affiliateId = (string) Str::uuid();
+        $affiliateId = (string) makeAffiliate('FULHOST')->getKey();
         $link = fulfillmentLink($affiliateId);
         $leg = app(PostConversionLeg::class)->execute(
             offerId: (string) $link->offer_id,

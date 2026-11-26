@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\CancelledPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CancelledPayout;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\Disabled;
-use AIArmada\Affiliates\States\FailedPayout;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\CreateAffiliatePayout;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Pages\CreateAffiliatePayout;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -84,7 +84,7 @@ function payoutPageAffiliateAndConversion(
             'occurred_at' => now(),
         ]);
 
-        ApplyConversionAccounting::run($conversion);
+        app(ApplyConversionAccounting::class)->handle($conversion);
 
         return [$affiliate, $conversion];
     });
@@ -147,15 +147,15 @@ it('creates through the page by reserving selected conversions and prevents payi
         ->and($payout->status->equals(PendingPayout::class))->toBeTrue()
         ->and($payout->metadata['notes'])->toBe('Quarterly payout');
 
-    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
+    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first());
 
     expect($balance?->available_minor)->toBe(0)
         ->and($conversion->fresh()->affiliate_payout_id)->toBe((string) $payout->getKey());
 
-    OwnerContext::withOwner($owner, fn (): AffiliatePayout => UpdatePayoutStatus::run($payout, 'completed'));
+    OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, 'completed'));
 
     $completedConversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => AffiliateConversion::query()->findOrFail($conversion->getKey()));
-    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
+    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first());
 
     expect($completedConversion->status->equals(PaidConversion::class))->toBeTrue()
         ->and($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
@@ -197,11 +197,11 @@ it('releases reservations once when a page-created payout fails or is cancelled'
         ->where('payee_id', $affiliate->getKey())
         ->firstOrFail());
 
-    OwnerContext::withOwner($owner, fn (): AffiliatePayout => UpdatePayoutStatus::run($payout, $status));
-    OwnerContext::withOwner($owner, fn (): AffiliatePayout => UpdatePayoutStatus::run($payout, $status));
+    OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, $status));
+    OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, $status));
 
     $freshConversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => AffiliateConversion::query()->findOrFail($conversion->getKey()));
-    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
+    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first());
 
     expect($payout->fresh()->status->getValue())->toBe($status)
         ->and($freshConversion->status->equals(ApprovedConversion::class))->toBeTrue()
@@ -225,7 +225,7 @@ it('rejects a conversion from a different affiliate even when the submitted affi
     });
 
     expect(OwnerContext::withOwner($owner, fn (): int => AffiliatePayout::query()->count()))->toBe(0)
-        ->and(OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $foreignAffiliate->balanceFor('USD'))?->available_minor)->toBe(5500);
+        ->and(OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $foreignAffiliate->getKey())->where('currency', 'USD')->first())?->available_minor)->toBe(5500);
 });
 
 it('rejects a foreign owner conversion at the page server boundary', function (): void {
@@ -242,7 +242,7 @@ it('rejects a foreign owner conversion at the page server boundary', function ()
     });
 
     expect(OwnerContext::withOwner($ownerB, fn (): int => AffiliatePayout::query()->count()))->toBe(0)
-        ->and(OwnerContext::withOwner($ownerB, fn (): ?AffiliateBalance => $affiliateB->balanceFor('USD'))?->available_minor)->toBe(5500);
+        ->and(OwnerContext::withOwner($ownerB, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliateB->getKey())->where('currency', 'USD')->first())?->available_minor)->toBe(5500);
 });
 
 it('ignores injected payout total currency status and payee values', function (): void {

@@ -145,7 +145,7 @@ $schedule->command('affiliates:process-payouts')
 
 ### Export Affiliate Payouts
 
-Exports a single payout batch, including its linked conversions, to CSV for external processing.
+Exports a single payout batch, including its linked conversions, to CSV for external processing. Ambiguous references fail rather than selecting a payout from an arbitrary owner. The command reports a failure if the destination cannot be written; local exports are published atomically.
 
 ```bash
 php artisan affiliates:payout:export PAY-REF-1234

@@ -23,11 +23,11 @@ All settings live in `config/filament-links.php`.
 | Key | Default | Description |
 |---|---|---|
 | `staff_roles` | `[]` | When configured, only users with one of these roles can access the resource. An empty list leaves authorization to the host panel and policies. |
-| `protected_subject_types` | `null` | Subject model classes whose tracked links keep protected fields read-only in Filament and cannot be deleted there. When `null`, `AffiliateLink` is protected automatically if the affiliates package is installed. An explicit array overrides the default; `[]` disables automatic protection. Other link controls, including deactivation, remain available. |
+| `protected_subject_types` | `null` | Subject model classes whose tracked links keep protected fields read-only in Filament and cannot be deleted there. When `null`, the canonical `affiliate_link` morph type is protected automatically. An explicit array overrides the default; `[]` disables automatic protection. Other link controls, including deactivation, remain available. |
 
 ```php
 'staff_roles' => ['super_admin', 'admin'],
-'protected_subject_types' => [AIArmada\Affiliates\Models\AffiliateLink::class],
+'protected_subject_types' => ['affiliate_link'],
 ```
 
 ## Resources

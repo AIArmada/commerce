@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 
@@ -16,7 +16,7 @@ beforeEach(function (): void {
     config()->set('affiliates.owner.enabled', false);
     // Settings cache outlives RefreshDatabase rollbacks within a process.
     Artisan::call('settings:clear-cache');
-    $this->engine = app(CommissionRuleEngine::class);
+    $this->engine = app(PerformanceBonusCalculation::class);
     $this->from = CarbonImmutable::now()->startOfMonth();
     $this->to = CarbonImmutable::now()->endOfMonth();
 });
@@ -58,7 +58,7 @@ it('keeps top performer output identical after the commission-rule collapse', fu
     ]);
 
     $bonuses = $this->engine->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         $this->from,
         $this->to,
     );
@@ -103,7 +103,7 @@ it('keeps recruitment output identical after the commission-rule collapse', func
     ]);
 
     $bonuses = $this->engine->calculatePerformanceBonuses(
-        CommissionRuleType::Recruitment,
+        CommissionRuleType::Recruitment->value,
         $this->from,
         $this->to,
     );
@@ -143,11 +143,11 @@ it('keeps consistency output identical after the commission-rule collapse', func
         'value_minor' => 10000,
         'commission_minor' => 1000,
         'status' => ApprovedConversion::class,
-        'occurred_at' => $this->from->startOfWeek()->addDay(),
+        'occurred_at' => $this->from->addDay(),
     ]);
 
     $bonuses = $this->engine->calculatePerformanceBonuses(
-        CommissionRuleType::Consistency,
+        CommissionRuleType::Consistency->value,
         $this->from,
         $this->to,
     );
@@ -203,7 +203,7 @@ it('keeps growth output identical after the commission-rule collapse', function 
     ]);
 
     $bonuses = $this->engine->calculatePerformanceBonuses(
-        CommissionRuleType::Growth,
+        CommissionRuleType::Growth->value,
         $this->from,
         $this->to,
     );

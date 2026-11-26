@@ -1,0 +1,132 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware;
+
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
+
+final class TrackAffiliateCookie
+{
+    public function __construct(
+        private readonly AttributionTracking $attributionTracking,
+        private readonly AttributionActivity $attributionActivity,
+        private readonly ReferralTrackingConsent $consent,
+    ) {}
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (! $this->consent->allows($request)) {
+            return $next($request);
+        }
+
+        /** @var Response $response */
+        $response = $next($request);
+
+        $cookieName = config('affiliates.cookies.name', 'affiliate_session');
+        $cookieValue = $request->cookie($cookieName);
+        $linkId = $request->query('aff_link');
+        $link = is_string($linkId) && Str::isUuid($linkId) ? AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
+            ->whereKey($linkId)->whereNull('deactivated_at')->first() : null;
+        $affiliate = null;
+
+        if ($link !== null) {
+            app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($link->getConnection()));
+            $affiliate = app(AffiliateLifecycleReader::class)->findById($link->affiliate_id);
+        }
+
+        $affiliateCode = $linkId !== null
+            ? ($affiliate?->canBeAttributed ? $affiliate->code : null)
+            : $this->resolveAffiliateCode($request);
+        $context = $this->buildContext($request);
+
+        if ($affiliateCode) {
+            if ($link !== null && $affiliate !== null) {
+                $context = array_merge($context, [
+                    'affiliate_link_id' => $link->id,
+                    'subject_type' => $link->subject_type,
+                    'subject_key' => $link->subject_key,
+                    'subject_id' => $link->subject_id,
+                    'subject_instance' => $link->subject_instance,
+                    'subject_title_snapshot' => $link->subject_title_snapshot,
+                    'metadata' => array_merge($link->subject_metadata ?? [], $context['metadata']),
+                    'origin' => $link->origin,
+                ]);
+                $owner = OwnerContext::fromTypeAndIdOrFail($affiliate->reference->ownerType, $affiliate->reference->ownerId);
+                $attribution = OwnerContext::withOwner($owner, fn () => $this->attributionTracking->track($affiliateCode, $context, $cookieValue));
+            } else {
+                $attribution = $this->attributionTracking->track($affiliateCode, $context, $cookieValue);
+            }
+            $cookieValue = $attribution?->cookieValue;
+        } elseif ($cookieValue) {
+            $this->attributionActivity->touch($cookieValue, $context);
+        }
+
+        if (! $cookieValue) {
+            return $response;
+        }
+
+        $minutes = (int) config('affiliates.cookies.ttl_minutes', 60 * 24 * 30);
+
+        $response->headers->setCookie(cookie(
+            name: $cookieName,
+            value: $cookieValue,
+            minutes: $minutes,
+            path: config('affiliates.cookies.path', '/'),
+            domain: config('affiliates.cookies.domain'),
+            secure: config('affiliates.cookies.secure'),
+            httpOnly: config('affiliates.cookies.http_only', true),
+            raw: false,
+            sameSite: config('affiliates.cookies.same_site', 'lax')
+        ));
+
+        return $response;
+    }
+
+    private function resolveAffiliateCode(Request $request): ?string
+    {
+        $keys = (array) config('affiliates.cookies.query_parameters', ['aff']);
+
+        foreach ($keys as $key) {
+            $value = $request->query($key);
+
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildContext(Request $request): array
+    {
+        $utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+        $querySnapshot = Arr::only($request->query(), $utmKeys);
+
+        return [
+            'source' => $request->query('utm_source'),
+            'medium' => $request->query('utm_medium'),
+            'campaign' => $request->query('utm_campaign'),
+            'term' => $request->query('utm_term'),
+            'content' => $request->query('utm_content'),
+            'landing_url' => $request->fullUrl(),
+            'referrer_url' => $request->headers->get('referer'),
+            'user_agent' => $request->userAgent(),
+            'ip_address' => $request->ip(),
+            'metadata' => ['utm' => $querySnapshot],
+        ];
+    }
+}

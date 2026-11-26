@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Support\Middleware\EnsureApiAuthorized;
+use AIArmada\Affiliates\EntryPoints\Http\Middleware\EnsureApiAuthorized;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 

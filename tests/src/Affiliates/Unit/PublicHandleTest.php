@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\Affiliates\Actions\Affiliates\UpdateTrackingLink;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Actions\UpdateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -31,16 +35,16 @@ test('affiliates receive a handle and chosen handles are normalized and globally
 test('handle changes preserve saved branded URLs and attribution', function (): void {
     config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
     $affiliate = handleAffiliate(['handle' => 'saifreviews']);
-    $link = CreateTrackingLink::run($affiliate, 'https://merchant.example/summer', ['link_style' => 'branded', 'link_label' => 'summer']);
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example/summer', ['link_style' => 'branded', 'link_label' => 'summer']);
     $issued = $link->tracking_url;
     expect($issued)->toContain('/go/saifreviews/summer-');
     $affiliate->update(['handle' => 'saifnew']);
     expect($link->fresh()->tracking_url)->toBe($issued);
     $this->get($issued)->assertRedirect();
     expect($link->refresh()->clicks)->toBe(1);
-    $new = CreateTrackingLink::run($affiliate, 'https://merchant.example/summer', ['link_style' => 'branded', 'link_label' => 'summer']);
+    $new = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example/summer', ['link_style' => 'branded', 'link_label' => 'summer']);
     expect($new->tracking_url)->toContain('/go/saifnew/summer-');
-    $link->deactivate();
+    app(TrackingLinkAdministration::class)->setEnabled((string) $link->getKey(), false);
     $this->get($issued)->assertStatus(410);
 });
 
@@ -59,14 +63,14 @@ test('handle uniqueness spans tenants and tracking link writes remain owner isol
     OwnerContext::withOwner($other, function () use ($affiliate): void {
         expect(Affiliate::query()->find($affiliate->id))->toBeNull();
         expect(fn () => handleAffiliate(['handle' => 'reservedcreator']))->toThrow(ValidationException::class);
-        expect(fn () => CreateTrackingLink::run($affiliate, 'https://merchant.example'))->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example'))->toThrow(ModelNotFoundException::class);
     });
 });
 
 test('saved link ID drives destination attribution after handle and code change', function (): void {
     config(['affiliates.links.allowed_hosts' => ['localhost'], 'affiliates.tracking.block_self_referral' => false]);
     $affiliate = handleAffiliate(['handle' => 'saifreviews']);
-    $link = CreateTrackingLink::run($affiliate, 'http://localhost/landing', ['link_style' => 'branded', 'subject_type' => 'product', 'subject_title_snapshot' => 'Summer', 'subject_metadata' => ['category' => 'campaign']]);
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'http://localhost/landing', ['link_style' => 'branded', 'subject_type' => 'product', 'subject_title_snapshot' => 'Summer', 'subject_metadata' => ['category' => 'campaign']]);
     $affiliate->update(['handle' => 'saifnew', 'code' => 'RENAMED']);
     Route::get('/landing', fn () => 'Welcome');
     $this->get($link->tracking_url)->assertRedirect('http://localhost/landing?aff_link=' . $link->id);
@@ -80,10 +84,10 @@ test('saved link ID drives destination attribution after handle and code change'
 test('affiliate deletion removes tracked campaign links and their clicks', function (): void {
     config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
     $affiliate = handleAffiliate();
-    $link = CreateTrackingLink::run($affiliate, 'https://merchant.example');
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
     $trackedId = $link->trackedLink->id;
     $this->get($link->tracking_url)->assertRedirect();
-    $affiliate->delete();
+    app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
     expect(Link::query()->whereKey($trackedId)->exists())->toBeFalse()
         ->and(LinkClick::query()->where('link_id', $trackedId)->exists())->toBeFalse();
 });
@@ -91,18 +95,53 @@ test('affiliate deletion removes tracked campaign links and their clicks', funct
 test('updating a destination preserves its URL and enforces the same allowlist', function (): void {
     config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
     $affiliate = handleAffiliate(['handle' => 'saifreviews']);
-    $link = CreateTrackingLink::run($affiliate, 'https://merchant.example/summer', ['link_style' => 'branded']);
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example/summer', ['link_style' => 'branded']);
     $issued = $link->tracking_url;
-    UpdateTrackingLink::run($link, ['destination_url' => 'https://merchant.example/autumn']);
+    app(UpdateTrackingLink::class)->handle((string) $link->getKey(), ['destination_url' => 'https://merchant.example/autumn']);
     expect($link->fresh()->tracking_url)->toBe($issued);
     $this->get($issued)->assertRedirect('https://merchant.example/autumn?aff_link=' . $link->id);
-    expect(fn () => UpdateTrackingLink::run($link, ['destination_url' => 'https://evil.example']))->toThrow(ValidationException::class);
+    expect(fn () => app(UpdateTrackingLink::class)->handle((string) $link->getKey(), ['destination_url' => 'https://evil.example']))->toThrow(ValidationException::class);
     expect($link->fresh()->destination_url)->toBe('https://merchant.example/autumn');
 });
 
 test('hosts can default to branded links without requiring an option on each creation', function (): void {
     config(['affiliates.links.allowed_hosts' => ['merchant.example'], 'affiliates.links.default_style' => 'branded']);
     $affiliate = handleAffiliate(['handle' => 'saifreviews']);
-    $link = CreateTrackingLink::run($affiliate, 'https://merchant.example');
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
     expect($link->tracking_url)->toContain('/go/saifreviews/link-');
+});
+
+test('tracking link removal deletes its public link and clicks atomically', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
+    $affiliate = handleAffiliate();
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
+    $trackedId = $link->trackedLink->id;
+    $this->get($link->tracking_url)->assertRedirect();
+
+    expect(app(TrackingLinkAdministration::class)->delete((string) $link->getKey()))->toBeTrue()
+        ->and($link->fresh())->toBeNull()
+        ->and(Link::query()->whereKey($trackedId)->exists())->toBeFalse()
+        ->and(LinkClick::query()->where('link_id', $trackedId)->exists())->toBeFalse();
+});
+
+test('tracking link removal rejects recorded conversions', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
+    $affiliate = handleAffiliate();
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
+    AffiliateConversion::query()->create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'affiliate_link_id' => $link->id,
+        'external_reference' => 'LINK-' . Str::random(8),
+        'subtotal_minor' => 1000,
+        'value_minor' => 1000,
+        'commission_minor' => 100,
+        'commission_currency' => 'MYR',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    expect(fn () => app(TrackingLinkAdministration::class)->delete((string) $link->getKey()))->toThrow(ValidationException::class)
+        ->and($link->fresh())->not->toBeNull()
+        ->and($link->trackedLink()->exists())->toBeTrue();
 });

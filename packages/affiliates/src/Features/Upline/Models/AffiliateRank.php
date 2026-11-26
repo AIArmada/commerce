@@ -1,0 +1,178 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Upline\Models;
+
+use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * @property string $id
+ * @property string $name
+ * @property string $slug
+ * @property int $level
+ * @property int $min_personal_sales
+ * @property int $min_team_sales
+ * @property int $min_active_downlines
+ * @property string $currency
+ * @property int $commission_rate_basis_points
+ * @property array<string, int>|null $override_rates
+ * @property array<string, mixed>|null $benefits
+ * @property array<string, mixed>|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property-read Model|null $owner
+ */
+class AffiliateRank extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
+    use HasUuids;
+    use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'level',
+        'min_personal_sales',
+        'min_team_sales',
+        'min_active_downlines',
+        'currency',
+        'commission_rate_basis_points',
+        'override_rates',
+        'benefits',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'level' => 'integer',
+        'min_personal_sales' => 'integer',
+        'min_team_sales' => 'integer',
+        'min_active_downlines' => 'integer',
+        'commission_rate_basis_points' => 'integer',
+        'override_rates' => 'array',
+        'benefits' => 'array',
+        'metadata' => 'array',
+    ];
+
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.ranks', 'affiliate_ranks');
+    }
+
+    public function toQualifiedRank(): QualifiedRank
+    {
+        return new QualifiedRank((string) $this->getKey(), $this->name, $this->level, $this->currencyCode());
+    }
+
+    public function isHigherThan(self $other): bool
+    {
+        return $this->level > $other->level;
+    }
+
+    public function isLowerThan(self $other): bool
+    {
+        return $this->level < $other->level;
+    }
+
+    public function getOverrideRateForDepth(int $depth): int
+    {
+        if (! is_array($this->override_rates)) {
+            return 0;
+        }
+
+        return $this->override_rates[$depth] ?? 0;
+    }
+
+    /**
+     * Currency the sales floors are denominated in.
+     */
+    public function currencyCode(): string
+    {
+        if (is_string($this->currency) && mb_trim($this->currency) !== '') {
+            return mb_strtoupper(mb_trim($this->currency));
+        }
+
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
+    }
+
+    /**
+     * Check if an affiliate meets the qualification requirements for this rank.
+     */
+    public function meetsQualification(int $personalSales, int $teamSales, int $activeDownlines): bool
+    {
+        if ($personalSales < $this->min_personal_sales) {
+            return false;
+        }
+
+        if ($teamSales < $this->min_team_sales) {
+            return false;
+        }
+
+        if ($activeDownlines < $this->min_active_downlines) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
+
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+
+        return $scoped;
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $rank): void {
+            if (! config('affiliates.owner.enabled', false)) {
+                return;
+            }
+
+            if ($rank->owner_id !== null) {
+                return;
+            }
+
+            if (! config('affiliates.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner) {
+                $rank->owner_type = $owner->getMorphClass();
+                $rank->owner_id = $owner->getKey();
+            }
+        });
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
+}

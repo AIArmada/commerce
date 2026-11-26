@@ -2,18 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -198,7 +201,7 @@ it('formatAmount handles VND zero decimal currency', function (): void {
     expect($formatted)->toBe('VND 100,000');
 });
 
-it('resolves affiliate by contact email when owner scope uses a tenant owner', function (): void {
+it('resolves a registered portal actor within the tenant owner scope', function (): void {
     config()->set('affiliates.owner.enabled', true);
 
     $tenantOwner = InteractsWithAffiliateTestOwner::create(['name' => 'Tenant Owner']);
@@ -221,24 +224,20 @@ it('resolves affiliate by contact email when owner scope uses a tenant owner', f
         'password' => 'secret',
     ]);
 
-    Affiliate::create([
-        'code' => 'OWN-' . Str::uuid(),
-        'name' => 'Tenant Scoped Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 500,
-        'currency' => 'USD',
-        'contact_email' => $user->email,
-        'owner_type' => $tenantOwner->getMorphClass(),
-        'owner_id' => (string) $tenantOwner->getKey(),
-    ]);
+    $affiliate = app(RegistrationApi::class)->register(
+        ['name' => 'Tenant Scoped Affiliate', 'contact_email' => 'affiliate-contact@example.com'],
+        new RecordReference($tenantOwner->getMorphClass(), (string) $tenantOwner->getKey()),
+        null,
+        null,
+        new RecordReference($user->getMorphClass(), (string) $user->getKey()),
+    );
 
     $this->actingAs($user);
 
     $testClass = new TestInteractsWithAffiliateClass;
 
     expect($testClass->hasAffiliate())->toBeTrue()
-        ->and($testClass->getAffiliate()?->contact_email)->toBe($user->email);
+        ->and($testClass->getAffiliate()?->getKey())->toBe($affiliate->id);
 });
 
 class InteractsWithAffiliateTestOwner extends Model
@@ -253,3 +252,28 @@ class InteractsWithAffiliateTestOwner extends Model
 
     protected $keyType = 'string';
 }
+
+it('projects rank labels without an affiliate model relationship', function (): void {
+    config(['affiliates.owner.enabled' => false]);
+    $rank = AffiliateRank::query()->create([
+        'name' => 'Projected rank',
+        'slug' => 'projected-rank',
+        'level' => 1,
+        'commission_rate_basis_points' => 1000,
+    ]);
+    $affiliate = Affiliate::query()->create([
+        'code' => 'RANK-' . Str::uuid(),
+        'name' => 'Ranked affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'rank_id' => $rank->getKey(),
+    ]);
+
+    $projected = Affiliate::query()->addSelect(['rank_name' => RankLabelProjection::query()])
+        ->findOrFail($affiliate->getKey());
+
+    expect($projected->getAttribute('rank_name'))->toBe('Projected rank')
+        ->and($projected->getKey())->toBe($affiliate->getKey());
+});

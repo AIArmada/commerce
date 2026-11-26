@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -146,11 +147,12 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
 
     $setOwner($ownerA);
 
-    AffiliateUpline::addToUpline($affiliateA, null);
+    config(['affiliates.upline.enabled' => true]);
+    app(UplineApi::class)->add((string) $affiliateA->getKey(), null);
 
     $setOwner($ownerB);
 
-    AffiliateUpline::addToUpline($affiliateB, null);
+    app(UplineApi::class)->add((string) $affiliateB->getKey(), null);
 
     $setOwner($ownerA);
 

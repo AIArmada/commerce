@@ -6,14 +6,16 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Pending;
 use Illuminate\Support\Carbon;
 
@@ -89,7 +91,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        $tiers = $program->tiers;
+        $tiers = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->get();
 
         expect($tiers)->toHaveCount(2)
             ->and($tiers->first()->name)->toBe('Silver') // Level 1 first (ordered by level)
@@ -124,11 +126,10 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect($program->affiliates)->toHaveCount(1)
-            ->and($program->affiliates->first()->id)->toBe($affiliate->id);
+        expect(app(ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([$program->id]);
     });
 
-    it('has many creatives', function (): void {
+    it('stores creatives for a program', function (): void {
         $program = AffiliateProgram::create([
             'name' => 'Test Program',
             'status' => ProgramStatus::Active,
@@ -148,7 +149,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect($program->creatives)->toHaveCount(1);
+        expect(AffiliateProgramCreative::query()->where('program_id', $program->id)->count())->toBe(1);
     });
 
     it('has many memberships', function (): void {
@@ -179,7 +180,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect($program->memberships)->toHaveCount(1);
+        expect(app(ProgramMembershipReader::class)->find((string) $affiliate->getKey(), (string) $program->getKey()))->not->toBeNull();
     });
 
     it('isActive returns true when status is active and within date range', function (): void {
@@ -290,7 +291,7 @@ describe('AffiliateProgram Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($program->canJoin($affiliate))->toBeTrue();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeTrue();
     });
 
     it('canJoin returns false when already a member', function (): void {
@@ -320,7 +321,7 @@ describe('AffiliateProgram Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        expect($program->canJoin($affiliate))->toBeFalse();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeFalse();
     });
 
     it('canJoin evaluates min_conversions eligibility rule', function (): void {
@@ -345,7 +346,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         // Affiliate has no conversions, should not be able to join
-        expect($program->canJoin($affiliate))->toBeFalse();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeFalse();
     });
 
     it('canJoin evaluates min_revenue using neutral value', function (): void {
@@ -381,7 +382,7 @@ describe('AffiliateProgram Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($program->canJoin($affiliate))->toBeTrue();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeTrue();
     });
 
     it('canJoin evaluates required_status eligibility rule', function (): void {
@@ -405,7 +406,7 @@ describe('AffiliateProgram Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($program->canJoin($affiliate))->toBeFalse();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeFalse();
     });
 
     it('getDefaultTier returns lowest level tier', function (): void {
@@ -433,7 +434,7 @@ describe('AffiliateProgram Model', function (): void {
             'commission_rate_basis_points' => 1000,
         ]);
 
-        $defaultTier = $program->getDefaultTier();
+        $defaultTier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->first();
 
         // getDefaultTier returns the entry-level tier (lowest level number)
         expect($defaultTier)->not->toBeNull()

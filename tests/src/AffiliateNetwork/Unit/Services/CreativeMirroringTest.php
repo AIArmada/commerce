@@ -18,12 +18,12 @@ use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Services\ProgramCatalogService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
@@ -68,7 +68,7 @@ test('catalog emits raw program assets without affiliate embeds or general creat
         'program_id' => $this->program->id, 'type' => 'text_link', 'name' => 'Text', 'tracking_code' => 'text',
     ]);
     $before = [AffiliateAttribution::count(), AffiliateConversion::count()];
-    $snapshot = app(ProgramCatalogService::class)->snapshot($this->program);
+    $snapshot = app(MerchantCatalog::class)->previewById((string) $this->program->getKey())->payload;
     expect([AffiliateAttribution::count(), AffiliateConversion::count()])->toBe($before);
     $creatives = collect($snapshot['creatives'])->keyBy('id');
     expect($snapshot['version'])->toBe('v2')
@@ -191,8 +191,8 @@ test('program visibility and cross-owner creative reads and writes fail closed',
 });
 
 test('file-less text links and documents mirror without losing types and rate locks preserve creative updates', function (): void {
-    $text = $this->program->creatives()->create(['type' => 'text_link', 'name' => 'Text', 'tracking_code' => 'text']);
-    $this->program->creatives()->create(['type' => 'document', 'name' => 'Document', 'tracking_code' => 'doc']);
+    $text = AffiliateProgramCreative::query()->create(['program_id' => $this->program->id, 'type' => 'text_link', 'name' => 'Text', 'tracking_code' => 'text']);
+    AffiliateProgramCreative::query()->create(['program_id' => $this->program->id, 'type' => 'document', 'name' => 'Document', 'tracking_code' => 'doc']);
     $this->importer->execute($this->site->toRecord(), $this->program->id);
     $offer = AffiliateOffer::firstOrFail();
     expect($offer->creatives()->where('external_creative_id', $text->id)->firstOrFail()->type)->toBe(CreativeType::Text)
@@ -206,7 +206,7 @@ test('file-less text links and documents mirror without losing types and rate lo
 });
 
 test('remote catalogs mirror public asset URLs without downloading files', function (): void {
-    $snapshot = app(ProgramCatalogService::class)->snapshot($this->program);
+    $snapshot = app(MerchantCatalog::class)->previewById((string) $this->program->getKey())->payload;
     $this->site->update(['catalog_url' => 'https://merchant.example/api/affiliates']);
     Http::fake(['*' => Http::response($snapshot)]);
     app()->instance(CatalogReader::class, new RemoteCatalogHttpDriver(

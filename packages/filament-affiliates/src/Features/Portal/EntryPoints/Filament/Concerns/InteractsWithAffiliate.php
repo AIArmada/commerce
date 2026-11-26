@@ -1,0 +1,301 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns;
+
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\PortalActorAffiliateReader;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
+use AIArmada\Vouchers\Models\Voucher;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+
+trait InteractsWithAffiliate
+{
+    protected ?Affiliate $affiliate = null;
+
+    public function getAffiliate(): ?Affiliate
+    {
+        if ($this->affiliate !== null) {
+            return $this->affiliate;
+        }
+
+        $user = auth()->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $actorType = $user->getMorphClass();
+        $actorId = (string) $user->getKey();
+
+        $resolve = function () use ($actorType, $actorId): ?Affiliate {
+            $affiliateId = app(PortalActorAffiliateReader::class)->affiliateIdForActor($actorType, $actorId);
+
+            if ($affiliateId === null) {
+                return null;
+            }
+
+            return Affiliate::query()->forOwner()->whereKey($affiliateId)->first();
+        };
+
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerUiScope::resolveOwner(Affiliate::class)
+            : $user;
+
+        $this->affiliate = OwnerContext::withOwner($owner, $resolve);
+
+        return $this->affiliate;
+    }
+
+    /**
+     * Check if the current user has an affiliate account.
+     */
+    public function hasAffiliate(): bool
+    {
+        return $this->getAffiliate() !== null;
+    }
+
+    /**
+     * Get conversions for the affiliate.
+     *
+     * @return Collection<int, AffiliateConversion>
+     */
+    public function getConversions(int $limit = 10): Collection
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return new Collection;
+        }
+
+        return AffiliateConversion::query()->forOwner(includeGlobal: true)->where('affiliate_id', $affiliate->getKey())
+            ->orderByDesc('occurred_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get payouts for the affiliate.
+     *
+     * @return Collection<int, AffiliatePayout>
+     */
+    public function getPayouts(int $limit = 10): Collection
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return new Collection;
+        }
+
+        return AffiliatePayout::query()->forOwner()->where('payee_type', $affiliate->getMorphClass())->where('payee_id', $affiliate->getKey())
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get total earnings for the affiliate, keyed by currency code.
+     *
+     * @return array<string, int>
+     */
+    public function getTotalEarnings(): array
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return [];
+        }
+
+        return $this->sumConversionsByCurrency(
+            $affiliate,
+            [ApprovedConversion::value(), PaidConversion::value()],
+        );
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public function getAvailableEarnings(): array
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return [];
+        }
+
+        $map = [];
+
+        foreach (app(BalanceReader::class)->forAffiliate((string) $affiliate->getKey()) as $balance) {
+            $code = mb_strtoupper((string) $balance->currency);
+            $map[$code] = ($map[$code] ?? 0) + (int) $balance->availableMinor;
+        }
+
+        ksort($map);
+
+        return $map;
+    }
+
+    /**
+     * Get pending earnings for the affiliate, keyed by currency code.
+     *
+     * @return array<string, int>
+     */
+    public function getPendingEarnings(): array
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return [];
+        }
+
+        return $this->sumConversionsByCurrency($affiliate, [PendingConversion::value()]);
+    }
+
+    /**
+     * @param  array<int, string>  $statuses
+     * @return array<string, int>
+     */
+    private function sumConversionsByCurrency(Affiliate $affiliate, array $statuses): array
+    {
+        $map = [];
+        $fallback = mb_strtoupper((string) ($affiliate->currency ?: config('affiliates.currency.default', 'MYR')));
+
+        foreach (app(ConversionStatisticsReader::class)->totals(
+            (string) $affiliate->getKey(),
+            $fallback,
+            spl_object_id($affiliate->getConnection()),
+            statuses: array_values($statuses),
+        ) as $row) {
+            $map[$row->currency] = $row->commissionMinor;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Get total clicks/visits for the affiliate.
+     */
+    public function getTotalClicks(): int
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return 0;
+        }
+
+        return app(AttributionReportingReader::class)->count((string) $affiliate->getKey());
+    }
+
+    /**
+     * Get total conversions count for the affiliate.
+     */
+    public function getTotalConversions(): int
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return 0;
+        }
+
+        return app(ConversionStatisticsReader::class)->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()));
+    }
+
+    /**
+     * Get vouchers linked to the affiliate.
+     *
+     * @return Collection<int, Voucher>
+     */
+    public function getVouchers(int $limit = 10): Collection
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate || ! class_exists(Voucher::class)) {
+            return new Collection;
+        }
+
+        return Voucher::query()
+            ->forAffiliate((string) $affiliate->getKey())
+            ->when(config('vouchers.owner.enabled', false), fn (Builder $query): Builder => $query
+                ->where('owner_type', $affiliate->owner_type)
+                ->where('owner_id', $affiliate->owner_id))
+            ->orderByDesc('created_at')
+            ->orderBy('id')
+            ->limit(max(0, min($limit, 100)))
+            ->get();
+    }
+
+    /**
+     * Get direct downlines (children) for the affiliate.
+     *
+     * @return Collection<int, Affiliate>
+     */
+    public function getDownlines(int $limit = 50): Collection
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return new Collection;
+        }
+
+        return $affiliate->children()
+            ->addSelect(['rank_name' => RankLabelProjection::query()])
+            ->addSelect(['conversions_count' => ConversionCountProjection::query()])
+            ->orderBy('created_at', 'desc')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * Format amount for display.
+     *
+     * Uses the affiliate's currency or falls back to the default currency.
+     * Formats with 2 decimal places which is standard for most currencies.
+     */
+    public function formatAmount(int $amount, ?string $currency = null): string
+    {
+        $affiliate = $this->getAffiliate();
+        $currency = $currency ?? $affiliate?->currency ?? config('affiliates.currency.default', 'MYR');
+
+        // Determine decimal places based on currency (most use 2, some use 0)
+        $zeroDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'RWF'];
+        $decimals = in_array(mb_strtoupper($currency), $zeroDecimalCurrencies, true) ? 0 : 2;
+
+        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($amount, $currency, $decimals);
+    }
+
+    /**
+     * Format a per-currency breakdown for display.
+     *
+     * @param  array<string, int>  $amountsByCurrency
+     */
+    public function formatBreakdown(array $amountsByCurrency): string
+    {
+        ksort($amountsByCurrency);
+
+        $parts = [];
+
+        foreach ($amountsByCurrency as $currency => $amount) {
+            if ((int) $amount === 0) {
+                continue;
+            }
+
+            $parts[] = $this->formatAmount((int) $amount, (string) $currency);
+        }
+
+        return $parts === [] ? $this->formatAmount(0) : implode(' · ', $parts);
+    }
+}

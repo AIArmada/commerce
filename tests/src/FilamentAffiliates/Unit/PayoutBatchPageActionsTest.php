@@ -3,17 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\FailedPayout;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
@@ -105,7 +106,7 @@ it('processes a payout via the record action', function (): void {
         ->and($payout->paid_at)->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('processes a payout when user only has affiliate.payout permission', function (): void {
@@ -200,7 +201,7 @@ it('marks payout as failed when no default method exists', function (): void {
     $payout->refresh();
 
     expect($payout->status)->toBeInstanceOf(FailedPayout::class);
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('rejects a payout and stores notes in metadata', function (): void {
@@ -250,7 +251,7 @@ it('rejects a payout and stores notes in metadata', function (): void {
         ->and($payout->metadata)->toBeArray()
         ->and($payout->metadata['notes'])->toBe('Insufficient verification');
 
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('executes batch processing bulk action', function (): void {

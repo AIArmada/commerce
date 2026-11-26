@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Fraud",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Fraud\\Extensions\\AdminPanelContribution"
+    ]
+  }
+}

@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Drivers\Payouts\PayPalProcessor;
+use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
-use AIArmada\Affiliates\Services\Payouts\PayPalProcessor;
-use AIArmada\Affiliates\Services\Payouts\StripeConnectProcessor;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -55,7 +57,7 @@ function createProviderPayout(PayoutMethodType $type, array $details, int $amoun
 
     $operation->forceFill(['affiliate_payout_id' => $payout->id])->save();
 
-    return $payout->fresh(['operation', 'payee']);
+    return $payout->fresh(['payee']);
 }
 
 test('stripe uses the operation id as the provider idempotency key', function (): void {
@@ -64,14 +66,14 @@ test('stripe uses the operation id as the provider idempotency key', function ()
 
     Http::fake(['api.stripe.com/*' => Http::response(['id' => 'tr_123'], 200)]);
 
-    $result = (new StripeConnectProcessor)->process($payout);
+    $result = (new StripeConnectProcessor)->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result->getStatus())->toBe('completed')
         ->and($result->externalReference)->toBe('tr_123');
 
     Http::assertSent(function (Request $request) use ($payout): bool {
         return $request->url() === 'https://api.stripe.com/v1/transfers'
-            && $request->hasHeader('Idempotency-Key', (string) $payout->operation?->id);
+            && $request->hasHeader('Idempotency-Key', (string) $payout->affiliate_payout_operation_id);
     });
 });
 
@@ -81,7 +83,7 @@ test('retryable stripe failures become unknown without exposing provider text', 
 
     Http::fake(['api.stripe.com/*' => Http::response(['error' => ['message' => 'secret upstream detail']], 500)]);
 
-    $result = (new StripeConnectProcessor)->process($payout);
+    $result = (new StripeConnectProcessor)->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result->isUnknown())->toBeTrue()
         ->and($result->failureReason)->not->toContain('secret upstream detail');
@@ -91,14 +93,14 @@ test('paypal derives one stable sender batch identity from the operation', funct
     config()->set('affiliates.payouts.paypal.client_id', 'client');
     config()->set('affiliates.payouts.paypal.client_secret', 'secret');
     $payout = createProviderPayout(PayoutMethodType::PayPal, ['email' => 'affiliate@example.test']);
-    $expected = mb_substr(hash('sha256', (string) $payout->operation?->id), 0, 30);
+    $expected = mb_substr(hash('sha256', (string) $payout->affiliate_payout_operation_id), 0, 30);
 
     Http::fake([
         'api-m.sandbox.paypal.com/v1/oauth2/token' => Http::response(['access_token' => 'token'], 200),
         'api-m.sandbox.paypal.com/v1/payments/payouts' => Http::response(['batch_header' => ['payout_batch_id' => 'BATCH-1']], 201),
     ]);
 
-    $result = (new PayPalProcessor)->process($payout);
+    $result = (new PayPalProcessor)->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result->isPending())->toBeTrue();
     Http::assertSent(function (Request $request) use ($expected): bool {
@@ -115,10 +117,10 @@ test('stripe reversals are locally and remotely idempotent', function (): void {
     $payout->save();
 
     Http::fake(['api.stripe.com/*' => Http::response(['id' => 'trr_123'], 200)]);
-    $processor = new StripeConnectProcessor;
+    $reverse = app(PayoutReversal::class);
 
-    expect($processor->cancel($payout->fresh(['operation'])))->toBeTrue()
-        ->and($processor->cancel($payout->fresh(['operation'])))->toBeTrue();
+    expect($reverse->reverse($payout->id))->toBeTrue()
+        ->and($reverse->reverse($payout->id))->toBeTrue();
 
     Http::assertSentCount(1);
 });

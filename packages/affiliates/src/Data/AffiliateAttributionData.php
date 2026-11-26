@@ -4,66 +4,60 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Lightweight DTO describing an attribution row.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class AffiliateAttributionData extends Data
+final readonly class AffiliateAttributionData
 {
-    public readonly string $id;
+    public string $id;
 
-    public readonly string $affiliateId;
+    public string $affiliateId;
 
-    public readonly string $affiliateCode;
+    public string $affiliateCode;
 
-    public readonly ?string $subjectType;
+    public ?string $subjectType;
 
-    public readonly ?string $subjectKey;
+    public ?string $subjectKey;
 
-    public readonly string $subjectInstance;
+    public string $subjectInstance;
 
-    public readonly ?string $subjectTitleSnapshot;
+    public ?string $subjectTitleSnapshot;
 
-    public readonly ?string $cartIdentifier;
+    public ?string $cartIdentifier;
 
-    public readonly string $cartInstance;
+    public string $cartInstance;
 
-    public readonly ?string $cookieValue;
+    public ?string $cookieValue;
 
-    public readonly ?string $voucherCode;
+    public ?string $voucherCode;
 
-    public readonly ?string $affiliateProgramId;
+    public ?string $affiliateProgramId;
 
     /** @var array<string, mixed>|null */
-    public readonly ?array $commissionOverride;
+    public ?array $commissionOverride;
 
     /** @var list<array<string, mixed>>|null */
-    public readonly ?array $uplineLevels;
+    public ?array $uplineLevels;
 
-    public readonly ?string $source;
+    public ?string $source;
 
-    public readonly ?string $medium;
+    public ?string $medium;
 
-    public readonly ?string $campaign;
+    public ?string $campaign;
 
-    public readonly ?CarbonInterface $expiresAt;
+    public ?CarbonImmutable $expiresAt;
 
-    public readonly ?string $ownerType;
+    public ?string $ownerType;
 
-    public readonly string | int | null $ownerId;
+    public string | int | null $ownerId;
 
     /**
      * @var array<string, mixed>|null
      */
-    public readonly ?array $metadata;
+    public ?array $metadata;
 
     /**
      * @param  array<string, mixed>|null  $metadata
@@ -111,37 +105,38 @@ class AffiliateAttributionData extends Data
         $this->source = $source;
         $this->medium = $medium;
         $this->campaign = $campaign;
-        $this->expiresAt = $expiresAt;
+        $this->expiresAt = $expiresAt === null ? null : CarbonImmutable::instance($expiresAt);
         $this->ownerType = $ownerType;
         $this->ownerId = $ownerId;
         $this->metadata = $metadata;
     }
 
-    public static function fromModel(AffiliateAttribution $attribution): self
+    /** @return array<string, mixed> */
+    public function toArray(): array
     {
-        return new self(
-            id: (string) $attribution->getKey(),
-            affiliateId: (string) $attribution->affiliate_id,
-            affiliateCode: (string) $attribution->affiliate_code,
-            subjectType: $attribution->subject_type,
-            subjectKey: $attribution->subject_key,
-            subjectInstance: $attribution->subject_instance,
-            subjectTitleSnapshot: $attribution->subject_title_snapshot,
-            cartIdentifier: $attribution->cart_identifier,
-            cartInstance: (string) $attribution->cart_instance,
-            cookieValue: $attribution->cookie_value,
-            voucherCode: $attribution->voucher_code,
-            affiliateProgramId: $attribution->affiliate_program_id,
-            commissionOverride: $attribution->commission_override,
-            uplineLevels: $attribution->upline_levels,
-            source: $attribution->source,
-            medium: $attribution->medium,
-            campaign: $attribution->campaign,
-            expiresAt: $attribution->expires_at,
-            ownerType: $attribution->owner_type,
-            ownerId: $attribution->owner_id,
-            metadata: $attribution->metadata,
-        );
+        return [
+            'id' => $this->id,
+            'affiliate_id' => $this->affiliateId,
+            'affiliate_code' => $this->affiliateCode,
+            'subject_type' => $this->subjectType,
+            'subject_key' => $this->subjectKey,
+            'subject_instance' => $this->subjectInstance,
+            'subject_title_snapshot' => $this->subjectTitleSnapshot,
+            'cart_identifier' => $this->cartIdentifier,
+            'cart_instance' => $this->cartInstance,
+            'cookie_value' => $this->cookieValue,
+            'voucher_code' => $this->voucherCode,
+            'affiliate_program_id' => $this->affiliateProgramId,
+            'commission_override' => $this->commissionOverride,
+            'upline_levels' => $this->uplineLevels,
+            'source' => $this->source,
+            'medium' => $this->medium,
+            'campaign' => $this->campaign,
+            'expires_at' => $this->expiresAt?->format('c'),
+            'owner_type' => $this->ownerType,
+            'owner_id' => $this->ownerId,
+            'metadata' => $this->metadata,
+        ];
     }
 
     public function isExpired(): bool
@@ -164,12 +159,10 @@ class AffiliateAttributionData extends Data
             return null;
         }
 
-        $parts = array_filter([
-            $this->source ? "utm_source={$this->source}" : null,
-            $this->medium ? "utm_medium={$this->medium}" : null,
-            $this->campaign ? "utm_campaign={$this->campaign}" : null,
-        ]);
-
-        return implode('&', $parts);
+        return http_build_query(array_filter([
+            'utm_source' => $this->source,
+            'utm_medium' => $this->medium,
+            'utm_campaign' => $this->campaign,
+        ], static fn (?string $value): bool => $value !== null), '', '&', PHP_QUERY_RFC3986);
     }
 }

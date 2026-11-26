@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Postbacks",
+  "owns": {},
+  "extensions": {
+    "panel.contributions": [
+      "AIArmada\\FilamentAffiliateNetwork\\Features\\Postbacks\\Extensions\\PanelContribution"
+    ]
+  }
+}

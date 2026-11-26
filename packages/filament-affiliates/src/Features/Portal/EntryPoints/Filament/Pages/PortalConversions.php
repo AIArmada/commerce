@@ -1,0 +1,156 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
+
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
+use BackedEnum;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
+
+class PortalConversions extends PortalPage implements HasTable
+{
+    use InteractsWithTable;
+
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
+
+    /** @var view-string */
+    protected string $view = 'filament-affiliates::pages.portal.conversions';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Conversions');
+    }
+
+    public function getTitle(): string | Htmlable
+    {
+        return __('Conversion History');
+    }
+
+    public function table(Table $table): Table
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return $table
+                ->query(AffiliateConversion::query()->whereNull('id'))
+                ->columns([])
+                ->emptyStateHeading(__('No affiliate account'))
+                ->emptyStateDescription(__('You need an affiliate account to view conversions.'));
+        }
+
+        $affiliateId = $affiliate->getKey();
+
+        $affiliateIds = [$affiliateId];
+
+        if (config('affiliates.upline.enabled', false)) {
+            $descendantIds = app(UplineApi::class)->descendantIds((string) $affiliateId);
+
+            $affiliateIds = array_values(array_unique(array_merge($affiliateIds, $descendantIds)));
+        }
+
+        return $table
+            ->query(
+                AffiliateConversion::query()
+                    ->whereIn('affiliate_id', $affiliateIds)
+            )
+            ->columns([
+                TextColumn::make('occurred_at')
+                    ->label(__('Date'))
+                    ->dateTime()
+                    ->sortable(),
+
+                TextColumn::make('affiliate_code')
+                    ->label(__('Affiliate'))
+                    ->searchable()
+                    ->sortable()
+                    ->visible(fn (): bool => config('affiliates.upline.enabled', false)),
+
+                TextColumn::make('voucher_code')
+                    ->label(__('Source'))
+                    ->badge()
+                    ->getStateUsing(function (AffiliateConversion $record) use ($affiliateId): string {
+                        if ($record->affiliate_id !== $affiliateId) {
+                            return __('Upline');
+                        }
+
+                        return match (true) {
+                            $record->channel === 'upline' => __('Upline'),
+                            $record->voucher_code !== null => __('Voucher'),
+                            default => __('Link'),
+                        };
+                    })
+                    ->color(function (AffiliateConversion $record) use ($affiliateId): string {
+                        if ($record->affiliate_id !== $affiliateId) {
+                            return 'success';
+                        }
+
+                        return match (true) {
+                            $record->channel === 'upline' => 'warning',
+                            $record->voucher_code !== null => 'info',
+                            default => 'gray',
+                        };
+                    }),
+
+                TextColumn::make('external_reference')
+                    ->label(__('Reference'))
+                    ->searchable(),
+
+                TextColumn::make('value_minor')
+                    ->label(__('Total'))
+                    ->formatStateUsing(fn ($state, AffiliateConversion $record): string => $this->formatAmount((int) $state, $record->commission_currency))
+                    ->sortable(),
+
+                TextColumn::make('commission_minor')
+                    ->label(__('Commission'))
+                    ->formatStateUsing(fn ($state, AffiliateConversion $record): string => $this->formatAmount((int) $state, $record->commission_currency))
+                    ->sortable(),
+
+                TextColumn::make('status')
+                    ->label(__('Status'))
+                    ->badge()
+                    ->color(fn (string | BackedEnum $state): string => ConversionStatus::fromString(
+                        $state instanceof BackedEnum ? (string) $state->value : $state
+                    )->color()),
+            ])
+            ->defaultSort('occurred_at', 'desc')
+            ->paginated([10, 25, 50]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getViewData(): array
+    {
+        $affiliate = $this->getAffiliate();
+
+        $affiliateIds = $affiliate ? [(string) $affiliate->getKey()] : [];
+
+        if ($affiliate && config('affiliates.upline.enabled', false)) {
+            $affiliateIds = array_values(array_unique(array_merge(
+                $affiliateIds,
+                app(UplineApi::class)->descendantIds((string) $affiliate->getKey()),
+            )));
+        }
+
+        $totalConversions = $affiliate
+            ? app(ConversionStatisticsReader::class)->count($affiliateIds, spl_object_id($affiliate->getConnection()))
+            : 0;
+
+        return [
+            'hasAffiliate' => $this->hasAffiliate(),
+            'totalConversions' => $totalConversions,
+            'totalEarnings' => $this->getTotalEarnings(),
+            'pendingEarnings' => $this->getPendingEarnings(),
+        ];
+    }
+}

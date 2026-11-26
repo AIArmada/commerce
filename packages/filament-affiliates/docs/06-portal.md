@@ -89,7 +89,9 @@ When `affiliates.features.commission_tracking.enabled` is `false`, portal payout
 
 ## Access model
 
-By default, portal pages require authentication and resolve affiliate context from the current user. If a user has no linked affiliate, pages should render empty-state behavior.
+By default, portal pages require authentication and resolve affiliate context from the current user. The canonical resolver is `AIArmada\Affiliates\Features\Identity\Api\PortalActorAffiliateReader`: it accepts direct ownership, an active ownership claim, or the identity recorded when the affiliate registered, within the current owner scope. Ambiguous matches are rejected rather than resolved to the first row, and profile writes revalidate the same actor-to-affiliate decision inside the affiliates package. If a user has no linked affiliate, pages should render empty-state behavior.
+
+Registration writes the user, affiliate, and `Affiliate` role inside one transaction after verifying that all three models share the same database connection. A connection mismatch fails before any row is created.
 
 If stricter enforcement is needed (for example affiliate-only guard middleware), extend `AffiliatePanelProvider` and add custom auth middleware.
 
@@ -107,7 +109,7 @@ When the affiliate has downlines (affiliates they directly referred), the dashbo
 The registration form includes an optional **Referral Code** field. If a valid affiliate code is entered:
 
 - The new affiliate is linked as a direct downline (`parent_affiliate_id`) of the referring affiliate.
-- The `UplineService::addToUpline()` call builds the closure table entry (when `affiliates.upline.enabled` is `true`).
+- The `UplineApi::add()` call builds the closure table entry (when `affiliates.upline.enabled` is `true`).
 
 
 Public handles are available during registration and profile editing when

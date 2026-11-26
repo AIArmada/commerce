@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\AffiliateReportService;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
@@ -61,7 +61,7 @@ test('reconciliation report discloses conversion provenance and uses period-end 
         ]);
     }
 
-    $report = app(PayoutReconciliationService::class)->generateReport('2026-01-01', '2026-12-31');
+    $report = app(PayoutReconciliationQueries::class)->generateReport('2026-01-01', '2026-12-31');
 
     expect($report['by_currency'])->toHaveKeys(['USD', 'MYR'])
         ->and($report['summary']['converted'])->toBeTrue()
@@ -94,7 +94,7 @@ test('report summaries disclose conversion provenance', function (): void {
         ]);
     }
 
-    $summary = app(AffiliateReportService::class)->getSummary($start, $end);
+    $summary = app(ReportingApi::class)->getSummary($start, $end);
 
     expect($summary['converted'])->toBeTrue()
         ->and($summary['conversion'])->toBe([
@@ -128,7 +128,7 @@ test('top affiliates break ranking ties by affiliate id', function (): void {
     }
 
     $expected = collect($affiliates)->map(fn (Affiliate $a): string => (string) $a->id)->sort()->values()->all();
-    $actual = collect(app(AffiliateReportService::class)->getTopAffiliates($start, $end, 10))
+    $actual = collect(app(ReportingApi::class)->getTopAffiliates($start, $end, 10))
         ->pluck('affiliate_id')->all();
 
     expect($actual)->toBe($expected);
@@ -160,8 +160,8 @@ test('performance leaderboard breaks revenue ties by affiliate id', function ():
         ]);
     }
 
-    $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+    $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
+        CommissionRuleType::TopPerformer->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );

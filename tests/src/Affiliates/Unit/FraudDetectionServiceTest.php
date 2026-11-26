@@ -3,17 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->service = app(FraudDetectionService::class);
+    $this->service = app(FraudApi::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'FRAUD-' . uniqid(),
@@ -35,7 +36,7 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('FraudDetectionService', function (): void {
+describe('AnalyzeFraud', function (): void {
     describe('analyzeClick', function (): void {
         test('returns allowed true when no fraud signals', function (): void {
             $request = Request::create('/', 'GET', [], [], [], [
@@ -43,12 +44,12 @@ describe('FraudDetectionService', function (): void {
                 'HTTP_USER_AGENT' => 'Mozilla/5.0 Test Browser',
             ]);
 
-            $result = $this->service->analyzeClick($this->affiliate, $request);
+            $result = $this->service->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-            expect($result)->toHaveKeys(['allowed', 'score', 'signals']);
-            expect($result['allowed'])->toBeTrue();
-            expect($result['score'])->toBe(0);
-            expect($result['signals'])->toBeEmpty();
+            expect($result)->toBeInstanceOf(FraudAssessment::class);
+            expect($result->allowed)->toBeTrue();
+            expect($result->score)->toBe(0);
+            expect($result->signals)->toBeEmpty();
         });
 
         test('detects click velocity violation', function (): void {
@@ -64,12 +65,12 @@ describe('FraudDetectionService', function (): void {
             $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.100');
             Cache::put($cacheKey, 5, now()->addHour());
 
-            $result = $this->service->analyzeClick($this->affiliate, $request);
+            $result = $this->service->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-            expect($result['signals'])->not->toBeEmpty();
-            expect($result['score'])->toBeGreaterThan(0);
+            expect($result->signals)->not->toBeEmpty();
+            expect($result->score)->toBeGreaterThan(0);
 
-            $velocitySignal = collect($result['signals'])->firstWhere('rule_code', 'CLICK_VELOCITY');
+            $velocitySignal = collect($result->signals)->firstWhere('ruleCode', 'CLICK_VELOCITY');
             expect($velocitySignal)->not->toBeNull();
         });
 
@@ -84,11 +85,11 @@ describe('FraudDetectionService', function (): void {
 
             $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.200');
 
-            $this->service->analyzeClick($this->affiliate, $request);
+            $this->service->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
             expect(Cache::get($cacheKey))->toBe(1);
 
-            $this->service->analyzeClick($this->affiliate, $request);
+            $this->service->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
             expect(Cache::get($cacheKey))->toBe(2);
         });
@@ -104,10 +105,10 @@ describe('FraudDetectionService', function (): void {
             $cacheKey = "fraud:clicks:{$this->affiliate->id}:192.168.1.1";
             Cache::put($cacheKey, 1000, now()->addHour()); // Way over limit
 
-            $result = $this->service->analyzeClick($this->affiliate, $request);
+            $result = $this->service->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
             // Should not flag because velocity check is disabled
-            $velocitySignal = collect($result['signals'])->firstWhere('rule_code', 'CLICK_VELOCITY');
+            $velocitySignal = collect($result->signals)->firstWhere('ruleCode', 'CLICK_VELOCITY');
             expect($velocitySignal)->toBeNull();
         });
     });
@@ -126,10 +127,10 @@ describe('FraudDetectionService', function (): void {
                 'occurred_at' => now(),
             ]);
 
-            $result = $this->service->analyzeConversion($conversion);
+            $result = $this->service->analyzeConversion((string) $conversion->getKey());
 
-            expect($result)->toHaveKeys(['allowed', 'score', 'signals']);
-            expect($result['allowed'])->toBeTrue();
+            expect($result)->toBeInstanceOf(FraudAssessment::class);
+            expect($result->allowed)->toBeTrue();
         });
 
         test('detects self-referral when enabled', function (): void {
@@ -153,9 +154,9 @@ describe('FraudDetectionService', function (): void {
 
             Event::fake([FraudSignalDetected::class]);
 
-            $result = $this->service->analyzeConversion($conversion);
+            $result = $this->service->analyzeConversion((string) $conversion->getKey());
 
-            $selfReferralSignal = collect($result['signals'])->firstWhere('rule_code', 'SELF_REFERRAL');
+            $selfReferralSignal = collect($result->signals)->firstWhere('ruleCode', 'SELF_REFERRAL');
             expect($selfReferralSignal)->not->toBeNull();
             expect($selfReferralSignal->severity)->toBe(FraudSeverity::Critical);
         });
@@ -192,9 +193,9 @@ describe('FraudDetectionService', function (): void {
 
             Event::fake([FraudSignalDetected::class]);
 
-            $result = $this->service->analyzeConversion($conversion);
+            $result = $this->service->analyzeConversion((string) $conversion->getKey());
 
-            $velocitySignal = collect($result['signals'])->firstWhere('rule_code', 'CONVERSION_VELOCITY');
+            $velocitySignal = collect($result->signals)->firstWhere('ruleCode', 'CONVERSION_VELOCITY');
             expect($velocitySignal)->not->toBeNull();
         });
 
@@ -224,9 +225,9 @@ describe('FraudDetectionService', function (): void {
 
             Event::fake([FraudSignalDetected::class]);
 
-            $result = $this->service->analyzeConversion($conversion);
+            $result = $this->service->analyzeConversion((string) $conversion->getKey());
 
-            $fastSignal = collect($result['signals'])->firstWhere('rule_code', 'FAST_CONVERSION');
+            $fastSignal = collect($result->signals)->firstWhere('ruleCode', 'FAST_CONVERSION');
             expect($fastSignal)->not->toBeNull();
             expect($fastSignal->severity)->toBe(FraudSeverity::High);
         });
@@ -248,7 +249,7 @@ describe('FraudDetectionService', function (): void {
 
             Event::fake([FraudSignalDetected::class]);
 
-            $this->service->analyzeConversion($conversion);
+            $this->service->analyzeConversion((string) $conversion->getKey());
 
             Event::assertDispatched(FraudSignalDetected::class);
         });
@@ -256,7 +257,7 @@ describe('FraudDetectionService', function (): void {
 
     describe('getRiskProfile', function (): void {
         test('returns risk profile array', function (): void {
-            $result = $this->service->getRiskProfile($this->affiliate);
+            $result = $this->service->getRiskProfile((string) $this->affiliate->getKey());
 
             expect($result)->toHaveKeys([
                 'total_score',
@@ -289,7 +290,7 @@ describe('FraudDetectionService', function (): void {
                 'detected_at' => now(),
             ]);
 
-            $result = $this->service->getRiskProfile($this->affiliate);
+            $result = $this->service->getRiskProfile((string) $this->affiliate->getKey());
 
             expect($result['total_score'])->toBe(40);
             expect($result['signal_count'])->toBe(2);
@@ -316,7 +317,7 @@ describe('FraudDetectionService', function (): void {
                 'detected_at' => now(),
             ]);
 
-            $result = $this->service->getRiskProfile($this->affiliate);
+            $result = $this->service->getRiskProfile((string) $this->affiliate->getKey());
 
             expect($result['by_rule'])->toHaveKey('CLICK_VELOCITY');
             expect($result['by_rule']['CLICK_VELOCITY']['count'])->toBe(2);
@@ -334,7 +335,7 @@ describe('FraudDetectionService', function (): void {
                 'detected_at' => now()->subDays(35),
             ]);
 
-            $result = $this->service->getRiskProfile($this->affiliate);
+            $result = $this->service->getRiskProfile((string) $this->affiliate->getKey());
 
             expect($result['total_score'])->toBe(0);
             expect($result['signal_count'])->toBe(0);
@@ -361,7 +362,7 @@ describe('FraudDetectionService', function (): void {
                 'detected_at' => now(),
             ]);
 
-            $result = $this->service->getRiskProfile($this->affiliate);
+            $result = $this->service->getRiskProfile((string) $this->affiliate->getKey());
 
             expect($result['pending_review'])->toBe(1);
             expect($result['confirmed'])->toBe(1);
@@ -379,7 +380,7 @@ describe('FraudDetectionService', function (): void {
                 'detected_at' => now(),
             ]);
 
-            $result = $this->service->getRiskProfile($this->affiliate);
+            $result = $this->service->getRiskProfile((string) $this->affiliate->getKey());
 
             expect($result['severity'])->toBeInstanceOf(FraudSeverity::class);
         });
@@ -399,7 +400,7 @@ test('directly created fraud signals dispatch the detected event', function (): 
         'detected_at' => now(),
     ]);
 
-    Event::assertDispatched(FraudSignalDetected::class, fn (FraudSignalDetected $event): bool => $event->signal->is($signal));
+    Event::assertDispatched(FraudSignalDetected::class, fn (FraudSignalDetected $event): bool => $event->signal->id === (string) $signal->getKey());
 });
 
 test('service analysis dispatches exactly once per created signal', function (): void {
@@ -419,7 +420,7 @@ test('service analysis dispatches exactly once per created signal', function ():
 
     Event::fake([FraudSignalDetected::class]);
 
-    $this->service->analyzeConversion($conversion);
+    $this->service->analyzeConversion((string) $conversion->getKey());
 
     $created = AffiliateFraudSignal::query()->where('affiliate_id', $this->affiliate->id)->count();
 

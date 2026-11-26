@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Http;
+
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
+final readonly class ResolvePublicAffiliateReferralContext
+{
+    public function __construct(
+        private AffiliateDirectory $affiliateLookup,
+    ) {}
+
+    /**
+     * @return array{
+     *     code: string,
+     *     name: string,
+     *     default_voucher_code: string|null,
+     *     checkout_url: string,
+     *     home_url: string,
+     *     entry_url: string,
+     *     source: string
+     * }|null
+     */
+    public function handle(?Request $request = null): ?array
+    {
+        if (! config('affiliates.public_pages.enabled', true)) {
+            return null;
+        }
+
+        if ($request === null) {
+            if (! app()->bound('request')) {
+                return null;
+            }
+
+            $request = request();
+        }
+
+        $resolvedAffiliate = $this->resolveFromQuery($request) ?? $this->resolveFromCookie($request);
+
+        if ($resolvedAffiliate === null) {
+            return null;
+        }
+
+        return [
+            'code' => $resolvedAffiliate['code'],
+            'name' => $resolvedAffiliate['name'],
+            'default_voucher_code' => $resolvedAffiliate['default_voucher_code'],
+            'checkout_url' => $this->destinationUrl('checkout', $resolvedAffiliate['code']),
+            'home_url' => $this->destinationUrl('home', $resolvedAffiliate['code']),
+            'entry_url' => url('/r/' . $resolvedAffiliate['code']),
+            'source' => $resolvedAffiliate['source'],
+        ];
+    }
+
+    /**
+     * @return array{code: string, name: string, default_voucher_code: string|null, source: string}|null
+     */
+    private function resolveFromQuery(Request $request): ?array
+    {
+        foreach ((array) config('affiliates.cookies.query_parameters', ['aff']) as $parameter) {
+            $affiliateCode = $request->query($parameter);
+
+            if (! is_string($affiliateCode) || mb_trim($affiliateCode) === '') {
+                continue;
+            }
+
+            $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
+
+            if ($affiliate === null || ! $affiliate->canBeAttributed) {
+                continue;
+            }
+
+            return [
+                'code' => $affiliate->code,
+                'name' => $affiliate->name,
+                'default_voucher_code' => $affiliate->defaultVoucherCode,
+                'source' => 'query',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{code: string, name: string, default_voucher_code: string|null, source: string}|null
+     */
+    private function resolveFromCookie(Request $request): ?array
+    {
+        $cookieValue = $request->cookie((string) config('affiliates.cookies.name', 'affiliate_session'));
+
+        if (! is_string($cookieValue) || $cookieValue === '') {
+            return null;
+        }
+
+        $affiliate = $this->affiliateLookup->findActiveAffiliateByCookie($cookieValue);
+
+        if ($affiliate === null || ! $affiliate->canBeAttributed) {
+            return null;
+        }
+
+        return [
+            'code' => $affiliate->code,
+            'name' => $affiliate->name,
+            'default_voucher_code' => $affiliate->defaultVoucherCode,
+            'source' => 'cookie',
+        ];
+    }
+
+    private function destinationUrl(string $destinationKey, string $affiliateCode): string
+    {
+        $destination = config(
+            'affiliates.public_pages.route.destinations.' . $destinationKey,
+            $destinationKey === 'checkout' ? '/checkout' : '/',
+        );
+
+        return $this->appendQuery(
+            $this->normalizeDestinationUrl($destination),
+            [(string) config('affiliates.links.parameter', 'aff') => $affiliateCode],
+        );
+    }
+
+    private function normalizeDestinationUrl(mixed $destination): string
+    {
+        if (! is_string($destination) || $destination === '') {
+            return url('/');
+        }
+
+        return Str::startsWith($destination, ['http://', 'https://'])
+            ? $destination
+            : url($destination);
+    }
+
+    /**
+     * @param  array<string, string>  $query
+     */
+    private function appendQuery(string $url, array $query): string
+    {
+        $queryString = http_build_query(array_filter($query, static fn (?string $value): bool => $value !== null && $value !== ''));
+
+        if ($queryString === '') {
+            return $url;
+        }
+
+        return $url . (str_contains($url, '?') ? '&' : '?') . $queryString;
+    }
+}

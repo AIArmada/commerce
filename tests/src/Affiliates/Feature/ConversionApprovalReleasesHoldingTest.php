@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Illuminate\Support\Facades\Gate;
 
 beforeEach(function (): void {
@@ -49,11 +50,11 @@ function createHeldConversion(string $code, int $commissionMinor = 5000): Affili
 test('approving a conversion releases its commission from holding', function (): void {
     $conversion = createHeldConversion('HOLD001');
 
-    expect($conversion->affiliate->balanceFor('USD')->holding_minor)->toBe(5000);
+    expect(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->holding_minor)->toBe(5000);
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000)
@@ -66,7 +67,7 @@ test('approving twice credits available only once', function (): void {
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
     expect(AffiliateConversionsTable::updateStatus($conversion->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000);
@@ -77,7 +78,7 @@ test('rejecting a conversion voids its held commission', function (): void {
 
     expect(AffiliateConversionsTable::updateStatus($conversion, RejectedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
@@ -108,7 +109,7 @@ test('approving an off-record conversion credits lifetime earnings for the uncov
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000)
@@ -132,12 +133,12 @@ function createOffRecordPendingHeld(Affiliate $affiliate, int $commissionMinor):
 
 test('approving an off-record conversion does not release a neighboring hold', function (): void {
     $held = createHeldConversion('HOLDMIX1');
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
     expect(AffiliateConversionsTable::updateStatus($offRecord, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(5000)
         ->and($balance->available_minor)->toBe(3000)
@@ -145,7 +146,7 @@ test('approving an off-record conversion does not release a neighboring hold', f
 
     expect(AffiliateConversionsTable::updateStatus($held->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(8000)
@@ -154,12 +155,12 @@ test('approving an off-record conversion does not release a neighboring hold', f
 
 test('rejecting an off-record conversion does not void a neighboring hold', function (): void {
     $held = createHeldConversion('HOLDMIX2');
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
     expect(AffiliateConversionsTable::updateStatus($offRecord, RejectedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(5000)
         ->and($balance->available_minor)->toBe(0)
@@ -168,12 +169,12 @@ test('rejecting an off-record conversion does not void a neighboring hold', func
 
 test('reversing an off-record pending conversion does not void a neighboring hold', function (): void {
     $held = createHeldConversion('HOLDMIX3');
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
-    ReverseAffiliateConversion::run($offRecord, 'duplicate');
+    app(ReverseAffiliateConversion::class)->handle($offRecord, 'duplicate');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(5000)
         ->and($balance->available_minor)->toBe(0)
@@ -182,13 +183,13 @@ test('reversing an off-record pending conversion does not void a neighboring hol
 
 test('approving a held conversion voids stale hold left by a downward adjustment', function (): void {
     $held = createHeldConversion('HOLDMIX4', 5000);
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
 
     $held->forceFill(['commission_minor' => 3000])->save();
 
     expect(AffiliateConversionsTable::updateStatus($held->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(3000)

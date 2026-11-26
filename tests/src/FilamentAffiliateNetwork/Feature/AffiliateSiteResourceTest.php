@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\RelationManagers\StatementsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource\RelationManagers\StatementsRelationManager;
 
 describe('AffiliateSiteResource', function (): void {
     test('returns pages array', function (): void {

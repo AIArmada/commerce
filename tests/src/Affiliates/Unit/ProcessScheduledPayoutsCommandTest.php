@@ -2,19 +2,20 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Console\Commands\ProcessScheduledPayoutsCommand;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\EntryPoints\Console\ProcessScheduledPayoutsCommand;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
@@ -408,7 +409,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         $payout = AffiliatePayout::where('payee_id', $this->affiliate->id)->first();
 
         // Should have created an event
-        $eventCount = $payout->events()->count();
+        $eventCount = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count();
         expect($eventCount)->toBeGreaterThanOrEqual(1);
     });
 

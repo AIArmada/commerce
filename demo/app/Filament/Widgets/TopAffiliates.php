@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Number;
+use LogicException;
 
 final class TopAffiliates extends BaseWidget
 {
@@ -31,6 +33,16 @@ final class TopAffiliates extends BaseWidget
     protected function getTableQuery(): Builder
     {
         $owner = OwnerContext::resolve();
+        $affiliate = new Affiliate;
+        $conversion = new AffiliateConversion;
+
+        if ($affiliate->getConnection() !== $conversion->getConnection()) {
+            throw new LogicException('Affiliate ranking requires a shared database connection.');
+        }
+
+        $conversions = AffiliateConversion::query()->forOwner(includeGlobal: true)
+            ->whereColumn($conversion->qualifyColumn('affiliate_id'), $affiliate->qualifyColumn('id'));
+        $currency = mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
 
         return Affiliate::query()
             ->when(
@@ -39,8 +51,10 @@ final class TopAffiliates extends BaseWidget
                 fn ($query) => $query->whereRaw('1 = 0'),
             )
             ->where('status', AffiliateStatus::normalize(Active::class))
-            ->withCount('conversions')
-            ->withSum('conversions', 'commission_minor')
+            ->addSelect([
+                'conversions_count' => (clone $conversions)->selectRaw('COUNT(*)'),
+                'conversions_sum_commission_minor' => (clone $conversions)->where('commission_currency', $currency)->selectRaw('COALESCE(SUM(commission_minor), 0)'),
+            ])
             ->orderByDesc('conversions_sum_commission_minor')
             ->limit(5);
     }
@@ -61,8 +75,8 @@ final class TopAffiliates extends BaseWidget
                     ->color('success'),
 
                 TextColumn::make('conversions_sum_commission_minor')
-                    ->label('Commissions')
-                    ->formatStateUsing(fn ($state): string => 'RM '.Number::format(($state ?? 0) / 100, 2))
+                    ->label('Commissions ('.mb_strtoupper((string) config('affiliates.currency.default', 'MYR')).' only)')
+                    ->formatStateUsing(fn ($state): string => MoneyFormatter::formatMinor((int) $state, mb_strtoupper((string) config('affiliates.currency.default', 'MYR'))))
                     ->alignEnd(),
             ])
             ->paginated(false);

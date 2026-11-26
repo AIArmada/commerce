@@ -17,7 +17,7 @@ use AIArmada\Affiliates\Data\PostedConversion;
 interface MerchantLedger
 {
     /**
-     * Post one external conversion. Idempotent on (source, source ref):
+     * Post one external conversion. Idempotent on (source, source ref, external reference):
      * redeliveries return the existing posting without new rows.
      */
     public function postExternalConversion(ExternalConversion $draft): ?PostedConversion;
