@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -14,6 +16,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 it('scopes attributions to current owner and global when enabled', function (): void {
     config()->set('affiliates.owner.enabled', true);
@@ -367,6 +370,61 @@ it('returns strict global-only when enabled and resolved owner is null', functio
     expect($conversionIds)->toContain($globalConversion->id)
         ->and($conversionIds)->not->toContain($corruptConversion->id)
         ->and($conversionIds)->toHaveCount(1);
+});
+
+it('protects conversion history that is not visible to the affiliate owner', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+    config()->set('affiliates.owner.auto_assign_on_create', false);
+    config()->set('affiliates.commissions.auto_approve', false);
+
+    $ownerA = AffiliatesTestOwner::create(['name' => 'Owner A']);
+    $ownerB = AffiliatesTestOwner::create(['name' => 'Owner B']);
+
+    OwnerContext::withOwner($ownerA, function () use ($ownerA, $ownerB): void {
+        $affiliate = new Affiliate([
+            'code' => 'AFF-HIDDEN-HISTORY',
+            'name' => 'History protection',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+        $affiliate->forceFill([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ])->save();
+
+        $reader = app(ConversionHistoryReader::class);
+        $connectionIdentity = spl_object_id($affiliate->getConnection());
+        expect($reader->hasAffiliateHistory($affiliate->id, $connectionIdentity))->toBeFalse();
+
+        $conversion = new AffiliateConversion([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'commission_minor' => 500,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+        ]);
+        $conversion->forceFill([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ])->save();
+
+        // Simulate a mismatched owner on historical data, without changing its affiliate reference.
+        $conversion->getConnection()->table($conversion->getTable())
+            ->where('id', $conversion->getKey())
+            ->update(['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey()]);
+
+        expect(AffiliateConversion::query()->forOwner()->whereKey($conversion->getKey())->exists())->toBeFalse()
+            ->and($reader->hasAffiliateHistory($affiliate->id, $connectionIdentity))->toBeTrue();
+        expect(fn () => $reader->hasAffiliateHistory($affiliate->id, -1))->toThrow(LogicException::class);
+        expect(fn () => $affiliate->delete())->toThrow(LogicException::class);
+        expect(fn () => app(AffiliateRemoval::class)->delete($affiliate->id))->toThrow(ValidationException::class);
+
+        expect(Affiliate::query()->whereKey($affiliate->id)->exists())->toBeTrue()
+            ->and(AffiliateConversion::query()->withoutOwnerScope()->whereKey($conversion->getKey())->exists())->toBeTrue();
+    });
 });
 
 class AffiliatesTestOwner extends Model

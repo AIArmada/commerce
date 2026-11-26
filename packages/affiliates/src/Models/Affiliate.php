@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
@@ -395,7 +396,7 @@ class Affiliate extends Model implements Auditable
 
         self::deleting(function (self $affiliate): void {
             if ($affiliate->identity_sealed_at !== null
-                || $affiliate->conversions()->exists()
+                || app(ConversionHistoryReader::class)->hasAffiliateHistory((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))
                 || app(PayoutAccountingReader::class)->hasAffiliateHistory((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))
                 || app(AttributionReportingReader::class)->hasAffiliateHistory((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))
                 || app(TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey())

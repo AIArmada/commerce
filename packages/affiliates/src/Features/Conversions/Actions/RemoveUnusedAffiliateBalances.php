@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -13,6 +14,8 @@ use LogicException;
 
 final readonly class RemoveUnusedAffiliateBalances implements UnusedAffiliateBalanceRemoval
 {
+    public function __construct(private ConversionHistoryReader $history) {}
+
     public function remove(string $affiliateId): void
     {
         $connection = (new Affiliate)->getConnection();
@@ -25,7 +28,7 @@ final readonly class RemoveUnusedAffiliateBalances implements UnusedAffiliateBal
         $connection->transaction(function () use ($affiliateId): void {
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
 
-            if ($affiliate->conversions()->exists()) {
+            if ($this->history->hasAffiliateHistory($affiliateId, spl_object_id($affiliate->getConnection()))) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with conversion history cannot be deleted.']);
             }
 
