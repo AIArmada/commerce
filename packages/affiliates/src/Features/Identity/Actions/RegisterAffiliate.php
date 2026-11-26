@@ -11,7 +11,9 @@ use AIArmada\Affiliates\Features\Identity\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final readonly class RegisterAffiliate implements RegistrationApi
@@ -38,52 +40,66 @@ final readonly class RegisterAffiliate implements RegistrationApi
             'phone' => ['nullable', 'string', 'max:32'],
         ])->validate();
 
+        $code = $data['code'] ?? null;
+
+        if (is_string($code) && $code !== '' && ! $this->lookup->codeAvailable($code)) {
+            throw ValidationException::withMessages(['code' => 'The affiliate code has already been taken.']);
+        }
+
         $ownerModel = EloquentRecordReference::resolve($owner);
         $connection = (new Affiliate)->getConnection();
 
-        return $connection->transaction(function () use ($data, $ownerModel, $referralCode, $cookie): AffiliateRecord {
-            $sponsor = null;
-            if ($referralCode !== null && mb_trim($referralCode) !== '') {
-                $sponsor = $this->lookup->findByCode($referralCode);
-                if ($sponsor === null || ! $sponsor->canBeAttributed() || ! $sponsor->isCommercialPurpose()) {
-                    throw new InvalidArgumentException('The referral code does not identify an eligible affiliate.');
-                }
-            } elseif ($cookie !== null && $cookie !== '') {
-                $sponsor = $this->lookup->findActiveAffiliateByCookie($cookie);
-                if ($sponsor !== null && ! $sponsor->isCommercialPurpose()) {
-                    $sponsor = null;
-                }
-            }
-
-            if ($sponsor !== null) {
-                $sponsor = Affiliate::query()->forOwner()->whereKey($sponsor->getKey())->lockForUpdate()->first();
-
-                if ($sponsor === null || ! $sponsor->canBeAttributed() || ! $sponsor->isCommercialPurpose()) {
-                    if ($referralCode !== null && mb_trim($referralCode) !== '') {
+        try {
+            return $connection->transaction(function () use ($data, $ownerModel, $referralCode, $cookie): AffiliateRecord {
+                $sponsor = null;
+                if ($referralCode !== null && mb_trim($referralCode) !== '') {
+                    $sponsor = $this->lookup->findByCode($referralCode);
+                    if ($sponsor === null || ! $sponsor->canBeAttributed() || ! $sponsor->isCommercialPurpose()) {
                         throw new InvalidArgumentException('The referral code does not identify an eligible affiliate.');
                     }
-
-                    $sponsor = null;
+                } elseif ($cookie !== null && $cookie !== '') {
+                    $sponsor = $this->lookup->findActiveAffiliateByCookie($cookie);
+                    if ($sponsor !== null && ! $sponsor->isCommercialPurpose()) {
+                        $sponsor = null;
+                    }
                 }
+
+                if ($sponsor !== null) {
+                    $sponsor = Affiliate::query()->forOwner()->whereKey($sponsor->getKey())->lockForUpdate()->first();
+
+                    if ($sponsor === null || ! $sponsor->canBeAttributed() || ! $sponsor->isCommercialPurpose()) {
+                        if ($referralCode !== null && mb_trim($referralCode) !== '') {
+                            throw new InvalidArgumentException('The referral code does not identify an eligible affiliate.');
+                        }
+
+                        $sponsor = null;
+                    }
+                }
+
+                if ($sponsor !== null) {
+                    $data['parent_affiliate_id'] = (string) $sponsor->getKey();
+                }
+
+                $affiliate = $this->create->handle($data, $ownerModel);
+                if ($sponsor !== null) {
+                    $this->upline->add((string) $affiliate->getKey(), (string) $sponsor->getKey());
+                }
+
+                return new AffiliateRecord(
+                    id: (string) $affiliate->getKey(),
+                    code: $affiliate->code,
+                    name: $affiliate->name,
+                    active: $affiliate->isActive(),
+                    canBeAttributed: $affiliate->canBeAttributed(),
+                    defaultVoucherCode: $affiliate->default_voucher_code,
+                );
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            if (is_string($code) && $code !== '' && ! $this->lookup->codeAvailable($code)) {
+                throw ValidationException::withMessages(['code' => 'The affiliate code has already been taken.']);
             }
 
-            if ($sponsor !== null) {
-                $data['parent_affiliate_id'] = (string) $sponsor->getKey();
-            }
-
-            $affiliate = $this->create->handle($data, $ownerModel);
-            if ($sponsor !== null) {
-                $this->upline->add((string) $affiliate->getKey(), (string) $sponsor->getKey());
-            }
-
-            return new AffiliateRecord(
-                id: (string) $affiliate->getKey(),
-                code: $affiliate->code,
-                name: $affiliate->name,
-                active: $affiliate->isActive(),
-                canBeAttributed: $affiliate->canBeAttributed(),
-                defaultVoucherCode: $affiliate->default_voucher_code,
-            );
-        });
+            throw $exception;
+        }
     }
 }

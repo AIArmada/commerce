@@ -237,3 +237,18 @@ it('enforces registration availability and schema limits at the API boundary', f
         ->toThrow(ValidationException::class)
         ->and(Affiliate::query()->count())->toBe(0);
 });
+
+it('rejects a differently cased existing code with a validation error', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+    config()->set('affiliates.registration.enabled', true);
+
+    $user = User::factory()->create();
+    $reference = EloquentRecordReference::fromModel($user);
+    $registration = app(RegistrationApi::class);
+
+    $registration->register(['name' => 'Original Applicant', 'code' => 'Public-Code'], $reference, null, null);
+
+    expect(fn () => $registration->register(['name' => 'Other Applicant', 'code' => 'PUBLIC-CODE'], $reference, null, null))
+        ->toThrow(ValidationException::class, 'The affiliate code has already been taken.')
+        ->and(Affiliate::query()->count())->toBe(1);
+});

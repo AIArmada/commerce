@@ -448,6 +448,8 @@ When an affiliate has downlines (affiliates they referred), the affiliate portal
 
 Downlines are loaded via the `children()` relationship on the `Affiliate` model (`parent_affiliate_id`).
 
+Affiliate codes are globally unique, case-insensitive public identifiers. Use `AffiliateDirectory::codeAvailable($code)` to check availability without retrieving another owner's affiliate record. Registration accepts public profile and contact fields; commission type, rate and currency come from package configuration. Referral sponsorship is resolved and revalidated inside the registration transaction. PostgreSQL and SQLite enforce code uniqueness at the database level.
+
 ### Registration with Referral Code
 
 New affiliates can optionally enter a referral code during self-registration. If the code matches an existing affiliate:
