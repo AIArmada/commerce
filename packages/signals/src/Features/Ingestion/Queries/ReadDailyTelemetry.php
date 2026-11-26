@@ -32,7 +32,7 @@ final readonly class ReadDailyTelemetry implements DailyTelemetryRead
 
         foreach (TrackedProperty::query()->forOwner()->lazyById(100)->chunk(100) as $properties) {
             for ($date = $from; $date->lte($to); $date = $date->addDay()) {
-                yield from $this->readChunk($date, $properties);
+                yield from $this->readChunk($date, $properties->collect()->values());
             }
         }
     }
@@ -99,7 +99,7 @@ final readonly class ReadDailyTelemetry implements DailyTelemetryRead
                 propertyId: $property->id,
                 date: $date->toDateString(),
                 ownerType: $property->owner_type,
-                ownerId: $property->owner_id,
+                ownerId: $property->owner_id === null ? null : (string) $property->owner_id,
                 currency: $currency,
                 identities: (int) ($count->unique_identities ?? 0),
                 sessions: (int) ($session->sessions ?? 0),

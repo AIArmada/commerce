@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Alerts;
 
-use AIArmada\Signals\Contracts\AlertTransport;
-use AIArmada\Signals\Drivers\DefaultAlertTransport;
 use AIArmada\Signals\Features\Alerts\Actions\SetAlertReadState;
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
@@ -31,7 +29,6 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(DetachPropertyAlerts::class, DetachAlertsFromProperty::class);
         $app->bind(AlertSummary::class, AlertSummaryQuery::class);
         $app->bind(AlertEventEvaluation::class, EvaluateIngestedEvent::class);
-        $app->bind(AlertTransport::class, DefaultAlertTransport::class);
         $app->singleton(AlertEvaluator::class, SignalAlertEvaluator::class);
         $app->singleton(SignalAlertDispatcher::class);
     }

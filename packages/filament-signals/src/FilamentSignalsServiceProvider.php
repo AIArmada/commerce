@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals;
 
+use AIArmada\FilamentSignals\Contracts\PageMarkupFetcher;
+use AIArmada\FilamentSignals\Drivers\PinnedPageMarkupFetcher;
 use AIArmada\FilamentSignals\Platform\ExtensionRegistry;
 use AIArmada\FilamentSignals\Platform\FeatureCatalog;
 use AIArmada\FilamentSignals\Platform\FeatureModule;
@@ -23,6 +25,8 @@ final class FilamentSignalsServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->bind(PageMarkupFetcher::class, PinnedPageMarkupFetcher::class);
+
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 

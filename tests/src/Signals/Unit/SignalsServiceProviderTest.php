@@ -119,3 +119,14 @@ it('maps affiliate lifecycle events to exact recorder methods and arguments', fu
         'arguments' => [['property' => 'signal', 'type' => 'object']],
     ]);
 });
+
+it('resolves the geocoder pipeline through the transport contract', function (): void {
+    $geocoder = Mockery::mock(\AIArmada\Signals\Contracts\ReverseGeocoderContract::class);
+    app()->instance(\AIArmada\Signals\Contracts\ReverseGeocoderContract::class, $geocoder);
+    app()->forgetInstance(SignalLocationResolverPipeline::class);
+
+    $pipeline = app(SignalLocationResolverPipeline::class);
+    $geocoders = Closure::bind(fn (): array => $this->geocoders, $pipeline, $pipeline)();
+
+    expect($geocoders)->toBe([$geocoder]);
+});

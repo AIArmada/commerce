@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals;
 
+use AIArmada\Signals\Contracts\AlertTransport;
+use AIArmada\Signals\Contracts\ReverseGeocoderContract;
+use AIArmada\Signals\Contracts\UserAgentParser;
+use AIArmada\Signals\Drivers\DefaultAlertTransport;
+use AIArmada\Signals\Drivers\MatomoUserAgentParser;
+use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
@@ -45,6 +51,10 @@ final class SignalsServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->bind(AlertTransport::class, DefaultAlertTransport::class);
+        $this->app->bind(ReverseGeocoderContract::class, NominatimGeocoder::class);
+        $this->app->bind(UserAgentParser::class, MatomoUserAgentParser::class);
+
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 
