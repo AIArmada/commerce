@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Policies;
 
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 class AffiliatePayoutPolicy

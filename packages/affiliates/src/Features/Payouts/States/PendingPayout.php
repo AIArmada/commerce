@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\States;
+namespace AIArmada\Affiliates\Features\Payouts\States;
 
 final class PendingPayout extends PayoutStatus
 {

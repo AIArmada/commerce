@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Reso
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;

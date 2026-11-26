@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;

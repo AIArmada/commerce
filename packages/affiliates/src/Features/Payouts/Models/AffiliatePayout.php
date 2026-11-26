@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Payouts\Models;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
-use AIArmada\Affiliates\States\PayoutStatus;
-use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -62,6 +64,8 @@ class AffiliatePayout extends Model implements Auditable
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
+
+    protected $table = 'affiliate_payouts';
 
     protected $fillable = [
         'reference',

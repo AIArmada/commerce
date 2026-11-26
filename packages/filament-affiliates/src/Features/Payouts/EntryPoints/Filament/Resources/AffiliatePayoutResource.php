@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Pages\CreateAffiliatePayout;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Pages\ListAffiliatePayouts;

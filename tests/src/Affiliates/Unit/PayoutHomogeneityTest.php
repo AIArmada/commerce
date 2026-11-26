@@ -6,11 +6,11 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 

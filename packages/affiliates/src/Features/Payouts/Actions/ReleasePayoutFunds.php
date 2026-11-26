@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use Carbon\CarbonImmutable;
 
 final readonly class ReleasePayoutFunds implements PayoutRelease

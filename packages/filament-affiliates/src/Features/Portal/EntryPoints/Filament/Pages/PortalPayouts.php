@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;

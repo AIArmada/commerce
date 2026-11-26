@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;

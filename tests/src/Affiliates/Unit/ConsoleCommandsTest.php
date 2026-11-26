@@ -8,10 +8,10 @@ use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailySt
 use AIArmada\Affiliates\Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 

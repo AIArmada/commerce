@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 
 final readonly class AdministerPayout implements PayoutAdministration

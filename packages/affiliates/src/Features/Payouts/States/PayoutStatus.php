@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\States;
+namespace AIArmada\Affiliates\Features\Payouts\States;
 
 use AIArmada\Affiliates\Enums\PayoutStatus as PayoutStatusEnum;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Spatie\ModelStates\State;

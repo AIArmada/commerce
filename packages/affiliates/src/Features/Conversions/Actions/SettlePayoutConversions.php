@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
+use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
@@ -13,9 +14,6 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingRecord;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CancelledPayout;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use Carbon\CarbonImmutable;
 use LogicException;
@@ -32,7 +30,7 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
     {
         $payout = $this->lockedPayout($payoutId);
 
-        if ($payout->status !== CompletedPayout::value()) {
+        if ($payout->status !== PayoutStatus::Completed->value) {
             throw new LogicException('Conversions can only settle for a completed payout.');
         }
 
@@ -59,7 +57,7 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
     {
         $payout = $this->lockedPayout($payoutId);
 
-        if ($payout->status !== FailedPayout::value() && $payout->status !== CancelledPayout::value()) {
+        if ($payout->status !== PayoutStatus::Failed->value && $payout->status !== PayoutStatus::Cancelled->value) {
             throw new LogicException('Only failed or cancelled payouts can release funds.');
         }
 

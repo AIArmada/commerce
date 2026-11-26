@@ -103,11 +103,11 @@ reserved just because the row is pending.
 Payout status is a Spatie state (`States\PayoutStatus`); assign state classes on write:
 
 ```php
-use AIArmada\Affiliates\States\CancelledPayout;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\FailedPayout;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CancelledPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 
 PendingPayout::class;     // Awaiting processing
 ProcessingPayout::class;  // Currently being processed

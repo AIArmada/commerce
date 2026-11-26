@@ -11,9 +11,9 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 

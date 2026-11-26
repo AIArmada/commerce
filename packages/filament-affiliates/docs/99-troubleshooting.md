@@ -202,7 +202,7 @@ AffiliateConversion::count();
 
 ```php
 \AIArmada\Affiliates\Models\AffiliateConversion::count();
-\AIArmada\Affiliates\Models\AffiliatePayout::count();
+\AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout::count();
 \AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal::count();
 ```
 

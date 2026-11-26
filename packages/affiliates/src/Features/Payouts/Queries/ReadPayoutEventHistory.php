@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Queries;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventRecord;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use Illuminate\Support\Str;
 use LogicException;
 

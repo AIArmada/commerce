@@ -7,8 +7,8 @@ namespace AIArmada\Affiliates\Features\Payouts\Queries;
 use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 
 final class PayoutRequestQuery
 {

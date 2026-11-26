@@ -6,11 +6,11 @@ namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Reso
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\FailedPayout;
-use AIArmada\Affiliates\States\PayoutStatus;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource;

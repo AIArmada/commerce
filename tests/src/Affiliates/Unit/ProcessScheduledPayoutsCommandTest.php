@@ -9,13 +9,13 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {

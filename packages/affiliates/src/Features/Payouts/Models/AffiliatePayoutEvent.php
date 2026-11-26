@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Models;
 
-use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonInterface;

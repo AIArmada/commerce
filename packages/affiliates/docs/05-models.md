@@ -177,7 +177,7 @@ rows, and any pool shortfall is reported via
 Batch payout record for commissions.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 ```
 
 **Key Attributes:**
