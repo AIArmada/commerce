@@ -6,8 +6,6 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +15,7 @@ final readonly class SaveAddressAreaAliasAction implements AddressAreaAliasWrite
     /**
      * @param  array{name: mixed, name_type?: mixed, is_preferred?: mixed}  $attributes
      */
-    public function handle(AddressArea $area, array $attributes, ?AddressAreaName $record = null): AddressAreaName
+    public function handle(string $areaId, array $attributes, ?string $aliasId = null): string
     {
         $name = $attributes['name'] ?? null;
 
@@ -33,13 +31,13 @@ final readonly class SaveAddressAreaAliasAction implements AddressAreaAliasWrite
             ]);
         }
 
-        return $area->getConnection()->transaction(function () use ($area, $attributes, $name, $record): AddressAreaName {
+        return ModelResolver::areaClass()::query()->getConnection()->transaction(function () use ($areaId, $attributes, $name, $aliasId): string {
             $areaClass = ModelResolver::areaClass();
-            $persistedArea = $areaClass::query()->lockForUpdate()->findOrFail($area->getKey());
+            $persistedArea = $areaClass::query()->lockForUpdate()->findOrFail($areaId);
             $aliasClass = ModelResolver::areaNameClass();
 
-            if ($record instanceof AddressAreaName) {
-                $persistedAlias = $aliasClass::query()->lockForUpdate()->findOrFail($record->getKey());
+            if ($aliasId !== null) {
+                $persistedAlias = $aliasClass::query()->lockForUpdate()->findOrFail($aliasId);
 
                 if ($persistedAlias->source !== 'manual') {
                     throw ValidationException::withMessages([
@@ -86,7 +84,7 @@ final readonly class SaveAddressAreaAliasAction implements AddressAreaAliasWrite
                 throw new DomainException('The address area alias could not be saved.');
             }
 
-            return $record;
+            return (string) $record->getKey();
         });
     }
 }

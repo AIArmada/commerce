@@ -53,7 +53,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(AddressAreaAliasWriter::class)->handle($owner, $data);
+                        app(AddressAreaAliasWriter::class)->handle((string) $owner->getKey(), $data);
 
                         Notification::make()->title('Alias added')->success()->send();
                     }),
@@ -77,7 +77,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(AddressAreaAliasWriter::class)->handle($owner, $data, $record);
+                        app(AddressAreaAliasWriter::class)->handle((string) $owner->getKey(), $data, $record);
 
                         Notification::make()->title('Alias updated')->success()->send();
                     }),
@@ -95,7 +95,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(AddressAreaAliasDeleter::class)->execute($owner, $record);
+                        app(AddressAreaAliasDeleter::class)->execute((string) $owner->getKey(), (string) $record->getKey());
 
                         Notification::make()->title('Alias deleted')->success()->send();
                     }),

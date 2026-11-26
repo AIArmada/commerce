@@ -6,21 +6,19 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
 
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 use Illuminate\Validation\ValidationException;
 
 final readonly class DeleteAddressAreaAliasAction implements AddressAreaAliasDeleter
 {
-    public function execute(AddressArea $area, AddressAreaName $alias): void
+    public function execute(string $areaId, string $aliasId): void
     {
-        $area->getConnection()->transaction(function () use ($area, $alias): void {
+        ModelResolver::areaClass()::query()->getConnection()->transaction(function () use ($areaId, $aliasId): void {
             $areaClass = ModelResolver::areaClass();
-            $persistedArea = $areaClass::query()->lockForUpdate()->findOrFail($area->getKey());
+            $persistedArea = $areaClass::query()->lockForUpdate()->findOrFail($areaId);
             $aliasClass = ModelResolver::areaNameClass();
-            $persistedAlias = $aliasClass::query()->lockForUpdate()->findOrFail($alias->getKey());
+            $persistedAlias = $aliasClass::query()->lockForUpdate()->findOrFail($aliasId);
 
             if ($persistedAlias->source !== 'manual') {
                 throw ValidationException::withMessages([

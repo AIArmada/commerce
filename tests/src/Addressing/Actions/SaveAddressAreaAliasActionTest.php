@@ -14,12 +14,12 @@ it('creates and updates only manually sourced aliases', function (): void {
     $area = AddressArea::factory()->create(['country_code' => 'MY']);
     $action = app(AddressAreaAliasWriter::class);
 
-    $alias = $action->handle($area, ['name' => 'Kuala Lumpur City']);
+    $alias = AddressAreaName::query()->findOrFail($action->handle((string) $area->getKey(), ['name' => 'Kuala Lumpur City']));
 
     expect($alias->source)->toBe('manual')
         ->and($alias->name)->toBe('Kuala Lumpur City');
 
-    $updated = $action->handle($area, ['name' => 'KL City'], $alias);
+    $updated = AddressAreaName::query()->findOrFail($action->handle((string) $area->getKey(), ['name' => 'KL City'], (string) $alias->getKey()));
 
     expect($updated->name)->toBe('KL City')
         ->and($updated->source)->toBe('manual');
@@ -35,7 +35,7 @@ it('preserves optional alias fields when an update omits them', function (): voi
         'is_preferred' => true,
     ]);
 
-    $updated = app(AddressAreaAliasWriter::class)->handle($area, ['name' => 'Renamed'], $alias);
+    $updated = AddressAreaName::query()->findOrFail(app(AddressAreaAliasWriter::class)->handle((string) $area->getKey(), ['name' => 'Renamed'], (string) $alias->getKey()));
 
     expect($updated->name_type)->toBe('official')
         ->and($updated->is_preferred)->toBeTrue();
@@ -45,9 +45,9 @@ it('validates alias name size and strict preferred booleans', function (): void 
     $area = AddressArea::factory()->create(['country_code' => 'MY']);
     $action = app(AddressAreaAliasWriter::class);
 
-    expect(fn () => $action->handle($area, ['name' => str_repeat('a', 256)]))
+    expect(fn () => $action->handle((string) $area->getKey(), ['name' => str_repeat('a', 256)]))
         ->toThrow(ValidationException::class)
-        ->and(fn () => $action->handle($area, ['name' => 'Alias', 'is_preferred' => 'false']))
+        ->and(fn () => $action->handle((string) $area->getKey(), ['name' => 'Alias', 'is_preferred' => 'false']))
         ->toThrow(ValidationException::class);
 });
 
@@ -62,7 +62,7 @@ it('reports observer-cancelled alias saves and deletes as failures', function ()
     Event::listen($savingEvent, static fn (): bool => false);
 
     try {
-        expect(fn () => app(AddressAreaAliasWriter::class)->handle($area, ['name' => 'Changed'], $alias))
+        expect(fn () => app(AddressAreaAliasWriter::class)->handle((string) $area->getKey(), ['name' => 'Changed'], (string) $alias->getKey()))
             ->toThrow(DomainException::class);
     } finally {
         Event::forget($savingEvent);
@@ -72,7 +72,7 @@ it('reports observer-cancelled alias saves and deletes as failures', function ()
     Event::listen($deletingEvent, static fn (): bool => false);
 
     try {
-        expect(fn () => app(AddressAreaAliasDeleter::class)->execute($area, $alias))
+        expect(fn () => app(AddressAreaAliasDeleter::class)->execute((string) $area->getKey(), (string) $alias->getKey()))
             ->toThrow(DomainException::class);
     } finally {
         Event::forget($deletingEvent);
@@ -91,9 +91,9 @@ it('refuses to update a provider sourced alias', function (): void {
     ]);
 
     expect(fn () => app(AddressAreaAliasWriter::class)->handle(
-        $area,
+        (string) $area->getKey(),
         ['name' => 'Changed name'],
-        $alias,
+        (string) $alias->getKey(),
     ))->toThrow(ValidationException::class);
 
     expect($alias->fresh()->name)->toBe('Provider name');
@@ -107,7 +107,7 @@ it('refuses to delete a provider sourced alias', function (): void {
         'source' => 'my.provider',
     ]);
 
-    expect(fn () => app(AddressAreaAliasDeleter::class)->execute($area, $alias))
+    expect(fn () => app(AddressAreaAliasDeleter::class)->execute((string) $area->getKey(), (string) $alias->getKey()))
         ->toThrow(ValidationException::class);
 
     expect($alias->fresh())->not->toBeNull();
@@ -121,7 +121,7 @@ it('deletes a manually sourced alias', function (): void {
         'source' => 'manual',
     ]);
 
-    app(AddressAreaAliasDeleter::class)->execute($area, $alias);
+    app(AddressAreaAliasDeleter::class)->execute((string) $area->getKey(), (string) $alias->getKey());
 
     expect($alias->fresh())->toBeNull();
 });
@@ -140,9 +140,9 @@ it('checks provider ownership from the persisted alias instead of the submitted 
     $forgedAlias->address_area_id = $area->getKey();
 
     expect(fn () => app(AddressAreaAliasWriter::class)->handle(
-        $area,
+        (string) $area->getKey(),
         ['name' => 'Changed name'],
-        $forgedAlias,
+        (string) $forgedAlias->getKey(),
     ))->toThrow(ValidationException::class);
 
     expect($alias->fresh()->name)->toBe('Provider name')
