@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
@@ -27,6 +28,7 @@ use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     config()->set('affiliates.owner.enabled', true);
@@ -242,5 +244,40 @@ it('projects compliance names and searches only strict current-owner records', f
             ->and(AffiliateReferenceProjection::label($owned->id))->toBe('Owned Compliance')
             ->and(AffiliateReferenceProjection::label($foreign->id))->toBeNull()
             ->and(AffiliateReferenceProjection::label($global->id))->toBeNull();
+    });
+});
+
+it('rejects changes to an existing affiliate owner through administration', function (): void {
+    config()->set('auth.providers.users.model', User::class);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($owner, $other): void {
+        $affiliate = Affiliate::create([
+            'code' => 'IMMUTABLE-OWNER-' . Str::uuid(),
+            'name' => 'Immutable Owner',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+        $administration = app(AffiliateAdministration::class);
+
+        expect(fn () => $administration->update($affiliate->id, [
+            'linked_user' => $other->getKey(),
+            'name' => 'Attempted Transfer',
+        ]))->toThrow(ValidationException::class, 'The affiliate owner cannot be changed after creation.');
+
+        $affiliate->refresh();
+        expect((string) $affiliate->owner_id)->toBe((string) $owner->getKey())
+            ->and($affiliate->name)->toBe('Immutable Owner');
+
+        $administration->update($affiliate->id, [
+            'linked_user' => $owner->getKey(),
+            'description' => 'Allowed edit',
+        ]);
+
+        expect($affiliate->fresh()->description)->toBe('Allowed edit');
     });
 });

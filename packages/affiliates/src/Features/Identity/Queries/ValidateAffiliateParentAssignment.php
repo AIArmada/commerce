@@ -55,9 +55,9 @@ final class ValidateAffiliateParentAssignment
             if (! $record->isCommercialPurpose()) {
                 throw $this->validationException('Non-commercial profiles cannot join a downline.');
             }
-
-            $this->ensureNoHierarchyCycle($record, $parentAffiliate);
         }
+
+        $this->ensureNoHierarchyCycle($record, $parentAffiliate);
 
         $data['parent_affiliate_id'] = (string) $parentAffiliate->getKey();
 
@@ -98,7 +98,7 @@ final class ValidateAffiliateParentAssignment
         ]);
     }
 
-    private function ensureNoHierarchyCycle(Affiliate $record, Affiliate $candidateParent): void
+    private function ensureNoHierarchyCycle(?Affiliate $record, Affiliate $candidateParent): void
     {
         $current = $candidateParent;
         $visited = [];
@@ -106,7 +106,7 @@ final class ValidateAffiliateParentAssignment
         while ($current instanceof Affiliate) {
             $id = (string) $current->getKey();
 
-            if ($id === (string) $record->getKey() || isset($visited[$id])) {
+            if (($record !== null && $id === (string) $record->getKey()) || isset($visited[$id])) {
                 throw $this->validationException('Selected parent affiliate would create a hierarchy cycle.');
             }
 

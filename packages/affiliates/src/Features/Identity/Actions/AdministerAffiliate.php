@@ -59,12 +59,16 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
 
             $data = $this->owners->handle($data);
 
+            if (isset($data['owner_type'], $data['owner_id'])
+                && ($affiliate->owner_type !== $data['owner_type'] || (string) $affiliate->owner_id !== $data['owner_id'])) {
+                throw ValidationException::withMessages(['data.linked_user' => 'The affiliate owner cannot be changed after creation.']);
+            }
+
             if (array_key_exists('parent_affiliate_id', $data)) {
                 $data = $this->parents->handle($data, $affiliate);
             }
 
             $affiliate->fill($this->attributes($data));
-            $this->applyOwner($affiliate, $data);
 
             if ($affiliate->isDirty(['commission_type', 'commission_rate'])) {
                 $this->assertCommission($affiliate);
