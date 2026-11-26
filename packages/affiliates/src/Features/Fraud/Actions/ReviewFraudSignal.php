@@ -6,11 +6,11 @@ namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAdministration;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewResult;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
