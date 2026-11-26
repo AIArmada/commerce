@@ -26,9 +26,6 @@ use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\ExportA
 use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ExportResolutionGapAliasesCommand;
 use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ReportResolutionGapsCommand;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsUrlParser;
-use AIArmada\Addressing\GooglePlaces\GooglePlaceGeographyMatcher;
-use AIArmada\Addressing\GooglePlaces\GooglePlaceGeographyResolver;
-use AIArmada\Addressing\GooglePlaces\GooglePlaceResolutionGapLogger;
 use AIArmada\Addressing\Platform\ExtensionRegistry;
 use AIArmada\Addressing\Platform\FeatureCatalog;
 use AIArmada\Addressing\Platform\FeatureModule;
@@ -87,9 +84,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(GooglePlacePhotoLookup::class, GooglePlacePhotoPreviewsClient::class);
         $this->app->singleton(GoogleAddressReferenceSource::class, GoogleAddressReferenceClient::class);
         $this->app->singleton(GoogleMapsLookup::class, GoogleMapsRemoteLookup::class);
-        $this->app->singleton(GooglePlaceGeographyMatcher::class);
-        $this->app->singleton(GooglePlaceResolutionGapLogger::class);
-        $this->app->singleton(GooglePlaceGeographyResolver::class);
 
     }
 

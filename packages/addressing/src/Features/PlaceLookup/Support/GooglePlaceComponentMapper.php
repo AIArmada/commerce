@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\GooglePlaces;
+namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 

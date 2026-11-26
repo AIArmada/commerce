@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\GooglePlaces;
+namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -10,6 +10,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -27,7 +28,7 @@ final class GooglePlaceGeographyMatcher
         $shortCode = $this->stringValue($countryComponent['shortText'] ?? null);
 
         if (is_string($shortCode) && mb_strlen($shortCode) === 2) {
-            $country = AddressCountry::query()
+            $country = ModelResolver::countryClass()::query()
                 ->where('iso2', Str::upper($shortCode))
                 ->first();
 
@@ -46,7 +47,7 @@ final class GooglePlaceGeographyMatcher
         }
 
         /** @var Collection<int, AddressCountry> $matches */
-        $matches = AddressCountry::query()
+        $matches = ModelResolver::countryClass()::query()
             ->get()
             ->filter(fn (AddressCountry $country): bool => $this->normalizeLocationName((string) $country->name) === $this->normalizeLocationName($countryName))
             ->values();
@@ -66,7 +67,7 @@ final class GooglePlaceGeographyMatcher
             return null;
         }
 
-        $stored = AddressCountry::query()->whereKey($countryId)->value('iso2');
+        $stored = ModelResolver::countryClass()::query()->whereKey($countryId)->value('iso2');
 
         return is_string($stored) && $stored !== '' ? mb_strtoupper($stored) : null;
     }
@@ -109,7 +110,7 @@ final class GooglePlaceGeographyMatcher
             return null;
         }
 
-        $matched = AddressAreaName::query()
+        $matched = ModelResolver::areaNameClass()::query()
             ->whereIn('address_area_id', $areaIds)
             ->get()
             ->filter(function (AddressAreaName $alias) use ($normalized, $countryCode): bool {
@@ -126,7 +127,7 @@ final class GooglePlaceGeographyMatcher
             return null;
         }
 
-        $area = AddressArea::query()->find($matched->first());
+        $area = ModelResolver::areaClass()::query()->find($matched->first());
 
         return $area instanceof AddressArea ? $area : null;
     }
@@ -162,7 +163,7 @@ final class GooglePlaceGeographyMatcher
         $matchedIds = $areas
             ->filter(fn (AddressArea $area): bool => $this->placeNameContainsAreaName($placeName, $area->name, $countryCode))
             ->map(static fn (AddressArea $area): string => (string) $area->getKey())
-            ->merge(AddressAreaName::query()
+            ->merge(ModelResolver::areaNameClass()::query()
                 ->whereIn('address_area_id', $areaIds)
                 ->get()
                 ->filter(function (AddressAreaName $alias) use ($placeName, $countryCode): bool {
@@ -192,7 +193,7 @@ final class GooglePlaceGeographyMatcher
      */
     public function scopedAreaQuery(?string $countryId, ?string $parentId, ?array $types, ?array $levels): Builder
     {
-        $query = AddressArea::query();
+        $query = ModelResolver::areaClass()::query();
 
         if ($countryId !== null) {
             $query->where('country_id', $countryId);
@@ -228,7 +229,7 @@ final class GooglePlaceGeographyMatcher
         }
 
         /** @var Collection<int, State> $matches */
-        $matches = State::query()
+        $matches = ModelResolver::stateClass()::query()
             ->where('country_id', $countryId)
             ->get()
             ->filter(function (State $state) use ($stateName, $countryCode): bool {
@@ -247,7 +248,7 @@ final class GooglePlaceGeographyMatcher
             return null;
         }
 
-        $query = City::query();
+        $query = ModelResolver::cityClass()::query();
 
         if ($stateId !== null) {
             $query->where('state_id', $stateId);

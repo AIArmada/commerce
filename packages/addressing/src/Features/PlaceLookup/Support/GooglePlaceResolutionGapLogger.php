@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\GooglePlaces;
+namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
+use AIArmada\Addressing\Support\ModelResolver;
 
 final readonly class GooglePlaceResolutionGapLogger
 {
@@ -90,7 +90,7 @@ final readonly class GooglePlaceResolutionGapLogger
             return $names;
         }
 
-        $aliases = AddressAreaName::query()
+        $aliases = ModelResolver::areaNameClass()::query()
             ->whereIn('address_area_id', array_values(array_unique($areaIds)))
             ->pluck('name');
 

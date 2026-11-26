@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\GooglePlaces;
+namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
@@ -12,6 +12,7 @@ use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\AddressAreaHierarchyResolver;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+use AIArmada\Addressing\Support\ModelResolver;
 
 final readonly class GooglePlaceGeographyResolver
 {
@@ -58,7 +59,7 @@ final readonly class GooglePlaceGeographyResolver
         $stateId = $this->matcher->resolveStateId($stateName, $countryId, $areaTreeRoot, $countryCode);
         $areaTreeRootId = AddressAreaStateBridge::areaIdForState($stateId, 'administrative');
         $areaTreeRoot = $areaTreeRootId !== null
-            ? AddressArea::query()->find($areaTreeRootId)
+            ? ModelResolver::areaClass()::query()->find($areaTreeRootId)
             : $areaTreeRoot;
 
         if (! $areaTreeRoot instanceof AddressArea) {
@@ -488,7 +489,7 @@ final readonly class GooglePlaceGeographyResolver
             return;
         }
 
-        $areas = PostalCode::query()
+        $areas = ModelResolver::postalCodeClass()::query()
             ->where('country_code', $countryCode)
             ->where('code', $code)
             ->where('is_active', true)
