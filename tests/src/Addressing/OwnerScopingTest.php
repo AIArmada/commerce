@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressSnapshot;
@@ -114,4 +116,25 @@ it('blocks cross-owner address attachments and global access without explicit co
         ->toBeFalse()
         ->and(OwnerContext::withOwner(null, fn (): bool => Address::query()->whereKey($globalAddress->id)->exists()))
         ->toBeTrue();
+});
+
+it('never demotes or detaches global attachments when mutating an owned host attachment', function (): void {
+    config()->set('addressing.features.owner.include_global', true);
+    $owner = User::factory()->create();
+    $host = AddressingOwnerTestHost::query()->create(['name' => 'Shared Host']);
+
+    $global = OwnerContext::withOwner(null, function () use ($host): Addressable {
+        $address = Address::query()->create(['line1' => 'Global', 'country_code' => 'MY']);
+
+        return $host->attachAddress($address, type: 'shipping', isPrimary: true);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($host): void {
+        $address = Address::query()->create(['line1' => 'Owned', 'country_code' => 'MY']);
+        $host->attachAddress($address, type: 'shipping', isPrimary: true);
+        app(AddressAttachmentWriter::class)->detachAll($host->getMorphClass(), (string) $host->getKey());
+    });
+
+    expect(OwnerContext::withOwner(null, fn () => Addressable::query()->findOrFail($global->getKey())->is_primary))->toBeTrue()
+        ->and(OwnerContext::withOwner($owner, fn () => Addressable::query()->forOwner()->count()))->toBe(0);
 });

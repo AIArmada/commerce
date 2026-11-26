@@ -7,6 +7,7 @@ namespace AIArmada\Addressing\Models;
 use AIArmada\Addressing\Database\Factories\AddressAreaFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Support\AddressingTableResolver;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
 use AIArmada\Addressing\Traits\HasSpatialLocation;
@@ -65,6 +66,12 @@ class AddressArea extends Model
 
     protected static function booted(): void
     {
+        static::saved(static function (AddressArea $area): void {
+            if ($area->wasRecentlyCreated || $area->wasChanged(['country_id', 'is_active', 'parent_id'])) {
+                AddressAreaStateBridge::forgetAll();
+            }
+        });
+
         static::deleting(static function (AddressArea $area): void {
             app(GeographyReferenceMaintenance::class)->clearArea((string) $area->getKey());
         });

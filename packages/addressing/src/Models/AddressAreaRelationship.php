@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Support\AddressingTableResolver;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -22,6 +23,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AddressAreaRelationship extends Model
 {
     use HasUuids;
+
+    protected static function booted(): void
+    {
+        static::saved(static fn () => AddressAreaStateBridge::forgetAll());
+        static::deleted(static fn () => AddressAreaStateBridge::forgetAll());
+    }
 
     protected $fillable = [
         'parent_address_area_id',

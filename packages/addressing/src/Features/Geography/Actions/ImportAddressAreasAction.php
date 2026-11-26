@@ -11,6 +11,7 @@ use AIArmada\Addressing\Data\ImportAddressAreaFailureData;
 use AIArmada\Addressing\Data\ImportAddressAreasResultData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
@@ -236,6 +237,10 @@ final readonly class ImportAddressAreasAction implements AddressAreaImporter
 
             if ($providerKey !== null && $failures === [] && ! $dryRun) {
                 $this->deactivateMissingProviderAreas($providerKey, $seenSourceIds, $countryIdsBySource, $now);
+            }
+
+            if (! $dryRun) {
+                AddressAreaStateBridge::forgetAll();
             }
 
             return new ImportAddressAreasResultData(

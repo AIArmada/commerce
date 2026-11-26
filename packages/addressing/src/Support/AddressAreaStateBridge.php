@@ -48,7 +48,7 @@ final class AddressAreaStateBridge
 
         $areaId = ModelResolver::areaStateLinkClass()::query()
             ->where('state_id', $state->getKey())
-            ->whereHas('addressArea', fn ($query) => $query->where('is_active', true))
+            ->whereHas('addressArea', fn ($query) => $query->where('is_active', true)->where('country_id', $state->country_id))
             ->when($hierarchyType !== null, function ($query) use ($hierarchyType): void {
                 $query->where(function ($query) use ($hierarchyType): void {
                     $query->where('hierarchy_type', $hierarchyType)
@@ -152,7 +152,8 @@ final class AddressAreaStateBridge
 
             $stateId = ModelResolver::areaStateLinkClass()::query()
                 ->whereIn('address_area_id', $frontier)
-                ->whereHas('addressArea', fn ($query) => $query->where('is_active', true))
+                ->whereHas('state', fn ($query) => $query->where('country_id', $area->country_id))
+                ->whereHas('addressArea', fn ($query) => $query->where('is_active', true)->where('country_id', $area->country_id))
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
                 ->value('state_id');
@@ -172,7 +173,7 @@ final class AddressAreaStateBridge
                 ->where(function ($query): void {
                     $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', CarbonImmutable::now());
                 })
-                ->whereHas('parent', fn ($query) => $query->where('is_active', true))
+                ->whereHas('parent', fn ($query) => $query->where('is_active', true)->where('country_id', $area->country_id))
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
                 ->pluck('parent_address_area_id')

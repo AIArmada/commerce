@@ -8,7 +8,8 @@ use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -245,8 +246,37 @@ it('does not return obsolete mappings after a provider prune in the same request
     expect(AddressAreaStateBridge::areaIdForState($stateId))->toBe($area->id)
         ->and(AddressAreaStateBridge::stateIdForArea($area))->toBe($stateId);
 
-    expect(GeographyReferenceCleanup::pruneStatesByCodes($country, ['PRN']))->toBe(1);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), new CountryStateSeedData([], ['PRN']));
+    expect(State::query()->whereKey($stateId)->exists())->toBeFalse();
 
     expect(AddressAreaStateBridge::areaIdForState($stateId))->toBeNull()
+        ->and(AddressAreaStateBridge::stateIdForArea($area))->toBeNull();
+});
+
+it('invalidates cached missing mappings when a state-area link is created', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $state = State::query()->create(['country_id' => $country->id, 'name' => 'Johor']);
+    $area = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'type' => 'state',
+        'level' => 1,
+        'name' => 'Johor',
+        'slug' => 'johor',
+        'source' => 'test',
+        'source_id' => Str::uuid()->toString(),
+    ]);
+
+    expect(AddressAreaStateBridge::areaIdForState($state))->toBeNull()
+        ->and(AddressAreaStateBridge::stateIdForArea($area))->toBeNull();
+
+    $link = AddressAreaStateLink::query()->create(['address_area_id' => $area->id, 'state_id' => $state->id]);
+
+    expect(AddressAreaStateBridge::areaIdForState($state))->toBe($area->id)
+        ->and(AddressAreaStateBridge::stateIdForArea($area))->toBe($state->id);
+
+    $link->delete();
+
+    expect(AddressAreaStateBridge::areaIdForState($state))->toBeNull()
         ->and(AddressAreaStateBridge::stateIdForArea($area))->toBeNull();
 });

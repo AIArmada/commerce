@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Support\AddressingTableResolver;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,8 @@ class AddressAreaStateLink extends Model
 
     protected static function booted(): void
     {
+        static::saved(static fn () => AddressAreaStateBridge::forgetAll());
+        static::deleted(static fn () => AddressAreaStateBridge::forgetAll());
         static::saving(static function (AddressAreaStateLink $link): void {
             if ($link->getAttribute('hierarchy_type') === null) {
                 $link->setAttribute('hierarchy_type', '');

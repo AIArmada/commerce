@@ -13,6 +13,7 @@ use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressingTableResolver;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Container\Container;
@@ -113,6 +114,8 @@ final readonly class SeedCountryGeographiesAction implements CountryGeographySee
                     'skipped' => $areaResult->skipped,
                 ];
             });
+
+            AddressAreaStateBridge::forgetAll();
 
             if ($areaSummary !== null) {
                 $areas[$providerCode] = $areaSummary;
