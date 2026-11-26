@@ -18,7 +18,9 @@ final readonly class IgnoreResolutionGapAction
     {
         return $gap->getConnection()->transaction(function () use ($gap): ResolutionGap {
             $gapClass = ModelResolver::resolutionGapClass();
-            OwnerWriteGuard::findOrFailForOwner($gapClass, $gap->getKey());
+            if ($gapClass::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner($gapClass, $gap->getKey());
+            }
             $locked = $gapClass::query()->whereKey($gap->getKey())->lockForUpdate()->firstOrFail();
 
             if ($locked->status === 'ignored') {

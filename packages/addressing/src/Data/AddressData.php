@@ -132,7 +132,7 @@ final readonly class AddressData
 
     private static function stringOrNull(mixed $value): ?string
     {
-        if ($value === null || $value === '') {
+        if (! is_scalar($value)) {
             return null;
         }
 
@@ -158,7 +158,7 @@ final readonly class AddressData
             return null;
         }
 
-        return (float) $value;
+        return is_finite((float) $value) ? (float) $value : null;
     }
 
     private static function navigationUrlOrNull(mixed $value): ?string

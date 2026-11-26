@@ -615,9 +615,9 @@ Pusat`, `West Java` vs `Jawa Barat`. Log every attempted-but-unmatched value
 so the naming gap is visible instead of silently degrading to a partial match.
 
 ~~~php
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 
-app(LogAddressResolutionGapAction::class)->execute(
+app(ResolutionGapReporter::class)->report(
     source: 'google-picker',
     countryCode: 'ID',
     role: 'regency',
@@ -644,13 +644,12 @@ preserve it — only provider-sourced names are refreshed on reseed. Gaps never
 auto-fill: a failed match cannot know *which* area the string maps to.
 
 ~~~php
-use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
-use AIArmada\Addressing\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 
-app(MatchGapToAreaAction::class)->execute($gap, $area, matchedBy: $admin->email);
+app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $area->getKey(), actor: $admin->email);
 
 // Junk values can be ignored; ignored gaps stay terminal on recurrence.
-app(IgnoreResolutionGapAction::class)->execute($gap);
+app(ResolutionGapCuration::class)->ignore((string) $gap->getKey());
 ~~~
 
 Matching refuses `ambiguous` gaps (they need data cleanup, not another alias),
@@ -1144,6 +1143,7 @@ $address = AddressData::from([
 
 ```php
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
+use AIArmada\Addressing\Data\AddressData;
 
 $links = app(AddressNavigationLinks::class)->build(AddressData::from($address->attributesToArray()));
 
