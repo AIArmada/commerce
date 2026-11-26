@@ -11,7 +11,5 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void {}
 
-    public function boot(Application $app): void
-    {
-    }
+    public function boot(Application $app): void {}
 }

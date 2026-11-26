@@ -6,9 +6,9 @@ namespace AIArmada\Signals\Features\Ingestion\Actions\Recorders;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;

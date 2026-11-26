@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Pages;
 
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource;
 use AIArmada\Signals\Features\Reporting\Api\SegmentAdministration;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use Illuminate\Database\Eloquent\Model;
-use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateSignalSegment extends CreateRecord
 {

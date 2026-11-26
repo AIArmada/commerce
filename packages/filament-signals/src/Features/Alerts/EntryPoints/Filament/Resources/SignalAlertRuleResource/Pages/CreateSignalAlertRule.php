@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Pages;
 
-use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateSignalAlertRule extends CreateRecord
 {

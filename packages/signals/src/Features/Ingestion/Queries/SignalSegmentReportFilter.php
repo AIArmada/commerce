@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use Illuminate\Database\Eloquent\Builder;
 
 final class SignalSegmentReportFilter
@@ -16,7 +16,6 @@ final class SignalSegmentReportFilter
         private readonly SignalEventConditionQueryService $conditionQueryService,
         private readonly ReportConfiguration $configuration,
     ) {}
-
 
     /**
      * @param  Builder<SignalEvent>  $query
@@ -78,5 +77,4 @@ final class SignalSegmentReportFilter
             $this->conditionQueryService->apply($eventQuery, $segment->conditions, $segment->matchType);
         });
     }
-
 }

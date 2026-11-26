@@ -6,13 +6,13 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
 use AIArmada\Signals\Contracts\ReverseGeocoderContract;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Data\GeocodingResult;
 use AIArmada\Signals\Data\SessionLocation;
-use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
+use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Jobs\ReverseGeocodeSessionJob;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
@@ -476,7 +476,6 @@ it('uses the configured tracker filename when deriving the pageview endpoint', f
         ->and($response->getContent())->not()->toContain('/tracker\\.js$')
         ->and($response->getContent())->toContain('/collect/pageview');
 });
-
 
 it('rolls back reverse geocoding when an enrichment resolver fails and allows retry', function (): void {
     $property = TrackedProperty::query()->create([

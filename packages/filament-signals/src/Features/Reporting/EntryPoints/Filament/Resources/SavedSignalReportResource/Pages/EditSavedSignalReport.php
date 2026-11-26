@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Pages;
 
-use AIArmada\Signals\Features\Reporting\Api\SavedReportAdministration;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
 use AIArmada\FilamentSignals\Features\Reporting\Support\SavedSignalReportMutationGuard;
+use AIArmada\Signals\Features\Reporting\Api\SavedReportAdministration;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditSavedSignalReport extends EditRecord
 {

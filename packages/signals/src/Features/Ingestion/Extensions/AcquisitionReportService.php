@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
-use AIArmada\Signals\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -103,8 +103,6 @@ final class AcquisitionReportService implements ReportInterface
             ->groupByRaw($referrerExpression);
     }
 
-
-
     /**
      * @return Builder<SignalEvent>
      */
@@ -187,7 +185,6 @@ final class AcquisitionReportService implements ReportInterface
             'conversion_event_name' => SavedSignalReportDefinition::conversionEventName($settings),
         ];
     }
-
 
     /**
      * @param  Builder<SignalEvent>  $query

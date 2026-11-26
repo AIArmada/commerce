@@ -8,12 +8,12 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 

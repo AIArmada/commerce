@@ -11,9 +11,9 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Queries\CrossTenantQuery;
 use AIArmada\Signals\Features\Ingestion\Support\SignalEventPropertyTypeInferrer;
 use AIArmada\Signals\Features\Ingestion\Support\SignalPropertyFilter;
-use AIArmada\Signals\Features\Ingestion\Queries\CrossTenantQuery;
 use AIArmada\Signals\Support\DuplicateKeyViolation;
 use AIArmada\Signals\Support\RecordingTransaction;
 use AIArmada\Signals\Support\SignalCurrency;
@@ -170,7 +170,6 @@ final readonly class IngestSignalEvent
 
         return $event;
     }
-
 
     /**
      * @param  array<string, mixed>  $payload

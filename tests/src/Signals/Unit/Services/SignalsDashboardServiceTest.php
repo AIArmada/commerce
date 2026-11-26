@@ -10,13 +10,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 uses(SignalsTestCase::class);
@@ -238,8 +239,8 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
 
     $service = app(DashboardRead::class);
 
-    expect(fn (): array => $service->summary($propertyB->id))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
-    expect(fn (): array => $service->trend($propertyB->id))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect(fn (): array => $service->summary($propertyB->id))->toThrow(ModelNotFoundException::class);
+    expect(fn (): array => $service->trend($propertyB->id))->toThrow(ModelNotFoundException::class);
 
     $summary = $service->summary(
         null,

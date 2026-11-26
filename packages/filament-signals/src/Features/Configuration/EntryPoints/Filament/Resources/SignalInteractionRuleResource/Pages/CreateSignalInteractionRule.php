@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages;
 
-use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
-use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
+use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateSignalInteractionRule extends CreateRecord
 {

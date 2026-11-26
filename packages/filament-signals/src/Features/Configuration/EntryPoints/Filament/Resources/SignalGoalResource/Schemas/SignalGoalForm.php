@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Schemas;
 
-use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;

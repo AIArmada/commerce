@@ -7,8 +7,6 @@ namespace AIArmada\Signals\Features\Ingestion\Actions;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
-use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\AffiliateNetworkSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\AffiliateSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\CartSignalRecorder;
@@ -18,6 +16,7 @@ use AIArmada\Signals\Features\Ingestion\Actions\Recorders\LinkSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\OrderSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\SignalRecorderSupport;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\VoucherSignalRecorder;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 

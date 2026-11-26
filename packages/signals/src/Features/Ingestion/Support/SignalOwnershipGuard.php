@@ -10,10 +10,10 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Support\SignalCurrency;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
-use AIArmada\Signals\Support\SignalCurrency;
 
 /**
  * Shared write boundary for Signals child models.
@@ -250,5 +250,4 @@ final class SignalOwnershipGuard
             $propertyCurrency,
         ));
     }
-
 }

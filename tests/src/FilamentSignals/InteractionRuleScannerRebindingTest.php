@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
-use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use AIArmada\FilamentSignals\Drivers\PinnedPageMarkupFetcher;
+use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Http;
 

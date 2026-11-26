@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts;
 
-use AIArmada\FilamentSignals\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\FilamentSignals\Features\Alerts\Api\AlertDashboardWidgets;
-use AIArmada\FilamentSignals\Features\Alerts\Queries\AlertDashboardWidgetList;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Policies\SignalAlertRulePolicy;
+use AIArmada\FilamentSignals\Features\Alerts\Queries\AlertDashboardWidgetList;
+use AIArmada\FilamentSignals\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;

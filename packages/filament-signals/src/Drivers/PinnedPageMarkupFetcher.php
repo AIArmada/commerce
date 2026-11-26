@@ -41,6 +41,6 @@ final readonly class PinnedPageMarkupFetcher implements PageMarkupFetcher
 
         $body = $response->body();
 
-        return strlen($body) <= self::MAX_HTML_BYTES ? $body : null;
+        return mb_strlen($body) <= self::MAX_HTML_BYTES ? $body : null;
     }
 }

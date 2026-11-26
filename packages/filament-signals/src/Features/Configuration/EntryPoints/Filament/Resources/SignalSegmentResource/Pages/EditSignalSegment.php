@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Pages;
 
-use AIArmada\Signals\Features\Reporting\Api\SegmentAdministration;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource;
+use AIArmada\Signals\Features\Reporting\Api\SegmentAdministration;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditSignalSegment extends EditRecord
 {

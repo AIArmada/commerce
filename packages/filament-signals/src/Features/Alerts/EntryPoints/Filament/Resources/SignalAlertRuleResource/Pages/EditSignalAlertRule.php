@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Pages;
 
-use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditSignalAlertRule extends EditRecord
 {

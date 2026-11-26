@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Pages;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas\SavedSignalReportForm;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables\SavedSignalReportTable;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use BackedEnum;
 use Filament\Resources\Resource;

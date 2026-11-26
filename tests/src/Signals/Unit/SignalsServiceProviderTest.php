@@ -3,17 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
-use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
+use AIArmada\Signals\Contracts\ReverseGeocoderContract;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
-use AIArmada\Signals\Features\Ingestion\EntryPoints\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Data\SessionLocation;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
-use AIArmada\Signals\SignalsServiceProvider;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Signals\Features\Ingestion\Support\SignalEventMap;
+use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
+use AIArmada\Signals\SignalsServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Mockery\MockInterface;
 use Spatie\LaravelPackageTools\Package;
@@ -122,8 +123,8 @@ it('maps affiliate lifecycle events to exact recorder methods and arguments', fu
 });
 
 it('resolves the geocoder pipeline through the transport contract', function (): void {
-    $geocoder = Mockery::mock(\AIArmada\Signals\Contracts\ReverseGeocoderContract::class);
-    app()->instance(\AIArmada\Signals\Contracts\ReverseGeocoderContract::class, $geocoder);
+    $geocoder = Mockery::mock(ReverseGeocoderContract::class);
+    app()->instance(ReverseGeocoderContract::class, $geocoder);
     app()->forgetInstance(SignalLocationResolverPipeline::class);
 
     $pipeline = app(SignalLocationResolverPipeline::class);

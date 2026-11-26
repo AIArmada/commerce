@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\Support;
 
 use AIArmada\FilamentSignals\Platform\SignalsModelReferenceGuard;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;

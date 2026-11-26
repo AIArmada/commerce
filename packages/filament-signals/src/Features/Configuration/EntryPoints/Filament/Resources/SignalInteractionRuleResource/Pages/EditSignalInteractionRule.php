@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages;
 
-use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
+use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditSignalInteractionRule extends EditRecord
 {

@@ -112,15 +112,15 @@ final readonly class ResolveTrackedProperty
                 'owner_id' => $owner?->getKey(),
                 'slug' => $slug,
             ], [
-            'name' => $name,
-            'type' => $type,
-            'timezone' => (string) config('signals.defaults.timezone', 'UTC'),
-            'currency' => (string) config('signals.defaults.currency', 'MYR'),
-            'is_active' => true,
-            'settings' => [
-                'integration' => $integration,
-                'auto_created' => true,
-            ],
+                'name' => $name,
+                'type' => $type,
+                'timezone' => (string) config('signals.defaults.timezone', 'UTC'),
+                'currency' => (string) config('signals.defaults.currency', 'MYR'),
+                'is_active' => true,
+                'settings' => [
+                    'integration' => $integration,
+                    'auto_created' => true,
+                ],
             ]);
 
             return $property->is_active && $property->type === $type ? $property : null;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 
 uses(SignalsTestCase::class);
 

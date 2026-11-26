@@ -7,12 +7,15 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 
 uses(SignalsTestCase::class);
 
@@ -193,7 +196,7 @@ it('rejects daily aggregation of a property outside the current owner', function
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
-    expect(fn () => app(\AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics::class)
-        ->aggregateForDate(\Illuminate\Support\Carbon::parse('2026-03-10'), $property->id))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect(fn () => app(AggregateDailyMetrics::class)
+        ->aggregateForDate(Carbon::parse('2026-03-10'), $property->id))
+        ->toThrow(ModelNotFoundException::class);
 });

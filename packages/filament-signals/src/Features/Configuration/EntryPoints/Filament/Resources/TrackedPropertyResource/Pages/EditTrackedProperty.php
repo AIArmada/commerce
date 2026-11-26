@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Pages;
 
-use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource;
+use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditTrackedProperty extends EditRecord
 {

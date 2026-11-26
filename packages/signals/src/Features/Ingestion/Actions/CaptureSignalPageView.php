@@ -55,5 +55,4 @@ final readonly class CaptureSignalPageView
             'properties' => $properties === [] ? null : $properties,
         ], trusted: false);
     }
-
 }

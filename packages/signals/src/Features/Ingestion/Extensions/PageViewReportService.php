@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -69,5 +69,4 @@ final class PageViewReportService implements ReportInterface
             ->when($from !== null, fn (Builder $q): Builder => $q->where('occurred_at', '>=', $from))
             ->when($until !== null, fn (Builder $q): Builder => $q->where('occurred_at', '<=', $until));
     }
-
 }

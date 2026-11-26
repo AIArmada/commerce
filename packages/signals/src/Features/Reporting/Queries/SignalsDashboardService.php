@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
-use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Carbon\CarbonImmutable;

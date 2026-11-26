@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalEventConditionQueryService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalEventConditionQueryService;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Reporting\Api\GoalDefinition;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Support\SignalCurrency;
@@ -95,7 +95,6 @@ final class GoalsReportService implements ReportInterface
             ->values()
             ->all();
     }
-
 
     /**
      * @return Builder<SignalEvent>

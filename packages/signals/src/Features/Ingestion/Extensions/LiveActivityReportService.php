@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -48,7 +48,6 @@ final class LiveActivityReportService implements ReportInterface
             ->with(['trackedProperty', 'identity', 'session'])
             ->orderByDesc('occurred_at');
     }
-
 
     /**
      * @return Builder<SignalEvent>

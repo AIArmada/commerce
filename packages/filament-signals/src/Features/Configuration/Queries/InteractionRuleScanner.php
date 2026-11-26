@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Configuration\Queries;
 
 use AIArmada\FilamentSignals\Contracts\PageMarkupFetcher;
-use FilesystemIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use DOMDocument;
 use DOMElement;
 use DOMNodeList;
 use DOMXPath;
+use FilesystemIterator;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Route;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 final class InteractionRuleScanner
 {
@@ -169,7 +169,7 @@ final class InteractionRuleScanner
                 $relativePath = str_replace(base_path() . DIRECTORY_SEPARATOR, '', $file->getPathname());
                 $source = file_get_contents($file->getPathname(), false, null, 0, self::MAX_SCAN_FILE_BYTES + 1);
 
-                if ($source === false || strlen($source) > self::MAX_SCAN_FILE_BYTES) {
+                if ($source === false || mb_strlen($source) > self::MAX_SCAN_FILE_BYTES) {
                     continue;
                 }
 

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Alerts\Models;
 
-use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Alerts\Actions\DeleteAlertRuleHistory;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Signals\Features\Alerts\Actions\DeleteAlertRuleHistory;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Support\SignalCurrency;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -53,7 +53,6 @@ final class SignalAlertRule extends Model implements Auditable
     use HasOwnerScopeConfig;
     use HasOwnerScopeKey;
     use HasUuids;
-
     use LogsCommerceActivity;
 
     protected $table = 'signal_alert_rules';

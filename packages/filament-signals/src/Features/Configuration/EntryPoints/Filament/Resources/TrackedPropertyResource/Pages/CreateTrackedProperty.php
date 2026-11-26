@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Pages;
 
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource;
 use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use Illuminate\Database\Eloquent\Model;
-use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 final class CreateTrackedProperty extends CreateRecord

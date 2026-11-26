@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Pages;
 
-use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource;
 use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
+use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditSignalGoal extends EditRecord
 {

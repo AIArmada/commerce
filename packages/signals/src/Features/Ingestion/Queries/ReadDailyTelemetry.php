@@ -47,7 +47,7 @@ final readonly class ReadDailyTelemetry implements DailyTelemetryRead
     }
 
     /**
-     * @param Collection<int, TrackedProperty> $properties
+     * @param  Collection<int, TrackedProperty>  $properties
      * @return list<DailyTelemetry>
      */
     private function readChunk(CarbonImmutable $date, Collection $properties): array

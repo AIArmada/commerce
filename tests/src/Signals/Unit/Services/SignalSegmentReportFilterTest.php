@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
-use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

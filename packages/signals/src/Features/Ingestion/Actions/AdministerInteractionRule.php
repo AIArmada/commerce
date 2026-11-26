@@ -39,7 +39,7 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
 
     public function createScanned(string $propertyId, string $triggerType, string $eventName, ?string $eventCategory, bool $isActive, array $candidates): int
     {
-        if (count($candidates) > 500 || ! in_array($triggerType, ['click', 'accordion', 'media', 'youtube'], true) || trim($eventName) === '') {
+        if (count($candidates) > 500 || ! in_array($triggerType, ['click', 'accordion', 'media', 'youtube'], true) || mb_trim($eventName) === '') {
             throw new InvalidArgumentException('Invalid interaction rule scan.');
         }
 
@@ -59,7 +59,7 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
             $created = 0;
 
             foreach ($candidates as $candidate) {
-                $name = trim((string) ($candidate['name'] ?? ''));
+                $name = mb_trim((string) ($candidate['name'] ?? ''));
 
                 if ($name === '') {
                     throw new InvalidArgumentException('A scanned interaction rule requires a name.');

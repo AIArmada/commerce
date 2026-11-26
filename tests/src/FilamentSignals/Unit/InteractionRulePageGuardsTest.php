@@ -5,19 +5,19 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentSignals\Features\Configuration\Persistence\ScanPreviewStore;
-use Illuminate\Auth\AuthenticationException;
-use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ConversionFunnelReport;
-use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
-use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\SignalsDashboard;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\CreateSignalInteractionRule;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\EditSignalInteractionRule;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\ListSignalInteractionRules;
+use AIArmada\FilamentSignals\Features\Configuration\Persistence\ScanPreviewStore;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ConversionFunnelReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\SignalsDashboard;
 use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Panel;
 use Filament\PanelRegistry;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
 
 uses(FilamentSignalsTestCase::class);
@@ -101,7 +101,12 @@ it('derives a fresh slug when the base slug is taken', function (): void {
     ]);
 
     $created = app(InteractionRuleAdministration::class)->createScanned(
-        (string) $property->getKey(), 'click', 'signup', null, false, [['name' => 'Track signup']],
+        (string) $property->getKey(),
+        'click',
+        'signup',
+        null,
+        false,
+        [['name' => 'Track signup']],
     );
 
     expect($created)->toBe(1)

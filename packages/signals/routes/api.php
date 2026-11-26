@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\GeolocationController;
-use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\PageViewController;
-use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\IdentifyController;
-use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\BrowserEventController;
-use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\TrustedOutcomeController;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\BrowserEventController;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\GeolocationController;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\IdentifyController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\Middleware\VerifyTrustedSignalSignature;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\PageViewController;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\TrustedOutcomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(config('signals.http.middleware', ['api']))

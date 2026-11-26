@@ -6,9 +6,10 @@ namespace AIArmada\Signals\Features\Ingestion\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
-use AIArmada\Signals\Features\Reporting\Api\DetachPropertyReports;
 use AIArmada\Signals\Features\Ingestion\Api\TrackedPropertyDeleting;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\DetachPropertyReports;
+use Illuminate\Auth\Access\AuthorizationException;
 
 final readonly class CleanUpTrackedProperty
 {
@@ -26,7 +27,7 @@ final readonly class CleanUpTrackedProperty
 
                 if ($property->owner_type !== $owner?->getMorphClass()
                     || (string) $property->owner_id !== (string) $owner?->getKey()) {
-                    throw new \Illuminate\Auth\Access\AuthorizationException('Tracked property is outside the current owner scope.');
+                    throw new AuthorizationException('Tracked property is outside the current owner scope.');
                 }
             }
 

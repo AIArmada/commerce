@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Extensions\LiveActivityReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;

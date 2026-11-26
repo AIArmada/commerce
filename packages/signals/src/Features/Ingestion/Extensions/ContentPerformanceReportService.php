@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
-use AIArmada\Signals\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
@@ -106,8 +106,6 @@ final class ContentPerformanceReportService implements ReportInterface
             ->all();
     }
 
-
-
     public function getBreakdownLabel(?string $savedReportId = null): string
     {
         $savedReport = $this->configuration->savedReport('content_performance', $savedReportId);
@@ -153,7 +151,6 @@ final class ContentPerformanceReportService implements ReportInterface
             'breakdown_dimension' => SavedSignalReportDefinition::contentBreakdownDimension($settings),
         ];
     }
-
 
     private function resolvePropertyId(?string $trackedPropertyId, ?string $savedReportId): ?string
     {

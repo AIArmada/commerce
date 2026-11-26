@@ -9,18 +9,18 @@ use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
 use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
 uses(SignalsTestCase::class);
@@ -419,7 +419,6 @@ it('still rejects same-property mismatches when owner scoping is disabled', func
         ->toThrow(AuthorizationException::class, 'immutable');
 });
 
-
 it('updates alert read state atomically and rejects another owner', function (): void {
     $ownerA = ownershipGuardOwner('alert-read-a');
     $ownerB = ownershipGuardOwner('alert-read-b');
@@ -468,7 +467,6 @@ it('updates alert read state atomically and rejects another owner', function ():
 
     OwnerContext::withOwner($ownerB, fn () => expect($logB->fresh()->read_at)->toBeNull());
 });
-
 
 it('keeps feature administration writes inside their owner and ignores forged owner attributes', function (): void {
     $ownerA = ownershipGuardOwner('admin-a');

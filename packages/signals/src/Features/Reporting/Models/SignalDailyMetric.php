@@ -8,9 +8,9 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Support\SignalCurrency;
-use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 /**
  * @property string $id

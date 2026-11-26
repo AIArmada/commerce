@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
-use AIArmada\Signals\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use Illuminate\Database\Eloquent\Builder;
 
 final class JourneyReportService implements ReportInterface
@@ -75,8 +75,6 @@ final class JourneyReportService implements ReportInterface
             ->groupByRaw($this->groupByExpression($dimension));
     }
 
-
-
     public function getBreakdownLabel(?string $savedReportId = null): string
     {
         $savedReport = $this->configuration->savedReport('journeys', $savedReportId);
@@ -122,7 +120,6 @@ final class JourneyReportService implements ReportInterface
             'breakdown_dimension' => SavedSignalReportDefinition::journeyBreakdownDimension($settings),
         ];
     }
-
 
     private function breakdownValueExpression(string $dimension): string
     {

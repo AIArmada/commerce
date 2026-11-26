@@ -7,13 +7,13 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
-use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -128,7 +128,6 @@ it('represents partial destination success independently', function (): void {
     expect($log->delivery_results['webhook']['sent'] ?? null)->toBe(1)
         ->and($log->delivery_results['webhook']['failed'] ?? null)->toBe(1);
 });
-
 
 it('rejects a stale second dispatch during the rule cooldown and removes delivery history on deletion', function (): void {
     Queue::fake();

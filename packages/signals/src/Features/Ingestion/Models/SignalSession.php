@@ -6,8 +6,8 @@ namespace AIArmada\Signals\Features\Ingestion\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use AIArmada\Signals\Features\Ingestion\Actions\DetachDeletedTelemetry;
+use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

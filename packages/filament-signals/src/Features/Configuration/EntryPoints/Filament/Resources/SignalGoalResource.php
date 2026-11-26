@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Pages;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Schemas\SignalGoalForm;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Tables\SignalGoalTable;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use BackedEnum;
 use Filament\Resources\Resource;

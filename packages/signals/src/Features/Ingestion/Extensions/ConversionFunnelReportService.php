@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalEventConditionQueryService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalEventConditionMatcher;
-use AIArmada\Signals\Support\SignalRouteCatalog;
-use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalEventConditionQueryService;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\GoalDefinition;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Reporting\Api\SavedReportSnapshot;
-use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Reporting\Api\GoalDefinition;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
+use AIArmada\Signals\Support\SignalRouteCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -127,8 +127,6 @@ final class ConversionFunnelReportService implements ReportInterface
 
         return $this->buildStages($context['tracked_property_id'], $context['from'], $context['until'], $context['signal_segment_id'], $context['saved_report']);
     }
-
-
 
     /**
      * @return list<array{label:string,event_name:string,count:int,rate_from_previous:float,rate_from_start:float,drop_off:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>
@@ -332,7 +330,6 @@ final class ConversionFunnelReportService implements ReportInterface
             ?? $event->signal_session_id
             ?? $event->id;
     }
-
 
     /**
      * @return list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>

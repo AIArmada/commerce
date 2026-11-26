@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use Illuminate\Database\Eloquent\Builder;
 
 final class DevicesReportService implements ReportInterface
@@ -123,7 +123,6 @@ final class DevicesReportService implements ReportInterface
             'bots' => (int) (clone $base)->whereNotNull('identified_as_bot_at')->count(),
         ];
     }
-
 
     /**
      * @return Builder<SignalSession>

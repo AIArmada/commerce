@@ -47,6 +47,7 @@ final class SignalReportRevenue
 
     /**
      * @template TModel of Model
+     *
      * @param  Builder<TModel>  $query
      * @return array<string, int>
      */
@@ -64,6 +65,7 @@ final class SignalReportRevenue
 
     /**
      * @template TModel of Model
+     *
      * @param  Builder<TModel>  $query
      */
     public static function sumForCurrency(Builder $query, string $currency): int

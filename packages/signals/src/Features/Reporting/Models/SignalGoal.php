@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Models;
 
-use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Support\SignalCondition;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

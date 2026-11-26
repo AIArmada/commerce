@@ -99,8 +99,16 @@ final readonly class ReadReportConfiguration implements ReportConfiguration, Seg
             $property = $goal->tracked_property_id === null ? null : ($properties[$goal->tracked_property_id] ?? null);
 
             $result[] = new GoalDefinition(
-                $goal->id, $goal->name, $goal->slug, $goal->goal_type, $goal->event_name,
-                $goal->event_category, $goal->tracked_property_id, $property?->name, $property?->currency, $goal->conditions,
+                $goal->id,
+                $goal->name,
+                $goal->slug,
+                $goal->goal_type,
+                $goal->event_name,
+                $goal->event_category,
+                $goal->tracked_property_id,
+                $property?->name,
+                $property?->currency,
+                $goal->conditions,
             );
         }
 

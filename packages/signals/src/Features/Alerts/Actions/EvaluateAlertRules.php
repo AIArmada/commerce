@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Alerts\Actions;
 
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

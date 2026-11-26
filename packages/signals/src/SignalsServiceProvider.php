@@ -10,25 +10,25 @@ use AIArmada\Signals\Contracts\UserAgentParser;
 use AIArmada\Signals\Drivers\DefaultAlertTransport;
 use AIArmada\Signals\Drivers\MatomoUserAgentParser;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
-use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
-use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Platform\ExtensionRegistry;
 use AIArmada\Signals\Platform\FeatureCatalog;
 use AIArmada\Signals\Platform\FeatureModule;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -109,5 +109,4 @@ final class SignalsServiceProvider extends PackageServiceProvider
             'saved_signal_report' => SavedSignalReport::class,
         ]);
     }
-
 }

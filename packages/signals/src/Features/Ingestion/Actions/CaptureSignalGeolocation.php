@@ -102,5 +102,4 @@ final readonly class CaptureSignalGeolocation
             $job->handle();
         });
     }
-
 }

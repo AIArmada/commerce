@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Pages;
 
-use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
-use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource;
 use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
+use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateSignalGoal extends CreateRecord
 {

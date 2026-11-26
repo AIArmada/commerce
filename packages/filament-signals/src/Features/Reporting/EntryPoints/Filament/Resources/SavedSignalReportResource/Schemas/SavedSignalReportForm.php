@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas;
 
-use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;

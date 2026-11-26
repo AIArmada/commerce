@@ -7,8 +7,8 @@ namespace AIArmada\Signals\Features\Ingestion\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Support\SignalPropertyFilter;
 use AIArmada\Signals\Features\Ingestion\Queries\CrossTenantQuery;
+use AIArmada\Signals\Features\Ingestion\Support\SignalPropertyFilter;
 use AIArmada\Signals\Support\DuplicateKeyViolation;
 use AIArmada\Signals\Support\RecordingTransaction;
 use AIArmada\Signals\Support\TransactionFailureClassifier;
@@ -117,7 +117,6 @@ final readonly class IdentifySignalIdentity
             return $winner;
         }));
     }
-
 
     /**
      * @param  array<string, mixed>  $payload

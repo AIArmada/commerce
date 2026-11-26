@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
-use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
-use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
