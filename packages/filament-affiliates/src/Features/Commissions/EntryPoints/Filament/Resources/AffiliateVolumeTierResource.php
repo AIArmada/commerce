@@ -78,6 +78,7 @@ final class AffiliateVolumeTierResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        /** @var Builder<AffiliateVolumeTier> $query */
         $query = parent::getEloquentQuery();
 
         if ((bool) config('affiliates.owner.enabled', false) && OwnerContext::isExplicitGlobal()) {

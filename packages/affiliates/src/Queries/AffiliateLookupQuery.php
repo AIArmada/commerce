@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Queries;
 
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use Throwable;
 
-final class AffiliateLookupQuery
+final readonly class AffiliateLookupQuery
 {
+    public function __construct(private AttributionLookup $attributions) {}
+
     /** @return Builder<Affiliate> */
     private function query(): Builder
     {
@@ -47,30 +45,10 @@ final class AffiliateLookupQuery
 
     public function findActiveAffiliateByCookie(string $cookieValue): ?Affiliate
     {
-        $attribution = $this->findActiveAttributionByCookie($cookieValue);
-        $affiliate = $attribution?->affiliate;
+        $id = $this->attributions->affiliateIdForCookie($cookieValue);
+        $affiliate = $id === null ? null : $this->findById($id);
 
-        return $affiliate instanceof Affiliate && $affiliate->canBeAttributed() ? $affiliate : null;
-    }
-
-    public function findActiveAttributionByCookie(string $cookieValue): ?AffiliateAttribution
-    {
-        return $this->findAttributionByCookie($cookieValue);
-    }
-
-    public function findAttachedAttribution(Cart $cart): ?AffiliateAttribution
-    {
-        $query = AffiliateAttribution::query()
-            ->with('affiliate')
-            ->where('cart_identifier', $cart->getIdentifier())
-            ->where('cart_instance', $cart->instance())
-            ->active()
-            ->latest('last_seen_at')
-            ->latest('id');
-
-        $this->applyOwnerScope($query);
-
-        return $query->first();
+        return $affiliate?->canBeAttributed() ? $affiliate : null;
     }
 
     /** @param Builder<Affiliate> $query */
@@ -91,46 +69,5 @@ final class AffiliateLookupQuery
                 fn (Builder $builder) => $builder->whereRaw('LOWER(' . $column . ') = ?', [mb_strtolower($normalized)]),
             )
             ->first();
-    }
-
-    private function findAttributionByCookie(?string $cookieValue): ?AffiliateAttribution
-    {
-        if (! is_string($cookieValue) || $cookieValue === '') {
-            return null;
-        }
-
-        $candidates = [$cookieValue];
-
-        try {
-            $decrypted = decrypt($cookieValue);
-
-            if (is_string($decrypted) && $decrypted !== '') {
-                $candidates[] = $decrypted;
-            }
-        } catch (Throwable) {
-        }
-
-        $query = AffiliateAttribution::query()
-            ->with('affiliate')
-            ->whereIn('cookie_value', array_values(array_unique($candidates)))
-            ->active()
-            ->latest('last_cookie_seen_at');
-
-        $this->applyOwnerScope($query);
-
-        return $query->first();
-    }
-
-    private function applyOwnerScope(Builder $query): void
-    {
-        if (! config('affiliates.owner.enabled', false)) {
-            return;
-        }
-
-        OwnerQuery::applyToEloquentBuilder(
-            $query,
-            OwnerContext::resolve(),
-            (bool) config('affiliates.owner.include_global', false),
-        );
     }
 }

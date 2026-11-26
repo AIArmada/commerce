@@ -36,7 +36,7 @@ final class RealTimeActivityWidget extends BaseWidget
                         (bool) config('affiliates.owner.enabled', false),
                         fn ($query) => $query->forOwner($owner),
                     )
-                    ->with(['affiliate', 'attribution'])
+                    ->with('affiliate')
                     ->latest('occurred_at')
                     ->limit(10)
             )

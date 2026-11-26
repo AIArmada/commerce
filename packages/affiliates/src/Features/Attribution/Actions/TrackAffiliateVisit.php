@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
@@ -25,6 +26,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
 {
     public function __construct(
         private AffiliateLookupQuery $affiliateLookup,
+        private ReadAttributions $attributions,
         private FraudApi $fraud,
     ) {}
 
@@ -79,7 +81,7 @@ final readonly class TrackAffiliateVisit implements AttributionTracking
 
         $payload['cookie_value'] = $cookieValue;
 
-        $candidate = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
+        $candidate = $this->attributions->findActiveAttributionByCookie($cookieValue);
         $attribution = $candidate === null ? null : AffiliateAttribution::query()
             ->forOwner()
             ->where('cookie_value', $candidate->cookie_value)

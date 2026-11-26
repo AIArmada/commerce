@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -31,7 +31,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
     public function __construct(
         private Dispatcher $events,
         private WebhookApi $webhooks,
-        private AffiliateLookupQuery $affiliateLookup,
+        private ReadAttributions $affiliateLookup,
         private DeleteAttributions $removal,
     ) {}
 

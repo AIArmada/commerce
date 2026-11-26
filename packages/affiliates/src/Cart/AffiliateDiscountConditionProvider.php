@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Cart;
 
 use AIArmada\Affiliates\Data\AffiliateData;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
@@ -32,6 +33,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
 
     public function __construct(
         private AffiliateLookupQuery $affiliateLookup,
+        private AttributionLookup $attributions,
     ) {}
 
     /**
@@ -48,7 +50,8 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return [];
         }
 
-        $affiliate = $this->affiliateLookup->findAttachedAttribution($cart)?->affiliate;
+        $attribution = $this->attributions->attached($cart->getIdentifier(), $cart->instance());
+        $affiliate = $attribution === null ? null : $this->affiliateLookup->findById($attribution->affiliateId);
 
         if (! $affiliate instanceof Affiliate || ! $affiliate->isActive()) {
             return [];

@@ -15,6 +15,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(Api\AttributionLookup::class, Queries\ReadAttributions::class);
         $app->bind(Api\TouchpointReader::class, Queries\ReadTouchpoints::class);
         $app->bind(Api\AttributionActivity::class, Actions\TouchAffiliateAttribution::class);
         $app->bind(Api\AttributionSignalReader::class, Queries\AttributionSignalQuery::class);

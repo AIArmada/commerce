@@ -67,7 +67,7 @@ trait ScopesByProgramOwner
         });
     }
 
-    private static function visibleProgramIds(Model $model): QueryBuilder
+    protected static function visibleProgramIds(Model $model): QueryBuilder
     {
         $connection = $model->getConnection();
         app(ProgramReferenceReader::class)->assertSharedConnection(spl_object_id($connection));

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Support\Integrations;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -28,7 +28,7 @@ final class CartBridge
             return null;
         }
 
-        if (app(AffiliateLookupQuery::class)->findAttachedAttribution($cart) !== null) {
+        if (app(AttributionLookup::class)->attached($cart->getIdentifier(), $cart->instance()) !== null) {
             return null;
         }
 

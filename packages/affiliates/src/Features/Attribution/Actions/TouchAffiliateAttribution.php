@@ -7,14 +7,14 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Attribution\Queries\ReadAttributions;
 use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 
 final readonly class TouchAffiliateAttribution implements AttributionActivity
 {
     public function __construct(
-        private AffiliateLookupQuery $affiliateLookup,
+        private ReadAttributions $affiliateLookup,
     ) {}
 
     public function touch(string $cookieValue, array $context = []): ?AffiliateAttributionData

@@ -244,7 +244,7 @@ test('fast conversion fraud is detected for suspiciously quick conversions', fun
         'commission_currency' => 'USD',
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
-        'attribution_id' => $attribution->id,
+        'affiliate_attribution_id' => $attribution->id,
         'external_reference' => 'FAST-ORDER',
         'subtotal_minor' => 10000,
         'value_minor' => 10000,
@@ -253,19 +253,12 @@ test('fast conversion fraud is detected for suspiciously quick conversions', fun
         'occurred_at' => now(),
     ]);
 
-    // Refresh to load the relationship properly
-    $conversion->load('attribution');
-
     $result = $fraudService->analyzeConversion((string) $conversion->getKey());
 
-    // Check if we have any signals
-    if (! empty($result->signals)) {
-        $fastSignal = collect($result->signals)->firstWhere('ruleCode', 'FAST_CONVERSION');
-        if ($fastSignal) {
-            expect($fastSignal->severity)->toBe(FraudSeverity::High);
-            expect($fastSignal->riskPoints)->toBe(45);
-        }
-    }
+    $fastSignal = collect($result->signals)->firstWhere('ruleCode', 'FAST_CONVERSION');
+    expect($fastSignal)->not->toBeNull()
+        ->and($fastSignal->severity)->toBe(FraudSeverity::High)
+        ->and($fastSignal->riskPoints)->toBe(45);
 
     // At minimum, the result should be allowed since no critical signals
     expect($result->allowed)->toBeTrue();

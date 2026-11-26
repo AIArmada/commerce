@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
@@ -47,7 +47,7 @@ it('hydrates a cookie attribution through the cart bridge', function (): void {
     $attribution = app(CartBridge::class)->hydrateAffiliateFromCookie($cart);
 
     expect($attribution)->not->toBeNull()
-        ->and(app(AffiliateLookupQuery::class)->findAttachedAttribution($cart)?->affiliate_id)
+        ->and(app(AttributionLookup::class)->attached($cart->getIdentifier(), $cart->instance())?->affiliateId)
         ->toBe($affiliate->getKey());
 });
 

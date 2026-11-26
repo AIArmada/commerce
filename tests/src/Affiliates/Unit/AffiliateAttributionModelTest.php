@@ -311,7 +311,7 @@ describe('AffiliateAttribution Model', function (): void {
         ]);
 
         $this->mock(ConversionAttributionMaintenance::class)
-            ->shouldReceive('detachAttribution')->with((string) $attribution->getKey())
+            ->shouldReceive('detachAttribution')->with((string) $attribution->getKey(), spl_object_id($attribution->getConnection()))
             ->andThrow(new RuntimeException('cleanup failed'));
 
         expect(fn () => app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]))
