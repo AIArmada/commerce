@@ -7,12 +7,12 @@ use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 function balanceAccountingConversion(Affiliate $affiliate, int $commissionMinor, string $status, int $heldMinor = 0): AffiliateConversion

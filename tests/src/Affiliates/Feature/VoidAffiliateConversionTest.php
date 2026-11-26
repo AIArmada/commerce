@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Illuminate\Support\Facades\Gate;
 

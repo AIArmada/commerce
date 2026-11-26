@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
@@ -15,6 +14,7 @@ use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Support\PayoutMinimums;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;

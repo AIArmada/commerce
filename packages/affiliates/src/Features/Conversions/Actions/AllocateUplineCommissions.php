@@ -6,11 +6,11 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
-use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
+use AIArmada\Affiliates\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 

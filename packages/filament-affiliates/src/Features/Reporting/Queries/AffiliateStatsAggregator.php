@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Reporting\Queries;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
-use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;

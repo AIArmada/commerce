@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
-use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Illuminate\Support\Str;
 use OpenSpout\Reader\XLSX\Reader;

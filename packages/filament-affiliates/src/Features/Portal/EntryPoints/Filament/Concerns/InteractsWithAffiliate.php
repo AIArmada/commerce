@@ -7,12 +7,12 @@ namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Conce
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;

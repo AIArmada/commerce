@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Actions;
 
-use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 
 final class DeleteAffiliateDailyStats
 {

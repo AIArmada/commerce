@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Support\Actions;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use LogicException;
 
 final readonly class OpenSupportTicket

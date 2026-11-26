@@ -7,8 +7,8 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

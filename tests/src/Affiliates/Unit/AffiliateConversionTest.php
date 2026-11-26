@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 test('AffiliateConversion has affiliate relationship', function (): void {

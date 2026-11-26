@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
@@ -13,9 +15,7 @@ use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Pages\ListAffiliatePayouts;

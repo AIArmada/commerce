@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Widgets\FraudAlertWidget;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Widgets\PayoutQueueWidget;

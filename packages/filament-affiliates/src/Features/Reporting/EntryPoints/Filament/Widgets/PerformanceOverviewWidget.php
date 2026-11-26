@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;

@@ -6,10 +6,10 @@ namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
 use AIArmada\Affiliates\Features\Attribution\Api\ProgramLinkVolume;
 use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use DateTimeImmutable;
 use Illuminate\Database\ConnectionInterface;

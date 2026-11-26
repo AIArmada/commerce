@@ -12,6 +12,10 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\ProcessAffiliatePayout;
@@ -22,11 +26,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
-use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
-use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use Illuminate\Support\Facades\DB;
 
 class ProcessAffiliatePayoutFakeSuccessProcessor implements PayoutProcessorInterface

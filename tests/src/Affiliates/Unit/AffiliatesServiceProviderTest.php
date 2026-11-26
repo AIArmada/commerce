@@ -14,9 +14,9 @@ use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePubli
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners\NotifyProgramJoined;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Contracts\CartManagerInterface;

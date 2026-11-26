@@ -8,13 +8,13 @@ use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 

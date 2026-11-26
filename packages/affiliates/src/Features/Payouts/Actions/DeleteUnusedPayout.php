@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
@@ -13,7 +14,6 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

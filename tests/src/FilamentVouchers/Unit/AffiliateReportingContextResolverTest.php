@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active as ActiveAffiliate;
-use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

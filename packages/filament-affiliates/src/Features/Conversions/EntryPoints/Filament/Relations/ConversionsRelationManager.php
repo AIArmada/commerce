@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Relations;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;

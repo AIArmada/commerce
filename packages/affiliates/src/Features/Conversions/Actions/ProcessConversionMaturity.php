@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use Carbon\CarbonImmutable;
 use RuntimeException;
 
