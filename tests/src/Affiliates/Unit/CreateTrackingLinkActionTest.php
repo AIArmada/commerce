@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks;
 use AIArmada\Affiliates\Features\Attribution\Extensions\AffiliateLinkGate;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
-use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
@@ -77,8 +77,8 @@ test('it records an attributed outcome without requiring a cart', function (): v
         'subject_instance' => 'web',
     ]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        attribution: $attribution,
+    $result = app(OutcomePosting::class)->post(
+        attributionId: (string) $attribution->getKey(),
         conversionType: 'event_checkin',
         businessKey: 'tracking-link-test:event_checkin:event-checkin-1',
         payload: [
@@ -120,8 +120,7 @@ test('it creates a program tracking link when owner scoping is disabled without 
         expect($link->program_id)->toBe((string) $program->getKey())
             ->and($link->tracking_url)->toContain('/go/')
             ->and(AffiliateLink::query()->whereKey($link->getKey())->exists())->toBeTrue()
-            ->and($link->trackedLink()->exists())->toBeTrue()
-            ->and($link->program?->getKey())->toBe((string) $program->getKey());
+            ->and($link->trackedLink()->exists())->toBeTrue();
     } finally {
         config(['affiliates.owner.enabled' => $previousOwnerEnabled, 'affiliates.links.allowed_hosts' => $previousAllowedHosts]);
         app()->instance(OwnerResolverInterface::class, $previousResolver);

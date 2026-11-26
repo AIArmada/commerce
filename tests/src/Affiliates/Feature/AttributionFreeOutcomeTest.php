@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
-use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -36,12 +36,12 @@ test('attribution-free outcome with explicit affiliate and provenance records ze
     $affiliate = attributionFreeAffiliate('AFO-OK', 'host_internal_only');
     $businessKey = 'afo-test:signal:' . Str::uuid();
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
+    $result = app(OutcomePosting::class)->post(
         null,
         'host_signal',
         $businessKey,
         ['dispatch_event' => true],
-        $affiliate,
+        (string) $affiliate->getKey(),
         validOutcomeProvenance('subject:' . Str::uuid()),
     );
 
@@ -54,21 +54,21 @@ test('attribution-free outcome with explicit affiliate and provenance records ze
 test('attribution-free outcome rejects missing provenance identity', function (): void {
     $affiliate = attributionFreeAffiliate('AFO-PROV');
 
-    expect(fn () => app(RecordAffiliateOutcome::class)->handle(
+    expect(fn () => app(OutcomePosting::class)->post(
         null,
         'host_signal',
         'afo-test:signal:' . Str::uuid(),
         [],
-        $affiliate,
+        (string) $affiliate->getKey(),
         ['origin' => 'host_signal'],
     ))->toThrow(InvalidArgumentException::class, 'subject_key');
 
-    expect(fn () => app(RecordAffiliateOutcome::class)->handle(
+    expect(fn () => app(OutcomePosting::class)->post(
         null,
         'host_signal',
         'afo-test:signal:' . Str::uuid(),
         [],
-        $affiliate,
+        (string) $affiliate->getKey(),
         ['subject_key' => 'subject:' . Str::uuid()],
     ))->toThrow(InvalidArgumentException::class, 'origin');
 });
@@ -77,12 +77,12 @@ test('attribution-free outcome rejects unknown affiliate', function (): void {
     $ghost = new Affiliate;
     $ghost->forceFill(['id' => (string) Str::uuid()]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
+    $result = app(OutcomePosting::class)->post(
         null,
         'host_signal',
         'afo-test:signal:' . Str::uuid(),
         ['dispatch_event' => false],
-        $ghost,
+        (string) $ghost->getKey(),
         validOutcomeProvenance('subject:' . Str::uuid()),
     );
 
@@ -98,7 +98,7 @@ test('provenance wins over payload and persists actor identity', function (): vo
     $subjectKey = 'subject:' . Str::uuid();
     $businessKey = 'afo-test:signal:' . Str::uuid();
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
+    $result = app(OutcomePosting::class)->post(
         null,
         'host_signal',
         $businessKey,
@@ -107,7 +107,7 @@ test('provenance wins over payload and persists actor identity', function (): vo
             'subject_key' => 'payload-loses',
             'origin' => 'payload-origin-loses',
         ],
-        $affiliate,
+        (string) $affiliate->getKey(),
         [
             'subject_key' => $subjectKey,
             'origin' => 'host_signal',
@@ -129,9 +129,9 @@ test('attribution-free outcome replays without a second promise', function (): v
     $businessKey = 'afo-test:signal:' . Str::uuid();
     $provenance = validOutcomeProvenance('subject:' . Str::uuid());
 
-    $action = app(RecordAffiliateOutcome::class);
-    $first = $action->handle(null, 'host_signal', $businessKey, ['dispatch_event' => false], $affiliate, $provenance);
-    $second = $action->handle(null, 'host_signal', $businessKey, ['dispatch_event' => false], $affiliate, $provenance);
+    $action = app(OutcomePosting::class);
+    $first = $action->post(null, 'host_signal', $businessKey, ['dispatch_event' => false], (string) $affiliate->getKey(), $provenance);
+    $second = $action->post(null, 'host_signal', $businessKey, ['dispatch_event' => false], (string) $affiliate->getKey(), $provenance);
 
     expect($first->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and($second->disposition)->toBe(AffiliateOutcomeDisposition::Replayed)
@@ -145,12 +145,12 @@ test('commercial attribution-free outcome still records commission', function ()
     $affiliate = createTestAffiliate(['code' => 'AFO-COMM']);
     $businessKey = 'afo-test:signal:' . Str::uuid();
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
+    $result = app(OutcomePosting::class)->post(
         null,
         'host_signal',
         $businessKey,
         ['dispatch_event' => false, 'subtotal_minor' => 10000, 'value_minor' => 10000, 'commission_minor' => 500],
-        $affiliate,
+        (string) $affiliate->getKey(),
         validOutcomeProvenance('subject:' . Str::uuid()),
     );
 
@@ -163,12 +163,12 @@ test('standalone outcomes reload the persisted affiliate purpose', function (): 
     $affiliate = attributionFreeAffiliate('AFO-STALE');
     Affiliate::query()->whereKey($affiliate->getKey())->update(['purpose' => 'host_internal_only']);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
+    $result = app(OutcomePosting::class)->post(
         null,
         'host_signal',
         'afo-test:stale:' . Str::uuid(),
         ['dispatch_event' => false, 'commission_minor' => 500],
-        $affiliate,
+        (string) $affiliate->getKey(),
         validOutcomeProvenance('subject:' . Str::uuid()),
     );
 
@@ -201,8 +201,8 @@ test('attributed outcomes validate provenance ahead of conflicting payload refer
         'cart_instance' => 'default',
     ]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    $result = app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'host_signal',
         'afo-test:references:' . Str::uuid(),
         [
@@ -232,8 +232,8 @@ test('attributed outcomes reject conflicting effective references', function (st
         'cart_instance' => 'default',
     ]);
 
-    expect(fn () => app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    expect(fn () => app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'host_signal',
         'afo-test:invalid-reference:' . Str::uuid(),
         ['dispatch_event' => false],

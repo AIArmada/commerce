@@ -15,7 +15,8 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionRecord;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\States\RejectedConversion;
@@ -24,6 +25,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
@@ -54,28 +56,11 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         private Dispatcher $events,
         private ApplyConversionAccounting $accounting,
         private FraudApi $fraud,
+        private AttributionConversionReader $attributions,
     ) {}
 
     public function post(?string $attributionId, string $conversionType, string $businessKey, array $payload = [], ?string $affiliateId = null, array $provenance = []): AffiliateOutcomeResult
     {
-        $attribution = $attributionId === null ? null : AffiliateAttribution::query()->forOwner()->findOrFail($attributionId);
-        $affiliate = $affiliateId === null ? null : Affiliate::query()->forOwner()->findOrFail($affiliateId);
-
-        return $this->handle($attribution, $conversionType, $businessKey, $payload, $affiliate, $provenance);
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     * @param  array<string, mixed>  $provenance
-     */
-    public function handle(
-        ?AffiliateAttribution $attribution,
-        string $conversionType,
-        string $businessKey,
-        array $payload = [],
-        ?Affiliate $affiliate = null,
-        array $provenance = [],
-    ): AffiliateOutcomeResult {
         $conversionType = mb_trim($conversionType);
         $businessKey = mb_trim($businessKey);
 
@@ -91,52 +76,34 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             throw new InvalidArgumentException('Business key must be a non-empty caller-owned namespaced identity of at most 191 characters.');
         }
 
-        if ($attribution instanceof AffiliateAttribution) {
-            $this->assertAttributionConnection($attribution);
+        $connection = (new AffiliateConversion)->getConnection();
+        $attribution = $attributionId === null
+            ? null
+            : $this->attributions->forOutcome($attributionId, spl_object_id($connection));
 
-            if ((bool) config('affiliates.owner.enabled', false)) {
-                /** @var AffiliateAttribution $attribution */
-                $attribution = OwnerWriteGuard::findOrFailForOwner(AffiliateAttribution::class, $attribution->getKey());
-            } else {
-                $attribution = AffiliateAttribution::query()->findOrFail($attribution->getKey());
-            }
-
-            $resolvedAffiliate = $attribution->affiliate()->first();
-
-            if ($affiliate instanceof Affiliate && $resolvedAffiliate instanceof Affiliate
-                && (string) $affiliate->getKey() !== (string) $resolvedAffiliate->getKey()) {
+        if ($attribution !== null) {
+            if ($affiliateId !== null && $affiliateId !== $attribution->affiliateId) {
                 throw new InvalidArgumentException('Outcome affiliate must match the persisted attribution.');
             }
 
-            $affiliate = $resolvedAffiliate;
+            $affiliateId = $attribution->affiliateId;
         }
 
-        if (! $affiliate instanceof Affiliate) {
-            if ($attribution instanceof AffiliateAttribution) {
-                $affiliate = $attribution->affiliate()->first();
-            } elseif ($affiliate === null) {
-                return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
-            }
-        }
+        $affiliate = $affiliateId !== null && Str::isUuid($affiliateId)
+            ? Affiliate::query()->forOwner()->find($affiliateId)
+            : null;
 
         if (! $affiliate instanceof Affiliate) {
             return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
         }
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            /** @var Affiliate $affiliate */
-            $affiliate = OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliate->getKey());
-        } else {
-            $affiliate = $affiliate->exists ? Affiliate::query()->find($affiliate->getKey()) : null;
-
-            if (! $affiliate instanceof Affiliate) {
-                return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
-            }
+            $affiliate = OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
         }
 
-        $this->assertSameConnection($attribution, $affiliate);
+        $this->assertSameConnection($affiliate);
 
-        if ($attribution instanceof AffiliateAttribution) {
+        if ($attribution instanceof AttributionConversionRecord) {
             $this->assertSameOwner($attribution, $affiliate);
             $this->assertAttributionReferences($attribution, $affiliate, $payload, $provenance);
         } else {
@@ -187,8 +154,6 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         $sharerUserId = $this->mergedValue($provenance, $payload, $attribution, 'sharer_user_id');
         $actorUserId = $this->mergedValue($provenance, $payload, $attribution, 'actor_user_id');
 
-        $connection = (new AffiliateConversion)->getConnection();
-
         /** @var array{disposition: AffiliateOutcomeDisposition, conversion_id: string} $committed */
         $committed = $connection->transaction(function () use (
             $connection,
@@ -212,18 +177,18 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             $conversion = new AffiliateConversion([
                 'idempotency_key' => $idempotencyKey,
                 'affiliate_id' => $affiliate->getKey(),
-                'affiliate_attribution_id' => $attribution?->getKey(),
+                'affiliate_attribution_id' => $attribution?->id,
                 'affiliate_program_id' => $programId,
                 'affiliate_code' => $affiliate->code,
-                'subject_type' => Arr::get($payload, 'subject_type', $attribution?->subject_type),
+                'subject_type' => Arr::get($payload, 'subject_type', $attribution?->subjectType),
                 'subject_key' => $subjectKey !== '' ? $subjectKey : null,
-                'subject_instance' => Arr::get($payload, 'subject_instance', $attribution?->subject_instance),
-                'subject_title_snapshot' => Arr::get($payload, 'subject_title_snapshot', $attribution?->subject_title_snapshot),
-                'subject_id' => Arr::get($payload, 'subject_id', $attribution?->subject_id),
+                'subject_instance' => Arr::get($payload, 'subject_instance', $attribution?->subjectInstance),
+                'subject_title_snapshot' => Arr::get($payload, 'subject_title_snapshot', $attribution?->subjectTitleSnapshot),
+                'subject_id' => Arr::get($payload, 'subject_id', $attribution?->subjectId),
                 'affiliate_link_id' => $linkId,
                 'external_reference' => $externalReference,
-                'commission_override' => Arr::get($payload, 'commission_override', $attribution?->commission_override),
-                'upline_levels' => Arr::get($payload, 'upline_levels', $attribution?->upline_levels),
+                'commission_override' => Arr::get($payload, 'commission_override', $attribution?->commissionOverride),
+                'upline_levels' => Arr::get($payload, 'upline_levels', $attribution?->uplineLevels),
                 'conversion_type' => $conversionType,
                 'subtotal_minor' => (int) Arr::get($payload, 'subtotal_minor', 0),
                 'value_minor' => (int) Arr::get($payload, 'value_minor', 0),
@@ -314,20 +279,10 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         return $result;
     }
 
-    private function assertAttributionConnection(AffiliateAttribution $attribution): void
+    private function assertSameOwner(AttributionConversionRecord $attribution, Affiliate $affiliate): void
     {
-        $expected = (new AffiliateConversion)->getConnection();
-
-        if ($attribution->getConnection()->getName() !== $expected->getName()
-            || spl_object_id($attribution->getConnection()) !== spl_object_id($expected)) {
-            throw new LogicException('Affiliate outcome recording requires the attribution on the same resolved connection as conversions.');
-        }
-    }
-
-    private function assertSameOwner(AffiliateAttribution $attribution, Affiliate $affiliate): void
-    {
-        if ($attribution->owner_type !== $affiliate->owner_type
-            || (string) $attribution->owner_id !== (string) $affiliate->owner_id) {
+        if ($attribution->ownerType !== $affiliate->owner_type
+            || (string) $attribution->ownerId !== (string) $affiliate->owner_id) {
             throw new LogicException('Affiliate outcome recording requires an attribution and affiliate with the same owner.');
         }
     }
@@ -339,7 +294,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $provenance
      */
-    private function mergedValue(array $provenance, array $payload, ?AffiliateAttribution $attribution, string $key): mixed
+    private function mergedValue(array $provenance, array $payload, ?AttributionConversionRecord $attribution, string $key): mixed
     {
         if (array_key_exists($key, $provenance) && $provenance[$key] !== null) {
             return $provenance[$key];
@@ -349,12 +304,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             return $payload[$key];
         }
 
-        // Array access, never getAttribute(): the attribution row may not
-        // carry this column at all (e.g. actor_user_id), and attribute
-        // access throws on missing attributes.
-        $attributes = $attribution?->getAttributes() ?? [];
-
-        return $attributes[$key] ?? null;
+        return $attribution?->provenance($key);
     }
 
     /**
@@ -362,7 +312,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
      * @param  array<string, mixed>  $provenance
      */
     private function assertAttributionReferences(
-        AffiliateAttribution $attribution,
+        AttributionConversionRecord $attribution,
         Affiliate $affiliate,
         array $payload,
         array $provenance = [],
@@ -371,19 +321,19 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             $reference = $this->mergedValue($provenance, $payload, $attribution, $key);
 
             if ((! is_string($reference) && ! is_int($reference) && $reference !== null)
-                || (string) $reference !== (string) $attribution->getAttribute($key)) {
+                || (string) $reference !== (string) $attribution->provenance($key)) {
                 throw new InvalidArgumentException(sprintf('Outcome reference [%s] must match the persisted attribution.', $key));
             }
         }
 
-        if ($attribution->affiliate_link_id !== null
-            && ! app(TrackingLinkReader::class)->belongsTo($attribution->affiliate_link_id, (string) $affiliate->getKey())) {
+        if ($attribution->affiliateLinkId !== null
+            && ! app(TrackingLinkReader::class)->belongsTo($attribution->affiliateLinkId, (string) $affiliate->getKey())) {
             throw new InvalidArgumentException('The attribution link does not belong to its affiliate.');
         }
 
-        if ($attribution->affiliate_program_id !== null
+        if ($attribution->affiliateProgramId !== null
             && ! app(ProgramReferenceReader::class)->existsForOwner(
-                $attribution->affiliate_program_id,
+                $attribution->affiliateProgramId,
                 $affiliate->owner_type,
                 $affiliate->owner_id,
                 spl_object_id($affiliate->getConnection()),
@@ -422,16 +372,11 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         }
     }
 
-    private function assertSameConnection(?AffiliateAttribution $attribution, Affiliate $affiliate): void
+    private function assertSameConnection(Affiliate $affiliate): void
     {
         $connection = (new AffiliateConversion)->getConnection();
-        $participants = [$affiliate, new AffiliateBalance];
 
-        if ($attribution !== null) {
-            $participants[] = $attribution;
-        }
-
-        foreach ($participants as $participant) {
+        foreach ([$affiliate, new AffiliateBalance] as $participant) {
             if ($participant->getConnection() !== $connection) {
                 throw new LogicException('Affiliate outcome recording requires one shared connection instance for atomicity.');
             }

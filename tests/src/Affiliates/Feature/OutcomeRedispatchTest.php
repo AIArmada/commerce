@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -55,9 +56,9 @@ test('outcome retry returns replayed with the original winner preserved', functi
         'commission_currency' => 'USD',
     ];
 
-    $action = app(RecordAffiliateOutcome::class);
-    $first = $action->handle($attribution, 'referral', 'redispatch-test:referral:ext-retry-1', $payload);
-    $second = $action->handle($attribution, 'referral', 'redispatch-test:referral:ext-retry-1', $payload);
+    $action = app(OutcomePosting::class);
+    $first = $action->post((string) $attribution->getKey(), 'referral', 'redispatch-test:referral:ext-retry-1', $payload);
+    $second = $action->post((string) $attribution->getKey(), 'referral', 'redispatch-test:referral:ext-retry-1', $payload);
 
     expect($first->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and($second->disposition)->toBe(AffiliateOutcomeDisposition::Replayed)
@@ -84,15 +85,15 @@ test('same business key from a different attribution replays the original winner
         'commission_currency' => 'USD',
     ];
 
-    $action = app(RecordAffiliateOutcome::class);
-    $first = $action->handle($winnerAttribution, 'referral', $businessKey, $payload);
+    $action = app(OutcomePosting::class);
+    $first = $action->post((string) $winnerAttribution->getKey(), 'referral', $businessKey, $payload);
 
     $balanceBefore = AffiliateBalance::query()
         ->where('affiliate_id', $winner->getKey())
         ->where('currency', 'USD')
         ->first();
 
-    $second = $action->handle($loserAttribution, 'referral', $businessKey, $payload);
+    $second = $action->post((string) $loserAttribution->getKey(), 'referral', $businessKey, $payload);
 
     $balanceAfter = AffiliateBalance::query()
         ->where('affiliate_id', $winner->getKey())
@@ -119,9 +120,9 @@ test('different namespaces for one source yield separate rows', function (): voi
     $affiliate = createRedispatchAffiliate('REDISPATCHNS');
     $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-ns');
 
-    $action = app(RecordAffiliateOutcome::class);
-    $first = $action->handle($attribution, 'referral', 'namespace-a:referral:source-1', ['dispatch_event' => false]);
-    $second = $action->handle($attribution, 'referral', 'namespace-b:referral:source-1', ['dispatch_event' => false]);
+    $action = app(OutcomePosting::class);
+    $first = $action->post((string) $attribution->getKey(), 'referral', 'namespace-a:referral:source-1', ['dispatch_event' => false]);
+    $second = $action->post((string) $attribution->getKey(), 'referral', 'namespace-b:referral:source-1', ['dispatch_event' => false]);
 
     expect($first->disposition)->toBe(AffiliateOutcomeDisposition::Created)
         ->and($second->disposition)->toBe(AffiliateOutcomeDisposition::Created)
@@ -151,7 +152,7 @@ test('existing idempotency row replays inside an outer transaction without poiso
     ]);
 
     $result = DB::transaction(function () use ($attribution, $businessKey) {
-        $outcome = app(RecordAffiliateOutcome::class)->handle($attribution, 'referral', $businessKey, [
+        $outcome = app(OutcomePosting::class)->post((string) $attribution->getKey(), 'referral', $businessKey, [
             'commission_minor' => 1000,
             'subtotal_minor' => 10000,
             'value_minor' => 10000,
@@ -175,8 +176,8 @@ test('missing affiliate returns no-affiliate without writes', function (): void 
     $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-noa');
     $attribution->forceFill(['affiliate_id' => (string) Str::uuid()])->save();
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        $attribution->refresh(),
+    $result = app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'referral',
         'redispatch-test:referral:no-affiliate-1',
         ['dispatch_event' => false],
@@ -202,8 +203,8 @@ test('fraud-blocked outcome creates a rejected row with persisted signals and ze
         'last_seen_at' => now(),
     ]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    $result = app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'referral',
         'redispatch-test:referral:fraud-blocked-1',
         [
@@ -241,13 +242,9 @@ test('cross-connection attribution fails closed with no partial writes', functio
 
     $affiliate = createRedispatchAffiliate('REDISPATCHXCON');
     $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-xcon');
-    $attribution->setConnection('wp2_mismatch_test');
-
-    expect(fn () => app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
-        'referral',
-        'redispatch-test:referral:xcon-1',
-        ['dispatch_event' => false],
+    expect(fn () => app(AttributionConversionReader::class)->forOutcome(
+        (string) $attribution->getKey(),
+        spl_object_id(DB::connection('wp2_mismatch_test')),
     ))->toThrow(LogicException::class);
 
     expect(AffiliateConversion::query()->where('idempotency_key', hash('sha256', 'redispatch-test:referral:xcon-1'))->count())->toBe(0);
@@ -271,7 +268,7 @@ test('outer rollback removes conversion signals balances and suppresses events',
 
     try {
         DB::transaction(function () use ($attribution, $businessKey): void {
-            app(RecordAffiliateOutcome::class)->handle($attribution, 'referral', $businessKey, [
+            app(OutcomePosting::class)->post((string) $attribution->getKey(), 'referral', $businessKey, [
                 'commission_minor' => 1000,
                 'commission_currency' => 'USD',
                 'occurred_at' => now(),
@@ -295,15 +292,15 @@ test('business key validation rejects empty and overlong identities', function (
     $affiliate = createRedispatchAffiliate('REDISPATCHVAL');
     $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-val');
 
-    $action = app(RecordAffiliateOutcome::class);
+    $action = app(OutcomePosting::class);
 
-    expect(fn () => $action->handle($attribution, 'referral', '   ', ['dispatch_event' => false]))
+    expect(fn () => $action->post((string) $attribution->getKey(), 'referral', '   ', ['dispatch_event' => false]))
         ->toThrow(InvalidArgumentException::class);
 
-    expect(fn () => $action->handle($attribution, 'referral', str_repeat('k', 192), ['dispatch_event' => false]))
+    expect(fn () => $action->post((string) $attribution->getKey(), 'referral', str_repeat('k', 192), ['dispatch_event' => false]))
         ->toThrow(InvalidArgumentException::class);
 
-    expect(fn () => $action->handle($attribution, '   ', 'redispatch-test:referral:valid-1', ['dispatch_event' => false]))
+    expect(fn () => $action->post((string) $attribution->getKey(), '   ', 'redispatch-test:referral:valid-1', ['dispatch_event' => false]))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -311,8 +308,8 @@ test('generic outcomes cannot record the reserved award type with alternate casi
     $affiliate = createRedispatchAffiliate('REDISPATCHAWD');
     $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-award');
 
-    expect(fn () => app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    expect(fn () => app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'REWARD_AWARD',
         'redispatch-test:reserved-award:1',
         ['commission_minor' => 1],
@@ -361,7 +358,7 @@ test('a deadlock after saving the outcome retries with a fresh conversion', func
     DB::commit();
 
     try {
-        $result = app(RecordAffiliateOutcome::class)->handle($attribution, 'referral', $businessKey, [
+        $result = app(OutcomePosting::class)->post((string) $attribution->getKey(), 'referral', $businessKey, [
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
         ]);
@@ -404,8 +401,8 @@ test('provenance-only keys never read missing attribution attributes', function 
     $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-noprov');
     $actor = (string) Str::uuid();
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    $result = app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'referral',
         'redispatch-test:referral:no-prov-attr',
         ['dispatch_event' => false],

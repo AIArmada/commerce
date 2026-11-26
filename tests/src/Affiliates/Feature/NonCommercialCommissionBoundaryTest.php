@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -170,8 +170,8 @@ test('outcome commission override on opaque-purpose affiliate records zero witho
         'last_seen_at' => CarbonImmutable::now()->subHour(),
     ]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    $result = app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'host_signal',
         'nccb-test:outcome:' . Str::uuid(),
         [
