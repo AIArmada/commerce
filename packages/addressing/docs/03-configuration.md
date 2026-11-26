@@ -105,7 +105,7 @@ or when the two gates differ for the selected state.
     'snapshot' => AIArmada\Addressing\Models\AddressSnapshot::class,
     'addressable' => AIArmada\Addressing\Models\Addressable::class,
     'postal_code' => AIArmada\Addressing\Models\PostalCode::class,
-    'resolution_gap' => AIArmada\Addressing\Models\ResolutionGap::class,
+    'resolution_gap' => null, // Defaults to the ResolutionGaps feature model.
     'area_assignment' => AIArmada\Addressing\Models\AddressAreaAssignment::class,
     'area_name' => AIArmada\Addressing\Models\AddressAreaName::class,
     'area_role' => AIArmada\Addressing\Models\AddressAreaRole::class,
@@ -202,7 +202,8 @@ uppercase during package boot. Invalid or blank values are treated as unset.
 
 The configured model classes must extend the corresponding core model. Core
 relations and normalization use `ModelResolver`, so host subclasses are
-applied consistently.
+applied consistently. Resolution gap persistence is owned by its feature; set
+`models.resolution_gap` to a subclass of `AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap` only when an override is required.
 
 ## Seed
 

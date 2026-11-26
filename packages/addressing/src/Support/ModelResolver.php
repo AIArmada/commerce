@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Support;
 
 use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -15,9 +14,9 @@ use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Models\State;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
@@ -111,17 +110,6 @@ final class ModelResolver
     {
         /** @var class-string<PostalCode> $modelClass */
         $modelClass = self::resolve('postal_code', PostalCode::class);
-
-        return $modelClass;
-    }
-
-    /**
-     * @return class-string<ResolutionGap>
-     */
-    public static function resolutionGapClass(): string
-    {
-        /** @var class-string<ResolutionGap> $modelClass */
-        $modelClass = self::resolve('resolution_gap', ResolutionGap::class);
 
         return $modelClass;
     }

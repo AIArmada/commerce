@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 
 beforeEach(function (): void {

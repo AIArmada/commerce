@@ -168,10 +168,10 @@ use AIArmada\Addressing\Geography\Guatemala\GuatemalaAddressFormatter;
 use AIArmada\Addressing\Geography\Guatemala\GuatemalaGeographyProvider;
 use AIArmada\Addressing\Geography\Guernsey\GuernseyAddressFormatter;
 use AIArmada\Addressing\Geography\Guernsey\GuernseyGeographyProvider;
-use AIArmada\Addressing\Geography\Guinea\GuineaAddressFormatter;
-use AIArmada\Addressing\Geography\Guinea\GuineaGeographyProvider;
 use AIArmada\Addressing\Geography\GuineaBissau\GuineaBissauAddressFormatter;
 use AIArmada\Addressing\Geography\GuineaBissau\GuineaBissauGeographyProvider;
+use AIArmada\Addressing\Geography\Guinea\GuineaAddressFormatter;
+use AIArmada\Addressing\Geography\Guinea\GuineaGeographyProvider;
 use AIArmada\Addressing\Geography\Guyana\GuyanaAddressFormatter;
 use AIArmada\Addressing\Geography\Guyana\GuyanaGeographyProvider;
 use AIArmada\Addressing\Geography\Haiti\HaitiAddressFormatter;
@@ -426,6 +426,10 @@ use AIArmada\Addressing\Geography\TurksAndCaicos\TurksAndCaicosAddressFormatter;
 use AIArmada\Addressing\Geography\TurksAndCaicos\TurksAndCaicosGeographyProvider;
 use AIArmada\Addressing\Geography\Tuvalu\TuvaluAddressFormatter;
 use AIArmada\Addressing\Geography\Tuvalu\TuvaluGeographyProvider;
+use AIArmada\Addressing\Geography\USMinorOutlyingIslands\USMinorOutlyingIslandsAddressFormatter;
+use AIArmada\Addressing\Geography\USMinorOutlyingIslands\USMinorOutlyingIslandsGeographyProvider;
+use AIArmada\Addressing\Geography\USVirginIslands\USVirginIslandsAddressFormatter;
+use AIArmada\Addressing\Geography\USVirginIslands\USVirginIslandsGeographyProvider;
 use AIArmada\Addressing\Geography\Uganda\UgandaAddressFormatter;
 use AIArmada\Addressing\Geography\Uganda\UgandaGeographyProvider;
 use AIArmada\Addressing\Geography\Ukraine\UkraineAddressFormatter;
@@ -438,10 +442,6 @@ use AIArmada\Addressing\Geography\UnitedStates\UnitedStatesAddressFormatter;
 use AIArmada\Addressing\Geography\UnitedStates\UnitedStatesGeographyProvider;
 use AIArmada\Addressing\Geography\Uruguay\UruguayAddressFormatter;
 use AIArmada\Addressing\Geography\Uruguay\UruguayGeographyProvider;
-use AIArmada\Addressing\Geography\USMinorOutlyingIslands\USMinorOutlyingIslandsAddressFormatter;
-use AIArmada\Addressing\Geography\USMinorOutlyingIslands\USMinorOutlyingIslandsGeographyProvider;
-use AIArmada\Addressing\Geography\USVirginIslands\USVirginIslandsAddressFormatter;
-use AIArmada\Addressing\Geography\USVirginIslands\USVirginIslandsGeographyProvider;
 use AIArmada\Addressing\Geography\Uzbekistan\UzbekistanAddressFormatter;
 use AIArmada\Addressing\Geography\Uzbekistan\UzbekistanGeographyProvider;
 use AIArmada\Addressing\Geography\Vanuatu\VanuatuAddressFormatter;
@@ -459,7 +459,6 @@ use AIArmada\Addressing\Geography\Zambia\ZambiaGeographyProvider;
 use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweAddressFormatter;
 use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweGeographyProvider;
 use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -469,9 +468,9 @@ use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 
@@ -490,7 +489,7 @@ return [
         'snapshot' => AddressSnapshot::class,
         'addressable' => Addressable::class,
         'postal_code' => PostalCode::class,
-        'resolution_gap' => ResolutionGap::class,
+        'resolution_gap' => null, // Uses the owning feature's model unless overridden.
         'area_assignment' => AddressAreaAssignment::class,
         'area_name' => AddressAreaName::class,
         'area_role' => AddressAreaRole::class,

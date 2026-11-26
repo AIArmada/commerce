@@ -123,7 +123,7 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
     'resolution_gaps' => [
         'enabled' => true,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\ResolutionGap::class,
+        'model' => null, // Uses the Addressing feature's configured resolution gap model.
     ],
 
     'addresses' => [

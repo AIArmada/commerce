@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
-use AIArmada\Addressing\Models\ResolutionGap;
-use AIArmada\Addressing\Support\ModelResolver;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -94,7 +93,7 @@ final readonly class ReportResolutionGapAction implements ResolutionGapReporter
             ]);
         }
 
-        $attempt = fn (): ResolutionGap => ModelResolver::resolutionGapClass()::query()->getConnection()->transaction(fn (): ResolutionGap => $this->upsert($source, $countryCode, $role, $value, $reason, $normalized, $context));
+        $attempt = fn (): ResolutionGap => ResolutionGap::configuredClass()::query()->getConnection()->transaction(fn (): ResolutionGap => $this->upsert($source, $countryCode, $role, $value, $reason, $normalized, $context));
 
         try {
             return (string) $this->runWithinOwnerContext($attempt)->getKey();
@@ -137,7 +136,7 @@ final readonly class ReportResolutionGapAction implements ResolutionGapReporter
         ?array $context,
     ): ResolutionGap {
         $owner = OwnerContext::resolve();
-        $gapClass = ModelResolver::resolutionGapClass();
+        $gapClass = ResolutionGap::configuredClass();
         $dedupeHash = $gapClass::dedupeHashFor(
             $owner?->getMorphClass(),
             $owner?->getKey(),

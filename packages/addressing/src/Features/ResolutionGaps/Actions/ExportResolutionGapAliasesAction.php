@@ -9,10 +9,10 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\ExportResolutionGapAliasesResultData;
 use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
@@ -88,7 +88,7 @@ final readonly class ExportResolutionGapAliasesAction
         $skippedDuplicates = 0;
         $emitted = [];
 
-        $gaps = ModelResolver::resolutionGapClass()::query()
+        $gaps = ResolutionGap::configuredClass()::query()
             ->when($allOwners, fn ($query) => $query->withoutOwnerScope())
             ->where('country_code', $countryCode)
             ->where('status', 'matched')

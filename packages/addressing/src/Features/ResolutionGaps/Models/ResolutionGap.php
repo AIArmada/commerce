@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\ResolutionGaps\Models;
 
 use AIArmada\Addressing\Database\Factories\ResolutionGapFactory;
+use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 /**
  * @property string $id
@@ -44,6 +46,18 @@ class ResolutionGap extends Model
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'addressing.features.owner';
+
+    /** @return class-string<ResolutionGap> */
+    public static function configuredClass(): string
+    {
+        $modelClass = config('addressing.models.resolution_gap') ?? self::class;
+
+        if (! is_string($modelClass) || ! is_a($modelClass, self::class, true)) {
+            throw new LogicException('The configured resolution gap model must extend ResolutionGap.');
+        }
+
+        return $modelClass;
+    }
 
     protected static function booted(): void
     {

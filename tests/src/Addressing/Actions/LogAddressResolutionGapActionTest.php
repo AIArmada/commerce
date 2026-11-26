@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

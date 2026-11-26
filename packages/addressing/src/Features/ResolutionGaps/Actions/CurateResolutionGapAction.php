@@ -7,8 +7,8 @@ namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 use AIArmada\Addressing\Contracts\AddressAreaAliasWriter;
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -41,7 +41,7 @@ final readonly class CurateResolutionGapAction implements ResolutionGapCuration
         }
 
         $attempt = function () use ($gapId, $areaId, $matchedBy): void {
-            ModelResolver::resolutionGapClass()::query()->getConnection()->transaction(function () use ($gapId, $areaId, $matchedBy): void {
+            ResolutionGap::configuredClass()::query()->getConnection()->transaction(function () use ($gapId, $areaId, $matchedBy): void {
                 $this->persistMatch($gapId, $areaId, $matchedBy);
             });
         };
@@ -55,7 +55,7 @@ final readonly class CurateResolutionGapAction implements ResolutionGapCuration
 
     public function ignore(string $gapId): void
     {
-        $gapClass = ModelResolver::resolutionGapClass();
+        $gapClass = ResolutionGap::configuredClass();
 
         $gapClass::query()->getConnection()->transaction(function () use ($gapId, $gapClass): void {
             if ($gapClass::ownerScopeConfig()->enabled) {
@@ -78,7 +78,7 @@ final readonly class CurateResolutionGapAction implements ResolutionGapCuration
 
     private function persistMatch(string $gapId, string $areaId, ?string $matchedBy): void
     {
-        $gapClass = ModelResolver::resolutionGapClass();
+        $gapClass = ResolutionGap::configuredClass();
 
         if ($gapClass::ownerScopeConfig()->enabled) {
             OwnerWriteGuard::findOrFailForOwner($gapClass, $gapId);

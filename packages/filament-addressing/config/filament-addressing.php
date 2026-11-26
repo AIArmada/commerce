@@ -8,7 +8,6 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Models\State;
 
 return [
@@ -73,7 +72,7 @@ return [
         'resolution_gaps' => [
             'enabled' => true,
             'read_only' => false,
-            'model' => ResolutionGap::class,
+            'model' => null, // Defaults to the Addressing feature's configured model.
         ],
 
         'addresses' => [

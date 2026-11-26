@@ -6,9 +6,9 @@ use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -31,6 +31,8 @@ beforeEach(function (): void {
 
     $this->areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 });
+
+final class CustomResolutionGapResourceModel extends ResolutionGap {}
 
 function logTestGap(string $value = 'Kuala Lumpur', string $role = 'postal_locality', string $reason = 'unmatched'): ResolutionGap
 {
@@ -181,4 +183,15 @@ it('scopes cached gap roles per owner with global roles shared', function (): vo
 
     expect($rolesA)->toBe(['alpha_probe' => 'Alpha probe', 'global_probe' => 'Global probe'])
         ->and($rolesB)->toBe(['beta_probe' => 'Beta probe', 'global_probe' => 'Global probe']);
+});
+
+it('uses the feature configured model when no Filament-specific override is present', function (): void {
+    config()->set('addressing.models.resolution_gap', CustomResolutionGapResourceModel::class);
+    config()->set('filament-addressing.resources.resolution_gaps.model', null);
+
+    expect(ResolutionGapResource::getModel())->toBe(CustomResolutionGapResourceModel::class);
+
+    $id = app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Configured model');
+
+    expect(CustomResolutionGapResourceModel::query()->findOrFail($id))->toBeInstanceOf(CustomResolutionGapResourceModel::class);
 });
