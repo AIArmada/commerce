@@ -15,6 +15,7 @@ use AIArmada\Signals\Features\Alerts\Queries\AlertSummaryQuery;
 use AIArmada\Signals\Features\Alerts\Api\AlertEventEvaluation;
 use AIArmada\Signals\Features\Alerts\Actions\EvaluateIngestedEvent;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use AIArmada\Signals\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
@@ -28,7 +29,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(AlertSummary::class, AlertSummaryQuery::class);
         $app->bind(AlertEventEvaluation::class, EvaluateIngestedEvent::class);
         $app->bind(AlertTransport::class, DefaultAlertTransport::class);
-        $app->singleton(SignalAlertEvaluator::class);
+        $app->singleton(AlertEvaluator::class, SignalAlertEvaluator::class);
         $app->singleton(SignalAlertDispatcher::class);
     }
 

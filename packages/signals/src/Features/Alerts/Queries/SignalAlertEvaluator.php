@@ -11,7 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\LazyCollection;
 
-final class SignalAlertEvaluator
+final class SignalAlertEvaluator implements AlertEvaluator
 {
     /**
      * @return array{matched: bool, metric_value: float, context: array<string, mixed>}

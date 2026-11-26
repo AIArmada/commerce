@@ -7,7 +7,7 @@ namespace AIArmada\Signals\Features\Alerts\EntryPoints\Console;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
-use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use Illuminate\Console\Command;
 
 final class ProcessSignalAlertsCommand extends Command
@@ -19,7 +19,7 @@ final class ProcessSignalAlertsCommand extends Command
     protected $description = 'Evaluate and dispatch Signals alert rules';
 
     public function __construct(
-        private readonly SignalAlertEvaluator $evaluator,
+        private readonly AlertEvaluator $evaluator,
         private readonly SignalAlertDispatcher $dispatcher,
     ) {
         parent::__construct();

@@ -11,8 +11,6 @@ use RuntimeException;
 
 final readonly class EvaluateIngestedEvent implements AlertEventEvaluation
 {
-    public function __construct(private EvaluateAlertRules $rules) {}
-
     public function afterIngest(string $eventId, string $trackedPropertyId, ?string $ownerType, string | int | null $ownerId): void
     {
         if (! (bool) config('signals.features.alerts.evaluate_on_ingest.enabled', false)) {
@@ -36,6 +34,6 @@ final readonly class EvaluateIngestedEvent implements AlertEventEvaluation
             throw new RuntimeException('Signal event owner cannot be resolved.');
         }
 
-        OwnerContext::withOwner($owner, fn () => $this->rules->handle($trackedPropertyId));
+        OwnerContext::withOwner($owner, fn () => app(EvaluateAlertRules::class)->handle($trackedPropertyId));
     }
 }

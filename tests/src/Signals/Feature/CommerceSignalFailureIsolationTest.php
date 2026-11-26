@@ -23,7 +23,7 @@ use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\CommerceSignalsRecorder;
-use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -349,7 +349,7 @@ function enableThrowingSyncAlertEvaluation(): void
     config()->set('signals.features.alerts.evaluate_on_ingest.enabled', true);
     config()->set('signals.features.alerts.evaluate_on_ingest.queue', false);
 
-    app()->instance(SignalAlertEvaluator::class, new class
+    app()->instance(AlertEvaluator::class, new class implements AlertEvaluator
     {
         public function evaluate(SignalAlertRule $rule): array
         {

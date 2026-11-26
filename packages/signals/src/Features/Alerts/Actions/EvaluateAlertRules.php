@@ -6,7 +6,7 @@ namespace AIArmada\Signals\Features\Alerts\Actions;
 
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
-use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -16,7 +16,7 @@ final class EvaluateAlertRules
     use AsAction;
 
     public function __construct(
-        private readonly SignalAlertEvaluator $evaluator,
+        private readonly AlertEvaluator $evaluator,
         private readonly SignalAlertDispatcher $dispatcher,
     ) {}
 
