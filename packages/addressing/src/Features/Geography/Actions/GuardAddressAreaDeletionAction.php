@@ -7,15 +7,12 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 use AIArmada\Addressing\Contracts\AddressAreaDeletionGuard;
 
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\Addressing\Models\AddressArea;
 use Illuminate\Validation\ValidationException;
 
 final readonly class GuardAddressAreaDeletionAction implements AddressAreaDeletionGuard
 {
-    public function handle(AddressArea $addressArea): void
+    public function handle(string $key): void
     {
-        $key = (string) $addressArea->getKey();
-
         if (ModelResolver::areaRelationshipClass()::query()
             ->where('parent_address_area_id', $key)
             ->where('relationship_type', 'contains')

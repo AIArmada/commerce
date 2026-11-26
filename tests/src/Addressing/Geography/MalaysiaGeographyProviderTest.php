@@ -91,7 +91,7 @@ it('preserves globally seeded states and adds missing Malaysian states', functio
         'label' => 'Kuala Lumpur',
     ]);
 
-    app(CountryStateSeeder::class)->execute($country, app(MalaysiaGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(MalaysiaGeographyProvider::class)->stateSeedData());
 
     $state->refresh();
 

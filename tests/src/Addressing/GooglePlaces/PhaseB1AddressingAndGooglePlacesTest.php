@@ -62,12 +62,12 @@ test('guard address country and area deletion actions prevent deleting reference
         'hierarchy_type' => 'administrative',
     ]);
 
-    expect(fn () => app(AddressCountryDeletionGuard::class)->handle($country))
+    expect(fn () => app(AddressCountryDeletionGuard::class)->handle((string) $2->getKey()))
         ->toThrow(ValidationException::class)
-        ->and(fn () => app(AddressAreaDeletionGuard::class)->handle($parentArea))
+        ->and(fn () => app(AddressAreaDeletionGuard::class)->handle((string) $2->getKey()))
         ->toThrow(ValidationException::class);
 
-    expect(fn () => app(AddressAreaDeletionGuard::class)->handle($childArea))
+    expect(fn () => app(AddressAreaDeletionGuard::class)->handle((string) $2->getKey()))
         ->not->toThrow(ValidationException::class);
 });
 

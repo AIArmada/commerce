@@ -79,7 +79,7 @@ final readonly class SeedCountryGeographiesAction implements CountryGeographySee
                 };
 
             $areaSummary = $this->connection()->transaction(function () use ($provider, $country, $providerCode, $report): ?array {
-                $this->stateSeeder->execute($country, $provider->stateSeedData());
+                $this->stateSeeder->execute((string) $2->getKey(), $provider->stateSeedData());
 
                 if (! $provider instanceof CountryHierarchyProvider) {
                     return null;

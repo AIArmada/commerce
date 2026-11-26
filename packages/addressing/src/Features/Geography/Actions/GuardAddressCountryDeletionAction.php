@@ -7,15 +7,12 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 use AIArmada\Addressing\Contracts\AddressCountryDeletionGuard;
 
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\Addressing\Models\AddressCountry;
 use Illuminate\Validation\ValidationException;
 
 final readonly class GuardAddressCountryDeletionAction implements AddressCountryDeletionGuard
 {
-    public function handle(AddressCountry $country): void
+    public function handle(string $key): void
     {
-        $key = (string) $country->getKey();
-
         if (ModelResolver::areaClass()::query()->where('country_id', $key)->exists()
             || ModelResolver::addressClass()::query()->withoutOwnerScope()->where('country_id', $key)->exists()) {
             throw ValidationException::withMessages([

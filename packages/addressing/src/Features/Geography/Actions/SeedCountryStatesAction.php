@@ -6,19 +6,18 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\GeographyReferenceCleanup;
 use AIArmada\Addressing\Support\ModelResolver;
 use InvalidArgumentException;
 
 final readonly class SeedCountryStatesAction implements CountryStateSeeder
 {
-    public function execute(AddressCountry $country, CountryStateSeedData $data): void
+    public function execute(string $countryId, CountryStateSeedData $data): void
     {
         $stateClass = ModelResolver::stateClass();
         $countryClass = ModelResolver::countryClass();
-        $country->getConnection()->transaction(function () use ($country, $countryClass, $stateClass, $data): void {
-            $persisted = $countryClass::query()->whereKey($country->getKey())->lockForUpdate()->firstOrFail();
+        (new $countryClass)->getConnection()->transaction(function () use ($countryId, $countryClass, $stateClass, $data): void {
+            $persisted = $countryClass::query()->whereKey($countryId)->lockForUpdate()->firstOrFail();
             $existing = $stateClass::query()->where('country_id', $persisted->getKey())->whereIn('code', array_column($data->states, 'code'))->lockForUpdate()->get()->keyBy('code');
 
             foreach ($data->states as $state) {

@@ -26,7 +26,7 @@ it('lists only the four mapped nations for GB after a full seed', function (): v
     ));
 
     app(StateDatasetSeeder::class)->execute($states);
-    app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(UnitedKingdomGeographyProvider::class)->stateSeedData());
     app(CountryGeographySeeder::class)->execute('GB');
 
     $resolver = app(CountryAddressProfileResolver::class);
@@ -62,7 +62,7 @@ it('lists only the ten mapped counties for LT after a full seed', function (): v
     ));
 
     app(StateDatasetSeeder::class)->execute($states);
-    app(CountryStateSeeder::class)->execute($country, app(LithuaniaGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(LithuaniaGeographyProvider::class)->stateSeedData());
     app(CountryGeographySeeder::class)->execute('LT');
 
     $resolver = app(CountryAddressProfileResolver::class);
@@ -106,7 +106,7 @@ it('respects the configured state subclass and its global scopes', function (): 
     ));
 
     app(StateDatasetSeeder::class)->execute($states);
-    app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $scopedState = new class extends State
     {
