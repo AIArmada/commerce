@@ -197,7 +197,16 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      */
     public function narrowToValidAssignments(?string $countryCode, ?string $persistedStateId, array $assignments): array
     {
-        $candidates = $assignments;
+        // Numeric-looking role keys are cast to integers by PHP. Remove
+        // malformed stored roles individually, not the valid selections.
+        $candidates = array_filter(
+            $assignments,
+            static fn (mixed $areaId, mixed $role): bool => is_string($role)
+                && $role !== ''
+                && is_string($areaId)
+                && mb_trim($areaId) !== '',
+            ARRAY_FILTER_USE_BOTH,
+        );
 
         while ($candidates !== []) {
             try {
