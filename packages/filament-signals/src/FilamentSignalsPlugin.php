@@ -4,23 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals;
 
-use AIArmada\FilamentSignals\Pages\AcquisitionReport;
-use AIArmada\FilamentSignals\Pages\ContentPerformanceReport;
-use AIArmada\FilamentSignals\Pages\ConversionFunnelReport;
-use AIArmada\FilamentSignals\Pages\DevicesReport;
-use AIArmada\FilamentSignals\Pages\GoalsReport;
-use AIArmada\FilamentSignals\Pages\JourneyReport;
-use AIArmada\FilamentSignals\Pages\LiveActivityReport;
-use AIArmada\FilamentSignals\Pages\PageViewsReport;
-use AIArmada\FilamentSignals\Pages\RetentionReport;
-use AIArmada\FilamentSignals\Pages\SignalsDashboard;
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
-use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
-use AIArmada\FilamentSignals\Resources\SignalGoalResource;
-use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
-use AIArmada\FilamentSignals\Resources\SignalSegmentResource;
-use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;
+use AIArmada\FilamentSignals\Contracts\AdminPanelContribution;
+use AIArmada\FilamentSignals\Platform\ExtensionRegistry;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -49,77 +34,17 @@ final class FilamentSignalsPlugin implements Plugin
         $pages = [];
         $resources = [];
 
-        if (config('filament-signals.features.dashboard', true)) {
-            $pages[] = SignalsDashboard::class;
+        foreach (app(ExtensionRegistry::class)->resolve('admin.panel.contributions', AdminPanelContribution::class) as $contribution) {
+            if ($contribution instanceof AdminPanelContribution) {
+                $pages += $contribution->pages();
+                $resources += $contribution->resources();
+            }
         }
 
-        if (config('filament-signals.features.page_views', true)) {
-            $pages[] = PageViewsReport::class;
-        }
+        ksort($pages);
+        ksort($resources);
 
-        if (config('filament-signals.features.conversion_funnel', true)) {
-            $pages[] = ConversionFunnelReport::class;
-        }
-
-        if (config('filament-signals.features.acquisition', true)) {
-            $pages[] = AcquisitionReport::class;
-        }
-
-        if (config('filament-signals.features.journeys', true)) {
-            $pages[] = JourneyReport::class;
-        }
-
-        if (config('filament-signals.features.retention', true)) {
-            $pages[] = RetentionReport::class;
-        }
-
-        if (config('filament-signals.features.content_performance', true)) {
-            $pages[] = ContentPerformanceReport::class;
-        }
-
-        if (config('filament-signals.features.live_activity', true)) {
-            $pages[] = LiveActivityReport::class;
-        }
-
-        if (config('filament-signals.features.goals_report', true)) {
-            $pages[] = GoalsReport::class;
-        }
-
-        if (config('filament-signals.features.devices_report', true)) {
-            $pages[] = DevicesReport::class;
-        }
-
-        if (config('filament-signals.features.properties', true)) {
-            $resources[] = TrackedPropertyResource::class;
-        }
-
-        if (config('filament-signals.features.goals', true)) {
-            $resources[] = SignalGoalResource::class;
-        }
-
-        if (config('filament-signals.features.segments', true)) {
-            $resources[] = SignalSegmentResource::class;
-        }
-
-        if (config('filament-signals.features.saved_reports', true)) {
-            $resources[] = SavedSignalReportResource::class;
-        }
-
-        if (config('filament-signals.features.alert_rules', true)) {
-            $resources[] = SignalAlertRuleResource::class;
-        }
-
-        if (config('filament-signals.features.alert_logs', true)) {
-            $resources[] = SignalAlertLogResource::class;
-        }
-
-        if (config('filament-signals.features.interaction_rules', true)) {
-            $resources[] = SignalInteractionRuleResource::class;
-        }
-
-        $panel
-            ->pages($pages)
-            ->resources($resources);
+        $panel->pages(array_values($pages))->resources(array_values($resources));
     }
 
     public function boot(Panel $panel): void {}

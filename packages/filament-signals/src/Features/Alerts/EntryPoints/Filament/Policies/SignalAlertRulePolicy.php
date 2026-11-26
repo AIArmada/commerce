@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Policies;
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Policies;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Illuminate\Foundation\Auth\User;
