@@ -9,6 +9,7 @@ use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Drivers\UserKeyIdentityDriver;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Data\MerchantAffiliate;
+use AIArmada\CommerceSupport\Data\OwnerTableReference;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class AffiliatesIdentityDriver implements AffiliateIdentityResolver
@@ -17,6 +18,11 @@ final class AffiliatesIdentityDriver implements AffiliateIdentityResolver
         private readonly MerchantIdentity $merchants,
         private readonly UserKeyIdentityDriver $users,
     ) {}
+
+    public function ownerTable(): OwnerTableReference
+    {
+        return $this->merchants->ownerTable();
+    }
 
     public function find(string $affiliateId): ?NetworkAffiliate
     {

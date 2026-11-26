@@ -38,6 +38,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Data\OwnerTableReference;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
@@ -77,6 +78,11 @@ final class FakeAffiliateIdentities implements AffiliateIdentityResolver
 {
     /** @param array<string, NetworkAffiliate> $affiliates */
     public function __construct(private array $affiliates = []) {}
+
+    public function ownerTable(): ?OwnerTableReference
+    {
+        return null;
+    }
 
     public function find(string $affiliateId): ?NetworkAffiliate
     {
@@ -467,8 +473,6 @@ describe('Network seam', function (): void {
         app()->instance(AffiliateIdentityResolver::class, new FakeAffiliateIdentities([
             'aff-1' => new NetworkAffiliate(id: 'aff-1', code: 'SEAM1', handle: 'seam-one'),
         ]));
-        config(['affiliate-network.models.affiliate' => null]);
-
         $application = app(ApplyToOffer::class)->execute($offer->id, 'aff-1', 'Recent application');
         $application->forceFill(['status' => ApplicationStatus::Pending])->save();
 
@@ -480,13 +484,10 @@ describe('Network seam', function (): void {
             ->and(method_exists($application, 'affiliate'))->toBeFalse();
     });
 
-    test('affiliate relations fail explicitly without a bound model', function (): void {
-        [, $offer] = seamFixtures('seam-relation.example');
-        $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
-
-        config(['affiliate-network.models.affiliate' => null]);
-
-        expect(fn () => $link->affiliate()->first())->toThrow(AffiliatesNotInstalled::class);
+    test('affiliate-owned records no longer expose cross-package ORM relations', function (): void {
+        expect(method_exists(AffiliateOfferLink::class, 'affiliate'))->toBeFalse()
+            ->and(method_exists(NetworkConversionLeg::class, 'affiliate'))->toBeFalse()
+            ->and(method_exists(AffiliateOfferApplication::class, 'affiliate'))->toBeFalse();
     });
 
     test('network binds the engine adapters when the engine is installed', function (): void {
@@ -496,7 +497,7 @@ describe('Network seam', function (): void {
             ->and(app(Fulfillment::class))->toBeInstanceOf(EnginePayoutFulfillmentDriver::class)
             ->and(app()->bound(AffiliateNetworkServiceProvider::LOCAL_READER_KEY))->toBeTrue()
             ->and(app(AffiliateNetworkServiceProvider::LOCAL_READER_KEY))->toBeInstanceOf(AffiliatesCatalogDriver::class)
-            ->and(config('affiliate-network.models.affiliate'))->toBe(Affiliate::class);
+            ->and(app(AffiliateIdentityResolver::class)->ownerTable()?->table)->toBe((new Affiliate)->getTable());
     });
 
     test('catalog reader bindings prefer remote and fail explicitly for local without adapters', function (): void {

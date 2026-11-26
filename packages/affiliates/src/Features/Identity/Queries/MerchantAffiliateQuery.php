@@ -8,11 +8,13 @@ use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Data\MerchantAffiliate;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Data\OwnerTableReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 /**
  * Merchant affiliate recognition.
@@ -23,8 +25,19 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class MerchantAffiliateQuery implements MerchantIdentity
 {
+    public function ownerTable(): OwnerTableReference
+    {
+        $affiliate = new Affiliate;
+
+        return new OwnerTableReference($affiliate->getTable(), $affiliate->getKeyName(), spl_object_id($affiliate->getConnection()));
+    }
+
     public function find(string $id): ?MerchantAffiliate
     {
+        if (! Str::isUuid($id)) {
+            return null;
+        }
+
         $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($id)->first();
 
         return $affiliate instanceof Affiliate ? self::toMerchantAffiliate($affiliate) : null;
@@ -32,6 +45,10 @@ final class MerchantAffiliateQuery implements MerchantIdentity
 
     public function findAccessible(string $id): ?MerchantAffiliate
     {
+        if (! Str::isUuid($id)) {
+            return null;
+        }
+
         if (! config('affiliates.owner.enabled', false)) {
             return $this->find($id);
         }

@@ -6,6 +6,7 @@ namespace AIArmada\AffiliateNetwork\Features\Enrollment\Actions;
 
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Data\OfferStatus;
 use AIArmada\AffiliateNetwork\Data\OfferVisibility;
 use AIArmada\AffiliateNetwork\Data\RestrictionContext;
@@ -49,7 +50,7 @@ final class ApplyToOffer
 
         if ($affiliate === null) {
             throw (new ModelNotFoundException)->setModel(
-                (string) config('affiliate-network.models.affiliate', 'affiliate'),
+                NetworkAffiliate::class,
                 [$affiliateId],
             );
         }

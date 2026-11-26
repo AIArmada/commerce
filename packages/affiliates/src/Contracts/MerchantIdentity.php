@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Contracts;
 
 use AIArmada\Affiliates\Data\MerchantAffiliate;
+use AIArmada\CommerceSupport\Data\OwnerTableReference;
 
 /**
  * Merchant identity seam.
@@ -14,6 +15,8 @@ use AIArmada\Affiliates\Data\MerchantAffiliate;
  */
 interface MerchantIdentity
 {
+    public function ownerTable(): OwnerTableReference;
+
     public function find(string $id): ?MerchantAffiliate;
 
     /** Resolve only within the current owner scope. */

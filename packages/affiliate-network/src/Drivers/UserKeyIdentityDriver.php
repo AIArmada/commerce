@@ -6,8 +6,10 @@ namespace AIArmada\AffiliateNetwork\Drivers;
 
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
+use AIArmada\CommerceSupport\Data\OwnerTableReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
@@ -15,6 +17,19 @@ use Illuminate\Support\Str;
 
 final class UserKeyIdentityDriver implements AffiliateIdentityResolver
 {
+    public function ownerTable(): ?OwnerTableReference
+    {
+        $model = $this->userModelClass();
+
+        if ($model === null || ! in_array(HasOwner::class, class_uses_recursive($model), true)) {
+            return null;
+        }
+
+        $user = new $model;
+
+        return new OwnerTableReference($user->getTable(), $user->getKeyName(), spl_object_id($user->getConnection()));
+    }
+
     public function find(string $affiliateId): ?NetworkAffiliate
     {
         $user = $this->userByKey($affiliateId);

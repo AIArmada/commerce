@@ -160,7 +160,6 @@ describe('affiliate profile requirement for network writes', function (): void {
     test('standalone UserKey identity bypasses the profile gate and keeps owner-off writes', function (): void {
         app()->instance(AffiliateIdentityResolver::class, new UserKeyIdentityDriver);
         app()->forgetInstance(AffiliateProfileGuard::class);
-        config(['affiliate-network.models.affiliate' => User::class]);
 
         $actor = affiliateProfileRequiredUser('Standalone Creator');
         [, $offer] = affiliateProfileRequiredFixtures($actor, 'standalone-profile.example');

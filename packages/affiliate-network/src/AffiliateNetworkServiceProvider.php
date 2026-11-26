@@ -115,8 +115,6 @@ final class AffiliateNetworkServiceProvider extends PackageServiceProvider
             $this->bindEngineAdapters();
         }
 
-        $this->registerAffiliateModel();
-
         foreach (array_keys($this->catalog()['features']) as $name) {
             $instance = $this->app->make($this->moduleClass($name));
 
@@ -154,21 +152,6 @@ final class AffiliateNetworkServiceProvider extends PackageServiceProvider
         $this->app->bind(Fulfillment::class, EnginePayoutFulfillmentDriver::class);
         $this->app->bind(self::LOCAL_READER_KEY, AffiliatesCatalogDriver::class);
         $this->app->tag([NetworkAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);
-
-        config(['affiliate-network.models.affiliate' => 'AIArmada\Affiliates\Models\Affiliate']);
-    }
-
-    private function registerAffiliateModel(): void
-    {
-        if (config('affiliate-network.models.affiliate') !== null) {
-            return;
-        }
-
-        $userModel = config('auth.providers.users.model');
-
-        if (is_string($userModel) && class_exists($userModel)) {
-            config(['affiliate-network.models.affiliate' => $userModel]);
-        }
     }
 
     private function registerMorphMap(): void
