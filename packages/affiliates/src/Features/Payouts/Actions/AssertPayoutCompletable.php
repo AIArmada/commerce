@@ -105,7 +105,8 @@ final readonly class AssertPayoutCompletable
         $operation = PayoutOperationQuery::forPayout($payout, $owner)->first();
 
         if ($operation?->payout_sequence !== null
-            && ($operation->funds_released_at !== null
+            && ($operation->affiliate_payout_id !== (string) $payout->getKey()
+                || $operation->funds_released_at !== null
                 || $operation->amount_minor !== (int) $payout->total_minor
                 || $operation->amount_minor !== $summary->totalMinor
                 || $summary->count !== (int) $payout->conversion_count

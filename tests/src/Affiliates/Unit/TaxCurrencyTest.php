@@ -146,3 +146,19 @@ test('annual generation keeps one record per affiliate year and currency', funct
         ->and($second?->id)->toBe($first?->id)
         ->and($api->documentsFor((string) $affiliate->getKey()))->toHaveCount(1);
 });
+
+test('annual payout thresholds normalize currency without summing foreign currencies', function (): void {
+    config(['affiliates.tax.1099_threshold' => 60000, 'affiliates.tax.1099_threshold_currency' => 'usd']);
+    $affiliate = taxCurrencyAffiliate('TAXCUR-NORMALIZED');
+    taxCurrencyPayout($affiliate, 'USD', 30000, 'TAXCUR-UPPER');
+    $lower = taxCurrencyPayout($affiliate, 'USD', 30000, 'TAXCUR-LOWER');
+    AffiliatePayout::query()->whereKey($lower->id)->update(['currency' => 'usd']);
+    taxCurrencyPayout($affiliate, 'MYR', 100000, 'TAXCUR-FOREIGN');
+
+    $api = app(TaxDocumentApi::class);
+
+    expect($api->calculateAnnualPayouts($affiliate->id, 2024))->toBe(60000)
+        ->and($api->affiliatesRequiring1099(2024))->toContain($affiliate->id)
+        ->and(array_column($api->excludedPayoutsForYear($affiliate->id, 2024), 'reference'))->toBe(['TAXCUR-FOREIGN'])
+        ->and($api->calculateAnnualPayouts('not-a-uuid', 2024))->toBe(0);
+});

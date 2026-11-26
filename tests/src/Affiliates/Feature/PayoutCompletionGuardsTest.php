@@ -704,3 +704,16 @@ test('manual payout selection rejects malformed conversion IDs before querying U
     expect(fn () => app(CreatePayout::class)->handle(['not-a-uuid']))
         ->toThrow(InvalidArgumentException::class, 'All conversions must be approved');
 });
+
+test('completion refuses a reservation whose operation no longer points to its payout', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    AffiliatePayoutOperation::query()->whereKey($payout->affiliate_payout_operation_id)->update(['affiliate_payout_id' => null]);
+
+    expect(fn () => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'reservation')
+        ->and($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+        ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+});
