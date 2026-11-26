@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
@@ -692,4 +693,43 @@ it('AffiliateFraudSignalResource returns null badge when no detected signals', f
     AffiliateFraudSignal::query()->delete();
 
     expect(AffiliateFraudSignalResource::getNavigationBadge())->toBeNull();
+});
+
+it('keeps payout eligibility and lifecycle timestamps consistent when editing status', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-LIFECYCLE-EDIT-' . Str::uuid(),
+        'name' => 'Lifecycle Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'MYR',
+    ]);
+
+    $administration = app(AffiliateAdministration::class);
+    $id = (string) $affiliate->getKey();
+
+    $administration->update($id, ['status' => 'paused']);
+    $affiliate->refresh();
+
+    expect($affiliate->paused_at)->not->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeFalse();
+
+    $administration->update($id, ['status' => 'active']);
+    $affiliate->refresh();
+
+    expect($affiliate->paused_at)->toBeNull()
+        ->and($affiliate->activated_at)->not->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeTrue();
+
+    $administration->update($id, ['status' => 'disabled']);
+    $affiliate->refresh();
+
+    expect($affiliate->deactivated_at)->not->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeFalse();
+
+    $administration->update($id, ['status' => 'active']);
+    $affiliate->refresh();
+
+    expect($affiliate->deactivated_at)->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeTrue();
 });

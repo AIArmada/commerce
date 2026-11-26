@@ -11,7 +11,11 @@ use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignm
 use AIArmada\Affiliates\Features\Upline\Api\RankAssignmentGuard;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Paused;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
@@ -32,6 +36,7 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
             $this->applyOwner($affiliate, $data);
             $this->assertCommission($affiliate);
             $this->assertRank($affiliate);
+            $this->synchronizeLifecycleTimestamps($affiliate);
             $affiliate->save();
 
             if ((bool) config('affiliates.upline.enabled', false) && $affiliate->isCommercialPurpose()) {
@@ -73,6 +78,11 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
             }
 
             $parentChanged = $affiliate->isDirty('parent_affiliate_id');
+
+            if ($affiliate->isDirty('status')) {
+                $this->synchronizeLifecycleTimestamps($affiliate);
+            }
+
             $affiliate->save();
 
             if ($parentChanged && (bool) config('affiliates.upline.enabled', false)) {
@@ -106,6 +116,19 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
     {
         if ($affiliate->commission_rate < 0 || ($affiliate->commission_type === CommissionType::Percentage && $affiliate->commission_rate > 10000)) {
             throw ValidationException::withMessages(['data.commission_rate' => 'The commission rate is outside the allowed range.']);
+        }
+    }
+
+    private function synchronizeLifecycleTimestamps(Affiliate $affiliate): void
+    {
+        if ($affiliate->status instanceof Active) {
+            $affiliate->activated_at = CarbonImmutable::now();
+            $affiliate->paused_at = null;
+            $affiliate->deactivated_at = null;
+        } elseif ($affiliate->status instanceof Paused) {
+            $affiliate->paused_at = CarbonImmutable::now();
+        } elseif ($affiliate->status instanceof Disabled) {
+            $affiliate->deactivated_at = CarbonImmutable::now();
         }
     }
 

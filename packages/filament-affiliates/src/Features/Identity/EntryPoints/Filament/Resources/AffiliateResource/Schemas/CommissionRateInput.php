@@ -29,7 +29,7 @@ final class CommissionRateInput
 
         $precision = $type === CommissionType::Percentage->value ? 2 : MoneyFormatter::precisionFor($currency);
 
-        if (preg_match('/^([0-9]*)(?:\.([0-9]+))?$/D', $rate, $matches) !== 1 || $rate === '') {
+        if (preg_match('/^([0-9]*)(?:\.([0-9]+))?$/D', $rate, $matches) !== 1) {
             throw self::invalidRate();
         }
 
