@@ -39,6 +39,8 @@ use AIArmada\Addressing\Features\Geography\Actions\SeedAddressingAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryStatesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
+use AIArmada\Addressing\Features\Geography\Actions\ValidateAreaAssignmentsAction;
+use AIArmada\Addressing\Features\Geography\Api\AreaAssignmentValidator;
 use AIArmada\Addressing\Features\Geography\Api\AreaReferenceReader;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Api\PlaceGeographyResolver;
@@ -63,6 +65,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(GooglePlaceGeographyMatcher::class);
         $app->singleton(GooglePlaceResolutionGapLogger::class);
         $app->singleton(PlaceGeographyResolver::class, GooglePlaceGeographyResolver::class);
+        $app->singleton(AreaAssignmentValidator::class, ValidateAreaAssignmentsAction::class);
         $app->singleton(AreaReferenceReader::class, ReadAreaReferencesAction::class);
         $app->instance('addressing.model-default.area_state_link', AddressAreaStateLink::class);
         $app->singleton(GeographyReferenceMaintenance::class, ClearGeographyReferencesAction::class);
