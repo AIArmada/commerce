@@ -12,7 +12,7 @@ interface AffiliateBonusReader
     public function candidates(bool $includeGlobal): iterable;
 
     /**
-     * @param list<string> $ids
+     * @param  list<string>  $ids
      * @return array<string, string|null>
      */
     public function currencies(array $ids): array;

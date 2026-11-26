@@ -14,7 +14,6 @@ use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 beforeEach(function (): void {
