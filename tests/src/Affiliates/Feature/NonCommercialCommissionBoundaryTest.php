@@ -219,3 +219,26 @@ test('reward-award settlement for opaque purposes still settles', function (): v
     expect($payout->conversion_count)->toBe(1)
         ->and($payout->total_minor)->toBe(1000);
 });
+
+
+test('an unknown explicit cart affiliate does not fall through to the attributed affiliate', function (): void {
+    $affiliate = createTestAffiliate(['code' => 'NCCB-UNKNOWN-EXPLICIT']);
+    $cart = app('cart')->getCurrentCart();
+    app(CartAttribution::class)->attach($affiliate->id, $cart);
+    $cart->add('nccb-unknown-item', 'Order item', 10.00, 1);
+
+    $reference = 'NCCB-UNKNOWN-' . Str::uuid();
+
+    expect(app(RecordAffiliateConversion::class)->record($cart, [
+        'affiliate_id' => (string) Str::uuid(),
+        'affiliate_code' => $affiliate->code,
+        'external_reference' => $reference,
+    ]))->toBeNull()
+        ->and(AffiliateConversion::query()->where('external_reference', $reference)->exists())->toBeFalse();
+
+    expect(app(RecordAffiliateConversion::class)->record($cart, [
+        'affiliate_id' => 'not-a-uuid',
+        'external_reference' => $reference,
+    ]))->toBeNull()
+        ->and(AffiliateConversion::query()->where('external_reference', $reference)->exists())->toBeFalse();
+});

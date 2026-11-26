@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
+use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiaryReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -477,3 +478,40 @@ class AffiliatesTestOwner extends Model
 
     protected $keyType = 'string';
 }
+
+
+it('locks conversion beneficiaries only on the shared connection and within the current owner', function (): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => false, 'affiliates.owner.auto_assign_on_create' => true]);
+
+    $ownerA = AffiliatesTestOwner::create(['name' => 'Beneficiary A']);
+    $ownerB = AffiliatesTestOwner::create(['name' => 'Beneficiary B']);
+
+    $affiliateA = OwnerContext::withOwner($ownerA, fn (): Affiliate => Affiliate::create([
+        'code' => 'BENEFICIARY-A', 'name' => 'Beneficiary A', 'status' => Active::class,
+        'commission_type' => 'percentage', 'commission_rate' => 500, 'currency' => 'USD',
+    ]));
+    $affiliateB = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
+        'code' => 'BENEFICIARY-B', 'name' => 'Beneficiary B', 'status' => Active::class,
+        'commission_type' => 'percentage', 'commission_rate' => 900, 'currency' => 'USD',
+    ]));
+
+    $connection = $affiliateA->getConnection();
+    $identity = spl_object_id($connection);
+    $reader = app(ConversionBeneficiaryReader::class);
+
+    OwnerContext::withOwner($ownerA, function () use ($reader, $affiliateA, $affiliateB, $connection, $identity): void {
+        expect($reader->find($affiliateB->id, $identity))->toBeNull()
+            ->and($reader->find('invalid', $identity))->toBeNull()
+            ->and($reader->findByCode($affiliateA->code, $identity)?->commissionRate)->toBe(500);
+
+        expect(fn () => $reader->find($affiliateA->id, -1))->toThrow(LogicException::class);
+
+        $connection->transaction(function () use ($reader, $affiliateA, $affiliateB, $identity): void {
+            expect(fn () => $reader->lock([$affiliateA->id, $affiliateB->id], $identity))->toThrow(InvalidArgumentException::class);
+            $locked = $reader->lock([$affiliateA->id, $affiliateA->id], $identity);
+            expect($locked)->toHaveCount(1)
+                ->and($locked[$affiliateA->id]->reference->id)->toBe($affiliateA->id)
+                ->and($locked[$affiliateA->id]->commercial)->toBeTrue();
+        });
+    });
+});

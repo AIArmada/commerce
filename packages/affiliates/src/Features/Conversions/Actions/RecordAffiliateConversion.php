@@ -83,7 +83,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         AttributionConversionRecord $attribution,
         array $payload = [],
     ): ?AffiliateConversionData {
-        $affiliate = app(ConversionBeneficiaryReader::class)->find($attribution->affiliateId, $this->connectionIdentity());
+        $affiliate = app(ConversionBeneficiaryReader::class)->find($attribution->affiliateId, $this->connectionIdentity(), includeGlobal: true);
 
         if ($affiliate === null || ! $affiliate->commercial) {
             throw new InvalidArgumentException('Frozen commission attribution must belong to a commercial-purpose affiliate.');
@@ -443,7 +443,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             return $reader->findByCode($payload['affiliate_code'], $connectionIdentity);
         }
 
-        return $attribution === null ? null : $reader->find($attribution->affiliateId, $connectionIdentity);
+        return $attribution === null ? null : $reader->find($attribution->affiliateId, $connectionIdentity, includeGlobal: true);
     }
 
     private function connectionIdentity(): int
