@@ -6,15 +6,15 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use Illuminate\Database\Connection;
-use LogicException;
 
 final readonly class AdministerPayoutHold implements PayoutHoldAdministration
 {
+    public function __construct(private AffiliateAccessGuard $affiliates) {}
+
     public function place(string $affiliateId, string $reason, ?string $notes = null, ?DateTimeImmutable $expiresAt = null, ?string $placedBy = null): string
     {
         $validated = validator([
@@ -28,9 +28,9 @@ final readonly class AdministerPayoutHold implements PayoutHoldAdministration
         ])->validate();
 
         return $this->connection()->transaction(function () use ($affiliateId, $validated, $expiresAt): string {
-            $affiliate = $this->lockAffiliate($affiliateId);
+            $this->affiliates->lockForWrite($affiliateId, spl_object_id($this->connection()));
             $hold = AffiliatePayoutHold::query()->create([
-                'affiliate_id' => $affiliate->getKey(),
+                'affiliate_id' => $affiliateId,
                 ...$validated,
                 'expires_at' => $expiresAt,
             ]);
@@ -42,8 +42,8 @@ final readonly class AdministerPayoutHold implements PayoutHoldAdministration
     public function release(string $affiliateId, string $holdId, ?string $notes = null): void
     {
         $this->connection()->transaction(function () use ($affiliateId, $holdId, $notes): void {
-            $affiliate = $this->lockAffiliate($affiliateId);
-            $hold = AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->getKey())->lockForUpdate()->findOrFail($holdId);
+            $this->affiliates->lockForWrite($affiliateId, spl_object_id($this->connection()));
+            $hold = AffiliatePayoutHold::query()->where('affiliate_id', $affiliateId)->lockForUpdate()->findOrFail($holdId);
 
             if ($hold->released_at !== null) {
                 return;
@@ -58,21 +58,6 @@ final readonly class AdministerPayoutHold implements PayoutHoldAdministration
 
     private function connection(): Connection
     {
-        $connection = (new Affiliate)->getConnection();
-
-        if ((new AffiliatePayoutHold)->getConnection() !== $connection) {
-            throw new LogicException('Payout hold updates require a shared database connection.');
-        }
-
-        return $connection;
-    }
-
-    private function lockAffiliate(string $affiliateId): Affiliate
-    {
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
-        }
-
-        return Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
+        return (new AffiliatePayoutHold)->getConnection();
     }
 }

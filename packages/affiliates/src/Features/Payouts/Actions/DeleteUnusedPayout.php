@@ -13,13 +13,13 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
 final readonly class DeleteUnusedPayout implements PayoutRemoval
 {
-    public function __construct(private PayoutConversionIntegrity $conversions, private PayoutAccountingReader $history) {}
+    public function __construct(private PayoutConversionIntegrity $conversions, private PayoutAccountingReader $history, private AffiliateAccessGuard $affiliates) {}
 
     public function deleteUnused(string $payoutId): bool
     {
@@ -55,19 +55,18 @@ final readonly class DeleteUnusedPayout implements PayoutRemoval
 
     public function removeUnusedConfiguration(string $affiliateId): void
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliatePayout)->getConnection();
 
-        if ($connection !== (new AffiliatePayout)->getConnection()
-            || $connection !== (new AffiliatePayoutOperation)->getConnection()
+        if ($connection !== (new AffiliatePayoutOperation)->getConnection()
             || $connection !== (new AffiliatePayoutMethod)->getConnection()
             || $connection !== (new AffiliatePayoutHold)->getConnection()) {
             throw new LogicException('Affiliate payout cleanup requires a shared database connection.');
         }
 
-        $connection->transaction(function () use ($affiliateId): void {
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+        $connection->transaction(function () use ($connection, $affiliateId): void {
+            $this->affiliates->lockForWrite($affiliateId, spl_object_id($connection));
 
-            if ($this->history->hasAffiliateHistory($affiliateId, spl_object_id($affiliate->getConnection()))) {
+            if ($this->history->hasAffiliateHistory($affiliateId, spl_object_id($connection))) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with payout history cannot be deleted.']);
             }
 

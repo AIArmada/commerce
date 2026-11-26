@@ -12,17 +12,16 @@ use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentRecord;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentStatus;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Features\Tax\Queries\TaxDocumentQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-use LogicException;
 use RuntimeException;
 use Throwable;
 
 final readonly class GenerateTaxDocument
 {
-    public function __construct(private AnnualPayoutReader $payouts, private TaxRecipientProvider $recipients, private TaxWorksheetWriter $writer) {}
+    public function __construct(private AnnualPayoutReader $payouts, private TaxRecipientProvider $recipients, private TaxWorksheetWriter $writer, private AffiliateAccessGuard $affiliates) {}
 
     public function execute(string $affiliateId, int $year, ?string $documentId = null): ?TaxDocumentRecord
     {
@@ -31,15 +30,11 @@ final readonly class GenerateTaxDocument
 
         $connection = (new AffiliateTaxDocument)->getConnection();
 
-        if ($connection !== (new Affiliate)->getConnection()) {
-            throw new LogicException('Tax document generation requires a shared affiliate database connection.');
-        }
-
         $this->payouts->assertSharedConnection(spl_object_id($connection));
 
         try {
             $result = $connection->transaction(function () use ($connection, $affiliateId, $year, $documentId, &$written, &$obsolete): ?TaxDocumentRecord {
-                Affiliate::query()->forOwner()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
+                $this->affiliates->lockForWrite($affiliateId, spl_object_id($connection));
                 $currency = mb_strtoupper((string) config('affiliates.tax.1099_threshold_currency', 'USD'));
                 $document = $documentId === null
                     ? AffiliateTaxDocument::query()->where(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $currency])->lockForUpdate()->first()

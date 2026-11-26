@@ -8,13 +8,13 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionRemoval;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 
 final readonly class DeleteAttributions implements AttributionRemoval
 {
-    public function __construct(private ConversionAttributionMaintenance $conversions) {}
+    public function __construct(private ConversionAttributionMaintenance $conversions, private AffiliateAccessGuard $affiliates) {}
 
     public function deleteMany(array $attributionIds): void
     {
@@ -27,7 +27,7 @@ final readonly class DeleteAttributions implements AttributionRemoval
 
     public function deleteForAffiliate(string $affiliateId): void
     {
-        Affiliate::query()->forOwner()->findOrFail($affiliateId);
+        $this->affiliates->assertCanWrite($affiliateId, spl_object_id((new AffiliateAttribution)->getConnection()));
         $this->remove(AffiliateAttribution::query()->where('affiliate_id', $affiliateId));
     }
 
@@ -36,8 +36,9 @@ final readonly class DeleteAttributions implements AttributionRemoval
     {
         $connection = $query->getModel()->getConnection();
 
-        if ($connection !== (new AffiliateTouchpoint)->getConnection()
-            || $connection !== (new Affiliate)->getConnection()) {
+        $this->affiliates->assertConnection(spl_object_id($connection));
+
+        if ($connection !== (new AffiliateTouchpoint)->getConnection()) {
             throw new LogicException('Attribution removal requires a shared database connection.');
         }
 
