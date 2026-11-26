@@ -15,7 +15,12 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -48,20 +53,27 @@ final readonly class ExternalConversionLedger implements MerchantLedger
     {
         $affiliate = $this->resolveAffiliate($draft);
 
-        if (! $affiliate instanceof Affiliate) {
+        if ($affiliate === null) {
             return null;
         }
 
         $connection = (new AffiliateConversion)->getConnection();
 
-        if ($affiliate->getConnection() !== $connection || (new AffiliateBalance)->getConnection() !== $connection) {
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
+
+        if ((new AffiliateBalance)->getConnection() !== $connection) {
             throw new RuntimeException('External conversion accounting requires a shared database connection.');
         }
 
-        $owner = $affiliate->owner;
-        if ($affiliate->owner_id !== null && $owner === null) {
-            throw new RuntimeException('External conversion affiliate owner no longer exists.');
+        $reference = $affiliate->reference;
+
+        if (($reference->ownerType === null) !== ($reference->ownerId === null)) {
+            throw new RuntimeException('External conversion affiliate has an invalid owner reference.');
         }
+
+        $owner = $reference->ownerType === null || $reference->ownerId === null
+            ? null
+            : EloquentRecordReference::resolve(new RecordReference($reference->ownerType, $reference->ownerId));
 
         $autoApprove = (bool) config('affiliates.commissions.auto_approve', false);
         $idempotencyKey = hash('sha256', implode('|', [
@@ -71,7 +83,7 @@ final readonly class ExternalConversionLedger implements MerchantLedger
         ]));
         $attributes = [
             'idempotency_key' => $idempotencyKey,
-            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_id' => $reference->id,
             'affiliate_code' => $affiliate->code,
             'source_ref' => $draft->sourceRef,
             'subject_type' => $draft->metadata['subject_type'] ?? 'external_order',
@@ -87,11 +99,18 @@ final readonly class ExternalConversionLedger implements MerchantLedger
             'metadata' => $draft->metadata,
             'occurred_at' => CarbonImmutable::now(),
             'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
-            'owner_type' => $affiliate->owner_type,
-            'owner_id' => $affiliate->owner_id,
+            'owner_type' => $reference->ownerType,
+            'owner_id' => $reference->ownerId,
         ];
 
-        $conversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => $connection->transaction(function () use ($attributes, $connection): AffiliateConversion {
+        $conversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => $connection->transaction(function () use ($attributes, $connection, $reference): AffiliateConversion {
+            $current = app(AffiliateProfileReader::class)->lock($reference->id, spl_object_id($connection));
+
+            if ($current === null || ! $current->reference->matches($reference)) {
+                throw new RuntimeException('External conversion affiliate identity or owner changed.');
+            }
+
+            $attributes['affiliate_code'] = $current->code;
             $conversion = $this->createIdempotent($attributes);
             $this->assertPostingIdentity($conversion, $attributes);
 
@@ -192,11 +211,12 @@ final readonly class ExternalConversionLedger implements MerchantLedger
             ->all();
     }
 
-    private function resolveAffiliate(ExternalConversion $draft): ?Affiliate
+    private function resolveAffiliate(ExternalConversion $draft): ?AffiliateLifecycleRecord
     {
-        $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($draft->affiliateId)->first();
+        $reader = app(AffiliateLifecycleReader::class);
+        $affiliate = $reader->findById($draft->affiliateId);
 
-        if ($affiliate instanceof Affiliate) {
+        if ($affiliate !== null) {
             return $affiliate;
         }
 
@@ -206,13 +226,7 @@ final readonly class ExternalConversionLedger implements MerchantLedger
 
         $id = $this->identities->findIdForEmail($draft->affiliateEmail);
 
-        if (! is_string($id)) {
-            return null;
-        }
-
-        $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($id)->first();
-
-        return $affiliate instanceof Affiliate ? $affiliate : null;
+        return $id === null ? null : $reader->findById($id);
     }
 
     /**
@@ -265,7 +279,7 @@ final readonly class ExternalConversionLedger implements MerchantLedger
     /** @param array<string, mixed> $attributes */
     private function assertPostingIdentity(AffiliateConversion $conversion, array $attributes): void
     {
-        foreach (['origin', 'source_ref', 'external_reference', 'affiliate_id', 'conversion_type'] as $field) {
+        foreach (['origin', 'source_ref', 'external_reference', 'affiliate_id', 'conversion_type', 'owner_type', 'owner_id'] as $field) {
             if ((string) $conversion->getAttribute($field) !== (string) $attributes[$field]) {
                 throw new InvalidArgumentException('External conversion idempotency key conflicts with an existing posting.');
             }

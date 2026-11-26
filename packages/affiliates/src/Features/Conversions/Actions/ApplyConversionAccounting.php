@@ -14,7 +14,8 @@ use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\PayoutMinimums;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
@@ -24,19 +25,14 @@ final readonly class ApplyConversionAccounting
 {
     public function handle(AffiliateConversion $conversion, ?ConversionStatus $previousStatus = null): void
     {
-        $affiliate = $conversion->affiliate()->first();
-
-        if (! $affiliate) {
-            return;
-        }
-
         $connection = $conversion->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
-        if ($connection !== $affiliate->getConnection() || $connection !== (new AffiliateBalance)->getConnection()) {
+        if ($connection !== (new AffiliateBalance)->getConnection()) {
             throw new LogicException('Conversion accounting requires a shared database connection.');
         }
 
-        $connection->transaction(function () use ($affiliate, $conversion, $previousStatus): void {
+        $connection->transaction(function () use ($connection, $conversion, $previousStatus): void {
             // Self-sufficient lock: callers hold this row already, but the
             // held read-modify-write below must be correct regardless.
             $lockedConversion = AffiliateConversion::query()
@@ -44,15 +40,25 @@ final readonly class ApplyConversionAccounting
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $lockedAffiliate = Affiliate::query()
-                ->whereKey($affiliate->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+            $lockedAffiliate = app(AffiliateProfileReader::class)->lock(
+                $lockedConversion->affiliate_id,
+                spl_object_id($connection),
+            );
+
+            if ($lockedAffiliate === null) {
+                throw new LogicException('Conversion accounting requires an accessible affiliate.');
+            }
+
+            if (config('affiliates.owner.enabled', false)
+                && ($lockedAffiliate->reference->ownerType !== $lockedConversion->owner_type
+                    || $lockedAffiliate->reference->ownerId !== $lockedConversion->owner_id)) {
+                throw new LogicException('Conversion accounting owner does not match the affiliate.');
+            }
 
             $currency = mb_strtoupper((string) ($lockedConversion->commission_currency ?: $lockedAffiliate->currency ?: config('affiliates.currency.default', 'MYR')));
 
-            $balance = AffiliateBalance::query()->where('affiliate_id', $lockedAffiliate->getKey())->where('currency', $currency)->lockForUpdate()->first()
-                ?? self::createBalance($lockedAffiliate, $currency);
+            $balance = AffiliateBalance::query()->where('affiliate_id', $lockedAffiliate->reference->id)->where('currency', $currency)->lockForUpdate()->first()
+                ?? self::createBalance($lockedAffiliate->reference->id, $currency);
 
             if ($previousStatus === null) {
                 $this->applyCreationAccounting($lockedConversion, $balance);
@@ -251,13 +257,13 @@ final readonly class ApplyConversionAccounting
         return ConversionStatus::fromString($conversion->status, $conversion);
     }
 
-    private static function createBalance(Affiliate $affiliate, string $currency): AffiliateBalance
+    private static function createBalance(string $affiliateId, string $currency): AffiliateBalance
     {
         $connection = (new AffiliateBalance)->getConnection();
 
         try {
             return $connection->transaction(static fn (): AffiliateBalance => AffiliateBalance::create([
-                'affiliate_id' => $affiliate->id,
+                'affiliate_id' => $affiliateId,
                 'available_minor' => 0,
                 'holding_minor' => 0,
                 'lifetime_earnings_minor' => 0,
@@ -273,7 +279,7 @@ final readonly class ApplyConversionAccounting
                 throw $exception;
             }
 
-            return AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', $currency)->firstOrFail();
+            return AffiliateBalance::query()->where('affiliate_id', $affiliateId)->where('currency', $currency)->firstOrFail();
         }
     }
 }

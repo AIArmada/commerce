@@ -176,6 +176,15 @@ describe('merchant seam', function (): void {
             ->and($posted->affiliateCode)->toBe($affiliate->code);
     });
 
+    test('ledger handles malformed external affiliate identifiers without an invalid UUID query', function (): void {
+        $email = 'malformed-' . uniqid() . '@example.com';
+        $affiliate = merchantSeamVerifiedAffiliate($email);
+        $ledger = app(MerchantLedger::class);
+
+        expect($ledger->postExternalConversion(merchantSeamDraft('not-a-uuid')))->toBeNull()
+            ->and($ledger->postExternalConversion(merchantSeamDraft('not-a-uuid', ['affiliateEmail' => $email]))?->affiliateCode)->toBe($affiliate->code);
+    });
+
     test('ledger posts nothing for unresolvable affiliates', function (): void {
         $draft = merchantSeamDraft((string) Str::uuid());
 
