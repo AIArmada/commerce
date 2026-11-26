@@ -14,6 +14,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use InvalidArgumentException;
 
 final class AddressOwnerGuard
 {
@@ -137,6 +138,26 @@ final class AddressOwnerGuard
         if (! $query->whereKey($addressableId)->exists()) {
             throw new AuthorizationException(self::inaccessibleMessage());
         }
+    }
+
+    public static function lockAddressableForWrite(string $addressableType, string | int $addressableId): void
+    {
+        self::assertAddressableIsWritable($addressableType, $addressableId);
+
+        $class = Relation::getMorphedModel($addressableType) ?? $addressableType;
+
+        if (! is_a($class, Model::class, true)) {
+            throw new InvalidArgumentException('The addressable type must identify an Eloquent model.');
+        }
+
+        $query = $class::query();
+
+        if (OwnerContext::isExplicitGlobal() && ! method_exists($class, 'scopeForOwner')) {
+            $query->withoutGlobalScopes();
+        }
+
+        $query->whereKey($addressableId)->lockForUpdate()->firstOrFail();
+        self::assertAddressableIsWritable($addressableType, $addressableId);
     }
 
     private static function inaccessibleMessage(): string

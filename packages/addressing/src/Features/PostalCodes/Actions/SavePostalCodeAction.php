@@ -233,10 +233,10 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
                 }
             }
 
-            $retained[] = $key;
+            $retained[$key] = true;
         }
 
-        $existing->reject(static fn (AddressAreaPostalCode $edge, string $key): bool => in_array($key, $retained, true))
+        $existing->reject(static fn (AddressAreaPostalCode $edge, string $key): bool => isset($retained[$key]))
             ->each(static function (AddressAreaPostalCode $edge): void {
                 if (! $edge->delete()) {
                     throw new DomainException('Manual postcode coverage could not be removed.');

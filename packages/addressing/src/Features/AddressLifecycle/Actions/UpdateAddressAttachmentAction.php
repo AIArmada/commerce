@@ -8,10 +8,7 @@ use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -101,7 +98,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
         $pivotClass = ModelResolver::addressableClass();
 
         (new $pivotClass)->getConnection()->transaction(function () use ($addressableType, $addressableId): void {
-            $this->lockHost($addressableType, $addressableId);
+            AddressOwnerGuard::lockAddressableForWrite($addressableType, $addressableId);
 
             $pivots = $this->writablePivots()
                 ->where('addressable_type', $addressableType)
@@ -214,28 +211,8 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
 
     private function lockAddressable(string $addressId, string $addressableType, string $addressableId): void
     {
-        $this->lockHost($addressableType, $addressableId);
+        AddressOwnerGuard::lockAddressableForWrite($addressableType, $addressableId);
         AddressOwnerGuard::lockAddressForWrite($addressId);
-    }
-
-    private function lockHost(string $addressableType, string $addressableId): void
-    {
-        AddressOwnerGuard::assertAddressableIsWritable($addressableType, $addressableId);
-
-        $class = Relation::getMorphedModel($addressableType) ?? $addressableType;
-
-        if (! is_a($class, Model::class, true)) {
-            throw new InvalidArgumentException('The addressable type must identify an Eloquent model.');
-        }
-
-        $query = $class::query();
-
-        if (OwnerContext::isExplicitGlobal() && ! method_exists($class, 'scopeForOwner')) {
-            $query->withoutGlobalScopes();
-        }
-
-        $query->whereKey($addressableId)->lockForUpdate()->firstOrFail();
-        AddressOwnerGuard::assertAddressableIsWritable($addressableType, $addressableId);
     }
 
     /** @return Builder<Addressable> */

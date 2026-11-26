@@ -7,9 +7,9 @@ use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -162,4 +162,23 @@ it('rejects mutations of visible global addresses by tenant owners', function ()
         app(AddressWriter::class)->execute(['line1' => 'Authorized edit'], null, (string) $global->getKey());
         expect($global->refresh()->line1)->toBe('Authorized edit');
     });
+});
+
+it('rejects snapshots of addresses owned by another tenant', function (): void {
+    config()->set('addressing.features.owner.include_global', true);
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $host = AddressingOwnerTestHost::query()->create(['name' => 'Shared Host']);
+    $address = OwnerContext::withOwner($ownerB, fn (): Address => Address::query()->create([
+        'line1' => 'Private address',
+        'country_code' => 'MY',
+    ]));
+
+    expect(fn () => OwnerContext::withOwner($ownerA, fn (): string => app(AddressSnapshotWriter::class)->execute(
+        $host->getMorphClass(),
+        $host->getKey(),
+        (string) $address->getKey(),
+    )))->toThrow(AuthorizationException::class);
+
+    expect(OwnerContext::withOwner($ownerA, fn (): int => AddressSnapshot::query()->count()))->toBe(0);
 });

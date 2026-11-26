@@ -6,10 +6,8 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use AIArmada\Addressing\Support\AddressOwnerGuard;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -26,15 +24,7 @@ final readonly class CreateAddressSnapshotAction implements AddressSnapshotWrite
         $snapshotClass = AddressSnapshot::configuredClass();
 
         return (new $snapshotClass)->getConnection()->transaction(function () use ($snapshotClass, $snapshotableType, $snapshotableId, $address, $reason, $label): string {
-            AddressOwnerGuard::assertAddressableIsWritable($snapshotableType, $snapshotableId);
-
-            $snapshotableClass = Relation::getMorphedModel($snapshotableType) ?? $snapshotableType;
-
-            if (! is_a($snapshotableClass, Model::class, true)) {
-                throw new InvalidArgumentException('The snapshotable type must identify an Eloquent model.');
-            }
-
-            $snapshotableClass::query()->whereKey($snapshotableId)->lockForUpdate()->firstOrFail();
+            AddressOwnerGuard::lockAddressableForWrite($snapshotableType, $snapshotableId);
 
             if (is_string($address)) {
                 $record = AddressOwnerGuard::lockAddressForWrite($address);
