@@ -7,17 +7,17 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
+use AIArmada\Affiliates\Features\Identity\Queries\GuardAffiliateAccess;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 
 final readonly class TransitionAffiliateStatus implements AffiliateLifecycle
 {
-    public function __construct(private QualifiesForOpenApproval $openApproval, private ConversionInspectionReader $conversions) {}
+    public function __construct(private QualifiesForOpenApproval $openApproval, private ConversionInspectionReader $conversions, private GuardAffiliateAccess $access) {}
 
     public function approve(string $affiliateId): bool
     {
@@ -89,11 +89,7 @@ final readonly class TransitionAffiliateStatus implements AffiliateLifecycle
 
     private function lockAffiliate(string $affiliateId): Affiliate
     {
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
-        }
-
-        return Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
+        return $this->access->lockedAffiliate($affiliateId);
     }
 
     private function activate(Affiliate $affiliate): bool

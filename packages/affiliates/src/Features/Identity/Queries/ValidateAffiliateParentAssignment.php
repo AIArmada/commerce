@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -35,6 +36,10 @@ final class ValidateAffiliateParentAssignment
         }
 
         $parentAffiliateId = (string) $parentAffiliateId;
+
+        if (! Str::isUuid($parentAffiliateId)) {
+            throw $this->validationException('Selected parent affiliate is invalid.');
+        }
 
         if ($record instanceof Affiliate && $parentAffiliateId === (string) $record->getKey()) {
             throw $this->validationException('An affiliate cannot be its own parent.');

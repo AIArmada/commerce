@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
+use AIArmada\Affiliates\Features\Identity\Queries\GuardAffiliateAccess;
 use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
 use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
 use AIArmada\Affiliates\Features\Upline\Api\RankAssignmentGuard;
@@ -14,7 +15,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +26,7 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
         private ValidateAffiliateParentAssignment $parents,
         private UplineApi $upline,
         private RankAssignmentGuard $ranks,
+        private GuardAffiliateAccess $access,
     ) {}
 
     public function create(array $data): string
@@ -50,11 +51,7 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
     public function update(string $affiliateId, array $data): void
     {
         (new Affiliate)->getConnection()->transaction(function () use ($affiliateId, $data): void {
-            if ((bool) config('affiliates.owner.enabled', false)) {
-                OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
-            }
-
-            $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
+            $affiliate = $this->access->lockedAffiliate($affiliateId);
 
             if (! $affiliate->isCommercialPurpose()) {
                 $data = Arr::only($data, ['status', 'description', 'contact_email', 'website_url']);

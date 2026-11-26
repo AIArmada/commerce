@@ -29,15 +29,26 @@ final readonly class GuardAffiliateAccess implements AffiliateAccessGuard
     public function lockForWrite(string $affiliateId, int $connectionIdentity): void
     {
         $this->assertConnection($connectionIdentity);
-
-        if ((new Affiliate)->getConnection()->transactionLevel() < 1) {
-            throw new LogicException('Affiliate write locks require an active transaction.');
-        }
-
+        $this->assertTransaction();
         $this->resolve($affiliateId, true);
     }
 
-    private function resolve(string $affiliateId, bool $lock): void
+    public function lockedAffiliate(string $affiliateId): Affiliate
+    {
+        $this->assertTransaction();
+
+        return $this->resolve($affiliateId, true, ['*']);
+    }
+
+    private function assertTransaction(): void
+    {
+        if ((new Affiliate)->getConnection()->transactionLevel() < 1) {
+            throw new LogicException('Affiliate write locks require an active transaction.');
+        }
+    }
+
+    /** @param list<string> $columns */
+    private function resolve(string $affiliateId, bool $lock, array $columns = ['id']): Affiliate
     {
         if (! Str::isUuid($affiliateId)) {
             throw (new ModelNotFoundException)->setModel(Affiliate::class, [$affiliateId]);
@@ -49,8 +60,10 @@ final readonly class GuardAffiliateAccess implements AffiliateAccessGuard
             $query->lockForUpdate();
         }
 
-        if ($query->first(['id']) !== null) {
-            return;
+        $affiliate = $query->first($columns);
+
+        if ($affiliate !== null) {
+            return $affiliate;
         }
 
         if ((bool) config('affiliates.owner.enabled', false)) {

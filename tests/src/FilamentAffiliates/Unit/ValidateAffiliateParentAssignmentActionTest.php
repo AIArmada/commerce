@@ -226,3 +226,10 @@ it('still validates existing parent affiliates when owner scoping is disabled', 
 
     expect($data['parent_affiliate_id'])->toBe((string) $parent->getKey());
 });
+
+it('rejects malformed parent identifiers before querying UUID columns', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+
+    expect(fn () => ValidateAffiliateParentAssignment::run(['parent_affiliate_id' => 'invalid-uuid']))
+        ->toThrow(ValidationException::class, 'Selected parent affiliate is invalid.');
+});

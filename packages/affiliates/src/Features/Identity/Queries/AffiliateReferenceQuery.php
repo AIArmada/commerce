@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccountSnapshot;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -27,13 +27,9 @@ final readonly class AffiliateReferenceQuery implements AffiliateReferenceReader
         }
 
         try {
-            OwnerWriteGuard::findOrFailForOwner(
-                Affiliate::class,
-                $id,
-                includeGlobal: (bool) config('affiliates.owner.include_global', false),
-            );
-
-            return true;
+            return Affiliate::query()->forOwner(
+                includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('affiliates.owner.include_global', false),
+            )->whereKey($id)->exists();
         } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
             return false;
         }
