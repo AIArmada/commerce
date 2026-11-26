@@ -37,7 +37,7 @@ trait ScopesByBelongsToOwner
             $relation = static::effectiveOwnerRelation($builder->getModel());
 
             if ($relation === null) {
-                return;
+                throw new RuntimeException(sprintf('No owner relation is configured for %s.', $builder->getModel()::class));
             }
 
             $builder->whereHas($relation, function (Builder $query) use ($config): void {
@@ -136,7 +136,7 @@ trait ScopesByBelongsToOwner
         $relation = static::effectiveOwnerRelation($model);
 
         if ($relation === null) {
-            return;
+            throw new RuntimeException(sprintf('No owner relation is configured for %s.', $model::class));
         }
 
         $segments = explode('.', $relation);
@@ -149,8 +149,16 @@ trait ScopesByBelongsToOwner
             ));
         }
 
-        if ($model->getAttribute($first->getForeignKeyName()) === null) {
-            return;
+        $foreignKey = $first->getForeignKeyName();
+
+        if ($model->exists && $model->isDirty($foreignKey)) {
+            $original = $model->withoutRelations();
+            $original->setRawAttributes($model->getRawOriginal(), true);
+            self::assertOwnerRelationAccessible($original);
+        }
+
+        if ($model->getAttribute($foreignKey) === null) {
+            throw new RuntimeException(sprintf('An owner relation is required for %s.', $model::class));
         }
 
         $current = $model;

@@ -36,14 +36,8 @@ final class UserKeyIdentityDriver implements AffiliateIdentityResolver
             return $affiliate;
         }
 
-        $user = $this->userByKey($affiliateId);
-
-        if (! $user instanceof Model) {
-            return null;
-        }
-
-        $sameOwner = $scope->getMorphClass() === $user->getMorphClass()
-            && (string) $scope->getKey() === (string) $user->getKey();
+        $sameOwner = $scope->getMorphClass() === $affiliate->ownerType
+            && (string) $scope->getKey() === (string) $affiliate->ownerId;
 
         return $sameOwner ? $affiliate : null;
     }
@@ -57,9 +51,9 @@ final class UserKeyIdentityDriver implements AffiliateIdentityResolver
         }
 
         $instance = new $model;
-        $key = $instance->newQuery()->where('email', $email)->value($instance->getKeyName());
+        $keys = $instance->newQuery()->where('email', $email)->limit(2)->pluck($instance->getKeyName());
 
-        return $key === null ? null : (string) $key;
+        return $keys->count() === 1 ? (string) $keys->first() : null;
     }
 
     public function requiresMerchantProfile(): bool

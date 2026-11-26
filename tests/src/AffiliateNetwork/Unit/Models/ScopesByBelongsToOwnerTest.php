@@ -93,3 +93,29 @@ describe('ScopesByBelongsToOwner', function (): void {
         expect($globalIds)->toBe([[], [], [], [], [], []]);
     });
 });
+
+test('rejects reparenting and deleting a foreign record through an unsaved owner-key change', function (): void {
+    config(['affiliate-network.owner.enabled' => true, 'affiliate-network.owner.include_global' => false]);
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    [$foreignSite, $foreignOffer] = OwnerContext::withOwner($ownerA, function () use ($ownerA): array {
+        $site = AffiliateSite::factory()->verified()->forOwner($ownerA)->create();
+
+        return [$site, AffiliateOffer::factory()->published()->forSite($site)->create()];
+    });
+    $ownSite = OwnerContext::withOwner($ownerB, fn (): AffiliateSite => AffiliateSite::factory()->verified()->forOwner($ownerB)->create());
+
+    OwnerContext::withOwner($ownerB, function () use ($foreignOffer, $ownSite): void {
+        $attempt = clone $foreignOffer;
+        $attempt->site_id = $ownSite->id;
+
+        expect(fn () => $attempt->save())->toThrow(RuntimeException::class)
+            ->and(fn () => $attempt->delete())->toThrow(RuntimeException::class);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($foreignSite, $foreignOffer): void {
+        expect(AffiliateOffer::query()->findOrFail($foreignOffer->id)->site_id)->toBe($foreignSite->id);
+    });
+});
