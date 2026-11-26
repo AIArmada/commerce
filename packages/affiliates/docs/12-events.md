@@ -124,7 +124,7 @@ use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 
-// Affiliate created (model hook) / activated
+// Affiliate created (model hook) / activated (model hook)
 AffiliateCreated::class;        // (AffiliateLifecycleReference $affiliate)
 AffiliateActivated::class;      // (AffiliateLifecycleReference $affiliate)
 AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?string $externalReference, string $reason)
@@ -148,6 +148,9 @@ FraudSignalDetected::class;     // (FraudSignalReference $signal)
 // the affiliate was still made whole — signal only, no in-repo consumer)
 HoldingShortfallDetected::class; // (string $conversionId, string $affiliateId, string $currency, string $operation, int $requestedMinor, int $appliedMinor)
 ```
+
+> [!NOTE]
+> `AffiliateCreated` and `AffiliateActivated` dispatch on the affiliate's own connection after the surrounding transaction commits, or immediately when no transaction is open. Dispatch runs after general contact-method synchronization, so listeners that re-read the affiliate through `AffiliateLifecycleReference` see committed contact aliases.
 
 > [!NOTE]
 > `FraudSignalDetected` implements `ShouldDispatchAfterCommit`: host listeners such as auto-suspend run after the signal transaction commits. A listener failure therefore never rolls back the recorded signal.

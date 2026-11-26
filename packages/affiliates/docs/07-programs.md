@@ -157,6 +157,9 @@ $creatives->update($programId, $creativeId, [], removeAsset: true);
 
 The API coordinates media changes with the database transaction, retains the previous asset on rollback, and retries detached-file cleanup after failure. Banner embeds require an attached file; text links can use only `destination_url`.
 
+> **info:**
+> On PostgreSQL, creative writes take a shared lock on the parent program. Enrollment and tracking-link writes can overlap with an in-flight creative upload, while program updates or deletions and same-creative replacements remain exclusive. SQLite still serializes these writes behind its database-wide writer lock.
+
 ## Using the Program feature APIs
 
 ```php

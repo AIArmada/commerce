@@ -14,6 +14,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('media_class');
             $table->text('media_attributes');
+            $table->uuid('claim_token')->nullable();
+            $table->timestampTz('claimed_at')->nullable();
             $table->unsignedBigInteger('attempt_count')->default(0);
             $table->timestampsTz();
             $table->index(['attempt_count', 'created_at', 'id'], 'affiliate_creative_cleanup_retry_index');

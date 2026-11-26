@@ -105,6 +105,10 @@ class Affiliate extends Model implements Auditable
 
     private bool $websiteUrlDirty = false;
 
+    private bool $pendingCreatedEvent = false;
+
+    private bool $pendingActivatedEvent = false;
+
     protected $fillable = [
         'code',
         'handle',
@@ -340,7 +344,7 @@ class Affiliate extends Model implements Auditable
         });
 
         self::created(function (self $affiliate): void {
-            AffiliateCreated::dispatch($affiliate->lifecycleReference());
+            $affiliate->pendingCreatedEvent = true;
         });
 
         self::updating(function (self $affiliate): void {
@@ -358,14 +362,30 @@ class Affiliate extends Model implements Auditable
         });
 
         self::updated(function (self $affiliate): void {
-            // Fire activated event when status changes to Active
             if ($affiliate->wasChanged('status') && $affiliate->status instanceof Active) {
-                AffiliateActivated::dispatch($affiliate->lifecycleReference());
+                $affiliate->pendingActivatedEvent = true;
             }
         });
 
         self::saved(function (self $affiliate): void {
+            $created = $affiliate->pendingCreatedEvent;
+            $activated = $affiliate->pendingActivatedEvent;
+            $affiliate->pendingCreatedEvent = false;
+            $affiliate->pendingActivatedEvent = false;
+
             $affiliate->syncPendingContacts();
+
+            $connection = $affiliate->getConnection();
+
+            if ($created) {
+                $reference = $affiliate->lifecycleReference();
+                $connection->afterCommit(static fn () => AffiliateCreated::dispatch($reference));
+            }
+
+            if ($activated) {
+                $reference = $affiliate->lifecycleReference();
+                $connection->afterCommit(static fn () => AffiliateActivated::dispatch($reference));
+            }
         });
 
         self::deleting(function (self $affiliate): void {

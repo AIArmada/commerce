@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
@@ -200,7 +201,7 @@ it('formatAmount handles VND zero decimal currency', function (): void {
     expect($formatted)->toBe('VND 100,000');
 });
 
-it('resolves affiliate by contact email when owner scope uses a tenant owner', function (): void {
+it('resolves a registered portal actor within the tenant owner scope', function (): void {
     config()->set('affiliates.owner.enabled', true);
 
     $tenantOwner = InteractsWithAffiliateTestOwner::create(['name' => 'Tenant Owner']);
@@ -223,24 +224,20 @@ it('resolves affiliate by contact email when owner scope uses a tenant owner', f
         'password' => 'secret',
     ]);
 
-    Affiliate::create([
-        'code' => 'OWN-' . Str::uuid(),
-        'name' => 'Tenant Scoped Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 500,
-        'currency' => 'USD',
-        'contact_email' => $user->email,
-        'owner_type' => $tenantOwner->getMorphClass(),
-        'owner_id' => (string) $tenantOwner->getKey(),
-    ]);
+    $affiliate = app(RegistrationApi::class)->register(
+        ['name' => 'Tenant Scoped Affiliate', 'contact_email' => 'affiliate-contact@example.com'],
+        new RecordReference($tenantOwner->getMorphClass(), (string) $tenantOwner->getKey()),
+        null,
+        null,
+        new RecordReference($user->getMorphClass(), (string) $user->getKey()),
+    );
 
     $this->actingAs($user);
 
     $testClass = new TestInteractsWithAffiliateClass;
 
     expect($testClass->hasAffiliate())->toBeTrue()
-        ->and($testClass->getAffiliate()?->contact_email)->toBe($user->email);
+        ->and($testClass->getAffiliate()?->getKey())->toBe($affiliate->id);
 });
 
 class InteractsWithAffiliateTestOwner extends Model

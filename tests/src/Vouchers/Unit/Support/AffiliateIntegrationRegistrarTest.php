@@ -14,6 +14,7 @@ use AIArmada\Affiliates\States\Draft;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
@@ -93,6 +94,47 @@ it('issues an activation voucher only for an active affiliate', function (): voi
     $affiliate->update(['status' => AffiliateActive::class]);
 
     expect(Voucher::query()->where('affiliate_id', $affiliate->id)->count())->toBe(1);
+});
+
+it('provisions the lifecycle voucher only after the affiliate transaction commits', function (): void {
+    app(AffiliateIntegrationRegistrar::class)->register();
+
+    $affiliateId = null;
+
+    DB::transaction(function () use (&$affiliateId): void {
+        $affiliateId = voucherIntegrationAffiliate()->id;
+
+        expect(Voucher::query()->where('affiliate_id', $affiliateId)->exists())->toBeFalse();
+    });
+
+    expect(Voucher::query()->where('affiliate_id', $affiliateId)->count())->toBe(1);
+});
+
+it('provisions the activation voucher only after the affiliate transaction commits', function (): void {
+    config(['vouchers.affiliates.auto_create_voucher' => false]);
+    app(AffiliateIntegrationRegistrar::class)->register();
+
+    $affiliate = voucherIntegrationAffiliate(Draft::class);
+
+    DB::transaction(function () use ($affiliate): void {
+        $affiliate->update(['status' => AffiliateActive::class]);
+
+        expect(Voucher::query()->where('affiliate_id', $affiliate->id)->exists())->toBeFalse();
+    });
+
+    expect(Voucher::query()->where('affiliate_id', $affiliate->id)->count())->toBe(1);
+});
+
+it('does not provision a voucher when the affiliate transaction rolls back', function (): void {
+    app(AffiliateIntegrationRegistrar::class)->register();
+
+    expect(fn () => DB::transaction(function (): void {
+        voucherIntegrationAffiliate();
+
+        throw new RuntimeException('rollback');
+    }))->toThrow(RuntimeException::class);
+
+    expect(Voucher::query()->count())->toBe(0);
 });
 
 it('supports code formats without updating the default when disabled', function (string $format): void {

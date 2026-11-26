@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $attempt_count
  * @property string $media_class
  * @property array<string, mixed> $media_attributes
+ * @property string|null $claim_token
+ * @property CarbonImmutable|null $claimed_at
  */
 final class AffiliateCreativeAssetCleanup extends Model
 {
@@ -28,6 +31,10 @@ final class AffiliateCreativeAssetCleanup extends Model
 
     protected function casts(): array
     {
-        return ['media_attributes' => 'encrypted:array', 'attempt_count' => 'integer'];
+        return [
+            'media_attributes' => 'encrypted:array',
+            'attempt_count' => 'integer',
+            'claimed_at' => 'immutable_datetime',
+        ];
     }
 }

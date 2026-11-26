@@ -13,13 +13,17 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileNameNotAllowed;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 
 beforeEach(function (): void {
@@ -412,6 +416,105 @@ test('failed post-commit creative cleanup is retained and can be retried', funct
 
     expect(app(ProcessCreativeAssetCleanup::class)->drain(100))->toBe(0)
         ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+    Storage::disk('public')->assertMissing($path);
+});
+
+test('failed creative staging removes its temporary file and preserves the current asset', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Original', 'tracking_code' => 'STAGING'], UploadedFile::fake()->image('original.png')->get());
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $original = $creative->getFirstMedia('creative_asset');
+    $before = glob(sys_get_temp_dir() . '/affiliate-creative*') ?: [];
+
+    config(['media-library.allowed_extensions' => ['txt']]);
+
+    try {
+        expect(fn () => $api->update(null, $id, [], UploadedFile::fake()->image('second.png')->get()))
+            ->toThrow(FileNameNotAllowed::class);
+    } finally {
+        config(['media-library.allowed_extensions' => null]);
+    }
+
+    $after = glob(sys_get_temp_dir() . '/affiliate-creative*') ?: [];
+
+    expect(array_values(array_diff($after, $before)))->toBe([])
+        ->and($creative->fresh()->name)->toBe('Original')
+        ->and($creative->fresh()->getFirstMedia('creative_asset')->getKey())->toBe($original->getKey())
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+    Storage::disk('public')->assertExists($original->getPathRelativeToRoot());
+});
+
+test('creative updates reject contradictory replacement and removal before changing state', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Original', 'tracking_code' => 'CONTRADICTION'], UploadedFile::fake()->image('original.png')->get());
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $original = $creative->getFirstMedia('creative_asset');
+    $before = glob(sys_get_temp_dir() . '/affiliate-creative*') ?: [];
+
+    expect(fn () => $api->update(null, $id, ['name' => 'Changed'], UploadedFile::fake()->image('second.png')->get(), true))
+        ->toThrow(ValidationException::class, 'Choose either a replacement or removal.');
+
+    $after = glob(sys_get_temp_dir() . '/affiliate-creative*') ?: [];
+
+    expect(array_values(array_diff($after, $before)))->toBe([])
+        ->and($creative->fresh()->name)->toBe('Original')
+        ->and($creative->fresh()->getFirstMedia('creative_asset')->getKey())->toBe($original->getKey())
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+});
+
+test('creative cleanup performs storage io outside the cleanup row transaction', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Transaction', 'tracking_code' => 'CLEANUP-TX'], UploadedFile::fake()->image('transaction.png')->get());
+    $baselineLevel = DB::connection()->transactionLevel();
+    $observedLevel = null;
+
+    $this->mock(CreativeAssetFilesystem::class)
+        ->shouldReceive('removeDetached')
+        ->once()
+        ->andReturnUsing(function () use (&$observedLevel): void {
+            $observedLevel = DB::connection()->transactionLevel();
+        });
+
+    expect(app(CreativeAdministration::class)->delete(null, $id))->toBeTrue()
+        ->and($observedLevel)->toBe($baselineLevel)
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+});
+
+test('creative cleanup claims a queued record once during nested drains', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Claim', 'tracking_code' => 'CLEANUP-CLAIM'], UploadedFile::fake()->image('claim.png')->get());
+    $calls = 0;
+
+    $this->mock(CreativeAssetFilesystem::class)
+        ->shouldReceive('removeDetached')
+        ->andReturnUsing(function () use (&$calls): void {
+            $calls++;
+            app(ProcessCreativeAssetCleanup::class)->drain(100);
+        });
+
+    expect(app(CreativeAdministration::class)->delete(null, $id))->toBeTrue()
+        ->and($calls)->toBe(1)
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+});
+
+test('stale creative cleanup claims are retried without losing work', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Stale', 'tracking_code' => 'CLEANUP-STALE'], UploadedFile::fake()->image('stale.png')->get());
+    $path = AffiliateProgramCreative::query()->findOrFail($id)->getFirstMedia('creative_asset')->getPathRelativeToRoot();
+
+    $this->mock(CreativeAssetFilesystem::class)->shouldReceive('removeDetached')->once()->andThrow(new RuntimeException('storage unavailable'));
+
+    expect(app(CreativeAdministration::class)->delete(null, $id))->toBeTrue();
+    $record = AffiliateCreativeAssetCleanup::query()->firstOrFail();
+    $record->forceFill([
+        'claim_token' => (string) Str::uuid(),
+        'claimed_at' => CarbonImmutable::now()->subSeconds(600),
+    ])->save();
+
+    app()->instance(CreativeAssetFilesystem::class, new SpatieCreativeAssetFilesystem);
+
+    expect(app(ProcessCreativeAssetCleanup::class)->drain(100))->toBe(0)
+        ->and($record->fresh())->toBeNull();
     Storage::disk('public')->assertMissing($path);
 });
 

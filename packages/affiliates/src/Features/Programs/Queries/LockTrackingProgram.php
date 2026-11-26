@@ -56,7 +56,7 @@ final readonly class LockTrackingProgram implements TrackingProgramGuard
         }
 
         if (! config('affiliates.owner.enabled', false)) {
-            AffiliateProgram::query()->lockForUpdate()->findOrFail($programId);
+            AffiliateProgram::query()->sharedLock()->findOrFail($programId);
 
             return;
         }
@@ -68,7 +68,7 @@ final readonly class LockTrackingProgram implements TrackingProgramGuard
             ->whereKey($programId)
             ->where('owner_type', $program->owner_type)
             ->where('owner_id', $program->owner_id)
-            ->lockForUpdate()
+            ->sharedLock()
             ->first();
 
         if ($locked === null) {

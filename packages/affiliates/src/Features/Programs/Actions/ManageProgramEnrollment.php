@@ -112,7 +112,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
     private function resolveProgram(string $programId): AffiliateProgram
     {
         if (! config('affiliates.owner.enabled', false)) {
-            return AffiliateProgram::query()->lockForUpdate()->findOrFail($programId);
+            return AffiliateProgram::query()->sharedLock()->findOrFail($programId);
         }
 
         $program = OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $programId, includeGlobal: true);
@@ -120,7 +120,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
         return AffiliateProgram::query()->withoutOwnerScope()
             ->where('owner_type', $program->owner_type)
             ->where('owner_id', $program->owner_id)
-            ->lockForUpdate()->findOrFail($programId);
+            ->sharedLock()->findOrFail($programId);
     }
 
     private function assertSharedConnection(AffiliateProgram $program): void

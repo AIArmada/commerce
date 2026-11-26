@@ -7,13 +7,13 @@ namespace AIArmada\Affiliates\Drivers\Media;
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
 use AIArmada\Affiliates\Contracts\CreativeCleanupQueue;
+use AIArmada\Affiliates\Data\PreparedCreativeAsset;
 use ArrayObject;
-use finfo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use LogicException;
+use RuntimeException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
@@ -22,9 +22,8 @@ final readonly class SpatieCreativeAssetReplacement implements CreativeAssetRepl
 {
     public function __construct(private CreativeAssetRemoval $removal, private CreativeCleanupQueue $cleanup) {}
 
-    public function replace(string $creativeId, string $morphType, int $connectionIdentity, string $bytes): void
+    public function replace(string $creativeId, string $morphType, int $connectionIdentity, PreparedCreativeAsset $asset): void
     {
-        $extension = $this->extension($bytes);
         $class = Relation::getMorphedModel($morphType) ?? $morphType;
 
         if (! is_a($class, Model::class, true) || ! is_a($class, HasMedia::class, true)) {
@@ -41,55 +40,46 @@ final readonly class SpatieCreativeAssetReplacement implements CreativeAssetRepl
         $this->removal->remove($creativeId, $morphType, $connectionIdentity, 'creative_asset');
         $subject->unsetRelation('media');
 
-        // Track newly inserted media before the enclosing transaction can roll back.
-        // The previous asset's database row and file remain recoverable on rollback.
         /** @var ArrayObject<int, Media> $added */
         $added = new ArrayObject;
         $connection->afterRollBack(function () use ($added, $connectionIdentity): void {
-            foreach ($added as $asset) {
+            foreach ($added as $item) {
                 try {
-                    $this->cleanup->recoverDetached($asset::class, $asset->getAttributes(), $connectionIdentity);
+                    $this->cleanup->recoverDetached($item::class, $item->getAttributes(), $connectionIdentity);
                 } catch (Throwable $exception) {
                     report($exception);
                 }
             }
         });
 
+        $path = tempnam(sys_get_temp_dir(), 'affiliate-creative');
+
+        if ($path === false) {
+            throw new RuntimeException('Creative asset staging failed.');
+        }
+
         try {
-            $added[] = $subject->addMediaFromString($bytes)
-                ->usingFileName((string) Str::uuid() . '.' . $extension)
-                ->toMediaCollection('creative_asset');
-        } catch (Throwable $exception) {
-            // FileAdder can insert the media row before a later filesystem step fails.
-            // Capture the partial rows while they are still visible to this transaction.
-            try {
-                $added->exchangeArray($subject->media()->where('collection_name', 'creative_asset')->get()->all());
-            } catch (Throwable $captureFailure) {
-                report($captureFailure);
+            if (file_put_contents($path, $asset->bytes) !== mb_strlen($asset->bytes, '8bit')) {
+                throw new RuntimeException('Creative asset staging failed.');
             }
 
-            throw $exception;
-        }
-    }
+            try {
+                $added[] = $subject->addMedia($path)
+                    ->usingFileName((string) Str::uuid() . '.' . $asset->extension)
+                    ->toMediaCollection('creative_asset');
+            } catch (Throwable $exception) {
+                try {
+                    $added->exchangeArray($subject->media()->where('collection_name', 'creative_asset')->get()->all());
+                } catch (Throwable $captureFailure) {
+                    report($captureFailure);
+                }
 
-    private function extension(string $bytes): string
-    {
-        if ($bytes === '' || mb_strlen($bytes, '8bit') > (int) config('media-library.max_file_size', 10485760)) {
-            throw ValidationException::withMessages(['asset' => 'The asset is empty or exceeds the configured upload limit.']);
+                throw $exception;
+            }
+        } finally {
+            if (is_file($path)) {
+                @unlink($path);
+            }
         }
-
-        // Derive both MIME and extension from content, never from the client name.
-        // SVG is excluded because these files are served from a public disk.
-        return match ((new finfo(FILEINFO_MIME_TYPE))->buffer($bytes)) {
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/gif' => 'gif',
-            'image/webp' => 'webp',
-            'video/mp4' => 'mp4',
-            'video/webm' => 'webm',
-            'application/pdf' => 'pdf',
-            'application/zip' => 'zip',
-            default => throw ValidationException::withMessages(['asset' => 'The asset type is not supported.']),
-        };
     }
 }
