@@ -111,7 +111,7 @@ class Address extends Model
                 return;
             }
 
-            app(AddressAssignmentWriter::class)->pruneIncompatibleAssignments($address);
+            app(AddressAssignmentWriter::class)->pruneIncompatibleAssignments((string) $address->getKey());
         });
 
         static::deleting(function (Address $address): void {

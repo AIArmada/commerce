@@ -687,7 +687,7 @@ php artisan address:export-gap-aliases --country=ID --prune
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 
 app(AddressAssignmentWriter::class)->execute(
-    address: $address,
+    addressId: (string) $address->getKey(),
     assignments: [
         'postal_locality' => $bangsar->id,
     ],

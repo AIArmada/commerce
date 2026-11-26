@@ -49,7 +49,7 @@ it('validates against persisted country when the caller mutated country without 
 
     $address->country_code = 'SG';
 
-    app(AddressAssignmentWriter::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $postal->getKey(),
     ]);
 
@@ -70,7 +70,7 @@ it('rejects areas that are invalid under the persisted country of a stale model'
 
     expect($address->country_code)->toBe('MY');
 
-    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute($address, [
+    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'postal_locality' => $postal->getKey(),
     ]))->toThrow(ValidationException::class);
 
@@ -96,7 +96,7 @@ it('rejects areas that are invalid under the persisted state of a stale model', 
 
     expect($address->state_id)->toBe($this->state->getKey());
 
-    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute($address, [
+    expect(fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'administrative_subdivision' => $subdivision->getKey(),
     ]))->toThrow(ValidationException::class);
 
@@ -119,7 +119,7 @@ it('ignores an unsaved state change when validating hierarchy', function (): voi
     ]);
     $address->state_id = $otherState->getKey();
 
-    app(AddressAssignmentWriter::class)->execute($address, [
+    app(AddressAssignmentWriter::class)->execute((string) $address->getKey(), [
         'administrative_subdivision' => $subdivision->getKey(),
     ]);
 
@@ -159,7 +159,7 @@ it('rejects an explicit state that contradicts the persisted address state', fun
 
     try {
         app(AddressAssignmentWriter::class)->execute(
-            $address,
+            (string) $address->getKey(),
             ['postal_locality' => $postalB->getKey()],
             $stateB->getKey(),
         );
@@ -193,7 +193,7 @@ it('accepts an explicit state matching the persisted state despite unsaved calle
     $address->state_id = $otherState->getKey();
 
     app(AddressAssignmentWriter::class)->execute(
-        $address,
+        (string) $address->getKey(),
         ['postal_locality' => $postal->getKey()],
         $this->state->getKey(),
     );

@@ -30,15 +30,17 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * @param  array<string, mixed>  $metadata
      */
     public function execute(
-        Address $address,
+        string $addressId,
         array $assignments,
         ?string $stateId = null,
         array $metadata = [],
     ): void {
-        $address->getConnection()->transaction(function () use ($address, $assignments, $stateId, $metadata): void {
-            AddressOwnerGuard::assertAddressIsWritable($address->getKey());
-            $address = $this->persistedAddress($address, lock: true);
-            $selectedAssignments = $assignments === [] ? [] : $this->validate($address, $assignments, $stateId);
+        $addressClass = ModelResolver::addressClass();
+
+        (new $addressClass)->getConnection()->transaction(function () use ($addressId, $assignments, $stateId, $metadata): void {
+            AddressOwnerGuard::assertAddressIsWritable($addressId);
+            $address = $this->persistedAddress($addressId, lock: true);
+            $selectedAssignments = $assignments === [] ? [] : $this->validate($address->country_code, $address->state_id, $assignments, $stateId);
             ModelResolver::areaAssignmentClass()::query()
                 ->where('address_id', $address->getKey())
                 ->delete();
@@ -58,18 +60,14 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
     /**
      * Validate an assignment map against authoritative address geography.
      *
-     * Callers must pass persisted address data: the caller's in-memory model
-     * may carry unsaved or stale country/state values that must never widen
-     * or narrow validation.
+     * Mutation callers resolve these geography values from the locked address.
      *
      * @param  array<string, string|null>  $assignments
      * @return array<string, string>
      */
-    public function validate(Address $address, array $assignments, ?string $stateId = null): array
+    public function validate(string $countryCode, ?string $persistedStateId, array $assignments, ?string $stateId = null): array
     {
         if ($stateId !== null) {
-            $persistedStateId = $address->state_id;
-
             if ($persistedStateId === null || (string) $stateId !== (string) $persistedStateId) {
                 throw ValidationException::withMessages([
                     'state_id' => 'The selected state does not match the persisted address state.',
@@ -77,7 +75,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             }
         }
 
-        $countryCode = mb_strtoupper(mb_trim((string) $address->country_code));
+        $countryCode = mb_strtoupper(mb_trim($countryCode));
         $selectedAssignments = array_filter(
             $assignments,
             static fn (mixed $areaId): bool => is_string($areaId) && mb_trim($areaId) !== '',
@@ -98,7 +96,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
 
         foreach ($selectedAssignments as $role => $areaId) {
             $area = $areas->get($areaId);
-            $definition = is_string($role) ? $this->profiles->definitionForRole($address->country_code, $role) : null;
+            $definition = is_string($role) ? $this->profiles->definitionForRole($countryCode, $role) : null;
 
             if (! $area instanceof AddressArea || $definition === null) {
                 throw ValidationException::withMessages([
@@ -119,7 +117,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             }
         }
 
-        $this->validateHierarchy($address, $selectedAssignments, $stateId, $areas, $countryCode);
+        $this->validateHierarchy($selectedAssignments, $stateId ?? $persistedStateId, $areas, $countryCode);
 
         /** @var array<string, string> $selectedAssignments */
         return $selectedAssignments;
@@ -132,36 +130,39 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * Still-valid roles are left untouched. Validity is decided solely by
      * validate(), so pruning can never disagree with synchronization.
      */
-    public function pruneIncompatibleAssignments(Address $address): void
+    public function pruneIncompatibleAssignments(string $addressId): void
     {
-        AddressOwnerGuard::assertAddressIsWritable($address->getKey());
+        $addressClass = ModelResolver::addressClass();
 
-        $persisted = $this->persistedAddress($address);
+        (new $addressClass)->getConnection()->transaction(function () use ($addressId): void {
+            AddressOwnerGuard::assertAddressIsWritable($addressId);
+            $persisted = $this->persistedAddress($addressId, lock: true);
 
-        /** @var array<string, string> $current */
-        $current = ModelResolver::areaAssignmentClass()::query()
-            ->where('address_id', $address->getKey())
-            ->pluck('address_area_id', 'role')
-            ->map(static fn (mixed $areaId): string => (string) $areaId)
-            ->all();
+            /** @var array<string, string> $current */
+            $current = ModelResolver::areaAssignmentClass()::query()
+                ->where('address_id', $addressId)
+                ->pluck('address_area_id', 'role')
+                ->map(static fn (mixed $areaId): string => (string) $areaId)
+                ->all();
 
-        if ($current === []) {
-            return;
-        }
+            if ($current === []) {
+                return;
+            }
 
-        $removedRoles = array_map(
-            static fn (int | string $role): string => (string) $role,
-            array_keys(array_diff_key($current, $this->narrowToValidAssignments($persisted, $current))),
-        );
+            $removedRoles = array_map(
+                static fn (int | string $role): string => (string) $role,
+                array_keys(array_diff_key($current, $this->narrowToValidAssignments($persisted->country_code, $persisted->state_id, $current))),
+            );
 
-        if ($removedRoles === []) {
-            return;
-        }
+            if ($removedRoles === []) {
+                return;
+            }
 
-        ModelResolver::areaAssignmentClass()::query()
-            ->where('address_id', $address->getKey())
-            ->whereIn('role', $removedRoles)
-            ->delete();
+            ModelResolver::areaAssignmentClass()::query()
+                ->where('address_id', $addressId)
+                ->whereIn('role', $removedRoles)
+                ->delete();
+        });
     }
 
     /**
@@ -170,25 +171,23 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      *
      * Owner-agnostic: reads only geography (`country_code`, `state_id`) and
      * global area tables, so system cleanup can reuse it cross-owner. After
-     * a bulk `state_id` nulling that bypasses model events (for example
-     * state reference cleanup), reload the persisted address, pass its
-     * current assignments, and delete the returned diff without owner scope.
+     * a bulk `state_id` nulling, pass persisted geography and assignments.
      *
      * @param  array<string, string>  $assignments
      * @return array<string, string>
      */
-    public function narrowToValidAssignments(Address $address, array $assignments): array
+    public function narrowToValidAssignments(string $countryCode, ?string $persistedStateId, array $assignments): array
     {
         $candidates = $assignments;
 
         while ($candidates !== []) {
             try {
-                return $this->validate($address, $candidates);
+                return $this->validate($countryCode, $persistedStateId, $candidates);
             } catch (ValidationException $exception) {
                 $offending = array_keys($exception->errors());
 
                 if (in_array('address_areas', $offending, true)) {
-                    $narrowed = $this->retainUsableAreas($address, $candidates);
+                    $narrowed = $this->retainUsableAreas($countryCode, $candidates);
 
                     if ($narrowed === $candidates) {
                         return [];
@@ -216,9 +215,9 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * @param  array<string, string>  $assignments
      * @return array<string, string>
      */
-    private function retainUsableAreas(Address $address, array $assignments): array
+    private function retainUsableAreas(string $countryCode, array $assignments): array
     {
-        $countryCode = mb_strtoupper(mb_trim((string) $address->country_code));
+        $countryCode = mb_strtoupper(mb_trim($countryCode));
 
         $usable = ModelResolver::areaClass()::query()
             ->whereIn('id', array_values($assignments))
@@ -236,13 +235,9 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
     }
 
     /**
-     * Reload the authoritative persisted row for validation.
-     *
-     * The caller's model may carry unsaved mutations or stale values; those
-     * must never widen or narrow validation, and this reload must not persist
-     * them back.
+     * Resolve the authoritative persisted row within the current owner scope.
      */
-    private function persistedAddress(Address $address, bool $lock = false): Address
+    private function persistedAddress(string $addressId, bool $lock = false): Address
     {
         $addressClass = ModelResolver::addressClass();
         $query = $addressClass::query();
@@ -251,7 +246,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             $query->withoutGlobalScope(OwnerScope::class);
         }
 
-        return $query->whereKey($address->getKey())->when($lock, fn ($query) => $query->lockForUpdate())->firstOrFail();
+        return $query->whereKey($addressId)->when($lock, fn ($query) => $query->lockForUpdate())->firstOrFail();
     }
 
     private function areaMatchesDefinition(AddressArea $area, AddressLevelDefinition $definition): bool
@@ -272,7 +267,6 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * @param  Collection<string, AddressArea>  $areas
      */
     private function validateHierarchy(
-        Address $address,
         array $selectedAssignments,
         ?string $stateId,
         Collection $areas,
@@ -282,7 +276,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
         $definitions = [];
 
         foreach (array_keys($selectedAssignments) as $role) {
-            $definition = $this->profiles->definitionForRole($address->country_code, $role);
+            $definition = $this->profiles->definitionForRole($countryCode, $role);
 
             if ($definition !== null) {
                 $definitions[$role] = $definition;
@@ -323,7 +317,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             }
 
             if ($parentDefinition->kind === 'state') {
-                $resolvedStateId = $stateId ?? $address->state_id;
+                $resolvedStateId = $stateId;
                 $stateAreaId = AddressAreaStateBridge::areaIdForState($resolvedStateId, $this->hierarchyType($definition));
 
                 if ($stateAreaId === null || ! in_array($stateAreaId, $ancestorIds[$this->hierarchyType($definition)][$areaId] ?? [], true)) {
@@ -339,7 +333,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             $parentAreaId = $selectedAssignments[$parentRole] ?? null;
 
             if (! is_string($parentAreaId)) {
-                $resolvedStateId = $stateId ?? $address->state_id;
+                $resolvedStateId = $stateId;
                 $stateAreaId = $resolvedStateId !== null
                     ? AddressAreaStateBridge::areaIdForState($resolvedStateId, $this->hierarchyType($definition))
                     : null;

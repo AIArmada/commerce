@@ -155,7 +155,7 @@ final class GeographyReferenceCleanup
 
         $removedRoles = array_map(
             static fn (int | string $role): string => (string) $role,
-            array_keys(array_diff_key($current, app(AddressAssignmentWriter::class)->narrowToValidAssignments($address, $current))),
+            array_keys(array_diff_key($current, app(AddressAssignmentWriter::class)->narrowToValidAssignments($address->country_code, $address->state_id, $current))),
         );
 
         if ($removedRoles === []) {
