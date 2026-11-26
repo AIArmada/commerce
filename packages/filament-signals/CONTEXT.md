@@ -17,7 +17,7 @@ keywords:
 - Composer: `aiarmada/filament-signals`
 - Role: Filament analytics UI: dashboards, reports, goals/segments/alerts.
 - Triggers: filament, analytics-ui, funnel, alerts
-- Search first: `src/Resources, src/Pages, src/Widgets, config, docs`
+- Search first: `src/Features, src/Platform, src/Contracts, src/Drivers, config, docs`
 - Related: `signals`, `growth`, `filament-growth`
 - Paired: `signals` (core domain owner)
 
@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `SavedSignalReportResource`, `SignalAlertLogResource`, `SignalAlertRuleResource`, `SignalGoalResource`, `SignalInteractionRuleResource`, `SignalSegmentResource`, `TrackedPropertyResource`
-- Actions/Services: `Support/InteractionRuleScanner`, `Support/SavedSignalReportMutationGuard`, `Support/SignalFormOptionLists`, `Support/SignalsModelReferenceGuard`, `Support/SignalsReportStateSanitizer`, `Support/SignalsUiConfig`, `Support/TrackedPropertyMutationGuard`
+- Feature boundaries: `Features/Configuration`, `Features/Reporting`, `Features/Alerts`. Filament entry points use Signals administration APIs for mutations; scanning and preview state belong to Configuration.
 - Config `filament-signals.php`: `navigation`, `group`, `features`, `dashboard`, `page_views`, `conversion_funnel`, `acquisition`, `journeys`, `retention`, `content_performance`, `live_activity`, `goals_report`, `devices_report`, `properties`, `goals`, `segments`, `saved_reports`, `alert_rules`, `alert_logs`, `interaction_rules`, `widgets`, `trend_chart`, `pending_alerts_widget`, `resources`, `labels`, `navigation_sort`
 
 ## Docs map

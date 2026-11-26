@@ -100,15 +100,19 @@ final readonly class ResolveTrackedProperty
             && (bool) config("signals.integrations.{$integration}.tracked_property.auto_create", false);
     }
 
-    private function createDefaultProperty(?Model $owner, ?string $propertyType, string $integration): TrackedProperty
+    private function createDefaultProperty(?Model $owner, ?string $propertyType, string $integration): ?TrackedProperty
     {
         $slug = (string) config("signals.integrations.{$integration}.tracked_property.slug", 'commerce');
         $name = (string) config("signals.integrations.{$integration}.tracked_property.name", 'Commerce');
         $type = $propertyType ?? (string) config('signals.defaults.property_type', 'website');
 
-        return OwnerContext::withOwner($owner, fn (): TrackedProperty => TrackedProperty::query()->create([
+        return OwnerContext::withOwner($owner, function () use ($owner, $slug, $name, $type, $integration): ?TrackedProperty {
+            $property = TrackedProperty::query()->withoutOwnerScope()->firstOrCreate([
+                'owner_type' => $owner?->getMorphClass(),
+                'owner_id' => $owner?->getKey(),
+                'slug' => $slug,
+            ], [
             'name' => $name,
-            'slug' => $slug,
             'type' => $type,
             'timezone' => (string) config('signals.defaults.timezone', 'UTC'),
             'currency' => (string) config('signals.defaults.currency', 'MYR'),
@@ -117,7 +121,10 @@ final readonly class ResolveTrackedProperty
                 'integration' => $integration,
                 'auto_created' => true,
             ],
-        ]));
+            ]);
+
+            return $property->is_active && $property->type === $type ? $property : null;
+        });
     }
 
     private function resolveOwner(Model $model): ?Model

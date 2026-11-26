@@ -99,3 +99,21 @@ it('auto-creates a deterministic tracked property only for explicitly enabled in
         ->and($property?->settings['integration'] ?? null)->toBe('cart')
         ->and($resolver->resolveForOwner($owner, integration: 'cart')?->is($property))->toBeTrue();
 });
+
+it('does not reactivate or duplicate an inactive property with the configured slug', function (): void {
+    $owner = User::query()->firstOrFail();
+    config()->set('signals.integrations.cart.enabled', true);
+    config()->set('signals.integrations.cart.tracked_property.auto_create', true);
+    config()->set('signals.integrations.cart.tracked_property.slug', 'commerce-cart');
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Disabled',
+        'slug' => 'commerce-cart',
+        'type' => 'website',
+        'is_active' => false,
+    ]);
+
+    expect(app(ResolveTrackedProperty::class)->resolveForOwner($owner, integration: 'cart'))->toBeNull()
+        ->and($property->fresh()->is_active)->toBeFalse()
+        ->and(TrackedProperty::query()->where('slug', 'commerce-cart')->count())->toBe(1);
+});
