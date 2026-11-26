@@ -9,7 +9,11 @@ use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use RuntimeException;
 
 final readonly class UpdateAddressAttachmentAction implements AddressAttachmentWriter
@@ -100,5 +104,110 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
                 throw new RuntimeException('The address attachment could not be removed.');
             }
         });
+    }
+    public function attach(string $addressId, string $addressableType, string $addressableId, string $type = 'primary', bool $isPrimary = false, ?string $label = null): string
+    {
+        $pivotClass = ModelResolver::addressableClass();
+
+        return (new $pivotClass)->getConnection()->transaction(function () use ($pivotClass, $addressId, $addressableType, $addressableId, $type, $isPrimary, $label): string {
+            $this->lockAddressable($addressId, $addressableType, $addressableId);
+            $type = mb_trim($type);
+
+            if ($type === '') {
+                throw ValidationException::withMessages(['type' => 'An attachment type is required.']);
+            }
+
+            $existing = $pivotClass::query()
+                ->where('address_id', $addressId)
+                ->where('addressable_type', $addressableType)
+                ->where('addressable_id', $addressableId)
+                ->where('type', $type)
+                ->lockForUpdate()
+                ->first();
+
+            if ($isPrimary) {
+                $this->demotePrimary($addressableType, $addressableId, $type);
+            }
+
+            if ($existing instanceof Addressable) {
+                $updates = [];
+
+                if ($isPrimary) {
+                    $updates['is_primary'] = true;
+                }
+
+                if ($label !== null && $existing->label !== $label) {
+                    $updates['label'] = $label;
+                }
+
+                if ($updates !== []) {
+                    $pivotClass::query()->whereKey($existing->getKey())->update($updates);
+                }
+
+                return (string) $existing->getKey();
+            }
+
+            $pivot = $pivotClass::query()->create([
+                'id' => (string) Str::orderedUuid(),
+                'address_id' => $addressId,
+                'addressable_type' => $addressableType,
+                'addressable_id' => $addressableId,
+                'type' => $type,
+                'is_primary' => $isPrimary,
+                'label' => $label,
+            ]);
+
+            return (string) $pivot->getKey();
+        });
+    }
+
+    public function setPrimary(string $addressId, string $addressableType, string $addressableId, string $type = 'primary'): string
+    {
+        $pivotClass = ModelResolver::addressableClass();
+
+        return (new $pivotClass)->getConnection()->transaction(function () use ($pivotClass, $addressId, $addressableType, $addressableId, $type): string {
+            $this->lockAddressable($addressId, $addressableType, $addressableId);
+
+            $pivot = $pivotClass::query()
+                ->where('address_id', $addressId)
+                ->where('addressable_type', $addressableType)
+                ->where('addressable_id', $addressableId)
+                ->where('type', $type)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $pivot instanceof Addressable) {
+                throw new InvalidArgumentException('The address must be attached with the requested type before it can be primary.');
+            }
+
+            $this->demotePrimary($addressableType, $addressableId, $type);
+            $pivotClass::query()->whereKey($pivot->getKey())->update(['is_primary' => true]);
+
+            return (string) $pivot->getKey();
+        });
+    }
+
+    private function lockAddressable(string $addressId, string $addressableType, string $addressableId): void
+    {
+        AddressOwnerGuard::assertAddressIsWritable($addressId);
+        AddressOwnerGuard::assertAddressableIsWritable($addressableType, $addressableId);
+
+        $class = Relation::getMorphedModel($addressableType) ?? $addressableType;
+
+        if (! is_a($class, Model::class, true)) {
+            throw new InvalidArgumentException('The addressable type must identify an Eloquent model.');
+        }
+
+        $class::query()->whereKey($addressableId)->lockForUpdate()->firstOrFail();
+    }
+
+    private function demotePrimary(string $addressableType, string $addressableId, string $type): void
+    {
+        ModelResolver::addressableClass()::query()
+            ->where('addressable_type', $addressableType)
+            ->where('addressable_id', $addressableId)
+            ->where('type', $type)
+            ->where('is_primary', true)
+            ->update(['is_primary' => false]);
     }
 }

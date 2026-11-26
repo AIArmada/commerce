@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Traits;
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Support\AddressingTableResolver;
@@ -18,9 +19,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
 
 trait HasAddresses
 {
@@ -250,95 +248,34 @@ trait HasAddresses
         bool $isPrimary = false,
         ?string $label = null,
     ): Addressable {
-        return DB::transaction(function () use ($address, $type, $isPrimary, $label): Addressable {
-            AddressOwnerGuard::assertAddressIsWritable($address->getKey());
-            AddressOwnerGuard::assertAddressableIsWritable($this->getMorphClass(), $this->getKey());
-            $this->lockForAddressMutation();
+        $id = app(AddressAttachmentWriter::class)->attach(
+            (string) $address->getKey(),
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $type,
+            $isPrimary,
+            $label,
+        );
 
-            $existing = ModelResolver::addressableClass()::query()
-                ->where('address_id', $address->getKey())
-                ->where('addressable_type', $this->getMorphClass())
-                ->where('addressable_id', $this->getKey())
-                ->where('type', $type)
-                ->lockForUpdate()
-                ->first();
+        $this->unsetRelation('addresses');
+        $this->unsetRelation('addressAttachments');
 
-            if ($existing instanceof Addressable) {
-                $updates = [];
-
-                if ($isPrimary) {
-                    $this->demotePrimaryAddressPivots($type);
-                    $updates['is_primary'] = true;
-                }
-
-                if ($label !== null && $existing->label !== $label) {
-                    $updates['label'] = $label;
-                }
-
-                if ($updates !== []) {
-                    // Query-builder update: $existing still holds the
-                    // pre-demote attributes in memory, so Eloquent would
-                    // see no dirty change and silently skip the write.
-                    ModelResolver::addressableClass()::query()
-                        ->whereKey($existing->getKey())
-                        ->update($updates);
-                }
-
-                $this->unsetRelation('addresses');
-
-                return $existing->fresh() ?? $existing;
-            }
-
-            if ($isPrimary) {
-                $this->demotePrimaryAddressPivots($type);
-            }
-
-            $pivot = ModelResolver::addressableClass()::query()->create([
-                'id' => (string) Str::orderedUuid(),
-                'address_id' => $address->id,
-                'addressable_type' => $this->getMorphClass(),
-                'addressable_id' => $this->getKey(),
-                'type' => $type,
-                'is_primary' => $isPrimary,
-                'label' => $label,
-            ]);
-
-            $this->unsetRelation('addresses');
-
-            return $pivot->fresh() ?? $pivot;
-        });
+        return ModelResolver::addressableClass()::query()->findOrFail($id);
     }
 
     public function setPrimaryAddress(Address $address, string $type = 'primary'): Addressable
     {
-        return DB::transaction(function () use ($address, $type): Addressable {
-            AddressOwnerGuard::assertAddressIsWritable($address->getKey());
-            AddressOwnerGuard::assertAddressableIsWritable($this->getMorphClass(), $this->getKey());
-            $this->lockForAddressMutation();
+        $id = app(AddressAttachmentWriter::class)->setPrimary(
+            (string) $address->getKey(),
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $type,
+        );
 
-            $pivotTable = AddressingTableResolver::resolve('addressables');
+        $this->unsetRelation('addresses');
+        $this->unsetRelation('addressAttachments');
 
-            /** @var Addressable|null $pivot */
-            $pivot = $this->addresses()
-                ->whereKey($address->id)
-                ->where("{$pivotTable}.type", $type)
-                ->first()
-                ?->pivot;
-
-            if (! $pivot instanceof Addressable) {
-                throw new InvalidArgumentException('The address must be attached with the requested type before it can be primary.');
-            }
-
-            $this->demotePrimaryAddressPivots($type);
-            ModelResolver::addressableClass()::query()
-                ->whereKey($pivot->getKey())
-                ->update(['is_primary' => true]);
-            $pivot->is_primary = true;
-
-            $this->unsetRelation('addresses');
-
-            return $pivot;
-        });
+        return ModelResolver::addressableClass()::query()->findOrFail($id);
     }
 
     /**
@@ -379,21 +316,4 @@ trait HasAddresses
             });
     }
 
-    private function demotePrimaryAddressPivots(string $type): void
-    {
-        ModelResolver::addressableClass()::query()
-            ->where('addressable_type', $this->getMorphClass())
-            ->where('addressable_id', $this->getKey())
-            ->where('type', $type)
-            ->where('is_primary', true)
-            ->update(['is_primary' => false]);
-    }
-
-    private function lockForAddressMutation(): void
-    {
-        $this->newQuery()
-            ->whereKey($this->getKey())
-            ->lockForUpdate()
-            ->first();
-    }
 }
