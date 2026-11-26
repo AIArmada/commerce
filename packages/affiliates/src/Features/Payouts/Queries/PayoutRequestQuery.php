@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Data\PayoutRequest;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
+use AIArmada\Affiliates\Models\Affiliate;
 
 final class PayoutRequestQuery
 {

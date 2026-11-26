@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentStatus;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use Carbon\Carbon;
 
 test('TaxDocumentApi calculateAnnualPayouts returns zero with no payouts', function (): void {

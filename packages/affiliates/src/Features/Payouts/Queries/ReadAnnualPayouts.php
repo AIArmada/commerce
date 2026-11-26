@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Payouts\Api\AnnualPayoutReader;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;

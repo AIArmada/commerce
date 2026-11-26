@@ -7,13 +7,13 @@ use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 

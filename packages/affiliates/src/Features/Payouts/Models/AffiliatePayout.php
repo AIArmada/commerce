@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Models;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
