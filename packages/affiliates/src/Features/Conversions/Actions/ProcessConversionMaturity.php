@@ -8,11 +8,11 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\Features\Conversions\Queries\CommercialAffiliateCandidates;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use Carbon\CarbonImmutable;
-use RuntimeException;
+use Illuminate\Support\Str;
 
 final readonly class ProcessConversionMaturity implements ConversionMaturity
 {
@@ -20,13 +20,14 @@ final readonly class ProcessConversionMaturity implements ConversionMaturity
 
     public function mature(string $conversionId): bool
     {
-        $connection = (new AffiliateConversion)->getConnection();
-
-        if ((new Affiliate)->getConnection() !== $connection) {
-            throw new RuntimeException('Conversion maturity requires a shared database connection.');
+        if (! Str::isUuid($conversionId)) {
+            return false;
         }
 
-        return $connection->transaction(function () use ($conversionId): bool {
+        $connection = (new AffiliateConversion)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
+
+        return $connection->transaction(function () use ($conversionId, $connection): bool {
             $conversion = AffiliateConversion::query()->lockForUpdate()->find($conversionId);
 
             if ($conversion === null || ! $conversion->status->equals(QualifiedConversion::class)
@@ -35,9 +36,9 @@ final readonly class ProcessConversionMaturity implements ConversionMaturity
                 return false;
             }
 
-            $affiliate = Affiliate::query()->whereKey($conversion->affiliate_id)->lockForUpdate()->first();
+            $affiliate = app(AffiliateProfileReader::class)->lock($conversion->affiliate_id, spl_object_id($connection));
 
-            if ($affiliate === null || ! $affiliate->isCommercialPurpose() || ! $affiliate->canReceivePayout() || $affiliate->isDeactivated()) {
+            if ($affiliate === null || ! $affiliate->commercial || ! $affiliate->canReceivePayout) {
                 return false;
             }
 
@@ -56,15 +57,11 @@ final readonly class ProcessConversionMaturity implements ConversionMaturity
 
     public function process(bool $dryRun = false): int
     {
+        $model = new AffiliateConversion;
         $query = AffiliateConversion::query()
             ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '<=', CarbonImmutable::now()->subDays($this->maturityDays()))
-            ->whereHas('affiliate', static function ($query): void {
-                $query->whereCommercialPurpose()
-                    ->where('status', AffiliateStatus::normalize(Active::class))
-                    ->whereNull('paused_at')
-                    ->whereNull('deactivated_at');
-            });
+            ->whereIn($model->qualifyColumn('affiliate_id'), CommercialAffiliateCandidates::query($model->getConnection(), requirePayoutEligibility: true));
 
         if ($dryRun) {
             return $query->count();

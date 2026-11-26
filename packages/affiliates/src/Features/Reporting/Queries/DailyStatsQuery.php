@@ -6,9 +6,10 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class DailyStatsQuery implements DailyStatsReader
 {
@@ -24,16 +25,22 @@ final readonly class DailyStatsQuery implements DailyStatsReader
      */
     public function getAggregatedStats(string $affiliateId, CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $affiliate = Affiliate::query()->findOrFail($affiliateId);
-        $rows = AffiliateDailyStat::query()
-            ->where('affiliate_id', $affiliate->id)
+        $affiliate = app(AffiliateProfileReader::class)->find($affiliateId, spl_object_id((new AffiliateDailyStat)->getConnection()), includeGlobal: true)
+            ?? throw new ModelNotFoundException('Affiliate not found.');
+        $query = AffiliateDailyStat::query()->where('affiliate_id', $affiliate->reference->id);
+
+        if (config('affiliates.owner.enabled', false)) {
+            $query->where('owner_type', $affiliate->reference->ownerType)->where('owner_id', $affiliate->reference->ownerId);
+        }
+
+        $rows = $query
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->toBase()
             ->selectRaw('currency, COALESCE(SUM(clicks), 0) as clicks, COALESCE(SUM(unique_clicks), 0) as unique_clicks, COALESCE(SUM(attributions), 0) as attributions, COALESCE(SUM(conversions), 0) as conversions, COALESCE(SUM(revenue_cents), 0) as revenue_cents, COALESCE(SUM(commission_cents), 0) as commission_cents')
             ->groupBy('currency')
             ->get();
 
-        $reference = $this->referenceCurrency($affiliate);
+        $reference = $this->referenceCurrency($affiliate->currency);
         $byCurrency = [];
         $clicks = 0;
         $uniqueClicks = 0;
@@ -123,10 +130,10 @@ final readonly class DailyStatsQuery implements DailyStatsReader
         return mb_strtoupper(mb_trim($value));
     }
 
-    private function referenceCurrency(Affiliate $affiliate): string
+    private function referenceCurrency(?string $currency): string
     {
-        if (is_string($affiliate->currency) && mb_trim($affiliate->currency) !== '') {
-            return mb_strtoupper(mb_trim($affiliate->currency));
+        if (is_string($currency) && mb_trim($currency) !== '') {
+            return mb_strtoupper(mb_trim($currency));
         }
 
         return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));

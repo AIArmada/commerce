@@ -8,10 +8,9 @@ use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use Carbon\CarbonImmutable;
-use LogicException;
 
 final readonly class AwardPerformanceBonuses implements PerformanceBonusPosting
 {
@@ -21,24 +20,22 @@ final readonly class AwardPerformanceBonuses implements PerformanceBonusPosting
     {
         $connection = (new AffiliateConversion)->getConnection();
 
-        if ($connection !== (new Affiliate)->getConnection()) {
-            throw new LogicException('Bonus posting requires a shared database connection.');
-        }
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
-        return $connection->transaction(function () use ($bonuses): int {
+        return $connection->transaction(function () use ($bonuses, $connection): int {
             $awarded = 0;
 
             foreach ($bonuses as $bonus) {
-                $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->find($bonus['affiliate_id']);
+                $affiliate = app(AffiliateProfileReader::class)->lock($bonus['affiliate_id'], spl_object_id($connection));
 
-                if (! $affiliate || ! $affiliate->status->equals(Active::class) || ! $affiliate->isCommercialPurpose()) {
+                if (! $affiliate || ! $affiliate->active || ! $affiliate->commercial) {
                     continue;
                 }
 
                 $period = (string) ($bonus['metrics']['period'] ?? CarbonImmutable::now()->format('Y-m'));
                 $performanceBonusKey = implode(':', [
                     'performance-bonus',
-                    $affiliate->id,
+                    $affiliate->reference->id,
                     $bonus['bonus_type'],
                     $period,
                 ]);
@@ -48,7 +45,7 @@ final readonly class AwardPerformanceBonuses implements PerformanceBonusPosting
                 $conversion = AffiliateConversion::firstOrCreate(
                     ['performance_bonus_key' => $performanceBonusKey],
                     [
-                        'affiliate_id' => $affiliate->id,
+                        'affiliate_id' => $affiliate->reference->id,
                         'affiliate_code' => $affiliate->code,
                         'external_reference' => 'BONUS-' . $period . '-' . mb_strtoupper(mb_substr(md5($performanceBonusKey), 0, 8)),
                         'performance_bonus_key' => $performanceBonusKey,

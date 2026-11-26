@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Identity\Api;
+
+final readonly class AffiliateProfile
+{
+    public function __construct(
+        public AffiliateLifecycleReference $reference,
+        public string $code,
+        public string $name,
+        public string $handle,
+        public ?string $currency,
+        public bool $active,
+        public bool $commercial,
+        public bool $canBeAttributed,
+        public bool $canReceivePayout,
+    ) {}
+}

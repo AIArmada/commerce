@@ -24,6 +24,7 @@ use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
@@ -262,9 +263,10 @@ describe('merchant seam', function (): void {
         $foreign = OwnerContext::withOwner($other, fn (): Affiliate => createTestAffiliate());
         $global = OwnerContext::withOwner(null, fn (): Affiliate => createTestAffiliate());
         $reader = app(AffiliateReferenceReader::class);
+        $profiles = app(AffiliateProfileReader::class);
         $identity = spl_object_id($owned->getConnection());
 
-        OwnerContext::withOwner($owner, function () use ($reader, $owned, $foreign, $global, $identity, $owner): void {
+        OwnerContext::withOwner($owner, function () use ($reader, $profiles, $owned, $foreign, $global, $identity, $owner): void {
             expect($reader->ownerReference($owned->id, $identity)?->ownerId)->toBe((string) $owner->getKey())
                 ->and($reader->ownerReference($foreign->id, $identity, includeGlobal: true))->toBeNull()
                 ->and($reader->ownerReference($global->id, $identity))->toBeNull()
@@ -273,6 +275,16 @@ describe('merchant seam', function (): void {
                 ->and(OwnerScopeOverride::withoutIncludeGlobal(fn () => $reader->ownerReference($global->id, $identity, includeGlobal: true)))->toBeNull();
 
             expect(fn () => $reader->ownerReference($owned->id, -1))->toThrow(LogicException::class);
+
+            $profile = $profiles->find($owned->id, $identity);
+            expect($profile?->reference->id)->toBe($owned->id)
+                ->and($profile?->code)->toBe($owned->code)
+                ->and($profile?->handle)->toBe($owned->handle)
+                ->and($profiles->find($foreign->id, $identity, includeGlobal: true))->toBeNull()
+                ->and($profiles->find($global->id, $identity))->toBeNull()
+                ->and($profiles->lock($foreign->id, $identity))->toBeNull()
+                ->and($profiles->lock($global->id, $identity))->toBeNull()
+                ->and($profiles->lock($owned->id, $identity)?->reference->id)->toBe($owned->id);
         });
     });
 

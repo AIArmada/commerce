@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
-use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
-use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
 use LogicException;
 
@@ -56,18 +53,7 @@ final readonly class ReadBalances implements BalanceReader
     public function payoutCandidates(int $minimum, ?string $affiliateId = null): iterable
     {
         $model = new AffiliateBalance;
-        $connection = $model->getConnection();
-        $reference = app(MerchantIdentity::class)->ownerTable();
-
-        if ($reference->connectionIdentity !== spl_object_id($connection)) {
-            throw new LogicException('Payout candidate selection requires the affiliate database connection.');
-        }
-
-        $eligible = $connection->table($reference->table)
-            ->select($reference->keyColumn)
-            ->where('status', Active::$name)
-            ->where(static fn (QueryBuilder $query) => $query->whereNull('purpose')
-                ->orWhereRaw('LOWER(TRIM(purpose)) = ?', ['general']));
+        $eligible = CommercialAffiliateCandidates::query($model->getConnection(), includeGlobal: true);
 
         $query = AffiliateBalance::query()
             ->where('available_minor', $minimum > 0 ? '>=' : '>', max(0, $minimum))

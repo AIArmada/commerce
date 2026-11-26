@@ -7,9 +7,10 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Attribution\Support\AffiliateLinkDestination;
 use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Models\Link;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -23,14 +24,15 @@ final readonly class UpdateTrackingLink
     public function handle(string $linkId, array $attributes): AffiliateLink
     {
         $connection = (new AffiliateLink)->getConnection();
-        if ($connection !== (new Link)->getConnection() || $connection !== (new Affiliate)->getConnection()) {
+        if ($connection !== (new Link)->getConnection()) {
             throw new LogicException('Tracking link update requires a shared database connection.');
         }
 
-        return $connection->transaction(function () use ($linkId, $attributes): AffiliateLink {
+        return $connection->transaction(function () use ($linkId, $attributes, $connection): AffiliateLink {
             $reference = AffiliateLink::query()->findOrFail($linkId);
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($reference->affiliate_id);
-            $link = AffiliateLink::query()->where('affiliate_id', $affiliate->getKey())->lockForUpdate()->findOrFail($linkId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($reference->affiliate_id, spl_object_id($connection))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
+            $link = AffiliateLink::query()->where('affiliate_id', $affiliate->reference->id)->lockForUpdate()->findOrFail($linkId);
             if (array_key_exists('affiliate_id', $attributes) && $attributes['affiliate_id'] !== $link->affiliate_id) {
                 throw ValidationException::withMessages(['affiliate_id' => 'An issued link cannot be reassigned.']);
             }
@@ -39,7 +41,7 @@ final readonly class UpdateTrackingLink
             if (isset($attributes['program_id'])) {
                 $this->programs->lockForTracking($attributes['program_id'], spl_object_id($link->getConnection()));
             }
-            if (! $affiliate->isCommercialPurpose()) {
+            if (! $affiliate->commercial) {
                 unset($attributes['destination_url']);
             }
             $destination = $attributes['destination_url'] ?? $link->destination_url;
