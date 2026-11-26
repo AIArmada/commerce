@@ -38,7 +38,7 @@ final readonly class SpatieCreativeAssetReplacement implements CreativeAssetRepl
             throw new LogicException('Creative asset replacement requires the active creative database transaction.');
         }
 
-        $this->removal->remove($creativeId, $morphType, $connectionIdentity);
+        $this->removal->remove($creativeId, $morphType, $connectionIdentity, 'creative_asset');
         $subject->unsetRelation('media');
 
         // Track newly inserted media before the enclosing transaction can roll back.
@@ -74,7 +74,7 @@ final readonly class SpatieCreativeAssetReplacement implements CreativeAssetRepl
 
     private function extension(string $bytes): string
     {
-        if ($bytes === '' || mb_strlen($bytes) > (int) config('media-library.max_file_size', 10485760)) {
+        if ($bytes === '' || mb_strlen($bytes, '8bit') > (int) config('media-library.max_file_size', 10485760)) {
             throw ValidationException::withMessages(['asset' => 'The asset is empty or exceeds the configured upload limit.']);
         }
 

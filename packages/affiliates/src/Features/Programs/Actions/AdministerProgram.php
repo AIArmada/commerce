@@ -70,7 +70,7 @@ final readonly class AdministerProgram implements ProgramAdministration
                 ->withoutGlobalScope('program_owner')
                 ->where('program_id', $programId)
                 ->eachById(function (AffiliateProgramCreative $creative): void {
-                    $this->assets->remove((string) $creative->getKey(), $creative->getMorphClass(), spl_object_id($creative->getConnection()));
+                    $this->assets->remove((string) $creative->getKey(), $creative->getMorphClass(), spl_object_id($creative->getConnection()), null);
 
                     if (! $creative->deletePreservingMedia()) {
                         throw new RuntimeException('Program creative deletion failed.');

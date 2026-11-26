@@ -6,5 +6,5 @@ namespace AIArmada\Affiliates\Contracts;
 
 interface CreativeAssetRemoval
 {
-    public function remove(string $creativeId, string $morphType, int $connectionIdentity): void;
+    public function remove(string $creativeId, string $morphType, int $connectionIdentity, ?string $collection): void;
 }

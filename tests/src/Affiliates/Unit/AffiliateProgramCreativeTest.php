@@ -387,3 +387,34 @@ test('creative uploads reject active content and retain the current asset', func
         ->and($creative->fresh()->getFirstMedia('creative_asset')->getKey())->toBe($first->getKey());
     Storage::disk('public')->assertExists($first->getPathRelativeToRoot());
 });
+
+test('replacing or clearing a creative asset preserves unrelated media collections', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Asset', 'tracking_code' => 'COLLECTION'], UploadedFile::fake()->image('first.png')->get());
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $other = $creative->addMedia(UploadedFile::fake()->image('other.png'))->toMediaCollection('attachments', 'public');
+    $path = $other->getPathRelativeToRoot();
+
+    $api->update(null, $id, [], UploadedFile::fake()->image('second.png')->get());
+    expect($other->fresh())->not->toBeNull();
+    Storage::disk('public')->assertExists($path);
+
+    $api->update(null, $id, [], removeAsset: true);
+    expect($creative->fresh()->getFirstMedia('creative_asset'))->toBeNull()
+        ->and($other->fresh())->not->toBeNull();
+    Storage::disk('public')->assertExists($path);
+
+    $api->delete(null, $id);
+    expect($other->fresh())->toBeNull();
+    Storage::disk('public')->assertMissing($path);
+});
+
+test('creative upload size is limited by bytes rather than multibyte characters', function (): void {
+    $bytes = UploadedFile::fake()->image('asset.png')->get() . str_repeat('é', 2048);
+    config(['media-library.max_file_size' => mb_strlen($bytes, '8bit') - 1]);
+
+    expect(fn () => app(CreativeAdministration::class)->create(null, [
+        'type' => 'image', 'name' => 'Oversized', 'tracking_code' => 'SIZE',
+    ], $bytes))->toThrow(ValidationException::class);
+    expect(AffiliateProgramCreative::query()->where('tracking_code', 'SIZE')->exists())->toBeFalse();
+});

@@ -53,7 +53,7 @@ final readonly class AdministerCreative implements CreativeAdministration
             if ($assetBytes !== null) {
                 $this->replaceAsset($creative, $assetBytes);
             } elseif ($removeAsset) {
-                $this->assets->remove($creativeId, $creative->getMorphClass(), spl_object_id($creative->getConnection()));
+                $this->assets->remove($creativeId, $creative->getMorphClass(), spl_object_id($creative->getConnection()), 'creative_asset');
             }
         }, attempts: 3);
     }
@@ -62,7 +62,7 @@ final readonly class AdministerCreative implements CreativeAdministration
     {
         return (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $creativeId): bool {
             $creative = $this->lockCreative($programId, $creativeId);
-            $this->assets->remove($creativeId, $creative->getMorphClass(), spl_object_id($creative->getConnection()));
+            $this->assets->remove($creativeId, $creative->getMorphClass(), spl_object_id($creative->getConnection()), null);
 
             if (! $creative->deletePreservingMedia()) {
                 throw new RuntimeException('Creative deletion failed.');

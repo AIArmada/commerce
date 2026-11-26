@@ -11,7 +11,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 final class SpatieCreativeAssetRemoval implements CreativeAssetRemoval
 {
-    public function remove(string $creativeId, string $morphType, int $connectionIdentity): void
+    public function remove(string $creativeId, string $morphType, int $connectionIdentity, ?string $collection): void
     {
         $mediaClass = config('media-library.media_model', Media::class);
 
@@ -26,11 +26,15 @@ final class SpatieCreativeAssetRemoval implements CreativeAssetRemoval
             throw new LogicException('Creative media deletion requires the active creative database transaction.');
         }
 
-        $media = $model->newModelQuery()
+        $query = $model->newModelQuery()
             ->where('model_type', $morphType)
-            ->where('model_id', $creativeId)
-            ->lockForUpdate()
-            ->get();
+            ->where('model_id', $creativeId);
+
+        if ($collection !== null) {
+            $query->where('collection_name', $collection);
+        }
+
+        $media = $query->lockForUpdate()->get();
 
         foreach ($media as $asset) {
             // The media observer deletes files immediately; remove the database row
