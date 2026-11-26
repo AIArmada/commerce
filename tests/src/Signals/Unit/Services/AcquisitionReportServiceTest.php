@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
@@ -11,8 +12,8 @@ use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\AcquisitionReportService;
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Ingestion\Queries\AcquisitionReportService;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -273,7 +274,7 @@ it('supports first touch and last touch acquisition attribution from saved repor
         ->and($lastTouchRow?->acquisition_source)->toBe('newsletter')
         ->and($lastTouchRow?->acquisition_medium)->toBe('email')
         ->and($lastTouchRow?->acquisition_campaign)->toBe('nurture')
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('acquisition'))
         ->toBe([
             $firstTouchReport->id => 'First Touch Acquisition',
             $lastTouchReport->id => 'Last Touch Acquisition',

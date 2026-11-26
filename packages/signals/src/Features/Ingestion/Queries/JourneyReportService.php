@@ -2,16 +2,30 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use Illuminate\Database\Eloquent\Builder;
 
-final class JourneyReportService
+final class JourneyReportService implements ReportInterface
 {
-    public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
+    public function type(): string
+    {
+        return 'journey';
+    }
+
+    public function name(): string
+    {
+        return 'Journey';
+    }
+
+    public function __construct(
+        private readonly SignalSegmentReportFilter $segmentReportFilter,
+        private readonly ReportConfiguration $configuration,
+    ) {}
 
     /**
      * @return array{sessions:int,unique_entry_paths:int,unique_exit_paths:int,bounced_sessions:int,avg_duration_seconds:float}
@@ -61,24 +75,11 @@ final class JourneyReportService
     }
 
 
-    /**
-     * @return array<string, string>
-     */
-    public function getSavedReportOptions(): array
-    {
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'journeys')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     public function getBreakdownLabel(?string $savedReportId = null): string
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $dimension = SavedSignalReportDefinition::journeyBreakdownDimension($savedReport?->normalizedSettings());
+        $savedReport = $this->configuration->savedReport('journeys', $savedReportId);
+        $dimension = SavedSignalReportDefinition::journeyBreakdownDimension($savedReport?->settings);
 
         return SavedSignalReportDefinition::journeyBreakdownDimensionOptions()[$dimension] ?? 'Path Pair';
     }
@@ -108,32 +109,19 @@ final class JourneyReportService
      */
     private function resolveReportContext(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?string $savedReportId): array
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $filters = $savedReport?->normalizedFilters() ?? [];
-        $settings = $savedReport?->normalizedSettings() ?? [];
+        $savedReport = $this->configuration->savedReport('journeys', $savedReportId);
+        $filters = $savedReport?->filters ?? [];
+        $settings = $savedReport?->settings ?? [];
 
         return [
-            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->tracked_property_id,
+            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->trackedPropertyId,
             'from' => $from ?? ($filters['date_from'] ?? null),
             'until' => $until ?? ($filters['date_to'] ?? null),
-            'signal_segment_id' => $signalSegmentId ?? $savedReport?->signal_segment_id,
+            'signal_segment_id' => $signalSegmentId ?? $savedReport?->segmentId,
             'breakdown_dimension' => SavedSignalReportDefinition::journeyBreakdownDimension($settings),
         ];
     }
 
-    private function resolveSavedReport(?string $savedReportId): ?SavedSignalReport
-    {
-        if ($savedReportId === null || $savedReportId === '') {
-            return null;
-        }
-
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'journeys')
-            ->where('is_active', true)
-            ->whereKey($savedReportId)
-            ->first();
-    }
 
     private function breakdownValueExpression(string $dimension): string
     {

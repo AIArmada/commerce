@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Support\SignalCondition;
+use AIArmada\Signals\Support\SignalCondition;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 
 final class SignalEventConditionMatcher

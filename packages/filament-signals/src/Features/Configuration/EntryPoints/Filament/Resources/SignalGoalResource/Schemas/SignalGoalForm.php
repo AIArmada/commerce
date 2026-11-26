@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Schemas;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
 
@@ -44,17 +43,10 @@ final class SignalGoalForm
 
                     Forms\Components\Select::make('tracked_property_id')
                         ->label('Website or app')
-                        ->relationship(
-                            name: 'trackedProperty',
-                            titleAttribute: 'name',
-                            modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn(
-                                'id',
-                                TrackedProperty::query()->forOwner()->select('id')
-                            ),
-                        )
+                        ->getSearchResultsUsing(fn (string $search): array => app(TelemetryRead::class)->searchPropertyOptions($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_scalar($value) ? app(TelemetryRead::class)->propertyLabel((string) $value) : null)
                         ->helperText('Choose which tracked property this goal should watch.')
-                        ->searchable()
-                        ->preload(),
+                        ->searchable(),
 
                     Forms\Components\Select::make('goal_type')
                         ->label('Goal type')

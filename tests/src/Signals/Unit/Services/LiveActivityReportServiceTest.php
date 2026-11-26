@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\LiveActivityReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\LiveActivityReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

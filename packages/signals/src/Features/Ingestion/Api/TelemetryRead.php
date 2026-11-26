@@ -16,6 +16,11 @@ interface TelemetryRead
 
     public function propertyLabel(string $id): ?string;
 
+    /** @param list<string> $ids
+     * @return array<string, PropertyDetails>
+     */
+    public function propertyDetails(array $ids): array;
+
     public function propertyCurrency(string $id): ?string;
 
     public function requirePropertyCurrency(string $id): string;

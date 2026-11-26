@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources;
 
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Pages;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Schemas\SignalGoalForm;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Tables\SignalGoalTable;
@@ -34,7 +35,13 @@ final class SignalGoalResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return SignalGoal::query()->forOwner()->with('trackedProperty');
+        $query = SignalGoal::query()->forOwner();
+
+        $property = TrackedProperty::query()->forOwner();
+        $property->select($property->getModel()->qualifyColumn('name'))
+            ->whereColumn($property->getModel()->qualifyColumn('id'), $query->getModel()->qualifyColumn('tracked_property_id'));
+
+        return $query->select($query->getModel()->qualifyColumn('*'))->addSelect(['tracked_property_name' => $property]);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

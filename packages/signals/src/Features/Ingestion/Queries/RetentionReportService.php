@@ -2,18 +2,32 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-final class RetentionReportService
+final class RetentionReportService implements ReportInterface
 {
-    public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
+    public function type(): string
+    {
+        return 'retention';
+    }
+
+    public function name(): string
+    {
+        return 'Retention';
+    }
+
+    public function __construct(
+        private readonly SignalSegmentReportFilter $segmentReportFilter,
+        private readonly ReportConfiguration $configuration,
+    ) {}
 
     /**
      * @return array{cohorts:int,identities:int,windows:list<array{days:int,retained:int,avg_retention_rate:float}>}
@@ -101,19 +115,6 @@ final class RetentionReportService
     }
 
 
-    /**
-     * @return array<string, string>
-     */
-    public function getSavedReportOptions(): array
-    {
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'retention')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @param  list<int>  $retentionWindows
@@ -201,32 +202,19 @@ final class RetentionReportService
      */
     private function resolveReportContext(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?string $savedReportId): array
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $filters = $savedReport?->normalizedFilters() ?? [];
-        $settings = $savedReport?->normalizedSettings() ?? [];
+        $savedReport = $this->configuration->savedReport('retention', $savedReportId);
+        $filters = $savedReport?->filters ?? [];
+        $settings = $savedReport?->settings ?? [];
 
         return [
-            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->tracked_property_id,
+            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->trackedPropertyId,
             'from' => $from ?? ($filters['date_from'] ?? null),
             'until' => $until ?? ($filters['date_to'] ?? null),
-            'signal_segment_id' => $signalSegmentId ?? $savedReport?->signal_segment_id,
+            'signal_segment_id' => $signalSegmentId ?? $savedReport?->segmentId,
             'retention_windows' => SavedSignalReportDefinition::retentionWindows($settings),
         ];
     }
 
-    private function resolveSavedReport(?string $savedReportId): ?SavedSignalReport
-    {
-        if ($savedReportId === null || $savedReportId === '') {
-            return null;
-        }
-
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'retention')
-            ->where('is_active', true)
-            ->whereKey($savedReportId)
-            ->first();
-    }
 
     /**
      * @return array{string|null, string|null}

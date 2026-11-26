@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
@@ -12,7 +13,7 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\ConversionFunnelReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -355,7 +356,7 @@ it('uses saved funnel definitions for custom conversion funnel reports', functio
         ->and($stages[1]['label'])->toBe('Signup Started')
         ->and($stages[2]['label'])->toBe('Subscription Activated')
         ->and($stages[2]['revenue_minor'])->toBe(7900)
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('conversion_funnel'))
         ->toBe([$savedReport->id => 'Signup Activation Funnel']);
 });
 

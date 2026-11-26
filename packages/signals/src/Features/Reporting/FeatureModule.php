@@ -7,20 +7,13 @@ namespace AIArmada\Signals\Features\Reporting;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Queries\ReadReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Platform\ExtensionRegistry;
 use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
 use AIArmada\Signals\Features\Reporting\Actions\DetachReportsFromProperty;
 use AIArmada\Signals\Features\Reporting\Api\DetachPropertyReports;
 use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
-use AIArmada\Signals\Features\Reporting\Queries\AcquisitionReportService;
-use AIArmada\Signals\Features\Reporting\Queries\ContentPerformanceReportService;
-use AIArmada\Signals\Features\Reporting\Queries\ConversionFunnelReportService;
-use AIArmada\Signals\Features\Reporting\Queries\DevicesReportService;
-use AIArmada\Signals\Features\Reporting\Queries\GoalsReportService;
-use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
-use AIArmada\Signals\Features\Reporting\Queries\LiveActivityReportService;
-use AIArmada\Signals\Features\Reporting\Queries\PageViewReportService;
-use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
 use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
 use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
 use AIArmada\Signals\Features\Reporting\Actions\AdministerGoal;
@@ -39,191 +32,18 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(SegmentAdministration::class, AdministerSegment::class);
         $app->bind(GoalAdministration::class, AdministerGoal::class);
         $app->singleton(DashboardRead::class, SignalsDashboardService::class);
-        $app->bind(SegmentOptions::class, SignalSegmentReportFilter::class);
+        $app->bind(SegmentOptions::class, ReadReportConfiguration::class);
+        $app->bind(ReportConfiguration::class, ReadReportConfiguration::class);
         $app->singleton(AggregateDailyMetrics::class);
         $app->bind(DetachPropertyReports::class, DetachReportsFromProperty::class);
-        $app->singleton(ReportRegistry::class, function ($app): ReportRegistry {
+        $app->singleton(ReportRegistry::class, function (Application $app): ReportRegistry {
             $registry = new ReportRegistry;
 
-            $registry->register(new class($app->make(AcquisitionReportService::class)) implements ReportInterface
-            {
-                public function __construct(private AcquisitionReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'acquisition';
+            foreach ($app->make(ExtensionRegistry::class)->resolve('signals.reports', ReportInterface::class) as $report) {
+                if ($report instanceof ReportInterface) {
+                    $registry->register($report);
                 }
-
-                public function name(): string
-                {
-                    return 'Acquisition';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(ConversionFunnelReportService::class)) implements ReportInterface
-            {
-                public function __construct(private ConversionFunnelReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'conversion_funnel';
-                }
-
-                public function name(): string
-                {
-                    return 'Conversion Funnel';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(RetentionReportService::class)) implements ReportInterface
-            {
-                public function __construct(private RetentionReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'retention';
-                }
-
-                public function name(): string
-                {
-                    return 'Retention';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(JourneyReportService::class)) implements ReportInterface
-            {
-                public function __construct(private JourneyReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'journey';
-                }
-
-                public function name(): string
-                {
-                    return 'Journey';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(PageViewReportService::class)) implements ReportInterface
-            {
-                public function __construct(private PageViewReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'page_view';
-                }
-
-                public function name(): string
-                {
-                    return 'Page Views';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(ContentPerformanceReportService::class)) implements ReportInterface
-            {
-                public function __construct(private ContentPerformanceReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'content_performance';
-                }
-
-                public function name(): string
-                {
-                    return 'Content Performance';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(DevicesReportService::class)) implements ReportInterface
-            {
-                public function __construct(private DevicesReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'devices';
-                }
-
-                public function name(): string
-                {
-                    return 'Devices';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(GoalsReportService::class)) implements ReportInterface
-            {
-                public function __construct(private GoalsReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'goals';
-                }
-
-                public function name(): string
-                {
-                    return 'Goals';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
-
-            $registry->register(new class($app->make(LiveActivityReportService::class)) implements ReportInterface
-            {
-                public function __construct(private LiveActivityReportService $service) {}
-
-                public function type(): string
-                {
-                    return 'live_activity';
-                }
-
-                public function name(): string
-                {
-                    return 'Live Activity';
-                }
-
-                public function summary(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null): array
-                {
-                    return $this->service->summary($trackedPropertyId, $from, $until);
-                }
-            });
+            }
 
             return $registry;
         });

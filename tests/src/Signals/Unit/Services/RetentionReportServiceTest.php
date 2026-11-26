@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
@@ -10,7 +11,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\RetentionReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -211,6 +212,6 @@ it('uses saved retention windows from saved reports', function (): void {
                 'retention_rate' => 50.0,
             ],
         ])
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('retention'))
         ->toBe([$savedReport->id => 'Retention 1d and 14d']);
 });

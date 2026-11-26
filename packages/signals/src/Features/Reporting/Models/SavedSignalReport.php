@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Models;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +33,6 @@ use RuntimeException;
  * @property array<string, mixed>|array<int, array<string, mixed>>|null $settings
  * @property bool $is_shared
  * @property bool $is_active
- * @property-read TrackedProperty|null $trackedProperty
  * @property-read SignalSegment|null $segment
  */
 final class SavedSignalReport extends Model implements Auditable
@@ -105,14 +104,6 @@ final class SavedSignalReport extends Model implements Auditable
     }
 
     /**
-     * @return BelongsTo<TrackedProperty, $this>
-     */
-    public function trackedProperty(): BelongsTo
-    {
-        return $this->belongsTo(TrackedProperty::class, 'tracked_property_id');
-    }
-
-    /**
      * @return BelongsTo<SignalSegment, $this>
      */
     public function segment(): BelongsTo
@@ -141,12 +132,7 @@ final class SavedSignalReport extends Model implements Auditable
             }
 
             if ($report->tracked_property_id !== '' && $report->tracked_property_id !== null) {
-                $propertyQuery = TrackedProperty::query();
-                $propertyExists = ($owner === null
-                    ? $propertyQuery->globalOnly()
-                    : $propertyQuery->forOwner($owner, includeGlobal: false))
-                    ->whereKey($report->tracked_property_id)
-                    ->exists();
+                $propertyExists = app(TelemetryRead::class)->propertyCurrency((string) $report->tracked_property_id) !== null;
 
                 if (! $propertyExists) {
                     throw new RuntimeException('Invalid tracked_property_id: does not belong to the current owner scope.');

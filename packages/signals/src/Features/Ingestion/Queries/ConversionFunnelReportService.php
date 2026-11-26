@@ -2,24 +2,37 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Support\SignalRouteCatalog;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Api\SavedReportSnapshot;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Api\GoalDefinition;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
-final class ConversionFunnelReportService
+final class ConversionFunnelReportService implements ReportInterface
 {
+    public function type(): string
+    {
+        return 'conversion_funnel';
+    }
+
+    public function name(): string
+    {
+        return 'Conversion Funnel';
+    }
+
     public function __construct(
         private readonly SignalSegmentReportFilter $segmentReportFilter,
         private readonly SignalEventConditionQueryService $conditionQueryService,
         private readonly SignalEventConditionMatcher $conditionMatcher,
+        private readonly ReportConfiguration $configuration,
     ) {}
 
     /**
@@ -113,24 +126,11 @@ final class ConversionFunnelReportService
     }
 
 
-    /**
-     * @return array<string, string>
-     */
-    public function getSavedReportOptions(): array
-    {
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'conversion_funnel')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @return list<array{label:string,event_name:string,count:int,rate_from_previous:float,rate_from_start:float,drop_off:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>
      */
-    private function buildStages(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?SavedSignalReport $savedReport): array
+    private function buildStages(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?SavedReportSnapshot $savedReport): array
     {
         $steps = $this->resolveFunnelSteps($savedReport);
 
@@ -184,18 +184,18 @@ final class ConversionFunnelReportService
     }
 
     /**
-     * @return array{tracked_property_id:string|null,from:string|null,until:string|null,signal_segment_id:string|null,saved_report:SavedSignalReport|null}
+     * @return array{tracked_property_id:string|null,from:string|null,until:string|null,signal_segment_id:string|null,saved_report:SavedReportSnapshot|null}
      */
     private function resolveReportContext(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?string $savedReportId): array
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $filters = $savedReport?->normalizedFilters() ?? [];
+        $savedReport = $this->configuration->savedReport('conversion_funnel', $savedReportId);
+        $filters = $savedReport?->filters ?? [];
 
         return [
-            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->tracked_property_id,
+            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->trackedPropertyId,
             'from' => $from ?? ($filters['date_from'] ?? null),
             'until' => $until ?? ($filters['date_to'] ?? null),
-            'signal_segment_id' => $signalSegmentId ?? $savedReport?->signal_segment_id,
+            'signal_segment_id' => $signalSegmentId ?? $savedReport?->segmentId,
             'saved_report' => $savedReport,
         ];
     }
@@ -204,9 +204,9 @@ final class ConversionFunnelReportService
      * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
      * @return list<array{count:int,revenue:array<string, int>}>
      */
-    private function calculateStageProgress(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, array $steps, ?SavedSignalReport $savedReport): array
+    private function calculateStageProgress(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, array $steps, ?SavedReportSnapshot $savedReport): array
     {
-        $stepWindowMinutes = SavedSignalReportDefinition::stepWindowMinutes($savedReport?->normalizedSettings());
+        $stepWindowMinutes = SavedSignalReportDefinition::stepWindowMinutes($savedReport?->settings);
         $counts = array_fill(0, count($steps), 0);
         $revenues = array_fill(0, count($steps), []);
 
@@ -330,29 +330,16 @@ final class ConversionFunnelReportService
             ?? $event->id;
     }
 
-    private function resolveSavedReport(?string $savedReportId): ?SavedSignalReport
-    {
-        if ($savedReportId === null || $savedReportId === '') {
-            return null;
-        }
-
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'conversion_funnel')
-            ->where('is_active', true)
-            ->whereKey($savedReportId)
-            ->first();
-    }
 
     /**
      * @return list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>
      */
-    private function resolveFunnelSteps(?SavedSignalReport $savedReport): array
+    private function resolveFunnelSteps(?SavedReportSnapshot $savedReport): array
     {
-        $steps = SavedSignalReportDefinition::funnelSteps($savedReport?->normalizedSettings());
+        $steps = SavedSignalReportDefinition::funnelSteps($savedReport?->settings);
 
         if ($steps !== []) {
-            $resolvedSteps = $this->resolveConfiguredSteps($steps, $savedReport?->tracked_property_id);
+            $resolvedSteps = $this->resolveConfiguredSteps($steps, $savedReport?->trackedPropertyId);
 
             if ($resolvedSteps !== []) {
                 return $resolvedSteps;
@@ -445,32 +432,18 @@ final class ConversionFunnelReportService
             $steps,
         ))));
 
-        $goalsBySlug = SignalGoal::query()
-            ->where('is_active', true)
-            ->when(
-                filled($trackedPropertyId),
-                fn (Builder $query): Builder => $query->where(function (Builder $goalQuery) use ($trackedPropertyId): void {
-                    $goalQuery->where('tracked_property_id', $trackedPropertyId)
-                        ->orWhereNull('tracked_property_id');
-                }),
-            )
-            ->when(
-                $goalSlugs !== [],
-                fn (Builder $query): Builder => $query->whereIn('slug', $goalSlugs)
-            )
-            ->get()
-            ->keyBy('slug');
+        $goalsBySlug = $this->configuration->goalsBySlug($trackedPropertyId, $goalSlugs);
 
         $resolved = [];
 
         foreach ($steps as $step) {
-            $goal = $step['goal_slug'] !== null ? $goalsBySlug->get($step['goal_slug']) : null;
+            $goal = $step['goal_slug'] !== null ? ($goalsBySlug[$step['goal_slug']] ?? null) : null;
 
-            if ($goal instanceof SignalGoal) {
+            if ($goal instanceof GoalDefinition) {
                 $resolved[] = [
                     'label' => $step['label'],
-                    'event_name' => $goal->event_name,
-                    'event_category' => $goal->event_category,
+                    'event_name' => $goal->eventName,
+                    'event_category' => $goal->eventCategory,
                     'condition_match_type' => 'all',
                     'conditions' => $goal->conditions,
                 ];

@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Models;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Signals\Features\Reporting\Support\SignalEventConditionDefinition;
+use AIArmada\Signals\Support\SignalCondition;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use RuntimeException;
@@ -32,7 +31,6 @@ use RuntimeException;
  * @property string|null $event_category
  * @property array<int, array<string, mixed>>|null $conditions
  * @property bool $is_active
- * @property-read TrackedProperty|null $trackedProperty
  */
 final class SignalGoal extends Model implements Auditable
 {
@@ -98,14 +96,6 @@ final class SignalGoal extends Model implements Auditable
         return $tables['goals'] ?? $prefix . 'goals';
     }
 
-    /**
-     * @return BelongsTo<TrackedProperty, $this>
-     */
-    public function trackedProperty(): BelongsTo
-    {
-        return $this->belongsTo(TrackedProperty::class, 'tracked_property_id');
-    }
-
     protected static function booted(): void
     {
         static::saving(function (SignalGoal $goal): void {
@@ -122,12 +112,7 @@ final class SignalGoal extends Model implements Auditable
             }
 
             if ($goal->tracked_property_id !== '' && $goal->tracked_property_id !== null) {
-                $propertyQuery = TrackedProperty::query();
-                $propertyExists = ($owner === null
-                    ? $propertyQuery->globalOnly()
-                    : $propertyQuery->forOwner($owner, includeGlobal: false))
-                    ->whereKey($goal->tracked_property_id)
-                    ->exists();
+                $propertyExists = app(TelemetryRead::class)->propertyCurrency((string) $goal->tracked_property_id) !== null;
 
                 if (! $propertyExists) {
                     throw new RuntimeException('Invalid tracked_property_id: does not belong to the current owner scope.');
@@ -156,7 +141,7 @@ final class SignalGoal extends Model implements Auditable
                 throw new InvalidArgumentException("Invalid goal condition at index {$index}: unsupported field [{$field}].");
             }
 
-            if ($operator === '' || ! SignalEventConditionDefinition::isSupportedOperator($operator)) {
+            if ($operator === '' || ! SignalCondition::isSupportedOperator($operator)) {
                 throw new InvalidArgumentException("Invalid goal condition at index {$index}: unsupported operator [{$operator}].");
             }
 
@@ -164,7 +149,7 @@ final class SignalGoal extends Model implements Auditable
                 throw new InvalidArgumentException("Invalid goal condition at index {$index}: value is required.");
             }
 
-            if (SignalEventConditionDefinition::operatorRequiresNumericComparison($operator) && ! SignalEventConditionDefinition::fieldSupportsNumericComparison($field)) {
+            if (SignalCondition::operatorRequiresNumericComparison($operator) && ! SignalCondition::fieldSupportsNumericComparison($field)) {
                 throw new InvalidArgumentException("Invalid goal condition at index {$index}: operator [{$operator}] requires a numeric field.");
             }
 
@@ -176,7 +161,7 @@ final class SignalGoal extends Model implements Auditable
 
     private static function isSupportedField(string $field): bool
     {
-        return SignalEventConditionDefinition::isSupportedField($field);
+        return SignalCondition::isSupportedField($field);
     }
 
     protected function getActivityLogName(): string

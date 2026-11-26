@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
-use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\JourneyReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -130,7 +131,7 @@ final class JourneyReport extends ReportPage implements HasTable
                 ->schema([
                     Select::make('savedReportId')
                         ->label('Saved Report')
-                        ->options(app(JourneyReportService::class)->getSavedReportOptions())
+                        ->options(app(ReportConfiguration::class)->savedReportOptions('journeys'))
                         ->searchable()
                         ->preload(),
                 ])

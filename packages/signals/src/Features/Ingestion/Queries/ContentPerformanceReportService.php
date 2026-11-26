@@ -2,18 +2,32 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 
-final class ContentPerformanceReportService
+final class ContentPerformanceReportService implements ReportInterface
 {
-    public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
+    public function type(): string
+    {
+        return 'content_performance';
+    }
+
+    public function name(): string
+    {
+        return 'Content Performance';
+    }
+
+    public function __construct(
+        private readonly SignalSegmentReportFilter $segmentReportFilter,
+        private readonly ReportConfiguration $configuration,
+    ) {}
 
     /**
      * @return array{paths:int,views:int,conversions:int,avg_conversion_rate:float,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
@@ -92,24 +106,11 @@ final class ContentPerformanceReportService
     }
 
 
-    /**
-     * @return array<string, string>
-     */
-    public function getSavedReportOptions(): array
-    {
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'content_performance')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     public function getBreakdownLabel(?string $savedReportId = null): string
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $dimension = SavedSignalReportDefinition::contentBreakdownDimension($savedReport?->normalizedSettings());
+        $savedReport = $this->configuration->savedReport('content_performance', $savedReportId);
+        $dimension = SavedSignalReportDefinition::contentBreakdownDimension($savedReport?->settings);
 
         return SavedSignalReportDefinition::contentBreakdownDimensionOptions()[$dimension] ?? 'Path';
     }
@@ -139,32 +140,19 @@ final class ContentPerformanceReportService
      */
     private function resolveReportContext(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?string $savedReportId): array
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $filters = $savedReport?->normalizedFilters() ?? [];
-        $settings = $savedReport?->normalizedSettings() ?? [];
+        $savedReport = $this->configuration->savedReport('content_performance', $savedReportId);
+        $filters = $savedReport?->filters ?? [];
+        $settings = $savedReport?->settings ?? [];
 
         return [
-            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->tracked_property_id,
+            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->trackedPropertyId,
             'from' => $from ?? ($filters['date_from'] ?? null),
             'until' => $until ?? ($filters['date_to'] ?? null),
-            'signal_segment_id' => $signalSegmentId ?? $savedReport?->signal_segment_id,
+            'signal_segment_id' => $signalSegmentId ?? $savedReport?->segmentId,
             'breakdown_dimension' => SavedSignalReportDefinition::contentBreakdownDimension($settings),
         ];
     }
 
-    private function resolveSavedReport(?string $savedReportId): ?SavedSignalReport
-    {
-        if ($savedReportId === null || $savedReportId === '') {
-            return null;
-        }
-
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'content_performance')
-            ->where('is_active', true)
-            ->whereKey($savedReportId)
-            ->first();
-    }
 
     private function resolvePropertyId(?string $trackedPropertyId, ?string $savedReportId): ?string
     {
@@ -172,7 +160,7 @@ final class ContentPerformanceReportService
             return $trackedPropertyId;
         }
 
-        return $this->resolveSavedReport($savedReportId)?->tracked_property_id;
+        return $this->configuration->savedReport('content_performance', $savedReportId)?->trackedPropertyId;
     }
 
     private function breakdownValueExpression(string $dimension): string

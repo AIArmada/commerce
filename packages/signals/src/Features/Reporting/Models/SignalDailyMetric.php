@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Models;
 
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
@@ -12,7 +11,6 @@ use AIArmada\Signals\Support\SignalCurrency;
 use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
@@ -28,7 +26,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $conversions
  * @property int $revenue_minor
  * @property string $currency
- * @property-read TrackedProperty $trackedProperty
  */
 final class SignalDailyMetric extends Model
 {
@@ -74,14 +71,6 @@ final class SignalDailyMetric extends Model
         $prefix = config('signals.database.table_prefix', 'signal_');
 
         return $tables['daily_metrics'] ?? $prefix . 'daily_metrics';
-    }
-
-    /**
-     * @return BelongsTo<TrackedProperty, $this>
-     */
-    public function trackedProperty(): BelongsTo
-    {
-        return $this->belongsTo(TrackedProperty::class, 'tracked_property_id');
     }
 
     protected static function booted(): void

@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\ConversionFunnelReportService;
-use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\RetentionReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

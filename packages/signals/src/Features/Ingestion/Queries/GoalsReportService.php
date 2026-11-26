@@ -2,19 +2,32 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
+use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Api\GoalDefinition;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 
-final class GoalsReportService
+final class GoalsReportService implements ReportInterface
 {
+    public function type(): string
+    {
+        return 'goals';
+    }
+
+    public function name(): string
+    {
+        return 'Goals';
+    }
+
     public function __construct(
         private readonly SignalEventConditionQueryService $conditionQueryService,
         private readonly SignalSegmentReportFilter $segmentReportFilter,
+        private readonly ReportConfiguration $configuration,
     ) {}
 
     /**
@@ -54,33 +67,25 @@ final class GoalsReportService
      */
     public function rows(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null, ?string $signalSegmentId = null): array
     {
-        return SignalGoal::query()
-            ->with('trackedProperty')
-            ->where('is_active', true)
-            ->when(
-                filled($trackedPropertyId),
-                fn (Builder $query): Builder => $query->where('tracked_property_id', $trackedPropertyId)
-            )
-            ->orderBy('name')
-            ->get()
-            ->map(function (SignalGoal $goal) use ($from, $until, $signalSegmentId): array {
+        return collect($this->configuration->goals($trackedPropertyId))
+            ->map(function (GoalDefinition $goal) use ($from, $until, $signalSegmentId): array {
                 $query = $this->goalEventQuery($goal, $from, $until, $signalSegmentId);
                 $goalHits = (int) (clone $query)->count();
                 $visitors = $this->distinctActorCount(clone $query);
-                $propertyCurrency = filled($goal->tracked_property_id)
-                    ? SignalCurrency::code($goal->trackedProperty?->currency)
+                $propertyCurrency = filled($goal->trackedPropertyId)
+                    ? SignalCurrency::code($goal->currency)
                     : null;
 
                 return [
                     'id' => $goal->id,
                     'name' => $goal->name,
-                    'goal_type' => $goal->goal_type,
-                    'event_name' => $goal->event_name,
-                    'event_category' => $goal->event_category,
-                    'tracked_property_name' => $goal->trackedProperty?->name,
+                    'goal_type' => $goal->goalType,
+                    'event_name' => $goal->eventName,
+                    'event_category' => $goal->eventCategory,
+                    'tracked_property_name' => $goal->trackedPropertyName,
                     'goal_hits' => $goalHits,
                     'visitors' => $visitors,
-                    ...SignalReportRevenue::shape($goal->tracked_property_id, SignalReportRevenue::byCurrency(clone $query), $propertyCurrency),
+                    ...SignalReportRevenue::shape($goal->trackedPropertyId, SignalReportRevenue::byCurrency(clone $query), $propertyCurrency),
                     'goal_rate' => $visitors > 0 ? round(($goalHits / $visitors) * 100, 2) : 0.0,
                     'last_hit_at' => (clone $query)->max('occurred_at'),
                 ];
@@ -93,17 +98,17 @@ final class GoalsReportService
     /**
      * @return Builder<SignalEvent>
      */
-    private function goalEventQuery(SignalGoal $goal, ?string $from, ?string $until, ?string $signalSegmentId): Builder
+    private function goalEventQuery(GoalDefinition $goal, ?string $from, ?string $until, ?string $signalSegmentId): Builder
     {
         $query = $this->segmentReportFilter->applyToEventQuery(SignalEvent::query(), $signalSegmentId)
-            ->where('event_name', $goal->event_name)
+            ->where('event_name', $goal->eventName)
             ->when(
-                filled($goal->event_category),
-                fn (Builder $query): Builder => $query->where('event_category', $goal->event_category)
+                filled($goal->eventCategory),
+                fn (Builder $query): Builder => $query->where('event_category', $goal->eventCategory)
             )
             ->when(
-                filled($goal->tracked_property_id),
-                fn (Builder $query): Builder => $query->where('tracked_property_id', $goal->tracked_property_id)
+                filled($goal->trackedPropertyId),
+                fn (Builder $query): Builder => $query->where('tracked_property_id', $goal->trackedPropertyId)
             )
             ->when(
                 filled($from),

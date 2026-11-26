@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 use Throwable;
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -32,7 +32,7 @@ final class SavedSignalReportTable
                 Tables\Columns\TextColumn::make('report_type')
                     ->badge()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
+                Tables\Columns\TextColumn::make('tracked_property_name')
                     ->label('Property')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('segment.name')

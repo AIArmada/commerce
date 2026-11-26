@@ -28,5 +28,17 @@
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\AdministerInteractionRule"
     ]
   },
-  "extensions": {}
+  "extensions": {
+    "signals.reports": [
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\AcquisitionReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\ConversionFunnelReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\RetentionReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\JourneyReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\PageViewReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\ContentPerformanceReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\DevicesReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\GoalsReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\LiveActivityReportService"
+    ]
+  }
 }

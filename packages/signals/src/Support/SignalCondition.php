@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Support;
+namespace AIArmada\Signals\Support;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;

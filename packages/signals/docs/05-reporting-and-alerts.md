@@ -56,7 +56,7 @@ $revenueByCurrency = SignalReportRevenue::byCurrency($query);
 `SignalRouteCatalog` can convert named routes into path conditions that are safe to reuse in reports or segments:
 
 ```php
-use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
+use AIArmada\Signals\Support\SignalRouteCatalog;
 
 // Returns null for unknown or ineligible routes.
 $condition = app(SignalRouteCatalog::class)->conditionForRouteName('pricing.show');
@@ -115,7 +115,7 @@ Report, alert, and command paths are owner-scoped. Global rows require explicit 
 
 ## ReportRegistry
 
-Signals uses a `ReportRegistry` to manage pluggable report types. Reports are registered in the Reporting feature module via anonymous classes implementing `ReportInterface`:
+Signals uses a `ReportRegistry` to manage pluggable report types. Telemetry-backed reports are declared in the Ingestion feature manifest and registered by the Reporting feature module via anonymous classes implementing `ReportInterface`:
 
 | Report Type | Backing Service |
 |---|---|
@@ -142,4 +142,4 @@ foreach ($dashboard->availableReports() as $type => $name) {
 }
 ```
 
-To add a custom report, implement `ReportInterface` and register it on the `ReportRegistry` singleton in your service provider.
+To add a custom report, implement `ReportInterface` and register it on the Reporting feature's `ReportRegistry` singleton in your service provider. Built-in telemetry readers implement the interface directly and are discovered through the `signals.reports` extension slot.

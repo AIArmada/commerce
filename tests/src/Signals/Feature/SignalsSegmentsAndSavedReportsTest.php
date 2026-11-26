@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
 
 uses(SignalsTestCase::class);
 

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
-use AIArmada\Signals\Features\Reporting\Queries\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\ConversionFunnelReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -111,7 +112,7 @@ final class ConversionFunnelReport extends ReportPage
                 ->form([
                     Select::make('saved_report_id')
                         ->label('Saved Funnel')
-                        ->options(app(ConversionFunnelReportService::class)->getSavedReportOptions())
+                        ->options(app(ReportConfiguration::class)->savedReportOptions('conversion_funnel'))
                         ->default($this->savedReportId !== '' ? $this->savedReportId : null)
                         ->searchable(),
                 ])

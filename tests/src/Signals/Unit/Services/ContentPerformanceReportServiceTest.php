@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
@@ -11,7 +12,7 @@ use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\ContentPerformanceReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -199,7 +200,7 @@ it('uses saved content report breakdown dimensions', function (): void {
 
     expect($rows)->toHaveCount(2)
         ->and($rows[0]['content_path'])->toBe('/pricing')
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('content_performance'))
         ->toBe([$savedReport->id => 'Content By Source']);
 
     $queryRows = $service->getTableQuery(null, '2026-03-10', '2026-03-10', null, $savedReport->id)

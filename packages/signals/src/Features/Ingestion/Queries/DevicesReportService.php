@@ -2,13 +2,24 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
+use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use Illuminate\Database\Eloquent\Builder;
 
-final class DevicesReportService
+final class DevicesReportService implements ReportInterface
 {
+    public function type(): string
+    {
+        return 'devices';
+    }
+
+    public function name(): string
+    {
+        return 'Devices';
+    }
+
     public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
 
     /**

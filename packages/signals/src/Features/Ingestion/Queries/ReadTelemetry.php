@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Queries;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\Signals\Features\Ingestion\Api\PropertyDetails;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -30,6 +31,21 @@ final readonly class ReadTelemetry implements TelemetryRead
     public function propertyLabel(string $id): ?string
     {
         return TrackedProperty::query()->forOwner()->whereKey($id)->value('name');
+    }
+
+    public function propertyDetails(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $details = [];
+
+        foreach (TrackedProperty::query()->whereKey($ids)->get(['id', 'name', 'currency']) as $property) {
+            $details[$property->id] = new PropertyDetails($property->id, $property->name, SignalCurrency::code($property->currency));
+        }
+
+        return $details;
     }
 
     public function propertyCurrency(string $id): ?string

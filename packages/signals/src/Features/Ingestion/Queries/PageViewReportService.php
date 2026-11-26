@@ -2,14 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
+use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
-final class PageViewReportService
+final class PageViewReportService implements ReportInterface
 {
+    public function type(): string
+    {
+        return 'page_view';
+    }
+
+    public function name(): string
+    {
+        return 'Page Views';
+    }
+
     public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
 
     /**

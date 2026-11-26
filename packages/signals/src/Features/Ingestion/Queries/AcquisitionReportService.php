@@ -2,18 +2,32 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
-final class AcquisitionReportService
+final class AcquisitionReportService implements ReportInterface
 {
-    public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
+    public function type(): string
+    {
+        return 'acquisition';
+    }
+
+    public function name(): string
+    {
+        return 'Acquisition';
+    }
+
+    public function __construct(
+        private readonly SignalSegmentReportFilter $segmentReportFilter,
+        private readonly ReportConfiguration $configuration,
+    ) {}
 
     /**
      * @return array{attributed_events:int,visitors:int,conversions:int,campaigns:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
@@ -89,19 +103,6 @@ final class AcquisitionReportService
     }
 
 
-    /**
-     * @return array<string, string>
-     */
-    public function getSavedReportOptions(): array
-    {
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'acquisition')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @return Builder<SignalEvent>
@@ -170,15 +171,15 @@ final class AcquisitionReportService
      */
     private function resolveReportContext(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, ?string $attributionModel, ?string $savedReportId): array
     {
-        $savedReport = $this->resolveSavedReport($savedReportId);
-        $filters = $savedReport?->normalizedFilters() ?? [];
-        $settings = $savedReport?->normalizedSettings() ?? [];
+        $savedReport = $this->configuration->savedReport('acquisition', $savedReportId);
+        $filters = $savedReport?->filters ?? [];
+        $settings = $savedReport?->settings ?? [];
 
         return [
-            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->tracked_property_id,
+            'tracked_property_id' => $trackedPropertyId ?? $savedReport?->trackedPropertyId,
             'from' => $from ?? ($filters['date_from'] ?? null),
             'until' => $until ?? ($filters['date_to'] ?? null),
-            'signal_segment_id' => $signalSegmentId ?? $savedReport?->signal_segment_id,
+            'signal_segment_id' => $signalSegmentId ?? $savedReport?->segmentId,
             'attribution_model' => filled($attributionModel)
                 ? $attributionModel
                 : SavedSignalReportDefinition::attributionModel($settings),
@@ -186,19 +187,6 @@ final class AcquisitionReportService
         ];
     }
 
-    private function resolveSavedReport(?string $savedReportId): ?SavedSignalReport
-    {
-        if ($savedReportId === null || $savedReportId === '') {
-            return null;
-        }
-
-        return SavedSignalReport::query()
-            ->forOwner()
-            ->where('report_type', 'acquisition')
-            ->where('is_active', true)
-            ->whereKey($savedReportId)
-            ->first();
-    }
 
     /**
      * @param  Builder<SignalEvent>  $query

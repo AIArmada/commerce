@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
@@ -12,7 +13,7 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\JourneyReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -256,6 +257,6 @@ it('uses saved journey report breakdown dimensions', function (): void {
         ->and((int) $rows[0]->sessions)->toBe(1)
         ->and($rows[1]->journey_breakdown_value)->toBe('mobile')
         ->and((int) $rows[1]->sessions)->toBe(2)
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('journeys'))
         ->toBe([$savedReport->id => 'Journey By Device']);
 });

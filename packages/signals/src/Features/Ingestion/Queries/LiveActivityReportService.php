@@ -2,14 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
+use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 
-final class LiveActivityReportService
+final class LiveActivityReportService implements ReportInterface
 {
+    public function type(): string
+    {
+        return 'live_activity';
+    }
+
+    public function name(): string
+    {
+        return 'Live Activity';
+    }
+
     public function __construct(private readonly SignalSegmentReportFilter $segmentReportFilter) {}
 
     /**

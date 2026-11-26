@@ -2,30 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Queries;
 
-use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
-use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use Illuminate\Database\Eloquent\Builder;
 
-final class SignalSegmentReportFilter implements SegmentOptions
+final class SignalSegmentReportFilter
 {
-    public function __construct(private readonly SignalEventConditionQueryService $conditionQueryService) {}
+    public function __construct(
+        private readonly SignalEventConditionQueryService $conditionQueryService,
+        private readonly ReportConfiguration $configuration,
+    ) {}
 
-    /**
-     * @return array<string, string>
-     */
-    public function getSegmentOptions(): array
-    {
-        return SignalSegment::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
 
     /**
      * @param  Builder<SignalEvent>  $query
@@ -33,7 +24,7 @@ final class SignalSegmentReportFilter implements SegmentOptions
      */
     public function applyToEventQuery(Builder $query, ?string $signalSegmentId): Builder
     {
-        $segment = $this->resolveSegment($signalSegmentId);
+        $segment = $this->configuration->segment($signalSegmentId);
 
         if ($signalSegmentId !== null && $signalSegmentId !== '' && $segment === null) {
             return $this->conditionQueryService->failClosed($query);
@@ -43,7 +34,7 @@ final class SignalSegmentReportFilter implements SegmentOptions
             return $query;
         }
 
-        return $this->conditionQueryService->apply($query, $segment->conditions, $segment->match_type);
+        return $this->conditionQueryService->apply($query, $segment->conditions, $segment->matchType);
     }
 
     /**
@@ -52,7 +43,7 @@ final class SignalSegmentReportFilter implements SegmentOptions
      */
     public function applyToSessionQuery(Builder $query, ?string $signalSegmentId): Builder
     {
-        $segment = $this->resolveSegment($signalSegmentId);
+        $segment = $this->configuration->segment($signalSegmentId);
 
         if ($signalSegmentId !== null && $signalSegmentId !== '' && $segment === null) {
             return $query->whereRaw('1 = 0');
@@ -63,7 +54,7 @@ final class SignalSegmentReportFilter implements SegmentOptions
         }
 
         return $query->whereHas('events', function (Builder $eventQuery) use ($segment): void {
-            $this->conditionQueryService->apply($eventQuery, $segment->conditions, $segment->match_type);
+            $this->conditionQueryService->apply($eventQuery, $segment->conditions, $segment->matchType);
         });
     }
 
@@ -73,7 +64,7 @@ final class SignalSegmentReportFilter implements SegmentOptions
      */
     public function applyToIdentityQuery(Builder $query, ?string $signalSegmentId): Builder
     {
-        $segment = $this->resolveSegment($signalSegmentId);
+        $segment = $this->configuration->segment($signalSegmentId);
 
         if ($signalSegmentId !== null && $signalSegmentId !== '' && $segment === null) {
             return $query->whereRaw('1 = 0');
@@ -84,19 +75,8 @@ final class SignalSegmentReportFilter implements SegmentOptions
         }
 
         return $query->whereHas('events', function (Builder $eventQuery) use ($segment): void {
-            $this->conditionQueryService->apply($eventQuery, $segment->conditions, $segment->match_type);
+            $this->conditionQueryService->apply($eventQuery, $segment->conditions, $segment->matchType);
         });
     }
 
-    private function resolveSegment(?string $signalSegmentId): ?SignalSegment
-    {
-        if ($signalSegmentId === null || $signalSegmentId === '') {
-            return null;
-        }
-
-        return SignalSegment::query()
-            ->where('is_active', true)
-            ->whereKey($signalSegmentId)
-            ->first();
-    }
 }

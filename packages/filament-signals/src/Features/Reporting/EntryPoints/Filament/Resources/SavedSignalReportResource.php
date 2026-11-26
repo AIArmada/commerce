@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources;
 
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Pages;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas\SavedSignalReportForm;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables\SavedSignalReportTable;
@@ -25,7 +26,13 @@ final class SavedSignalReportResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return SavedSignalReport::query()->forOwner()->with(['trackedProperty', 'segment']);
+        $query = SavedSignalReport::query()->forOwner()->with('segment');
+
+        $property = TrackedProperty::query()->forOwner();
+        $property->select($property->getModel()->qualifyColumn('name'))
+            ->whereColumn($property->getModel()->qualifyColumn('id'), $query->getModel()->qualifyColumn('tracked_property_id'));
+
+        return $query->select($query->getModel()->qualifyColumn('*'))->addSelect(['tracked_property_name' => $property]);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

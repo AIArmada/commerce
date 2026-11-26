@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Schemas;
 
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
-use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
+use AIArmada\Signals\Support\SavedSignalReportDefinition;
+use AIArmada\Signals\Support\SignalRouteCatalog;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -45,17 +45,10 @@ final class SavedSignalReportForm
 
                     Forms\Components\Select::make('tracked_property_id')
                         ->label('Tracked Property')
-                        ->relationship(
-                            name: 'trackedProperty',
-                            titleAttribute: 'name',
-                            modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn(
-                                'id',
-                                TrackedProperty::query()->forOwner()->select('id')
-                            ),
-                        )
+                        ->getSearchResultsUsing(fn (string $search): array => app(TelemetryRead::class)->searchPropertyOptions($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_scalar($value) ? app(TelemetryRead::class)->propertyLabel((string) $value) : null)
                         ->live()
-                        ->searchable()
-                        ->preload(),
+                        ->searchable(),
 
                     Forms\Components\Select::make('signal_segment_id')
                         ->label('Segment')

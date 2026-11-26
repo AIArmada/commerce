@@ -40,7 +40,7 @@ final class SignalGoalTable
                     ->label('Event category')
                     ->badge()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
+                Tables\Columns\TextColumn::make('tracked_property_name')
                     ->label('Website / app')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('conditions')

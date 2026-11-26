@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Reporting\Support;
+namespace AIArmada\Signals\Support;
 
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -306,11 +306,11 @@ final class SavedSignalReportDefinition
             $operator = is_string($condition['operator'] ?? null) ? mb_trim($condition['operator']) : '';
             $value = is_string($condition['value'] ?? null) ? mb_trim($condition['value']) : '';
 
-            if ($field === '' || ! SignalEventConditionDefinition::isSupportedField($field)) {
+            if ($field === '' || ! SignalCondition::isSupportedField($field)) {
                 throw new InvalidArgumentException("Invalid funnel condition at index {$index}: unsupported field [{$field}].");
             }
 
-            if ($operator === '' || ! SignalEventConditionDefinition::isSupportedOperator($operator)) {
+            if ($operator === '' || ! SignalCondition::isSupportedOperator($operator)) {
                 throw new InvalidArgumentException("Invalid funnel condition at index {$index}: unsupported operator [{$operator}].");
             }
 
@@ -318,7 +318,7 @@ final class SavedSignalReportDefinition
                 throw new InvalidArgumentException("Invalid funnel condition at index {$index}: value is required.");
             }
 
-            if (SignalEventConditionDefinition::operatorRequiresNumericComparison($operator) && ! SignalEventConditionDefinition::fieldSupportsNumericComparison($field)) {
+            if (SignalCondition::operatorRequiresNumericComparison($operator) && ! SignalCondition::fieldSupportsNumericComparison($field)) {
                 throw new InvalidArgumentException("Invalid funnel condition at index {$index}: operator [{$operator}] requires a numeric field.");
             }
 
