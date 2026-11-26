@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
@@ -10,7 +12,7 @@ use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
-final class UpdateAddressAttachmentAction
+final readonly class UpdateAddressAttachmentAction implements AddressAttachmentWriter
 {
     /** @param array{type: string, label?: string|null, is_primary: bool} $data */
     public function execute(Addressable $pivot, array $data): Addressable

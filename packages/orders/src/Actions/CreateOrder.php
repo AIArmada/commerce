@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Actions;
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -488,7 +488,7 @@ final class CreateOrder
         );
 
         if (config('orders.address_snapshots.enabled', false)) {
-            app(CreateAddressSnapshotAction::class)->execute(
+            app(AddressSnapshotWriter::class)->execute(
                 snapshotable: $order,
                 address: $address,
                 reason: 'order_' . $type,

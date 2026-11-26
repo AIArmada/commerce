@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
+
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
@@ -12,7 +14,7 @@ use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
-class CreateAddressSnapshotAction
+final readonly class CreateAddressSnapshotAction implements AddressSnapshotWriter
 {
     public function execute(
         Model $snapshotable,
@@ -29,6 +31,7 @@ class CreateAddressSnapshotAction
 
         if ($address instanceof Address) {
             AddressOwnerGuard::assertAddressIsWritable($address->getKey());
+            $address = ModelResolver::addressClass()::query()->whereKey($address->getKey())->firstOrFail();
             $data = AddressData::from($address->attributesToArray());
             $addressId = $address->id;
         } else {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing;
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
 use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
 use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
@@ -102,7 +101,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(CountryAddressProfileResolver::class);
         $this->app->singleton(CountryAddressFormatterResolver::class);
         $this->app->singleton(ImportAddressAreasAction::class);
-        $this->app->singleton(CreateAddressSnapshotAction::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
         $this->app->singleton(ResolveSingaporePostalCodesAction::class);
         $this->app->singleton(SaveAddressAreaAction::class);

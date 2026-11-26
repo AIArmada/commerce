@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressSnapshot;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
-    $this->action = app(CreateAddressSnapshotAction::class);
+    $this->action = app(AddressSnapshotWriter::class);
 });
 
 it('snapshots address data from AddressData', function (): void {

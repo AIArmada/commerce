@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\UpdateAddressAttachmentAction;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
@@ -254,7 +254,7 @@ it('hides attachments whose related address is outside the current owner scope',
     OwnerContext::withOwner($owner, function () use ($customer, $forgedAttachment): void {
         expect(Addressable::query()->whereKey($forgedAttachment->getKey())->exists())->toBeTrue();
         expect($customer->addressAttachments()->exists())->toBeFalse();
-        expect(fn () => app(UpdateAddressAttachmentAction::class)->execute($forgedAttachment, [
+        expect(fn () => app(AddressAttachmentWriter::class)->execute($forgedAttachment, [
             'type' => 'billing',
             'is_primary' => true,
         ]))->toThrow(ModelNotFoundException::class);

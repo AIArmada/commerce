@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressSnapshot;
@@ -70,7 +70,7 @@ it('isolates addresses, pivots, and snapshots across owners', function (): void 
         ->toBe(0);
 
     $snapshot = OwnerContext::withOwner($ownerA, function () use ($hostA): AddressSnapshot {
-        return app(CreateAddressSnapshotAction::class)->execute(
+        return app(AddressSnapshotWriter::class)->execute(
             snapshotable: $hostA,
             address: AddressData::from(['line1' => 'Owner A snapshot', 'countryCode' => 'MY']),
             reason: 'test',

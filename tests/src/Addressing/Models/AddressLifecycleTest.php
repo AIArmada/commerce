@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Traits\HasAddresses;
@@ -69,7 +69,7 @@ it('deletes pivots through model events and detaches snapshots on delete', funct
     };
     $snapshotable->save();
 
-    $snapshot = app(CreateAddressSnapshotAction::class)->execute($snapshotable, $address);
+    $snapshot = app(AddressSnapshotWriter::class)->execute($snapshotable, $address);
 
     $pivotDeletingFired = false;
     Event::listen('eloquent.deleting: ' . Addressable::class, function () use (&$pivotDeletingFired): void {
