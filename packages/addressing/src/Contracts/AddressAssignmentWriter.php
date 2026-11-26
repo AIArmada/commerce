@@ -16,7 +16,7 @@ interface AddressAssignmentWriter
      * @param  array<string, string|null>  $assignments
      * @return array<string, string>
      */
-    public function validate(string $countryCode, ?string $persistedStateId, array $assignments, ?string $stateId = null): array;
+    public function validate(?string $countryCode, ?string $persistedStateId, array $assignments, ?string $stateId = null): array;
 
     public function pruneIncompatibleAssignments(string $addressId): void;
 
@@ -24,5 +24,5 @@ interface AddressAssignmentWriter
      * @param  array<string, string>  $assignments
      * @return array<string, string>
      */
-    public function narrowToValidAssignments(string $countryCode, ?string $persistedStateId, array $assignments): array;
+    public function narrowToValidAssignments(?string $countryCode, ?string $persistedStateId, array $assignments): array;
 }

@@ -65,7 +65,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * @param  array<string, string|null>  $assignments
      * @return array<string, string>
      */
-    public function validate(string $countryCode, ?string $persistedStateId, array $assignments, ?string $stateId = null): array
+    public function validate(?string $countryCode, ?string $persistedStateId, array $assignments, ?string $stateId = null): array
     {
         if ($stateId !== null) {
             if ($persistedStateId === null || (string) $stateId !== (string) $persistedStateId) {
@@ -75,7 +75,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             }
         }
 
-        $countryCode = mb_strtoupper(mb_trim($countryCode));
+        $countryCode = mb_strtoupper(mb_trim((string) $countryCode));
         $selectedAssignments = array_filter(
             $assignments,
             static fn (mixed $areaId): bool => is_string($areaId) && mb_trim($areaId) !== '',
@@ -176,7 +176,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * @param  array<string, string>  $assignments
      * @return array<string, string>
      */
-    public function narrowToValidAssignments(string $countryCode, ?string $persistedStateId, array $assignments): array
+    public function narrowToValidAssignments(?string $countryCode, ?string $persistedStateId, array $assignments): array
     {
         $candidates = $assignments;
 
@@ -215,9 +215,9 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
      * @param  array<string, string>  $assignments
      * @return array<string, string>
      */
-    private function retainUsableAreas(string $countryCode, array $assignments): array
+    private function retainUsableAreas(?string $countryCode, array $assignments): array
     {
-        $countryCode = mb_strtoupper(mb_trim($countryCode));
+        $countryCode = mb_strtoupper(mb_trim((string) $countryCode));
 
         $usable = ModelResolver::areaClass()::query()
             ->whereIn('id', array_values($assignments))

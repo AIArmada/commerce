@@ -9,6 +9,7 @@ use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Database\Factories\AddressFactory;
+use AIArmada\Addressing\Features\AddressLifecycle\Actions\DeleteAddressReferencesAction;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Traits\HasSpatialLocation;
@@ -114,18 +115,8 @@ class Address extends Model
             app(AddressAssignmentWriter::class)->pruneIncompatibleAssignments((string) $address->getKey());
         });
 
-        static::deleting(function (Address $address): void {
-            $address->getConnection()->transaction(function () use ($address): void {
-                foreach ($address->areaAssignments()->get() as $assignment) {
-                    $assignment->delete();
-                }
-
-                foreach ($address->addressableLinks()->get() as $link) {
-                    $link->delete();
-                }
-
-                $address->snapshots()->update(['address_id' => null]);
-            });
+        static::deleting(static function (Address $address): void {
+            app(DeleteAddressReferencesAction::class)->execute((string) $address->getKey());
         });
     }
 
@@ -141,6 +132,11 @@ class Address extends Model
         }
 
         return ['formatted_address' => $formatted, 'formatted_lines' => explode("\n", $formatted)];
+    }
+
+    public function delete(): ?bool
+    {
+        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
     }
 
     protected $fillable = [

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\AddressAreaFactory;
-use AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\Geography\Actions\ClearGeographyReferencesAction;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -66,23 +65,14 @@ class AddressArea extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (AddressArea $area): void {
-            DB::transaction(static function () use ($area): void {
-                ModelResolver::areaAssignmentClass()::query()
-                    ->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)
-                    ->where('address_area_id', $area->getKey())
-                    ->delete();
-                ModelResolver::areaNameClass()::query()->where('address_area_id', $area->getKey())->delete();
-                ModelResolver::areaPostalCodeClass()::query()->where('address_area_id', $area->getKey())->delete();
-                ModelResolver::areaRoleClass()::query()->where('address_area_id', $area->getKey())->delete();
-                ModelResolver::areaStateLinkClass()::query()->where('address_area_id', $area->getKey())->delete();
-                ModelResolver::areaRelationshipClass()::query()
-                    ->where('parent_address_area_id', $area->getKey())
-                    ->orWhere('child_address_area_id', $area->getKey())
-                    ->delete();
-                self::query()->where('parent_id', $area->getKey())->update(['parent_id' => null]);
-            });
+        static::deleting(static function (AddressArea $area): void {
+            app(ClearGeographyReferencesAction::class)->clearArea((string) $area->getKey());
         });
+    }
+
+    public function delete(): ?bool
+    {
+        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
     }
 
     protected $fillable = [

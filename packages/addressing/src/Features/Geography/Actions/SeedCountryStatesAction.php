@@ -6,7 +6,6 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
 use AIArmada\Addressing\Support\ModelResolver;
 use InvalidArgumentException;
 
@@ -38,7 +37,16 @@ final readonly class SeedCountryStatesAction implements CountryStateSeeder
                 }
             }
 
-            GeographyReferenceCleanup::pruneStatesByCodes($persisted, $data->retiredCodes);
+            $retired = array_values(array_unique(array_filter(array_map(
+                static fn (mixed $code): string => mb_trim((string) $code),
+                $data->retiredCodes,
+            ), static fn (string $code): bool => $code !== '')));
+
+            if ($retired !== []) {
+                foreach ($stateClass::query()->where('country_id', $countryId)->whereIn('code', $retired)->lazyById(500) as $state) {
+                    $state->delete();
+                }
+            }
         });
     }
 }

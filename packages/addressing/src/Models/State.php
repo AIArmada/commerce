@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\StateFactory;
+use AIArmada\Addressing\Features\Geography\Actions\ClearGeographyReferencesAction;
 use AIArmada\Addressing\Support\AddressingTableResolver;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,7 +32,7 @@ class State extends Model
     protected static function booted(): void
     {
         static::deleting(static function (State $state): void {
-            GeographyReferenceCleanup::cleanupStateReferences($state);
+            app(ClearGeographyReferencesAction::class)->clearState((string) $state->getKey());
         });
     }
 
@@ -76,7 +76,7 @@ class State extends Model
      */
     public function addressAreaLinks(): HasMany
     {
-        return $this->hasMany(AddressAreaStateLink::class, 'state_id');
+        return $this->hasMany(ModelResolver::areaStateLinkClass(), 'state_id');
     }
 
     protected function casts(): array

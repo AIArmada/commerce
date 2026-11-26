@@ -12,6 +12,8 @@ use AIArmada\Addressing\Features\AddressLifecycle\Actions\CreateAddressSnapshotA
 use AIArmada\Addressing\Features\AddressLifecycle\Actions\SaveAddressAction;
 use AIArmada\Addressing\Features\AddressLifecycle\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Features\AddressLifecycle\Actions\UpdateAddressAttachmentAction;
+use AIArmada\Addressing\Features\AddressLifecycle\Actions\ClearAddressGeographyReferencesAction;
+use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceMaintenance;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(AddressReferenceMaintenance::class, ClearAddressGeographyReferencesAction::class);
         $app->singleton(AddressWriter::class, SaveAddressAction::class);
         $app->singleton(AddressAssignmentWriter::class, SyncAddressAreaAssignmentsAction::class);
         $app->singleton(AddressSnapshotWriter::class, CreateAddressSnapshotAction::class);

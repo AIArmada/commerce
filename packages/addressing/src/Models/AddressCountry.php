@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\AddressCountryFactory;
+use AIArmada\Addressing\Features\Geography\Actions\ClearGeographyReferencesAction;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
-use DomainException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,19 +42,7 @@ class AddressCountry extends Model
     protected static function booted(): void
     {
         static::deleting(static function (AddressCountry $country): void {
-            $countryId = $country->getKey();
-
-            $referenced = ModelResolver::stateClass()::query()->where('country_id', $countryId)->exists()
-                || ModelResolver::cityClass()::query()->where('country_id', $countryId)->exists()
-                || ModelResolver::areaClass()::query()->where('country_id', $countryId)->exists()
-                || ModelResolver::addressClass()::query()->withoutOwnerScope()->where('country_id', $countryId)->exists();
-
-            if ($referenced) {
-                throw new DomainException('Countries with states, cities, areas, or addresses cannot be deleted.');
-            }
-
-            $country->currencies()->detach();
-            $country->timezones()->detach();
+            app(ClearGeographyReferencesAction::class)->clearCountry((string) $country->getKey());
         });
     }
 
