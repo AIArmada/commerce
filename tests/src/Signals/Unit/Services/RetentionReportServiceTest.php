@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Queries\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

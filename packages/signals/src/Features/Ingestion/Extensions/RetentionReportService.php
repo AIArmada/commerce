@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Features\Ingestion\Queries;
+namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
 use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;

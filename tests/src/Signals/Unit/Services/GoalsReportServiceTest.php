@@ -12,7 +12,7 @@ use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Queries\GoalsReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\GoalsReportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

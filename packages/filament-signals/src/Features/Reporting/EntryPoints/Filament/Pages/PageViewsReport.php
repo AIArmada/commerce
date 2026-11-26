@@ -6,7 +6,8 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Ingestion\Queries\PageViewReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -89,7 +90,7 @@ final class PageViewsReport extends ReportPage implements HasTable
                     ->query(function (Builder $query, array $data): Builder {
                         $segmentId = is_string($data['value'] ?? null) ? $data['value'] : null;
 
-                        return app(SegmentOptions::class)->applyToEventQuery($query, $segmentId);
+                        return app(SignalSegmentReportFilter::class)->applyToEventQuery($query, $segmentId);
                     }),
                 Filter::make('occurred_at')
                     ->label('Date Range')

@@ -12,7 +12,7 @@ use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Queries\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

@@ -9,6 +9,7 @@ use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Support\DuplicateKeyViolation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -95,7 +96,7 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
 
                         break;
                     } catch (QueryException $exception) {
-                        if (! DuplicateKeyViolation::is($exception) || ! (clone $query)->where('slug', $slug)->exists()) {
+                        if (! DuplicateKeyViolation::is($exception) || ! $this->slugExistsAfterConflict($query, $slug)) {
                             throw $exception;
                         }
                     }
@@ -119,6 +120,12 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
             fn (): bool => $this->lockRecord($id)->delete() === true,
             attempts: 3,
         );
+    }
+
+    /** @param Builder<SignalInteractionRule> $query */
+    private function slugExistsAfterConflict(Builder $query, string $slug): bool
+    {
+        return (clone $query)->where('slug', $slug)->exists();
     }
 
     private function lockRecord(string $id): SignalInteractionRule

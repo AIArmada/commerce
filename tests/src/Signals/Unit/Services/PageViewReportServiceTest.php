@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Queries\PageViewReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

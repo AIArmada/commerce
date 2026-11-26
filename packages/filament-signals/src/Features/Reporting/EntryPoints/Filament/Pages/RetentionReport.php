@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
-use AIArmada\Signals\Features\Ingestion\Queries\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;

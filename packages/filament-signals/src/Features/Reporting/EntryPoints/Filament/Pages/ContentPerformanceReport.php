@@ -8,7 +8,7 @@ use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
-use AIArmada\Signals\Features\Ingestion\Queries\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;

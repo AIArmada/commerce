@@ -88,9 +88,6 @@ final class SignalsTrackerRenderer implements TrackerMarkup
         return $this->scriptTag($attributes);
     }
 
-    /**
-     * @return list<array<string, mixed>>
-     */
     private function signalUrl(string $suffix): string
     {
         $prefix = '/' . mb_trim((string) config('signals.http.prefix', 'api/signals'), '/');

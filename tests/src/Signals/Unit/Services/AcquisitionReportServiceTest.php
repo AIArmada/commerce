@@ -12,7 +12,7 @@ use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Ingestion\Queries\AcquisitionReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\AcquisitionReportService;
 use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use Carbon\CarbonImmutable;
 

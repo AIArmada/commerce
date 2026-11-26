@@ -30,15 +30,15 @@
   },
   "extensions": {
     "signals.reports": [
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\AcquisitionReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\ConversionFunnelReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\RetentionReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\JourneyReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\PageViewReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\ContentPerformanceReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\DevicesReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\GoalsReportService",
-      "AIArmada\\Signals\\Features\\Ingestion\\Queries\\LiveActivityReportService"
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\AcquisitionReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\ConversionFunnelReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\RetentionReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\JourneyReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\PageViewReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\ContentPerformanceReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\DevicesReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\GoalsReportService",
+      "AIArmada\\Signals\\Features\\Ingestion\\Extensions\\LiveActivityReportService"
     ]
   }
 }
