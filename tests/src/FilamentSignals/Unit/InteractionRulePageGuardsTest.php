@@ -11,7 +11,9 @@ use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Signa
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\CreateSignalInteractionRule;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\EditSignalInteractionRule;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\ListSignalInteractionRules;
+use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Panel;
 use Filament\PanelRegistry;
 use Illuminate\Database\QueryException;
@@ -90,15 +92,16 @@ it('derives a fresh slug when the base slug is taken', function (): void {
         'is_active' => true,
     ]);
 
-    $method = new ReflectionMethod(ListSignalInteractionRules::class, 'createRuleWithUniqueSlug');
-    $rule = $method->invoke(app(ListSignalInteractionRules::class), [
-        'name' => 'Track signup',
-        'trigger_type' => 'click',
-        'event_name' => 'signup',
-        'sort_order' => 2,
-        'is_active' => false,
-    ], 'track-signup');
+    $property = TrackedProperty::query()->create([
+        'name' => 'Website',
+        'slug' => 'website',
+        'type' => 'website',
+    ]);
 
-    expect($rule)->toBeInstanceOf(SignalInteractionRule::class)
-        ->and($rule->slug)->toBe('track-signup-2');
+    $created = app(InteractionRuleAdministration::class)->createScanned(
+        (string) $property->getKey(), 'click', 'signup', null, false, [['name' => 'Track signup']],
+    );
+
+    expect($created)->toBe(1)
+        ->and(SignalInteractionRule::query()->where('slug', 'track-signup-2')->exists())->toBeTrue();
 });

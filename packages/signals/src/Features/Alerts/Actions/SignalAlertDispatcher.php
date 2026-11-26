@@ -28,7 +28,7 @@ final readonly class SignalAlertDispatcher
 
             // Never dispatch an evaluation calculated against a concurrently edited definition.
             foreach (['tracked_property_id', 'metric_key', 'operator', 'threshold', 'timeframe_minutes', 'event_filters'] as $field) {
-                if ($current->getRawOriginal($field) !== $rule->getRawOriginal($field)) {
+                if ($current->getAttribute($field) !== $rule->getAttribute($field)) {
                     return null;
                 }
             }

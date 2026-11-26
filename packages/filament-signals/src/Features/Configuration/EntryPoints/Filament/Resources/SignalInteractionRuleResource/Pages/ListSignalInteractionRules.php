@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use AIArmada\FilamentSignals\Platform\SignalsModelReferenceGuard;
+use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
@@ -22,9 +23,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Throwable;
 
@@ -118,36 +116,14 @@ final class ListSignalInteractionRules extends ListRecords
                         return;
                     }
                     $isActive = (bool) ($data['activate_created_rules'] ?? false);
-                    $existingSortOrder = (int) (SignalInteractionRule::query()->forOwner()->max('sort_order') ?? 0);
-
-                    $created = DB::transaction(function () use ($selectedIndexes, $candidates, $trackedPropertyId, $triggerType, $eventName, $eventCategory, $isActive, $existingSortOrder): int {
-                        $created = 0;
-
-                        foreach ($selectedIndexes as $index => $candidateIndex) {
-                            $candidate = $candidates[$candidateIndex];
-                            $slugBase = Str::slug((string) $candidate['name']);
-                            $candidateSettings = is_array($candidate['settings'] ?? null) ? $candidate['settings'] : [];
-                            $candidateSettings['scanner_confidence'] = $candidate['confidence'] ?? null;
-                            $candidateSettings['scanner_confidence_note'] = $candidate['confidence_note'] ?? null;
-
-                            $this->createRuleWithUniqueSlug([
-                                'tracked_property_id' => $trackedPropertyId,
-                                'name' => (string) $candidate['name'],
-                                'trigger_type' => $triggerType,
-                                'event_name' => $eventName,
-                                'event_category' => $eventCategory,
-                                'selector' => is_string($candidate['selector'] ?? null) ? $candidate['selector'] : null,
-                                'page_pattern' => is_string($candidate['page_pattern'] ?? null) ? $candidate['page_pattern'] : null,
-                                'settings' => $candidateSettings,
-                                'sort_order' => $existingSortOrder + $index + 1,
-                                'is_active' => $isActive,
-                            ], $slugBase !== '' ? $slugBase : 'interaction-rule');
-
-                            $created++;
-                        }
-
-                        return $created;
-                    });
+                    $created = app(InteractionRuleAdministration::class)->createScanned(
+                        $trackedPropertyId,
+                        $triggerType,
+                        $eventName,
+                        $eventCategory,
+                        $isActive,
+                        array_values(array_intersect_key($candidates, array_flip($selectedIndexes))),
+                    );
 
                     Notification::make()
                         ->title('Interaction rules created from preview')
@@ -339,32 +315,14 @@ final class ListSignalInteractionRules extends ListRecords
                     $eventCategory = mb_trim((string) ($data['event_category'] ?? ''));
                     $triggerType = (string) $data['trigger_type'];
                     $isActive = (bool) ($data['activate_created_rules'] ?? false);
-                    $existingSortOrder = (int) (SignalInteractionRule::query()->forOwner()->max('sort_order') ?? 0);
-
-                    $created = DB::transaction(function () use ($candidates, $trackedPropertyId, $triggerType, $eventName, $eventCategory, $isActive, $existingSortOrder): int {
-                        $created = 0;
-
-                        foreach ($candidates as $index => $candidate) {
-                            $slugBase = Str::slug((string) $candidate['name']);
-
-                            $this->createRuleWithUniqueSlug([
-                                'tracked_property_id' => $trackedPropertyId,
-                                'name' => (string) $candidate['name'],
-                                'trigger_type' => $triggerType,
-                                'event_name' => $eventName,
-                                'event_category' => $eventCategory !== '' ? $eventCategory : null,
-                                'selector' => $candidate['selector'],
-                                'page_pattern' => $candidate['page_pattern'],
-                                'settings' => is_array($candidate['settings']) ? $candidate['settings'] : null,
-                                'sort_order' => $existingSortOrder + $index + 1,
-                                'is_active' => $isActive,
-                            ], $slugBase !== '' ? $slugBase : 'interaction-rule');
-
-                            $created++;
-                        }
-
-                        return $created;
-                    });
+                    $created = app(InteractionRuleAdministration::class)->createScanned(
+                        $trackedPropertyId,
+                        $triggerType,
+                        $eventName,
+                        $eventCategory !== '' ? $eventCategory : null,
+                        $isActive,
+                        $candidates,
+                    );
 
                     Notification::make()
                         ->title('Interaction rules created')
@@ -603,46 +561,5 @@ final class ListSignalInteractionRules extends ListRecords
         }
 
         return $descriptions;
-    }
-
-    private function uniqueSlug(string $base): string
-    {
-        $slug = $base;
-        $suffix = 2;
-
-        while (SignalInteractionRule::query()->forOwner()->where('slug', $slug)->exists()) {
-            $slug = $base . '-' . $suffix;
-            $suffix++;
-        }
-
-        return $slug;
-    }
-
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    private function createRuleWithUniqueSlug(array $attributes, string $slugBase): SignalInteractionRule
-    {
-        $attempts = 0;
-
-        while (true) {
-            $attempts++;
-
-            try {
-                /** @var SignalInteractionRule $rule */
-                $rule = SignalInteractionRule::query()->create([
-                    ...$attributes,
-                    'slug' => $this->uniqueSlug($slugBase),
-                ]);
-
-                return $rule;
-            } catch (QueryException $exception) {
-                // A concurrent scan claimed the slug between the exists check
-                // and the insert: pick the next candidate and retry.
-                if ($attempts >= 5 || $exception->getCode() !== '23000') {
-                    throw $exception;
-                }
-            }
-        }
     }
 }
