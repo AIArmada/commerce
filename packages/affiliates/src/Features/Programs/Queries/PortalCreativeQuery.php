@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Programs\Api\PortalCreativeReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,7 +44,10 @@ final readonly class PortalCreativeQuery implements PortalCreativeReader
 
         $programCreatives = AffiliateProgramCreative::query()
             ->whereIn('program_id', $activeMemberships)
-            ->whereHas('program')
+            ->whereHas('program', static function (Builder $query): void {
+                /** @var Builder<AffiliateProgram> $query */
+                $query->active();
+            })
             ->with(['media', 'program'])
             ->orderByDesc('created_at')
             ->orderBy('id')

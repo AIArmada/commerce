@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Queries\ProgramEligibilityQuery;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -22,7 +23,7 @@ use RuntimeException;
 
 final readonly class ManageProgramEnrollment implements ProgramEnrollment
 {
-    public function __construct(private ProgramMembershipQuery $memberships, private Dispatcher $events) {}
+    public function __construct(private ProgramMembershipQuery $memberships, private ProgramEligibilityQuery $eligibility, private Dispatcher $events) {}
 
     public function join(string $affiliateId, string $programId): MembershipRecord
     {
@@ -41,7 +42,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
                 return $this->memberships->project($existing);
             }
 
-            if (! $program->canJoin($affiliate)) {
+            if ($this->eligibility->eligibleIds($affiliate, [$program]) === []) {
                 $existing = $query->first();
 
                 if ($existing !== null) {
@@ -99,9 +100,16 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
 
     private function resolveProgram(string $programId): AffiliateProgram
     {
-        return (bool) config('affiliates.owner.enabled', false)
-            ? OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $programId, includeGlobal: true)
-            : AffiliateProgram::query()->findOrFail($programId);
+        if (! config('affiliates.owner.enabled', false)) {
+            return AffiliateProgram::query()->lockForUpdate()->findOrFail($programId);
+        }
+
+        $program = OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $programId, includeGlobal: true);
+
+        return AffiliateProgram::query()->withoutOwnerScope()
+            ->where('owner_type', $program->owner_type)
+            ->where('owner_id', $program->owner_id)
+            ->lockForUpdate()->findOrFail($programId);
     }
 
     private function assertSharedConnection(Affiliate $affiliate, AffiliateProgram $program): void

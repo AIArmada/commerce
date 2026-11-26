@@ -590,6 +590,12 @@ it('PortalPrograms returns joined programs and creative assets for the current a
     $membership->update(['expires_at' => now()->addDay()]);
     expect((new PortalCreatives)->getViewData()['assets'])->toHaveCount(1);
 
+    $program->update(['ends_at' => now()->subDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
+
+    $program->update(['ends_at' => now()->addDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toHaveCount(1);
+
     $membership->update(['status' => MembershipStatus::Pending]);
     expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
 });

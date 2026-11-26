@@ -25,6 +25,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\ProgramTierManagement::class, Actions\UpgradeProgramTier::class);
         $app->bind(Api\TierQualificationReader::class, Queries\ProgramTierQualificationQuery::class);
         $app->bind(Api\ProgramPortalReader::class, Queries\ProgramPortalQuery::class);
+        $app->bind(Api\ProgramEligibilityReader::class, Queries\ProgramEligibilityQuery::class);
         $app->bind(Api\PortalCreativeReader::class, Queries\PortalCreativeQuery::class);
         $app->bind(Api\CreativeAdministration::class, Actions\AdministerCreative::class);
         $app->bind(CreativeCleanupQueue::class, Actions\ProcessCreativeAssetCleanup::class);

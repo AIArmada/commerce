@@ -7,11 +7,6 @@ namespace AIArmada\Affiliates\Features\Programs\Models;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\AffiliateStatus;
-use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -127,25 +122,6 @@ class AffiliateProgram extends Model implements Auditable
         return $this->isActive() && $this->visibility === ProgramVisibility::Public;
     }
 
-    public function canJoin(Affiliate $affiliate): bool
-    {
-        if (! $this->isOpen()) {
-            return false;
-        }
-
-        // Check if already a member
-        if (app(ProgramMembershipReader::class)->find((string) $affiliate->getKey(), (string) $this->getKey()) !== null) {
-            return false;
-        }
-
-        // Check eligibility rules
-        if (! empty($this->eligibility_rules)) {
-            return $this->evaluateEligibility($affiliate);
-        }
-
-        return true;
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ProgramStatus::Active)
@@ -208,44 +184,6 @@ class AffiliateProgram extends Model implements Auditable
             }
         });
 
-    }
-
-    private function evaluateEligibility(Affiliate $affiliate): bool
-    {
-        $rules = $this->eligibility_rules ?? [];
-
-        $statistics = app(ConversionStatisticsReader::class);
-        $affiliateId = (string) $affiliate->getKey();
-        $connectionIdentity = spl_object_id($affiliate->getConnection());
-
-        if (isset($rules['min_conversions'])
-            && $statistics->count([$affiliateId], $connectionIdentity) < $rules['min_conversions']) {
-            return false;
-        }
-
-        if (isset($rules['min_revenue'])) {
-            $reference = RevenueVolume::referenceFor($affiliate);
-            $byCurrency = [];
-
-            foreach ($statistics->totals($affiliateId, $reference, $connectionIdentity) as $row) {
-                $byCurrency[$row->currency] = $row->revenueMinor;
-            }
-
-            $currency = is_string($rules['min_revenue_currency'] ?? null) && mb_trim($rules['min_revenue_currency']) !== ''
-                ? mb_strtoupper(mb_trim($rules['min_revenue_currency']))
-                : mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
-            $revenue = RevenueVolume::measurableIn($byCurrency, $currency);
-
-            if ($revenue < $rules['min_revenue']) {
-                return false;
-            }
-        }
-
-        if (isset($rules['required_status']) && AffiliateStatus::normalize($affiliate->status) !== $rules['required_status']) {
-            return false;
-        }
-
-        return true;
     }
 
     protected function getActivityLogName(): string

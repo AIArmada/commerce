@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
@@ -290,7 +291,7 @@ describe('AffiliateProgram Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($program->canJoin($affiliate))->toBeTrue();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeTrue();
     });
 
     it('canJoin returns false when already a member', function (): void {
@@ -320,7 +321,7 @@ describe('AffiliateProgram Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        expect($program->canJoin($affiliate))->toBeFalse();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeFalse();
     });
 
     it('canJoin evaluates min_conversions eligibility rule', function (): void {
@@ -345,7 +346,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         // Affiliate has no conversions, should not be able to join
-        expect($program->canJoin($affiliate))->toBeFalse();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeFalse();
     });
 
     it('canJoin evaluates min_revenue using neutral value', function (): void {
@@ -381,7 +382,7 @@ describe('AffiliateProgram Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($program->canJoin($affiliate))->toBeTrue();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeTrue();
     });
 
     it('canJoin evaluates required_status eligibility rule', function (): void {
@@ -405,7 +406,7 @@ describe('AffiliateProgram Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($program->canJoin($affiliate))->toBeFalse();
+        expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeFalse();
     });
 
     it('getDefaultTier returns lowest level tier', function (): void {

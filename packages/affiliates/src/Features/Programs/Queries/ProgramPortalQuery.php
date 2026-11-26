@@ -13,6 +13,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 
 final readonly class ProgramPortalQuery implements ProgramPortalReader
 {
+    public function __construct(private ProgramEligibilityQuery $eligibility) {}
+
     public function programExists(string $programId): bool
     {
         return AffiliateProgram::query()->forOwner(includeGlobal: false)->whereKey($programId)->exists();
@@ -20,7 +22,7 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
 
     public function programs(string $affiliateId): array
     {
-        $affiliate = Affiliate::query()->findOrFail($affiliateId);
+        $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
         $programs = AffiliateProgram::query()->forOwner(includeGlobal: false)->active()->public()->orderBy('id')->get();
 
         $memberships = AffiliateProgramMembership::query()
@@ -29,10 +31,15 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
             ->get()
             ->keyBy('program_id');
 
+        $eligible = array_fill_keys($this->eligibility->eligibleIds(
+            $affiliate,
+            $programs->filter(fn (AffiliateProgram $program): bool => ! $memberships->has($program->id)),
+        ), true);
+
         $activeIds = $programs->filter(fn (AffiliateProgram $program): bool => $memberships->get($program->id)?->isActive() ?? false)->modelKeys();
         $creatives = AffiliateProgramCreative::query()->whereIn('program_id', $activeIds)->with('media')->orderBy('id')->get()->groupBy('program_id');
 
-        return $programs->map(function (AffiliateProgram $program) use ($affiliate, $memberships, $creatives): PortalProgramRecord {
+        return $programs->map(function (AffiliateProgram $program) use ($eligible, $memberships, $creatives): PortalProgramRecord {
             $membership = $memberships->get($program->id);
             $active = $membership?->isActive() ?? false;
 
@@ -46,7 +53,7 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
                 membershipStatus: $membership?->status->value,
                 membershipStatusLabel: $membership?->status->label(),
                 activeMembership: $active,
-                canJoin: $membership === null && $program->canJoin($affiliate),
+                canJoin: isset($eligible[$program->id]),
                 creatives: $active
                     ? $creatives->get($program->id, collect())->map(fn (AffiliateProgramCreative $creative): array => [
                         'id' => (string) $creative->getKey(),

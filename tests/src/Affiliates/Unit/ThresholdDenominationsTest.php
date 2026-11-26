@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
@@ -164,7 +165,7 @@ test('program eligibility honors a denominated revenue rule', function (): void 
 
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-004');
 
-    expect($program->canJoin($affiliate))->toBeTrue();
+    expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeTrue();
 });
 
 test('top performer threshold compares in its declared currency', function (): void {
