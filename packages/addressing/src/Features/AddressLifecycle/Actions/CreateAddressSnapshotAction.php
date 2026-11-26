@@ -6,70 +6,86 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 
 final readonly class CreateAddressSnapshotAction implements AddressSnapshotWriter
 {
     public function execute(
-        Model $snapshotable,
-        Address | AddressData $address,
+        string $snapshotableType,
+        string | int $snapshotableId,
+        string | AddressData $address,
         ?string $reason = null,
         ?string $label = null,
-    ): AddressSnapshot {
+    ): string {
         $reason = $this->normalizeReason($reason);
-
-        AddressOwnerGuard::assertAddressableIsWritable(
-            $snapshotable->getMorphClass(),
-            $snapshotable->getKey(),
-        );
-
-        if ($address instanceof Address) {
-            AddressOwnerGuard::assertAddressIsWritable($address->getKey());
-            $address = ModelResolver::addressClass()::query()->whereKey($address->getKey())->firstOrFail();
-            $data = AddressData::from($address->attributesToArray());
-            $addressId = $address->id;
-        } else {
-            $data = AddressData::from($address->toArray());
-            $addressId = null;
-        }
-
         $snapshotClass = ModelResolver::snapshotClass();
 
-        return $snapshotClass::create([
-            'address_id' => $addressId,
-            'snapshotable_type' => $snapshotable->getMorphClass(),
-            'snapshotable_id' => $snapshotable->getKey(),
-            'reason' => $reason,
-            'label' => $label ?? $data->label ?? null,
-            'line1' => $data->line1,
-            'line2' => $data->line2,
-            'line3' => $data->line3,
-            'city' => $data->city,
-            'state' => $data->state,
-            'postcode' => $data->postcode,
-            'country' => $data->country,
-            'country_code' => $data->countryCode,
-            'formatted_address' => $data->formatted,
-            'formatted_lines' => $data->formatted !== null && mb_trim($data->formatted) !== ''
-                ? explode("\n", $data->formatted)
-                : null,
-            'components' => $data->components !== [] ? $data->components : null,
-            'latitude' => $data->latitude,
-            'longitude' => $data->longitude,
-            'google_place_id' => $data->googlePlaceId,
-            'google_feature_id' => $data->googleFeatureId,
-            'google_cid' => $data->googleCid,
-            'google_entity_id' => $data->googleEntityId,
-            'metadata' => $data->metadata !== [] ? $data->metadata : null,
-            'google_maps_url' => $data->googleMapsUrl,
-            'waze_url' => $data->wazeUrl,
-            'navigation_links' => $data->navigationLinks !== [] ? $data->navigationLinks : null,
-        ]);
+        return (new $snapshotClass)->getConnection()->transaction(function () use ($snapshotClass, $snapshotableType, $snapshotableId, $address, $reason, $label): string {
+            AddressOwnerGuard::assertAddressableIsWritable($snapshotableType, $snapshotableId);
+
+            $snapshotableClass = Relation::getMorphedModel($snapshotableType) ?? $snapshotableType;
+
+            if (! is_a($snapshotableClass, Model::class, true)) {
+                throw new InvalidArgumentException('The snapshotable type must identify an Eloquent model.');
+            }
+
+            $snapshotableClass::query()->whereKey($snapshotableId)->lockForUpdate()->firstOrFail();
+
+            if (is_string($address)) {
+                AddressOwnerGuard::assertAddressIsWritable($address);
+                $addressClass = ModelResolver::addressClass();
+                $query = $addressClass::query();
+
+                if (! $addressClass::ownerScopeConfig()->enabled) {
+                    $query->withoutGlobalScope(OwnerScope::class);
+                }
+
+                $record = $query->whereKey($address)->lockForUpdate()->firstOrFail();
+                $data = AddressData::from($record->attributesToArray());
+                $addressId = (string) $record->getKey();
+            } else {
+                $data = AddressData::from($address->toArray());
+                $addressId = null;
+            }
+
+            $snapshot = $snapshotClass::create([
+                'address_id' => $addressId,
+                'snapshotable_type' => $snapshotableType,
+                'snapshotable_id' => $snapshotableId,
+                'reason' => $reason,
+                'label' => $label ?? $data->label ?? null,
+                'line1' => $data->line1,
+                'line2' => $data->line2,
+                'line3' => $data->line3,
+                'city' => $data->city,
+                'state' => $data->state,
+                'postcode' => $data->postcode,
+                'country' => $data->country,
+                'country_code' => $data->countryCode,
+                'formatted_address' => $data->formatted,
+                'formatted_lines' => $data->formatted !== null && mb_trim($data->formatted) !== ''
+                    ? explode("\n", $data->formatted)
+                    : null,
+                'components' => $data->components !== [] ? $data->components : null,
+                'latitude' => $data->latitude,
+                'longitude' => $data->longitude,
+                'google_place_id' => $data->googlePlaceId,
+                'google_feature_id' => $data->googleFeatureId,
+                'google_cid' => $data->googleCid,
+                'google_entity_id' => $data->googleEntityId,
+                'metadata' => $data->metadata !== [] ? $data->metadata : null,
+                'google_maps_url' => $data->googleMapsUrl,
+                'waze_url' => $data->wazeUrl,
+                'navigation_links' => $data->navigationLinks !== [] ? $data->navigationLinks : null,
+            ]);
+
+            return (string) $snapshot->getKey();
+        });
     }
 
     private function normalizeReason(?string $reason): ?string

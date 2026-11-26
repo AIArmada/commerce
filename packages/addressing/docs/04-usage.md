@@ -1024,9 +1024,10 @@ Pass a relation name when the addressable relation is not named `addresses`.
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 
-$snapshot = app(AddressSnapshotWriter::class)->execute(
-    snapshotable: $order,
-    address: $shippingAddress,
+$snapshotId = app(AddressSnapshotWriter::class)->execute(
+    snapshotableType: $order->getMorphClass(),
+    snapshotableId: $order->getKey(),
+    address: (string) $shippingAddress->getKey(),
     reason: 'order_placed',
 );
 

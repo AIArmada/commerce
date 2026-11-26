@@ -181,7 +181,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
             }
 
             $this->demotePrimary($addressableType, $addressableId, $type);
-            $pivotClass::query()->whereKey($pivotId)->update(['is_primary' => true]);
+            $pivotClass::query()->whereKey($pivot->getKey())->update(['is_primary' => true]);
 
             return (string) $pivot->getKey();
         });

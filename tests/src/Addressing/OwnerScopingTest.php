@@ -70,11 +70,12 @@ it('isolates addresses, pivots, and snapshots across owners', function (): void 
         ->toBe(0);
 
     $snapshot = OwnerContext::withOwner($ownerA, function () use ($hostA): AddressSnapshot {
-        return app(AddressSnapshotWriter::class)->execute(
-            snapshotable: $hostA,
+        return AddressSnapshot::query()->findOrFail(app(AddressSnapshotWriter::class)->execute(
+            snapshotableType: $hostA->getMorphClass(),
+            snapshotableId: $hostA->getKey(),
             address: AddressData::from(['line1' => 'Owner A snapshot', 'countryCode' => 'MY']),
             reason: 'test',
-        );
+        ));
     });
 
     expect(OwnerContext::withOwner($ownerA, fn (): bool => AddressSnapshot::query()->whereKey($snapshot->id)->exists()))

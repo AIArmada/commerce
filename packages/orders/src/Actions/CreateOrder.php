@@ -489,8 +489,9 @@ final class CreateOrder
 
         if (config('orders.address_snapshots.enabled', false)) {
             app(AddressSnapshotWriter::class)->execute(
-                snapshotable: $order,
-                address: $address,
+                snapshotableType: $order->getMorphClass(),
+                snapshotableId: $order->getKey(),
+                address: (string) $address->getKey(),
                 reason: 'order_' . $type,
             );
         }
