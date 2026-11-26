@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models\Concerns;
 
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -13,6 +14,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use LogicException;
 
 trait ScopesByAffiliateOwner
 {
@@ -47,13 +49,17 @@ trait ScopesByAffiliateOwner
     protected static function visibleAffiliateIds(Model $model): QueryBuilder
     {
         $connection = $model->getConnection();
-        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
+        $reference = app(MerchantIdentity::class)->ownerTable();
+
+        if ($reference->connectionIdentity !== spl_object_id($connection)) {
+            throw new LogicException('Affiliate ownership requires a shared database connection.');
+        }
         $config = OwnerScopeConfigFactory::fromConfig('affiliates.owner');
         $owner = OwnerContext::resolveConfigured($config);
         OwnerContext::assertResolvedOrExplicitGlobal($owner);
 
         return OwnerQuery::applyToQueryBuilder(
-            $connection->table((string) config('affiliates.database.tables.affiliates', 'affiliate_affiliates'))->select('id'),
+            $connection->table($reference->table)->select($reference->keyColumn),
             $owner,
             ! OwnerScopeOverride::suppressIncludeGlobal() && $config->includeGlobal,
             $config->ownerTypeColumn,

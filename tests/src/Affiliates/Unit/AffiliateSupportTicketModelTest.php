@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('AffiliateSupportTicket Model', function (): void {
@@ -36,7 +36,7 @@ describe('AffiliateSupportTicket Model', function (): void {
             ->and($ticket->status)->toBe('open');
     });
 
-    it('belongs to an affiliate', function (): void {
+    it('resolves the affiliate through its identity directory', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -54,8 +54,10 @@ describe('AffiliateSupportTicket Model', function (): void {
             'status' => 'open',
         ]);
 
-        expect($ticket->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($ticket->affiliate->id)->toBe($affiliate->id);
+        $identity = app(AffiliateDirectory::class)->findById($ticket->affiliate_id);
+
+        expect($identity?->id)->toBe($affiliate->id)
+            ->and(method_exists($ticket, 'affiliate'))->toBeFalse();
     });
 
     it('has many messages', function (): void {

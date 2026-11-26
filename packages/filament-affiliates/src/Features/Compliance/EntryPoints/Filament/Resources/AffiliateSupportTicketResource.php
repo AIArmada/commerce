@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages\CreateAffiliateSupportTicket;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages\EditAffiliateSupportTicket;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages\ListAffiliateSupportTickets;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages\ViewAffiliateSupportTicket;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Compliance\Queries\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -76,17 +76,7 @@ final class AffiliateSupportTicketResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<AffiliateSupportTicket> $query */
-        $query = parent::getEloquentQuery()->with(['affiliate']);
-
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $query;
-
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $modelQuery;
-        }
-
-        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
+        return AffiliateReferenceProjection::apply(parent::getEloquentQuery());
     }
 
     public static function form(Schema $schema): Schema
@@ -96,8 +86,9 @@ final class AffiliateSupportTicketResource extends Resource
                 ->schema([
                     Select::make('affiliate_id')
                         ->label('Affiliate')
-                        ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
                         ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => AffiliateReferenceProjection::options($search))
+                        ->getOptionLabelUsing(fn (string $value): ?string => AffiliateReferenceProjection::label($value))
                         ->required(),
 
                     TextInput::make('subject')
@@ -141,10 +132,10 @@ final class AffiliateSupportTicketResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('affiliate.name')
+                TextColumn::make('affiliate_name')
                     ->label('Affiliate')
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_name', $direction)),
 
                 TextColumn::make('subject')
                     ->searchable()
@@ -198,7 +189,7 @@ final class AffiliateSupportTicketResource extends Resource
         return $schema->schema([
             Section::make('Ticket')
                 ->schema([
-                    TextEntry::make('affiliate.name')->label('Affiliate'),
+                    TextEntry::make('affiliate_name')->label('Affiliate'),
                     TextEntry::make('subject'),
                     TextEntry::make('category')->badge(),
                     TextEntry::make('priority')->badge(),

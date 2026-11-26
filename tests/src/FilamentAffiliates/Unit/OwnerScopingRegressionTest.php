@@ -7,6 +7,8 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
@@ -15,6 +17,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Features\Compliance\Queries\AffiliateReferenceProjection;
 use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
@@ -184,5 +187,60 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
         ]);
 
         $approve?->call(['record' => $signalA]);
+    });
+});
+
+it('projects compliance names and searches only strict current-owner records', function (): void {
+    config()->set('affiliates.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $create = function (string $name): Affiliate {
+        $affiliate = Affiliate::create([
+            'code' => 'COMPLIANCE-' . Str::uuid(),
+            'name' => $name,
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        AffiliateSupportTicket::create([
+            'affiliate_id' => $affiliate->id,
+            'subject' => 'Test support',
+            'category' => 'general',
+            'priority' => 'medium',
+            'status' => 'open',
+        ]);
+
+        AffiliateTaxDocument::create([
+            'affiliate_id' => $affiliate->id,
+            'document_type' => '1099',
+            'tax_year' => 2025,
+            'status' => 'pending',
+            'total_amount_minor' => 100,
+            'currency' => 'USD',
+        ]);
+
+        return $affiliate;
+    };
+
+    $owned = OwnerContext::withOwner($owner, fn (): Affiliate => $create('Owned Compliance'));
+    $foreign = OwnerContext::withOwner($other, fn (): Affiliate => $create('Foreign Compliance'));
+    $global = OwnerContext::withOwner(null, fn (): Affiliate => $create('Global Compliance'));
+
+    OwnerContext::withOwner($owner, function () use ($owned, $foreign, $global): void {
+        foreach ([AffiliateSupportTicketResource::class, AffiliateTaxDocumentResource::class] as $resource) {
+            $query = $resource::getEloquentQuery();
+
+            expect((clone $query)->get()->pluck('affiliate_name')->all())->toBe(['Owned Compliance'])
+                ->and(AffiliateReferenceProjection::search(clone $query, 'Foreign')->exists())->toBeFalse()
+                ->and(AffiliateReferenceProjection::search(clone $query, 'Owned')->count())->toBe(1);
+        }
+
+        expect(AffiliateReferenceProjection::options('Compliance'))->toBe([$owned->id => 'Owned Compliance'])
+            ->and(AffiliateReferenceProjection::label($owned->id))->toBe('Owned Compliance')
+            ->and(AffiliateReferenceProjection::label($foreign->id))->toBeNull()
+            ->and(AffiliateReferenceProjection::label($global->id))->toBeNull();
     });
 });

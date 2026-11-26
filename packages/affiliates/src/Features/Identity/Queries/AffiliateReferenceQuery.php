@@ -60,7 +60,7 @@ final readonly class AffiliateReferenceQuery implements AffiliateReferenceReader
     /** @return array<string, string> */
     public function options(string $search = '', int $limit = 50): array
     {
-        $query = Affiliate::query()->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false));
+        $query = Affiliate::query()->forOwner(includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('affiliates.owner.include_global', false));
         $search = mb_trim($search);
 
         if ($search !== '') {
@@ -82,7 +82,7 @@ final readonly class AffiliateReferenceQuery implements AffiliateReferenceReader
             return null;
         }
 
-        $name = Affiliate::query()->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false))->whereKey($id)->value('name');
+        $name = Affiliate::query()->forOwner(includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('affiliates.owner.include_global', false))->whereKey($id)->value('name');
 
         return is_string($name) ? $name : null;
     }

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -54,25 +53,10 @@ final class CreateAffiliateSupportTicket extends CreateRecord
 
     private function resolveOwnedAffiliateId(string $affiliateId): string
     {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            $affiliate = Affiliate::query()->find($affiliateId);
-
-            if (! $affiliate instanceof Affiliate) {
-                throw ValidationException::withMessages([
-                    'data.affiliate_id' => 'The selected affiliate is invalid.',
-                ]);
-            }
-
-            return (string) $affiliate->getKey();
-        }
-
         try {
-            return (string) OwnerWriteGuard::findOrFailForOwner(
-                Affiliate::class,
-                $affiliateId,
-                includeGlobal: (bool) config('affiliates.owner.include_global', false),
-                message: 'The selected affiliate is not accessible in the current owner scope.',
-            )->getKey();
+            app(AffiliateAccessGuard::class)->assertCanWrite($affiliateId, spl_object_id((new AffiliateSupportTicket)->getConnection()));
+
+            return $affiliateId;
         } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
             throw ValidationException::withMessages([
                 'data.affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',

@@ -6,10 +6,10 @@ namespace AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\R
 
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource\Pages\ListAffiliateTaxDocuments;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource\Pages\ViewAffiliateTaxDocument;
+use AIArmada\FilamentAffiliates\Features\Compliance\Queries\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -70,17 +70,7 @@ final class AffiliateTaxDocumentResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<AffiliateTaxDocument> $query */
-        $query = parent::getEloquentQuery()->with(['affiliate']);
-
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $query;
-
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $modelQuery;
-        }
-
-        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
+        return AffiliateReferenceProjection::apply(parent::getEloquentQuery());
     }
 
     public static function form(Schema $schema): Schema
@@ -92,10 +82,10 @@ final class AffiliateTaxDocumentResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('affiliate.name')
+                TextColumn::make('affiliate_name')
                     ->label('Affiliate')
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_name', $direction)),
 
                 TextColumn::make('document_type')
                     ->badge(),
@@ -146,7 +136,7 @@ final class AffiliateTaxDocumentResource extends Resource
         return $schema->schema([
             Section::make('Tax Document')
                 ->schema([
-                    TextEntry::make('affiliate.name')->label('Affiliate'),
+                    TextEntry::make('affiliate_name')->label('Affiliate'),
                     TextEntry::make('document_type'),
                     TextEntry::make('tax_year')->numeric(),
                     TextEntry::make('status')->badge(),

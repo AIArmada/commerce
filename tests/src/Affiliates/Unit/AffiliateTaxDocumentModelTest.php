@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentStatus;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateTaxDocument Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -37,7 +37,7 @@ describe('AffiliateTaxDocument Model', function (): void {
             ->and($doc->total_amount_minor)->toBe(500000);
     });
 
-    it('belongs to an affiliate', function (): void {
+    it('resolves the affiliate through its identity directory', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -56,8 +56,10 @@ describe('AffiliateTaxDocument Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($doc->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($doc->affiliate->id)->toBe($affiliate->id);
+        $identity = app(AffiliateDirectory::class)->findById($doc->affiliate_id);
+
+        expect($identity?->id)->toBe($affiliate->id)
+            ->and(method_exists($doc, 'affiliate'))->toBeFalse();
     });
 
     it('stores document path', function (): void {
