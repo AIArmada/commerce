@@ -267,17 +267,6 @@ describe('Affiliate Model - Relationships', function (): void {
         expect(AffiliateFraudSignal::query()->whereKey($signal->getKey())->exists())->toBeFalse();
     });
 
-    test('has many daily stats', function (): void {
-        $affiliate = Affiliate::create([
-            'code' => 'STATS-001',
-            'name' => 'Stats Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-    });
-
     test('reads balance records through the conversions feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'BAL-001',
@@ -436,6 +425,23 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         ]);
 
         expect($affiliate->canRequestPayout())->toBeFalse();
+    });
+
+    test('inconsistent lifecycle timestamps fail closed for payout eligibility', function (): void {
+        $affiliate = new Affiliate(['status' => Active::class, 'paused_at' => now()]);
+
+        expect($affiliate->canReceivePayout())->toBeFalse()
+            ->and($affiliate->canRequestPayout())->toBeFalse();
+
+        $affiliate->paused_at = null;
+        $affiliate->deactivated_at = now();
+
+        expect($affiliate->canReceivePayout())->toBeFalse()
+            ->and($affiliate->canRequestPayout())->toBeFalse();
+    });
+
+    test('does not expose an optional voucher ORM relationship', function (): void {
+        expect(method_exists(Affiliate::class, 'vouchers'))->toBeFalse();
     });
 
     test('canRequestPayout returns false with active hold', function (): void {

@@ -260,9 +260,14 @@ trait InteractsWithAffiliate
             return new Collection;
         }
 
-        return $affiliate->vouchers()
+        return Voucher::query()
+            ->forAffiliate((string) $affiliate->getKey())
+            ->when(config('vouchers.owner.enabled', false), fn (Builder $query): Builder => $query
+                ->where('owner_type', $affiliate->owner_type)
+                ->where('owner_id', $affiliate->owner_id))
             ->orderByDesc('created_at')
-            ->limit($limit)
+            ->orderBy('id')
+            ->limit(max(0, min($limit, 100)))
             ->get();
     }
 

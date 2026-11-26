@@ -48,9 +48,8 @@ app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class)->ha
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
 app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey());
-$affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
 app(\AIArmada\Affiliates\Features\Upline\Api\RankDirectory::class)->label($affiliate->rank_id);
-$affiliate->vouchers;         // HasMany<Voucher>
+// Optional vouchers are read from the vouchers package by affiliate_id, with owner scope.
 ```
 
 Commission rules, promotions and volume tiers are program-scoped and owned by Commissions. Use `ProgramCommissionAdministration` and `VolumeTierAdministration` for mutations, and `CommissionCatalogReader`, `CommissionRulePreview` and `VolumeTierReader` for catalog reads.

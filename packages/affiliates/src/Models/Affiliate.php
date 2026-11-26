@@ -29,7 +29,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\ReplaceGeneralContactMethods;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
-use AIArmada\Vouchers\Models\Voucher;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -79,7 +78,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read string|null $website_url Alias for the primary website contact method
  * @property-read Affiliate|null $parent
  * @property-read Collection<int, Affiliate> $children
- * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
 class Affiliate extends Model implements Auditable
@@ -214,24 +212,9 @@ class Affiliate extends Model implements Auditable
         return is_string($email) && $email !== '' ? $email : null;
     }
 
-    /**
-     * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
-     *
-     * @return HasMany<Voucher, $this>|HasMany<Model, $this>
-     */
-    public function vouchers(): HasMany
-    {
-        if (\class_exists(Voucher::class)) {
-            return $this->hasMany(Voucher::class, 'affiliate_id');
-        }
-
-        // Fallback to prevent errors when vouchers package not installed
-        return $this->hasMany(Model::class, 'affiliate_id');
-    }
-
     public function canRequestPayout(?string $currency = null): bool
     {
-        if (! $this->isActive()) {
+        if (! $this->canReceivePayout()) {
             return false;
         }
 
@@ -260,7 +243,7 @@ class Affiliate extends Model implements Auditable
 
     public function canReceivePayout(): bool
     {
-        return $this->status instanceof Active && ! $this->isPaused();
+        return $this->isActive() && ! $this->isPaused() && ! $this->isDeactivated();
     }
 
     public function isDeactivated(): bool
