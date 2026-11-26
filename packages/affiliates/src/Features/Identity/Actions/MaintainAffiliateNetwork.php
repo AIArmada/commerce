@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMaintenance;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMember;
 use AIArmada\Affiliates\Features\Identity\Queries\GuardAffiliateAccess;
+use AIArmada\Affiliates\Features\Identity\Queries\ReadAffiliateNetwork;
 use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -22,10 +22,7 @@ final readonly class MaintainAffiliateNetwork implements AffiliateNetworkMainten
         $members = [];
 
         foreach ($this->lockedModels($ids, $connectionIdentity) as $affiliate) {
-            $members[$affiliate->id] = new AffiliateNetworkMember(
-                $affiliate->lifecycleReference(),
-                $affiliate->isCommercialPurpose(),
-            );
+            $members[$affiliate->id] = ReadAffiliateNetwork::project($affiliate);
         }
 
         return $members;

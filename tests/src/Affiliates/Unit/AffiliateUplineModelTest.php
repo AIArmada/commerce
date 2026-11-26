@@ -69,26 +69,24 @@ describe('AffiliateUpline Model', function (): void {
         expect($network->timestamps)->toBeFalse();
     });
 
-    it('belongs to ancestor affiliate', function (): void {
+    it('resolves the ancestor through the upline API', function (): void {
         $network = AffiliateUpline::create([
             'ancestor_id' => $this->rootAffiliate->id,
             'descendant_id' => $this->childAffiliate->id,
             'depth' => 1,
         ]);
 
-        expect($network->ancestor)->toBeInstanceOf(Affiliate::class)
-            ->and($network->ancestor->id)->toBe($this->rootAffiliate->id);
+        expect(app(UplineApi::class)->ancestors($network->descendant_id)[0]->id)->toBe($this->rootAffiliate->id);
     });
 
-    it('belongs to descendant affiliate', function (): void {
+    it('resolves the descendant through the upline API', function (): void {
         $network = AffiliateUpline::create([
             'ancestor_id' => $this->rootAffiliate->id,
             'descendant_id' => $this->childAffiliate->id,
             'depth' => 1,
         ]);
 
-        expect($network->descendant)->toBeInstanceOf(Affiliate::class)
-            ->and($network->descendant->id)->toBe($this->childAffiliate->id);
+        expect(app(UplineApi::class)->descendants($network->ancestor_id)[0]->id)->toBe($this->childAffiliate->id);
     });
 
     it('casts depth as integer', function (): void {

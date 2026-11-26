@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -23,8 +21,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $depth
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property-read Affiliate $ancestor
- * @property-read Affiliate $descendant
  */
 class AffiliateUpline extends Model implements Auditable
 {
@@ -60,19 +56,4 @@ class AffiliateUpline extends Model implements Auditable
         return config('affiliates.database.tables.upline', 'affiliate_upline');
     }
 
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function ancestor(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class, 'ancestor_id');
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function descendant(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class, 'descendant_id');
-    }
 }

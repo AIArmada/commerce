@@ -7,11 +7,12 @@ namespace AIArmada\Affiliates\Features\Upline\Actions;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMaintenance;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMember;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Upline\Queries\UplinePathQuery;
 use InvalidArgumentException;
 
 final readonly class ManageUpline
 {
-    public function __construct(private AffiliateNetworkMaintenance $identity) {}
+    public function __construct(private AffiliateNetworkMaintenance $identity, private UplinePathQuery $paths) {}
 
     public function add(string $affiliateId, ?string $sponsorId): void
     {
@@ -40,7 +41,7 @@ final readonly class ManageUpline
             if (! config('affiliates.upline.enabled', false)) {
                 return;
             }
-            if ($sponsorId === $affiliateId || ($sponsorId !== null && AffiliateUpline::query()->where('ancestor_id', $affiliateId)->where('descendant_id', $sponsorId)->exists())) {
+            if ($sponsorId === $affiliateId || ($sponsorId !== null && AffiliateUpline::query()->forOwner()->where('ancestor_id', $affiliateId)->where('descendant_id', $sponsorId)->exists())) {
                 throw new InvalidArgumentException('A sponsor cannot be the affiliate or its descendant.');
             }
             if ($sponsor !== null && config('affiliates.owner.enabled', false)
@@ -48,8 +49,8 @@ final readonly class ManageUpline
                 throw new InvalidArgumentException('Affiliate and sponsor must belong to the same owner.');
             }
 
-            $oldAncestors = AffiliateUpline::query()->where('descendant_id', $affiliateId)->where('depth', '>', 0)->pluck('ancestor_id')->all();
-            $oldSponsor = AffiliateUpline::query()->where('descendant_id', $affiliateId)->where('depth', 1)->value('ancestor_id');
+            $oldAncestors = AffiliateUpline::query()->forOwner()->where('descendant_id', $affiliateId)->where('depth', '>', 0)->pluck('ancestor_id')->all();
+            $oldSponsor = AffiliateUpline::query()->forOwner()->where('descendant_id', $affiliateId)->where('depth', 1)->value('ancestor_id');
             if (! $move && $oldSponsor !== null && (string) $oldSponsor !== $sponsorId) {
                 throw new InvalidArgumentException('Use move to change an existing sponsor.');
             }
@@ -59,14 +60,13 @@ final readonly class ManageUpline
                 $this->storePath($sponsor, $sponsor->reference->id, 0);
             }
 
-            $subtree = AffiliateUpline::query()->where('ancestor_id', $affiliateId)->pluck('depth', 'descendant_id')->all();
+            $subtree = AffiliateUpline::query()->forOwner()->where('ancestor_id', $affiliateId)->pluck('depth', 'descendant_id')->all();
             $subtree[$affiliateId] = 0;
             $subtreeIds = array_keys($subtree);
-            $ancestors = $sponsorId === null ? [] : AffiliateUpline::query()->where('descendant_id', $sponsorId)
-                ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())->pluck('depth', 'ancestor_id')->all();
+            $ancestors = $sponsorId === null ? [] : $this->paths->commercialEndpoint(AffiliateUpline::query()->forOwner()->where('descendant_id', $sponsorId), 'ancestor_id')->pluck('depth', 'ancestor_id')->all();
 
             if ($move) {
-                AffiliateUpline::query()->whereIn('descendant_id', $subtreeIds)->whereNotIn('ancestor_id', $subtreeIds)->delete();
+                AffiliateUpline::query()->forOwner()->whereIn('descendant_id', $subtreeIds)->whereNotIn('ancestor_id', $subtreeIds)->delete();
             }
 
             $members = $this->identity->lockMembers($subtreeIds, $connectionIdentity);
@@ -97,12 +97,12 @@ final readonly class ManageUpline
             if (! config('affiliates.upline.enabled', false)) {
                 return;
             }
-            $descendants = AffiliateUpline::query()->where('ancestor_id', $affiliateId)->pluck('descendant_id')->all();
-            $ancestors = AffiliateUpline::query()->where('descendant_id', $affiliateId)->where('depth', '>', 0)->pluck('ancestor_id')->all();
+            $descendants = AffiliateUpline::query()->forOwner()->where('ancestor_id', $affiliateId)->pluck('descendant_id')->all();
+            $ancestors = AffiliateUpline::query()->forOwner()->where('descendant_id', $affiliateId)->where('depth', '>', 0)->pluck('ancestor_id')->all();
             if ($descendants === []) {
                 return;
             }
-            AffiliateUpline::query()->whereIn('descendant_id', $descendants)->delete();
+            AffiliateUpline::query()->forOwner()->whereIn('descendant_id', $descendants)->delete();
             $this->identity->clearNetwork($descendants, $connectionIdentity);
             $this->refreshCounts($ancestors, $connectionIdentity);
         }, attempts: 3);
@@ -116,17 +116,17 @@ final readonly class ManageUpline
         $connection->transaction(function () use ($affiliateId, $connectionIdentity): void {
             $this->identity->lockMembers([$affiliateId], $connectionIdentity);
 
-            $descendants = AffiliateUpline::query()->where('ancestor_id', $affiliateId)
+            $descendants = AffiliateUpline::query()->forOwner()->where('ancestor_id', $affiliateId)
                 ->where('depth', '>', 0)->pluck('descendant_id')->all();
-            $ancestors = AffiliateUpline::query()->where('descendant_id', $affiliateId)
+            $ancestors = AffiliateUpline::query()->forOwner()->where('descendant_id', $affiliateId)
                 ->where('depth', '>', 0)->pluck('ancestor_id')->all();
 
             if ($descendants !== []) {
-                AffiliateUpline::query()->whereIn('descendant_id', $descendants)
+                AffiliateUpline::query()->forOwner()->whereIn('descendant_id', $descendants)
                     ->whereNotIn('ancestor_id', $descendants)->delete();
             }
 
-            AffiliateUpline::query()->where(function ($query) use ($affiliateId): void {
+            AffiliateUpline::query()->forOwner()->where(function ($query) use ($affiliateId): void {
                 $query->where('ancestor_id', $affiliateId)->orWhere('descendant_id', $affiliateId);
             })->delete();
 
@@ -136,7 +136,7 @@ final readonly class ManageUpline
 
     private function storePath(AffiliateNetworkMember $descendant, string $ancestorId, int $depth): void
     {
-        $path = AffiliateUpline::query()->firstOrNew(['ancestor_id' => $ancestorId, 'descendant_id' => $descendant->reference->id]);
+        $path = AffiliateUpline::query()->forOwner()->firstOrNew(['ancestor_id' => $ancestorId, 'descendant_id' => $descendant->reference->id]);
         $path->forceFill(['depth' => $depth, 'owner_type' => $descendant->reference->ownerType, 'owner_id' => $descendant->reference->ownerId])->save();
     }
 
@@ -148,12 +148,10 @@ final readonly class ManageUpline
         }
 
         $members = $this->identity->lockMembers($ids, $connectionIdentity);
-        $counts = AffiliateUpline::query()->whereIn('ancestor_id', $ids)->where('depth', '>', 0)
-            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
+        $counts = $this->paths->commercialEndpoint(AffiliateUpline::query()->forOwner()->whereIn('ancestor_id', $ids)->where('depth', '>', 0), 'descendant_id')
             ->toBase()->selectRaw('ancestor_id, COUNT(*) AS total, SUM(CASE WHEN depth = 1 THEN 1 ELSE 0 END) AS direct')
             ->groupBy('ancestor_id')->get()->keyBy('ancestor_id');
-        $depths = AffiliateUpline::query()->whereIn('descendant_id', $ids)
-            ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())
+        $depths = $this->paths->commercialEndpoint(AffiliateUpline::query()->forOwner()->whereIn('descendant_id', $ids), 'ancestor_id')
             ->toBase()->selectRaw('descendant_id, MAX(depth) AS maximum')->groupBy('descendant_id')->pluck('maximum', 'descendant_id');
 
         $statistics = [];

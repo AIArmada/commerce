@@ -9,5 +9,12 @@ final readonly class AffiliateNetworkMember
     public function __construct(
         public AffiliateLifecycleReference $reference,
         public bool $commercial,
+        public string $name,
+        public string $code,
+        public ?string $currency,
+        public string $status,
+        public ?string $rankId,
+        public int $directDownlineCount,
+        public int $totalDownlineCount,
     ) {}
 }
