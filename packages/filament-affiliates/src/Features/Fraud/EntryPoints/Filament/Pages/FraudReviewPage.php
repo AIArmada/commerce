@@ -184,7 +184,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
     public function getViewData(): array
     {
-        $base = AffiliateFraudSignal::query()
+        $base = AffiliateReferenceProjection::apply(AffiliateFraudSignal::query(), includeGlobal: true)
             ->where('status', FraudSignalStatus::Detected);
 
         return [

@@ -17,7 +17,7 @@ final class AffiliateFraudSignalInfolist
             Section::make('Signal Details')
                 ->schema([
                     Grid::make(2)->schema([
-                        TextEntry::make('affiliate.name')
+                        TextEntry::make('affiliate_name')
                             ->label('Affiliate')
                             ->placeholder('—'),
 

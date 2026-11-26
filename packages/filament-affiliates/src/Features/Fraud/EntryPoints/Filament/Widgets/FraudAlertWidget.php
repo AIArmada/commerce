@@ -10,10 +10,12 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\UpdateAffiliateFraudSignalStatus;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 
 final class FraudAlertWidget extends BaseWidget
 {
@@ -34,8 +36,7 @@ final class FraudAlertWidget extends BaseWidget
     {
         return $table
             ->query(
-                AffiliateFraudSignal::query()
-                    ->with('affiliate')
+                AffiliateReferenceProjection::apply(AffiliateFraudSignal::query(), includeGlobal: true)
                     ->where('status', FraudSignalStatus::Detected)
                     ->latest()
                     ->limit(10)
@@ -46,9 +47,9 @@ final class FraudAlertWidget extends BaseWidget
                     ->dateTime()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('affiliate.name')
+                Tables\Columns\TextColumn::make('affiliate_name')
                     ->label('Affiliate')
-                    ->searchable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search)),
 
                 Tables\Columns\TextColumn::make('rule_code')
                     ->label('Rule')

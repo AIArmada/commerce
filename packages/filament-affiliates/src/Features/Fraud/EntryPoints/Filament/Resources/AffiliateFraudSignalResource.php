@@ -10,10 +10,9 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\UpdateAffiliateFraudSignalStatus;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource\Schemas\AffiliateFraudSignalInfolist;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -72,9 +71,10 @@ final class AffiliateFraudSignalResource extends Resource
                     ->dateTime()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('affiliate.name')
-                    ->searchable()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('affiliate_name')
+                    ->label('Affiliate')
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_name', $direction)),
 
                 Tables\Columns\TextColumn::make('rule_code')
                     ->badge()
@@ -164,21 +164,7 @@ final class AffiliateFraudSignalResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<AffiliateFraudSignal> $query */
-        $query = parent::getEloquentQuery()->with(['affiliate']);
-
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $query;
-        }
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-        return $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($owner, $includeGlobal): void {
-            $scoped = $affiliateQuery->withoutGlobalScope(OwnerScope::class);
-            OwnerQuery::applyToEloquentBuilder($scoped, $owner, $includeGlobal);
-        });
+        return AffiliateReferenceProjection::apply(parent::getEloquentQuery(), includeGlobal: true);
     }
 
     public static function getRelations(): array
@@ -206,20 +192,7 @@ final class AffiliateFraudSignalResource extends Resource
             'filament-affiliates.fraud-signals.detected-count',
             30,
             static function (): int {
-                $query = self::getModel()::query()->where('status', FraudSignalStatus::Detected);
-
-                if ((bool) config('affiliates.owner.enabled', false)) {
-                    /** @var Model|null $scopedOwner */
-                    $scopedOwner = OwnerContext::resolve();
-                    $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-                    $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($scopedOwner, $includeGlobal): void {
-                        $scoped = $affiliateQuery->withoutGlobalScope(OwnerScope::class);
-                        OwnerQuery::applyToEloquentBuilder($scoped, $scopedOwner, $includeGlobal);
-                    });
-                }
-
-                return $query->count();
+                return self::getEloquentQuery()->where('status', FraudSignalStatus::Detected)->count();
             },
         );
 
