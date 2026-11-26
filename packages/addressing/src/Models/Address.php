@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Models;
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
@@ -111,7 +111,7 @@ class Address extends Model
                 return;
             }
 
-            app(SyncAddressAreaAssignmentsAction::class)->pruneIncompatibleAssignments($address);
+            app(AddressAssignmentWriter::class)->pruneIncompatibleAssignments($address);
         });
 
         static::deleting(function (Address $address): void {

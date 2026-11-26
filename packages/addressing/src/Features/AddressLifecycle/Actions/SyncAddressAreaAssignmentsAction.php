@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
@@ -18,10 +20,10 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
-final class SyncAddressAreaAssignmentsAction
+final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignmentWriter
 {
     public function __construct(
-        private readonly CountryAddressProfileResolver $profiles,
+        private CountryAddressProfileResolver $profiles,
     ) {}
 
     /**

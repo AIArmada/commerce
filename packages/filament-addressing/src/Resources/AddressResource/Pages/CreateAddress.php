@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
-use AIArmada\Addressing\Actions\SaveAddressAction;
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
@@ -21,7 +21,7 @@ final class CreateAddress extends CreateRecord
 
     protected function handleRecordCreation(array $data): Address
     {
-        return app(SaveAddressAction::class)->execute(
+        return app(AddressWriter::class)->execute(
             $data,
             $this->areaAssignments(),
             modelClass: AddressResource::getModel(),

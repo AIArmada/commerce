@@ -7,6 +7,12 @@
     ],
     "table:address_snapshots": [
       "AIArmada\\Addressing\\Features\\AddressLifecycle\\Actions\\CreateAddressSnapshotAction"
+    ],
+    "table:addresses": [
+      "AIArmada\\Addressing\\Features\\AddressLifecycle\\Actions\\SaveAddressAction"
+    ],
+    "table:address_area_assignments": [
+      "AIArmada\\Addressing\\Features\\AddressLifecycle\\Actions\\SyncAddressAreaAssignmentsAction"
     ]
   },
   "extensions": {}

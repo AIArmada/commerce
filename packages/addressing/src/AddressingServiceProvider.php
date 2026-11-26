@@ -18,7 +18,6 @@ use AIArmada\Addressing\Actions\SeedAddressingAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Actions\SeedPostalCodesAction;
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffGoogleAddressReferenceCommand;
@@ -96,7 +95,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(SeedCountryGeographiesAction::class);
         $this->app->singleton(SeedPostalCodesAction::class);
         $this->app->singleton(SearchAddressAreasAction::class);
-        $this->app->singleton(SyncAddressAreaAssignmentsAction::class);
         $this->app->singleton(ImportPostalCodesAction::class);
         $this->app->singleton(CountryAddressProfileResolver::class);
         $this->app->singleton(CountryAddressFormatterResolver::class);

@@ -275,7 +275,7 @@ class AddressFormSchema
      *
      * Area selects are dehydrated(false), so consumers must read them via
      * `$form->getRawState()` and pass the result to
-     * SyncAddressAreaAssignmentsAction after saving the address.
+     * AddressAssignmentWriter after saving the address.
      *
      * @param  array<string, mixed>  $rawState
      * @return array<string, string|null>

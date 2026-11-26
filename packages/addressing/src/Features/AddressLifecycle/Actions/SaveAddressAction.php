@@ -2,16 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
+
+use AIArmada\Addressing\Contracts\AddressWriter;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use LogicException;
 
-final readonly class SaveAddressAction
+final readonly class SaveAddressAction implements AddressWriter
 {
-    public function __construct(private SyncAddressAreaAssignmentsAction $assignments) {}
+    public function __construct(private AddressAssignmentWriter $assignments) {}
 
     /**
      * @param  array<string, mixed>  $data

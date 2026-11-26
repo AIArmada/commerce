@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
@@ -255,8 +255,8 @@ it('prunes only state-dependent assignments across owners when a state is delete
         'country_code' => 'MY',
     ]));
 
-    OwnerContext::withOwner($ownerA, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressA, $sync()));
-    OwnerContext::withOwner($ownerB, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressB, $sync()));
+    OwnerContext::withOwner($ownerA, fn (): mixed => app(AddressAssignmentWriter::class)->execute($addressA, $sync()));
+    OwnerContext::withOwner($ownerB, fn (): mixed => app(AddressAssignmentWriter::class)->execute($addressB, $sync()));
 
     // The per-save hook prunes the same way: nulling through a model save
     // drops the state-parented district but keeps the parentless zone.
@@ -266,7 +266,7 @@ it('prunes only state-dependent assignments across owners when a state is delete
         'state_id' => $state->getKey(),
         'country_code' => 'MY',
     ]));
-    OwnerContext::withOwner($ownerA, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressC, $sync()));
+    OwnerContext::withOwner($ownerA, fn (): mixed => app(AddressAssignmentWriter::class)->execute($addressC, $sync()));
     OwnerContext::withOwner($ownerA, function () use ($addressC): void {
         // Null through a model save: free-text must not re-resolve to the
         // still-existing State row, so use a non-matching name.
@@ -367,8 +367,8 @@ it('prunes assignments cross-owner without owner resolution when owner mode is d
         'country_code' => 'MY',
     ]));
 
-    OwnerContext::withOwner($ownerA, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressA, $assignments));
-    OwnerContext::withOwner($ownerB, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressB, $assignments));
+    OwnerContext::withOwner($ownerA, fn (): mixed => app(AddressAssignmentWriter::class)->execute($addressA, $assignments));
+    OwnerContext::withOwner($ownerB, fn (): mixed => app(AddressAssignmentWriter::class)->execute($addressB, $assignments));
 
     $snapshot = OwnerContext::withOwner($ownerA, fn (): AddressSnapshot => AddressSnapshot::query()->create([
         'address_id' => $addressA->getKey(),

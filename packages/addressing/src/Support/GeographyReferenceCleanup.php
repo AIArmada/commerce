@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Support;
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
@@ -155,7 +155,7 @@ final class GeographyReferenceCleanup
 
         $removedRoles = array_map(
             static fn (int | string $role): string => (string) $role,
-            array_keys(array_diff_key($current, app(SyncAddressAreaAssignmentsAction::class)->narrowToValidAssignments($address, $current))),
+            array_keys(array_diff_key($current, app(AddressAssignmentWriter::class)->narrowToValidAssignments($address, $current))),
         );
 
         if ($removedRoles === []) {
