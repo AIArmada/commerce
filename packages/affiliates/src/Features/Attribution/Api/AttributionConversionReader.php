@@ -11,4 +11,6 @@ interface AttributionConversionReader
     public function frozen(string $id, int $connectionIdentity): AttributionConversionRecord;
 
     public function forOutcome(string $id, int $connectionIdentity): AttributionConversionRecord;
+
+    public function evidence(string $id, ?string $ownerType, ?string $ownerId, int $connectionIdentity): ?AttributionEvidence;
 }

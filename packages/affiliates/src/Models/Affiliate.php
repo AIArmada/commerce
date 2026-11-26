@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
@@ -77,7 +78,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read string|null $website_url Alias for the primary website contact method
  * @property-read Affiliate|null $parent
  * @property-read Collection<int, Affiliate> $children
- * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
@@ -186,14 +186,6 @@ class Affiliate extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.affiliates', parent::getTable());
-    }
-
-    /**
-     * @return HasMany<AffiliateAttribution, $this>
-     */
-    public function attributions(): HasMany
-    {
-        return $this->hasMany(AffiliateAttribution::class);
     }
 
     /**
@@ -405,7 +397,7 @@ class Affiliate extends Model implements Auditable
             if ($affiliate->identity_sealed_at !== null
                 || $affiliate->conversions()->exists()
                 || app(PayoutAccountingReader::class)->hasAffiliateHistory((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))
-                || $affiliate->attributions()->exists()
+                || app(AttributionReportingReader::class)->hasAffiliateHistory((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))
                 || app(TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(BalanceReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(PayoutMethodReader::class)->hasRecords((string) $affiliate->getKey())

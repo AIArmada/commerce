@@ -11,11 +11,9 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
@@ -61,7 +59,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read Affiliate $affiliate
- * @property-read Collection<int, AffiliateConversion> $conversions
  */
 class AffiliateAttribution extends Model
 {
@@ -162,14 +159,6 @@ class AffiliateAttribution extends Model
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
-     * @return HasMany<AffiliateConversion, $this>
-     */
-    public function conversions(): HasMany
-    {
-        return $this->hasMany(AffiliateConversion::class, 'affiliate_attribution_id');
     }
 
     public function scopeActive(Builder $query): Builder

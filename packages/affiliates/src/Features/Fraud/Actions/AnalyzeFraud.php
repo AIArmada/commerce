@@ -63,7 +63,7 @@ final readonly class AnalyzeFraud implements FraudApi
             return new FraudAssessment(true, 0, []);
         }
 
-        $conversion = AffiliateConversion::query()->with(['affiliate', 'attribution'])->findOrFail($conversionId);
+        $conversion = AffiliateConversion::query()->with('affiliate')->findOrFail($conversionId);
         $evidence = $this->evidence->conversion($conversion);
         $signals = [];
 

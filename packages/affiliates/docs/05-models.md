@@ -41,7 +41,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 
 ```php
 $affiliate->conversions;      // HasMany<AffiliateConversion>
-$affiliate->attributions;     // HasMany<AffiliateAttribution>
+app(\AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader::class)->count($affiliate->id);
 app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader::class)->hasAffiliateHistory($affiliate->id, spl_object_id($affiliate->getConnection()));
 app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey());
 $affiliate->parent;           // BelongsTo<Affiliate>
@@ -100,7 +100,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 
 ```php
 $attribution->affiliate;    // BelongsTo<Affiliate>
-$attribution->conversions;  // HasMany<AffiliateConversion>
+// Query conversion records by affiliate_attribution_id.  // HasMany<AffiliateConversion>
 app(\AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader::class)->distributionTouches($attribution->id);
 ```
 
@@ -143,7 +143,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 
 ```php
 $conversion->affiliate;    // BelongsTo<Affiliate>
-$conversion->attribution;  // BelongsTo<AffiliateAttribution>
+$conversion->affiliate_attribution_id;  // BelongsTo<AffiliateAttribution>
 $conversion->affiliate_payout_id; // nullable payout identity
 ```
 

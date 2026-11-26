@@ -181,8 +181,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->attribution)->toBeInstanceOf(AffiliateAttribution::class);
-        expect($conversion->attribution->id)->toBe($attribution->id);
+        expect($conversion->affiliate_attribution_id)->toBe($attribution->id);
     });
 
     test('stores the payout identity when set', function (): void {

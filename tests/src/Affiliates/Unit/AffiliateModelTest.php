@@ -174,7 +174,7 @@ describe('Affiliate Model - Status Methods', function (): void {
 });
 
 describe('Affiliate Model - Relationships', function (): void {
-    test('has attributions relationship', function (): void {
+    test('reads attribution counts from the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate',
@@ -183,7 +183,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        expect($affiliate->attributions())->toBeInstanceOf(HasMany::class);
+        expect(app(\AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader::class)->count((string) $affiliate->getKey()))->toBe(0);
     });
 
     test('has conversions relationship', function (): void {

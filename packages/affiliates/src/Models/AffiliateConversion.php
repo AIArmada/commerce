@@ -70,7 +70,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read Affiliate $affiliate
- * @property-read AffiliateAttribution|null $attribution
  */
 class AffiliateConversion extends Model
 {
@@ -163,14 +162,6 @@ class AffiliateConversion extends Model
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
-     * @return BelongsTo<AffiliateAttribution, $this>
-     */
-    public function attribution(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
     }
 
     /**

@@ -230,7 +230,7 @@ trait InteractsWithAffiliate
             return 0;
         }
 
-        return (int) $affiliate->attributions()->count();
+        return app(\AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader::class)->count((string) $affiliate->getKey());
     }
 
     /**

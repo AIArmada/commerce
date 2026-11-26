@@ -14,10 +14,10 @@ test('AffiliateConversion has affiliate relationship', function (): void {
     expect($conversion->affiliate())->toBeInstanceOf(BelongsTo::class);
 });
 
-test('AffiliateConversion has attribution relationship', function (): void {
+test('AffiliateConversion stores a nullable attribution identity', function (): void {
     $conversion = new AffiliateConversion;
 
-    expect($conversion->attribution())->toBeInstanceOf(BelongsTo::class);
+    expect($conversion->affiliate_attribution_id)->toBeNull();
 });
 
 test('AffiliateConversion stores a nullable payout identity', function (): void {

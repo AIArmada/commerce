@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionRecord;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionEvidence;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
@@ -57,6 +58,28 @@ final readonly class ReadAttributionConversions implements AttributionConversion
             : AffiliateAttribution::query()->findOrFail($id);
 
         return $this->record($row);
+    }
+
+    public function evidence(string $id, ?string $ownerType, ?string $ownerId, int $connectionIdentity): ?AttributionEvidence
+    {
+        $this->assertConnection($connectionIdentity);
+
+        if (! Str::isUuid($id)) {
+            return null;
+        }
+
+        $query = AffiliateAttribution::query()->whereKey($id);
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
+        }
+
+        $row = $query->first(['affiliate_id', 'first_seen_at']);
+
+        return $row === null ? null : new AttributionEvidence(
+            $row->affiliate_id,
+            $row->first_seen_at === null ? null : CarbonImmutable::instance($row->first_seen_at),
+        );
     }
 
     private function assertId(string $id): void

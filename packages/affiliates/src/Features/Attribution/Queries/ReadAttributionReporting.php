@@ -73,6 +73,13 @@ final readonly class ReadAttributionReporting implements AttributionReportingRea
             ->count();
     }
 
+    public function hasAffiliateHistory(string $affiliateId, int $connectionIdentity): bool
+    {
+        $this->assertSharedConnection($connectionIdentity);
+
+        return AffiliateAttribution::query()->withoutOwnerScope()->where('affiliate_id', $affiliateId)->exists();
+    }
+
     public function countFirstSeen(string $affiliateId, DateTimeInterface $start, DateTimeInterface $end): int
     {
         return AffiliateAttribution::query()->forOwner()->where('affiliate_id', $affiliateId)

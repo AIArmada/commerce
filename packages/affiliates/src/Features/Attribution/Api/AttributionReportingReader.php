@@ -19,6 +19,8 @@ interface AttributionReportingReader
 
     public function count(?string $affiliateId = null): int;
 
+    public function hasAffiliateHistory(string $affiliateId, int $connectionIdentity): bool;
+
     public function countFirstSeen(string $affiliateId, DateTimeInterface $start, DateTimeInterface $end): int;
 
     public function countWindow(DateTimeInterface $start, DateTimeInterface $end): int;

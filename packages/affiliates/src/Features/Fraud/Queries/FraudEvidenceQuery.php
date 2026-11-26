@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Fraud\Queries;
 
 use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 
 final readonly class FraudEvidenceQuery
 {
-    public function __construct(private TouchpointReader $touchpoints) {}
+    public function __construct(private TouchpointReader $touchpoints, private AttributionConversionReader $attributions) {}
 
     public function click(string $affiliateId, ?string $ipAddress, string $fingerprint, ?int $clickCount): ClickFraudEvidence
     {
@@ -55,6 +56,13 @@ final readonly class FraudEvidenceQuery
             && is_string($userModel) && is_a($userModel, Model::class, true)
             && ($ownerType === $userModel || $ownerType === (new $userModel)->getMorphClass());
 
+        $attribution = $conversion->affiliate_attribution_id === null ? null : $this->attributions->evidence(
+            $conversion->affiliate_attribution_id,
+            $conversion->owner_type,
+            $conversion->owner_id,
+            spl_object_id($conversion->getConnection()),
+        );
+
         return new ConversionFraudEvidence(
             $affiliate instanceof Affiliate ? $affiliate->conversions()->where('occurred_at', '>=', $date)->where('occurred_at', '<', $date->addDay())->count() : 0,
             max(0, (int) config('affiliates.fraud.velocity.max_conversions_per_day', 50)),
@@ -62,7 +70,7 @@ final readonly class FraudEvidenceQuery
             $selfReferral,
             $ownerId,
             $actor === null ? null : (string) $actor,
-            $conversion->attribution?->first_seen_at?->toImmutable(),
+            $attribution?->firstSeenAt,
             $conversion->occurred_at?->toImmutable(),
             max(0, (int) config('affiliates.fraud.anomaly.conversion_time.min_seconds', 5)),
         );

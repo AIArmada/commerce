@@ -15,7 +15,6 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 describe('AffiliateAttribution Model', function (): void {
@@ -62,7 +61,7 @@ describe('AffiliateAttribution Model', function (): void {
             'cart_instance' => 'default',
         ]);
 
-        expect($attribution->conversions())->toBeInstanceOf(HasMany::class);
+        expect(AffiliateConversion::query()->where('affiliate_attribution_id', $attribution->id)->count())->toBe(0);
     });
 
     it('reads touchpoints through the attribution feature', function (): void {
