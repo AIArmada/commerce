@@ -77,8 +77,10 @@ it('reports alert failures with persisted identifiers and no previous text', fun
     ]);
 
     $failure = CommerceSignalRecordingFailed::forAlertEvaluation(
-        $event,
-        $property,
+        (string) $event->getKey(),
+        (string) $property->getKey(),
+        $event->getAttributes()['owner_type'] ?? null,
+        $event->getAttributes()['owner_id'] ?? null,
         new RuntimeException('customer email customer@example.com leaked in evaluator'),
     );
 

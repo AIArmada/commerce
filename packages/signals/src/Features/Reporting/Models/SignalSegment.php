@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Signals\Features\Reporting\Support\SignalEventConditionDefinition;
+use AIArmada\Signals\Support\SignalCondition;
 use AIArmada\Signals\Features\Reporting\Actions\DetachDeletedSegment;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -156,7 +156,7 @@ final class SignalSegment extends Model implements Auditable
                 throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: unsupported field [{$field}].");
             }
 
-            if ($operator === '' || ! SignalEventConditionDefinition::isSupportedOperator($operator)) {
+            if ($operator === '' || ! SignalCondition::isSupportedOperator($operator)) {
                 throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: unsupported operator [{$operator}].");
             }
 
@@ -164,7 +164,7 @@ final class SignalSegment extends Model implements Auditable
                 throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: value is required.");
             }
 
-            if (SignalEventConditionDefinition::operatorRequiresNumericComparison($operator) && ! SignalEventConditionDefinition::fieldSupportsNumericComparison($field)) {
+            if (SignalCondition::operatorRequiresNumericComparison($operator) && ! SignalCondition::fieldSupportsNumericComparison($field)) {
                 throw new InvalidArgumentException("Invalid signal segment condition at index {$index}: operator [{$operator}] requires a numeric field.");
             }
 
@@ -176,7 +176,7 @@ final class SignalSegment extends Model implements Auditable
 
     private static function isSupportedField(string $field): bool
     {
-        return SignalEventConditionDefinition::isSupportedField($field);
+        return SignalCondition::isSupportedField($field);
     }
 
     protected function getActivityLogName(): string

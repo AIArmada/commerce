@@ -157,7 +157,13 @@ final readonly class IngestSignalEvent
                 // The event is already persisted; a failing optional alert
                 // evaluation must not fail ingestion or the outer commit.
                 CommerceSignalRecordingFailed::reportSafely(
-                    CommerceSignalRecordingFailed::forAlertEvaluation($event, $trackedProperty, $e)
+                    CommerceSignalRecordingFailed::forAlertEvaluation(
+                        (string) $event->getKey(),
+                        (string) $trackedProperty->getKey(),
+                        $event->getAttributes()['owner_type'] ?? null,
+                        $event->getAttributes()['owner_id'] ?? null,
+                        $e,
+                    )
                 );
             }
         });
