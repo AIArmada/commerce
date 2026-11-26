@@ -63,6 +63,7 @@ final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
                 $affiliate->owner_type,
                 $affiliate->owner_id === null ? null : (string) $affiliate->owner_id,
             ),
+            parentAffiliateId: $affiliate->parent_affiliate_id,
         );
     }
 }

@@ -54,3 +54,36 @@ test('allocates upline commissions from voucher share overrides', function (): v
     expect($uplineConversion->commission_minor)->toBe(50)
         ->and($uplineConversion->metadata['weight'])->toBe(0.05);
 });
+
+test('upline allocation does not cross a foreign owner boundary', function (): void {
+    config([
+        'affiliates.owner.enabled' => true,
+        'affiliates.owner.include_global' => true,
+        'affiliates.payouts.multi_level.enabled' => true,
+        'affiliates.payouts.multi_level.levels' => [0.1],
+        'affiliates.events.dispatch_conversion' => false,
+        'affiliates.events.dispatch_webhooks' => false,
+    ]);
+
+    $owner = \AIArmada\Commerce\Tests\Fixtures\Models\User::factory()->create();
+    $other = \AIArmada\Commerce\Tests\Fixtures\Models\User::factory()->create();
+    $parent = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($other, fn () => createTestAffiliate());
+    $child = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, fn () => createTestAffiliate());
+
+    // Simulate a corrupt pointer without using the guarded identity writer.
+    $child->getConnection()->table($child->getTable())->where('id', $child->id)->update(['parent_affiliate_id' => $parent->id]);
+
+    \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, function () use ($child): void {
+        $data = new AffiliateConversionData(
+            id: (string) Str::uuid(),
+            affiliateId: $child->id,
+            affiliateCode: $child->code,
+            commissionMinor: 1000,
+            commissionCurrency: 'MYR',
+        );
+
+        app(AllocateUplineCommissions::class)->handle([$data], false, ConversionStatus::fromString(PendingConversion::class), null);
+    });
+
+    expect(AffiliateConversion::query()->withoutOwnerScope()->where('channel', 'upline')->exists())->toBeFalse();
+});

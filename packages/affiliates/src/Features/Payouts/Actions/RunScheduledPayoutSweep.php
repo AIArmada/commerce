@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Closure;
 use Throwable;
 
@@ -20,7 +20,7 @@ final readonly class RunScheduledPayoutSweep implements ScheduledPayoutSweep
         $affiliateId = $affiliateId !== null && mb_trim($affiliateId) !== '' ? mb_trim($affiliateId) : null;
 
         if ($affiliateId !== null && (bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
+            app(AffiliateAccessGuard::class)->assertCanWrite($affiliateId, app(MerchantIdentity::class)->ownerTable()->connectionIdentity);
         }
 
         return $this->run($dryRun, $affiliateId, $minimum);
