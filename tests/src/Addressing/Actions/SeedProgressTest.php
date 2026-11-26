@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\CityDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
@@ -24,7 +24,7 @@ beforeEach(function (): void {
 it('reports import progress per row with totals', function (): void {
     $events = [];
 
-    app(ImportAddressAreasAction::class)->execute(
+    app(AddressAreaImporter::class)->execute(
         new ArrayAddressAreaSource('areas', [
             new AddressAreaData(source: 'areas', sourceId: 'a-1', countryCode: 'MY', type: 'locality', name: 'One'),
             new AddressAreaData(source: 'areas', sourceId: 'a-2', countryCode: 'MY', type: 'locality', name: 'Two'),
@@ -70,7 +70,7 @@ it('renders a zero-total bar without error', function (): void {
 it('reports country seeding per row with totals', function (): void {
     $events = [];
 
-    app(SeedAddressCountriesAction::class)->execute(
+    app(CountryDatasetSeeder::class)->execute(
         function (string $phase, int $done, int $total) use (&$events): void {
             $events[] = [$phase, $done, $total];
         },
@@ -90,7 +90,7 @@ it('reports country seeding per row with totals', function (): void {
 it('reports reference syncing as one phase across both loops', function (): void {
     $events = [];
 
-    app(SeedAddressCountryReferencesAction::class)->execute(
+    app(CountryLinkSeeder::class)->execute(
         function (string $phase, int $done, int $total) use (&$events): void {
             $events[] = [$phase, $done, $total];
         },
@@ -112,7 +112,7 @@ it('reports state seeding per row with totals', function (): void {
 
     $events = [];
 
-    app(SeedAddressStatesAction::class)->execute(
+    app(StateDatasetSeeder::class)->execute(
         [
             ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
             ['name' => 'Beta', 'state_code' => 'BB', 'country_code' => 'US'],
@@ -127,13 +127,13 @@ it('reports state seeding per row with totals', function (): void {
 
 it('reports city seeding per chunk with totals', function (): void {
     $this->seedCountry('US');
-    app(SeedAddressStatesAction::class)->execute([
+    app(StateDatasetSeeder::class)->execute([
         ['name' => 'California', 'country_code' => 'US', 'state_code' => 'CA'],
     ]);
 
     $events = [];
 
-    app(SeedAddressCitiesAction::class)->execute(
+    app(CityDatasetSeeder::class)->execute(
         [
             ['name' => 'Springfield', 'country_code' => 'US', 'state_code' => 'CA'],
             ['name' => 'Shelbyville', 'country_code' => 'US', 'state_code' => 'CA'],
@@ -150,12 +150,12 @@ it('emits terminal codes and links on a no-op postcode reseed', function (): voi
     config(['addressing.geography.providers' => [SaintBarthelemyGeographyProvider::class]]);
 
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
-    app(SeedPostalCodesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
 
     $events = [];
 
-    app(SeedPostalCodesAction::class)->execute(
+    app(PostalCodeSeeder::class)->execute(
         'BL',
         function (string $phase, int $done, int $total, ?string $label = null) use (&$events): void {
             $events[] = [$phase, $done, $total, $label];

@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\DiffGoogleAddressReferenceAction;
+use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
 use Illuminate\Support\Facades\Artisan;
 
 it('reports clean countries with success', function (): void {
-    app()->instance(DiffGoogleAddressReferenceAction::class, new DiffGoogleAddressReferenceAction(
+    $source = Mockery::mock(GoogleAddressReferenceSource::class);
+    $source->shouldReceive('fetch')->andReturnUsing(
         fn (string $code): array => [
             'key' => 'MY',
             'fmt' => '%N%n%O%n%A%n%Z %C%n%S',
@@ -15,7 +16,8 @@ it('reports clean countries with success', function (): void {
             'zip' => '\d{5}',
             'zipex' => '43000,50754',
         ],
-    ));
+    );
+    app()->instance(GoogleAddressReferenceSource::class, $source);
 
     $exit = Artisan::call('address:reference:google', ['country' => 'MY']);
 
@@ -24,7 +26,8 @@ it('reports clean countries with success', function (): void {
 });
 
 it('fails with a drift table when the profile disagrees', function (): void {
-    app()->instance(DiffGoogleAddressReferenceAction::class, new DiffGoogleAddressReferenceAction(
+    $source = Mockery::mock(GoogleAddressReferenceSource::class);
+    $source->shouldReceive('fetch')->andReturnUsing(
         fn (string $code): array => [
             'key' => 'MY',
             'fmt' => '%N%n%O%n%A%n%Z %C%n%S',
@@ -33,7 +36,8 @@ it('fails with a drift table when the profile disagrees', function (): void {
             'zip' => '\d{5}',
             'zipex' => '43000',
         ],
-    ));
+    );
+    app()->instance(GoogleAddressReferenceSource::class, $source);
 
     $exit = Artisan::call('address:reference:google', ['country' => 'MY']);
 

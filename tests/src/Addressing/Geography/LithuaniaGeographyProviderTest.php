@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Geography\Lithuania\LithuaniaGeographyProvider;
-use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
@@ -49,13 +49,13 @@ it('seeds consistently and resolves every municipal type through the municipalit
 
     expect($resolver->definitionForRole('LT', 'municipality'))->not->toBeNull();
 
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
 
-    expect($search->execute(query: 'Vilniaus miestas', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
+    expect(array_column($search->execute(query: 'Vilniaus miestas', countryCode: 'LT', role: 'municipality'), 'name'))
         ->toContain('Vilniaus miestas')
-        ->and($search->execute(query: 'Akmenė', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Akmenė', countryCode: 'LT', role: 'municipality'), 'name'))
         ->toContain('Akmenė')
-        ->and($search->execute(query: 'Marijampolė', countryCode: 'LT', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Marijampolė', countryCode: 'LT', role: 'municipality'), 'name'))
         ->toContain('Marijampolė');
 });
 

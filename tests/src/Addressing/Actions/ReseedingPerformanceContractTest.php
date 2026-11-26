@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Data\CountryStateSeedData;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaRole;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +40,10 @@ final class ReseedingContractGeographyProvider implements CountryAddressAreaMeta
         return 'BL';
     }
 
-    public function seed(AddressCountry $country): void {}
+    public function stateSeedData(): CountryStateSeedData
+    {
+        return new CountryStateSeedData([]);
+    }
 
     public function addressHierarchies(): array
     {
@@ -73,21 +76,21 @@ final class ReseedingContractGeographyProvider implements CountryAddressAreaMeta
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [
             'area-0' => [['role' => 'locality', 'country_code' => 'BL', 'is_primary' => true]],
         ];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [
             'area-0' => [['name' => 'Source alias', 'name_type' => 'common', 'is_preferred' => false]],
         ];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return self::$areaCount < 2 ? [] : [
             'area-1' => [[
@@ -106,8 +109,8 @@ beforeEach(function (): void {
 it('keeps real Saint Barthélemy geography and postcode rows unchanged on a no-op reseed', function (): void {
     $country = $this->seedCountry('BL');
 
-    app(SeedCountryGeographiesAction::class)->execute('BL');
-    app(SeedPostalCodesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
 
     $area = AddressArea::query()->where('country_id', $country->getKey())->firstOrFail();
     $postalCode = PostalCode::query()->where('country_code', 'BL')->firstOrFail();
@@ -175,8 +178,8 @@ it('keeps real Saint Barthélemy geography and postcode rows unchanged on a no-o
 
     $this->travel(1)->minutes();
     $captureQueries = true;
-    $geographyResult = app(SeedCountryGeographiesAction::class)->execute('BL');
-    $postalCodeResult = app(SeedPostalCodesAction::class)->execute('BL');
+    $geographyResult = app(CountryGeographySeeder::class)->execute('BL');
+    $postalCodeResult = app(PostalCodeSeeder::class)->execute('BL');
     $captureQueries = false;
 
     expect($snapshot())->toBe($before)
@@ -194,7 +197,7 @@ it('updates source changes by stable identity, overwriting local edits', functio
     ReseedingContractGeographyProvider::$areaCount = 2;
     ReseedingContractGeographyProvider::$areaName = 'Version A';
 
-    $seeder = app(SeedCountryGeographiesAction::class);
+    $seeder = app(CountryGeographySeeder::class);
     $seeder->execute('BL');
 
     $area = AddressArea::query()
@@ -238,7 +241,7 @@ it('keeps geography select counts bounded as a provider grows from 25 to 100 are
             }
         });
 
-        app(SeedCountryGeographiesAction::class)->execute('BL');
+        app(CountryGeographySeeder::class)->execute('BL');
         $captureQueries = false;
 
         return $selects;

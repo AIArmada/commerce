@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Tables;
 
-use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
-use AIArmada\Addressing\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -143,6 +142,7 @@ final class ResolutionGapTable
     public static function matchActionVisible(ResolutionGap $record): bool
     {
         return self::mutatingActionsEnabled()
+            && ! AddressAreaResource::isReadOnly()
             && OwnerUiScope::canMutateRecord($record)
             && ResolutionGapResource::canEdit($record)
             && $record->status === 'open';
@@ -203,6 +203,7 @@ final class ResolutionGapTable
             ->orderBy('name')
             ->limit(50)
             ->get()
+            ->filter(static fn (AddressArea $area): bool => AddressAreaResource::canView($area))
             ->mapWithKeys(static fn (AddressArea $area): array => [(string) $area->getKey() => self::areaLabel($area)])
             ->toArray();
     }
@@ -220,7 +221,14 @@ final class ResolutionGapTable
         $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
         $area = $areaClass::query()->whereKey(mb_trim($areaId))->firstOrFail();
 
-        app(MatchGapToAreaAction::class)->execute($record, $area, self::actor());
+        abort_unless(
+            ! AddressAreaResource::isReadOnly()
+                && AddressAreaResource::canView($area)
+                && AddressAreaResource::canEdit($area),
+            403,
+        );
+
+        app(ResolutionGapCuration::class)->match((string) $record->getKey(), (string) $area->getKey(), self::actor());
 
         Notification::make()
             ->title('Gap matched')
@@ -231,7 +239,7 @@ final class ResolutionGapTable
     public static function runIgnore(ResolutionGap $record): void
     {
         self::assertGapCanMutate($record);
-        app(IgnoreResolutionGapAction::class)->execute($record);
+        app(ResolutionGapCuration::class)->ignore((string) $record->getKey());
 
         Notification::make()
             ->title('Gap ignored')
@@ -259,7 +267,7 @@ final class ResolutionGapTable
         $ignored = 0;
 
         foreach ($gaps as $record) {
-            app(IgnoreResolutionGapAction::class)->execute($record);
+            app(ResolutionGapCuration::class)->ignore((string) $record->getKey());
             $ignored++;
         }
 
@@ -289,7 +297,11 @@ final class ResolutionGapTable
         $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
         $area = $areaClass::query()->with('parent')->whereKey(mb_trim($value))->first();
 
-        return $area instanceof AddressArea ? self::areaLabel($area) : null;
+        if (! $area instanceof AddressArea || ! AddressAreaResource::canView($area)) {
+            return null;
+        }
+
+        return self::areaLabel($area);
     }
 
     private static function areaLabel(AddressArea $area): string

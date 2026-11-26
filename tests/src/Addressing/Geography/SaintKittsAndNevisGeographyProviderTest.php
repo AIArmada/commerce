@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\SaintKittsAndNevis\SaintKittsAndNevisGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('ships 14 parishes under the two island states with parent links', function (): void {
@@ -23,7 +22,7 @@ it('ships 92 villages under their parishes with village roles', function (): voi
         ->and($byId->get('kn:village:sandy-point-town')->parentSourceId)->toBe('kn:parish:saint-anne-sandy-point')
         ->and($byId->get('kn:village:saint-james-windward:camps')->parentSourceId)->toBe('kn:parish:saint-james-windward');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['kn:village:sandy-point-town'][0]['role'])->toBe('village')
         ->and($roles['kn:parish:saint-anne-sandy-point'][0]['role'])->toBe('parish');

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Geography\Djibouti\DjiboutiGeographyProvider;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('ships 20 sub-prefectures under regions with parent links', function (): void {
@@ -40,7 +41,7 @@ it('uses the verified town-article spellings', function (): void {
 it('seeds the 6 ISO 3166-2:DJ first-level divisions', function (): void {
     $country = $this->seedCountry('DJ');
 
-    app(DjiboutiGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(DjiboutiGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 

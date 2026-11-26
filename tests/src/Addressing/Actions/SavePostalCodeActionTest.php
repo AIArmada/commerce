@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +21,7 @@ it('normalizes postcode identity and links validated manual coverage', function 
         'slug' => 'bangsar', 'source' => 'areas', 'source_id' => 'bangsar',
     ]);
 
-    $postcode = app(SavePostalCodeAction::class)->execute([
+    $postcode = PostalCode::query()->findOrFail(app(PostalCodeWriter::class)->execute([
         'country_code' => 'my',
         'code' => ' 50450 ',
         'metadata' => ['owner' => 'admin'],
@@ -30,7 +30,7 @@ it('normalizes postcode identity and links validated manual coverage', function 
             'relationship_type' => 'served_by',
             'is_primary' => true,
         ]],
-    ]);
+    ]));
 
     $link = AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->firstOrFail();
 
@@ -64,7 +64,7 @@ it('preserves provider and inactive manual coverage when manual coverage is omit
         'source' => 'manual', 'source_id' => 'retained-source-id', 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(SavePostalCodeAction::class)->execute(['is_active' => false], $postcode);
+    app(PostalCodeWriter::class)->execute(['is_active' => false], (string) $postcode->getKey());
 
     expect($postcode->fresh()->is_active)->toBeFalse()
         ->and($postcode->fresh()->metadata)->toBe(['existing' => true])
@@ -81,35 +81,35 @@ it('allows an unchanged inactive manual edge but rejects new inactive or cross-c
         'country_code' => 'SG', 'type' => 'locality', 'level' => 1, 'name' => 'Singapore Area',
         'slug' => 'singapore-area', 'source' => 'areas', 'source_id' => 'singapore',
     ]);
-    $postcode = app(SavePostalCodeAction::class)->execute(['country_code' => 'MY', 'code' => '50450']);
+    $postcode = PostalCode::query()->findOrFail(app(PostalCodeWriter::class)->execute(['country_code' => 'MY', 'code' => '50450']));
 
-    expect(fn () => app(SavePostalCodeAction::class)->execute([
+    expect(fn () => app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [[
             'area_id' => $inactive->getKey(),
             'relationship_type' => 'served_by',
             'is_primary' => false,
         ]],
-    ], $postcode))->toThrow(ValidationException::class, 'New manual postcode coverage')
-        ->and(fn () => app(SavePostalCodeAction::class)->execute([
+    ], (string) $postcode->getKey()))->toThrow(ValidationException::class, 'New manual postcode coverage')
+        ->and(fn () => app(PostalCodeWriter::class)->execute([
             'manual_coverage' => [[
                 'area_id' => $foreign->getKey(),
                 'relationship_type' => 'served_by',
                 'is_primary' => false,
             ]],
-        ], $postcode))->toThrow(ValidationException::class, 'New manual postcode coverage');
+        ], (string) $postcode->getKey()))->toThrow(ValidationException::class, 'New manual postcode coverage');
 
     AddressAreaPostalCode::query()->create([
         'postal_code_id' => $postcode->getKey(), 'address_area_id' => $inactive->getKey(),
         'source' => 'manual', 'source_id' => null, 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(SavePostalCodeAction::class)->execute([
+    app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [[
             'area_id' => $inactive->getKey(),
             'relationship_type' => 'served_by',
             'is_primary' => true,
         ]],
-    ], $postcode);
+    ], (string) $postcode->getKey());
 
     expect(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->value('is_primary'))->toBeTrue();
 });
@@ -125,15 +125,44 @@ it('keeps country and postcode identity immutable during updates with coverage',
         'source' => 'provider', 'source_id' => 'provider-1', 'relationship_type' => 'served_by', 'is_primary' => true,
     ]);
 
-    app(SavePostalCodeAction::class)->execute([
+    app(PostalCodeWriter::class)->execute([
         'country_code' => 'SG',
         'code' => '99999',
         'is_active' => false,
-    ], $postcode);
+    ], (string) $postcode->getKey());
 
     expect($postcode->fresh()->country_code)->toBe('MY')
         ->and($postcode->fresh()->code)->toBe('50450')
         ->and($postcode->fresh()->is_active)->toBeFalse();
+});
+
+it('preserves imported manual coverage and rejects a duplicate operator edge', function (): void {
+    $area = AddressArea::query()->create([
+        'country_code' => 'MY', 'type' => 'locality', 'level' => 1, 'name' => 'Bangsar',
+        'slug' => 'bangsar', 'source' => 'areas', 'source_id' => 'bangsar',
+    ]);
+    $postcode = PostalCode::query()->create(['country_code' => 'MY', 'code' => '50450']);
+    $importedLink = AddressAreaPostalCode::query()->create([
+        'postal_code_id' => $postcode->getKey(), 'address_area_id' => $area->getKey(),
+        'source' => 'manual', 'source_id' => 'batch-coverage', 'relationship_type' => 'served_by', 'is_primary' => false,
+    ]);
+
+    $writer = app(PostalCodeWriter::class);
+    $writer->execute(['manual_coverage' => []], (string) $postcode->getKey());
+
+    expect($importedLink->fresh())->not->toBeNull();
+
+    expect(fn () => $writer->execute([
+        'manual_coverage' => [[
+            'area_id' => $area->getKey(),
+            'relationship_type' => 'served_by',
+            'is_primary' => true,
+        ]],
+    ], (string) $postcode->getKey()))->toThrow(ValidationException::class, 'An imported coverage link already uses this area and relationship type.');
+
+    expect(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->count())->toBe(1)
+        ->and($importedLink->fresh()?->source_id)->toBe('batch-coverage')
+        ->and($importedLink->fresh()?->is_primary)->toBeFalse();
 });
 
 it('locks selected manual coverage areas in primary-key order', function (): void {
@@ -153,12 +182,12 @@ it('locks selected manual coverage areas in primary-key order', function (): voi
         }
     });
 
-    app(SavePostalCodeAction::class)->execute([
+    app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [
             ['area_id' => $areaTwo->getKey(), 'relationship_type' => 'served_by', 'is_primary' => false],
             ['area_id' => $areaOne->getKey(), 'relationship_type' => 'covers', 'is_primary' => true],
         ],
-    ], $postcode);
+    ], (string) $postcode->getKey());
 
     $areaTable = mb_strtolower((new AddressArea)->getTable());
     $areaLockQueries = collect($queries)->filter(static fn (string $sql): bool => str_contains($sql, $areaTable)

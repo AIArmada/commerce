@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Contracts\AddressNormalizer;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     $this->seedCountry('US');
@@ -28,7 +30,7 @@ beforeEach(function (): void {
 });
 
 it('resolves free-text geography to canonical country state and city ids', function (): void {
-    $address = app(NormalizeAddressDataAction::class)->normalize([
+    $address = app(AddressNormalizer::class)->normalize([
         'country_code' => ' us ',
         'state' => ' new york ',
         'city' => ' new york city ',
@@ -44,7 +46,7 @@ it('resolves free-text geography to canonical country state and city ids', funct
 });
 
 it('resolves a country name before resolving its free-text geography', function (): void {
-    $address = app(NormalizeAddressDataAction::class)->normalize([
+    $address = app(AddressNormalizer::class)->normalize([
         'country' => ' United States ',
         'state' => 'New York',
         'city' => 'New York City',
@@ -55,6 +57,29 @@ it('resolves a country name before resolving its free-text geography', function 
         ->and($address->countryCode)->toBe('US');
 });
 
+it('reuses explicit reference lookups within the request', function (): void {
+    $normalizer = app(AddressNormalizer::class);
+    $payload = [
+        'country_id' => $this->city->country_id,
+        'state_id' => $this->city->state_id,
+        'city_id' => $this->city->getKey(),
+    ];
+    $queries = [];
+
+    DB::listen(static function (QueryExecuted $query) use (&$queries): void {
+        $sql = mb_strtolower($query->sql);
+
+        if (str_starts_with($sql, 'select') && preg_match('/from "(countries|states|cities)"/', $sql) === 1) {
+            $queries[] = $sql;
+        }
+    });
+
+    $normalizer->normalize($payload);
+    $normalizer->normalize($payload);
+
+    expect($queries)->toHaveCount(3);
+});
+
 it('rejects an explicit city linked to a different state', function (): void {
     $otherState = State::query()->create([
         'country_id' => $this->city->country_id,
@@ -63,7 +88,7 @@ it('rejects an explicit city linked to a different state', function (): void {
         'code' => 'CA',
     ]);
 
-    expect(fn (): mixed => app(NormalizeAddressDataAction::class)->normalize([
+    expect(fn (): mixed => app(AddressNormalizer::class)->normalize([
         'country_id' => $this->city->country_id,
         'state_id' => $otherState->getKey(),
         'city_id' => $this->city->getKey(),

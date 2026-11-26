@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Contracts\AddressWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 
 final class CreateAddress extends CreateRecord
@@ -18,31 +17,24 @@ final class CreateAddress extends CreateRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressResource::isReadOnly();
+        return ! AddressResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function handleRecordCreation(array $data): Address
     {
-        return DB::transaction(function () use ($data): Address {
-            $modelClass = AddressResource::getModel();
-            $address = new $modelClass;
+        $modelClass = AddressResource::getModel();
 
-            if (! $address instanceof Address) {
-                throw new LogicException('Configured address model must extend Address.');
-            }
+        if (! is_a($modelClass, Address::class, true)) {
+            throw new LogicException('Invalid addressing resource model.');
+        }
+        $id = app(AddressWriter::class)->execute(
+            $data,
+            $this->areaAssignments(),
+            modelClass: $modelClass,
+            assignmentMetadata: ['source' => 'filament-addressing'],
+        );
 
-            $address->fill($data);
-            $address->save();
-
-            app(SyncAddressAreaAssignmentsAction::class)->execute(
-                $address,
-                $this->areaAssignments(),
-                $address->state_id,
-                ['source' => 'filament-addressing'],
-            );
-
-            return $address;
-        });
+        return $modelClass::query()->findOrFail($id);
     }
 
     /** @return array<string, string|null> */

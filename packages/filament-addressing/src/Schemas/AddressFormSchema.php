@@ -6,10 +6,10 @@ namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
 use AIArmada\Addressing\Rules\ValidPostalCode;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -275,7 +275,7 @@ class AddressFormSchema
      *
      * Area selects are dehydrated(false), so consumers must read them via
      * `$form->getRawState()` and pass the result to
-     * SyncAddressAreaAssignmentsAction after saving the address.
+     * AddressAssignmentWriter after saving the address.
      *
      * @param  array<string, mixed>  $rawState
      * @return array<string, string|null>

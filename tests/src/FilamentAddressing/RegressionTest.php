@@ -2,21 +2,22 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAddressing\Exports\AddressExporter;
 use AIArmada\FilamentAddressing\Exports\PostalCodeExporter;
 use AIArmada\FilamentAddressing\Imports\PostalCodeImporter;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\RelationManagers\AddressesRelationManager;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
@@ -26,7 +27,6 @@ use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\CreatePostalC
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\EditPostalCode;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\ListPostalCodes;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Tables\AddressAreaTable;
 use AIArmada\FilamentAddressing\Tables\AddressCityTable;
 use AIArmada\FilamentAddressing\Tables\AddressCountryTable;
@@ -46,7 +46,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 });
 
 it('creates addresses with the configured model override', function (): void {

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\UpdateAddressAttachmentAction;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Contracts\AddressNavigationLinks;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\ResolutionGap;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Commerce\Tests\Fixtures\FilamentAddressingPanelUser;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -59,7 +59,7 @@ final class AddressAdminCapabilitiesTestPolicy
 
 beforeEach(function (): void {
     AddressAdminCapabilitiesTestPolicy::$viewedAddressIds = [];
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     config()->set('auth.providers.users.model', FilamentAddressingPanelUser::class);
     Filament::auth()->login(FilamentAddressingPanelUser::query()->create(User::factory()->raw()));
     Gate::define('customers.addresses.create', fn (): bool => true);
@@ -169,14 +169,6 @@ it('keeps natural keys stable for states without provider codes', function (): v
         'name' => 'Manual state',
         'code' => null,
     ]);
-    $page = app(EditAddressState::class);
-    $page->record = $state;
-    $mutate = new ReflectionMethod(EditAddressState::class, 'mutateFormDataBeforeSave');
-    $mutate->setAccessible(true);
-
-    expect($mutate->invoke($page, ['name' => 'Forged rename', 'latitude' => 3.12]))
-        ->not->toHaveKey('name');
-
     Livewire::test(EditAddressState::class, ['record' => $state->getRouteKey()])
         ->fillForm(['name' => 'Forged rename', 'latitude' => 3.12])
         ->call('save')
@@ -254,7 +246,7 @@ it('hides attachments whose related address is outside the current owner scope',
     OwnerContext::withOwner($owner, function () use ($customer, $forgedAttachment): void {
         expect(Addressable::query()->whereKey($forgedAttachment->getKey())->exists())->toBeTrue();
         expect($customer->addressAttachments()->exists())->toBeFalse();
-        expect(fn () => app(UpdateAddressAttachmentAction::class)->execute($forgedAttachment, [
+        expect(fn () => app(AddressAttachmentWriter::class)->execute((string) $forgedAttachment->getKey(), [
             'type' => 'billing',
             'is_primary' => true,
         ]))->toThrow(ModelNotFoundException::class);
@@ -273,7 +265,7 @@ it('generates safe navigation links from live and saved address coordinates', fu
         'waze_url' => 'data:text/html,unsafe',
     ]));
 
-    $links = app(BuildAddressNavigationLinksAction::class)->execute($address);
+    $links = app(AddressNavigationLinks::class)->build(AddressData::from($address->attributesToArray()));
 
     expect($links['google_maps_url'])->toStartWith('https://www.google.com/maps/search/')
         ->and($links['waze_url'])->toStartWith('https://waze.com/ul?');
@@ -286,7 +278,7 @@ it('generates safe navigation links from live and saved address coordinates', fu
         'google_maps_url' => null,
         'waze_url' => null,
     ]));
-    $renderedLinks = app(BuildAddressNavigationLinksAction::class)->execute($renderedAddress);
+    $renderedLinks = app(AddressNavigationLinks::class)->build(AddressData::from($renderedAddress->attributesToArray()));
 
     OwnerContext::withOwner($owner, function () use ($renderedAddress, $renderedLinks): void {
         test()->get(AddressResource::getUrl('view', ['record' => $renderedAddress]))->assertOk();
@@ -306,7 +298,7 @@ it('generates safe navigation links from live and saved address coordinates', fu
         'waze_url' => null,
     ]));
 
-    $snapshotLinks = app(BuildAddressNavigationLinksAction::class)->execute(
+    $snapshotLinks = app(AddressNavigationLinks::class)->build(
         AddressData::from($snapshot->attributesToArray()),
     );
 

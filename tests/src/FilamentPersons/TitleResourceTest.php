@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\FilamentPersons\Resources\TitleResource;
 use AIArmada\Persons\Models\Title;
 use Filament\Tables\Columns\TextColumn;

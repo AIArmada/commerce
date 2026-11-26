@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\CompositeAddressAreaSource;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
@@ -33,7 +33,7 @@ it('streams the opt-in villages when the flag is on', function (): void {
 it('seeds the 38 ISO provinces including the six Papuas', function (): void {
     $country = $this->seedCountry('ID');
 
-    app(IndonesiaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(IndonesiaGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 
@@ -68,14 +68,14 @@ it('pins the verified regency, city, and district counts', function (): void {
 it('exposes village roles when the villages flag is on', function (): void {
     config()->set('addressing.geography.indonesia.villages', true);
 
-    $roles = app(IndonesiaGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(IndonesiaGeographyProvider::class)->areaRoles();
 
     expect($roles['id:village:1101012001'][0]['role'])->toBe('village')
         ->and($roles['id:urban_village:1201011001'][0]['role'])->toBe('village');
 });
 
 it('links deep areas to their province ancestor', function (): void {
-    $relationships = app(IndonesiaGeographyProvider::class)->areaRelationships(new AddressCountry);
+    $relationships = app(IndonesiaGeographyProvider::class)->areaRelationships();
 
     expect($relationships['id:district:110101'])->toHaveCount(2)
         ->and($relationships['id:district:110101'][0]['parent_source_id'])->toBe('id:regency:1101')

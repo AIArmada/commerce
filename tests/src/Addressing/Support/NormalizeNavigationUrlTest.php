@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Support\NormalizeNavigationUrl;
+use AIArmada\Addressing\Data\NormalizeNavigationUrl;
 
 beforeEach(function (): void {
     $this->normalizer = new NormalizeNavigationUrl;
@@ -42,4 +42,8 @@ it('rejects javascript scheme', function (): void {
 
 it('rejects ftp scheme', function (): void {
     expect($this->normalizer->normalize('ftp://example.com/file'))->toBeNull();
+});
+
+it('rejects embedded credentials in navigation URLs', function (): void {
+    expect($this->normalizer->normalize('https://trusted.example@untrusted.example/maps'))->toBeNull();
 });

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
@@ -15,7 +15,7 @@ beforeEach(function (): void {
     };
     $this->snapshotable->save();
 
-    $this->action = app(CreateAddressSnapshotAction::class);
+    $this->action = app(AddressSnapshotWriter::class);
 });
 
 it('rejects updates to existing snapshots', function (): void {
@@ -24,7 +24,7 @@ it('rejects updates to existing snapshots', function (): void {
         'city' => 'Kuala Lumpur',
         'country_code' => 'MY',
     ]);
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'order_placed');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), (string) $address->getKey(), reason: 'order_placed'));
 
     expect(fn (): mixed => $snapshot->update(['line1' => 'Changed Line']))
         ->toThrow(LogicException::class, 'immutable');
@@ -37,11 +37,12 @@ it('rejects updates to existing snapshots', function (): void {
 });
 
 it('still allows snapshot creation and deletion', function (): void {
-    $snapshot = $this->action->execute(
-        $this->snapshotable,
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute(
+        $this->snapshotable->getMorphClass(),
+        $this->snapshotable->getKey(),
         AddressData::from(['line1' => '123 Main St', 'countryCode' => 'MY']),
         reason: 'order_placed',
-    );
+    ));
 
     expect($snapshot->exists)->toBeTrue()
         ->and(AddressSnapshot::query()->whereKey($snapshot->getKey())->exists())->toBeTrue();
@@ -59,7 +60,7 @@ it('freezes formatted lines from the address model payload', function (): void {
         'country_code' => 'MY',
     ])->fresh();
 
-    $snapshot = $this->action->execute($this->snapshotable, $address, reason: 'order_placed');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($this->snapshotable->getMorphClass(), $this->snapshotable->getKey(), (string) $address->getKey(), reason: 'order_placed'));
 
     expect($snapshot->formatted_address)->toBe($address->formatted_address)
         ->and($snapshot->formatted_lines)->toBe(explode("\n", (string) $snapshot->formatted_address))
@@ -67,26 +68,28 @@ it('freezes formatted lines from the address model payload', function (): void {
 });
 
 it('freezes multiline formatted lines from address data', function (): void {
-    $snapshot = $this->action->execute(
-        $this->snapshotable,
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute(
+        $this->snapshotable->getMorphClass(),
+        $this->snapshotable->getKey(),
         AddressData::from([
             'line1' => '123 Main St',
             'countryCode' => 'MY',
             'formatted' => "123 Main St\n50450 Kuala Lumpur\nMalaysia",
         ]),
         reason: 'order_placed',
-    );
+    ));
 
     expect($snapshot->formatted_address)->toBe("123 Main St\n50450 Kuala Lumpur\nMalaysia")
         ->and($snapshot->formatted_lines)->toBe(['123 Main St', '50450 Kuala Lumpur', 'Malaysia']);
 });
 
 it('stores null formatted lines when formatting is empty', function (): void {
-    $snapshot = $this->action->execute(
-        $this->snapshotable,
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute(
+        $this->snapshotable->getMorphClass(),
+        $this->snapshotable->getKey(),
         AddressData::from(['countryCode' => 'MY']),
         reason: 'order_placed',
-    );
+    ));
 
     expect($snapshot->formatted_address)->toBeNull()
         ->and($snapshot->formatted_lines)->toBeNull();

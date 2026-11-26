@@ -63,7 +63,7 @@ final class MembershipsRelationManager extends RelationManager
         return $schema->schema([
             Select::make('affiliate_id')
                 ->getSearchResultsUsing(fn (string $search): array => AffiliateReferenceProjection::options($search))
-                ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : AffiliateReferenceProjection::label($id))
+                ->getOptionLabelUsing(fn (?string $value): ?string => $value === null ? null : AffiliateReferenceProjection::label($value))
                 ->disabledOn('edit')
                 ->searchable()
                 ->required(),

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Contracts\CityDatasetSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 beforeEach(function (): void {
     $this->seedCountry('US');
-    $this->action = app(SeedAddressCitiesAction::class);
+    $this->action = app(CityDatasetSeeder::class);
 });
 
 it('does not collapse same-name cities across different states', function (): void {
-    app(SeedAddressStatesAction::class)->execute([
+    app(StateDatasetSeeder::class)->execute([
         ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
         ['name' => 'Beta', 'state_code' => 'BB', 'country_code' => 'US'],
     ]);
@@ -30,7 +30,7 @@ it('does not collapse same-name cities across different states', function (): vo
 });
 
 it('links cities to the correct state', function (): void {
-    app(SeedAddressStatesAction::class)->execute([
+    app(StateDatasetSeeder::class)->execute([
         ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
     ]);
 
@@ -55,7 +55,7 @@ it('stores city with null state when state_code is absent', function (): void {
 });
 
 it('is idempotent', function (): void {
-    app(SeedAddressStatesAction::class)->execute([
+    app(StateDatasetSeeder::class)->execute([
         ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
     ]);
 
@@ -72,7 +72,7 @@ it('is idempotent', function (): void {
 });
 
 it('updates existing city in place on re-seed', function (): void {
-    app(SeedAddressStatesAction::class)->execute([
+    app(StateDatasetSeeder::class)->execute([
         ['name' => 'Alpha', 'state_code' => 'AA', 'country_code' => 'US'],
     ]);
 

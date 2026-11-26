@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Models\Customer;
 
@@ -49,14 +51,19 @@ trait SynchronizesCustomerAddresses
             return;
         }
 
-        $address = Address::create($payload->toModelAttributes());
+        $addressId = app(AddressWriter::class)->execute($payload->toModelAttributes(), []);
 
-        $customer->attachAddress(
-            address: $address,
+        app(AddressAttachmentWriter::class)->attach(
+            addressId: $addressId,
+            addressableType: $customer->getMorphClass(),
+            addressableId: (string) $customer->getKey(),
             type: $type->value,
             isPrimary: $setAsPrimary && $customer->primaryAddress($type->value) === null,
             label: $payload->label,
         );
+
+        $customer->unsetRelation('addresses');
+        $customer->unsetRelation('addressAttachments');
     }
 
     /**

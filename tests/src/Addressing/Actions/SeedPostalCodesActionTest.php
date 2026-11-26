@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
-use AIArmada\Addressing\Actions\SeedPostalCodesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
 
 beforeEach(function (): void {
     config(['addressing.geography.providers' => [SaintBarthelemyGeographyProvider::class]]);
@@ -14,9 +14,9 @@ beforeEach(function (): void {
 
 it('seeds postcodes and links for one country', function (): void {
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 
-    $result = app(SeedPostalCodesAction::class)->execute('BL');
+    $result = app(PostalCodeSeeder::class)->execute('BL');
 
     expect($result['seeded'])->toBe(['BL'])
         ->and($result['codes']['BL'])->toBe(['created' => 1, 'updated' => 0, 'skipped' => 0, 'links' => 1])
@@ -27,10 +27,10 @@ it('seeds postcodes and links for one country', function (): void {
 
 it('is idempotent on re-run', function (): void {
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 
-    app(SeedPostalCodesAction::class)->execute('BL');
-    $second = app(SeedPostalCodesAction::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
+    $second = app(PostalCodeSeeder::class)->execute('BL');
 
     expect($second['codes']['BL'])->toBe(['created' => 0, 'updated' => 0, 'skipped' => 1, 'links' => 0])
         ->and(PostalCode::query()->where('country_code', 'BL')->count())->toBe(1)
@@ -38,7 +38,7 @@ it('is idempotent on re-run', function (): void {
 });
 
 it('skips unknown country codes', function (): void {
-    $result = app(SeedPostalCodesAction::class)->execute('XX');
+    $result = app(PostalCodeSeeder::class)->execute('XX');
 
     expect($result['seeded'])->toBe([])
         ->and($result['codes'])->toBe([])
@@ -48,7 +48,7 @@ it('skips unknown country codes', function (): void {
 it('skips datasets without a configured provider', function (): void {
     config(['addressing.geography.providers' => []]);
 
-    $result = app(SeedPostalCodesAction::class)->execute();
+    $result = app(PostalCodeSeeder::class)->execute();
 
     expect($result['seeded'])->toBe([])
         ->and($result['skipped'])->toContain('BL')
@@ -59,7 +59,7 @@ it('covers every bundled dataset with the default providers', function (): void 
     $bundled = require __DIR__ . '/../../../../packages/addressing/config/addressing.php';
     config(['addressing.geography.providers' => $bundled['geography']['providers']]);
 
-    $result = app(SeedPostalCodesAction::class)->execute('XX');
+    $result = app(PostalCodeSeeder::class)->execute('XX');
 
     $provided = [];
 
@@ -73,11 +73,11 @@ it('covers every bundled dataset with the default providers', function (): void 
 });
 
 it('throws when the country has not been seeded', function (): void {
-    app(SeedPostalCodesAction::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
 })->throws(InvalidArgumentException::class, 'Cannot seed postcodes for BL because the country has not been seeded.');
 
 it('throws when areas are missing', function (): void {
     $this->seedCountry('BL');
 
-    app(SeedPostalCodesAction::class)->execute('BL');
+    app(PostalCodeSeeder::class)->execute('BL');
 })->throws(InvalidArgumentException::class, 'Seed country geographies first.');

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
+use AIArmada\Addressing\Features\Geography\Models\State;
 
 beforeEach(function (): void {
     $this->seedCountry('US');
-    $this->action = app(SeedAddressStatesAction::class);
+    $this->action = app(StateDatasetSeeder::class);
 });
 
 it('seeds states with codes', function (): void {

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Thailand\ThailandGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('ships 76 provinces plus Bangkok and Pattaya', function (): void {
@@ -30,7 +29,7 @@ it('ships 928 amphoe and khet under provinces with parent links', function (): v
 });
 
 it('declares Bangkok official Thai name and Pattaya ISO spelling', function (): void {
-    $names = app(ThailandGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(ThailandGeographyProvider::class)->areaNames();
 
     expect($names['th:metropolitan_administration:bangkok'][0])->toBe(['name' => 'Krung Thep Maha Nakhon', 'name_type' => 'official'])
         ->and($names['th:metropolitan_administration:pattaya'][0]['name'])->toBe('Phatthaya');

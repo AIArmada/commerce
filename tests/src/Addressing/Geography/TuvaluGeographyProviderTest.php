@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Tuvalu\TuvaluGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 
 it('names the island council Niutao without a type suffix', function (): void {
     $areas = app(TuvaluGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -14,7 +13,7 @@ it('names the island council Niutao without a type suffix', function (): void {
 });
 
 it('roles Funafuti town council with the island-council selector', function (): void {
-    $roles = app(TuvaluGeographyProvider::class)->areaRoles(new AddressCountry);
+    $roles = app(TuvaluGeographyProvider::class)->areaRoles();
 
     expect($roles['tv:town_council:funafuti'][0]['role'])->toBe('island_council');
 });
@@ -38,7 +37,7 @@ it('pins the verified Tuvalu tree of 8 councils', function (): void {
         ->and($byId->get('tv:island_council:nukulaelae')->code)->toBe('NKL')
         ->and($byId->get('tv:island_council:vaitupu')->code)->toBe('VAI');
 
-    $names = app(TuvaluGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(TuvaluGeographyProvider::class)->areaNames();
 
     expect($names['tv:island_council:nanumanga'][0]['name'])->toBe('Nanumaga');
 });

@@ -84,7 +84,7 @@ if (config('customers.features.owner.enabled')) {
         ->forOwner($owner, includeGlobal: false)
         ->findOrFail($customerId);
     
-    $address = \AIArmada\Addressing\Models\Address::create([...]);
+    $address = \AIArmada\Addressing\Features\AddressLifecycle\Models\Address::create([...]);
     $customer->attachAddress($address, type: 'shipping', isPrimary: true);
 }
 ```

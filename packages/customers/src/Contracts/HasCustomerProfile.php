@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Contracts;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 

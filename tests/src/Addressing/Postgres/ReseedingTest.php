@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ExportAddressingReferencesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Data\CountryStateSeedData;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\ExportAddressingReferencesAction;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportFile;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
-use AIArmada\Addressing\Support\ReferenceExportFile;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +32,10 @@ final class PostgresReseedingGeographyProvider implements CountryAddressAreaMeta
         return 'BL';
     }
 
-    public function seed(AddressCountry $country): void {}
+    public function stateSeedData(): CountryStateSeedData
+    {
+        return new CountryStateSeedData([]);
+    }
 
     public function addressHierarchies(): array
     {
@@ -65,17 +68,17 @@ final class PostgresReseedingGeographyProvider implements CountryAddressAreaMeta
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
     }
@@ -168,7 +171,7 @@ it('keeps decimal geography and JSON stable on PostgreSQL no-op reseeds', functi
     config(['addressing.geography.providers' => [PostgresReseedingGeographyProvider::class]]);
     $this->seedCountry('BL');
 
-    $seeder = app(SeedCountryGeographiesAction::class);
+    $seeder = app(CountryGeographySeeder::class);
     $seeder->execute('BL');
 
     $area = AddressArea::query()
@@ -209,7 +212,7 @@ it('holds the PostgreSQL area row lock until its source update commits', functio
     config(['addressing.geography.providers' => [PostgresReseedingGeographyProvider::class]]);
     $this->seedCountry('BL');
 
-    $seeder = app(SeedCountryGeographiesAction::class);
+    $seeder = app(CountryGeographySeeder::class);
     $seeder->execute('BL');
 
     $area = AddressArea::query()
@@ -299,7 +302,7 @@ it('holds the PostgreSQL area row lock until its source update commits', functio
 it('exports the same PostgreSQL reference snapshot as canonical JSON records', function (): void {
     config(['addressing.geography.providers' => [PostgresReseedingGeographyProvider::class]]);
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 
     DB::connection('testing')->commit();
 

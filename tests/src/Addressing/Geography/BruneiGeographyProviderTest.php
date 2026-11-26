@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Brunei\BruneiGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('pins the verified Brunei tree of 4 districts and 39 mukims', function (): void {
@@ -67,7 +66,7 @@ it('holds the 2026-10-06 retry verdicts: Kedayan BK incumbents kept, family-only
 });
 
 it('exposes the Brunei Post finder spellings as alternative names', function (): void {
-    $names = app(BruneiGeographyProvider::class)->areaNames(new AddressCountry);
+    $names = app(BruneiGeographyProvider::class)->areaNames();
 
     expect($names['bn:mukim:burong-pingai-ayer'])->toContain(
         ['name' => 'Burong Pinggai Ayer', 'name_type' => 'alternative'],

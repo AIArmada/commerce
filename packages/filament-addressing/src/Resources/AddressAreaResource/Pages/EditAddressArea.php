@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages;
 
-use AIArmada\Addressing\Actions\SaveAddressAreaAction;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Support\AddressAreaHierarchy;
+use AIArmada\Addressing\Contracts\AddressAreaWriter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Support\AddressAreaHierarchy;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Schemas\AddressAreaFormSchema;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +22,7 @@ final class EditAddressArea extends EditRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! AddressAreaResource::isReadOnly();
+        return ! AddressAreaResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function getHeaderActions(): array
@@ -124,10 +124,10 @@ final class EditAddressArea extends EditRecord
             unset($data['source'], $data['source_id'], $data['parent_source_id']);
         }
 
-        $area = app(SaveAddressAreaAction::class)->handle($data, $record);
+        $id = app(AddressAreaWriter::class)->handle($data, (string) $record->getKey(), $record::class);
 
         AddressingFilterOptions::forgetAreaOptions();
 
-        return $area;
+        return $record->newQuery()->with(['country', 'parent'])->findOrFail($id);
     }
 }

@@ -2,28 +2,32 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'kl', countryCode: 'MY', type: 'locality', level: 2, name: 'Wilayah Persekutuan Kuala Lumpur'),
         new AddressAreaData(source: 'areas', sourceId: 'pj', countryCode: 'MY', type: 'locality', level: 2, name: 'Petaling Jaya'),
         new AddressAreaData(source: 'areas', sourceId: 'district', countryCode: 'MY', type: 'district', level: 2, name: 'Petaling'),
@@ -32,9 +36,37 @@ beforeEach(function (): void {
     $this->areas = AddressArea::query()->where('source', 'areas')->get()->keyBy('source_id');
 });
 
+final class CustomResolutionGapResourceModel extends ResolutionGap {}
+
+final class DeniedGapAreaPolicy
+{
+    public function view(User $user, AddressArea $area): bool
+    {
+        return false;
+    }
+
+    public function update(User $user, AddressArea $area): bool
+    {
+        return false;
+    }
+}
+
+final class AllowedGapAreaPolicy
+{
+    public function view(User $user, AddressArea $area): bool
+    {
+        return true;
+    }
+
+    public function update(User $user, AddressArea $area): bool
+    {
+        return true;
+    }
+}
+
 function logTestGap(string $value = 'Kuala Lumpur', string $role = 'postal_locality', string $reason = 'unmatched'): ResolutionGap
 {
-    return app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', $role, $value, $reason);
+    return ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', $role, $value, $reason));
 }
 
 it('registers the resolution gap resource with the configured model', function (): void {
@@ -98,6 +130,28 @@ it('matches a gap through the core action', function (): void {
     expect($gap->fresh()?->status)->toBe('matched')
         ->and($gap->fresh()?->matched_area_id)->toBe($this->areas['kl']->getKey())
         ->and(AddressAreaName::query()->where('address_area_id', $this->areas['kl']->getKey())->where('name', 'Kuala Lumpur')->exists())->toBeTrue();
+});
+
+it('requires area view and update authorization for gap matching', function (): void {
+    $this->actingAs(User::factory()->create());
+    $gap = logTestGap();
+    Gate::policy(AddressArea::class, DeniedGapAreaPolicy::class);
+
+    expect(ResolutionGapTable::searchAreas('petaling', $gap))->toBe([])
+        ->and(fn (): mixed => ResolutionGapTable::runMatch($gap, ['address_area_id' => $this->areas['kl']->getKey()]))
+        ->toThrow(HttpException::class);
+});
+
+it('requires editable areas even when the area policy allows updates', function (): void {
+    $this->actingAs(User::factory()->create());
+    $gap = logTestGap();
+    Gate::policy(AddressArea::class, AllowedGapAreaPolicy::class);
+    config()->set('filament-addressing.resources.areas.read_only', true);
+
+    expect(ResolutionGapTable::matchActionVisible($gap))->toBeFalse()
+        ->and(ResolutionGapTable::searchAreas('petaling', $gap))->not->toBe([])
+        ->and(fn (): mixed => ResolutionGapTable::runMatch($gap, ['address_area_id' => $this->areas['kl']->getKey()]))
+        ->toThrow(HttpException::class);
 });
 
 it('surfaces core match failures', function (): void {
@@ -181,4 +235,36 @@ it('scopes cached gap roles per owner with global roles shared', function (): vo
 
     expect($rolesA)->toBe(['alpha_probe' => 'Alpha probe', 'global_probe' => 'Global probe'])
         ->and($rolesB)->toBe(['beta_probe' => 'Beta probe', 'global_probe' => 'Global probe']);
+});
+
+it('separates cached gap roles by configured table', function (): void {
+    logTestGap('First table', 'first_table_probe');
+    expect(AddressingFilterOptions::gapRoles())->toBe(['first_table_probe' => 'First table probe']);
+
+    $original = config('addressing.database.tables.resolution_gaps');
+    $alternate = 'address_resolution_gaps_filter_probe';
+    Schema::create($alternate, function (Blueprint $table): void {
+        $table->string('role');
+        $table->nullableMorphs('owner');
+    });
+
+    try {
+        config()->set('addressing.database.tables.resolution_gaps', $alternate);
+
+        expect(AddressingFilterOptions::gapRoles())->toBe([]);
+    } finally {
+        config()->set('addressing.database.tables.resolution_gaps', $original);
+        Schema::dropIfExists($alternate);
+    }
+});
+
+it('uses the feature configured model when no Filament-specific override is present', function (): void {
+    config()->set('addressing.models.resolution_gap', CustomResolutionGapResourceModel::class);
+    config()->set('filament-addressing.resources.resolution_gaps.model', null);
+
+    expect(ResolutionGapResource::getModel())->toBe(CustomResolutionGapResourceModel::class);
+
+    $id = app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Configured model');
+
+    expect(CustomResolutionGapResourceModel::query()->findOrFail($id))->toBeInstanceOf(CustomResolutionGapResourceModel::class);
 });

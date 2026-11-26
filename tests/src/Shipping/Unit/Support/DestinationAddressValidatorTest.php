@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Support\DestinationAddressValidator;
 
@@ -34,4 +35,11 @@ it('reports malformed postcodes', function (): void {
     $violations = app(DestinationAddressValidator::class)->validate(shippableTestDestination(['postcode' => 'ABC']));
 
     expect($violations)->toHaveKey('postcode');
+});
+
+it('returns no violations when the optional addressing integration is unavailable', function (): void {
+    app()->offsetUnset(AddressValidator::class);
+
+    expect(app()->bound(AddressValidator::class))->toBeFalse()
+        ->and(app(DestinationAddressValidator::class)->validate(shippableTestDestination(['city' => null])))->toBe([]);
 });

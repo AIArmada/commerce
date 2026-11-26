@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
-    $this->action = app(CreateAddressSnapshotAction::class);
+    $this->action = app(AddressSnapshotWriter::class);
 });
 
 it('snapshots address data from AddressData', function (): void {
@@ -26,7 +26,7 @@ it('snapshots address data from AddressData', function (): void {
         'countryCode' => 'MY',
     ]);
 
-    $snapshot = $this->action->execute($snapshotable, $addressData, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), $addressData, reason: 'test'));
 
     expect($snapshot)->toBeInstanceOf(AddressSnapshot::class);
     expect($snapshot->line1)->toBe('123 Main St');
@@ -44,8 +44,9 @@ it('rejects an empty snapshot reason', function (): void {
     };
     $snapshotable->save();
 
-    expect(fn (): AddressSnapshot => $this->action->execute(
-        $snapshotable,
+    expect(fn (): string => $this->action->execute(
+        $snapshotable->getMorphClass(),
+        $snapshotable->getKey(),
         AddressData::from(['line1' => '123 Main St', 'countryCode' => 'MY']),
         reason: '   ',
     ))->toThrow(InvalidArgumentException::class, 'non-empty string');
@@ -66,7 +67,7 @@ it('snapshots address from Address model', function (): void {
         'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
     ]);
 
-    $snapshot = $this->action->execute($snapshotable, $address, reason: 'order_placed');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), (string) $address->getKey(), reason: 'order_placed'));
 
     expect($snapshot->line1)->toBe('123 Main St');
     expect($snapshot->city)->toBe('Kuala Lumpur');
@@ -87,12 +88,12 @@ it('snapshots the address label from AddressData and Address', function (): void
         'country_code' => 'MY',
     ]);
 
-    $modelSnapshot = $this->action->execute($snapshotable, $address);
-    $dataSnapshot = $this->action->execute($snapshotable, AddressData::from([
+    $modelSnapshot = AddressSnapshot::query()->findOrFail($this->action->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), (string) $address->getKey()));
+    $dataSnapshot = AddressSnapshot::query()->findOrFail($this->action->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), AddressData::from([
         'label' => 'Billing',
         'line1' => '456 Main St',
         'countryCode' => 'MY',
-    ]));
+    ])));
 
     expect($modelSnapshot->label)->toBe('Warehouse')
         ->and($dataSnapshot->label)->toBe('Billing');
@@ -112,7 +113,7 @@ it('snapshot copies latitude and longitude from address', function (): void {
         'longitude' => 101.6678,
     ]);
 
-    $snapshot = $this->action->execute($snapshotable, $address, reason: 'test');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), (string) $address->getKey(), reason: 'test'));
 
     expect($snapshot->latitude)->toBe(3.1712);
     expect($snapshot->longitude)->toBe(101.6678);
@@ -133,7 +134,7 @@ it('snapshot remains unchanged when original address changes', function (): void
         'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
     ]);
 
-    $snapshot = $this->action->execute($snapshotable, $address, reason: 'order_placed');
+    $snapshot = AddressSnapshot::query()->findOrFail($this->action->execute($snapshotable->getMorphClass(), $snapshotable->getKey(), (string) $address->getKey(), reason: 'order_placed'));
 
     $address->update([
         'line1' => 'Changed Line',

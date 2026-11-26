@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Pages;
 
-use AIArmada\Addressing\Actions\ValidateAddressAction;
+use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
@@ -57,13 +57,13 @@ class AddressValidationPage extends Page
      */
     public function getInvalidAddresses(): array
     {
-        $validator = app(ValidateAddressAction::class);
+        $validator = app(AddressValidator::class);
 
         return $this->customerAddressesQuery()
             ->limit(100)
             ->get()
             ->map(function (Address $address) use ($validator): ?array {
-                $violations = $validator->execute(AddressData::from($address->attributesToArray()));
+                $violations = $validator->validate(AddressData::from($address->attributesToArray()));
 
                 if ($violations === []) {
                     return null;

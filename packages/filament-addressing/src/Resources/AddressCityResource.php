@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
-use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\City;
 use AIArmada\FilamentAddressing\Resources\AddressCityResource\Pages\EditAddressCity;
 use AIArmada\FilamentAddressing\Resources\AddressCityResource\Pages\ListAddressCities;
 use AIArmada\FilamentAddressing\Resources\AddressCityResource\Pages\ViewAddressCity;

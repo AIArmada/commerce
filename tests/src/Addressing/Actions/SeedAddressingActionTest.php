@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressingAction;
+use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
-use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ConsoleSeedProgress;
 use AIArmada\Addressing\Support\SeedAddressingSummary;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -22,7 +22,7 @@ beforeEach(function (): void {
 it('seeds every tier for the configured providers', function (): void {
     config(['addressing.seed.full_city_countries' => ['MY']]);
 
-    $result = app(SeedAddressingAction::class)->execute();
+    $result = app(AddressingDatasetSeeder::class)->execute();
 
     $country = AddressCountry::query()->where('iso2', 'BL')->firstOrFail();
 
@@ -43,7 +43,7 @@ it('reports every step phase in order with terminals', function (): void {
 
     $events = [];
 
-    app(SeedAddressingAction::class)->execute(
+    app(AddressingDatasetSeeder::class)->execute(
         function (string $phase, int $done, int $total, ?string $label = null) use (&$events): void {
             $events[] = [$phase, $done, $total, $label];
         },
@@ -82,7 +82,7 @@ it('renders one console bar per step on a full run', function (): void {
 
     expect($progress)->not->toBeNull();
 
-    app(SeedAddressingAction::class)->execute($progress);
+    app(AddressingDatasetSeeder::class)->execute($progress);
 
     $text = $output->fetch();
 
@@ -92,7 +92,7 @@ it('renders one console bar per step on a full run', function (): void {
 it('skips postcodes when the seed toggle is off', function (): void {
     config(['addressing.seed.full_city_countries' => ['MY'], 'addressing.seed.postal_codes' => false]);
 
-    $result = app(SeedAddressingAction::class)->execute();
+    $result = app(AddressingDatasetSeeder::class)->execute();
 
     expect($result['postal_codes']['seeded'])->toBe([])
         ->and(PostalCode::query()->count())->toBe(0);

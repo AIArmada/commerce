@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Venues\Models;
 
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\Events\Data\FacilityAvailability;
 use AIArmada\Events\Database\Factories\VenueFacilityFactory;
 use Carbon\CarbonImmutable;

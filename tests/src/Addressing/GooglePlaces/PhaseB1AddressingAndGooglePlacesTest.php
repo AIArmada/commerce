@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
-use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
-use AIArmada\Addressing\Actions\NormalizeGoogleMapsInputAction;
-use AIArmada\Addressing\Actions\ResolveGooglePlaceSelectionAction;
+use AIArmada\Addressing\Contracts\AddressAreaDeletionGuard;
+use AIArmada\Addressing\Contracts\AddressCountryDeletionGuard;
+use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
+use AIArmada\Addressing\Contracts\GooglePlaceSelectionResolver;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAssignments;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressFormState;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressHierarchyFormatter;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
 use AIArmada\Addressing\GooglePlaces\GooglePlaceIdentity;
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Rules\ValidAreaAssignmentRoles;
-use AIArmada\Addressing\Support\AddressAssignments;
-use AIArmada\Addressing\Support\AddressFormState;
-use AIArmada\Addressing\Support\AddressHierarchyFormatter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
@@ -62,12 +62,12 @@ test('guard address country and area deletion actions prevent deleting reference
         'hierarchy_type' => 'administrative',
     ]);
 
-    expect(fn () => app(GuardAddressCountryDeletionAction::class)->handle($country))
+    expect(fn () => app(AddressCountryDeletionGuard::class)->handle((string) $country->getKey()))
         ->toThrow(ValidationException::class)
-        ->and(fn () => app(GuardAddressAreaDeletionAction::class)->handle($parentArea))
+        ->and(fn () => app(AddressAreaDeletionGuard::class)->handle((string) $parentArea->getKey()))
         ->toThrow(ValidationException::class);
 
-    expect(fn () => app(GuardAddressAreaDeletionAction::class)->handle($childArea))
+    expect(fn () => app(AddressAreaDeletionGuard::class)->handle((string) $childArea->getKey()))
         ->not->toThrow(ValidationException::class);
 });
 
@@ -134,7 +134,7 @@ test('google places identity, input normalization, and place selection resolutio
         ->and($identity['google_cid'])->toBe('1188566389576577631');
 
     Http::fake();
-    $normalized = app(NormalizeGoogleMapsInputAction::class)->handle([
+    $normalized = app(GoogleMapsInputNormalizer::class)->handle([
         'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=3.1390,101.6869&query_place_id=ChIJ123',
     ]);
 
@@ -149,7 +149,7 @@ test('google places identity, input normalization, and place selection resolutio
         'numeric_code' => '458',
     ]);
 
-    $resolved = app(ResolveGooglePlaceSelectionAction::class)->handle([
+    $resolved = app(GooglePlaceSelectionResolver::class)->handle([
         'id' => 'ChIJ123',
         'displayName' => ['text' => 'Masjid Jamek'],
         'location' => ['lat' => 3.149, 'lng' => 101.696],

@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages;
 
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
-use LogicException;
 
 final class CreatePostalCode extends CreateRecord
 {
@@ -17,18 +15,14 @@ final class CreatePostalCode extends CreateRecord
 
     public static function canAccess(array $parameters = []): bool
     {
-        return ! PostalCodeResource::isReadOnly();
+        return ! PostalCodeResource::isReadOnly() && parent::canAccess($parameters);
     }
 
     protected function handleRecordCreation(array $data): Model
     {
         $modelClass = PostalCodeResource::getModel();
-        $record = new $modelClass;
+        $id = app(PostalCodeWriter::class)->execute($data, modelClass: $modelClass);
 
-        if (! $record instanceof PostalCode) {
-            throw new LogicException('Configured postcode model must extend PostalCode.');
-        }
-
-        return app(SavePostalCodeAction::class)->execute($data, $record);
+        return $modelClass::query()->with('areas')->findOrFail($id);
     }
 }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaSearch;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Geography\Georgia\GeorgiaGeographyProvider;
-use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
@@ -36,24 +36,24 @@ it('seeds consistently and resolves level-2 cities through the municipality role
 
     expect($resolver->definitionForRole('GE', 'municipality'))->not->toBeNull();
 
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
 
-    expect($search->execute(query: 'Batumi', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+    expect(array_column($search->execute(query: 'Batumi', countryCode: 'GE', role: 'municipality'), 'name'))
         ->toContain('Batumi')
-        ->and($search->execute(query: 'Gagra', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Gagra', countryCode: 'GE', role: 'municipality'), 'name'))
         ->toContain('Gagra')
-        ->and($search->execute(query: 'Keda', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Keda', countryCode: 'GE', role: 'municipality'), 'name'))
         ->toContain('Keda');
 });
 
 it('keeps Tbilisi on the city role instead of the municipality role', function (): void {
     expect($this->seedProviderConsistently(GeorgiaGeographyProvider::class))->toBe([]);
 
-    $search = app(SearchAddressAreasAction::class);
+    $search = app(AddressAreaSearch::class);
 
-    expect($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'city')->pluck('name')->all())
+    expect(array_column($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'city'), 'name'))
         ->toContain('Tbilisi')
-        ->and($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'municipality')->pluck('name')->all())
+        ->and(array_column($search->execute(query: 'Tbilisi', countryCode: 'GE', role: 'municipality'), 'name'))
         ->not->toContain('Tbilisi');
 });
 

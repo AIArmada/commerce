@@ -2,21 +2,22 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\State;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 });
 
 it('builds area assignment fields from the configured country profiles', function (): void {
@@ -234,8 +235,8 @@ it('lists only provider state-kind roots in the state selector', function (): vo
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
-    app(UnitedKingdomGeographyProvider::class)->seed($country);
+    app(StateDatasetSeeder::class)->execute($states);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $field = collect(AddressFormSchema::make())
         ->first(fn ($component): bool => $component->getName() === 'state_id');

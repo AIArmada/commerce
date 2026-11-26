@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
@@ -14,14 +14,15 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers\Notes
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\AttachAction;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component as LivewireComponent;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
@@ -104,20 +105,20 @@ it('scopes the address attach picker to the current owner', function (): void {
     $table = $manager->table(Table::make($manager));
 
     $attachAction = collect($table->getHeaderActions())
-        ->first(fn (Action $action): bool => $action instanceof AttachAction);
+        ->first(fn (Action $action): bool => $action->getName() === 'attach');
 
-    expect($attachAction)->toBeInstanceOf(AttachAction::class);
+    expect($attachAction)->toBeInstanceOf(Action::class);
 
-    $property = new ReflectionProperty(AttachAction::class, 'modifyRecordSelectOptionsQueryUsing');
-    $property->setAccessible(true);
+    $this->actingAs($ownerA);
+    Gate::before(static fn (): bool => true);
+    $query = new ReflectionMethod(AddressesRelationManager::class, 'availableAddresses');
 
-    $callback = $property->getValue($attachAction);
-
-    expect($callback)->toBeInstanceOf(Closure::class);
-
-    $ids = OwnerContext::withOwner($ownerA, fn (): array => $callback(Address::query())->pluck('id')->all());
+    $ids = OwnerContext::withOwner($ownerA, fn (): array => $query->invoke($manager)->pluck('id')->all());
 
     expect($ids)->toEqual([$inScope->id]);
+
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => $query->invoke($manager)))
+        ->toThrow(HttpException::class);
 });
 
 it('validates country codes as two ascii letters', function (): void {

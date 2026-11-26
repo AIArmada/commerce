@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
-    $this->action = app(ImportAddressAreasAction::class);
+    $this->action = app(AddressAreaImporter::class);
 });
 
 it('imports valid hierarchy', function (): void {
@@ -546,18 +546,35 @@ it('rejects a foreign-country parent when updating an existing row', function ()
     AddressCountry::query()->create(['iso2' => 'ZZ', 'name' => 'Testland']);
 
     $this->action->execute(new ArrayAddressAreaSource('test', [
-        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
-        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root'),
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'ZZ', type: 'state', name: 'Testland'),
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling'),
     ]));
 
     $result = $this->action->execute(new ArrayAddressAreaSource('test', [
-        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'ZZ', type: 'district', name: 'Petaling', parentSourceId: 'root'),
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root'),
     ]));
 
     expect($result->updated)->toBe(0)
         ->and($result->hasFailures())->toBeTrue()
         ->and($result->failures[0]->reason)->toContain('same country')
         ->and(AddressArea::query()->where('source', 'test')->where('source_id', 'child')->firstOrFail()->country_code)->toBe('MY');
+});
+
+it('rejects changing the country of an existing area during import', function (): void {
+    AddressCountry::query()->create(['iso2' => 'ZZ', 'name' => 'Testland']);
+
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
+    ]));
+
+    $result = $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'ZZ', type: 'state', name: 'Selangor'),
+    ]));
+
+    expect($result->updated)->toBe(0)
+        ->and($result->hasFailures())->toBeTrue()
+        ->and($result->failures[0]->reason)->toContain('country')
+        ->and(AddressArea::query()->where('source', 'test')->where('source_id', 'root')->firstOrFail()->country_code)->toBe('MY');
 });
 
 it('rejects inverted and equal parent levels for new rows', function (): void {

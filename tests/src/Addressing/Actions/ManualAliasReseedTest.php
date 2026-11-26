@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Data\CountryStateSeedData;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 
 final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
@@ -25,7 +25,10 @@ final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadata
         return 'MY';
     }
 
-    public function seed(AddressCountry $country): void {}
+    public function stateSeedData(): CountryStateSeedData
+    {
+        return new CountryStateSeedData([]);
+    }
 
     public function addressHierarchies(): array
     {
@@ -44,12 +47,12 @@ final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadata
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [
             'kl' => [
@@ -58,7 +61,7 @@ final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadata
         ];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
     }
@@ -68,7 +71,7 @@ it('preserves manual gap-match aliases across geography reseeds', function (): v
     $this->seedCountry('MY');
     config()->set('addressing.geography.providers', [GapReseedFakeGeographyProvider::class]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     $area = AddressArea::query()->where('source_id', 'kl')->firstOrFail();
 
@@ -80,7 +83,7 @@ it('preserves manual gap-match aliases across geography reseeds', function (): v
         'is_preferred' => false,
     ]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     expect(AddressAreaName::query()->where('address_area_id', $area->getKey())->where('source', 'manual')->count())->toBe(1)
         ->and(AddressAreaName::query()->where('address_area_id', $area->getKey())->where('source', 'test.fake')->count())->toBe(1)

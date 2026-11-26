@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Venues\Models;
 
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\EventFacilityFactory;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\ScopesByEventOwner;

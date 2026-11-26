@@ -2,20 +2,22 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\Addressing\Data\CountryStateSeedData;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Artisan;
@@ -35,7 +37,10 @@ final class GapScopingFakeGeographyProvider implements CountryAddressAreaMetadat
         return 'MY';
     }
 
-    public function seed(AddressCountry $country): void {}
+    public function stateSeedData(): CountryStateSeedData
+    {
+        return new CountryStateSeedData([]);
+    }
 
     public function addressHierarchies(): array
     {
@@ -52,26 +57,39 @@ final class GapScopingFakeGeographyProvider implements CountryAddressAreaMetadat
         return [];
     }
 
-    public function areaRoles(AddressCountry $country): array
+    public function areaRoles(): array
     {
         return [];
     }
 
-    public function areaNames(AddressCountry $country): array
+    public function areaNames(): array
     {
         return [];
     }
 
-    public function areaRelationships(AddressCountry $country): array
+    public function areaRelationships(): array
     {
         return [];
+    }
+}
+
+final class FixedOwnerResolutionGap extends ResolutionGap
+{
+    public static ?string $ownerId = null;
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(
+            enabled: true,
+            owner: self::$ownerId !== null ? new RecordReference(User::class, self::$ownerId) : null,
+        );
     }
 }
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'a-area', countryCode: 'MY', type: 'locality', level: 2, name: 'A Area Official'),
         new AddressAreaData(source: 'areas', sourceId: 'b-area', countryCode: 'MY', type: 'locality', level: 2, name: 'B Area Official'),
         new AddressAreaData(source: 'areas', sourceId: 'g-area', countryCode: 'MY', type: 'locality', level: 2, name: 'G Area Official'),
@@ -88,7 +106,7 @@ beforeEach(function (): void {
 
 function logGapForScoping(?User $owner, string $value): ResolutionGap
 {
-    $log = fn (): ResolutionGap => app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', $value);
+    $log = fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', $value));
 
     if ($owner === null) {
         return OwnerContext::withOwner(null, $log);
@@ -100,7 +118,7 @@ function logGapForScoping(?User $owner, string $value): ResolutionGap
 function matchGapForScoping(?User $owner, ResolutionGap $gap, AddressArea $area): void
 {
     $match = function () use ($gap, $area): void {
-        app(MatchGapToAreaAction::class)->execute($gap, $area, 'scope-test');
+        app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $area->getKey(), 'scope-test');
     };
 
     if ($owner === null) {
@@ -115,8 +133,8 @@ function matchGapForScoping(?User $owner, ResolutionGap $gap, AddressArea $area)
 it('logs gaps under the current owner and falls back to global rows', function (): void {
     $owner = User::factory()->create();
 
-    $owned = OwnerContext::withOwner($owner, fn (): ResolutionGap => app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Owned Value'));
-    $global = OwnerContext::withOwner(null, fn (): ResolutionGap => app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Global Value'));
+    $owned = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Owned Value')));
+    $global = OwnerContext::withOwner(null, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Global Value')));
 
     expect($owned->owner_type)->toBe($owner->getMorphClass())
         ->and($owned->owner_id)->toBe((string) $owner->getKey())
@@ -203,4 +221,50 @@ it('reports gaps consolidated across every owner', function (): void {
         ->and($output)->toContain('Alpha Tenant Value')
         ->and($output)->toContain('Beta Tenant Value')
         ->and($output)->toContain('Global Telemetry Value');
+});
+
+it('dedupes global gaps when auto assignment is disabled', function (): void {
+    $owner = User::factory()->create();
+    config()->set('addressing.features.owner.auto_assign_on_create', false);
+
+    $first = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->withoutOwnerScope()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Auto Assign Off')));
+    $second = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->withoutOwnerScope()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Auto Assign Off')));
+
+    expect($first->getKey())->toBe($second->getKey())
+        ->and($first->fresh()?->owner_type)->toBeNull()
+        ->and($first->fresh()?->owner_id)->toBeNull()
+        ->and((int) $first->fresh()?->hits)->toBe(2)
+        ->and(ResolutionGap::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('dedupes global gaps when owner scoping is disabled', function (): void {
+    $owner = User::factory()->create();
+    config()->set('addressing.features.owner.enabled', false);
+
+    $first = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Owner Scoping Off')));
+    $second = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Owner Scoping Off')));
+
+    expect($first->getKey())->toBe($second->getKey())
+        ->and($first->fresh()?->owner_type)->toBeNull()
+        ->and((int) $first->fresh()?->hits)->toBe(2)
+        ->and(ResolutionGap::query()->count())->toBe(1);
+});
+
+it('uses a configured fixed owner for dedupe, scope, and insert', function (): void {
+    $owner = User::factory()->create();
+    FixedOwnerResolutionGap::$ownerId = (string) $owner->getKey();
+    config()->set('addressing.models.resolution_gap', FixedOwnerResolutionGap::class);
+
+    try {
+        $first = app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Fixed Owner');
+        $second = app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Fixed Owner');
+        $gap = FixedOwnerResolutionGap::query()->findOrFail($first);
+
+        expect($second)->toBe($first)
+            ->and($gap->owner_type)->toBe($owner->getMorphClass())
+            ->and((string) $gap->owner_id)->toBe((string) $owner->getKey())
+            ->and((int) $gap->hits)->toBe(2);
+    } finally {
+        FixedOwnerResolutionGap::$ownerId = null;
+    }
 });

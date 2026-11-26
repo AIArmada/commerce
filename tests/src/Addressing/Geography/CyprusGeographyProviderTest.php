@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Cyprus\CyprusGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('ships 755 localities under their districts with postal locality roles', function (): void {
@@ -25,7 +24,7 @@ it('ships 755 localities under their districts with postal locality roles', func
         ->and($byId->get('cy:locality:komi-kebir')->name)->toBe('Komi Kebir')
         ->and($byId->get('cy:locality:tziaos')->name)->toBe('Tziaos');
 
-    $roles = $provider->areaRoles(new AddressCountry);
+    $roles = $provider->areaRoles();
 
     expect($roles['cy:locality:paralimni'][0]['role'])->toBe('postal_locality');
 });

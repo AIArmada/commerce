@@ -2,22 +2,25 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\Geography\Models\AddressArea;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Features\Geography\Models\City;
+use AIArmada\Addressing\Features\Geography\Models\State;
 use AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
-use AIArmada\Addressing\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\State;
-use AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 
 it('nulls live references and clears links when a state is deleted', function (): void {
     $country = $this->seedCountry('MY');
@@ -159,7 +162,7 @@ it('clears cross-owner references through a real provider cleanup and keeps late
         'country_code' => 'ID',
     ]));
 
-    app(IndonesiaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(IndonesiaGeographyProvider::class)->stateSeedData());
 
     expect(State::query()->where('country_id', $country->id)->where('code', 'PP')->exists())->toBeFalse();
 
@@ -255,8 +258,8 @@ it('prunes only state-dependent assignments across owners when a state is delete
         'country_code' => 'MY',
     ]));
 
-    OwnerContext::withOwner($ownerA, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressA, $sync()));
-    OwnerContext::withOwner($ownerB, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressB, $sync()));
+    OwnerContext::withOwner($ownerA, fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $addressA->getKey(), $sync()));
+    OwnerContext::withOwner($ownerB, fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $addressB->getKey(), $sync()));
 
     // The per-save hook prunes the same way: nulling through a model save
     // drops the state-parented district but keeps the parentless zone.
@@ -266,7 +269,7 @@ it('prunes only state-dependent assignments across owners when a state is delete
         'state_id' => $state->getKey(),
         'country_code' => 'MY',
     ]));
-    OwnerContext::withOwner($ownerA, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressC, $sync()));
+    OwnerContext::withOwner($ownerA, fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $addressC->getKey(), $sync()));
     OwnerContext::withOwner($ownerA, function () use ($addressC): void {
         // Null through a model save: free-text must not re-resolve to the
         // still-existing State row, so use a non-matching name.
@@ -367,8 +370,8 @@ it('prunes assignments cross-owner without owner resolution when owner mode is d
         'country_code' => 'MY',
     ]));
 
-    OwnerContext::withOwner($ownerA, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressA, $assignments));
-    OwnerContext::withOwner($ownerB, fn (): mixed => app(SyncAddressAreaAssignmentsAction::class)->execute($addressB, $assignments));
+    OwnerContext::withOwner($ownerA, fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $addressA->getKey(), $assignments));
+    OwnerContext::withOwner($ownerB, fn (): mixed => app(AddressAssignmentWriter::class)->execute((string) $addressB->getKey(), $assignments));
 
     $snapshot = OwnerContext::withOwner($ownerA, fn (): AddressSnapshot => AddressSnapshot::query()->create([
         'address_id' => $addressA->getKey(),
@@ -403,4 +406,71 @@ it('prunes assignments cross-owner without owner resolution when owner mode is d
 
     expect($frozen->address_id)->toBe($addressA->getKey())
         ->and($frozen->state)->toBe('Selangor');
+});
+
+it('prunes state assignments in bounded batch reads instead of per address', function (): void {
+    $country = $this->seedCountry('MY');
+    $state = State::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'code' => 'SGR',
+        'name' => 'Selangor',
+    ]);
+    $area = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'type' => 'postal_locality',
+        'level' => 4,
+        'name' => 'Kajang',
+        'slug' => 'kajang',
+        'source' => 'batch-test',
+        'source_id' => 'batch-test:kajang',
+        'is_active' => true,
+    ]);
+
+    $addresses = OwnerContext::withOwner(null, function () use ($state, $area): array {
+        $addresses = [];
+
+        for ($index = 1; $index <= 3; $index++) {
+            $address = Address::query()->create([
+                'line1' => "Batch Address {$index}",
+                'state_id' => $state->getKey(),
+                'country_code' => 'MY',
+            ]);
+
+            AddressAreaAssignment::query()->create([
+                'address_id' => $address->getKey(),
+                'address_area_id' => $area->getKey(),
+                'role' => 'postal_locality',
+                'is_primary' => true,
+            ]);
+
+            $addresses[] = $address;
+        }
+
+        return $addresses;
+    });
+
+    $queries = [];
+
+    DB::listen(static function (QueryExecuted $query) use (&$queries): void {
+        $queries[] = mb_strtolower($query->sql);
+    });
+
+    $state->delete();
+
+    $addressSelects = collect($queries)->filter(
+        static fn (string $sql): bool => str_starts_with($sql, 'select') && str_contains($sql, 'from "addresses"'),
+    );
+    $assignmentSelects = collect($queries)->filter(
+        static fn (string $sql): bool => str_starts_with($sql, 'select') && str_contains($sql, 'from "address_area_assignments"'),
+    );
+    $areaSelects = collect($queries)->filter(
+        static fn (string $sql): bool => str_starts_with($sql, 'select') && str_contains($sql, 'from "address_areas"'),
+    );
+
+    expect($addressSelects->count())->toBeLessThanOrEqual(2)
+        ->and($assignmentSelects->count())->toBe(1)
+        ->and($areaSelects->count())->toBe(1)
+        ->and($addresses)->toHaveCount(3);
 });

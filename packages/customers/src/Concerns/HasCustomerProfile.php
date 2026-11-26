@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Support\CustomerProfileNormalizer;

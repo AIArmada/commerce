@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\UpdateAddressAttachmentAction;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
@@ -31,10 +31,10 @@ it('updates one attachment type and preserves its identity and metadata', functi
     $pivot->save();
     $id = $pivot->getKey();
 
-    $updated = app(UpdateAddressAttachmentAction::class)->execute($pivot, [
+    $updated = Addressable::query()->findOrFail(app(AddressAttachmentWriter::class)->execute((string) $pivot->getKey(), [
         'type' => 'shipping',
         'is_primary' => true,
-    ]);
+    ]));
 
     expect($updated->getKey())->toBe($id)
         ->and($updated->type)->toBe('shipping')
@@ -46,10 +46,10 @@ it('updates one attachment type and preserves its identity and metadata', functi
 
 it('clears an attachment label only when null is explicitly submitted', function (): void {
     $pivot = $this->host->attachAddress($this->address, type: 'shipping', label: 'Front desk');
-    $action = app(UpdateAddressAttachmentAction::class);
+    $action = app(AddressAttachmentWriter::class);
 
-    $preserved = $action->execute($pivot, ['type' => 'shipping', 'is_primary' => false]);
-    $cleared = $action->execute($preserved, ['type' => 'shipping', 'label' => null, 'is_primary' => false]);
+    $preserved = Addressable::query()->findOrFail($action->execute((string) $pivot->getKey(), ['type' => 'shipping', 'is_primary' => false]));
+    $cleared = Addressable::query()->findOrFail($action->execute((string) $preserved->getKey(), ['type' => 'shipping', 'label' => null, 'is_primary' => false]));
 
     expect($preserved->label)->toBe('Front desk')
         ->and($cleared->label)->toBeNull();
@@ -64,7 +64,7 @@ it('rolls back primary demotion when an attachment save is cancelled', function 
     $dispatcher->listen($event, static fn (): bool => false);
 
     try {
-        expect(fn () => app(UpdateAddressAttachmentAction::class)->execute($other, [
+        expect(fn () => app(AddressAttachmentWriter::class)->execute((string) $other->getKey(), [
             'type' => 'shipping',
             'is_primary' => true,
         ]))->toThrow(RuntimeException::class, 'could not be updated');
@@ -81,7 +81,7 @@ it('rejects a duplicate address attachment type without changing the existing pi
     $first = $this->host->attachAddress($this->address, type: 'shipping');
     $second = $this->host->attachAddress($this->address, type: 'billing');
 
-    expect(fn (): Addressable => app(UpdateAddressAttachmentAction::class)->execute($second, [
+    expect(fn (): string => app(AddressAttachmentWriter::class)->execute((string) $second->getKey(), [
         'type' => 'shipping',
         'is_primary' => false,
     ]))->toThrow(ValidationException::class);
@@ -94,7 +94,7 @@ it('detaches only the selected pivot when an address has multiple attachment typ
     $shipping = $this->host->attachAddress($this->address, type: 'shipping');
     $billing = $this->host->attachAddress($this->address, type: 'billing');
 
-    app(UpdateAddressAttachmentAction::class)->detach($shipping);
+    app(AddressAttachmentWriter::class)->detach((string) $shipping->getKey());
 
     expect(Addressable::query()->whereKey($shipping->getKey())->exists())->toBeFalse()
         ->and(Addressable::query()->whereKey($billing->getKey())->exists())->toBeTrue();
@@ -107,11 +107,43 @@ it('does not report a cancelled attachment deletion as successful', function ():
     $dispatcher->listen($event, static fn (): bool => false);
 
     try {
-        expect(fn () => app(UpdateAddressAttachmentAction::class)->detach($pivot))
+        expect(fn () => app(AddressAttachmentWriter::class)->detach((string) $pivot->getKey()))
             ->toThrow(RuntimeException::class, 'could not be removed');
     } finally {
         $dispatcher->forget($event);
     }
 
     expect(Addressable::query()->whereKey($pivot->getKey())->exists())->toBeTrue();
+});
+
+it('selects a different primary attachment without changing other types', function (): void {
+    $first = $this->host->attachAddress($this->address, type: 'shipping', isPrimary: true);
+    $otherAddress = Address::query()->create(['line1' => '9 Market Street', 'country_code' => 'MY']);
+    $second = $this->host->attachAddress($otherAddress, type: 'shipping');
+    $billing = $this->host->attachAddress($this->address, type: 'billing', isPrimary: true);
+
+    $selected = $this->host->setPrimaryAddress($otherAddress, 'shipping');
+
+    expect($selected->getKey())->toBe($second->getKey())
+        ->and($selected->is_primary)->toBeTrue()
+        ->and($first->fresh()->is_primary)->toBeFalse()
+        ->and($billing->fresh()->is_primary)->toBeTrue();
+});
+
+it('rolls back demotion when an attachment creation is vetoed', function (): void {
+    $first = $this->host->attachAddress($this->address, type: 'shipping', isPrimary: true);
+    $otherAddress = Address::query()->create(['line1' => '9 Market Street', 'country_code' => 'MY']);
+    $dispatcher = Event::getFacadeRoot();
+    $event = 'eloquent.creating: ' . Addressable::class;
+    $dispatcher->listen($event, static fn (): bool => false);
+
+    try {
+        expect(fn () => $this->host->attachAddress($otherAddress, type: 'shipping', isPrimary: true))
+            ->toThrow(RuntimeException::class, 'could not be created');
+    } finally {
+        $dispatcher->forget($event);
+    }
+
+    expect($first->fresh()->is_primary)->toBeTrue()
+        ->and($this->host->addressAttachments()->count())->toBe(1);
 });

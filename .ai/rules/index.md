@@ -4,7 +4,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
-| packages/addressing/src/Actions/Seed*.php, packages/addressing/src/Commands/Seed*.php, packages/addressing/src/Support/CitySeedRowReader.php, packages/addressing/src/Support/SeedAddressingSummary.php, packages/addressing/database/seeders/**, packages/addressing/config/addressing.php | .ai/rules/addressing-seeding.md |
+| packages/addressing/src/Features/*/Actions/Seed*.php, packages/addressing/src/Features/*/EntryPoints/Commands/Seed*.php, packages/addressing/src/Support/CitySeedRowReader.php, packages/addressing/src/Support/SeedAddressingSummary.php, packages/addressing/database/seeders/**, packages/addressing/config/addressing.php | .ai/rules/addressing-seeding.md |
 | packages/*/src/Contracts/**, packages/*/src/Contracts.php, packages/*/src/Data/**, packages/*/src/DTOs/**, packages/*/src/Api/**, demo/app/Features/*/Api/**, demo/app/Shared/Contracts/** | .ai/rules/api-contracts.md |
 | packages/addressing/resources/geography/*, packages/addressing/src/Geography/**, packages/addressing/docs/05-country-data.md, packages/addressing/docs/15-locality-expansion.md, tests/src/Addressing/Geography/* | .ai/rules/country-data-expansion.md |
 | packages/**, demo/app/Features/** | .ai/rules/features.md |

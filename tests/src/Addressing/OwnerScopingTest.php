@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\AddressSnapshot;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -70,11 +74,12 @@ it('isolates addresses, pivots, and snapshots across owners', function (): void 
         ->toBe(0);
 
     $snapshot = OwnerContext::withOwner($ownerA, function () use ($hostA): AddressSnapshot {
-        return app(CreateAddressSnapshotAction::class)->execute(
-            snapshotable: $hostA,
+        return AddressSnapshot::query()->findOrFail(app(AddressSnapshotWriter::class)->execute(
+            snapshotableType: $hostA->getMorphClass(),
+            snapshotableId: $hostA->getKey(),
             address: AddressData::from(['line1' => 'Owner A snapshot', 'countryCode' => 'MY']),
             reason: 'test',
-        );
+        ));
     });
 
     expect(OwnerContext::withOwner($ownerA, fn (): bool => AddressSnapshot::query()->whereKey($snapshot->id)->exists()))
@@ -113,4 +118,67 @@ it('blocks cross-owner address attachments and global access without explicit co
         ->toBeFalse()
         ->and(OwnerContext::withOwner(null, fn (): bool => Address::query()->whereKey($globalAddress->id)->exists()))
         ->toBeTrue();
+});
+
+it('never demotes or detaches global attachments when mutating an owned host attachment', function (): void {
+    config()->set('addressing.features.owner.include_global', true);
+    $owner = User::factory()->create();
+    $host = AddressingOwnerTestHost::query()->create(['name' => 'Shared Host']);
+
+    $global = OwnerContext::withOwner(null, function () use ($host): Addressable {
+        $address = Address::query()->create(['line1' => 'Global', 'country_code' => 'MY']);
+
+        return $host->attachAddress($address, type: 'shipping', isPrimary: true);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($host): void {
+        $address = Address::query()->create(['line1' => 'Owned', 'country_code' => 'MY']);
+        $host->attachAddress($address, type: 'shipping', isPrimary: true);
+        app(AddressAttachmentWriter::class)->detachAll($host->getMorphClass(), (string) $host->getKey());
+    });
+
+    expect(OwnerContext::withOwner(null, fn () => Addressable::query()->findOrFail($global->getKey())->is_primary))->toBeTrue()
+        ->and(OwnerContext::withOwner($owner, fn () => Addressable::query()->forOwner()->count()))->toBe(0);
+});
+
+it('rejects mutations of visible global addresses by tenant owners', function (): void {
+    config()->set('addressing.features.owner.include_global', true);
+    $owner = User::factory()->create();
+    $global = OwnerContext::withOwner(null, fn (): Address => Address::query()->create([
+        'line1' => 'Global address',
+        'country_code' => 'MY',
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($global): void {
+        expect(Address::query()->whereKey($global->getKey())->exists())->toBeTrue()
+            ->and(fn () => app(AddressWriter::class)->execute(['line1' => 'Unauthorized edit'], null, (string) $global->getKey()))
+            ->toThrow(AuthorizationException::class)
+            ->and(fn () => app(AddressAssignmentWriter::class)->execute((string) $global->getKey(), []))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($global): void {
+        expect($global->refresh()->line1)->toBe('Global address');
+        app(AddressWriter::class)->execute(['line1' => 'Authorized edit'], null, (string) $global->getKey());
+        expect($global->refresh()->line1)->toBe('Authorized edit');
+    });
+});
+
+it('rejects snapshots of addresses owned by another tenant', function (): void {
+    config()->set('addressing.features.owner.include_global', true);
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $host = AddressingOwnerTestHost::query()->create(['name' => 'Shared Host']);
+    $address = OwnerContext::withOwner($ownerB, fn (): Address => Address::query()->create([
+        'line1' => 'Private address',
+        'country_code' => 'MY',
+    ]));
+
+    expect(fn () => OwnerContext::withOwner($ownerA, fn (): string => app(AddressSnapshotWriter::class)->execute(
+        $host->getMorphClass(),
+        $host->getKey(),
+        (string) $address->getKey(),
+    )))->toThrow(AuthorizationException::class);
+
+    expect(OwnerContext::withOwner($ownerA, fn (): int => AddressSnapshot::query()->count()))->toBe(0);
 });

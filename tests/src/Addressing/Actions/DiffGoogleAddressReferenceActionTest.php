@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\DiffGoogleAddressReferenceAction;
+use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffGoogleAddressReferenceAction;
 
 function googleTestPayload(array $overrides = []): array
 {
@@ -18,7 +19,7 @@ function googleTestPayload(array $overrides = []): array
 }
 
 it('reports no drift when the profile matches Google', function (): void {
-    $diff = new DiffGoogleAddressReferenceAction(fn (string $code): array => googleTestPayload());
+    $diff = googleReferenceDiff(fn (string $code): array => googleTestPayload());
 
     $result = $diff->execute('MY');
 
@@ -28,7 +29,7 @@ it('reports no drift when the profile matches Google', function (): void {
 });
 
 it('flags required and upper mismatches', function (): void {
-    $diff = new DiffGoogleAddressReferenceAction(fn (string $code): array => googleTestPayload([
+    $diff = googleReferenceDiff(fn (string $code): array => googleTestPayload([
         'require' => 'AZ',
         'upper' => 'C',
     ]));
@@ -39,7 +40,7 @@ it('flags required and upper mismatches', function (): void {
 });
 
 it('flags zipex examples our pattern rejects', function (): void {
-    $diff = new DiffGoogleAddressReferenceAction(fn (string $code): array => googleTestPayload([
+    $diff = googleReferenceDiff(fn (string $code): array => googleTestPayload([
         'zip' => '\d{4}',
         'zipex' => '1234',
     ]));
@@ -51,21 +52,21 @@ it('flags zipex examples our pattern rejects', function (): void {
 });
 
 it('flags one-sided zip rules', function (): void {
-    $googleOnly = new DiffGoogleAddressReferenceAction(fn (string $code): array => googleTestPayload(['key' => 'HK']));
-    $oursOnly = new DiffGoogleAddressReferenceAction(fn (string $code): array => googleTestPayload(['zip' => '']));
+    $googleOnly = googleReferenceDiff(fn (string $code): array => googleTestPayload(['key' => 'HK']));
+    $oursOnly = googleReferenceDiff(fn (string $code): array => googleTestPayload(['zip' => '']));
 
     expect(array_column($googleOnly->execute('HK')->drifts, 'dimension'))->toContain('pattern')
         ->and(array_column($oursOnly->execute('MY')->drifts, 'dimension'))->toContain('pattern');
 });
 
 it('flags unprofiled countries where Google has data', function (): void {
-    $diff = new DiffGoogleAddressReferenceAction(fn (string $code): array => googleTestPayload(['key' => 'AQ']));
+    $diff = googleReferenceDiff(fn (string $code): array => googleTestPayload(['key' => 'AQ']));
 
     expect(array_column($diff->execute('AQ')->drifts, 'dimension'))->toContain('profile');
 });
 
 it('marks Google-silent countries instead of drifting', function (): void {
-    $diff = new DiffGoogleAddressReferenceAction(fn (string $code): array => []);
+    $diff = googleReferenceDiff(fn (string $code): array => []);
 
     $result = $diff->execute('MY');
 
@@ -74,9 +75,24 @@ it('marks Google-silent countries instead of drifting', function (): void {
 });
 
 it('fails loudly when the fetch fails', function (): void {
-    $diff = new DiffGoogleAddressReferenceAction(function (string $code): array {
+    $diff = googleReferenceDiff(function (string $code): array {
         throw new RuntimeException('boom');
     });
 
     $diff->execute('MY');
 })->throws(RuntimeException::class, 'boom');
+
+function googleReferenceDiff(Closure $fetcher): DiffGoogleAddressReferenceAction
+{
+    $source = Mockery::mock(GoogleAddressReferenceSource::class);
+    $source->shouldReceive('fetch')->andReturnUsing($fetcher);
+
+    return new DiffGoogleAddressReferenceAction($source);
+}
+
+it('rejects malformed country codes before contacting the source', function (): void {
+    $source = Mockery::mock(GoogleAddressReferenceSource::class);
+    $source->shouldNotReceive('fetch');
+
+    (new DiffGoogleAddressReferenceAction($source))->execute('../MY');
+})->throws(InvalidArgumentException::class);
