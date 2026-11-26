@@ -56,6 +56,19 @@ trait FormatsSignalsReportValues
             ->format('M j, Y g:i A');
     }
 
+    protected function safeReportUrl(mixed $value): ?string
+    {
+        if (! is_string($value) || filter_var($value, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $scheme = parse_url($value, PHP_URL_SCHEME);
+
+        return is_string($scheme) && in_array(mb_strtolower($scheme), ['http', 'https'], true)
+            ? $value
+            : null;
+    }
+
     public function outcomesLabel(): string
     {
         return SignalsUiConfig::outcomesLabel();

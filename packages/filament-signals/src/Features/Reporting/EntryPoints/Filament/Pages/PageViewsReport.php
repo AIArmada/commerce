@@ -63,7 +63,7 @@ final class PageViewsReport extends ReportPage implements HasTable
                     ->label('URL')
                     ->limit(60)
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->url(fn (SignalEvent $record): ?string => is_string($record->page_url ?? null) ? $record->page_url : null, shouldOpenInNewTab: true),
+                    ->url(fn (SignalEvent $record): ?string => $this->safeReportUrl($record->page_url ?? null), shouldOpenInNewTab: true),
                 TextColumn::make('views')
                     ->numeric(decimalPlaces: 0)
                     ->sortable(),

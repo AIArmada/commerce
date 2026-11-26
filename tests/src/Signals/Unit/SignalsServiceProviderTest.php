@@ -13,6 +13,7 @@ use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Signals\Features\Ingestion\Support\SignalEventMap;
+use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
 use Illuminate\Support\Facades\Event;
 use Mockery\MockInterface;
 use Spatie\LaravelPackageTools\Package;
@@ -129,4 +130,25 @@ it('resolves the geocoder pipeline through the transport contract', function ():
     $geocoders = Closure::bind(fn (): array => $this->geocoders, $pipeline, $pipeline)();
 
     expect($geocoders)->toBe([$geocoder]);
+});
+
+it('discovers and resolves every built-in report extension', function (): void {
+    $registry = app(ReportRegistry::class);
+
+    expect(array_keys($registry->all()))->toEqualCanonicalizing([
+        'acquisition',
+        'content_performance',
+        'conversion_funnel',
+        'devices',
+        'goals',
+        'journey',
+        'live_activity',
+        'page_view',
+        'retention',
+    ]);
+
+    foreach ($registry->all() as $type => $report) {
+        expect($report->type())->toBe($type)
+            ->and($registry->get($type))->toBe($report);
+    }
 });

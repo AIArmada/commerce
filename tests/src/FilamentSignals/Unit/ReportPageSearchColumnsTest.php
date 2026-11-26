@@ -7,6 +7,7 @@ use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Acqui
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ContentPerformanceReport;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\JourneyReport;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\PageViewsReport;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Filament\Tables\Table;
 
@@ -62,4 +63,16 @@ it('searches journey breakdowns by the underlying session columns', function ():
 
     expect($column)->not()->toBeNull()
         ->and($column?->getSearchColumns(new SignalEvent))->toBe(['entry_path', 'exit_path', 'country', 'device_type', 'browser', 'os', 'utm_source', 'utm_medium', 'utm_campaign']);
+});
+
+it('allows only absolute HTTP and HTTPS report links', function (): void {
+    $page = app(PageViewsReport::class);
+    $method = new ReflectionMethod($page, 'safeReportUrl');
+
+    expect($method->invoke($page, 'https://example.com/page'))->toBe('https://example.com/page')
+        ->and($method->invoke($page, 'http://example.com/page'))->toBe('http://example.com/page')
+        ->and($method->invoke($page, 'javascript:alert(1)'))->toBeNull()
+        ->and($method->invoke($page, 'ftp://example.com/page'))->toBeNull()
+        ->and($method->invoke($page, '//example.com/page'))->toBeNull()
+        ->and($method->invoke($page, null))->toBeNull();
 });
