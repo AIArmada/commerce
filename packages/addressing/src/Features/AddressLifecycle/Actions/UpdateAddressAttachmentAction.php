@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;

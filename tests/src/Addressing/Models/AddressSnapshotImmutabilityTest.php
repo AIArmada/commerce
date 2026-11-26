@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\Address;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {

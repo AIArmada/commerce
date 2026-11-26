@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Support;
 
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
@@ -63,23 +61,27 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<Address>
+     * @return class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\Address>
      */
     public static function addressClass(): string
     {
-        /** @var class-string<Address> $modelClass */
-        $modelClass = self::resolve('address', Address::class);
+        /** @var class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\Address> $default */
+        $default = app('addressing.model-default.address');
+        /** @var class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\Address> $modelClass */
+        $modelClass = self::resolve('address', $default);
 
         return $modelClass;
     }
 
     /**
-     * @return class-string<Addressable>
+     * @return class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable>
      */
     public static function addressableClass(): string
     {
-        /** @var class-string<Addressable> $modelClass */
-        $modelClass = self::resolve('addressable', Addressable::class);
+        /** @var class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable> $default */
+        $default = app('addressing.model-default.addressable');
+        /** @var class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable> $modelClass */
+        $modelClass = self::resolve('addressable', $default);
 
         return $modelClass;
     }

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAddressing\Resources\AddressResource;

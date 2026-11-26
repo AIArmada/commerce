@@ -101,9 +101,9 @@ or when the two gates differ for the selected state.
     'state' => AIArmada\Addressing\Models\State::class,
     'city' => AIArmada\Addressing\Models\City::class,
     'area' => AIArmada\Addressing\Models\AddressArea::class,
-    'address' => AIArmada\Addressing\Models\Address::class,
+    'address' => null, // AddressLifecycle feature default; override with a subclass.
     'snapshot' => null, // Defaults to the AddressLifecycle feature model.
-    'addressable' => AIArmada\Addressing\Models\Addressable::class,
+    'addressable' => null, // AddressLifecycle feature default; override with a subclass.
     'postal_code' => null, // PostalCodes feature default; override with a configured model.
     'resolution_gap' => null, // Defaults to the ResolutionGaps feature model.
     'area_assignment' => null, // AddressLifecycle feature default; override with a subclass.

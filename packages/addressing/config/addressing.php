@@ -458,8 +458,6 @@ use AIArmada\Addressing\Geography\Zambia\ZambiaAddressFormatter;
 use AIArmada\Addressing\Geography\Zambia\ZambiaGeographyProvider;
 use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweAddressFormatter;
 use AIArmada\Addressing\Geography\Zimbabwe\ZimbabweGeographyProvider;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
@@ -477,9 +475,9 @@ return [
         'state' => State::class,
         'city' => City::class,
         'area' => AddressArea::class,
-        'address' => Address::class,
+        'address' => null, // Defaults to the AddressLifecycle feature model.
         'snapshot' => null, // Defaults to the AddressLifecycle feature model.
-        'addressable' => Addressable::class,
+        'addressable' => null, // Defaults to the AddressLifecycle feature model.
         'postal_code' => null, // Defaults to the PostalCodes feature model.
         'resolution_gap' => null, // Uses the owning feature's model unless overridden.
         'area_assignment' => null, // Defaults to the AddressLifecycle feature model.

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Policies;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;

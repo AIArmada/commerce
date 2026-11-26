@@ -129,7 +129,7 @@ duplicate.
 ### Customer with a reusable address (forward path)
 
 ```php
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 
@@ -290,7 +290,7 @@ type.
 ### Add and attach an address
 
 ```php
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 
 $address = Address::create([
     'label' => 'Home',

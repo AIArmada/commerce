@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;

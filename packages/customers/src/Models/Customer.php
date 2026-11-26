@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Models;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;

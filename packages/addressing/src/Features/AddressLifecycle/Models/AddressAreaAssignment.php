@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\AddressLifecycle\Models;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope;
 use AIArmada\Addressing\Support\AddressingTableResolver;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

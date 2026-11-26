@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 

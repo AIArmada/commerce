@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\AddressLifecycle\Models;
 
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\AddressingTableResolver;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

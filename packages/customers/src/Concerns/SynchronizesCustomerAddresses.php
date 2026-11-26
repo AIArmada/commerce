@@ -7,7 +7,7 @@ namespace AIArmada\Customers\Concerns;
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Models\Customer;
 

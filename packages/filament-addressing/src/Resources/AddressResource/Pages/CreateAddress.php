@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
 use AIArmada\Addressing\Contracts\AddressWriter;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;

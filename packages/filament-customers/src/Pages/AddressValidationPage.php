@@ -6,8 +6,8 @@ namespace AIArmada\FilamentCustomers\Pages;
 
 use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;

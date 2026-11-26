@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 
 beforeEach(function (): void {
     $this->action = app(AddressNavigationLinks::class);

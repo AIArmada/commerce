@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;

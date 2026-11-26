@@ -7,7 +7,7 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
 use InvalidArgumentException;
 use RuntimeException;
 

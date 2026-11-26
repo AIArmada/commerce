@@ -347,7 +347,7 @@ final class ResolvedLocationData
 `HasAddresses` should be used only on models that own reusable addresses:
 
 ```php
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 
 final class Institution extends Model
 {

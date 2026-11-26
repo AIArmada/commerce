@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressLocationData;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressLocationScope;
-use AIArmada\Addressing\Traits\HasAddresses;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 

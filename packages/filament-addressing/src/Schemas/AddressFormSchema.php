@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;

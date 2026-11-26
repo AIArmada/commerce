@@ -6,8 +6,8 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\AddressWriter;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use LogicException;
 

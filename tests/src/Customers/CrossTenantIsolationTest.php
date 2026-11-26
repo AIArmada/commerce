@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Actions\RebuildAllSegments;

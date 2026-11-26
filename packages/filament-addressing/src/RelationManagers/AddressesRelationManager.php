@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;

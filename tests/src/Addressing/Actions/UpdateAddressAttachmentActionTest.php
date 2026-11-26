@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;

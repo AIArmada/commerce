@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Contracts\AddressWriter;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;

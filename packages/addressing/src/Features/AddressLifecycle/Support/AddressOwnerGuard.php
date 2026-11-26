@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;

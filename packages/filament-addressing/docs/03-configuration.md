@@ -129,7 +129,7 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
     'addresses' => [
         'enabled' => false,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\Address::class,
+        'model' => \AIArmada\Addressing\Features\AddressLifecycle\Models\Address::class,
     ],
 
     'snapshots' => [

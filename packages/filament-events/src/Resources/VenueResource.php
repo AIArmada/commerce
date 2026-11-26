@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Events\Features\Venues\Models\Venue;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\VenueExporter;

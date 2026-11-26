@@ -86,7 +86,7 @@ rerun; production deployment requires the normal migration rollout process.
 ### Example
 
 ```php
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 
 $address = Address::create($request->validated('shipping_address'));
 $customer->attachAddress($address, type: 'shipping', isPrimary: true);

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\ResolutionGapReporter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
-use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;

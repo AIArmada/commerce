@@ -59,7 +59,7 @@ php artisan db:seed --class="AIArmada\Addressing\Database\Seeders\AddressCountry
 First-class geography models sit beside free-text address fields:
 
 ```php
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 
@@ -905,7 +905,7 @@ edited or deleted through these actions.
 ## HasAddresses Trait
 
 ```php
-use AIArmada\Addressing\Traits\HasAddresses;
+use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 
 class Customer extends Model
 {
@@ -938,7 +938,7 @@ and updates the typed relationship and primary flag transactionally.
 
 ```php
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 
 $attachment = Addressable::query()->findOrFail($attachmentId);
 
@@ -1237,7 +1237,7 @@ Enable the corresponding [spatial option](03-configuration.md#optional-spatial-c
 
 ```php
 use AIArmada\Addressing\Contracts\AddressAreaBoundaryWriter;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 
 $nearby = Address::query()->withinRadius(48.0, -126.0, 5_000)->get();

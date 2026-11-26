@@ -264,7 +264,7 @@ Only enable this for trusted admin panels.
     'addresses' => [
         'enabled' => true,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\Address::class,
+        'model' => \AIArmada\Addressing\Features\AddressLifecycle\Models\Address::class,
     ],
 ],
 ```

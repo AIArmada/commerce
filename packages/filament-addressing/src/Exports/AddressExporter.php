@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Exports;
 
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;

@@ -81,7 +81,7 @@ namespace App\Filament\Resources\VenueResource\Pages;
 
 use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
 

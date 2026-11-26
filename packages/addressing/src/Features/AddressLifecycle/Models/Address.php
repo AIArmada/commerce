@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Models;
 
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\AddressFormatter;
@@ -10,6 +10,9 @@ use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Database\Factories\AddressFactory;
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
+use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -217,7 +220,7 @@ class Address extends TransactionalDeletionModel
         return $this->belongsTo(ModelResolver::cityClass(), 'city_id');
     }
 
-    /** @return HasMany<\AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment, $this> */
+    /** @return HasMany<AddressAreaAssignment, $this> */
     public function areaAssignments(): HasMany
     {
         return $this->hasMany(ModelResolver::areaAssignmentClass(), 'address_id');

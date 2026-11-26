@@ -573,7 +573,7 @@ $registrationId = $attendance->registrationIdForAttendance($attendanceId);
 ## Managing Venues
 
 ```php
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Events\Features\Venues\Models\Venue;
 
 $venue = Venue::query()->create([

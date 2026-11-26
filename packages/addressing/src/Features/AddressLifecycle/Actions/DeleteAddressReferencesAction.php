@@ -6,7 +6,7 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
-use AIArmada\Addressing\Support\AddressOwnerGuard;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use RuntimeException;
 

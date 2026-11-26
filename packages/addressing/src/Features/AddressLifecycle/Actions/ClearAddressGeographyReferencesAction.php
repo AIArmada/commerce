@@ -6,7 +6,7 @@ namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceMaintenance;
-use AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope;
+use AIArmada\Addressing\Features\AddressLifecycle\Support\AddressAreaAssignmentOwnerScope;
 use AIArmada\Addressing\Support\ModelResolver;
 
 final readonly class ClearAddressGeographyReferencesAction implements AddressReferenceMaintenance
