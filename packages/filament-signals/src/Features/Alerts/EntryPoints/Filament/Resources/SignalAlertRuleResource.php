@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resource
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Pages;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Schemas\SignalAlertRuleForm;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Tables\SignalAlertRuleTable;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

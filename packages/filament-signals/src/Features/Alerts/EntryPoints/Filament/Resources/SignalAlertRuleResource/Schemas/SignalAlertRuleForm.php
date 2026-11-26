@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resource
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;

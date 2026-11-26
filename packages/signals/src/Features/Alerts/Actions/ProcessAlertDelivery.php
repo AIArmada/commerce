@@ -6,9 +6,9 @@ namespace AIArmada\Signals\Features\Alerts\Actions;
 
 use AIArmada\Signals\Contracts\AlertTransport;
 use AIArmada\Signals\Data\AlertDeliveryMessage;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;

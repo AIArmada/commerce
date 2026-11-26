@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;

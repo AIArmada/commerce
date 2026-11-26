@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Actions;
+namespace AIArmada\Signals\Features\Alerts\Actions;
 
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Jobs;
+namespace AIArmada\Signals\Features\Alerts\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

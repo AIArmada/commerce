@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Actions\IngestSignalEvent;
-use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;

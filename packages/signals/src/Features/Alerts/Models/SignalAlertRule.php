@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Alerts\Models;
 
+use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -53,6 +54,8 @@ final class SignalAlertRule extends Model implements Auditable
     use HasOwnerScopeConfig;
     use HasOwnerScopeKey;
     use HasUuids;
+
+    protected $table = 'signal_alert_rules';
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'signals.owner';

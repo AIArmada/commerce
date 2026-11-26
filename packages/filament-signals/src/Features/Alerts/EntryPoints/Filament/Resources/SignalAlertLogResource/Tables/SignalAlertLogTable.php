@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Tables;
 
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
-use AIArmada\Signals\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;

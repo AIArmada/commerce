@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Services;
+namespace AIArmada\Signals\Features\Alerts\Queries;
 
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Support\SignalCurrency;
 use Carbon\CarbonImmutable;

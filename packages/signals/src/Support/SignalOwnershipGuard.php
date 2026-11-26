@@ -6,7 +6,7 @@ namespace AIArmada\Signals\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Signals\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;

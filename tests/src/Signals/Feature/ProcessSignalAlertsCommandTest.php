@@ -8,11 +8,11 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 

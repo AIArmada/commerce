@@ -6,7 +6,7 @@ namespace AIArmada\Signals\Features\Alerts\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
-use AIArmada\Signals\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;

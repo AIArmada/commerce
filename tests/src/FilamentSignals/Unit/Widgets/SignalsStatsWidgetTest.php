@@ -10,8 +10,8 @@ use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Signa
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\EventTrendWidget;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets\PendingSignalAlertsWidget;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\SignalsStatsWidget;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;

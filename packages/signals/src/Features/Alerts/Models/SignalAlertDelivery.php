@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Alerts\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -26,6 +26,8 @@ final class SignalAlertDelivery extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected $table = 'signal_alert_deliveries';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 

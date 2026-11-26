@@ -329,7 +329,7 @@ Signals provides reusable Laravel Actions for core ingest, session, and alert op
 ```php
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Actions\ResolveSession;
-use AIArmada\Signals\Actions\EvaluateAlertRules;
+use AIArmada\Signals\Features\Alerts\Actions\EvaluateAlertRules;
 use AIArmada\Signals\Models\TrackedProperty;
 
 // Ingest a signal event into a tracked property

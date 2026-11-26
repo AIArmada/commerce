@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
 use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalGoal;

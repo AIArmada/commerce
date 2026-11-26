@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Services;
+namespace AIArmada\Signals\Features\Alerts\Actions;
 
-use AIArmada\Signals\Jobs\DispatchSignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
-final class SignalAlertDispatcher
+final readonly class SignalAlertDispatcher
 {
     /**
      * @param  array<string, mixed>  $context
@@ -74,13 +74,21 @@ final class SignalAlertDispatcher
                 ownerType: $delivery->owner_type,
                 ownerId: $delivery->owner_id,
                 ownerIsGlobal: $delivery->owner_type === null && $delivery->owner_id === null,
-            )->onQueue((string) config('signals.features.alerts.delivery.queue', 'default'));
+            )->onQueue((string) config('signals.features.alerts.delivery.queue', 'default'))->afterCommit();
         }
 
         return $log->refresh();
     }
 
     public function refreshLogSummary(SignalAlertLog $log): void
+    {
+        DB::transaction(function () use ($log): void {
+            $lockedLog = SignalAlertLog::query()->whereKey($log->id)->lockForUpdate()->firstOrFail();
+            $this->writeLogSummary($lockedLog);
+        });
+    }
+
+    private function writeLogSummary(SignalAlertLog $log): void
     {
         $deliveries = SignalAlertDelivery::query()
             ->where('signal_alert_log_id', $log->id)

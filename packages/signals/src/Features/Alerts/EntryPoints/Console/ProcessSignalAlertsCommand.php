@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Console\Commands;
+namespace AIArmada\Signals\Features\Alerts\EntryPoints\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use Illuminate\Console\Command;
 
 final class ProcessSignalAlertsCommand extends Command

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
-use AIArmada\Signals\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;

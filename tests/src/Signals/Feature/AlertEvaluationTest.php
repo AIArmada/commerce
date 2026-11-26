@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalGoal;
@@ -14,7 +14,7 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalInteractionRule;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);

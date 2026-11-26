@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Alerts\Models;
 
+use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -39,6 +40,8 @@ final class SignalAlertLog extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected $table = 'signal_alert_logs';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 

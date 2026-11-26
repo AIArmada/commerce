@@ -8,7 +8,7 @@ use AIArmada\FilamentSignals\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\FilamentSignals\Features\Alerts\Api\AlertDashboardWidgets;
 use AIArmada\FilamentSignals\Features\Alerts\Queries\AlertDashboardWidgetList;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Policies\SignalAlertRulePolicy;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
 
