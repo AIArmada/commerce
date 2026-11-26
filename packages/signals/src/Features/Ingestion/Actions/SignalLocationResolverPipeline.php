@@ -7,6 +7,7 @@ namespace AIArmada\Signals\Features\Ingestion\Actions;
 use AIArmada\Signals\Contracts\ReverseGeocoderContract;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Data\GeocodingResult;
+use AIArmada\Signals\Data\SessionLocation;
 use AIArmada\Signals\Models\SignalSession;
 use Carbon\CarbonImmutable;
 
@@ -56,21 +57,41 @@ final class SignalLocationResolverPipeline
 
         $storeRawPayload = (bool) config('signals.features.geolocation.reverse_geocode.store_raw_payload', false);
 
-        $session->update([
-            'resolved_country_code' => $result->countryCode,
-            'resolved_country_name' => $result->countryName,
-            'resolved_state' => $result->state,
-            'resolved_city' => $result->city,
-            'resolved_postcode' => $result->postcode,
-            'resolved_formatted_address' => $result->formattedAddress,
-            'raw_reverse_geocode_payload' => $storeRawPayload ? $result->rawPayload : null,
-            'reverse_geocode_provider' => $providerName,
-            'reverse_geocoded_at' => CarbonImmutable::now(),
-        ]);
+        $session->getConnection()->transaction(function () use ($session, $result, $providerName, $storeRawPayload): void {
+            $locked = SignalSession::query()->whereKey($session->getKey())->lockForUpdate()->first();
 
-        foreach ($this->resolvers as $resolver) {
-            $resolver->resolve($session->refresh(), $result->rawPayload);
-        }
+            if ($locked === null || $locked->reverse_geocoded_at !== null
+                || $locked->latitude !== $session->latitude || $locked->longitude !== $session->longitude) {
+                return;
+            }
+
+        $locked->update([
+                'resolved_country_code' => $result->countryCode,
+                'resolved_country_name' => $result->countryName,
+                'resolved_state' => $result->state,
+                'resolved_city' => $result->city,
+                'resolved_postcode' => $result->postcode,
+                'resolved_formatted_address' => $result->formattedAddress,
+                'raw_reverse_geocode_payload' => $storeRawPayload ? $result->rawPayload : null,
+                'reverse_geocode_provider' => $providerName,
+                'reverse_geocoded_at' => CarbonImmutable::now(),
+            ]);
+
+            $location = new SessionLocation(
+                sessionId: (string) $locked->getKey(),
+                trackedPropertyId: (string) $locked->tracked_property_id,
+                ownerType: $locked->owner_type,
+                ownerId: $locked->owner_id,
+                latitude: (float) $locked->latitude,
+                longitude: (float) $locked->longitude,
+                provider: $providerName,
+                result: $result,
+            );
+
+            foreach ($this->resolvers as $resolver) {
+                $resolver->resolve($location);
+            }
+        });
     }
 
     /**

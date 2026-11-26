@@ -50,30 +50,36 @@ final readonly class CaptureSignalGeolocation
         }
 
         OwnerContext::withOwner($owner, function () use ($sessionIdentifier, $trackedProperty, $payload, $latitude, $longitude): void {
-            $session = SignalSession::query()
-                ->where('session_identifier', $sessionIdentifier)
-                ->where('tracked_property_id', $trackedProperty->id)
-                ->first();
+            $session = (new SignalSession)->getConnection()->transaction(function () use ($sessionIdentifier, $trackedProperty, $payload, $latitude, $longitude): ?SignalSession {
+                $session = SignalSession::query()
+                    ->where('session_identifier', $sessionIdentifier)
+                    ->where('tracked_property_id', $trackedProperty->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($session === null || ($session->latitude !== null && $session->longitude !== null)) {
+                    return null;
+                }
+
+                $accuracy = $payload['accuracy'] ?? null;
+                $accuracy = is_numeric($accuracy) && is_finite((float) $accuracy) && (float) $accuracy >= 0 && (float) $accuracy <= 2147483647
+                    ? (int) round((float) $accuracy)
+                    : null;
+
+                $session->update([
+                    'latitude' => (float) $latitude,
+                    'longitude' => (float) $longitude,
+                    'accuracy_meters' => $accuracy,
+                    'geolocation_source' => 'browser',
+                    'geolocation_captured_at' => CarbonImmutable::now(),
+                ]);
+
+                return $session;
+            });
 
             if ($session === null) {
                 return;
             }
-
-            if ($session->latitude !== null && $session->longitude !== null) {
-                return;
-            }
-
-            $accuracy = is_numeric($payload['accuracy'] ?? null)
-                ? (int) round((float) $payload['accuracy'])
-                : null;
-
-            $session->update([
-                'latitude' => (float) $latitude,
-                'longitude' => (float) $longitude,
-                'accuracy_meters' => $accuracy,
-                'geolocation_source' => 'browser',
-                'geolocation_captured_at' => CarbonImmutable::now(),
-            ]);
 
             if (! (bool) config('signals.features.geolocation.reverse_geocode.enabled', false)) {
                 return;

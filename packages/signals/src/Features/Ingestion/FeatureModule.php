@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion;
 
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
+use AIArmada\Signals\Contracts\UserAgentParser;
+use AIArmada\Signals\Drivers\MatomoUserAgentParser;
 use AIArmada\Signals\Features\Ingestion\Actions\CommerceSignalsRecorder;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
@@ -17,6 +19,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->singleton(CommerceSignalsRecorder::class);
+        $app->bind(UserAgentParser::class, MatomoUserAgentParser::class);
         $app->singleton(SignalLocationResolverPipeline::class, function ($app): SignalLocationResolverPipeline {
             $pipeline = new SignalLocationResolverPipeline;
             $pipeline->registerGeocoder($app->make(NominatimGeocoder::class));

@@ -7,7 +7,7 @@ use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Listeners\RecordCommerceSignal;
-use AIArmada\Signals\Models\SignalSession;
+use AIArmada\Signals\Data\SessionLocation;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use AIArmada\Signals\SignalsServiceProvider;
@@ -41,7 +41,7 @@ it('configures the package name, config, and migrations', function (): void {
 it('registers the default reverse geocoder and optional location resolver on the pipeline', function (): void {
     app()->bind(SignalLocationResolverContract::class, fn (): SignalLocationResolverContract => new class implements SignalLocationResolverContract
     {
-        public function resolve(SignalSession $session, array $rawPayload): void {}
+        public function resolve(SessionLocation $location): void {}
     });
 
     $pipeline = app(SignalLocationResolverPipeline::class);

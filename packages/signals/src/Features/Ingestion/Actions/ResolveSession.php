@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalUserAgentParser;
+use AIArmada\Signals\Contracts\UserAgentParser;
 use AIArmada\Signals\Features\Ingestion\Queries\CrossTenantQuery;
 use AIArmada\Signals\Support\DuplicateKeyViolation;
 use AIArmada\Signals\Support\RecordingTransaction;
@@ -20,7 +20,7 @@ use Illuminate\Http\Request;
 final readonly class ResolveSession
 {
     public function __construct(
-        private SignalUserAgentParser $userAgentParser,
+        private UserAgentParser $userAgentParser,
     ) {}
 
     /**

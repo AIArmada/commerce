@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Services;
+namespace AIArmada\Signals\Drivers;
 
-use DeviceDetector\ClientHints;
+use AIArmada\Signals\Contracts\UserAgentParser;
 use DeviceDetector\DeviceDetector;
 
-final class SignalUserAgentParser
+final readonly class MatomoUserAgentParser implements UserAgentParser
 {
     /**
      * Parse a User-Agent string into normalized device/browser/OS info.
@@ -26,7 +26,7 @@ final class SignalUserAgentParser
      *     is_bot: bool,
      * }
      */
-    public function parse(string $userAgent, ?ClientHints $clientHints = null): array
+    public function parse(string $userAgent): array
     {
         if (! config('signals.features.ua_parsing.enabled', true)) {
             return $this->emptyResult();
@@ -38,7 +38,7 @@ final class SignalUserAgentParser
             return $this->emptyResult();
         }
 
-        $dd = new DeviceDetector($userAgent, $clientHints);
+        $dd = new DeviceDetector($userAgent);
         $dd->discardBotInformation();
         $dd->parse();
 

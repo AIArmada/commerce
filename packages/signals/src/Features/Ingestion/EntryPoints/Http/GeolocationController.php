@@ -22,7 +22,7 @@ final readonly class GeolocationController
             'session_identifier' => ['required', 'string', 'max:255'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'accuracy' => ['nullable', 'numeric', 'min:0'],
+            'accuracy' => ['nullable', 'numeric', 'min:0', 'max:2147483647'],
         ]);
 
         // Validate write key resolves to a tracked property (raises 403 on failure)
