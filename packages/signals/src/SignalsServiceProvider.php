@@ -22,7 +22,6 @@ use AIArmada\Signals\Platform\ExtensionRegistry;
 use AIArmada\Signals\Platform\FeatureCatalog;
 use AIArmada\Signals\Platform\FeatureModule;
 use Illuminate\Contracts\Foundation\Application;
-use AIArmada\Signals\Services\TrackedPropertyResolver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -55,8 +54,6 @@ final class SignalsServiceProvider extends PackageServiceProvider
                 $module->register($this->app);
             }
         }
-
-        $this->app->singleton(TrackedPropertyResolver::class);
 
     }
 

@@ -8,6 +8,8 @@ use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Contracts\UserAgentParser;
 use AIArmada\Signals\Drivers\MatomoUserAgentParser;
 use AIArmada\Signals\Features\Ingestion\Actions\CommerceSignalsRecorder;
+use AIArmada\Signals\Features\Ingestion\Actions\ResolveBrowserProperty;
+use AIArmada\Signals\Features\Ingestion\Api\BrowserPropertyResolver;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->singleton(CommerceSignalsRecorder::class);
+        $app->bind(BrowserPropertyResolver::class, ResolveBrowserProperty::class);
         $app->bind(UserAgentParser::class, MatomoUserAgentParser::class);
         $app->singleton(SignalLocationResolverPipeline::class, function ($app): SignalLocationResolverPipeline {
             $pipeline = new SignalLocationResolverPipeline;

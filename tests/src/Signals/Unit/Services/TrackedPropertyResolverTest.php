@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\TrackedPropertyResolver;
+use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
 
 uses(SignalsTestCase::class);
 
@@ -21,7 +21,7 @@ it('resolves the single active property for an owner', function (): void {
         'is_active' => true,
     ]);
 
-    $resolver = app(TrackedPropertyResolver::class);
+    $resolver = app(ResolveTrackedProperty::class);
 
     expect($resolver->resolveForOwner($owner)?->is($property))->toBeTrue();
 });
@@ -45,7 +45,7 @@ it('returns null when an owner has multiple active matching properties', functio
         'is_active' => true,
     ]);
 
-    $resolver = app(TrackedPropertyResolver::class);
+    $resolver = app(ResolveTrackedProperty::class);
 
     expect($resolver->resolveForOwner($owner))->toBeNull();
 });
@@ -76,14 +76,14 @@ it('ignores properties belonging to other owners when resolving', function (): v
         ]);
     });
 
-    $resolver = app(TrackedPropertyResolver::class);
+    $resolver = app(ResolveTrackedProperty::class);
 
     expect($resolver->resolveForOwner($owner)?->is($property))->toBeTrue();
 });
 
 it('auto-creates a deterministic tracked property only for explicitly enabled integrations', function (): void {
     $owner = User::query()->firstOrFail();
-    $resolver = app(TrackedPropertyResolver::class);
+    $resolver = app(ResolveTrackedProperty::class);
 
     expect($resolver->resolveForOwner($owner, integration: 'cart'))->toBeNull();
 

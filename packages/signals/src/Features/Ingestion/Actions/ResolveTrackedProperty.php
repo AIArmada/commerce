@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Services;
+namespace AIArmada\Signals\Features\Ingestion\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Model;
 
-final class TrackedPropertyResolver
+final readonly class ResolveTrackedProperty
 {
     public function resolveForModel(Model $model, ?string $propertyType = null): ?TrackedProperty
     {
@@ -56,7 +56,7 @@ final class TrackedPropertyResolver
 
     public function resolveForOwnerReference(?string $ownerType, string | int | null $ownerId, ?string $propertyType = null, ?string $integration = null): ?TrackedProperty
     {
-        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
+        $owner = OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId);
 
         return $this->resolveForOwner($owner, $propertyType, $integration);
     }

@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\TrackedPropertyResolver;
+use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -22,7 +22,7 @@ use InvalidArgumentException;
 final class SignalRecorderSupport
 {
     public function __construct(
-        private readonly TrackedPropertyResolver $trackedPropertyResolver,
+        private readonly ResolveTrackedProperty $trackedPropertyResolver,
         private readonly IngestSignalEvent $ingestSignalEvent,
     ) {}
 

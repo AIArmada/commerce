@@ -13,6 +13,9 @@
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent",
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CaptureSignalGeolocation",
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\SignalLocationResolverPipeline"
+    ],
+    "table:signal_tracked_properties": [
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveTrackedProperty"
     ]
   },
   "extensions": {}

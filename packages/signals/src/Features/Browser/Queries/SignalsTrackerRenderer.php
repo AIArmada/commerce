@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Browser\Queries;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Browser\Api\TrackerMarkup;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Signals\Models\SignalInteractionRule;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\TrackedPropertyResolver;
+use AIArmada\Signals\Features\Ingestion\Api\BrowserPropertyResolver;
+use AIArmada\Signals\Features\Ingestion\Api\BrowserProperty;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +20,7 @@ final class SignalsTrackerRenderer implements TrackerMarkup
 {
     public function __construct(
         private readonly SignalsBrowserContextManager $browserContextManager,
-        private readonly TrackedPropertyResolver $trackedPropertyResolver,
+        private readonly BrowserPropertyResolver $trackedPropertyResolver,
     ) {}
 
     /**
@@ -43,9 +42,9 @@ final class SignalsTrackerRenderer implements TrackerMarkup
             return '';
         }
 
-        $trackedProperty = $this->resolveTrackedProperty();
+        $trackedProperty = $this->trackedPropertyResolver->resolve();
 
-        if (! $trackedProperty instanceof TrackedProperty) {
+        if (! $trackedProperty instanceof BrowserProperty) {
             return '';
         }
 
@@ -58,7 +57,7 @@ final class SignalsTrackerRenderer implements TrackerMarkup
             'defer' => true,
             'src' => $this->signalUrl((string) config('signals.http.tracker_script', 'tracker.js')),
             'data-signals-tracker' => '1',
-            'data-write-key' => $trackedProperty->write_key,
+            'data-write-key' => $trackedProperty->writeKey,
             'data-endpoint' => $this->signalUrl('collect/pageview'),
             'data-event-endpoint' => $this->signalUrl('collect/browser-event'),
             'data-identify-endpoint' => $this->signalUrl('collect/identify'),
@@ -91,7 +90,7 @@ final class SignalsTrackerRenderer implements TrackerMarkup
     /**
      * @return list<array<string, mixed>>
      */
-    private function interactionRules(TrackedProperty $trackedProperty): array
+    private function interactionRules(BrowserProperty $trackedProperty): array
     {
         if (! (bool) config('signals.integrations.browser.interaction_tracking.enabled', true)) {
             return [];
@@ -105,7 +104,7 @@ final class SignalsTrackerRenderer implements TrackerMarkup
             ->where('is_active', true)
             ->where(function ($query) use ($trackedProperty): void {
                 $query->whereNull('tracked_property_id')
-                    ->orWhere('tracked_property_id', $trackedProperty->getKey());
+                    ->orWhere('tracked_property_id', $trackedProperty->id);
             })
             ->when(! $includeRulesWithoutSelector, static function ($query): void {
                 $query->where(function ($innerQuery): void {
@@ -143,17 +142,6 @@ final class SignalsTrackerRenderer implements TrackerMarkup
             ->all();
 
         return $rules;
-    }
-
-    private function resolveTrackedProperty(): ?TrackedProperty
-    {
-        $owner = OwnerContext::resolve();
-
-        if ((bool) config('signals.owner.enabled', true) && ! $owner instanceof Model && ! OwnerContext::isExplicitGlobal()) {
-            return null;
-        }
-
-        return $this->trackedPropertyResolver->resolveForOwner($owner, integration: 'browser');
     }
 
     private function signalUrl(string $suffix): string
