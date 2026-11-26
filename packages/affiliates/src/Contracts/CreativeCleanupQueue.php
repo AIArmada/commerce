@@ -8,4 +8,7 @@ interface CreativeCleanupQueue
 {
     /** @param array<string, mixed> $attributes */
     public function enqueue(string $mediaClass, array $attributes, int $connectionIdentity): void;
+
+    /** @param array<string, mixed> $attributes */
+    public function recoverDetached(string $mediaClass, array $attributes, int $connectionIdentity): void;
 }

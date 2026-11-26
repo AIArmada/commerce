@@ -33,12 +33,40 @@ final readonly class ProcessCreativeAssetCleanup implements CreativeCleanupQueue
         });
     }
 
+    public function recoverDetached(string $mediaClass, array $attributes, int $connectionIdentity): void
+    {
+        $connection = (new AffiliateCreativeAssetCleanup)->getConnection();
+
+        if (spl_object_id($connection) !== $connectionIdentity) {
+            throw new LogicException('Creative rollback cleanup requires the original database connection.');
+        }
+
+        try {
+            $this->filesystem->removeDetached($mediaClass, $attributes, $connectionIdentity);
+
+            return;
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        // If a parent transaction rolls back, its queue insert is rolled back as well.
+        if ($connection->transactionLevel() > 0) {
+            $connection->afterRollBack(function () use ($mediaClass, $attributes, $connectionIdentity): void {
+                $this->recoverDetached($mediaClass, $attributes, $connectionIdentity);
+            });
+        }
+
+        $connection->transaction(function () use ($mediaClass, $attributes, $connectionIdentity): void {
+            $this->enqueue($mediaClass, $attributes, $connectionIdentity);
+        });
+    }
+
     public function drain(int $limit): int
     {
         $failures = 0;
 
         $ids = AffiliateCreativeAssetCleanup::query()->orderBy('attempt_count')->oldest('created_at')->orderBy('id')
-            ->limit(max(1, $limit))->pluck('id');
+            ->limit(max(1, min(1000, $limit)))->pluck('id');
 
         foreach ($ids as $id) {
             if (! $this->attempt((string) $id)) {

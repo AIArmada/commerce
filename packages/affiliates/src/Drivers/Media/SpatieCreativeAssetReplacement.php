@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Drivers\Media;
 
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
+use AIArmada\Affiliates\Contracts\CreativeCleanupQueue;
 use ArrayObject;
 use finfo;
 use Illuminate\Database\Eloquent\Model;
@@ -14,13 +15,12 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\MediaCollections\Filesystem;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
 final readonly class SpatieCreativeAssetReplacement implements CreativeAssetReplacement
 {
-    public function __construct(private CreativeAssetRemoval $removal) {}
+    public function __construct(private CreativeAssetRemoval $removal, private CreativeCleanupQueue $cleanup) {}
 
     public function replace(string $creativeId, string $morphType, int $connectionIdentity, string $bytes): void
     {
@@ -45,10 +45,10 @@ final readonly class SpatieCreativeAssetReplacement implements CreativeAssetRepl
         // The previous asset's database row and file remain recoverable on rollback.
         /** @var ArrayObject<int, Media> $added */
         $added = new ArrayObject;
-        $connection->afterRollBack(static function () use ($added): void {
+        $connection->afterRollBack(function () use ($added, $connectionIdentity): void {
             foreach ($added as $asset) {
                 try {
-                    app(Filesystem::class)->removeAllFiles($asset);
+                    $this->cleanup->recoverDetached($asset::class, $asset->getAttributes(), $connectionIdentity);
                 } catch (Throwable $exception) {
                     report($exception);
                 }

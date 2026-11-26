@@ -414,3 +414,33 @@ test('failed post-commit creative cleanup is retained and can be retried', funct
         ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
     Storage::disk('public')->assertMissing($path);
 });
+
+test('failed rollback cleanup of a new creative asset is retained for retry', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Original', 'tracking_code' => 'ROLLBACK-RETRY'], UploadedFile::fake()->image('original.png')->get());
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $original = $creative->getFirstMedia('creative_asset')->getPathRelativeToRoot();
+    $replacement = null;
+
+    $this->mock(CreativeAssetFilesystem::class)->shouldReceive('removeDetached')->andThrow(new RuntimeException('storage unavailable'));
+
+    expect(function () use ($creative, $id, &$replacement): void {
+        $creative->getConnection()->transaction(function () use ($id, &$replacement): void {
+            app(CreativeAdministration::class)->update(null, $id, [], UploadedFile::fake()->image('replacement.png')->get());
+            $replacement = AffiliateProgramCreative::query()->findOrFail($id)->getFirstMedia('creative_asset')->getPathRelativeToRoot();
+
+            throw new RuntimeException('force creative rollback');
+        });
+    })->toThrow(RuntimeException::class, 'force creative rollback');
+
+    expect(AffiliateCreativeAssetCleanup::query()->count())->toBe(1);
+    Storage::disk('public')->assertExists($original);
+    Storage::disk('public')->assertExists($replacement);
+
+    app()->instance(CreativeAssetFilesystem::class, new SpatieCreativeAssetFilesystem);
+
+    expect(app(ProcessCreativeAssetCleanup::class)->drain(100))->toBe(0)
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+    Storage::disk('public')->assertExists($original);
+    Storage::disk('public')->assertMissing($replacement);
+});
