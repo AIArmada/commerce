@@ -149,17 +149,18 @@ class AffiliatePayout extends Model implements Auditable
      * Fail loud when linked conversions do not belong to this payout's affiliate.
      */
     public function assertSingleAffiliateConversions(
-        ?AffiliateConversion $conversion = null,
+        ?string $candidateAffiliateId = null,
+        ?string $existingConversionId = null,
         Model | string | null $owner = OwnerContext::CURRENT,
     ): void {
         $affiliateIds = collect(app(PayoutConversionIntegrity::class)->affiliateIds(
             (string) $this->getKey(),
             spl_object_id($this->getConnection()),
-            $conversion?->exists ? (string) $conversion->getKey() : null,
+            $existingConversionId,
         ));
 
-        if ($conversion instanceof AffiliateConversion) {
-            $affiliateIds->push($conversion->affiliate_id);
+        if ($candidateAffiliateId !== null) {
+            $affiliateIds->push($candidateAffiliateId);
         }
 
         $expectedAffiliateId = null;

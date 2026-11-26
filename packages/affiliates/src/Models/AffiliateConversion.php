@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CancelledPayout;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
@@ -199,15 +196,10 @@ class AffiliateConversion extends Model
             return;
         }
 
-        $payout = $this->payout()->withoutGlobalScope(OwnerScope::class)->first();
-
-        if (! $payout instanceof AffiliatePayout) {
-            return;
-        }
-
-        if ($payout->status->equals(CompletedPayout::class)
-            || $payout->status->equals(FailedPayout::class)
-            || $payout->status->equals(CancelledPayout::class)) {
+        if (! app(PayoutAccountingReader::class)->isOpen(
+            $this->affiliate_payout_id,
+            spl_object_id($this->getConnection()),
+        )) {
             return;
         }
 
@@ -263,30 +255,14 @@ class AffiliateConversion extends Model
                 return;
             }
 
-            $payout = AffiliatePayout::query()->find($conversion->affiliate_payout_id);
-
-            if (! $payout instanceof AffiliatePayout) {
-                throw new InvalidArgumentException(sprintf(
-                    'Cannot link conversion [%s] to payout [%s]: the payout is missing or outside the owner scope.',
-                    (string) $conversion->getKey(),
-                    (string) $conversion->affiliate_payout_id,
-                ));
-            }
-
-            $payout->assertSingleAffiliateConversions($conversion);
-
-            $conversionCurrency = mb_strtoupper((string) $conversion->commission_currency);
-            $payoutCurrency = mb_strtoupper((string) $payout->currency);
-
-            if ($conversionCurrency !== '' && $conversionCurrency !== $payoutCurrency) {
-                throw new InvalidArgumentException(sprintf(
-                    'Cannot link conversion [%s] (%s) to payout [%s] (%s): conversions must use the same currency as their payout.',
-                    (string) $conversion->getKey(),
-                    $conversionCurrency,
-                    (string) $payout->getKey(),
-                    $payoutCurrency,
-                ));
-            }
+            app(PayoutAccountingReader::class)->assertConversionLink(
+                $conversion->affiliate_payout_id,
+                (string) $conversion->getKey(),
+                $conversion->exists ? (string) $conversion->getKey() : null,
+                $conversion->affiliate_id,
+                $conversion->commission_currency,
+                spl_object_id($conversion->getConnection()),
+            );
         });
 
         static::saving(function (self $conversion): void {
