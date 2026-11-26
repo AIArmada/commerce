@@ -6,19 +6,17 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSelection;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -28,7 +26,11 @@ use LogicException;
  */
 final readonly class CreatePayout
 {
-    public function __construct(private PayoutReservation $reservation, private BalanceReader $balances) {}
+    public function __construct(
+        private PayoutReservation $reservation,
+        private BalanceReader $balances,
+        private PayoutConversionSelection $selection,
+    ) {}
 
     /**
      * Create a payout from the given conversion IDs.
@@ -54,45 +56,22 @@ final readonly class CreatePayout
 
         $connection = (new Affiliate)->getConnection();
 
-        foreach ([new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutHold] as $model) {
+        foreach ([new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new LogicException('Payout reservation requires a shared database connection.');
             }
         }
 
-        return $connection->transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId): AffiliatePayout {
-            /** @var Collection<int, AffiliateConversion> $conversions */
-            $conversions = AffiliateConversion::query()
-                ->forOwner()
-                ->whereIn('id', $conversionIds)
-                ->where('commission_minor', '>', 0)
-                ->where('status', ApprovedConversion::value())
-                ->whereNull('affiliate_payout_id')
-                ->lockForUpdate()
-                ->get();
-
-            if ($conversions->count() !== count($conversionIds)) {
-                throw new InvalidArgumentException('All conversions must be approved and not already linked to a payout.');
-            }
-
-            $affiliateIds = $conversions->pluck('affiliate_id')->unique()->values();
-
-            if ($affiliateIds->count() !== 1) {
-                throw new InvalidArgumentException('A payout operation may contain conversions for only one affiliate.');
-            }
-
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail((string) $affiliateIds->first());
+        return $connection->transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId, $connection): AffiliatePayout {
+            $selection = $this->selection->manual($conversionIds, spl_object_id($connection));
+            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($selection->affiliateId);
 
             if ($expectedAffiliateId !== null && (string) $affiliate->getKey() !== $expectedAffiliateId) {
                 throw new InvalidArgumentException('The conversions do not belong to the selected affiliate.');
             }
 
-            $onlyFixedRewardAwards = $conversions->every(
-                fn (AffiliateConversion $conversion): bool => $conversion->conversion_type === 'reward_award',
-            );
-
             if (! $affiliate->isCommercialPurpose()
-                && (! $onlyFixedRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
+                && (! $selection->onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
                 throw new InvalidArgumentException('Only commercial-purpose conversions may be paid unless reward-award settlement is explicitly enabled.');
             }
 
@@ -102,36 +81,19 @@ final readonly class CreatePayout
 
             $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);
 
-            $ownerTuples = $conversions
-                ->map(fn (AffiliateConversion $conversion): string => ($conversion->owner_type ?? '') . '|' . ($conversion->owner_id ?? ''))
-                ->unique();
-
-            if ($ownerTuples->count() !== 1) {
-                throw new InvalidArgumentException('A payout operation may contain conversions for only one owner.');
-            }
-
-            $ownerType = $conversions->first()?->owner_type;
-            $ownerId = $conversions->first()?->owner_id;
+            $ownerType = $selection->ownerType;
+            $ownerId = $selection->ownerId;
 
             $this->assertOwnerAttributesMatch($attributes, $ownerType, $ownerId);
 
-            $currencies = $conversions
-                ->map(fn (AffiliateConversion $conversion): string => mb_strtoupper((string) $conversion->commission_currency))
-                ->unique()
-                ->values();
-
-            if ($currencies->count() !== 1) {
-                throw new InvalidArgumentException('A payout operation may contain conversions in only one currency.');
-            }
-
-            $currency = (string) $currencies->first();
+            $currency = $selection->currency;
 
             if (array_key_exists('currency', $attributes) && $attributes['currency'] !== null
                 && mb_strtoupper((string) $attributes['currency']) !== $currency) {
                 throw new InvalidArgumentException('Payout currency must match the conversions being paid.');
             }
 
-            $total = (int) $conversions->sum('commission_minor');
+            $total = $selection->totalMinor;
 
             if ($total <= 0) {
                 throw new InvalidArgumentException('Payout total must be greater than zero.');
@@ -153,8 +115,8 @@ final readonly class CreatePayout
             $sequence = $balance->payoutSequence + 1;
 
             $operation = new AffiliatePayoutOperation([
-                'affiliate_id' => (string) $affiliateIds->first(),
-                'operation_key' => sprintf('manual:%s:%s:%d', $affiliateIds->first(), $currency, $sequence),
+                'affiliate_id' => $selection->affiliateId,
+                'operation_key' => sprintf('manual:%s:%s:%d', $selection->affiliateId, $currency, $sequence),
                 'status' => 'claimed',
                 'amount_minor' => $total,
                 'currency' => $currency,
@@ -170,7 +132,7 @@ final readonly class CreatePayout
                 'reference' => $reference,
                 'status' => $status::class,
                 'total_minor' => $total,
-                'conversion_count' => $conversions->count(),
+                'conversion_count' => $selection->count,
                 'currency' => $currency,
                 'metadata' => $this->payoutMetadata($attributes, $payoutOverride),
                 'payee_type' => $attributes['payee_type'] ?? $affiliate->getMorphClass(),

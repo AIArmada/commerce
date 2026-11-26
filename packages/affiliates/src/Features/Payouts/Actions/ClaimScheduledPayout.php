@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSelection;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
@@ -23,7 +22,11 @@ final class ClaimScheduledPayout
 {
     use AsAction;
 
-    public function __construct(private readonly PayoutReservation $reservation, private readonly BalanceReader $balances) {}
+    public function __construct(
+        private readonly PayoutReservation $reservation,
+        private readonly BalanceReader $balances,
+        private readonly PayoutConversionSelection $selection,
+    ) {}
 
     public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): bool
     {
@@ -58,9 +61,9 @@ final class ClaimScheduledPayout
             return false;
         }
 
-        $allocation = $this->fundedConversionAllocation($affiliate, $balance->availableMinor, $currency);
+        $allocation = $this->selection->scheduled($affiliateId, $balance->availableMinor, $currency, false, spl_object_id($affiliate->getConnection()));
 
-        return $allocation['conversion_ids'] !== [] && $allocation['amount_minor'] >= $threshold;
+        return $allocation->conversionIds !== [] && $allocation->amountMinor >= $threshold;
     }
 
     public function handle(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): ?AffiliatePayoutOperation
@@ -69,7 +72,7 @@ final class ClaimScheduledPayout
 
         $connection = (new Affiliate)->getConnection();
 
-        foreach ([new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent, new AffiliatePayoutHold] as $model) {
+        foreach ([new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new LogicException('Scheduled payout reservation requires a shared database connection.');
             }
@@ -112,14 +115,15 @@ final class ClaimScheduledPayout
                 return null;
             }
 
-            $allocation = $this->fundedConversionAllocation(
-                affiliate: $affiliate,
+            $allocation = $this->selection->scheduled(
+                affiliateId: $affiliateId,
                 availableMinor: $balance->availableMinor,
                 currency: $currency,
                 lockForUpdate: true,
+                connectionIdentity: spl_object_id($affiliate->getConnection()),
             );
-            $conversionIds = $allocation['conversion_ids'];
-            $amountMinor = $allocation['amount_minor'];
+            $conversionIds = $allocation->conversionIds;
+            $amountMinor = $allocation->amountMinor;
 
             if ($conversionIds === [] || $amountMinor < $threshold) {
                 return null;
@@ -193,65 +197,5 @@ final class ClaimScheduledPayout
         }
 
         return (string) config('affiliates.currency.default', 'MYR');
-    }
-
-    /**
-     * Allocate a deterministic FIFO prefix of fully funded conversions.
-     *
-     * @return array{conversion_ids:list<string>,amount_minor:int}
-     */
-    private function fundedConversionAllocation(
-        Affiliate $affiliate,
-        int $availableMinor,
-        string $currency,
-        bool $lockForUpdate = false,
-    ): array {
-        if ($availableMinor <= 0) {
-            return ['conversion_ids' => [], 'amount_minor' => 0];
-        }
-
-        $query = $affiliate->conversions()
-            ->where('status', ApprovedConversion::value())
-            ->whereNull('affiliate_payout_id')
-            ->orderBy('occurred_at')
-            ->orderBy('id')
-            ->select(['id', 'commission_minor', 'commission_currency']);
-
-        if ($lockForUpdate) {
-            $query->lockForUpdate();
-        }
-
-        $conversionIds = [];
-        $amountMinor = 0;
-
-        // Fixed-size lazy batches keep memory bounded on high-volume
-        // affiliates. Skipped rows (other currencies, zero commission) must
-        // not consume a row limit, so limit(availableMinor) is wrong; and
-        // lazyById would reorder the occurred_at,id FIFO, so ordered offset
-        // chunks are used. No rows mutate during traversal (links update
-        // after allocation), making offset pagination safe here.
-        foreach ($query->lazy(1000) as $conversion) {
-            if (mb_strtoupper((string) $conversion->commission_currency) !== $currency) {
-                continue;
-            }
-
-            $commissionMinor = max(0, (int) $conversion->commission_minor);
-
-            if ($commissionMinor === 0) {
-                continue;
-            }
-
-            if ($amountMinor + $commissionMinor > $availableMinor) {
-                break;
-            }
-
-            $conversionIds[] = (string) $conversion->id;
-            $amountMinor += $commissionMinor;
-        }
-
-        return [
-            'conversion_ids' => $conversionIds,
-            'amount_minor' => $amountMinor,
-        ];
     }
 }
