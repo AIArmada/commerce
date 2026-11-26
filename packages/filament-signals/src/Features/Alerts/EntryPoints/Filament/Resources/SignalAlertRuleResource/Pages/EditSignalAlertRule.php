@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Pages;
 
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
 use Filament\Resources\Pages\EditRecord;
@@ -11,6 +13,13 @@ use Filament\Resources\Pages\EditRecord;
 final class EditSignalAlertRule extends EditRecord
 {
     protected static string $resource = SignalAlertRuleResource::class;
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        app(AlertRuleAdministration::class)->update((string) $record->getKey(), $data);
+
+        return $record->refresh();
+    }
 
     /**
      * @param  array<string, mixed>  $data

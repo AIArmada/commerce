@@ -20,10 +20,12 @@
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\DetachDeletedTelemetry"
     ],
     "table:signal_tracked_properties": [
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveTrackedProperty"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveTrackedProperty",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\AdministerTrackedProperty"
     ],
     "table:signal_interaction_rules": [
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\AdministerInteractionRule"
     ]
   },
   "extensions": {}

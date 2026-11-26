@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource\Tables;
 
+use AIArmada\Signals\Features\Reporting\Api\SavedReportAdministration;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -50,11 +56,22 @@ final class SavedSignalReportTable
             ])
             ->actions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->using(static fn (Model $record): bool => app(SavedReportAdministration::class)->delete((string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! SavedSignalReportResource::canDelete($record) || ! app(SavedReportAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

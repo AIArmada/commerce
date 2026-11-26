@@ -17,6 +17,8 @@ use AIArmada\Signals\Features\Alerts\Actions\EvaluateIngestedEvent;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
+use AIArmada\Signals\Features\Alerts\Actions\AdministerAlertRule;
 use AIArmada\Signals\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -24,6 +26,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(AlertRuleAdministration::class, AdministerAlertRule::class);
         $app->bind(AlertReadState::class, SetAlertReadState::class);
         $app->bind(DetachPropertyAlerts::class, DetachAlertsFromProperty::class);
         $app->bind(AlertSummary::class, AlertSummaryQuery::class);

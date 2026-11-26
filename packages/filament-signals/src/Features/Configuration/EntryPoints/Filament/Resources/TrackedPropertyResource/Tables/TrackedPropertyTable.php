@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Tables;
 
+use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -47,11 +53,22 @@ final class TrackedPropertyTable
             ])
             ->actions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->using(static fn (Model $record): bool => app(PropertyAdministration::class)->delete((string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! TrackedPropertyResource::canDelete($record) || ! app(PropertyAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

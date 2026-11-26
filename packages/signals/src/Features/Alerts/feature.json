@@ -4,7 +4,8 @@
   "owns": {
     "table:signal_alert_rules": [
       "AIArmada\\Signals\\Features\\Alerts\\Actions\\SignalAlertDispatcher",
-      "AIArmada\\Signals\\Features\\Alerts\\Actions\\DetachAlertsFromProperty"
+      "AIArmada\\Signals\\Features\\Alerts\\Actions\\DetachAlertsFromProperty",
+      "AIArmada\\Signals\\Features\\Alerts\\Actions\\AdministerAlertRule"
     ],
     "table:signal_alert_logs": [
       "AIArmada\\Signals\\Features\\Alerts\\Actions\\SignalAlertDispatcher",

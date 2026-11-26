@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Tables;
 
+use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -72,7 +78,7 @@ final class SignalGoalTable
             ->actions([
                 EditAction::make()
                     ->label('Edit'),
-                DeleteAction::make()
+                DeleteAction::make()->using(static fn (Model $record): bool => app(GoalAdministration::class)->delete((string) $record->getKey()))
                     ->label('Delete')
                     ->modalHeading('Delete goal?')
                     ->modalDescription('This will remove the saved goal from dashboards, funnels, and reports.')
@@ -80,7 +86,18 @@ final class SignalGoalTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! SignalGoalResource::canDelete($record) || ! app(GoalAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    })
                         ->label('Delete selected')
                         ->modalHeading('Delete goals?')
                         ->modalDescription('This will remove the selected saved goals from dashboards, funnels, and reports.')

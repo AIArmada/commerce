@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Tables;
 
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -71,11 +77,22 @@ final class SignalAlertRuleTable
             ])
             ->actions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->using(static fn (Model $record): bool => app(AlertRuleAdministration::class)->delete((string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! SignalAlertRuleResource::canDelete($record) || ! app(AlertRuleAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

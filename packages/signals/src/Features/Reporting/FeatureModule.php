@@ -19,6 +19,12 @@ use AIArmada\Signals\Features\Reporting\Queries\LiveActivityReportService;
 use AIArmada\Signals\Features\Reporting\Queries\PageViewReportService;
 use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
 use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
+use AIArmada\Signals\Features\Reporting\Actions\AdministerGoal;
+use AIArmada\Signals\Features\Reporting\Api\SegmentAdministration;
+use AIArmada\Signals\Features\Reporting\Actions\AdministerSegment;
+use AIArmada\Signals\Features\Reporting\Api\SavedReportAdministration;
+use AIArmada\Signals\Features\Reporting\Actions\AdministerSavedReport;
 use AIArmada\Signals\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -26,6 +32,9 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(SavedReportAdministration::class, AdministerSavedReport::class);
+        $app->bind(SegmentAdministration::class, AdministerSegment::class);
+        $app->bind(GoalAdministration::class, AdministerGoal::class);
         $app->singleton(SignalsDashboardService::class);
         $app->singleton(AggregateDailyMetrics::class);
         $app->bind(DetachPropertyReports::class, DetachReportsFromProperty::class);

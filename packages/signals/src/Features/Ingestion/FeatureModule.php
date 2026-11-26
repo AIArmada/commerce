@@ -13,6 +13,10 @@ use AIArmada\Signals\Features\Ingestion\Api\BrowserPropertyResolver;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
+use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
+use AIArmada\Signals\Features\Ingestion\Actions\AdministerTrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
+use AIArmada\Signals\Features\Ingestion\Actions\AdministerInteractionRule;
 use AIArmada\Signals\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -20,6 +24,8 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(InteractionRuleAdministration::class, AdministerInteractionRule::class);
+        $app->bind(PropertyAdministration::class, AdministerTrackedProperty::class);
         $app->singleton(CommerceSignalsRecorder::class);
         $app->bind(BrowserPropertyResolver::class, ResolveBrowserProperty::class);
         $app->bind(UserAgentParser::class, MatomoUserAgentParser::class);

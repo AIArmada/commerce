@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\InteractionRuleAdministration;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
 use Filament\Resources\Pages\EditRecord;
@@ -11,6 +13,13 @@ use Filament\Resources\Pages\EditRecord;
 final class EditSignalInteractionRule extends EditRecord
 {
     protected static string $resource = SignalInteractionRuleResource::class;
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        app(InteractionRuleAdministration::class)->update((string) $record->getKey(), $data);
+
+        return $record->refresh();
+    }
 
     public function getTitle(): string
     {

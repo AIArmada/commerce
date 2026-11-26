@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Tables;
 
+use AIArmada\Signals\Features\Reporting\Api\SegmentAdministration;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -65,7 +71,7 @@ final class SignalSegmentTable
             ->actions([
                 EditAction::make()
                     ->label('Edit'),
-                DeleteAction::make()
+                DeleteAction::make()->using(static fn (Model $record): bool => app(SegmentAdministration::class)->delete((string) $record->getKey()))
                     ->label('Delete')
                     ->modalHeading('Delete audience segment?')
                     ->modalDescription('This will remove the saved audience segment from reports and filters.')
@@ -73,7 +79,18 @@ final class SignalSegmentTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! SignalSegmentResource::canDelete($record) || ! app(SegmentAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    })
                         ->label('Delete selected')
                         ->modalHeading('Delete audience segments?')
                         ->modalDescription('This will remove the selected saved audience segments from reports and filters.')

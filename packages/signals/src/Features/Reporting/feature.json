@@ -7,11 +7,16 @@
       "AIArmada\\Signals\\Features\\Reporting\\Actions\\DetachReportsFromProperty"
     ],
     "table:signal_goals": [
-      "AIArmada\\Signals\\Features\\Reporting\\Actions\\DetachReportsFromProperty"
+      "AIArmada\\Signals\\Features\\Reporting\\Actions\\DetachReportsFromProperty",
+      "AIArmada\\Signals\\Features\\Reporting\\Actions\\AdministerGoal"
     ],
     "table:signal_saved_reports": [
       "AIArmada\\Signals\\Features\\Reporting\\Actions\\DetachReportsFromProperty",
-      "AIArmada\\Signals\\Features\\Reporting\\Actions\\DetachDeletedSegment"
+      "AIArmada\\Signals\\Features\\Reporting\\Actions\\DetachDeletedSegment",
+      "AIArmada\\Signals\\Features\\Reporting\\Actions\\AdministerSavedReport"
+    ],
+    "table:signal_segments": [
+      "AIArmada\\Signals\\Features\\Reporting\\Actions\\AdministerSegment"
     ]
   },
   "extensions": {}
