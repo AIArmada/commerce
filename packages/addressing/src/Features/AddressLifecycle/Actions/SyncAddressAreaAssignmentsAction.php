@@ -13,7 +13,6 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -443,11 +442,6 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             }
 
             $relationships = $this->references->activeContainmentParents($frontier);
-                })
-                ->where(function ($query): void {
-                    $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', CarbonImmutable::now());
-                })
-                ->get(['parent_address_area_id', 'child_address_area_id', 'hierarchy_type']);
 
             foreach ($relationships as $relationship) {
                 $parents->put(
