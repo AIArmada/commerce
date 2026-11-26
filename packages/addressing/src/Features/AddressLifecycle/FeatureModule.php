@@ -16,6 +16,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Actions\SyncAddressAreaAssignm
 use AIArmada\Addressing\Features\AddressLifecycle\Actions\UpdateAddressAttachmentAction;
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceMaintenance;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -23,6 +24,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->instance('addressing.model-default.area_assignment', AddressAreaAssignment::class);
         $app->singleton(AddressDeletionCleanup::class, DeleteAddressReferencesAction::class);
         $app->singleton(AddressReferenceMaintenance::class, ClearAddressGeographyReferencesAction::class);
         $app->singleton(AddressWriter::class, SaveAddressAction::class);

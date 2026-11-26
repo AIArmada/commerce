@@ -217,7 +217,7 @@ class Address extends TransactionalDeletionModel
         return $this->belongsTo(ModelResolver::cityClass(), 'city_id');
     }
 
-    /** @return HasMany<AddressAreaAssignment, $this> */
+    /** @return HasMany<\AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment, $this> */
     public function areaAssignments(): HasMany
     {
         return $this->hasMany(ModelResolver::areaAssignmentClass(), 'address_id');

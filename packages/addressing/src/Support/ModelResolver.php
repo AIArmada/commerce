@@ -7,7 +7,6 @@ namespace AIArmada\Addressing\Support;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
@@ -99,12 +98,14 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<AddressAreaAssignment>
+     * @return class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment>
      */
     public static function areaAssignmentClass(): string
     {
-        /** @var class-string<AddressAreaAssignment> $modelClass */
-        $modelClass = self::resolve('area_assignment', AddressAreaAssignment::class);
+        /** @var class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment> $default */
+        $default = app('addressing.model-default.area_assignment');
+        /** @var class-string<\AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment> $modelClass */
+        $modelClass = self::resolve('area_assignment', $default);
 
         return $modelClass;
     }

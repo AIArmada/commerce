@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
 use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaAddressComponents;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Support\ModelResolver;
 
 /**
  * Builds the canonical AddressData value object used for formatted block and summary rendering.

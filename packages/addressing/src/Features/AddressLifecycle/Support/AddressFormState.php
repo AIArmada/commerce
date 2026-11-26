@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
 use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

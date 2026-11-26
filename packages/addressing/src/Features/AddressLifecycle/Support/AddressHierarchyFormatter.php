@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\AddressFormatRenderer;
+use AIArmada\Addressing\Support\LocationLevelLabels;
+use AIArmada\Addressing\Support\ModelResolver;
 use InvalidArgumentException;
 
 final class AddressHierarchyFormatter
