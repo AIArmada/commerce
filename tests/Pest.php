@@ -6,7 +6,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
     require_once __DIR__ . '/Support/Shims/Facades/Livewire/Features/SupportFileUploads/GenerateSignedUploadUrl.php';
 }
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Tests\CartEngineTestCase;

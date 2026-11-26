@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\KeyValueEntry;

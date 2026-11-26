@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Widgets;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;

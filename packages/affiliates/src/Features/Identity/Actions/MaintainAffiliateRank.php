@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRankMaintenance;
 use AIArmada\Affiliates\Features\Identity\Queries\GuardAffiliateAccess;
 use AIArmada\Affiliates\Features\Upline\Api\RankAssignmentGuard;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use InvalidArgumentException;
 use LogicException;
 

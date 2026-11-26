@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiary;
 use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiaryReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Support\Str;
 use InvalidArgumentException;

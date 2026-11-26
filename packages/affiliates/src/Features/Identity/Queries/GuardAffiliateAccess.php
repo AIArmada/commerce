@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;

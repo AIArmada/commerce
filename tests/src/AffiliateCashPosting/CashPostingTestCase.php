@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\AffiliateCashPosting;
 
 use AIArmada\Affiliates\AffiliatesServiceProvider;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\CashPostingFailureInjector;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\FixtureAffiliateAwardPolicy;

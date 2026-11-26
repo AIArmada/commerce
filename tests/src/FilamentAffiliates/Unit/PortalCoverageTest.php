@@ -17,7 +17,7 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

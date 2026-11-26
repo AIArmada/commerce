@@ -13,7 +13,7 @@ The affiliates package includes 30 Eloquent models. This reference covers the pr
 The main affiliate/partner model.
 
 ```php
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 ```
 
 **Key Attributes:**

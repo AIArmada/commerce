@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateCohortMember;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;

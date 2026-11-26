@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccountSnapshot;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Auth\Access\AuthorizationException;

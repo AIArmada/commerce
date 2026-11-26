@@ -9,7 +9,7 @@ use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 

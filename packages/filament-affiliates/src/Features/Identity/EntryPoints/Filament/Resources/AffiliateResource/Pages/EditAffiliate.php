@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;

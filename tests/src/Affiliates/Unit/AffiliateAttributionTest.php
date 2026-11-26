@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;

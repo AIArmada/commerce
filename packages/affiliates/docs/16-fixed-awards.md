@@ -64,7 +64,7 @@ namespace AIArmada\Affiliates\Contracts;
 
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 
 interface AffiliateAwardPolicy
 {

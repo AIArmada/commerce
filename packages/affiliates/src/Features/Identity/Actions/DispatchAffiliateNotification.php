@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;

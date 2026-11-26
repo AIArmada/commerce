@@ -13,7 +13,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Queries\CreatorBalancesQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\AttributionCookie;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Events\CommissionAttributionRequired;

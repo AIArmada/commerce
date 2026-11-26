@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

@@ -18,7 +18,7 @@ use AIArmada\Affiliates\Features\Programs\Api\MembershipRemovalGuard;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Upline\Api\RankHistoryRemovalGuard;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

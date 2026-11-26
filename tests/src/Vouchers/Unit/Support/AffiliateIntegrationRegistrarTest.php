@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateVoucherIssuer;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateVoucherProvisioning;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Vouchers\Models\Voucher;

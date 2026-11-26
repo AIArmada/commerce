@@ -20,7 +20,7 @@ use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySite;
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySiteByStrategy;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Features\Sites\Queries\SiteLookupQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Actions\ResolveLink;

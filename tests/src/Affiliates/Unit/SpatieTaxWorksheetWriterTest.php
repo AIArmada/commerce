@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Data\TaxRecipientDetails;
 use AIArmada\Affiliates\Data\TaxWorksheetRequest;
 use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Drivers\BrowsershotDriver;

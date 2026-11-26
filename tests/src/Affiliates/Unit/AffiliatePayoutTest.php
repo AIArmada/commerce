@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 

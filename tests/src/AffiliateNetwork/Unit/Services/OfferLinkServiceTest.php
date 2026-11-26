@@ -10,7 +10,7 @@ use AIArmada\AffiliateNetwork\Features\Attribution\Queries\ResolveOfferLinkQuery
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Actions\GenerateLinkUrl;

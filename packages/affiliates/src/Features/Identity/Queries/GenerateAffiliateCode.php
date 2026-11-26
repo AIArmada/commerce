@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Support\Str;
 
 /**

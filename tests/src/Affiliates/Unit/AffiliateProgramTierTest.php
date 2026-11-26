@@ -15,7 +15,7 @@ use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 
 describe('AffiliateProgramTier Model', function (): void {

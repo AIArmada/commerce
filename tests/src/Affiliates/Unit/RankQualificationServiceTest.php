@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Illuminate\Database\Connection;

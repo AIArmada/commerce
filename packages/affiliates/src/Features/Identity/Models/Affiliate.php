@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Identity\Models;
 
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;

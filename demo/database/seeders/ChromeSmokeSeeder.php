@@ -12,7 +12,7 @@ use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;

@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

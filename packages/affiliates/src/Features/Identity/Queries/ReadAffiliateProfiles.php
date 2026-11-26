@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;

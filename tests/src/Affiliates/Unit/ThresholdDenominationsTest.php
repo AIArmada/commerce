@@ -19,7 +19,7 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;

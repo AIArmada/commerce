@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;

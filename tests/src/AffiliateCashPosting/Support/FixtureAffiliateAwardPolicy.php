@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AwardRecipient;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Support\Facades\DB;
 
 /**

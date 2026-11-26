@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileAdministration;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileInput;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;

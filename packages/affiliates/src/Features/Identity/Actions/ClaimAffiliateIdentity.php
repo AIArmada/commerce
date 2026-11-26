@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;

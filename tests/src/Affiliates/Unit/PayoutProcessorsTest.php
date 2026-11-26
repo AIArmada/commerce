@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 
 // PayoutProcessorFactory Tests

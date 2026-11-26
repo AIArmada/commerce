@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMaintenance;
 use AIArmada\Affiliates\Features\Identity\Queries\GuardAffiliateAccess;
 use AIArmada\Affiliates\Features\Identity\Queries\ReadAffiliateNetwork;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;

@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Data\MerchantAffiliate;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Data\OwnerTableReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;

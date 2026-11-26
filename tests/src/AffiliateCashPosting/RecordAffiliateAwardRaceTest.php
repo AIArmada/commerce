@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\CashPostingTestCase;
 use Illuminate\Support\Facades\DB;

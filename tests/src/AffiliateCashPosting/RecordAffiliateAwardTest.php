@@ -23,7 +23,7 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\Support\Awards\AffiliateAwardKey;
 use AIArmada\Affiliates\Support\Awards\NullAffiliateAwardPolicy;

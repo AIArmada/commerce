@@ -136,7 +136,7 @@ implementations of `HasOwner`.
 ## Querying with Owner Scope
 
 ```php
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 
 // Automatically scoped to current owner
 $affiliates = Affiliate::query()->get();

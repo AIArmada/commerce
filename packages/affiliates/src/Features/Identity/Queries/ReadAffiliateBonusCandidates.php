@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusCandidate;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

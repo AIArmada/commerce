@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;

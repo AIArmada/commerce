@@ -14,7 +14,7 @@ use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplicati
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\CreateSite;
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\UpdateSite;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;

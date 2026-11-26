@@ -20,7 +20,7 @@ use AIArmada\AffiliateNetwork\Features\Postbacks\EntryPoints\Jobs\DeliverCreator
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Queue;
 

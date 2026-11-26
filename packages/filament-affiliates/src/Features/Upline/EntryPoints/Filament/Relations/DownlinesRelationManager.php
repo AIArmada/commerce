@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Relations;
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentAffiliates\Features\Identity\Api\AffiliateAdminLinks;
 use AIArmada\FilamentAffiliates\Support\ConversionCountProjection;

@@ -18,7 +18,7 @@ use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Pending;

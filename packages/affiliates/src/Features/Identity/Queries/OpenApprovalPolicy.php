@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Pending;
 
 final readonly class OpenApprovalPolicy implements QualifiesForOpenApproval

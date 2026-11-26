@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;

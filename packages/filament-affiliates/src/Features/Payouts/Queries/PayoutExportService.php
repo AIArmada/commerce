@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutExportRow;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;

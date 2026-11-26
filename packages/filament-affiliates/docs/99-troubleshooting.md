@@ -141,7 +141,7 @@ app(OwnerResolverInterface::class)->resolve();
 
 ```bash
 php artisan tinker
-> \AIArmada\Affiliates\Models\Affiliate::withoutGlobalScopes()->count()
+> \AIArmada\Affiliates\Features\Identity\Models\Affiliate::withoutGlobalScopes()->count()
 ```
 
 3. Verify Filament tenant configuration if using tenancy.
@@ -156,7 +156,7 @@ php artisan tinker
 // App\Models\User
 public function affiliate(): HasOne
 {
-    return $this->hasOne(\AIArmada\Affiliates\Models\Affiliate::class);
+    return $this->hasOne(\AIArmada\Affiliates\Features\Identity\Models\Affiliate::class);
 }
 ```
 

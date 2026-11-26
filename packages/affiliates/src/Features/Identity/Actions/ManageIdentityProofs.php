@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Identity\Api\IdentityProofApi;
 use AIArmada\Affiliates\Features\Identity\Api\IssuedIdentityProof;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use Carbon\CarbonImmutable;
 use LogicException;

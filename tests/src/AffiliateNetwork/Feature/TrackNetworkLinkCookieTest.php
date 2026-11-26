@@ -7,7 +7,7 @@ use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\AttributionCookie;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;

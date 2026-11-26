@@ -17,7 +17,7 @@ use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Event;
 

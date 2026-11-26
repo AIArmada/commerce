@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Identity\Actions\RevokeAffiliateClaim;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;

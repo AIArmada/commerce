@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateAward;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\CashPostingRaceWorkerBoot;
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\FixtureAffiliateAwardPolicy;
 

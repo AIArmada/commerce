@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
 use AIArmada\Affiliates\Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;

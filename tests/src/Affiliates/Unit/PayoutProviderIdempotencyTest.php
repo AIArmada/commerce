@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;

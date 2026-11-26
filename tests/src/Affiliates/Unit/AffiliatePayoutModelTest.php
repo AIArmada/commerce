@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Validation\ValidationException;

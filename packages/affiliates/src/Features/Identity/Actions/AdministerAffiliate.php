@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
 use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
 use AIArmada\Affiliates\Features\Upline\Api\RankAssignmentGuard;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
