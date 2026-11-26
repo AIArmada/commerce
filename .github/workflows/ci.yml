@@ -218,7 +218,7 @@ jobs:
       - name: Verify package boundaries and write ownership
         run: |
           failed=0
-          for package in authz commerce-support filament-authz filament-commerce-support affiliates affiliate-network filament-affiliates filament-affiliate-network; do
+          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network; do
             echo "::group::${package} boundaries"
             composer --working-dir="packages/${package}" arch:boundaries || failed=1
             echo "::endgroup::"
@@ -227,13 +227,6 @@ jobs:
             echo "::endgroup::"
           done
           exit "$failed"
-
-      - name: Verify Addressing boundaries and write ownership
-        run: composer --working-dir=packages/addressing arch:check
-
-      - name: Verify Filament Addressing boundaries and write ownership
-        if: always() && !cancelled()
-        run: composer --working-dir=packages/filament-addressing arch:check
 
   phpstan:
     name: PHPStan
