@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\CountryLinkSeeder;
-
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Features\ReferenceData\Api\ReferenceDataApi;

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Paraguay\ParaguayGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 
 it('types Asunción as a capital district with a department role', function (): void {
     $areas = app(ParaguayGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;

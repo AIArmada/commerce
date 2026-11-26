@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffGoogleAddressReferenceAction;
 use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
+use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffGoogleAddressReferenceAction;
 
 function googleTestPayload(array $overrides = []): array
 {

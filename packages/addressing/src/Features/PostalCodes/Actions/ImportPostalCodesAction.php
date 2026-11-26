@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PostalCodes\Actions;
 
 use AIArmada\Addressing\Contracts\PostalCodeImporter;
-
 use AIArmada\Addressing\Contracts\PostalCodeSource;
 use AIArmada\Addressing\Data\ImportPostalCodeFailureData;
 use AIArmada\Addressing\Data\ImportPostalCodesResultData;

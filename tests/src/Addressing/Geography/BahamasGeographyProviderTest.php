@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Bahamas\BahamasGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 
 it('uses ISO district names with aliases for the renamed districts', function (): void {
     $areas = app(BahamasGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;

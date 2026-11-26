@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -105,6 +104,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
             }
         });
     }
+
     public function attach(string $addressId, string $addressableType, string $addressableId, string $type = 'primary', bool $isPrimary = false, ?string $label = null): string
     {
         $pivotClass = ModelResolver::addressableClass();

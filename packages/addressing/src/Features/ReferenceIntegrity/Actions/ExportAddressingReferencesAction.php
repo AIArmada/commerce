@@ -6,9 +6,9 @@ namespace AIArmada\Addressing\Features\ReferenceIntegrity\Actions;
 
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\AddressingReferenceRecords;
-use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportContract;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Support\ReferenceExportSorter;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Database\Connection;
 use InvalidArgumentException;
 use RuntimeException;

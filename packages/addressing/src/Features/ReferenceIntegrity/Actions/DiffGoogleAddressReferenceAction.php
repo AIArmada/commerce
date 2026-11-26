@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\ReferenceIntegrity\Actions;
 
+use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
 use AIArmada\Addressing\Data\GoogleAddressReferenceDiffData;
 use AIArmada\Addressing\Support\AddressValidationProfiles;
-use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
 use InvalidArgumentException;
 
 /**
@@ -17,7 +17,6 @@ use InvalidArgumentException;
  * the source it was transcribed from. This is a fetch-time oracle: nothing
  * is vendored, nothing is auto-applied — the command reports and a human
  * adjudicates (Google is sometimes the wrong one).
- *
  */
 final readonly class DiffGoogleAddressReferenceAction
 {

@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaSearch;
-
-use AIArmada\Addressing\Contracts\ResolutionGapReporter;
-
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryPostalCodeNormalizer;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\LikeSearch;

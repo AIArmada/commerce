@@ -315,5 +315,4 @@ trait HasAddresses
                     ->orWhere("{$pivotTable}.valid_until", '>=', $now);
             });
     }
-
 }

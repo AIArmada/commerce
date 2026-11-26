@@ -14,6 +14,7 @@ use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use LogicException;
 
 final class FilamentAddressingPlugin implements Plugin
 {
@@ -27,7 +28,7 @@ final class FilamentAddressingPlugin implements Plugin
         $plugin = filament(app(self::class)->getId());
 
         if (! $plugin instanceof self) {
-            throw new \LogicException('The registered addressing plugin has an unexpected type.');
+            throw new LogicException('The registered addressing plugin has an unexpected type.');
         }
 
         return $plugin;

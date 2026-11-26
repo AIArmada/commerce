@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Tuvalu\TuvaluGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 
 it('names the island council Niutao without a type suffix', function (): void {
     $areas = app(TuvaluGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;

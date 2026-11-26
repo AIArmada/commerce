@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Actions;
 
-use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\ResolutionGaps;
 
-use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\CurateResolutionGapAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ReportResolutionGapAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;

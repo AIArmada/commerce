@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
-
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\ImportAddressAreaFailureData;

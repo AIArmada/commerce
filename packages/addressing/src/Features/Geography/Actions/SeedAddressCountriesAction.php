@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
-
 use AIArmada\Addressing\Support\ModelResolver;
 use RuntimeException;
 

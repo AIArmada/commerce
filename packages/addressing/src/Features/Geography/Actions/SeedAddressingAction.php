@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
+use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
 use AIArmada\Addressing\Contracts\CityDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
-use AIArmada\Addressing\Contracts\CountryLinkSeeder;
-use AIArmada\Addressing\Contracts\StateDatasetSeeder;
-use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
-
-use AIArmada\Addressing\Support\CitySeedRowReader;
-use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
+use AIArmada\Addressing\Support\CitySeedRowReader;
 
 final readonly class SeedAddressingAction implements AddressingDatasetSeeder
 {

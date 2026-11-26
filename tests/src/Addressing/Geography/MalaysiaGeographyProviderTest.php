@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Contracts\CountryStateSeeder;
-use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
@@ -19,7 +19,6 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
-use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
 
 final class ObsoleteLinkFakeGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
@@ -145,9 +144,9 @@ it('deactivates prior areas when a provider changes its imported source key', fu
         }
 
         public function stateSeedData(): CountryStateSeedData
-    {
-        return new CountryStateSeedData([]);
-    }
+        {
+            return new CountryStateSeedData([]);
+        }
 
         public function addressHierarchies(): array
         {

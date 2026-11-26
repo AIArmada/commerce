@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Drivers\GooglePlaces;
 
 use AIArmada\Addressing\Contracts\GooglePlacePhotoLookup;
-
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use Illuminate\Support\Facades\Http;
 use Throwable;

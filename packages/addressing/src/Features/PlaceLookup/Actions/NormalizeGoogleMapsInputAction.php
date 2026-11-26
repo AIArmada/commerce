@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PlaceLookup\Actions;
 
 use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
-
-use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
+use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsUrlParser;
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 

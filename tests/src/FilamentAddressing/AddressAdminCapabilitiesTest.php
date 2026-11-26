@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
-use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;

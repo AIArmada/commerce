@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands;
 
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Data\ExportResolutionGapAliasesResultData;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
 use ReflectionClass;

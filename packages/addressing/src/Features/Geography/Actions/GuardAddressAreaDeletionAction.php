@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaDeletionGuard;
-
+use AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Validation\ValidationException;
 
@@ -24,7 +24,7 @@ final readonly class GuardAddressAreaDeletionAction implements AddressAreaDeleti
 
         if (ModelResolver::addressClass()::query()->withoutOwnerScope()->whereHas(
             'areaAssignments',
-            static fn ($query) => $query->withoutGlobalScope(\AIArmada\Addressing\Support\AddressAreaAssignmentOwnerScope::class)->where('address_area_id', $key),
+            static fn ($query) => $query->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)->where('address_area_id', $key),
         )->exists()) {
             throw ValidationException::withMessages([
                 'address_area' => 'This address area is still referenced by one or more addresses.',

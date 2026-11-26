@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\PostalCodes\Actions;
 
-use AIArmada\Addressing\Contracts\SingaporePostalCodeResolver;
+use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Contracts\PostalCodeImporter;
-
+use AIArmada\Addressing\Contracts\SingaporePostalCodeResolver;
 use AIArmada\Addressing\Data\ResolveSingaporePostalCodesResultData;
 use AIArmada\Addressing\Support\ModelResolver;
-use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Support\OneMapPostalCodeSource;
 use InvalidArgumentException;
 

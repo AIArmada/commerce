@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\AddressLifecycle;
 
-use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
-use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
-use AIArmada\Addressing\Features\AddressLifecycle\Actions\CreateAddressSnapshotAction;
-use AIArmada\Addressing\Features\AddressLifecycle\Actions\UpdateAddressAttachmentAction;
-use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Contracts\AddressWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Actions\CreateAddressSnapshotAction;
 use AIArmada\Addressing\Features\AddressLifecycle\Actions\SaveAddressAction;
 use AIArmada\Addressing\Features\AddressLifecycle\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Features\AddressLifecycle\Actions\UpdateAddressAttachmentAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 

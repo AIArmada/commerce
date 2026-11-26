@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\AddressFormatting\Actions;
 
-use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
+use AIArmada\Addressing\Data\AddressData;
 
 final readonly class BuildAddressNavigationLinksAction implements AddressNavigationLinks
 {

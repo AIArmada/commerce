@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PostalCodes\Actions;
 
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
-use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\BundledPostalDatasets;

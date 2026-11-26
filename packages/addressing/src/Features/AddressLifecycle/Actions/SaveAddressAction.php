@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
-use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
-
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;

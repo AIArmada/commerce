@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PlaceLookup\Actions;
 
 use AIArmada\Addressing\Contracts\GooglePlaceSelectionResolver;
-
 use AIArmada\Addressing\GooglePlaces\GooglePlaceAddressComponents;
 use AIArmada\Addressing\GooglePlaces\GooglePlaceGeographyResolver;
 use Illuminate\Support\Arr;

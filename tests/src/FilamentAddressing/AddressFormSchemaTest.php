@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Contracts\CountryStateSeeder;
-use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
-use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Contracts\AddressAreaAliasDeleter;
-
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 use Illuminate\Validation\ValidationException;

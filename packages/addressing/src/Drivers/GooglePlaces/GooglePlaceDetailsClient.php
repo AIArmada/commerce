@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Drivers\GooglePlaces;
 
 use AIArmada\Addressing\Contracts\GooglePlaceDetailsLookup;
-
-use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
+use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Throwable;

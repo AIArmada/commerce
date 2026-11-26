@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Addressing;
 
-use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;

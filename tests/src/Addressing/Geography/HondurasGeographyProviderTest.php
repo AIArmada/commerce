@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Honduras\HondurasGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
 
 it('names the island department Islas de la Bahía with a Bay Islands alias', function (): void {
     $areas = app(HondurasGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;

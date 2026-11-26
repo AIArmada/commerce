@@ -57,6 +57,7 @@ final class GoogleMapsInputValues
 
         return is_numeric($trimmed) && is_finite((float) $trimmed) ? (float) $trimmed : null;
     }
+
     public static function latitude(mixed $value): ?float
     {
         $number = self::number($value);

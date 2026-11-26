@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PostalCodes\Actions;
 
 use AIArmada\Addressing\Contracts\PostalCodeWriter;
-
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
