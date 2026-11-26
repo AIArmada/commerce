@@ -34,7 +34,7 @@ it('streams the opt-in villages when the flag is on', function (): void {
 it('seeds the 38 ISO provinces including the six Papuas', function (): void {
     $country = $this->seedCountry('ID');
 
-    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(IndonesiaGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(IndonesiaGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 

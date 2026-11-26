@@ -160,7 +160,7 @@ it('clears cross-owner references through a real provider cleanup and keeps late
         'country_code' => 'ID',
     ]));
 
-    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(IndonesiaGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(IndonesiaGeographyProvider::class)->stateSeedData());
 
     expect(State::query()->where('country_id', $country->id)->where('code', 'PP')->exists())->toBeFalse();
 

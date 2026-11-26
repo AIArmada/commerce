@@ -27,7 +27,7 @@ it('ships 16 districts under the 4 provinces and Western Area', function (): voi
 it('seeds the ISO 3166-2:SL provinces and area', function (): void {
     $country = $this->seedCountry('SL');
 
-    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(SierraLeoneGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(SierraLeoneGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 

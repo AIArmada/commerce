@@ -28,7 +28,7 @@ it('pins the verified UAE tree of 7 emirates', function (): void {
 it('seeds the 7 ISO 3166-2:AE emirates', function (): void {
     $country = $this->seedCountry('AE');
 
-    app(CountryStateSeeder::class)->execute((string) $2->getKey(), app(UnitedArabEmiratesGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(UnitedArabEmiratesGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 
