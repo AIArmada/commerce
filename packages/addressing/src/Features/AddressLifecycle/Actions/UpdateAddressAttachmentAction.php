@@ -241,7 +241,8 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
     /** @return Builder<Addressable> */
     private function writablePivots(): Builder
     {
-        return ModelResolver::addressableClass()::query()->forOwner();
+        return ModelResolver::addressableClass()::query()->forOwner()
+            ->whereHas('address', static fn ($query) => $query->forOwner());
     }
 
     private function demotePrimary(string $addressableType, string $addressableId, string $type, ?string $exceptId = null): void

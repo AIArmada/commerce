@@ -292,18 +292,25 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
             ? $attributes['level']
             : ($record->level ?? ($parent?->level !== null ? $parent->level + 1 : 1));
 
-        if ($value === null) {
+        if ($value === null || $value === '') {
             return null;
         }
 
-        if ((! is_int($value) && ! is_string($value))
-            || filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 32767]]) === false) {
+        if (! is_numeric($value)) {
             throw ValidationException::withMessages([
                 'level' => __('The area level must be a positive integer no greater than 32767.'),
             ]);
         }
 
-        return (int) $value;
+        $numeric = (float) $value;
+
+        if (! is_finite($numeric) || $numeric < 1 || $numeric > 32767 || floor($numeric) !== $numeric) {
+            throw ValidationException::withMessages([
+                'level' => __('The area level must be a positive integer no greater than 32767.'),
+            ]);
+        }
+
+        return (int) $numeric;
     }
 
     /**

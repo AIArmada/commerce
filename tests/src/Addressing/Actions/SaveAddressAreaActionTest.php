@@ -360,3 +360,15 @@ it('rejects raising a parent to the same level as its child', function (): void 
         ->and($parent->refresh()->level)->toBe(1)
         ->and($child->refresh()->level)->toBe(2);
 });
+
+it('accepts integral numeric form state without truncating fractional levels', function (mixed $level): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $id = $this->action->handle([
+        'country_id' => $country->id,
+        'name' => 'Central',
+        'type' => 'state',
+        'level' => $level,
+    ]);
+
+    expect(AddressArea::query()->findOrFail($id)->level)->toBe(2);
+})->with([2, 2.0, '2', '2.0']);
