@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Growth;
 
+use AIArmada\Growth\Actions\DeletePropertyExperiments;
 use AIArmada\Growth\Actions\ProjectExperimentContextIntoSignalProperties;
+use AIArmada\Signals\Features\Ingestion\Api\TrackedPropertyDeleting;
+use Illuminate\Support\Facades\Event;
 use AIArmada\Growth\Actions\ResolveExperimentPreset;
 use AIArmada\Growth\Console\Commands\ArchiveExperimentsCommand;
 use AIArmada\Growth\Console\Commands\RecomputeExperimentAssignmentsCommand;
@@ -66,6 +69,7 @@ final class GrowthServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->assertOwnerModeMatchesSignals();
+        Event::listen(TrackedPropertyDeleting::class, DeletePropertyExperiments::class);
         $this->registerExperimentMiddleware();
         $this->registerBladeDirectives();
     }

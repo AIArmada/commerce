@@ -3,19 +3,25 @@
   "name": "Ingestion",
   "owns": {
     "table:signal_events": [
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
     ],
     "table:signal_identities": [
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IdentifySignalIdentity"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IdentifySignalIdentity",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
     ],
     "table:signal_sessions": [
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveSession",
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent",
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CaptureSignalGeolocation",
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\SignalLocationResolverPipeline"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\SignalLocationResolverPipeline",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
     ],
     "table:signal_tracked_properties": [
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveTrackedProperty"
+    ],
+    "table:signal_interaction_rules": [
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
     ]
   },
   "extensions": {}

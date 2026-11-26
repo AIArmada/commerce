@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
-use AIArmada\Signals\Features\Reporting\Api\DetachPropertyReports;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Signals\Support\SignalCurrency;
+use AIArmada\Signals\Features\Ingestion\Actions\CleanUpTrackedProperty;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -152,31 +150,7 @@ final class TrackedProperty extends Model implements Auditable
         });
 
         static::deleting(function (TrackedProperty $trackedProperty): void {
-            $growthExperimentModel = 'AIArmada\\Growth\\Models\\Experiment';
-
-            if (class_exists($growthExperimentModel)) {
-                $growthExperiment = new $growthExperimentModel;
-                $growthTable = $growthExperiment->getTable();
-
-                // Checked live on every delete: the answer depends on the
-                // current connection's schema, which a process-wide static
-                // cache cannot track across rebuilds or tenant switches.
-                if (Schema::hasTable($growthTable)) {
-                    $growthExperimentModel::query()
-                        ->withoutOwnerScope()
-                        ->where('tracked_property_id', $trackedProperty->getKey())
-                        ->chunkById(500, static function ($experiments): void {
-                            $experiments->each(static fn ($experiment): mixed => $experiment->delete());
-                        });
-                }
-            }
-
-            app(DetachPropertyReports::class)->detach((string) $trackedProperty->getKey());
-            app(DetachPropertyAlerts::class)->detach((string) $trackedProperty->getKey());
-            $trackedProperty->events()->delete();
-            $trackedProperty->interactionRules()->delete();
-            $trackedProperty->sessions()->delete();
-            $trackedProperty->identities()->delete();
+            app(CleanUpTrackedProperty::class)->handle($trackedProperty);
         });
     }
 
