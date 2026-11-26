@@ -356,6 +356,17 @@ describe('SpatieTaxWorksheetWriter', function (): void {
             Storage::disk('local')->assertExists($result);
         });
     });
+    test('rejects invalid worksheet identities and refuses unrelated file deletion', function (): void {
+        Storage::fake('local');
+        Storage::disk('local')->put('unrelated/private.pdf', 'private data');
+
+        $request = new TaxWorksheetRequest('../foreign', 2024, 70000, 'USD', new TaxRecipientDetails('Recipient', '123456789'));
+
+        expect(fn () => $this->generator->write($request))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->generator->delete('unrelated/private.pdf'))->toThrow(InvalidArgumentException::class);
+        Storage::disk('local')->assertExists('unrelated/private.pdf');
+    });
+
     test('rejects remote drivers before sending sensitive data', function (): void {
         config(['affiliates.tax.pdf_driver' => 'cloudflare']);
         $request = new TaxWorksheetRequest((string) $this->affiliate->getKey(), 2024, 70000, 'USD', new TaxRecipientDetails('Recipient', '123456789'));

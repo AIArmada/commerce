@@ -16,6 +16,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
+use LogicException;
+use RuntimeException;
 use Throwable;
 
 final readonly class GenerateTaxDocument
@@ -27,15 +29,21 @@ final readonly class GenerateTaxDocument
         $written = null;
         $obsolete = null;
 
-        $this->payouts->assertSharedConnection(spl_object_id((new AffiliateTaxDocument)->getConnection()));
+        $connection = (new AffiliateTaxDocument)->getConnection();
+
+        if ($connection !== (new Affiliate)->getConnection()) {
+            throw new LogicException('Tax document generation requires a shared affiliate database connection.');
+        }
+
+        $this->payouts->assertSharedConnection(spl_object_id($connection));
 
         try {
-            $result = (new AffiliateTaxDocument)->getConnection()->transaction(function () use ($affiliateId, $year, $documentId, &$written, &$obsolete): ?TaxDocumentRecord {
-                Affiliate::query()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
+            $result = $connection->transaction(function () use ($connection, $affiliateId, $year, $documentId, &$written, &$obsolete): ?TaxDocumentRecord {
+                Affiliate::query()->forOwner()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
                 $currency = mb_strtoupper((string) config('affiliates.tax.1099_threshold_currency', 'USD'));
                 $document = $documentId === null
                     ? AffiliateTaxDocument::query()->where(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $currency])->lockForUpdate()->first()
-                    : AffiliateTaxDocument::query()->whereKey($documentId)->where('affiliate_id', $affiliateId)->lockForUpdate()->firstOrFail();
+                    : AffiliateTaxDocument::query()->whereKey($documentId)->where('affiliate_id', $affiliateId)->where('tax_year', $year)->where('document_type', '1099-NEC')->lockForUpdate()->firstOrFail();
 
                 if ($document?->isSent()) {
                     if ($documentId !== null) {
@@ -69,28 +77,43 @@ final readonly class GenerateTaxDocument
                     $document->generated_at = null;
                 } else {
                     $written = $this->writer->write(new TaxWorksheetRequest($affiliateId, $year, $amount, $currency, $recipient, $notes));
+                    $path = $written;
+                    $connection->afterRollBack(function () use ($path): void {
+                        $this->deleteSafely($path);
+                    });
                     $document->status = TaxDocumentStatus::Generated;
                     $document->notes = $notes;
                     $document->document_path = $written;
                     $document->generated_at = CarbonImmutable::now();
                 }
 
-                $document->save();
+                if (! $document->save()) {
+                    throw new RuntimeException('Tax document could not be persisted.');
+                }
 
                 return TaxDocumentQuery::record($document);
             });
         } catch (Throwable $exception) {
             if ($written !== null) {
-                $this->writer->delete($written);
+                $this->deleteSafely($written);
             }
 
             throw $exception;
         }
 
         if ($obsolete !== null && $obsolete !== $written) {
-            (new AffiliateTaxDocument)->getConnection()->afterCommit(fn () => $this->writer->delete($obsolete));
+            $connection->afterCommit(fn () => $this->deleteSafely($obsolete));
         }
 
         return $result;
+    }
+
+    private function deleteSafely(string $path): void
+    {
+        try {
+            $this->writer->delete($path);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
@@ -161,4 +162,31 @@ test('annual payout thresholds normalize currency without summing foreign curren
         ->and($api->affiliatesRequiring1099(2024))->toContain($affiliate->id)
         ->and(array_column($api->excludedPayoutsForYear($affiliate->id, 2024), 'reference'))->toBe(['TAXCUR-FOREIGN'])
         ->and($api->calculateAnnualPayouts('not-a-uuid', 2024))->toBe(0);
+});
+
+test('outer transaction rollback preserves the original tax worksheet and removes the replacement', function (): void {
+    Storage::fake('local');
+    config(['affiliates.tax.1099_threshold' => 60000, 'affiliates.tax.1099_threshold_currency' => 'USD']);
+
+    $affiliate = taxCurrencyAffiliate('TAXCUR-ROLLBACK');
+    taxCurrencyPayout($affiliate, 'USD', 70000, 'TAXCUR-ROLLBACK-PAYOUT');
+    $api = app(TaxDocumentApi::class);
+    $first = $api->generateForAffiliate($affiliate->id, 2024);
+    $original = AffiliateTaxDocument::query()->findOrFail($first->id)->document_path;
+
+    expect(function () use ($affiliate, $api, $original, $first): void {
+        $affiliate->getConnection()->transaction(function () use ($api, $original, $first): void {
+            $api->regenerate($first->id);
+            $replacement = AffiliateTaxDocument::query()->findOrFail($first->id)->document_path;
+
+            expect($replacement)->not->toBe($original);
+            Storage::disk('local')->assertExists($original);
+            Storage::disk('local')->assertExists($replacement);
+
+            throw new RuntimeException('force tax rollback');
+        });
+    })->toThrow(RuntimeException::class, 'force tax rollback');
+
+    expect(AffiliateTaxDocument::query()->findOrFail($first->id)->document_path)->toBe($original)
+        ->and(Storage::disk('local')->allFiles())->toBe([$original]);
 });

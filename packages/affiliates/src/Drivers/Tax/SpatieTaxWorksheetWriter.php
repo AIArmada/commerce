@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Data\TaxWorksheetRequest;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 use Spatie\LaravelPdf\Facades\Pdf;
 
@@ -16,6 +17,10 @@ final class SpatieTaxWorksheetWriter implements TaxWorksheetWriter
 {
     public function write(TaxWorksheetRequest $request): string
     {
+        if (! Str::isUuid($request->affiliateId) || $request->year < 1900 || $request->year > 9999) {
+            throw new InvalidArgumentException('Invalid tax worksheet identity or year.');
+        }
+
         $payer = config('affiliates.tax.payer_info', []);
         $tin = preg_replace('/[^0-9]/', '', $request->recipient->tin) ?? '';
         $driver = (string) config('affiliates.tax.pdf_driver', 'browsershot');
@@ -51,7 +56,15 @@ final class SpatieTaxWorksheetWriter implements TaxWorksheetWriter
 
     public function delete(string $path): void
     {
-        Storage::disk($this->disk())->delete($path);
+        if (! preg_match('~\A(?:tax-documents/)([0-9]{4})/1099-NEC-\1-[0-9a-fA-F-]{36}-[0-9a-fA-F-]{36}\.pdf\z~D', $path)) {
+            throw new InvalidArgumentException('Invalid tax worksheet storage path.');
+        }
+
+        $disk = Storage::disk($this->disk());
+
+        if (! $disk->delete($path) && $disk->exists($path)) {
+            throw new RuntimeException('Tax worksheet could not be deleted.');
+        }
     }
 
     private function disk(): string
