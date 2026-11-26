@@ -71,6 +71,8 @@ class AffiliateAttribution extends Model
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
+    protected $table = 'affiliate_attributions';
+
     protected $fillable = [
         'affiliate_id',
         'affiliate_code',

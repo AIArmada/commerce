@@ -15,8 +15,8 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 
 function fulfillmentLink(string $affiliateId, array $offerAttributes = []): AffiliateOfferLink

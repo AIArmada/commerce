@@ -12,8 +12,8 @@ use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Http\Controllers\VoidN
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Queries\CreatorBalancesQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;

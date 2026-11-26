@@ -95,6 +95,8 @@ class Affiliate extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
+    protected $table = 'affiliates';
+
     public const string PURPOSE_GENERAL = 'general';
 
     private ?string $pendingContactEmail = null;

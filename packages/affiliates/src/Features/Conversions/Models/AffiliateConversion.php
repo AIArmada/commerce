@@ -83,6 +83,8 @@ class AffiliateConversion extends Model
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
+    protected $table = 'affiliate_conversions';
+
     protected $fillable = [
         'affiliate_id',
         'affiliate_code',
