@@ -7,6 +7,7 @@ namespace AIArmada\Addressing\Features\Geography\Actions;
 use AIArmada\Addressing\Contracts\GeographyReferenceEditor;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 final readonly class EditGeographyReferenceAction implements GeographyReferenceEditor
 {
@@ -21,7 +22,9 @@ final readonly class EditGeographyReferenceAction implements GeographyReferenceE
                 throw ValidationException::withMessages(['name' => 'A country name is required.']);
             }
 
-            $record->saveOrFail();
+            if (! $record->saveOrFail()) {
+                throw new LogicException('The country could not be saved.');
+            }
         });
     }
 
@@ -40,7 +43,9 @@ final readonly class EditGeographyReferenceAction implements GeographyReferenceE
                 $data['name'] = mb_trim($attributes['name']);
             }
 
-            $record->fill($data)->saveOrFail();
+            if (! $record->fill($data)->saveOrFail()) {
+                throw new LogicException('The state could not be saved.');
+            }
         });
     }
 
@@ -49,7 +54,9 @@ final readonly class EditGeographyReferenceAction implements GeographyReferenceE
         $class = ModelResolver::cityClass();
         $class::query()->getConnection()->transaction(function () use ($class, $id, $attributes): void {
             $record = $class::query()->whereKey($id)->lockForUpdate()->firstOrFail();
-            $record->fill($this->coordinates($attributes))->saveOrFail();
+            if (! $record->fill($this->coordinates($attributes))->saveOrFail()) {
+                throw new LogicException('The city could not be saved.');
+            }
         });
     }
 

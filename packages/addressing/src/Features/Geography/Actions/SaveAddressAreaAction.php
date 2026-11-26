@@ -72,8 +72,8 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
                 'native_name' => $this->resolveNullableString($attributes, 'native_name', $record->native_name),
                 'code' => $this->resolveNullableString($attributes, 'code', $record->code),
                 'slug' => Str::limit(Str::slug($name), 255, ''),
-                'latitude' => $this->resolveNullableScalar($attributes, 'latitude', $record->latitude),
-                'longitude' => $this->resolveNullableScalar($attributes, 'longitude', $record->longitude),
+                'latitude' => $this->resolveCoordinate($attributes, 'latitude', $record->latitude, 90),
+                'longitude' => $this->resolveCoordinate($attributes, 'longitude', $record->longitude, 180),
                 'source' => $source,
                 'source_id' => $sourceId,
                 'parent_source_id' => $this->resolveParentSourceId($attributes, $record, $parent),
@@ -82,7 +82,11 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
             // Omitted on create, the column default (active) applies; omitted on
             // update, the stored value stands. An explicit boolean always wins.
             if (array_key_exists('is_active', $attributes)) {
-                $record->is_active = (bool) $attributes['is_active'];
+                if (! is_bool($attributes['is_active'])) {
+                    throw ValidationException::withMessages(['is_active' => 'The active status must be a boolean.']);
+                }
+
+                $record->is_active = $attributes['is_active'];
             }
 
             if ($parent instanceof AddressArea) {
@@ -257,13 +261,19 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private function resolveNullableScalar(array $attributes, string $key, mixed $current = null): mixed
+    private function resolveCoordinate(array $attributes, string $key, mixed $current, int $limit): ?float
     {
-        if (! array_key_exists($key, $attributes)) {
-            return $current;
+        $value = array_key_exists($key, $attributes) ? $attributes[$key] : $current;
+
+        if ($value === null || $value === '') {
+            return null;
         }
 
-        return $attributes[$key];
+        if (! is_numeric($value) || ! is_finite((float) $value) || abs((float) $value) > $limit) {
+            throw ValidationException::withMessages([$key => 'The coordinate is outside its valid range.']);
+        }
+
+        return (float) $value;
     }
 
     /**

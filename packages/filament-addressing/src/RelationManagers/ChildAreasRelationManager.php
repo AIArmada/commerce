@@ -29,7 +29,9 @@ final class ChildAreasRelationManager extends RelationManager
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->url(fn (AddressArea $record): string => AddressAreaResource::getUrl('view', ['record' => $record])),
+                    ->url(fn (AddressArea $record): ?string => AddressAreaResource::canView($record)
+                        ? AddressAreaResource::getUrl('view', ['record' => $record])
+                        : null),
                 TextColumn::make('type')
                     ->badge()
                     ->searchable()

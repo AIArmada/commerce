@@ -276,3 +276,54 @@ it('replaces the source-owned relationship when changing hierarchy type', functi
     expect(AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->count())->toBe(1)
         ->and(AddressAreaRelationship::query()->where('child_address_area_id', $area->id)->value('hierarchy_type'))->toBe('administrative');
 });
+
+it('rejects invalid area coordinates and non-boolean activation values atomically', function (array $invalid): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+        'latitude' => 3.1,
+        'longitude' => 101.5,
+        'is_active' => true,
+    ]));
+
+    expect(fn (): string => $this->action->handle(
+        ['name' => 'Changed'] + $invalid,
+        (string) $area->getKey(),
+    ))->toThrow(ValidationException::class);
+
+    $area->refresh();
+
+    expect($area->name)->toBe('Selangor')
+        ->and((float) $area->latitude)->toBe(3.1)
+        ->and((float) $area->longitude)->toBe(101.5)
+        ->and($area->is_active)->toBeTrue();
+})->with([
+    'latitude out of range' => [['latitude' => 90.01]],
+    'longitude out of range' => [['longitude' => -180.01]],
+    'non-finite latitude' => [['latitude' => INF]],
+    'non-numeric longitude' => [['longitude' => 'invalid']],
+    'non-boolean activation' => [['is_active' => 'false']],
+]);
+
+it('accepts coordinate boundaries and clears explicitly empty coordinates', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+        'latitude' => '-90',
+        'longitude' => '180',
+    ]));
+
+    expect((float) $area->latitude)->toBe(-90.0)
+        ->and((float) $area->longitude)->toBe(180.0);
+
+    $this->action->handle(['latitude' => null, 'longitude' => ''], (string) $area->getKey());
+
+    $area->refresh();
+
+    expect($area->latitude)->toBeNull()
+        ->and($area->longitude)->toBeNull();
+});

@@ -123,10 +123,14 @@ class AddressAreaFormSchema
                         TextInput::make('latitude')
                             ->label('Latitude')
                             ->numeric()
+                            ->minValue(-90)
+                            ->maxValue(90)
                             ->step(0.000001),
                         TextInput::make('longitude')
                             ->label('Longitude')
                             ->numeric()
+                            ->minValue(-180)
+                            ->maxValue(180)
                             ->step(0.000001),
                     ])->columns(2)
                     ->disabled($isSourceManaged),
