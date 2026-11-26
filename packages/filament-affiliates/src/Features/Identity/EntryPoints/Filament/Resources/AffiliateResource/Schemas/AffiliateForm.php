@@ -12,7 +12,6 @@ use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\PublicHandle;
 use BackedEnum;
 use Closure;
@@ -133,7 +132,7 @@ final class AffiliateForm
                             ->getOptionLabelUsing(fn ($value): ?string => app(CommissionTemplateReader::class)->find((string) $value)?->name)
                             ->searchable()
                             ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
-                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                            ->afterStateUpdated(function (?string $state, Get $get, Set $set) use ($currency): void {
                                 if ($state === null || $state === '') {
                                     return;
                                 }
@@ -146,11 +145,7 @@ final class AffiliateForm
 
                                 $set('commission_type', $template->commissionType);
 
-                                $rate = $template->rate;
-
-                                $set('commission_rate', $template->commissionType === CommissionType::Percentage->value
-                                    ? number_format($rate / 100, 2, '.', '')
-                                    : (string) $rate);
+                                $set('commission_rate', CommissionRateInput::format($template->rate, $template->commissionType, (string) ($get('currency') ?? $currency)));
                             })
                             ->dehydrated(false),
 
@@ -167,18 +162,8 @@ final class AffiliateForm
                             ->numeric()
                             ->required()
                             ->suffix(fn (Get $get): string => $get('commission_type') === CommissionType::Percentage->value ? '%' : $get('currency') ?? $currency)
-                            ->formatStateUsing(fn (?int $state, Get $get): ?string => $state === null
-                                ? null
-                                : (
-                                    $get('commission_type') === CommissionType::Percentage->value
-                                    ? number_format($state / 100, 2, '.', '')
-                                    : MoneyFormatter::decimalFromMinor($state, (string) ($get('currency') ?? $currency))
-                                ))
-                            ->dehydrateStateUsing(
-                                fn (?string $state, Get $get): ?int => $state === null || $state === ''
-                                ? null
-                                : (int) round((float) $state * 100)
-                            )
+                            ->formatStateUsing(fn (?int $state, Get $get): ?string => CommissionRateInput::format($state, (string) $get('commission_type'), (string) ($get('currency') ?? $currency)))
+                            ->dehydrateStateUsing(fn (?string $state, Get $get): ?int => CommissionRateInput::parse($state, (string) $get('commission_type'), (string) ($get('currency') ?? $currency)))
                             ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
                             ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
