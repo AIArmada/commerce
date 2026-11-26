@@ -42,10 +42,19 @@ trait ScopesByProgramOwner
                 return;
             }
 
-            $builder->whereIn(
-                $builder->getModel()->qualifyColumn(static::$programOwnerForeignKey),
-                static::visibleProgramIds($builder->getModel())
-            );
+            $config = OwnerScopeConfigFactory::fromConfig('affiliates.owner');
+            $includeGlobal = OwnerContext::isExplicitGlobal()
+                || (! OwnerScopeOverride::suppressIncludeGlobal() && $config->includeGlobal);
+            $foreignKey = $builder->getModel()->qualifyColumn(static::$programOwnerForeignKey);
+            $programIds = static::visibleProgramIds($builder->getModel());
+
+            $builder->where(function (Builder $query) use ($foreignKey, $programIds, $includeGlobal): void {
+                if ($includeGlobal) {
+                    $query->whereNull($foreignKey);
+                }
+
+                $query->orWhereIn($foreignKey, $programIds);
+            });
         });
     }
 
@@ -55,8 +64,12 @@ trait ScopesByProgramOwner
             return $query;
         }
 
-        if (! OwnerContext::isExplicitGlobal()) {
-            throw new AuthorizationException('Global program configuration requires explicit global context.');
+        $config = OwnerScopeConfigFactory::fromConfig('affiliates.owner');
+        $includeGlobal = OwnerContext::isExplicitGlobal()
+            || (! OwnerScopeOverride::suppressIncludeGlobal() && $config->includeGlobal);
+
+        if (! $includeGlobal) {
+            throw new AuthorizationException('Global program configuration requires explicit global or include-global context.');
         }
 
         $foreignKey = $query->getModel()->qualifyColumn(static::$programOwnerForeignKey);

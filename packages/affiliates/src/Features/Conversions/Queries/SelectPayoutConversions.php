@@ -9,13 +9,14 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSelection;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutSelectionRecord;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
 final readonly class SelectPayoutConversions implements PayoutConversionSelection
 {
-    public function manual(array $conversionIds, int $connectionIdentity): PayoutSelectionRecord
+    public function manual(array $conversionIds, int $connectionIdentity, bool $lockForUpdate = true): PayoutSelectionRecord
     {
         $this->assertConnection($connectionIdentity, true);
 
@@ -29,16 +30,19 @@ final readonly class SelectPayoutConversions implements PayoutConversionSelectio
             }
         }
 
-        $rows = AffiliateConversion::query()->forOwner()
+        $query = AffiliateConversion::query()->forOwner(includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('affiliates.owner.include_global', false))
             ->whereIn('id', $conversionIds)
             ->where('commission_minor', '>', 0)
             ->where('status', ApprovedConversion::value())
             ->whereNull('affiliate_payout_id')
             ->select(['affiliate_id', 'owner_type', 'owner_id', 'commission_currency', 'commission_minor', 'conversion_type'])
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->toBase()
-            ->get();
+            ->orderBy('id');
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        $rows = $query->toBase()->get();
 
         if ($rows->count() !== count($conversionIds)) {
             throw new InvalidArgumentException('All conversions must be approved and not already linked to a payout.');
@@ -85,7 +89,7 @@ final readonly class SelectPayoutConversions implements PayoutConversionSelectio
             return new PayoutAllocation([], 0);
         }
 
-        $query = AffiliateConversion::query()->forOwner()
+        $query = AffiliateConversion::query()->forOwner(includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('affiliates.owner.include_global', false))
             ->where('affiliate_id', $affiliateId)
             ->where('status', ApprovedConversion::value())
             ->whereNull('affiliate_payout_id')

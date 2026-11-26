@@ -6,5 +6,5 @@ namespace AIArmada\Affiliates\Features\Identity\Api;
 
 interface PortalProfileAdministration
 {
-    public function save(string $affiliateId, string $actorType, string $actorId, ?string $actorEmail, PortalProfileInput $input): void;
+    public function save(string $affiliateId, string $actorType, string $actorId, PortalProfileInput $input): void;
 }

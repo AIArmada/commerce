@@ -40,7 +40,7 @@ final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
         )->whereKey($id)->first());
     }
 
-    public function lock(string $id, int $connectionIdentity): ?AffiliateProfile
+    public function lock(string $id, int $connectionIdentity, bool $includeGlobal = false): ?AffiliateProfile
     {
         $this->guard->assertConnection($connectionIdentity);
 
@@ -52,7 +52,9 @@ final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
             return null;
         }
 
-        return $this->project(Affiliate::query()->forOwner(includeGlobal: false)->whereKey($id)->lockForUpdate()->first());
+        return $this->project(Affiliate::query()->forOwner(
+            includeGlobal: $includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(),
+        )->whereKey($id)->lockForUpdate()->first());
     }
 
     private function project(?Affiliate $affiliate): ?AffiliateProfile

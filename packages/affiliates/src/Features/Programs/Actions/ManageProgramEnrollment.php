@@ -28,7 +28,9 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
 
     public function join(string $affiliateId, string $programId): MembershipRecord
     {
-        return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($affiliateId, $programId): MembershipRecord {
+        $connection = (new AffiliateProgramMembership)->getConnection();
+
+        return $connection->transaction(function () use ($affiliateId, $programId, $connection): MembershipRecord {
             $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()))
                 ?? throw new ModelNotFoundException('Affiliate not found.');
             $program = $this->resolveProgram($programId);
@@ -69,7 +71,8 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
             ]);
 
             if ($membership->wasRecentlyCreated && $status === MembershipStatus::Approved) {
-                $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate->reference, $program)));
+                $joined = $membership->joinReference($affiliate->reference, $program);
+                $connection->afterCommit(fn () => $this->events->dispatch(new AffiliateProgramJoined($joined)));
             }
 
             return $this->memberships->project($membership, $membership->wasRecentlyCreated);
@@ -78,7 +81,9 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
 
     public function leave(string $affiliateId, string $programId): bool
     {
-        return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($affiliateId, $programId): bool {
+        $connection = (new AffiliateProgramMembership)->getConnection();
+
+        return $connection->transaction(function () use ($affiliateId, $programId, $connection): bool {
             $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()))
                 ?? throw new ModelNotFoundException('Affiliate not found.');
             $program = $this->resolveProgram($programId);
@@ -95,7 +100,10 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
             }
 
             $membership->delete();
-            $this->events->dispatch(new AffiliateProgramLeft($affiliate->reference->id, (string) $program->getKey(), (string) $membership->getKey()));
+            $affiliateReferenceId = $affiliate->reference->id;
+            $programId = (string) $program->getKey();
+            $membershipId = (string) $membership->getKey();
+            $connection->afterCommit(fn () => $this->events->dispatch(new AffiliateProgramLeft($affiliateReferenceId, $programId, $membershipId)));
 
             return true;
         }, attempts: 3);

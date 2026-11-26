@@ -34,6 +34,9 @@ keywords:
 
 ## Guardrails
 - Owns models, actions, services, events, calculations, and persistence rules.
+- Global affiliates and global configuration are readable only when `affiliates.owner.include_global` is enabled or the caller enters explicit global context; conversion accounting and upline allocation re-enter the canonical owner (including explicit global) before writing.
+- Payout reconciliation and reversal honor active processing leases; provider I/O never runs inside the payout transaction.
+- Supported databases are PostgreSQL and SQLite. MySQL/MariaDB fail fast because affiliate-code uniqueness uses a functional `LOWER(code)` index.
 - If admin UI changes too, audit `filament-affiliates`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
@@ -44,7 +47,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Affiliate`, `AffiliateAttribution`, `AffiliateBalance`, `AffiliateCommissionPromotion`, `AffiliateCommissionRule`, `AffiliateCommissionTemplate`, `AffiliateConversion`, `AffiliateDailyStat`, `AffiliateFraudSignal`, `AffiliateLink`
-- Actions/Services: `Features/Identity/Api/AffiliateLifecycle`, `Features/Attribution/Api/CartAttribution`, `Features/Attribution/EntryPoints/Middleware/CaptureAffiliateReferralFromPath`, `Features/Identity/Api/AffiliateAdministration`, `Features/Attribution/Api/TrackingLinkAdministration`, `Features/Conversions/Api/CartConversionRecording`, `Features/Conversions/Api/ConversionAdministration`
+- Actions/Services: `Features/Identity/Api/AffiliateLifecycle`, `Features/Identity/Api/PortalActorAffiliateReader`, `Features/Attribution/Api/CartAttribution`, `Features/Attribution/EntryPoints/Middleware/CaptureAffiliateReferralFromPath`, `Features/Identity/Api/AffiliateAdministration`, `Features/Attribution/Api/TrackingLinkAdministration`, `Features/Conversions/Api/CartConversionRecording`, `Features/Conversions/Api/ConversionAdministration`
 - Seams: `Contracts/MerchantLedger`, `Contracts/MerchantIdentity`, `Features/Programs/Api/MerchantCatalog` (network-facing; merchant vocabulary only). Identity's `AffiliateReferenceReader::ownerReference()` provides scoped, connection-checked immutable owner coordinates for internal consumers.
 - Config `affiliates.php`: `database`, `currency`, `features`, `owner`, `cart`, `cookies`, `public_pages`, `commissions`, `payouts`, `tracking`, `events`, `webhooks`, `links`, `api`, `merchant`, `tax`, `bonuses`, `fraud`, `upline`, `registration`, `catalog`
 

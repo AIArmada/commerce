@@ -33,7 +33,7 @@ final readonly class CreateAffiliate
      *
      * @param  array<string, mixed>  $data
      */
-    public function handle(array $data, ?Model $owner = null): Affiliate
+    public function handle(array $data, ?Model $owner = null, ?Model $registrationActor = null): Affiliate
     {
         $name = $this->resolveName($data);
         $commissionType = $this->resolveCommissionType($data);
@@ -45,7 +45,7 @@ final readonly class CreateAffiliate
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return (new Affiliate)->getConnection()->transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $mode): Affiliate {
+                return (new Affiliate)->getConnection()->transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $mode, $registrationActor): Affiliate {
                     $parentId = $this->resolveParentId($data);
                     $status = $mode->defaultStatus();
 
@@ -66,6 +66,11 @@ final readonly class CreateAffiliate
                     if ($owner) {
                         $affiliate->owner_type = $owner->getMorphClass();
                         $affiliate->owner_id = $owner->getKey();
+                    }
+
+                    if ($registrationActor !== null) {
+                        $affiliate->setAttribute('registration_actor_type', $registrationActor->getMorphClass());
+                        $affiliate->setAttribute('registration_actor_id', (string) $registrationActor->getKey());
                     }
 
                     if ($status === Active::class) {

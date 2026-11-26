@@ -24,6 +24,7 @@ use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiary;
 use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiaryReader;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Cart\Cart;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\QueryException;
@@ -121,10 +122,6 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
         $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
 
-        // Pricing can consume a limited-use promotion. Resolve it only when
-        // there is a new conversion leg to post, after idempotency is checked.
-        $commissionMinor = null;
-
         $status = config('affiliates.commissions.default_status', PendingConversion::value());
         $statusEnum = ConversionStatus::fromString($status);
         $autoApprove = config('affiliates.commissions.auto_approve', false);
@@ -195,115 +192,120 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                     $totalMinor,
                 );
 
-            $existing = AffiliateConversion::query()->forOwner(includeGlobal: true)
-                ->where('idempotency_key', $idempotencyKey)->first();
+            $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
 
-            if ($existing instanceof AffiliateConversion) {
-                $existingData = $existing->toData();
-                $firstConversion ??= $existingData;
+            $outcome = OwnerContext::withOwner($owner, function () use ($idempotencyKey, $affiliate, $subtotalMinor, $totalMinor, $payload, $attribution, $beneficiary, $weight, $affiliateId, $portionRevenue, $conversionType, $externalReference, $channel, $autoApprove, $statusEnum, $explicitIdempotencyKey, $cart, $ownerType, $ownerId): array {
+                $existing = AffiliateConversion::query()->forOwner(includeGlobal: true)
+                    ->where('idempotency_key', $idempotencyKey)->first();
 
-                if ($this->shouldDispatch('dispatch_conversion')) {
-                    $this->events->dispatch(new AffiliateConversionRecorded($existingData));
+                if ($existing instanceof AffiliateConversion) {
+                    return ['existing' => $existing->toData()];
                 }
 
-                continue;
-            }
+                $commissionMinor = $this->resolveCommission(
+                    $affiliate,
+                    $subtotalMinor ?? $totalMinor ?? 0,
+                    $payload,
+                    $attribution,
+                );
+                $portionCommission = $beneficiary->commercial
+                    ? (int) round($commissionMinor * $weight)
+                    : 0;
+                $conversionMetadata = $this->buildConversionMetadata(
+                    $payload['metadata'] ?? [],
+                    $weight,
+                    $payload['subject_type'] ?? $attribution?->subjectType,
+                    $payload['subject_title_snapshot'] ?? $attribution?->subjectTitleSnapshot,
+                );
 
-            $commissionMinor ??= $this->resolveCommission(
-                $affiliate,
-                $subtotalMinor ?? $totalMinor ?? 0,
-                $payload,
-                $attribution,
-            );
-            $portionCommission = $beneficiary->commercial
-                ? (int) round($commissionMinor * $weight)
-                : 0;
-            $conversionMetadata = $this->buildConversionMetadata(
-                $payload['metadata'] ?? [],
-                $weight,
-                $payload['subject_type'] ?? $attribution?->subjectType,
-                $payload['subject_title_snapshot'] ?? $attribution?->subjectTitleSnapshot,
-            );
+                $conversionAttributes = [
+                    'affiliate_id' => $affiliateId,
+                    'affiliate_code' => $beneficiary->code,
+                    'affiliate_attribution_id' => $attribution?->id,
+                    'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution?->affiliateLinkId,
+                    'affiliate_program_id' => $payload['affiliate_program_id'] ?? $attribution?->affiliateProgramId,
+                    'subject_type' => $payload['subject_type'] ?? $attribution?->subjectType,
+                    'subject_key' => $payload['subject_key'] ?? $attribution?->subjectKey ?? $cart->getIdentifier(),
+                    'subject_id' => $payload['subject_id'] ?? $attribution?->subjectId,
+                    'subject_instance' => $payload['subject_instance'] ?? $attribution?->subjectInstance ?? $cart->instance(),
+                    'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subjectTitleSnapshot,
+                    'voucher_code' => $payload['voucher_code'] ?? $attribution?->voucherCode,
+                    'commission_override' => $payload['commission_override'] ?? $attribution?->commissionOverride,
+                    'upline_levels' => $payload['upline_levels'] ?? $attribution?->uplineLevels,
+                    'external_reference' => $externalReference,
+                    'conversion_type' => $conversionType,
+                    'subtotal_minor' => $subtotalMinor ?? 0,
+                    'value_minor' => $portionRevenue,
+                    'commission_minor' => $portionCommission,
+                    'commission_currency' => mb_strtoupper((string) ($payload['commission_currency'] ?? $affiliate->currency)),
+                    'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
+                    'channel' => $channel,
+                    'origin' => $payload['origin'] ?? $attribution?->origin,
+                    'source_ref' => $payload['source_ref'] ?? null,
+                    'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharerUserId,
+                    'actor_user_id' => $payload['actor_user_id'] ?? null,
+                    'metadata' => $conversionMetadata,
+                    'owner_type' => $ownerType,
+                    'owner_id' => $ownerId,
+                    'occurred_at' => $payload['occurred_at'] ?? CarbonImmutable::now(),
+                    'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
+                ];
 
-            $conversionAttributes = [
-                'affiliate_id' => $affiliateId,
-                'affiliate_code' => $beneficiary->code,
-                'affiliate_attribution_id' => $attribution?->id,
-                'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution?->affiliateLinkId,
-                'affiliate_program_id' => $payload['affiliate_program_id'] ?? $attribution?->affiliateProgramId,
-                'subject_type' => $payload['subject_type'] ?? $attribution?->subjectType,
-                'subject_key' => $payload['subject_key'] ?? $attribution?->subjectKey ?? $cart->getIdentifier(),
-                'subject_id' => $payload['subject_id'] ?? $attribution?->subjectId,
-                'subject_instance' => $payload['subject_instance'] ?? $attribution?->subjectInstance ?? $cart->instance(),
-                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subjectTitleSnapshot,
-                'voucher_code' => $payload['voucher_code'] ?? $attribution?->voucherCode,
-                'commission_override' => $payload['commission_override'] ?? $attribution?->commissionOverride,
-                'upline_levels' => $payload['upline_levels'] ?? $attribution?->uplineLevels,
-                'external_reference' => $externalReference,
-                'conversion_type' => $conversionType,
-                'subtotal_minor' => $subtotalMinor ?? 0,
-                'value_minor' => $portionRevenue,
-                'commission_minor' => $portionCommission,
-                'commission_currency' => mb_strtoupper((string) ($payload['commission_currency'] ?? $affiliate->currency)),
-                'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
-                'channel' => $channel,
-                'origin' => $payload['origin'] ?? $attribution?->origin,
-                'source_ref' => $payload['source_ref'] ?? null,
-                'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharerUserId,
-                'actor_user_id' => $payload['actor_user_id'] ?? null,
-                'metadata' => $conversionMetadata,
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerId,
-                'occurred_at' => $payload['occurred_at'] ?? CarbonImmutable::now(),
-                'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
-            ];
-
-            if (is_string($explicitIdempotencyKey)) {
-                $conversionAttributes['metadata']['caller_idempotency_key'] = mb_trim($explicitIdempotencyKey);
-            }
-
-            $conversionAttributes['idempotency_key'] = $idempotencyKey;
-            $conversion = $this->createIdempotent($conversionAttributes);
-
-            if (! $conversion->wasRecentlyCreated) {
-                // Retry-safe delivery: the ledger row already exists but
-                // a prior attempt may never have dispatched (see the
-                // outcome path). Webhooks stay first-write-only: hosts
-                // must not receive duplicate external calls on retry.
-                $existingData = $conversion->toData();
-                $firstConversion ??= $existingData;
-
-                if ($this->shouldDispatch('dispatch_conversion')) {
-                    $this->events?->dispatch(new AffiliateConversionRecorded($existingData));
+                if (is_string($explicitIdempotencyKey)) {
+                    $conversionAttributes['metadata']['caller_idempotency_key'] = mb_trim($explicitIdempotencyKey);
                 }
 
+                $conversionAttributes['idempotency_key'] = $idempotencyKey;
+                $conversion = $this->createIdempotent($conversionAttributes);
+
+                if (! $conversion->wasRecentlyCreated) {
+                    return ['existing' => $conversion->toData()];
+                }
+
+                if (! $this->fraud->analyzeConversion((string) $conversion->getKey())->allowed) {
+                    $conversion->update(['status' => RejectedConversion::class]);
+                }
+
+                $this->accounting->handle($conversion);
+
+                return $conversion->status->equals(RejectedConversion::class)
+                    ? ['rejected' => $conversion->toData()]
+                    : ['created' => $conversion->toData()];
+            });
+
+            if (isset($outcome['existing'])) {
+                $existingData = $outcome['existing'];
+                $firstConversion ??= $existingData;
+
+                $connection->afterCommit(function () use ($existingData): void {
+                    if ($this->shouldDispatch('dispatch_conversion')) {
+                        $this->events->dispatch(new AffiliateConversionRecorded($existingData));
+                    }
+                });
+
                 continue;
             }
 
-            if (! $this->fraud->analyzeConversion((string) $conversion->getKey())->allowed) {
-                $conversion->update(['status' => RejectedConversion::class]);
-            }
-
-            $this->accounting->handle($conversion);
-
-            if ($conversion->status->equals(RejectedConversion::class)) {
-                $firstConversion ??= $conversion->toData();
+            if (isset($outcome['rejected'])) {
+                $firstConversion ??= $outcome['rejected'];
 
                 continue;
             }
 
-            $firstConversion ??= $conversion->toData();
-
-            $conversionData = $conversion->toData();
+            /** @var AffiliateConversionData $conversionData */
+            $conversionData = $outcome['created'];
+            $firstConversion ??= $conversionData;
             $conversions[] = $conversionData;
 
-            if ($this->shouldDispatch('dispatch_conversion')) {
-                $this->events?->dispatch(new AffiliateConversionRecorded($conversionData));
-            }
+            $connection->afterCommit(function () use ($conversionData): void {
+                if ($this->shouldDispatch('dispatch_conversion')) {
+                    $this->events->dispatch(new AffiliateConversionRecorded($conversionData));
+                }
 
-            if ($this->shouldDispatch('dispatch_webhooks')) {
-                $this->webhooks->dispatch('conversion', $conversionData->toArray());
-            }
+                if ($this->shouldDispatch('dispatch_webhooks')) {
+                    $this->webhooks->dispatch('conversion', $conversionData->toArray());
+                }
+            });
         }
 
         if ($conversions !== []) {

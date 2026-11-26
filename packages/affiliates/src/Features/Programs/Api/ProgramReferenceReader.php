@@ -21,5 +21,11 @@ interface ProgramReferenceReader
     /** @return array<string, string> */
     public function options(string $search = '', int $limit = 50, ?bool $includeGlobal = null): array;
 
+    /**
+     * @param  list<string>  $ids
+     * @return array<string, string>
+     */
+    public function labels(array $ids, ?bool $includeGlobal = null): array;
+
     public function label(string $id, ?bool $includeGlobal = null): ?string;
 }

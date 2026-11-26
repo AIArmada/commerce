@@ -31,14 +31,20 @@ final readonly class ReviewProgramMembership implements MembershipReviewApi
 
     private function review(string $membershipId, MembershipStatus $status, ?string $approvedBy): bool
     {
-        return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId, $status, $approvedBy): bool {
-            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
-            $program = (bool) config('affiliates.owner.enabled', false)
-                ? OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $membership->program_id, includeGlobal: true)
-                : AffiliateProgram::query()->findOrFail($membership->program_id);
+        $connection = (new AffiliateProgramMembership)->getConnection();
 
-            $affiliate = app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+        return $connection->transaction(function () use ($membershipId, $status, $approvedBy, $connection): bool {
+            $preview = AffiliateProgramMembership::query()->findOrFail($membershipId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($preview->affiliate_id, spl_object_id($connection))
                 ?? throw new ModelNotFoundException('Affiliate not found.');
+            $program = (bool) config('affiliates.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $preview->program_id, includeGlobal: true)
+                : AffiliateProgram::query()->findOrFail($preview->program_id);
+            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
+
+            if ($membership->affiliate_id !== $preview->affiliate_id || $membership->program_id !== $preview->program_id) {
+                throw new ModelNotFoundException('Program membership changed during review.');
+            }
 
             if ($membership->status !== MembershipStatus::Pending) {
                 return false;
@@ -61,7 +67,8 @@ final readonly class ReviewProgramMembership implements MembershipReviewApi
                 'suspended_at' => null,
             ]);
 
-            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate->reference, $program)));
+            $joined = $membership->joinReference($affiliate->reference, $program);
+            $connection->afterCommit(fn () => $this->events->dispatch(new AffiliateProgramJoined($joined)));
 
             return true;
         }, attempts: 3);

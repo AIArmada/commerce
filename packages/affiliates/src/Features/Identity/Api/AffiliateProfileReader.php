@@ -12,5 +12,5 @@ interface AffiliateProfileReader
 
     public function find(string $id, int $connectionIdentity, bool $includeGlobal = false): ?AffiliateProfile;
 
-    public function lock(string $id, int $connectionIdentity): ?AffiliateProfile;
+    public function lock(string $id, int $connectionIdentity, bool $includeGlobal = false): ?AffiliateProfile;
 }

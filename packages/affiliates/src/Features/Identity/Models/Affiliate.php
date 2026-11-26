@@ -95,8 +95,6 @@ class Affiliate extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
-    protected $table = 'affiliates';
-
     public const string PURPOSE_GENERAL = 'general';
 
     private ?string $pendingContactEmail = null;
@@ -185,7 +183,7 @@ class Affiliate extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.affiliates', parent::getTable());
+        return $this->table ?? config('affiliates.database.tables.affiliates', parent::getTable());
     }
 
     /**

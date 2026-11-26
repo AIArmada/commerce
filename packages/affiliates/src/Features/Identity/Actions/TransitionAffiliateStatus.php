@@ -46,6 +46,7 @@ final readonly class TransitionAffiliateStatus implements AffiliateLifecycle
 
             $affiliate->status = new Paused($affiliate);
             $affiliate->paused_at = CarbonImmutable::now();
+            $affiliate->deactivated_at = null;
             $affiliate->save();
 
             return true;
@@ -115,6 +116,7 @@ final readonly class TransitionAffiliateStatus implements AffiliateLifecycle
 
         $affiliate->status = new Disabled($affiliate);
         $affiliate->deactivated_at = CarbonImmutable::now();
+        $affiliate->paused_at = null;
         $affiliate->save();
 
         return true;

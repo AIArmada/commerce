@@ -11,6 +11,7 @@ Use the modular Dune affiliate engine through feature APIs; never import another
 - Public signup uses `RegistrationApi::register()`; commission terms are derived from configuration and sponsorship is resolved inside the transaction. Administrative changes use `AffiliateAdministration` and lifecycle APIs.
 - Record cart conversions through `CartConversionRecording`; post fixed awards through `AwardPosting`. Never write conversion or balance rows directly from application code.
 - Use `PayoutReconciliationQueries::settlementExport()` for settlement rows and their matching summary; do not resolve arbitrary payee relations in exports.
+- Payout reconciliation and reversal honor active operation leases; provider I/O stays outside database transactions, and global affiliate accounting re-enters the canonical owner context (including explicit global).
 - Amounts are integer minor units with an explicit ISO currency. Scope reads and mutations to the current owner; explicit global context is not equivalent to a missing owner. Do not bypass ownership or use cross-feature ORM relationships.
 - Configure a local renderer for private tax worksheets. TINs must be masked and tax documents stored privately. No legacy aliases or backfills.
 

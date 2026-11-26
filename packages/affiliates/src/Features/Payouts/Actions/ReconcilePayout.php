@@ -51,6 +51,24 @@ final readonly class ReconcilePayout implements PayoutReconciliation
                 return false;
             }
 
+            $operation = PayoutOperationQuery::forPayout($locked, $locked->owner)->lockForUpdate()->first();
+
+            if ($operation instanceof AffiliatePayoutOperation) {
+                if (in_array($operation->status, ['submitting', 'submitted', 'unknown', 'reversing'], true)
+                    && $operation->lease_expires_at?->isFuture()) {
+                    return false;
+                }
+
+                if (in_array($operation->status, ['reversing', 'reversed'], true)) {
+                    return false;
+                }
+
+                if ($operation->affiliate_payout_id !== null
+                    && $operation->affiliate_payout_id !== (string) $locked->getKey()) {
+                    return false;
+                }
+            }
+
             // Provider events can arrive stale or out of order (including for
             // terminal payouts). Only declared state-machine transitions run;
             // anything else is ignored rather than forced.
@@ -90,7 +108,6 @@ final readonly class ReconcilePayout implements PayoutReconciliation
                 'metadata' => $metadata,
             ])->save();
 
-            $operation = PayoutOperationQuery::forPayout($locked)->lockForUpdate()->first();
             if ($operation instanceof AffiliatePayoutOperation) {
                 $operation->forceFill([
                     'status' => match (true) {

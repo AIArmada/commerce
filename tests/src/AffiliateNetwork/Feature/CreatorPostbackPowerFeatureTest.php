@@ -358,3 +358,60 @@ describe('power feature: dynamic sub id passthrough', function (): void {
             ->and(NetworkConversionLeg::query()->where('external_reference', 'STATUS-1')->exists())->toBeTrue();
     });
 });
+
+test('an active delivery lease blocks overlapping transport attempts', function (): void {
+    $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => true]);
+    $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create([
+        'status' => PostbackDeliveryStatus::Pending,
+        'attempt_token' => (string) Str::uuid(),
+        'lease_expires_at' => now()->addMinutes(5),
+    ]);
+
+    $transport = new RecordingPostbackTransport;
+    app()->instance(CreatorPostbackTransport::class, $transport);
+
+    expect(fn () => app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey()))
+        ->toThrow(RuntimeException::class, 'already in progress')
+        ->and($transport->sent)->toBe([]);
+});
+
+test('a stale delivery finalization cannot overwrite a newer attempt', function (): void {
+    $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => true]);
+    $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create([
+        'status' => PostbackDeliveryStatus::Pending,
+    ]);
+
+    $transport = new class implements CreatorPostbackTransport
+    {
+        public function send(string $method, string $url, array $headers = [], ?array $body = null): CreatorPostbackResponse
+        {
+            $deliveryId = request()->attributes->get('delivery_id');
+
+            CreatorPostbackDelivery::query()->whereKey($deliveryId)->update([
+                'attempt_token' => 'newer-attempt',
+                'lease_expires_at' => now()->addMinutes(5),
+            ]);
+
+            return new CreatorPostbackResponse(true, 200);
+        }
+    };
+
+    request()->attributes->set('delivery_id', (string) $delivery->getKey());
+    app()->instance(CreatorPostbackTransport::class, $transport);
+
+    $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+    expect($result->status)->toBe(PostbackDeliveryStatus::Pending)
+        ->and($result->attempt_token)->toBe('newer-attempt');
+});
+
+test('configuration rejects an unknown offer reference', function (): void {
+    $affiliate = postbackAffiliate();
+
+    expect(fn () => app(ConfigureCreatorPostback::class)->execute((string) $affiliate->getKey(), [
+        'offer_id' => (string) Str::uuid(),
+        'url_template' => 'https://creator.example/pb?leg={leg_id}',
+        'http_method' => 'GET',
+        'events' => [PostbackEventType::ConversionRecorded->value],
+    ]))->toThrow(RuntimeException::class, 'does not exist');
+});

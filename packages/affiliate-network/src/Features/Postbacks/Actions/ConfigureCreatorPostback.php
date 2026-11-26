@@ -5,13 +5,21 @@ declare(strict_types=1);
 namespace AIArmada\AffiliateNetwork\Features\Postbacks\Actions;
 
 use AIArmada\AffiliateNetwork\Data\PostbackEventType;
+use AIArmada\AffiliateNetwork\Features\Catalog\Api\CatalogApi;
+use AIArmada\AffiliateNetwork\Features\Catalog\Api\OfferRecord;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
+use AIArmada\AffiliateNetwork\Platform\AffiliateProfileGuard;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 
 final readonly class ConfigureCreatorPostback
 {
+    public function __construct(
+        private AffiliateProfileGuard $affiliateProfileGuard,
+        private CatalogApi $catalog,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -41,14 +49,23 @@ final readonly class ConfigureCreatorPostback
         )));
 
         $secret = $validated['signing_secret'] ?? null;
+        $offerId = $validated['offer_id'] ?? null;
 
-        return (new CreatorPostbackEndpoint)->getConnection()->transaction(function () use ($affiliateId, $endpointId, $validated, $urlTemplate, $events, $secret): CreatorPostbackEndpoint {
+        if ($offerId !== null && ! $this->catalog->findOfferUnscoped($offerId) instanceof OfferRecord) {
+            throw new RuntimeException('The selected offer does not exist.');
+        }
+
+        $connection = (new CreatorPostbackEndpoint)->getConnection();
+
+        return $connection->transaction(function () use ($affiliateId, $endpointId, $validated, $urlTemplate, $events, $secret, $offerId, $connection): CreatorPostbackEndpoint {
+            $this->affiliateProfileGuard->lockForWrite($affiliateId, spl_object_id($connection));
+
             $endpoint = $endpointId === null
                 ? new CreatorPostbackEndpoint(['affiliate_id' => $affiliateId])
                 : CreatorPostbackEndpoint::query()->whereKey($endpointId)->where('affiliate_id', $affiliateId)->lockForUpdate()->firstOrFail();
 
             $endpoint->fill([
-                'offer_id' => $validated['offer_id'] ?? null,
+                'offer_id' => $offerId,
                 'url_template' => $urlTemplate,
                 'http_method' => mb_strtoupper((string) $validated['http_method']),
                 'events' => $events,

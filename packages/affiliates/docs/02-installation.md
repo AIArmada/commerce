@@ -10,6 +10,8 @@ title: Installation
 - Laravel 13.x or higher
 - PostgreSQL or SQLite
 
+MySQL and MariaDB are not supported. Affiliate code uniqueness is enforced by a functional `LOWER(code)` unique index, which the package only creates on PostgreSQL and SQLite; the migration fails fast on other drivers instead of silently dropping case-insensitive uniqueness.
+
 ## Install via Composer
 
 ```bash

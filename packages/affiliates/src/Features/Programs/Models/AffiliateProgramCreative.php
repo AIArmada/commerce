@@ -39,8 +39,6 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
     use LogsCommerceActivity;
     use ScopesByProgramOwner;
 
-    protected $table = 'affiliate_program_creatives';
-
     protected $fillable = [
         'program_id',
         'type',
@@ -61,7 +59,7 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.program_creatives', 'affiliate_program_creatives');
+        return $this->table ?? config('affiliates.database.tables.program_creatives', 'affiliate_program_creatives');
     }
 
     /**

@@ -51,66 +51,72 @@ final readonly class UpdatePayoutStatus
             throw new LogicException('Payout status updates require a shared database connection.');
         }
 
-        return $payout->getConnection()->transaction(function () use ($payout, $status, $notes, $metadata, $retainNote): AffiliatePayout {
+        $connection = $payout->getConnection();
+
+        return $connection->transaction(function () use ($payout, $status, $notes, $metadata, $retainNote, $connection): AffiliatePayout {
             $locked = AffiliatePayout::query()->lockForUpdate()->findOrFail($payout->getKey());
+            $owner = OwnerContext::fromTypeAndIdOrFail($locked->owner_type, $locked->owner_id);
 
-            $from = $locked->status;
-            $newStatus = PayoutStatus::fromString($status, $locked);
+            return OwnerContext::withOwner($owner, function () use ($locked, $status, $notes, $metadata, $retainNote, $connection): AffiliatePayout {
+                $from = $locked->status;
+                $newStatus = PayoutStatus::fromString($status, $locked);
 
-            if ($from->equals($newStatus::class)) {
-                return $locked->refresh();
-            }
+                if ($from->equals($newStatus::class)) {
+                    return $locked->refresh();
+                }
 
-            $overrideReason = null;
+                $overrideReason = null;
 
-            if ($newStatus->equals(CompletedPayout::class)) {
-                // Mirror payout reconciliation: the gate checks WHO
-                // may be paid, this checks the linked legs are sane.
-                $locked->assertHomogeneousConversions();
-                $overrideReason = $this->completionGate->handle($locked);
-            }
+                if ($newStatus->equals(CompletedPayout::class)) {
+                    // Mirror payout reconciliation: the gate checks WHO
+                    // may be paid, this checks the linked legs are sane.
+                    $locked->assertHomogeneousConversions();
+                    $overrideReason = $this->completionGate->handle($locked);
+                }
 
-            $locked->status->transitionTo($newStatus::class);
+                $locked->status->transitionTo($newStatus::class);
 
-            if ($newStatus->equals(CompletedPayout::class) && $locked->paid_at === null) {
-                $locked->paid_at = CarbonImmutable::now();
-            }
+                if ($newStatus->equals(CompletedPayout::class) && $locked->paid_at === null) {
+                    $locked->paid_at = CarbonImmutable::now();
+                }
 
-            if ($newStatus->equals(FailedPayout::class) && $locked->failed_at === null) {
-                $locked->failed_at = CarbonImmutable::now();
-            }
+                if ($newStatus->equals(FailedPayout::class) && $locked->failed_at === null) {
+                    $locked->failed_at = CarbonImmutable::now();
+                }
 
-            if ($newStatus->equals(CancelledPayout::class) && $locked->cancelled_at === null) {
-                $locked->cancelled_at = CarbonImmutable::now();
-            }
+                if ($newStatus->equals(CancelledPayout::class) && $locked->cancelled_at === null) {
+                    $locked->cancelled_at = CarbonImmutable::now();
+                }
 
-            if ($retainNote && $notes !== null) {
-                $locked->metadata = array_merge($locked->metadata ?? [], ['notes' => $notes]);
-            }
+                if ($retainNote && $notes !== null) {
+                    $locked->metadata = array_merge($locked->metadata ?? [], ['notes' => $notes]);
+                }
 
-            $locked->save();
+                $locked->save();
 
-            $this->syncConversions($locked, $newStatus);
+                $this->syncConversions($locked, $newStatus);
 
-            AffiliatePayoutEvent::create([
-                'affiliate_payout_id' => $locked->getKey(),
-                'from_status' => $from?->getValue(),
-                'to_status' => $newStatus->getValue(),
-                'metadata' => $metadata ?: null,
-                'notes' => $notes ?? ($overrideReason !== null ? 'Completed under payout override: ' . $overrideReason : null),
-            ]);
+                AffiliatePayoutEvent::create([
+                    'affiliate_payout_id' => $locked->getKey(),
+                    'from_status' => $from?->getValue(),
+                    'to_status' => $newStatus->getValue(),
+                    'metadata' => $metadata ?: null,
+                    'notes' => $notes ?? ($overrideReason !== null ? 'Completed under payout override: ' . $overrideReason : null),
+                ]);
 
-            $fresh = $locked->refresh();
+                $fresh = $locked->refresh();
+                $payload = [
+                    'id' => $fresh->getKey(),
+                    'reference' => $fresh->reference,
+                    'status' => $fresh->status->getValue(),
+                    'total_minor' => $fresh->total_minor,
+                    'currency' => $fresh->currency,
+                ];
 
-            $this->webhooks->dispatch('payout', [
-                'id' => $fresh->getKey(),
-                'reference' => $fresh->reference,
-                'status' => $fresh->status->getValue(),
-                'total_minor' => $fresh->total_minor,
-                'currency' => $fresh->currency,
-            ]);
+                $connection->afterCommit(fn () => $this->webhooks->dispatch('payout', $payload));
 
-            return $fresh;
+                return $fresh;
+            });
         }, attempts: 3);
     }
 

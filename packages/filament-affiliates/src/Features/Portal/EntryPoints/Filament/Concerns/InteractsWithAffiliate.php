@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\PortalActorAffiliateReader;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
@@ -26,12 +27,6 @@ trait InteractsWithAffiliate
 {
     protected ?Affiliate $affiliate = null;
 
-    /**
-     * Get the current user's affiliate.
-     *
-     * In owner mode: looks up affiliate owned by the current tenant.
-     * In non-owner mode: looks up affiliate where the user is the owner.
-     */
     public function getAffiliate(): ?Affiliate
     {
         if ($this->affiliate !== null) {
@@ -44,52 +39,24 @@ trait InteractsWithAffiliate
             return null;
         }
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerUiScope::resolveOwner(Affiliate::class);
-            $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
+        $actorType = $user->getMorphClass();
+        $actorId = (string) $user->getKey();
 
-            $this->affiliate = OwnerContext::withOwner($owner, function () use ($owner, $user, $contactEmail): ?Affiliate {
-                return Affiliate::query()
-                    ->forOwner($owner, false)
-                    ->where(function (Builder $query) use ($user, $contactEmail): void {
-                        $query->where(function (Builder $ownedByUser) use ($user): void {
-                            $ownedByUser
-                                ->where('owner_type', $user->getMorphClass())
-                                ->where('owner_id', $user->getKey());
-                        });
+        $resolve = function () use ($actorType, $actorId): ?Affiliate {
+            $affiliateId = app(PortalActorAffiliateReader::class)->affiliateIdForActor($actorType, $actorId);
 
-                        if (is_string($contactEmail) && $contactEmail !== '') {
-                            $query->orWhereHas('contactMethods', function (Builder $contactMethods) use ($contactEmail): void {
-                                $contactMethods
-                                    ->where('type', 'email')
-                                    ->where('purpose', 'general')
-                                    ->whereRaw('LOWER(COALESCE(normalized_value, value)) = ?', [$contactEmail]);
-                            });
-                        }
-                    })
-                    ->first();
-            });
-        } else {
-            $this->affiliate = OwnerContext::withOwner($user, function () use ($user): ?Affiliate {
-                $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
+            if ($affiliateId === null) {
+                return null;
+            }
 
-                return Affiliate::query()
-                    ->where(function (Builder $query) use ($user, $contactEmail): void {
-                        $query->where('owner_type', $user->getMorphClass())
-                            ->where('owner_id', $user->getKey());
+            return Affiliate::query()->forOwner()->whereKey($affiliateId)->first();
+        };
 
-                        if (is_string($contactEmail) && $contactEmail !== '') {
-                            $query->orWhereHas('contactMethods', function (Builder $contactMethods) use ($contactEmail): void {
-                                $contactMethods
-                                    ->where('type', 'email')
-                                    ->where('purpose', 'general')
-                                    ->whereRaw('LOWER(COALESCE(normalized_value, value)) = ?', [$contactEmail]);
-                            });
-                        }
-                    })
-                    ->first();
-            });
-        }
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerUiScope::resolveOwner(Affiliate::class)
+            : $user;
+
+        $this->affiliate = OwnerContext::withOwner($owner, $resolve);
 
         return $this->affiliate;
     }

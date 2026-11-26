@@ -47,7 +47,7 @@ function makeAffiliate(string $code = 'FUL'): Affiliate
 
 describe('fulfillment', function (): void {
     test('host fulfillment records runs idempotently', function (): void {
-        $affiliateId = (string) Str::uuid();
+        $affiliateId = (string) makeAffiliate('FULHOST')->getKey();
         $link = fulfillmentLink($affiliateId);
         $leg = app(PostConversionLeg::class)->execute(
             offerId: (string) $link->offer_id,

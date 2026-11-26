@@ -8,7 +8,9 @@ use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
@@ -23,6 +25,7 @@ use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use LogicException;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
 
@@ -87,28 +90,35 @@ class PortalRegistration extends FilamentRegister
      */
     protected function handleRegistration(array $data): Model
     {
-        // Pick only the user attributes explicitly; the password arrives
-        // already hashed via the registration form's dehydrateStateUsing.
-        $user = $this->getUserModel()::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-        ]);
+        $userModel = $this->getUserModel();
+        $connection = (new $userModel)->getConnection();
 
-        $this->createAffiliateForUser($user, $data);
-
-        $guard = (string) config('authz.guards.0', 'web');
-
-        $role = app(RoleAdministrationApi::class)->ensureRole('Affiliate', $guard, getPermissionsTeamId(), ['panel.affiliate']);
-        $reference = EloquentRecordReference::fromModel($user);
-
-        if ($reference === null) {
-            throw new InvalidArgumentException('A persisted user is required.');
+        if ((new Affiliate)->getConnection() !== $connection || (new Role)->getConnection() !== $connection) {
+            throw new LogicException('Affiliate registration requires a shared database connection for users, affiliates, and roles.');
         }
 
-        app(RoleAdministrationApi::class)->assignRole($reference, $role->id);
+        return $connection->transaction(function () use ($data, $userModel): Model {
+            $user = $userModel::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
 
-        return $user;
+            $this->createAffiliateForUser($user, $data);
+
+            $guard = (string) config('authz.guards.0', 'web');
+
+            $role = app(RoleAdministrationApi::class)->ensureRole('Affiliate', $guard, getPermissionsTeamId(), ['panel.affiliate']);
+            $reference = EloquentRecordReference::fromModel($user);
+
+            if ($reference === null) {
+                throw new InvalidArgumentException('A persisted user is required.');
+            }
+
+            app(RoleAdministrationApi::class)->assignRole($reference, $role->id);
+
+            return $user;
+        }, attempts: 3);
     }
 
     public function getHeading(): string
@@ -365,9 +375,10 @@ class PortalRegistration extends FilamentRegister
         }
 
         $reference = EloquentRecordReference::fromModel($owner);
+        $actor = EloquentRecordReference::fromModel($user);
 
-        if ($reference === null) {
-            throw new InvalidArgumentException('A persisted owner is required.');
+        if ($reference === null || $actor === null) {
+            throw new InvalidArgumentException('A persisted owner and registration actor are required.');
         }
 
         $cookie = request()->cookie(config('affiliates.cookies.name', 'affiliate_session'));
@@ -377,6 +388,7 @@ class PortalRegistration extends FilamentRegister
             $reference,
             is_string($data['referral_code'] ?? null) ? $data['referral_code'] : null,
             is_string($cookie) ? $cookie : null,
+            $actor,
         );
     }
 

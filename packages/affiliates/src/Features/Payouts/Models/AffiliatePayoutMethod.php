@@ -32,8 +32,6 @@ class AffiliatePayoutMethod extends Model implements Auditable
     use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
-    protected $table = 'affiliate_payout_methods';
-
     protected $fillable = [
         'affiliate_id',
         'type',
@@ -65,7 +63,7 @@ class AffiliatePayoutMethod extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.payout_methods', 'affiliate_payout_methods');
+        return $this->table ?? config('affiliates.database.tables.payout_methods', 'affiliate_payout_methods');
     }
 
     public function isVerified(): bool

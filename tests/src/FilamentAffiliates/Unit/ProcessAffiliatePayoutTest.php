@@ -382,3 +382,53 @@ test('missing payout method does not release funds after provider submission', f
         ->and($operation->last_error_code)->toBe('NO_DEFAULT_PAYOUT_METHOD')
         ->and($operation->funds_released_at)->toBeNull();
 });
+
+test('status lookup failures persist the canonical provider reference', function (): void {
+    $affiliate = createProcessPayoutAffiliate();
+    $payout = createProcessPayout($affiliate);
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id);
+    $payout->forceFill(['status' => ProcessingPayout::class])->save();
+    $operation->forceFill([
+        'status' => 'submitted',
+        'provider_reference' => null,
+        'lease_expires_at' => null,
+    ])->save();
+
+    useFakeSuccessProcessor();
+    $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
+    $processor->shouldReceive('getStatus')->once()->andReturn(new PayoutStatusResult('failed', 'provider-failed-ref'));
+    $processor->shouldNotReceive('process');
+    app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
+
+    $result = app(ProcessAffiliatePayout::class)->handle($payout);
+
+    expect($result->isSuccess())->toBeFalse()
+        ->and($payout->fresh()->external_reference)->toBe('provider-failed-ref')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->provider_reference)->toBe('provider-failed-ref');
+});
+
+test('completion-blocked reconciliation keeps the known provider reference', function (): void {
+    $affiliate = createProcessPayoutAffiliate();
+    $payout = createProcessPayout($affiliate);
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id);
+    $payout->forceFill(['status' => ProcessingPayout::class, 'external_reference' => null])->save();
+    $operation->forceFill([
+        'status' => 'submitted',
+        'provider_reference' => 'provider-ref-known',
+        'lease_expires_at' => null,
+    ])->save();
+
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
+    useFakeSuccessProcessor();
+    $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
+    $processor->shouldReceive('getStatus')->once()->andReturn(new PayoutStatusResult('not_found'));
+    $processor->shouldNotReceive('process');
+    app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
+
+    $result = app(ProcessAffiliatePayout::class)->handle($payout);
+
+    expect($result->isUnknown())->toBeTrue()
+        ->and($result->failureCode)->toBe('PAYOUT_COMPLETION_BLOCKED')
+        ->and($payout->fresh()->external_reference)->toBe('provider-ref-known')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->provider_reference)->toBe('provider-ref-known');
+});

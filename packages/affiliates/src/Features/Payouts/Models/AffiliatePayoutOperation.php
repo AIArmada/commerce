@@ -40,8 +40,6 @@ final class AffiliatePayoutOperation extends Model
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
-    protected $table = 'affiliate_payout_operations';
-
     protected $fillable = [
         'affiliate_id',
         'affiliate_payout_id',
@@ -62,7 +60,7 @@ final class AffiliatePayoutOperation extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.payout_operations', 'affiliate_payout_operations');
+        return $this->table ?? config('affiliates.database.tables.payout_operations', 'affiliate_payout_operations');
     }
 
     /** @return BelongsTo<AffiliatePayout, $this> */

@@ -41,10 +41,17 @@ final readonly class ReviewFraudSignal implements FraudReviewApi
 
             if ($status === FraudSignalStatus::Dismissed) {
                 $attributes['dismissed_at'] = $now;
+                $attributes['confirmed_at'] = null;
             }
 
             if ($status === FraudSignalStatus::Confirmed) {
                 $attributes['confirmed_at'] = $now;
+                $attributes['dismissed_at'] = null;
+            }
+
+            if ($status === FraudSignalStatus::Reviewed) {
+                $attributes['dismissed_at'] = null;
+                $attributes['confirmed_at'] = null;
             }
 
             if ($reviewNotes !== null && mb_trim($reviewNotes) !== '') {

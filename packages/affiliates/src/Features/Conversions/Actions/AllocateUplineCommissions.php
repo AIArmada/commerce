@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
@@ -12,6 +13,7 @@ use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 
@@ -42,102 +44,120 @@ final readonly class AllocateUplineCommissions
         app(AffiliateAccessGuard::class)->assertConnection($connectionIdentity);
         $profiles = app(AffiliateProfileReader::class);
 
-        $connection->transaction(function () use ($baseConversions, $autoApprove, $statusEnum, $attributionId, $levels, $connectionIdentity, $profiles): void {
+        $connection->transaction(function () use ($baseConversions, $autoApprove, $statusEnum, $attributionId, $levels, $connectionIdentity, $profiles, $connection): void {
             foreach ($baseConversions as $conversionData) {
-                $affiliate = $profiles->lock($conversionData->affiliateId, $connectionIdentity);
+                $ownerType = $conversionData->ownerType;
+                $ownerId = $conversionData->ownerId === null ? null : (string) $conversionData->ownerId;
+                $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
 
-                if (! $affiliate || ! $affiliate->commercial) {
-                    continue;
-                }
+                OwnerContext::withOwner($owner, function () use ($conversionData, $autoApprove, $statusEnum, $attributionId, $levels, $connectionIdentity, $profiles, $connection, $owner, $ownerType, $ownerId): void {
+                    $affiliate = $profiles->lock($conversionData->affiliateId, $connectionIdentity, includeGlobal: $owner === null);
 
-                $overrideLevels = $conversionData->uplineLevels;
-
-                $resolvedLevels = $levels;
-
-                if (is_array($overrideLevels)) {
-                    usort($overrideLevels, static fn (array $a, array $b): int => ($a['level'] ?? 0) <=> ($b['level'] ?? 0));
-                    $resolvedLevels = $overrideLevels;
-                }
-
-                $current = $affiliate->parentAffiliateId === null ? null : $profiles->lock($affiliate->parentAffiliateId, $connectionIdentity);
-                $depth = 0;
-                $visited = [$affiliate->reference->id => true];
-
-                foreach ($resolvedLevels as $levelConfig) {
-                    $depth++;
-
-                    if (! $current || isset($visited[$current->reference->id])) {
-                        break;
+                    if (! $affiliate || ! $affiliate->commercial) {
+                        return;
                     }
 
-                    if (config('affiliates.owner.enabled', false)
-                        && ($current->reference->ownerType !== $affiliate->reference->ownerType
-                            || $current->reference->ownerId !== $affiliate->reference->ownerId)) {
-                        break;
+                    if ($affiliate->reference->ownerType !== $ownerType
+                        || ($affiliate->reference->ownerId === null ? null : (string) $affiliate->reference->ownerId) !== $ownerId) {
+                        return;
                     }
 
-                    $visited[$current->reference->id] = true;
+                    $overrideLevels = $conversionData->uplineLevels;
 
-                    if (! $current->commercial) {
-                        $current = $current->parentAffiliateId === null ? null : $profiles->lock($current->parentAffiliateId, $connectionIdentity);
+                    $resolvedLevels = $levels;
 
-                        continue;
+                    if (is_array($overrideLevels)) {
+                        usort($overrideLevels, static fn (array $a, array $b): int => ($a['level'] ?? 0) <=> ($b['level'] ?? 0));
+                        $resolvedLevels = $overrideLevels;
                     }
 
-                    $portion = app(CommissionPricing::class)->clamp(self::resolvePortion($conversionData->commissionMinor, $levelConfig));
+                    $current = $affiliate->parentAffiliateId === null ? null : $profiles->lock($affiliate->parentAffiliateId, $connectionIdentity, includeGlobal: $owner === null);
+                    $depth = 0;
+                    $visited = [$affiliate->reference->id => true];
 
-                    if ($portion > 0) {
-                        $model = new AffiliateConversion([
-                            'affiliate_id' => $current->reference->id,
-                            'affiliate_code' => $current->code,
-                            'affiliate_attribution_id' => $attributionId,
-                            'subject_type' => $conversionData->subjectType,
-                            'subject_key' => $conversionData->subjectKey,
-                            'subject_instance' => $conversionData->subjectInstance,
-                            'subject_title_snapshot' => $conversionData->subjectTitleSnapshot,
-                            'voucher_code' => $conversionData->voucherCode,
-                            'external_reference' => $conversionData->externalReference,
-                            'conversion_type' => $conversionData->conversionType,
-                            'subtotal_minor' => 0,
-                            'value_minor' => 0,
-                            'commission_minor' => $portion,
-                            'commission_currency' => $conversionData->commissionCurrency,
-                            'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
-                            'channel' => 'upline',
-                            'metadata' => [
-                                'upline_of' => $affiliate->reference->id,
-                                'level' => $depth,
-                                'weight' => self::resolveWeight($levelConfig),
-                                'base_conversion' => $conversionData->id,
-                            ],
-                            'occurred_at' => CarbonImmutable::now(),
-                            'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
-                        ]);
-                        $model->forceFill([
-                            'owner_type' => $current->reference->ownerType,
-                            'owner_id' => $current->reference->ownerId,
-                        ]);
-                        $model->save();
+                    foreach ($resolvedLevels as $levelConfig) {
+                        $depth++;
 
-                        $this->accounting->handle($model);
-
-                        $uplineData = $model->toData();
-
-                        $shouldDispatchConversion = (bool) config('affiliates.events.dispatch_conversion', true);
-
-                        if ($shouldDispatchConversion) {
-                            $this->events?->dispatch(new AffiliateConversionRecorded($uplineData));
+                        if (! $current || isset($visited[$current->reference->id])) {
+                            break;
                         }
 
-                        $shouldDispatchWebhooks = (bool) config('affiliates.events.dispatch_webhooks', true);
-
-                        if ($shouldDispatchWebhooks) {
-                            $this->webhooks->dispatch('conversion', $uplineData->toArray());
+                        if (config('affiliates.owner.enabled', false)
+                            && ($current->reference->ownerType !== $ownerType
+                                || ($current->reference->ownerId === null ? null : (string) $current->reference->ownerId) !== $ownerId)) {
+                            break;
                         }
-                    }
 
-                    $current = $current->parentAffiliateId === null ? null : $profiles->lock($current->parentAffiliateId, $connectionIdentity);
-                }
+                        $visited[$current->reference->id] = true;
+
+                        if (! $current->commercial) {
+                            $current = $current->parentAffiliateId === null ? null : $profiles->lock($current->parentAffiliateId, $connectionIdentity, includeGlobal: $owner === null);
+
+                            continue;
+                        }
+
+                        $portion = app(CommissionPricing::class)->clamp(self::resolvePortion($conversionData->commissionMinor, $levelConfig));
+
+                        if ($portion > 0) {
+                            $uplineOwner = OwnerContext::fromTypeAndId(
+                                $current->reference->ownerType,
+                                $current->reference->ownerId === null ? null : (string) $current->reference->ownerId,
+                            );
+
+                            $uplineData = OwnerContext::withOwner($uplineOwner, function () use ($current, $conversionData, $attributionId, $autoApprove, $statusEnum, $depth, $levelConfig, $portion): ?AffiliateConversionData {
+                                $model = new AffiliateConversion([
+                                    'affiliate_id' => $current->reference->id,
+                                    'affiliate_code' => $current->code,
+                                    'affiliate_attribution_id' => $attributionId,
+                                    'subject_type' => $conversionData->subjectType,
+                                    'subject_key' => $conversionData->subjectKey,
+                                    'subject_instance' => $conversionData->subjectInstance,
+                                    'subject_title_snapshot' => $conversionData->subjectTitleSnapshot,
+                                    'voucher_code' => $conversionData->voucherCode,
+                                    'external_reference' => $conversionData->externalReference,
+                                    'conversion_type' => $conversionData->conversionType,
+                                    'subtotal_minor' => 0,
+                                    'value_minor' => 0,
+                                    'commission_minor' => $portion,
+                                    'commission_currency' => $conversionData->commissionCurrency,
+                                    'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
+                                    'channel' => 'upline',
+                                    'metadata' => [
+                                        'upline_of' => $conversionData->affiliateId,
+                                        'level' => $depth,
+                                        'weight' => self::resolveWeight($levelConfig),
+                                        'base_conversion' => $conversionData->id,
+                                    ],
+                                    'occurred_at' => CarbonImmutable::now(),
+                                    'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
+                                ]);
+                                $model->forceFill([
+                                    'owner_type' => $current->reference->ownerType,
+                                    'owner_id' => $current->reference->ownerId,
+                                ]);
+                                $model->save();
+
+                                $this->accounting->handle($model);
+
+                                return $model->toData();
+                            });
+
+                            if ($uplineData !== null) {
+                                $connection->afterCommit(function () use ($uplineData): void {
+                                    if ((bool) config('affiliates.events.dispatch_conversion', true)) {
+                                        $this->events->dispatch(new AffiliateConversionRecorded($uplineData));
+                                    }
+
+                                    if ((bool) config('affiliates.events.dispatch_webhooks', true)) {
+                                        $this->webhooks->dispatch('conversion', $uplineData->toArray());
+                                    }
+                                });
+                            }
+                        }
+
+                        $current = $current->parentAffiliateId === null ? null : $profiles->lock($current->parentAffiliateId, $connectionIdentity, includeGlobal: $owner === null);
+                    }
+                });
             }
         }, attempts: 3);
     }
@@ -166,7 +186,6 @@ final readonly class AllocateUplineCommissions
             return 0;
         }
 
-        // Global config: flat float (0.05 = 5%)
         return (int) round($commissionMinor * (float) $levelConfig);
     }
 

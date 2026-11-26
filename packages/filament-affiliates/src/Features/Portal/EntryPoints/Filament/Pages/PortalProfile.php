@@ -95,7 +95,6 @@ class PortalProfile extends PortalPage
             (string) $affiliate->getKey(),
             $user->getMorphClass(),
             (string) $user->getKey(),
-            is_string($user->email ?? null) ? $user->email : null,
             new PortalProfileInput(
                 $this->name,
                 $this->handle,

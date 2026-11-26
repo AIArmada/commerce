@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Identity\Api\PortalActorAffiliateReader;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileAdministration;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileInput;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 
 final readonly class UpdatePortalProfile implements PortalProfileAdministration
 {
-    public function __construct(private PayoutMethodAdministration $payoutMethods) {}
+    public function __construct(
+        private PayoutMethodAdministration $payoutMethods,
+        private PortalActorAffiliateReader $actorAffiliates,
+    ) {}
 
-    public function save(string $affiliateId, string $actorType, string $actorId, ?string $actorEmail, PortalProfileInput $input): void
+    public function save(string $affiliateId, string $actorType, string $actorId, PortalProfileInput $input): void
     {
         if ($actorType === '' || $actorId === '') {
             throw new AuthorizationException('An authenticated affiliate account is required.');
@@ -34,28 +37,22 @@ final readonly class UpdatePortalProfile implements PortalProfileAdministration
         ], [
             'name' => ['required', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
-            'website_url' => ['nullable', 'url', 'max:255'],
+            'website_url' => ['nullable', 'url:http,https', 'max:2048'],
             'payout_method_type' => ['required', 'string', Rule::in(array_column(PayoutMethodType::cases(), 'value'))],
             'payout_method_label' => ['required', 'string', 'max:255'],
             'payout_method_account_ref' => ['required', 'string', 'max:255'],
         ])->validate();
 
-        $save = function () use ($affiliateId, $actorType, $actorId, $actorEmail, $input, $validated): void {
-            (new Affiliate)->getConnection()->transaction(function () use ($affiliateId, $actorType, $actorId, $actorEmail, $input, $validated): void {
+        $save = function () use ($affiliateId, $actorType, $actorId, $input, $validated): void {
+            (new Affiliate)->getConnection()->transaction(function () use ($affiliateId, $actorType, $actorId, $input, $validated): void {
+                $actorAffiliateId = $this->actorAffiliates->affiliateIdForActor($actorType, $actorId);
+
+                if ($actorAffiliateId === null || $actorAffiliateId !== $affiliateId) {
+                    throw new AuthorizationException('The affiliate account is not accessible.');
+                }
+
                 $affiliate = Affiliate::query()->forOwner()
                     ->whereKey($affiliateId)
-                    ->where(function (Builder $query) use ($actorType, $actorId, $actorEmail): void {
-                        $query->where(function (Builder $owned) use ($actorType, $actorId): void {
-                            $owned->where('owner_type', $actorType)->where('owner_id', $actorId);
-                        });
-
-                        if ($actorEmail !== null && $actorEmail !== '') {
-                            $query->orWhereHas('contactMethods', static function (Builder $contacts) use ($actorEmail): void {
-                                $contacts->where('type', 'email')->where('purpose', 'general')
-                                    ->whereRaw('LOWER(COALESCE(normalized_value, value)) = ?', [mb_strtolower($actorEmail)]);
-                            });
-                        }
-                    })
                     ->lockForUpdate()
                     ->first();
 

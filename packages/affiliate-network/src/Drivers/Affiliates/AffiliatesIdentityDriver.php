@@ -9,8 +9,11 @@ use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Drivers\UserKeyIdentityDriver;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Data\MerchantAffiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\CommerceSupport\Data\OwnerTableReference;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 
 final class AffiliatesIdentityDriver implements AffiliateIdentityResolver
 {
@@ -44,6 +47,25 @@ final class AffiliatesIdentityDriver implements AffiliateIdentityResolver
         $merchant = $this->merchants->findAccessible($affiliateId);
 
         return $merchant === null ? null : $this->toNetworkAffiliate($merchant);
+    }
+
+    public function lockForWrite(string $affiliateId, int $connectionIdentity): void
+    {
+        if ($this->merchants->find($affiliateId) !== null) {
+            app(AffiliateAccessGuard::class)->lockForWrite($affiliateId, $connectionIdentity);
+
+            return;
+        }
+
+        if ($this->users->find($affiliateId) !== null) {
+            $this->users->lockForWrite($affiliateId, $connectionIdentity);
+
+            return;
+        }
+
+        if (Str::isUuid($affiliateId)) {
+            throw new ModelNotFoundException('Affiliate identity not found.');
+        }
     }
 
     public function requiresMerchantProfile(): bool

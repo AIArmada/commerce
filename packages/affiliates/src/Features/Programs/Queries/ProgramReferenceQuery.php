@@ -128,14 +128,26 @@ final readonly class ProgramReferenceQuery implements ProgramReferenceReader
         return $options;
     }
 
-    public function label(string $id, ?bool $includeGlobal = null): ?string
+    public function labels(array $ids, ?bool $includeGlobal = null): array
     {
-        if (! Str::isUuid($id)) {
-            return null;
+        $ids = array_values(array_filter($ids, Str::isUuid(...)));
+
+        if ($ids === []) {
+            return [];
         }
 
-        $name = AffiliateProgram::query()->forOwner(includeGlobal: $includeGlobal ?? (bool) config('affiliates.owner.include_global', false))->whereKey($id)->value('name');
+        /** @var array<string, string> $labels */
+        $labels = AffiliateProgram::query()
+            ->forOwner(includeGlobal: $includeGlobal ?? (bool) config('affiliates.owner.include_global', false))
+            ->whereKey($ids)
+            ->pluck('name', 'id')
+            ->all();
 
-        return is_string($name) ? $name : null;
+        return $labels;
+    }
+
+    public function label(string $id, ?bool $includeGlobal = null): ?string
+    {
+        return $this->labels([$id], $includeGlobal)[$id] ?? null;
     }
 }

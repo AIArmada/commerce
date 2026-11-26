@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
@@ -138,6 +137,15 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                         $query->whereCommercialPurpose();
                     })
                     ->with('payee')
+                    ->addSelect([
+                        'payout_method_type' => AffiliatePayoutMethod::query()
+                            ->withoutGlobalScope('affiliate_owner')
+                            ->select('type')
+                            ->whereColumn('affiliate_id', (new AffiliatePayout)->qualifyColumn('payee_id'))
+                            ->where('is_default', true)
+                            ->orderBy('id')
+                            ->limit(1),
+                    ])
                     ->latest()
             )
             ->columns([
@@ -159,13 +167,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->label('Method')
                     ->badge()
                     ->getStateUsing(function (AffiliatePayout $record): string {
-                        $payee = $record->payee;
+                        $method = $record->getAttribute('payout_method_type');
 
-                        if (! $payee instanceof Affiliate) {
-                            return '—';
-                        }
-
-                        return app(PayoutMethodReader::class)->defaultType((string) $payee->getKey()) ?? '—';
+                        return is_string($method) && $method !== '' ? $method : '—';
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')

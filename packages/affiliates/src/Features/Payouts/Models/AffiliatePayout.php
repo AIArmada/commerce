@@ -61,8 +61,6 @@ class AffiliatePayout extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
-    protected $table = 'affiliate_payouts';
-
     protected $fillable = [
         'reference',
         'affiliate_payout_operation_id',
@@ -96,7 +94,7 @@ class AffiliatePayout extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.payouts', parent::getTable());
+        return $this->table ?? config('affiliates.database.tables.payouts', parent::getTable());
     }
 
     /**

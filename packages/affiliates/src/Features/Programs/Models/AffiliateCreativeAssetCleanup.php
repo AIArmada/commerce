@@ -17,15 +17,13 @@ final class AffiliateCreativeAssetCleanup extends Model
 {
     use HasUuids;
 
-    protected $table = 'affiliate_creative_asset_cleanups';
-
     protected $fillable = ['media_class', 'media_attributes'];
 
     protected $hidden = ['media_attributes'];
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.creative_asset_cleanups', parent::getTable());
+        return $this->table ?? config('affiliates.database.tables.creative_asset_cleanups', parent::getTable());
     }
 
     protected function casts(): array

@@ -17,6 +17,7 @@ use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\PayoutMinimums;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use LogicException;
@@ -32,39 +33,56 @@ final readonly class ApplyConversionAccounting
             throw new LogicException('Conversion accounting requires a shared database connection.');
         }
 
-        $connection->transaction(function () use ($connection, $conversion, $previousStatus): void {
-            // Self-sufficient lock: callers hold this row already, but the
-            // held read-modify-write below must be correct regardless.
-            $lockedConversion = AffiliateConversion::query()
-                ->whereKey($conversion->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+        $ownerType = $conversion->owner_type;
+        $ownerId = $conversion->owner_id === null ? null : (string) $conversion->owner_id;
+        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
 
-            $lockedAffiliate = app(AffiliateProfileReader::class)->lock(
-                $lockedConversion->affiliate_id,
-                spl_object_id($connection),
-            );
+        $connection->transaction(function () use ($connection, $conversion, $previousStatus, $owner, $ownerType, $ownerId): void {
+            OwnerContext::withOwner($owner, function () use ($connection, $conversion, $previousStatus, $owner, $ownerType, $ownerId): void {
+                $lockedAffiliate = app(AffiliateProfileReader::class)->lock(
+                    $conversion->affiliate_id,
+                    spl_object_id($connection),
+                    includeGlobal: $owner === null,
+                );
 
-            if ($lockedAffiliate === null) {
-                throw new LogicException('Conversion accounting requires an accessible affiliate.');
-            }
+                if ($lockedAffiliate === null) {
+                    throw new LogicException('Conversion accounting requires an accessible affiliate.');
+                }
 
-            if (config('affiliates.owner.enabled', false)
-                && ($lockedAffiliate->reference->ownerType !== $lockedConversion->owner_type
-                    || $lockedAffiliate->reference->ownerId !== $lockedConversion->owner_id)) {
-                throw new LogicException('Conversion accounting owner does not match the affiliate.');
-            }
+                if (config('affiliates.owner.enabled', false)
+                    && ($lockedAffiliate->reference->ownerType !== $ownerType
+                        || ($lockedAffiliate->reference->ownerId === null ? null : (string) $lockedAffiliate->reference->ownerId) !== $ownerId)) {
+                    throw new LogicException('Conversion accounting owner does not match the affiliate.');
+                }
 
-            $currency = mb_strtoupper((string) ($lockedConversion->commission_currency ?: $lockedAffiliate->currency ?: config('affiliates.currency.default', 'MYR')));
+                $snapshot = AffiliateConversion::query()
+                    ->whereKey($conversion->getKey())
+                    ->firstOrFail();
+                $currency = mb_strtoupper((string) ($snapshot->commission_currency ?: $lockedAffiliate->currency ?: config('affiliates.currency.default', 'MYR')));
 
-            $balance = AffiliateBalance::query()->where('affiliate_id', $lockedAffiliate->reference->id)->where('currency', $currency)->lockForUpdate()->first()
-                ?? self::createBalance($lockedAffiliate->reference->id, $currency);
+                $balance = AffiliateBalance::query()->where('affiliate_id', $lockedAffiliate->reference->id)->where('currency', $currency)->lockForUpdate()->first()
+                    ?? self::createBalance($lockedAffiliate->reference->id, $currency);
 
-            if ($previousStatus === null) {
-                $this->applyCreationAccounting($lockedConversion, $balance);
-            } else {
-                $this->applyTransitionAccounting($lockedConversion, $balance, $previousStatus);
-            }
+                $lockedConversion = AffiliateConversion::query()
+                    ->whereKey($conversion->getKey())
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $lockedCurrency = mb_strtoupper((string) ($lockedConversion->commission_currency ?: $lockedAffiliate->currency ?: config('affiliates.currency.default', 'MYR')));
+
+                if ($lockedConversion->owner_type !== $ownerType
+                    || ($lockedConversion->owner_id === null ? null : (string) $lockedConversion->owner_id) !== $ownerId
+                    || $lockedConversion->affiliate_id !== $lockedAffiliate->reference->id
+                    || $lockedCurrency !== $currency) {
+                    throw new LogicException('Conversion accounting owner changed while locking.');
+                }
+
+                if ($previousStatus === null) {
+                    $this->applyCreationAccounting($lockedConversion, $balance);
+                } else {
+                    $this->applyTransitionAccounting($lockedConversion, $balance, $previousStatus);
+                }
+            });
         });
     }
 

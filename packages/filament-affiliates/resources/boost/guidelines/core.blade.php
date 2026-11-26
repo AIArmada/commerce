@@ -8,4 +8,5 @@ Register `AIArmada\\FilamentAffiliates\\FilamentAffiliatesPlugin::make()` on the
 - Use `AIArmada\\FilamentAffiliates\\Features\\Identity\\Api\\AffiliateAdminLinks::view($affiliateId)` for cross-package affiliate admin links. Do not import private resource classes from other packages.
 - Authorize every action server-side, including bulk operations, and validate owner context before resolving records. Use engine APIs for payouts, program membership, support, fraud and conversion transitions.
 - Preserve currency boundaries in reporting and settlement. Export sensitive data only after authorization.
+- Resolve portal actors through `AIArmada\\Affiliates\\Features\\Identity\\Api\\PortalActorAffiliateReader`; never duplicate email matching or trust caller-supplied verification. Registration writes user, affiliate, and role atomically on a verified shared connection.
 @endif

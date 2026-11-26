@@ -25,19 +25,70 @@ final readonly class GenerateTaxDocument
 
     public function execute(string $affiliateId, int $year, ?string $documentId = null): ?TaxDocumentRecord
     {
-        $written = null;
-        $obsolete = null;
-
         $connection = (new AffiliateTaxDocument)->getConnection();
-
         $this->payouts->assertSharedConnection(spl_object_id($connection));
 
+        $plan = $connection->transaction(function () use ($affiliateId, $year, $documentId): ?array {
+            $this->affiliates->lockForWrite($affiliateId, spl_object_id((new AffiliateTaxDocument)->getConnection()));
+            $currency = mb_strtoupper((string) config('affiliates.tax.1099_threshold_currency', 'USD'));
+            $document = $documentId === null
+                ? AffiliateTaxDocument::query()->where(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $currency])->lockForUpdate()->first()
+                : AffiliateTaxDocument::query()->whereKey($documentId)->where('affiliate_id', $affiliateId)->where('tax_year', $year)->where('document_type', '1099-NEC')->lockForUpdate()->firstOrFail();
+
+            if ($document?->isSent()) {
+                if ($documentId !== null) {
+                    throw new InvalidArgumentException('Sent documents cannot be regenerated.');
+                }
+
+                return ['existing' => TaxDocumentQuery::record($document)];
+            }
+
+            $currency = $document?->currency ?? $currency;
+            $amount = $this->payouts->total($affiliateId, $year, $currency);
+
+            if ($document === null && $amount < (int) config('affiliates.tax.1099_threshold', 60000)) {
+                return null;
+            }
+
+            $excluded = $this->payouts->excluded($affiliateId, $year, $currency);
+
+            return [
+                'amount' => $amount,
+                'currency' => $currency,
+                'notes' => $excluded === [] ? null : 'Excluded non-' . $currency . ' payouts for manual review: ' . implode(', ', array_map(
+                    static fn (array $leg): string => $leg['reference'] . ' (' . MoneyFormatter::formatMinor($leg['amount_minor'], $leg['currency']) . ')',
+                    $excluded,
+                )) . '.',
+            ];
+        });
+
+        if ($plan === null) {
+            return null;
+        }
+
+        if (isset($plan['existing'])) {
+            return $plan['existing'];
+        }
+
+        $recipient = $this->recipients->find($affiliateId);
+        $missingInfo = true;
+        $written = null;
+        $notes = $plan['notes'];
+
+        if ($recipient !== null) {
+            $missingInfo = mb_trim($recipient->legalName) === ''
+                || ! preg_match('/^[0-9]{9}$/D', preg_replace('/[^0-9]/', '', $recipient->tin) ?? '');
+
+            if (! $missingInfo) {
+                $written = $this->writer->write(new TaxWorksheetRequest($affiliateId, $year, $plan['amount'], $plan['currency'], $recipient, $notes));
+            }
+        }
+
         try {
-            $result = $connection->transaction(function () use ($connection, $affiliateId, $year, $documentId, &$written, &$obsolete): ?TaxDocumentRecord {
+            $result = $connection->transaction(function () use ($affiliateId, $year, $documentId, $plan, $notes, $written, $missingInfo, $connection): array {
                 $this->affiliates->lockForWrite($affiliateId, spl_object_id($connection));
-                $currency = mb_strtoupper((string) config('affiliates.tax.1099_threshold_currency', 'USD'));
                 $document = $documentId === null
-                    ? AffiliateTaxDocument::query()->where(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $currency])->lockForUpdate()->first()
+                    ? AffiliateTaxDocument::query()->where(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $plan['currency']])->lockForUpdate()->first()
                     : AffiliateTaxDocument::query()->whereKey($documentId)->where('affiliate_id', $affiliateId)->where('tax_year', $year)->where('document_type', '1099-NEC')->lockForUpdate()->firstOrFail();
 
                 if ($document?->isSent()) {
@@ -45,36 +96,29 @@ final readonly class GenerateTaxDocument
                         throw new InvalidArgumentException('Sent documents cannot be regenerated.');
                     }
 
-                    return TaxDocumentQuery::record($document);
+                    return ['record' => TaxDocumentQuery::record($document), 'obsolete' => null];
                 }
 
-                $currency = $document?->currency ?? $currency;
-                $amount = $this->payouts->total($affiliateId, $year, $currency);
-                if ($document === null && $amount < (int) config('affiliates.tax.1099_threshold', 60000)) {
-                    return null;
+                if ($this->payouts->total($affiliateId, $year, $plan['currency']) !== $plan['amount']) {
+                    throw new RuntimeException('Tax document source totals changed during generation; retry the document.');
                 }
 
-                $excluded = $this->payouts->excluded($affiliateId, $year, $currency);
-                $notes = $excluded === [] ? null : 'Excluded non-' . $currency . ' payouts for manual review: ' . implode(', ', array_map(
-                    static fn (array $leg): string => $leg['reference'] . ' (' . MoneyFormatter::formatMinor($leg['amount_minor'], $leg['currency']) . ')',
-                    $excluded,
-                )) . '.';
-                $recipient = $this->recipients->find($affiliateId);
-                $document ??= new AffiliateTaxDocument(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $currency]);
-                $obsolete = $document->document_path;
-                $document->total_amount_minor = $amount;
+                $obsolete = $document?->document_path;
+                $document ??= new AffiliateTaxDocument(['affiliate_id' => $affiliateId, 'document_type' => '1099-NEC', 'tax_year' => $year, 'currency' => $plan['currency']]);
+                $document->total_amount_minor = $plan['amount'];
                 $document->sent_at = null;
 
-                if ($recipient === null || mb_trim($recipient->legalName) === '' || ! preg_match('/^[0-9]{9}$/D', preg_replace('/[^0-9]/', '', $recipient->tin) ?? '')) {
+                if ($missingInfo) {
                     $document->status = TaxDocumentStatus::PendingInfo;
                     $document->notes = mb_trim('Missing required tax information (TIN or legal name). ' . ($notes ?? ''));
                     $document->document_path = null;
                     $document->generated_at = null;
                 } else {
-                    $written = $this->writer->write(new TaxWorksheetRequest($affiliateId, $year, $amount, $currency, $recipient, $notes));
                     $path = $written;
                     $connection->afterRollBack(function () use ($path): void {
-                        $this->deleteSafely($path);
+                        if ($path !== null) {
+                            $this->deleteSafely($path);
+                        }
                     });
                     $document->status = TaxDocumentStatus::Generated;
                     $document->notes = $notes;
@@ -86,7 +130,7 @@ final readonly class GenerateTaxDocument
                     throw new RuntimeException('Tax document could not be persisted.');
                 }
 
-                return TaxDocumentQuery::record($document);
+                return ['record' => TaxDocumentQuery::record($document), 'obsolete' => $obsolete];
             });
         } catch (Throwable $exception) {
             if ($written !== null) {
@@ -96,11 +140,11 @@ final readonly class GenerateTaxDocument
             throw $exception;
         }
 
-        if ($obsolete !== null && $obsolete !== $written) {
-            $connection->afterCommit(fn () => $this->deleteSafely($obsolete));
+        if ($result['obsolete'] !== null && $result['obsolete'] !== $written) {
+            $connection->afterCommit(fn () => $this->deleteSafely($result['obsolete']));
         }
 
-        return $result;
+        return $result['record'];
     }
 
     private function deleteSafely(string $path): void

@@ -42,9 +42,28 @@ final readonly class AdministerConversion implements ConversionAdministration
             }
 
             $previous = $conversion->status;
-            $conversion->approved_at = in_array($status, [Status::Approved, Status::Paid], true)
-                ? ($conversion->approved_at ?? CarbonImmutable::now())
-                : null;
+
+            if ($status === Status::Approved) {
+                $conversion->approved_at = $conversion->approved_at ?? CarbonImmutable::now();
+                $conversion->rejected_at = null;
+                $conversion->reversed_at = null;
+                $conversion->paid_at = null;
+            } elseif ($status === Status::Paid) {
+                $conversion->approved_at = $conversion->approved_at ?? CarbonImmutable::now();
+                $conversion->paid_at = $conversion->paid_at ?? CarbonImmutable::now();
+                $conversion->rejected_at = null;
+                $conversion->reversed_at = null;
+            } elseif ($status === Status::Rejected) {
+                $conversion->rejected_at = $conversion->rejected_at ?? CarbonImmutable::now();
+                $conversion->reversed_at = null;
+                $conversion->paid_at = null;
+            } else {
+                $conversion->approved_at = null;
+                $conversion->rejected_at = null;
+                $conversion->reversed_at = null;
+                $conversion->paid_at = null;
+            }
+
             $conversion->status->transitionTo($target);
             $this->accounting->handle($conversion, $previous);
 

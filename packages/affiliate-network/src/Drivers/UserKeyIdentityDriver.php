@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use LogicException;
 
 final class UserKeyIdentityDriver implements AffiliateIdentityResolver
 {
@@ -55,6 +56,23 @@ final class UserKeyIdentityDriver implements AffiliateIdentityResolver
             && (string) $scope->getKey() === (string) $affiliate->ownerId;
 
         return $sameOwner ? $affiliate : null;
+    }
+
+    public function lockForWrite(string $affiliateId, int $connectionIdentity): void
+    {
+        $model = $this->userModelClass();
+
+        if ($model === null) {
+            return;
+        }
+
+        $instance = new $model;
+
+        if (spl_object_id($instance->getConnection()) !== $connectionIdentity || $instance->getConnection()->transactionLevel() < 1) {
+            throw new LogicException('Affiliate identity locks require an active shared-connection transaction.');
+        }
+
+        $instance->newQuery()->whereKey($affiliateId)->lockForUpdate()->first();
     }
 
     public function findIdForVerifiedEmail(string $email): ?string

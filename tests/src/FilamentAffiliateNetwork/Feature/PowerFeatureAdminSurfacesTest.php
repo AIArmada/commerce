@@ -21,6 +21,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
@@ -78,6 +79,18 @@ function powerFeatureSite(): AffiliateSite
 {
     return AffiliateSite::factory()->verified()->create([
         'domain' => 'power-' . uniqid() . '.example.com',
+    ]);
+}
+
+function powerFeatureAffiliate(): Affiliate
+{
+    return Affiliate::create([
+        'code' => 'POWER-' . uniqid(),
+        'name' => 'Power Feature Affiliate',
+        'status' => 'active',
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
     ]);
 }
 
@@ -366,6 +379,7 @@ describe('creator postback resource', function (): void {
 
     test('edit page encrypts a supplied secret and keeps the existing one when blank', function (): void {
         $endpoint = CreatorPostbackEndpoint::factory()->create([
+            'affiliate_id' => (string) powerFeatureAffiliate()->getKey(),
             'signing_secret_encrypted' => encrypt('original'),
         ]);
 
@@ -399,7 +413,10 @@ describe('creator postback resource', function (): void {
     });
 
     test('editing an endpoint cannot retarget it to a different affiliate or expose ciphertext', function (): void {
-        $endpoint = CreatorPostbackEndpoint::factory()->create(['signing_secret_encrypted' => encrypt('private')]);
+        $endpoint = CreatorPostbackEndpoint::factory()->create([
+            'affiliate_id' => (string) powerFeatureAffiliate()->getKey(),
+            'signing_secret_encrypted' => encrypt('private'),
+        ]);
         $page = (new ReflectionClass(EditCreatorPostback::class))->newInstanceWithoutConstructor();
         $method = new ReflectionMethod(EditCreatorPostback::class, 'handleRecordUpdate');
 

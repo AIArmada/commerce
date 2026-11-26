@@ -24,7 +24,7 @@ final readonly class RegisterAffiliate implements RegistrationApi
         private UplineApi $upline,
     ) {}
 
-    public function register(array $data, RecordReference $owner, ?string $referralCode, ?string $cookie): AffiliateRecord
+    public function register(array $data, RecordReference $owner, ?string $referralCode, ?string $cookie, ?RecordReference $actor = null): AffiliateRecord
     {
         if (! config('affiliates.registration.enabled', true)) {
             throw new InvalidArgumentException('Affiliate registration is disabled.');
@@ -47,10 +47,11 @@ final readonly class RegisterAffiliate implements RegistrationApi
         }
 
         $ownerModel = EloquentRecordReference::resolve($owner);
+        $actorModel = $actor === null ? null : EloquentRecordReference::resolve($actor);
         $connection = (new Affiliate)->getConnection();
 
         try {
-            return $connection->transaction(function () use ($data, $ownerModel, $referralCode, $cookie): AffiliateRecord {
+            return $connection->transaction(function () use ($data, $ownerModel, $referralCode, $cookie, $actorModel): AffiliateRecord {
                 $sponsor = null;
                 if ($referralCode !== null && mb_trim($referralCode) !== '') {
                     $sponsor = $this->lookup->findByCode($referralCode);
@@ -80,7 +81,7 @@ final readonly class RegisterAffiliate implements RegistrationApi
                     $data['parent_affiliate_id'] = (string) $sponsor->getKey();
                 }
 
-                $affiliate = $this->create->handle($data, $ownerModel);
+                $affiliate = $this->create->handle($data, $ownerModel, $actorModel);
                 if ($sponsor !== null) {
                     $this->upline->add((string) $affiliate->getKey(), (string) $sponsor->getKey());
                 }

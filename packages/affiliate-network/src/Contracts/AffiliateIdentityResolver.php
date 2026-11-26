@@ -23,6 +23,8 @@ interface AffiliateIdentityResolver
 
     public function findAccessible(string $affiliateId): ?NetworkAffiliate;
 
+    public function lockForWrite(string $affiliateId, int $connectionIdentity): void;
+
     /**
      * Resolve the affiliate id for a verified account email.
      *

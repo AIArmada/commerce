@@ -894,3 +894,13 @@ test('enforces global case-insensitive affiliate code uniqueness across owner sc
         ])))->toThrow(QueryException::class);
     });
 });
+
+it('honors an aliased table for self-join queries', function (): void {
+    $affiliate = new Affiliate;
+    $default = $affiliate->getTable();
+
+    $affiliate->setTable('affiliate_alias');
+
+    expect($affiliate->getTable())->toBe('affiliate_alias')
+        ->and($default)->toBe(config('affiliates.database.tables.affiliates', 'affiliates'));
+});

@@ -128,8 +128,14 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
             $affiliate->deactivated_at = null;
         } elseif ($affiliate->status instanceof Paused) {
             $affiliate->paused_at = CarbonImmutable::now();
+            $affiliate->deactivated_at = null;
         } elseif ($affiliate->status instanceof Disabled) {
             $affiliate->deactivated_at = CarbonImmutable::now();
+            $affiliate->paused_at = null;
+        } else {
+            $affiliate->activated_at = null;
+            $affiliate->paused_at = null;
+            $affiliate->deactivated_at = null;
         }
     }
 

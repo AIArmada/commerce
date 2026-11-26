@@ -29,8 +29,6 @@ class AffiliatePayoutEvent extends Model implements Auditable
     use HasUuids;
     use LogsCommerceActivity;
 
-    protected $table = 'affiliate_payout_events';
-
     protected $fillable = [
         'affiliate_payout_id',
         'from_status',
@@ -45,7 +43,7 @@ class AffiliatePayoutEvent extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.payout_events', parent::getTable());
+        return $this->table ?? config('affiliates.database.tables.payout_events', parent::getTable());
     }
 
     /** @return BelongsTo<AffiliatePayout, $this> */

@@ -16,7 +16,7 @@ use BackedEnum;
 use League\Csv\Writer;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
-use SplTempFileObject;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -37,14 +37,18 @@ final class PayoutExportService
 
         return response()->streamDownload(
             function () use ($payout): void {
-                $csv = Writer::createFromFileObject(new SplTempFileObject);
+                $stream = fopen('php://output', 'wb');
+
+                if ($stream === false) {
+                    throw new RuntimeException('The CSV output stream could not be opened.');
+                }
+
+                $csv = Writer::createFromStream($stream);
                 $csv->insertOne($this->getHeaders());
 
                 foreach ($this->conversionRows($payout) as $conversion) {
                     $csv->insertOne($this->getRowData($conversion));
                 }
-
-                echo $csv->toString();
             },
             $filename,
             ['Content-Type' => 'text/csv']
@@ -64,13 +68,17 @@ final class PayoutExportService
 
         return response()->streamDownload(
             function () use ($rows): void {
-                $csv = Writer::createFromFileObject(new SplTempFileObject);
+                $stream = fopen('php://output', 'wb');
+
+                if ($stream === false) {
+                    throw new RuntimeException('The CSV output stream could not be opened.');
+                }
+
+                $csv = Writer::createFromStream($stream);
 
                 foreach ($rows as $row) {
                     $csv->insertOne($row);
                 }
-
-                echo $csv->toString();
             },
             'settlement-summary.csv',
             ['Content-Type' => 'text/csv']

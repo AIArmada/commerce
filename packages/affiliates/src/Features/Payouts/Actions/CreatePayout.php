@@ -17,6 +17,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -65,109 +66,123 @@ final readonly class CreatePayout
         }
 
         return $connection->transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId, $connection): AffiliatePayout {
-            $selection = $this->selection->manual($conversionIds, spl_object_id($connection));
-            $affiliate = app(AffiliateProfileReader::class)->lock($selection->affiliateId, spl_object_id($connection))
-                ?? throw new InvalidArgumentException('The selected affiliate is missing or inaccessible.');
+            $preview = $this->selection->manual($conversionIds, spl_object_id($connection), false);
+            $owner = OwnerContext::fromTypeAndId($preview->ownerType, $preview->ownerId);
 
-            if (config('affiliates.owner.enabled', false)
-                && ($affiliate->reference->ownerType !== $selection->ownerType || $affiliate->reference->ownerId !== $selection->ownerId)) {
-                throw new InvalidArgumentException('Payout conversion owner must match the affiliate.');
-            }
+            return OwnerContext::withOwner($owner, function () use ($preview, $conversionIds, $attributes, $expectedAffiliateId, $connection, $owner): AffiliatePayout {
+                $affiliate = app(AffiliateProfileReader::class)->lock($preview->affiliateId, spl_object_id($connection), includeGlobal: $owner === null)
+                    ?? throw new InvalidArgumentException('The selected affiliate is missing or inaccessible.');
 
-            if ($expectedAffiliateId !== null && $affiliate->reference->id !== $expectedAffiliateId) {
-                throw new InvalidArgumentException('The conversions do not belong to the selected affiliate.');
-            }
+                if (! $affiliate->commercial
+                && (! $preview->onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
+                    throw new InvalidArgumentException('Only commercial-purpose conversions may be paid unless reward-award settlement is explicitly enabled.');
+                }
 
-            if (! $affiliate->commercial
-                && (! $selection->onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
-                throw new InvalidArgumentException('Only commercial-purpose conversions may be paid unless reward-award settlement is explicitly enabled.');
-            }
+                $balance = $this->reserveBalance($affiliate, $preview->totalMinor, $preview->currency, spl_object_id($connection));
+                $selection = $this->selection->manual($conversionIds, spl_object_id($connection));
 
-            if (AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->reference->id)->active()->exists()) {
-                throw new InvalidArgumentException('An active payout hold blocks payout reservation.');
-            }
+                if ($selection->affiliateId !== $preview->affiliateId
+                    || $selection->currency !== $preview->currency
+                    || $selection->totalMinor !== $preview->totalMinor
+                    || $selection->ownerType !== $preview->ownerType
+                    || ($selection->ownerId === null ? null : (string) $selection->ownerId) !== ($preview->ownerId === null ? null : (string) $preview->ownerId)) {
+                    throw new InvalidArgumentException('Payout conversion selection changed during reservation.');
+                }
 
-            $this->assertPayeeMatchesAffiliate($affiliate, $attributes);
-            $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);
+                if (config('affiliates.owner.enabled', false)
+                    && ($affiliate->reference->ownerType !== $selection->ownerType || $affiliate->reference->ownerId !== $selection->ownerId)) {
+                    throw new InvalidArgumentException('Payout conversion owner must match the affiliate.');
+                }
 
-            $ownerType = $selection->ownerType;
-            $ownerId = $selection->ownerId;
+                if ($expectedAffiliateId !== null && $affiliate->reference->id !== $expectedAffiliateId) {
+                    throw new InvalidArgumentException('The conversions do not belong to the selected affiliate.');
+                }
 
-            $this->assertOwnerAttributesMatch($attributes, $ownerType, $ownerId);
+                if (AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->reference->id)->active()->exists()) {
+                    throw new InvalidArgumentException('An active payout hold blocks payout reservation.');
+                }
 
-            $currency = $selection->currency;
+                $this->assertPayeeMatchesAffiliate($affiliate, $attributes);
+                $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);
 
-            if (array_key_exists('currency', $attributes) && $attributes['currency'] !== null
-                && mb_strtoupper((string) $attributes['currency']) !== $currency) {
-                throw new InvalidArgumentException('Payout currency must match the conversions being paid.');
-            }
+                $ownerType = $selection->ownerType;
+                $ownerId = $selection->ownerId;
 
-            $total = $selection->totalMinor;
+                $this->assertOwnerAttributesMatch($attributes, $ownerType, $ownerId);
 
-            if ($total <= 0) {
-                throw new InvalidArgumentException('Payout total must be greater than zero.');
-            }
+                $currency = $selection->currency;
 
-            $balance = $this->reserveBalance($affiliate, $total, $currency, spl_object_id($connection));
-            $reference = $attributes['reference'] ?? $this->generateReference();
+                if (array_key_exists('currency', $attributes) && $attributes['currency'] !== null
+                    && mb_strtoupper((string) $attributes['currency']) !== $currency) {
+                    throw new InvalidArgumentException('Payout currency must match the conversions being paid.');
+                }
 
-            // Handle status - accept either enum or string. Terminal states are
-            // rejected: conversions and balance sync happen through status
-            // transitions after creation, never at creation time.
-            $status = $attributes['status'] ?? PendingPayout::class;
-            $status = PayoutStatus::fromString($status);
+                $total = $selection->totalMinor;
 
-            if (! $status->equals(PendingPayout::class) && ! $status->equals(ProcessingPayout::class)) {
-                throw new InvalidArgumentException('A payout can only be created as pending or processing.');
-            }
+                if ($total <= 0) {
+                    throw new InvalidArgumentException('Payout total must be greater than zero.');
+                }
 
-            $sequence = $balance->payoutSequence + 1;
+                $reference = $attributes['reference'] ?? $this->generateReference();
 
-            $operation = new AffiliatePayoutOperation([
-                'affiliate_id' => $selection->affiliateId,
-                'operation_key' => sprintf('manual:%s:%s:%d', $selection->affiliateId, $currency, $sequence),
-                'status' => 'claimed',
-                'amount_minor' => $total,
-                'currency' => $currency,
-                'payout_sequence' => $sequence,
-                'claimed_at' => CarbonImmutable::now(),
-                'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
-            ]);
-            $operation->forceFill(['owner_type' => $ownerType, 'owner_id' => $ownerId]);
-            $operation->save();
+                // Handle status - accept either enum or string. Terminal states are
+                // rejected: conversions and balance sync happen through status
+                // transitions after creation, never at creation time.
+                $status = $attributes['status'] ?? PendingPayout::class;
+                $status = PayoutStatus::fromString($status);
 
-            $payout = new AffiliatePayout([
-                'affiliate_payout_operation_id' => $operation->id,
-                'reference' => $reference,
-                'status' => $status::class,
-                'total_minor' => $total,
-                'conversion_count' => $selection->count,
-                'currency' => $currency,
-                'metadata' => $this->payoutMetadata($attributes, $payoutOverride),
-                'payee_type' => $affiliate->awardRecipient->morphType,
-                'payee_id' => $affiliate->reference->id,
-                'scheduled_at' => $attributes['scheduled_at'] ?? null,
-                'paid_at' => $attributes['paid_at'] ?? null,
-            ]);
-            $payout->forceFill(['owner_type' => $ownerType, 'owner_id' => $ownerId]);
-            $payout->save();
+                if (! $status->equals(PendingPayout::class) && ! $status->equals(ProcessingPayout::class)) {
+                    throw new InvalidArgumentException('A payout can only be created as pending or processing.');
+                }
 
-            $this->reservation->reserve(
-                $balance->id,
-                $affiliate->reference->id,
-                (string) $payout->getKey(),
-                $currency,
-                $total,
-                $sequence,
-                $conversionIds,
-            );
+                $sequence = $balance->payoutSequence + 1;
 
-            $operation->forceFill([
-                'affiliate_payout_id' => $payout->id,
-                'status' => 'reserved',
-            ])->save();
+                $operation = new AffiliatePayoutOperation([
+                    'affiliate_id' => $selection->affiliateId,
+                    'operation_key' => sprintf('manual:%s:%s:%d', $selection->affiliateId, $currency, $sequence),
+                    'status' => 'claimed',
+                    'amount_minor' => $total,
+                    'currency' => $currency,
+                    'payout_sequence' => $sequence,
+                    'claimed_at' => CarbonImmutable::now(),
+                    'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
+                ]);
+                $operation->forceFill(['owner_type' => $ownerType, 'owner_id' => $ownerId]);
+                $operation->save();
 
-            return $payout;
+                $payout = new AffiliatePayout([
+                    'affiliate_payout_operation_id' => $operation->id,
+                    'reference' => $reference,
+                    'status' => $status::class,
+                    'total_minor' => $total,
+                    'conversion_count' => $selection->count,
+                    'currency' => $currency,
+                    'metadata' => $this->payoutMetadata($attributes, $payoutOverride),
+                    'payee_type' => $affiliate->awardRecipient->morphType,
+                    'payee_id' => $affiliate->reference->id,
+                    'scheduled_at' => $attributes['scheduled_at'] ?? null,
+                    'paid_at' => $attributes['paid_at'] ?? null,
+                ]);
+                $payout->forceFill(['owner_type' => $ownerType, 'owner_id' => $ownerId]);
+                $payout->save();
+
+                $this->reservation->reserve(
+                    $balance->id,
+                    $affiliate->reference->id,
+                    (string) $payout->getKey(),
+                    $currency,
+                    $total,
+                    $sequence,
+                    $conversionIds,
+                );
+
+                $operation->forceFill([
+                    'affiliate_payout_id' => $payout->id,
+                    'status' => 'reserved',
+                ])->save();
+
+                return $payout;
+            });
         }, attempts: 3);
     }
 

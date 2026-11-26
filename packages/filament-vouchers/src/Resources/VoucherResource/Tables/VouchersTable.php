@@ -23,16 +23,20 @@ use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use WeakMap;
 
 final class VouchersTable
 {
     public static function configure(Table $table): Table
     {
+        $programLabels = new WeakMap;
+
         return $table
             ->modifyQueryUsing(static function (Builder $query): Builder {
                 $query->withCount('usages');
@@ -153,9 +157,27 @@ final class VouchersTable
                 interface_exists(ProgramReferenceReader::class) && app()->bound(ProgramReferenceReader::class)
                     ? TextColumn::make('affiliate_program_name')
                         ->label('Program')
-                        ->state(static fn (Voucher $record): ?string => $record->affiliate_program_id === null
-                            ? null
-                            : app(ProgramReferenceReader::class)->label($record->affiliate_program_id))
+                        ->state(static function (Voucher $record, HasTable $livewire) use ($programLabels): ?string {
+                            if ($record->affiliate_program_id === null) {
+                                return null;
+                            }
+
+                            $records = $livewire->getTableRecords();
+
+                            if (! isset($programLabels[$records])) {
+                                $ids = [];
+
+                                foreach ($records as $voucher) {
+                                    if ($voucher instanceof Voucher && $voucher->affiliate_program_id !== null) {
+                                        $ids[] = $voucher->affiliate_program_id;
+                                    }
+                                }
+
+                                $programLabels[$records] = app(ProgramReferenceReader::class)->labels(array_values(array_unique($ids)));
+                            }
+
+                            return $programLabels[$records][$record->affiliate_program_id] ?? null;
+                        })
                         ->placeholder('—')
                         ->toggleable(isToggledHiddenByDefault: true)
                     : null,

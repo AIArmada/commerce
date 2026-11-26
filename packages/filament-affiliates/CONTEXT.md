@@ -31,7 +31,10 @@ keywords:
 
 ## Guardrails
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `affiliates`.
+- Portal identity uses `PortalActorAffiliateReader` from `affiliates`; do not duplicate email/owner matching in portal concerns or trust caller-supplied emails.
+- Registration writes user, affiliate, and role atomically after verifying a shared connection.
 - Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
+- Tables use owner-safe eager/correlated reads for program names and payout methods; exports stream CSV rather than buffering.
 - If behavior or calculations change, move them to `affiliates` and keep this package UI-only.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 

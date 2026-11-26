@@ -134,9 +134,12 @@ fail.
 `AffiliateIdentityResolver` exposes the contract:
 
 ```php
-$resolver->requiresMerchantProfile();      // bool
+$resolver->requiresMerchantProfile();        // bool
 $resolver->hasMerchantProfile($affiliateId); // bool
+$resolver->lockForWrite($affiliateId, spl_object_id($connection));       // serialize with affiliate deletion
 ```
+
+`lockForWrite()` must run inside an active transaction. It locks the canonical affiliate identity row (or host user row for `UserKeyIdentityDriver`) so network writes cannot race an affiliate removal guard.
 
 `UserKeyIdentityDriver` returns `false` from `requiresMerchantProfile()`, and
 the identity driver still falls back to the host user for display/reporting

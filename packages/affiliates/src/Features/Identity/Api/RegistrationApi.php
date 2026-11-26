@@ -9,5 +9,5 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 interface RegistrationApi
 {
     /** @param array<string, mixed> $data */
-    public function register(array $data, RecordReference $owner, ?string $referralCode, ?string $cookie): AffiliateRecord;
+    public function register(array $data, RecordReference $owner, ?string $referralCode, ?string $cookie, ?RecordReference $actor = null): AffiliateRecord;
 }

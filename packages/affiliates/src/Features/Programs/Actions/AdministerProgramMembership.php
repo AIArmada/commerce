@@ -52,12 +52,20 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
 
     public function update(string $membershipId, array $data): MembershipRecord
     {
-        return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId, $data): MembershipRecord {
-            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
-            $affiliate = app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+        $connection = (new AffiliateProgramMembership)->getConnection();
+
+        return $connection->transaction(function () use ($membershipId, $data, $connection): MembershipRecord {
+            $preview = AffiliateProgramMembership::query()->findOrFail($membershipId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($preview->affiliate_id, spl_object_id($connection))
                 ?? throw new ModelNotFoundException('Affiliate not found.');
-            $program = $this->program($membership->program_id);
+            $program = $this->program($preview->program_id);
             $this->assertSharedConnection($program);
+            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
+
+            if ($membership->affiliate_id !== $preview->affiliate_id || $membership->program_id !== $preview->program_id) {
+                throw new ModelNotFoundException('Program membership changed during administration.');
+            }
+
             $this->persist($membership, $affiliate, $program, $data, false);
 
             return $this->memberships->project($membership);
@@ -66,24 +74,41 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
 
     public function delete(string $membershipId): void
     {
-        (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId): void {
-            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
-            $affiliate = app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+        $connection = (new AffiliateProgramMembership)->getConnection();
+
+        $connection->transaction(function () use ($membershipId, $connection): void {
+            $preview = AffiliateProgramMembership::query()->findOrFail($membershipId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($preview->affiliate_id, spl_object_id($connection))
                 ?? throw new ModelNotFoundException('Affiliate not found.');
-            $program = $this->program($membership->program_id);
+            $program = $this->program($preview->program_id);
             $this->assertSharedConnection($program);
+            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
+
+            if ($membership->affiliate_id !== $preview->affiliate_id || $membership->program_id !== $preview->program_id) {
+                throw new ModelNotFoundException('Program membership changed during administration.');
+            }
 
             $membership->delete();
-            $this->events->dispatch(new AffiliateProgramLeft($affiliate->reference->id, (string) $program->getKey(), (string) $membership->getKey()));
+            $affiliateReferenceId = $affiliate->reference->id;
+            $programId = (string) $program->getKey();
+            $membershipId = (string) $membership->getKey();
+            $connection->afterCommit(fn () => $this->events->dispatch(new AffiliateProgramLeft($affiliateReferenceId, $programId, $membershipId)));
         }, attempts: 3);
     }
 
     public function suspend(string $membershipId): bool
     {
-        return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId): bool {
+        $connection = (new AffiliateProgramMembership)->getConnection();
+
+        return $connection->transaction(function () use ($membershipId, $connection): bool {
+            $preview = AffiliateProgramMembership::query()->findOrFail($membershipId);
+            app(AffiliateProfileReader::class)->lock($preview->affiliate_id, spl_object_id($connection)) ?? throw new ModelNotFoundException('Affiliate not found.');
+            $this->program($preview->program_id);
             $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
-            app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection())) ?? throw new ModelNotFoundException('Affiliate not found.');
-            $this->program($membership->program_id);
+
+            if ($membership->affiliate_id !== $preview->affiliate_id || $membership->program_id !== $preview->program_id) {
+                throw new ModelNotFoundException('Program membership changed during administration.');
+            }
 
             if ($membership->status === MembershipStatus::Suspended) {
                 return false;
@@ -141,7 +166,8 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
         $membership->fill($attributes)->save();
 
         if ($status === MembershipStatus::Approved && $previous !== MembershipStatus::Approved) {
-            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate->reference, $program)));
+            $joined = $membership->joinReference($affiliate->reference, $program);
+            (new AffiliateProgramMembership)->getConnection()->afterCommit(fn () => $this->events->dispatch(new AffiliateProgramJoined($joined)));
         }
     }
 

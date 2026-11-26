@@ -32,8 +32,6 @@ class AffiliatePayoutHold extends Model implements Auditable
     use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
-    protected $table = 'affiliate_payout_holds';
-
     protected $fillable = [
         'affiliate_id',
         'reason',
@@ -50,7 +48,7 @@ class AffiliatePayoutHold extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.payout_holds', 'affiliate_payout_holds');
+        return $this->table ?? config('affiliates.database.tables.payout_holds', 'affiliate_payout_holds');
     }
 
     /**

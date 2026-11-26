@@ -94,6 +94,8 @@ final class FakeAffiliateIdentities implements AffiliateIdentityResolver
         return $this->find($affiliateId);
     }
 
+    public function lockForWrite(string $affiliateId, int $connectionIdentity): void {}
+
     public function findIdForVerifiedEmail(string $email): ?string
     {
         foreach ($this->affiliates as $affiliate) {

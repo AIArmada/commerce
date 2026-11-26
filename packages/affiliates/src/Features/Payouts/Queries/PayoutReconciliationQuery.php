@@ -39,14 +39,24 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     /** @return list<string> */
     public function payoutIdsNeedingReconciliation(): array
     {
+        $now = CarbonImmutable::now();
+
         return AffiliatePayout::query()
             ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
             ->where(static function ($query): void {
                 $query->whereIn('affiliate_payout_operation_id', AffiliatePayoutOperation::query()->whereIn('status', ['submitting', 'submitted', 'unknown'])->select('id'))
                     ->orWhereNotNull('external_reference');
             })
-            ->where('updated_at', '<=', CarbonImmutable::now()->subMinutes(5))
-            ->where(static fn ($query) => $query->whereNull('affiliate_payout_operation_id')->orWhereNotIn('affiliate_payout_operation_id', AffiliatePayoutOperation::query()->where('last_error_code', PayoutReconciliation::COMPLETION_BLOCKED_CODE)->select('id')))
+            ->where('updated_at', '<=', $now->subMinutes(5))
+            ->where(static fn ($query) => $query->whereNull('affiliate_payout_operation_id')->orWhereNotIn('affiliate_payout_operation_id', AffiliatePayoutOperation::query()
+                ->where(static function ($operation) use ($now): void {
+                    $operation->where(static fn ($processing) => $processing
+                        ->whereIn('status', ['submitting', 'submitted', 'unknown', 'reversing'])
+                        ->where('lease_expires_at', '>', $now))
+                        ->orWhereIn('status', ['reversing', 'reversed'])
+                        ->orWhere('last_error_code', PayoutReconciliation::COMPLETION_BLOCKED_CODE);
+                })
+                ->select('id')))
             ->orderBy('id')
             ->pluck('id')
             ->map(static fn (mixed $id): string => (string) $id)

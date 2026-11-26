@@ -80,8 +80,6 @@ class AffiliateConversion extends Model
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
-    protected $table = 'affiliate_conversions';
-
     protected $fillable = [
         'affiliate_id',
         'affiliate_code',
@@ -153,7 +151,7 @@ class AffiliateConversion extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.conversions', parent::getTable());
+        return $this->table ?? config('affiliates.database.tables.conversions', parent::getTable());
     }
 
     /**

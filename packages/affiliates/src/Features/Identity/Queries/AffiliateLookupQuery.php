@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -25,7 +26,7 @@ final readonly class AffiliateLookupQuery
             return $query;
         }
 
-        return $query->forOwner();
+        return $query->forOwner(includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('affiliates.owner.include_global', false));
     }
 
     public function codeAvailable(string $code, ?string $ignoreAffiliateId = null): bool

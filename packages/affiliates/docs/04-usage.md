@@ -448,7 +448,7 @@ When an affiliate has downlines (affiliates they referred), the affiliate portal
 
 Downlines are loaded via the `children()` relationship on the `Affiliate` model (`parent_affiliate_id`).
 
-Affiliate codes are globally unique, case-insensitive public identifiers. Use `AffiliateDirectory::codeAvailable($code)` to check availability without retrieving another owner's affiliate record. Registration accepts public profile and contact fields; commission type, rate and currency come from package configuration. Referral sponsorship is resolved and revalidated inside the registration transaction. PostgreSQL and SQLite enforce code uniqueness at the database level.
+Affiliate codes are globally unique, case-insensitive public identifiers. Use `AffiliateDirectory::codeAvailable($code)` to check availability without retrieving another owner's affiliate record. Registration accepts public profile and contact fields; commission type, rate and currency come from package configuration. Referral sponsorship is resolved and revalidated inside the registration transaction. PostgreSQL and SQLite enforce code uniqueness at the database level through a functional `LOWER(code)` unique index. MySQL and MariaDB are not supported by the package migration.
 
 ### Registration with Referral Code
 

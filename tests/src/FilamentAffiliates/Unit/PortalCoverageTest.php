@@ -23,6 +23,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalConversions;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalCreatives;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalDashboard;
@@ -86,16 +87,14 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
         }
     });
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
         'code' => 'PORTAL-B-' . Str::uuid(),
         'name' => 'Portal Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
     AffiliateConversion::create([
         'affiliate_id' => $affiliateB->getKey(),
@@ -180,16 +179,14 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'owner_id' => (string) $ownerA->getKey(),
     ]);
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
         'code' => 'PORTAL-B2-' . Str::uuid(),
         'name' => 'Portal Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
     AffiliateAttribution::create([
         'affiliate_id' => $affiliateA->getKey(),
