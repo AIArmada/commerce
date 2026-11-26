@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -18,7 +19,7 @@ uses(LazilyRefreshDatabase::class);
 beforeEach(function (): void {
     config(['affiliates.owner.enabled' => false]);
 
-    $this->service = app(PerformanceBonusService::class);
+    $this->service = app(PerformanceBonusPosting::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'BONUS-CONCUR-' . bin2hex(random_bytes(4)),
@@ -54,8 +55,8 @@ test('concurrent bonus awards do not create duplicate conversions', function ():
 
     $results = DB::transaction(function () use ($bonuses): array {
         return [
-            $this->service->awardBonuses($bonuses),
-            $this->service->awardBonuses($bonuses),
+            $this->service->award($bonuses),
+            $this->service->award($bonuses),
         ];
     });
 
@@ -75,7 +76,7 @@ test('bonus awards are atomic under concurrent load', function (): void {
         ],
     ];
 
-    $this->service->awardBonuses($bonuses);
+    $this->service->award($bonuses);
 
     $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
     expect($balance->available_minor)->toBe(5000);
@@ -223,18 +224,14 @@ test('leaderboard respects owner scope', function (): void {
     });
 
     OwnerContext::withOwner($ownerA, function (): void {
-        $leaderboard = $this->service->getLeaderboard();
+        $leaderboard = app(PerformanceBonusQueries::class)->getLeaderboard();
         expect($leaderboard)->toHaveCount(1);
-        if ($leaderboard->isNotEmpty()) {
-            expect($leaderboard->first()['total_revenue'])->toBe(50000);
-        }
+        expect($leaderboard[0]['total_revenue'])->toBe(50000);
     });
 
     OwnerContext::withOwner($ownerB, function (): void {
-        $leaderboard = $this->service->getLeaderboard();
+        $leaderboard = app(PerformanceBonusQueries::class)->getLeaderboard();
         expect($leaderboard)->toHaveCount(1);
-        if ($leaderboard->isNotEmpty()) {
-            expect($leaderboard->first()['total_revenue'])->toBe(100000);
-        }
+        expect($leaderboard[0]['total_revenue'])->toBe(100000);
     });
 });

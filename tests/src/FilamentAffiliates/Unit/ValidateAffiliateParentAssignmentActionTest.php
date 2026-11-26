@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Actions\ValidateAffiliateParentAssignment;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -225,4 +225,38 @@ it('still validates existing parent affiliates when owner scoping is disabled', 
     ], $child);
 
     expect($data['parent_affiliate_id'])->toBe((string) $parent->getKey());
+});
+
+it('rejects malformed parent identifiers before querying UUID columns', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+
+    expect(fn () => ValidateAffiliateParentAssignment::run(['parent_affiliate_id' => 'invalid-uuid']))
+        ->toThrow(ValidationException::class, 'Selected parent affiliate is invalid.');
+});
+
+it('rejects a pre-existing parent cycle when creating an affiliate', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+
+    $first = Affiliate::create([
+        'code' => 'CYCLE-A-' . Str::uuid(),
+        'name' => 'Cycle A',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 300,
+        'currency' => 'USD',
+    ]);
+    $second = Affiliate::create([
+        'code' => 'CYCLE-B-' . Str::uuid(),
+        'name' => 'Cycle B',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 300,
+        'currency' => 'USD',
+        'parent_affiliate_id' => $first->id,
+    ]);
+
+    $first->update(['parent_affiliate_id' => $second->id]);
+
+    expect(fn () => ValidateAffiliateParentAssignment::run(['parent_affiliate_id' => $first->id]))
+        ->toThrow(ValidationException::class, 'Selected parent affiliate would create a hierarchy cycle.');
 });

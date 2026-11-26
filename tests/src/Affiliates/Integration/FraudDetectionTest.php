@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -38,7 +38,7 @@ beforeEach(function (): void {
         'user_agent' => 'Mozilla/5.0 Test',
     ]);
 
-    $this->fraudService = app(FraudDetectionService::class);
+    $this->fraudService = app(FraudApi::class);
 
     // Enable fraud detection
     config([
@@ -58,7 +58,7 @@ test('click velocity fraud is detected when threshold is exceeded', function ():
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     $request = Request::create('/landing', 'GET');
     $request->server->set('REMOTE_ADDR', '192.168.1.100');
@@ -68,14 +68,14 @@ test('click velocity fraud is detected when threshold is exceeded', function ():
     $cacheKey = "fraud:clicks:{$this->affiliate->id}:" . IpHasher::hash('192.168.1.100');
     Cache::put($cacheKey, 10, now()->addHour());
 
-    $result = $fraudService->analyzeClick($this->affiliate, $request);
+    $result = $fraudService->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-    expect($result['signals'])->not->toBeEmpty();
-    expect($result['score'])->toBeGreaterThan(0);
+    expect($result->signals)->not->toBeEmpty();
+    expect($result->score)->toBeGreaterThan(0);
 
-    $velocitySignal = collect($result['signals'])->firstWhere('rule_code', 'CLICK_VELOCITY');
+    $velocitySignal = collect($result->signals)->firstWhere('ruleCode', 'CLICK_VELOCITY');
     expect($velocitySignal)->not->toBeNull();
-    expect($velocitySignal->risk_points)->toBe(30);
+    expect($velocitySignal->riskPoints)->toBe(30);
 
     Event::assertDispatched(FraudSignalDetected::class);
 });
@@ -84,7 +84,7 @@ test('geo anomaly fraud is detected for rapid IP changes', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     // Create recent touchpoint with different IP (within 5 minute window)
     AffiliateTouchpoint::create([
@@ -100,12 +100,12 @@ test('geo anomaly fraud is detected for rapid IP changes', function (): void {
     $request->server->set('REMOTE_ADDR', '192.168.1.100');
     $request->headers->set('User-Agent', 'Mozilla/5.0 Test Browser');
 
-    $result = $fraudService->analyzeClick($this->affiliate, $request);
+    $result = $fraudService->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-    $geoSignal = collect($result['signals'])->firstWhere('rule_code', 'GEO_ANOMALY');
+    $geoSignal = collect($result->signals)->firstWhere('ruleCode', 'GEO_ANOMALY');
     expect($geoSignal)->not->toBeNull();
     expect($geoSignal->severity)->toBe(FraudSeverity::High);
-    expect($geoSignal->risk_points)->toBe(40);
+    expect($geoSignal->riskPoints)->toBe(40);
 
     Event::assertDispatched(FraudSignalDetected::class);
 });
@@ -114,7 +114,7 @@ test('fingerprint repeat fraud is detected', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     $fingerprint = hash('sha256', 'Mozilla/5.0 Test|192.168.1.1');
 
@@ -135,9 +135,9 @@ test('fingerprint repeat fraud is detected', function (): void {
     $request->server->set('REMOTE_ADDR', '192.168.1.1');
     $request->headers->set('User-Agent', 'Mozilla/5.0 Test');
 
-    $result = $fraudService->analyzeClick($this->affiliate, $request);
+    $result = $fraudService->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-    $fpSignal = collect($result['signals'])->firstWhere('rule_code', 'FINGERPRINT_REPEAT');
+    $fpSignal = collect($result->signals)->firstWhere('ruleCode', 'FINGERPRINT_REPEAT');
     expect($fpSignal)->not->toBeNull();
     expect($fpSignal->severity)->toBe(FraudSeverity::Medium);
 });
@@ -146,7 +146,7 @@ test('conversion velocity fraud is detected when daily limit exceeded', function
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     // Create conversions to hit the daily limit
     for ($i = 1; $i <= 5; $i++) {
@@ -176,18 +176,18 @@ test('conversion velocity fraud is detected when daily limit exceeded', function
         'occurred_at' => today(),
     ]);
 
-    $result = $fraudService->analyzeConversion($conversion);
+    $result = $fraudService->analyzeConversion((string) $conversion->getKey());
 
-    $velocitySignal = collect($result['signals'])->firstWhere('rule_code', 'CONVERSION_VELOCITY');
+    $velocitySignal = collect($result->signals)->firstWhere('ruleCode', 'CONVERSION_VELOCITY');
     expect($velocitySignal)->not->toBeNull();
-    expect($velocitySignal->risk_points)->toBe(35);
+    expect($velocitySignal->riskPoints)->toBe(35);
 });
 
 test('self referral fraud is detected', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     config(['auth.providers.users.model' => User::class]);
 
@@ -210,20 +210,20 @@ test('self referral fraud is detected', function (): void {
         'actor_user_id' => 'user-123',
     ]);
 
-    $result = $fraudService->analyzeConversion($conversion);
+    $result = $fraudService->analyzeConversion((string) $conversion->getKey());
 
-    $selfRefSignal = collect($result['signals'])->firstWhere('rule_code', 'SELF_REFERRAL');
+    $selfRefSignal = collect($result->signals)->firstWhere('ruleCode', 'SELF_REFERRAL');
     expect($selfRefSignal)->not->toBeNull();
     expect($selfRefSignal->severity)->toBe(FraudSeverity::Critical);
-    expect($selfRefSignal->risk_points)->toBe(100);
-    expect($result['allowed'])->toBeFalse();
+    expect($selfRefSignal->riskPoints)->toBe(100);
+    expect($result->allowed)->toBeFalse();
 });
 
 test('fast conversion fraud is detected for suspiciously quick conversions', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     // Enable conversion time fraud check
     config(['affiliates.fraud.anomaly.conversion_time.enabled' => true]);
@@ -244,7 +244,7 @@ test('fast conversion fraud is detected for suspiciously quick conversions', fun
         'commission_currency' => 'USD',
         'affiliate_id' => $this->affiliate->id,
         'affiliate_code' => $this->affiliate->code,
-        'attribution_id' => $attribution->id,
+        'affiliate_attribution_id' => $attribution->id,
         'external_reference' => 'FAST-ORDER',
         'subtotal_minor' => 10000,
         'value_minor' => 10000,
@@ -253,22 +253,15 @@ test('fast conversion fraud is detected for suspiciously quick conversions', fun
         'occurred_at' => now(),
     ]);
 
-    // Refresh to load the relationship properly
-    $conversion->load('attribution');
+    $result = $fraudService->analyzeConversion((string) $conversion->getKey());
 
-    $result = $fraudService->analyzeConversion($conversion);
-
-    // Check if we have any signals
-    if (! empty($result['signals'])) {
-        $fastSignal = collect($result['signals'])->firstWhere('rule_code', 'FAST_CONVERSION');
-        if ($fastSignal) {
-            expect($fastSignal->severity)->toBe(FraudSeverity::High);
-            expect($fastSignal->risk_points)->toBe(45);
-        }
-    }
+    $fastSignal = collect($result->signals)->firstWhere('ruleCode', 'FAST_CONVERSION');
+    expect($fastSignal)->not->toBeNull()
+        ->and($fastSignal->severity)->toBe(FraudSeverity::High)
+        ->and($fastSignal->riskPoints)->toBe(45);
 
     // At minimum, the result should be allowed since no critical signals
-    expect($result['allowed'])->toBeTrue();
+    expect($result->allowed)->toBeTrue();
 });
 
 test('risk profile aggregates signals correctly', function (): void {
@@ -303,7 +296,7 @@ test('risk profile aggregates signals correctly', function (): void {
         'detected_at' => now()->subDays(15),
     ]);
 
-    $profile = $this->fraudService->getRiskProfile($this->affiliate);
+    $profile = $this->fraudService->getRiskProfile((string) $this->affiliate->getKey());
 
     expect($profile['total_score'])->toBe(95);
     expect($profile['signal_count'])->toBe(3);
@@ -316,17 +309,17 @@ test('clean click passes all fraud checks', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     $request = Request::create('/landing', 'GET');
     $request->server->set('REMOTE_ADDR', '203.0.113.50');
     $request->headers->set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
 
-    $result = $fraudService->analyzeClick($this->affiliate, $request);
+    $result = $fraudService->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-    expect($result['allowed'])->toBeTrue();
-    expect($result['score'])->toBe(0);
-    expect($result['signals'])->toBeEmpty();
+    expect($result->allowed)->toBeTrue();
+    expect($result->score)->toBe(0);
+    expect($result->signals)->toBeEmpty();
 
     Event::assertNotDispatched(FraudSignalDetected::class);
 });
@@ -335,7 +328,7 @@ test('clean conversion passes all fraud checks', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     // Create attribution from 10 minutes ago
     $attribution = AffiliateAttribution::create([
@@ -358,11 +351,11 @@ test('clean conversion passes all fraud checks', function (): void {
         'occurred_at' => now(),
     ]);
 
-    $result = $fraudService->analyzeConversion($conversion);
+    $result = $fraudService->analyzeConversion((string) $conversion->getKey());
 
-    expect($result['allowed'])->toBeTrue();
-    expect($result['score'])->toBe(0);
-    expect($result['signals'])->toBeEmpty();
+    expect($result->allowed)->toBeTrue();
+    expect($result->score)->toBe(0);
+    expect($result->signals)->toBeEmpty();
 
     Event::assertNotDispatched(FraudSignalDetected::class);
 });
@@ -371,7 +364,7 @@ test('multiple fraud signals accumulate to block traffic', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(FraudApi::class);
 
     $fingerprint = hash('sha256', 'Mozilla/5.0 Bot|192.168.1.1');
 
@@ -406,11 +399,11 @@ test('multiple fraud signals accumulate to block traffic', function (): void {
     $request->server->set('REMOTE_ADDR', '192.168.1.1');
     $request->headers->set('User-Agent', 'Mozilla/5.0 Bot');
 
-    $result = $fraudService->analyzeClick($this->affiliate, $request);
+    $result = $fraudService->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
     // Should have multiple signals
-    expect(count($result['signals']))->toBeGreaterThanOrEqual(2);
-    expect($result['score'])->toBeGreaterThan(50);
+    expect(count($result->signals))->toBeGreaterThanOrEqual(2);
+    expect($result->score)->toBeGreaterThan(50);
 });
 
 test('fraud severity correctly maps from score', function (): void {

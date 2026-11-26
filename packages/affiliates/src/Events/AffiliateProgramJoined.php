@@ -4,20 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Events;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-final class AffiliateProgramJoined
+final readonly class AffiliateProgramJoined
 {
     use Dispatchable;
-    use SerializesModels;
 
-    public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly AffiliateProgram $program,
-        public readonly AffiliateProgramMembership $membership
-    ) {}
+    public function __construct(public ProgramJoinReference $reference) {}
 }

@@ -9,11 +9,12 @@ Programs allow you to create structured affiliate offerings with different commi
 ## Creating Programs
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 
-$program = AffiliateProgram::create([
+$programId = app(ProgramAdministration::class)->create([
     'name' => 'Premium Partners',
     'slug' => 'premium-partners',
     'description' => 'Our exclusive partner program with higher commissions',
@@ -34,7 +35,7 @@ $program = AffiliateProgram::create([
 ```
 
 > **warning:**
-> There is no `is_public` column. `create()` would silently drop it. Use
+> There is no `is_public` column. Use
 > `visibility` (`ProgramVisibility::Public` / `Private`).
 
 ## Program Statuses
@@ -53,11 +54,10 @@ ProgramStatus::Archived;  // Permanently closed
 Tiers allow progressive commission rates based on performance:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
 
 // Bronze tier (default)
-AffiliateProgramTier::create([
-    'program_id' => $program->id,
+app(ProgramTierAdministration::class)->create($programId, [
     'name' => 'Bronze',
     'level' => 1,
     'commission_rate_basis_points' => 1000, // 10%
@@ -66,8 +66,7 @@ AffiliateProgramTier::create([
 ]);
 
 // Silver tier
-AffiliateProgramTier::create([
-    'program_id' => $program->id,
+app(ProgramTierAdministration::class)->create($programId, [
     'name' => 'Silver',
     'level' => 2,
     'commission_rate_basis_points' => 1250, // 12.5%
@@ -76,8 +75,7 @@ AffiliateProgramTier::create([
 ]);
 
 // Gold tier
-AffiliateProgramTier::create([
-    'program_id' => $program->id,
+$goldTierId = app(ProgramTierAdministration::class)->create($programId, [
     'name' => 'Gold',
     'level' => 3,
     'commission_rate_basis_points' => 1500, // 15%
@@ -91,23 +89,23 @@ AffiliateProgramTier::create([
 ## Enrolling Affiliates
 
 ```php
-use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
-$programService = app(ProgramService::class);
-
-// Join (enroll). Returns null when the affiliate is not eligible or the
-// program is not open; membership status is Pending when approval is required.
-$membership = $programService->joinProgram($affiliate, $program);
+// Join (enroll). Throws ProgramEnrollmentDenied when ineligible or closed.
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $programId);
 
 if ($membership !== null) {
-    $service->approveMembership($membership, 'admin-1');
+    app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve($membership->id, 'admin-1');
 }
 
 // Program listings
-$service->getAvailablePrograms();              // Collection — no arguments
-$service->getAffiliatePrograms($affiliate);    // Collection
-$service->isMember($affiliate, $program);      // bool
-$service->getMembership($affiliate, $program); // ?AffiliateProgramMembership
+app(MerchantCatalog::class)->availablePrograms();              // list of program summaries
+app(ProgramMembershipReader::class)->programIds($affiliate->id);    // list of program IDs
+app(ProgramMembershipReader::class)->find($affiliate->id, $programId)?->active ?? false;      // bool
+app(ProgramMembershipReader::class)->find($affiliate->id, $programId); // ?MembershipRecord
 ```
 
 ## Membership Statuses
@@ -126,10 +124,10 @@ MembershipStatus::Suspended;  // Temporarily disabled
 Provide affiliates with promotional materials:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 
-$creative = AffiliateProgramCreative::create([
-    'program_id' => $program->id,
+$creatives = app(CreativeAdministration::class);
+$creativeId = $creatives->create($programId, [
     'name' => 'Summer Sale Banner',
     'type' => 'banner',
     'tracking_code' => 'SUMMER-SALE',
@@ -142,44 +140,53 @@ $creative = AffiliateProgramCreative::create([
 ]);
 ```
 
-Creative files live exclusively in Spatie Media Library's single-file `creative_asset` collection on the `public` disk. Attach a local file after creating the creative:
+Creative files live exclusively in Spatie Media Library's single-file `creative_asset` collection on the `public` disk. Supply validated upload bytes to the owning API; never attach or remove media directly:
 
 ```php
-$creative->addMedia(storage_path('app/banners/summer-sale.jpg'))
-    ->toMediaCollection('creative_asset');
+$bytes = file_get_contents(storage_path('app/banners/summer-sale.jpg'));
 
-$url = $creative->getAssetUrl(); // null when no file is attached
+if ($bytes === false) {
+    throw new RuntimeException('Creative asset could not be read.');
+}
+
+$creatives->update($programId, $creativeId, [], assetBytes: $bytes);
+
+// Remove only the creative asset:
+$creatives->update($programId, $creativeId, [], removeAsset: true);
 ```
 
-Replacing the file removes the previous media and deleting the creative removes its media. Banner embeds require an attached file; text links can use only `destination_url`.
+The API coordinates media changes with the database transaction, retains the previous asset on rollback, and retries detached-file cleanup after failure. Banner embeds require an attached file; text links can use only `destination_url`.
 
-> **warning**: Breaking change: the creative URL column and URL form inputs have been removed. Create creatives with an attached file using Media Library. The existing creative migration defines the new schema; there is no compatibility path or data backfill.
+> **info:**
+> On PostgreSQL, creative writes take a shared lock on the parent program. Enrollment and tracking-link writes can overlap with an in-flight creative upload, while program updates or deletions and same-creative replacements remain exclusive. SQLite still serializes these writes behind its database-wide writer lock.
 
-## Using the ProgramService
+## Using the Program feature APIs
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Services\ProgramService;
-
-$service = app(ProgramService::class);
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
 // Get available programs (no affiliate argument)
-$programs = $service->getAvailablePrograms();
+$programs = app(MerchantCatalog::class)->availablePrograms();
 
 // Enroll affiliate
-$membership = $service->joinProgram($affiliate, $program);
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $programId);
+
+// Suspend administratively
+app(\AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration::class)->suspend($membership->id);
 
 // Leave
-$service->leaveProgram($affiliate, $program);
+app(ProgramEnrollment::class)->leave($affiliate->id, $programId);
 
 // Upgrade tier — takes affiliate + program + tier, not the membership
-$service->upgradeTier($affiliate, $program, $goldTier);
+app(ProgramTierManagement::class)->upgrade($affiliate->id, $programId, $goldTierId);
 
 // Get affiliate's memberships
-$memberships = AffiliateProgramMembership::query()
-    ->with('program', 'tier')
-    ->where('affiliate_id', $affiliate->id)
-    ->get();
+$reader = app(ProgramMembershipReader::class);
+$programIds = $reader->programIds($affiliate->id);
+$membership = $reader->find($affiliate->id, $programId);
 ```
 
 ## Commission Templates
@@ -187,17 +194,19 @@ $memberships = AffiliateProgramMembership::query()
 Pre-defined commission structures for quick affiliate setup:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
+
+$templates = app(CommissionTemplateAdministration::class);
 
 // Create standard percentage template
-$template = AffiliateCommissionTemplate::createStandardPercentage(
+$templateId = $templates->createStandardPercentage(
     name: 'Standard 10%',
     rateBasisPoints: 1000,
     isDefault: true,
 );
 
 // Create tiered volume template
-$template = AffiliateCommissionTemplate::createTieredVolume(
+$templateId = $templates->createTieredVolume(
     name: 'Volume Tiers',
     baseRateBasisPoints: 500,
     volumeTiers: [
@@ -208,17 +217,17 @@ $template = AffiliateCommissionTemplate::createTieredVolume(
 );
 
 // Create MLM template
-$template = AffiliateCommissionTemplate::createMlm(
+$templateId = $templates->createMlm(
     name: '3-Level MLM',
     baseRateBasisPoints: 1000,
     overridePercentages: [50, 25, 10], // 50%, 25%, 10% of commission to uplines
 );
 
 // Apply template to affiliate
-$template->applyToAffiliate($affiliate);
+$templates->applyToAffiliate($templateId, $affiliate->id);
 
 // Apply template to program
-$template->applyToProgram($program);
+$templates->applyToProgram($templateId, $programId);
 ```
 
 ## Volume Tiers
@@ -228,10 +237,12 @@ bonuses. `AffiliateVolumeTier` is program-scoped (`program_id`), not
 affiliate-scoped.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 
-AffiliateVolumeTier::create([
-    'program_id' => $program->id,
+$volumeTiers = app(VolumeTierAdministration::class);
+
+$volumeTiers->create([
+    'program_id' => $programId,
     'name' => 'Base',
     'period' => 'monthly',
     'currency' => 'MYR',
@@ -240,8 +251,8 @@ AffiliateVolumeTier::create([
     'commission_rate_basis_points' => 0, // No bonus
 ]);
 
-AffiliateVolumeTier::create([
-    'program_id' => $program->id,
+$volumeTiers->create([
+    'program_id' => $programId,
     'name' => 'Scale',
     'period' => 'monthly',
     'currency' => 'MYR',
@@ -256,12 +267,11 @@ AffiliateVolumeTier::create([
 Custom rules for specific conditions:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 
-AffiliateCommissionRule::create([
-    'program_id' => $program->id,
+app(ProgramCommissionAdministration::class)->createRule($programId, [
     'name' => 'Electronics boost',
     'rule_type' => CommissionRuleType::Category,
     'priority' => 10,
@@ -283,11 +293,10 @@ AffiliateCommissionRule::create([
 Time-limited commission boosts:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
 use AIArmada\Affiliates\Enums\CommissionType;
 
-AffiliateCommissionPromotion::create([
-    'program_id' => $program->id,
+app(ProgramCommissionAdministration::class)->createPromotion($programId, [
     'name' => 'Holiday Bonus',
     'bonus_type' => CommissionType::Percentage,
     'bonus_value' => 500, // +5% in basis points

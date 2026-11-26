@@ -124,30 +124,33 @@ use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 
-// Affiliate created (model hook) / activated
-AffiliateCreated::class;        // (Affiliate $affiliate)
-AffiliateActivated::class;      // (Affiliate $affiliate)
+// Affiliate created (model hook) / activated (model hook)
+AffiliateCreated::class;        // (AffiliateLifecycleReference $affiliate)
+AffiliateActivated::class;      // (AffiliateLifecycleReference $affiliate)
 AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?string $externalReference, string $reason)
 
 // Program membership changes
-AffiliateProgramJoined::class;  // (AffiliateProgramMembership $membership)
-AffiliateProgramLeft::class;    // (AffiliateProgramMembership $membership)
+AffiliateProgramJoined::class;  // (ProgramJoinReference $reference)
+AffiliateProgramLeft::class;    // (string $affiliateId, string $programId, string $membershipId)
 
-// Rank and tier upgrades
-AffiliateRankChanged::class;    // (Affiliate $affiliate, AffiliateRank $newRank, ?AffiliateRank $previousRank)
-AffiliateTierUpgraded::class;   // (AffiliateProgramMembership $membership, AffiliateProgramTier $newTier, ?AffiliateProgramTier $previousTier, Affiliate $affiliate)
+// Rank and tier upgrades (higher numeric level = higher rank)
+AffiliateRankChanged::class;    // (string $affiliateId, ?QualifiedRank $fromRank, ?QualifiedRank $toRank, RankQualificationReason $reason)
+AffiliateTierUpgraded::class;   // (string $affiliateId, string $programId, ?string $fromTierId, string $toTierId)
 
 // Daily aggregation finished
 DailyStatsAggregated::class;    // (CarbonImmutable $date, int $affiliateCount)
 
 // Fraud signal recorded (model create from any path; dispatched after
 // commit; rolled-back signals never dispatch)
-FraudSignalDetected::class;     // (AffiliateFraudSignal $signal)
+FraudSignalDetected::class;     // (FraudSignalReference $signal)
 
 // Holding pool carried less than a conversion recorded (release/void clamped;
 // the affiliate was still made whole — signal only, no in-repo consumer)
-HoldingShortfallDetected::class; // (AffiliateConversion $conversion, string $operation, int $requestedMinor, int $appliedMinor)
+HoldingShortfallDetected::class; // (string $conversionId, string $affiliateId, string $currency, string $operation, int $requestedMinor, int $appliedMinor)
 ```
+
+> [!NOTE]
+> `AffiliateCreated` and `AffiliateActivated` dispatch on the affiliate's own connection after the surrounding transaction commits, or immediately when no transaction is open. Dispatch runs after general contact-method synchronization, so listeners that re-read the affiliate through `AffiliateLifecycleReference` see committed contact aliases.
 
 > [!NOTE]
 > `FraudSignalDetected` implements `ShouldDispatchAfterCommit`: host listeners such as auto-suspend run after the signal transaction commits. A listener failure therefore never rolls back the recorded signal.
@@ -225,17 +228,17 @@ Every webhook shares one envelope; only `type` and `data` vary:
 
 `type` selects the endpoint list from `affiliates.webhooks.endpoints.{type}` (e.g. `attribution`, `conversion`, `payout`).
 
-### Using WebhookDispatcher
+### Using WebhookApi
 
-`WebhookDispatcher` has a single public method. Endpoints come from
+`WebhookApi` has a single public method. Endpoints come from
 `affiliates.webhooks.endpoints.{type}`; there is no per-call endpoint argument
 and no `dispatchAttribution` / `dispatchConversion` / `dispatchPayout`
 shorthand.
 
 ```php
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 
-$dispatcher = app(WebhookDispatcher::class);
+$dispatcher = app(WebhookApi::class);
 
 // type must match a key under affiliates.webhooks.endpoints
 $dispatcher->dispatch('attribution', $payload);

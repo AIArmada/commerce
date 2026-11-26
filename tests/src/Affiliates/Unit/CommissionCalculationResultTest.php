@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Services\Commissions\CommissionCalculationResult;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionCalculationResult;
 
 // CommissionCalculationResult Tests
 test('CommissionCalculationResult can be created', function (): void {

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateCommissionPromotion Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -46,8 +46,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'current_uses' => 0,
         ]);
 
-        expect($promo->program())->toBeInstanceOf(BelongsTo::class)
-            ->and($promo->program->id)->toBe($program->id);
+        expect($promo->program_id)->toBe($program->id);
     });
 
     it('is active when within date range', function (): void {
@@ -123,7 +122,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'affiliate_ids' => null,
         ]);
 
-        expect($promo->appliesToAffiliate($affiliate))->toBeTrue();
+        expect($promo->appliesToAffiliate($affiliate->id))->toBeTrue();
     });
 
     it('applies to specific affiliates when affiliate_ids is set', function (): void {
@@ -155,8 +154,8 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'affiliate_ids' => [$includedAffiliate->id],
         ]);
 
-        expect($promo->appliesToAffiliate($includedAffiliate))->toBeTrue()
-            ->and($promo->appliesToAffiliate($excludedAffiliate))->toBeFalse();
+        expect($promo->appliesToAffiliate($includedAffiliate->id))->toBeTrue()
+            ->and($promo->appliesToAffiliate($excludedAffiliate->id))->toBeFalse();
     });
 
     it('increments usage', function (): void {
@@ -169,7 +168,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'current_uses' => 5,
         ]);
 
-        $promo->incrementUsage();
+        expect(app(PromotionUsage::class)->consume((string) $promo->getKey()))->toBeTrue();
 
         $promo->refresh();
         expect($promo->current_uses)->toBe(6);

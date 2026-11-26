@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -67,12 +67,12 @@ test('approving a conversion with a divergent hold credits the full commission a
     Log::spy();
 
     $conversion = createShortfallHeldConversion('SHORT001');
-    $balance = $conversion->affiliate->balanceFor('USD');
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first();
     drainShortfallHolding($balance, 0);
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000)
@@ -81,7 +81,9 @@ test('approving a conversion with a divergent hold credits the full commission a
 
     Log::shouldHaveReceived('warning')->once();
 
-    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversion->is($conversion)
+    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversionId === (string) $conversion->getKey()
+        && $event->affiliateId === (string) $conversion->affiliate_id
+        && $event->currency === $conversion->commission_currency
         && $event->operation === 'release'
         && $event->requestedMinor === 5000
         && $event->appliedMinor === 0);
@@ -91,7 +93,7 @@ test('a partially drained pool still pays every approval in full', function (): 
     Event::fake([HoldingShortfallDetected::class]);
 
     $first = createShortfallHeldConversion('SHORT002');
-    $affiliate = $first->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($first->affiliate_id);
 
     $second = AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
@@ -105,12 +107,12 @@ test('a partially drained pool still pays every approval in full', function (): 
     ]);
     app(ApplyConversionAccounting::class)->handle($second);
 
-    drainShortfallHolding($affiliate->balanceFor('USD'), 5000);
+    drainShortfallHolding(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first(), 5000);
 
     expect(AffiliateConversionsTable::updateStatus($first, ApprovedConversion::class))->toBeTrue();
     expect(AffiliateConversionsTable::updateStatus($second->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(10000)
@@ -127,7 +129,7 @@ test('approving with an upward adjustment credits the lifetime catch-up', functi
 
     expect(AffiliateConversionsTable::updateStatus($conversion->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(7000)
@@ -141,11 +143,11 @@ test('rejecting a conversion with a divergent hold voids without throwing and re
     Log::spy();
 
     $conversion = createShortfallHeldConversion('SHORT004');
-    drainShortfallHolding($conversion->affiliate->balanceFor('USD'), 0);
+    drainShortfallHolding(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first(), 0);
 
     expect(AffiliateConversionsTable::updateStatus($conversion, RejectedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate_id)->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
@@ -153,7 +155,9 @@ test('rejecting a conversion with a divergent hold voids without throwing and re
 
     Log::shouldHaveReceived('warning')->once();
 
-    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversion->is($conversion)
+    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversionId === (string) $conversion->getKey()
+        && $event->affiliateId === (string) $conversion->affiliate_id
+        && $event->currency === $conversion->commission_currency
         && $event->operation === 'void'
         && $event->requestedMinor === 5000
         && $event->appliedMinor === 0);
@@ -161,14 +165,14 @@ test('rejecting a conversion with a divergent hold voids without throwing and re
 
 test('reversing a held conversion zeroed after recording releases its hold', function (): void {
     $conversion = createShortfallHeldConversion('SHORT006');
-    $affiliate = $conversion->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($conversion->affiliate_id);
 
     // Downward adjustment to zero after the hold was recorded.
     $conversion->forceFill(['commission_minor' => 0])->save();
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'chargeback');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'chargeback');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($conversion->fresh()->held_minor)->toBe(0)
@@ -202,7 +206,7 @@ test('approving an off-record conversion reports no shortfall', function (): voi
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(5000)
         ->and($balance->lifetime_earnings_minor)->toBe(5000);

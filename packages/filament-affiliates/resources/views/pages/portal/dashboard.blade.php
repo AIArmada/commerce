@@ -346,7 +346,7 @@
                                             <code class="fia-portal-code">{{ $downline->code }}</code>
                                         </td>
                                         <td>
-                                            <span>{{ $downline->rank?->name ?? '—' }}</span>
+                                            <span>{{ $downline->getAttribute('rank_name') ?? '—' }}</span>
                                         </td>
                                         <td>
                                             <span>{{ number_format($downline->conversions_count) }}</span>

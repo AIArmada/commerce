@@ -18,7 +18,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Http\Controllers\VoidN
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use Carbon\CarbonImmutable;

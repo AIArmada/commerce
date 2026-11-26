@@ -8,17 +8,17 @@ final class Paused extends AffiliateStatus
 {
     public static string $name = 'paused';
 
-    public function label(): string
+    public static function label(): string
     {
         return 'Paused';
     }
 
-    public function description(): string
+    public static function description(): string
     {
         return 'Affiliate is temporarily inactive';
     }
 
-    public function color(): string
+    public static function color(): string
     {
         return 'gray';
     }

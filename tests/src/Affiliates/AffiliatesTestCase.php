@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\LaravelDataServiceProvider;
+use Spatie\LaravelPdf\PdfServiceProvider;
 use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
 
 /**
@@ -105,6 +106,7 @@ abstract class AffiliatesTestCase extends Orchestra
     {
         return [
             LaravelDataServiceProvider::class,
+            PdfServiceProvider::class,
             LaravelSettingsServiceProvider::class,
             CommerceSupportServiceProvider::class,
             ContactingServiceProvider::class,

@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\QualifiedConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
 use Carbon\CarbonImmutable;
 
 /**
@@ -22,7 +23,7 @@ use Carbon\CarbonImmutable;
 function createConversionWithAccounting(array $data): AffiliateConversion
 {
     $conversion = AffiliateConversion::create($data);
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
 
     return $conversion;
 }
@@ -73,7 +74,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($balance)->not->toBeNull()
             ->and($balance?->holding_minor)->toBe(1000)
@@ -96,7 +97,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ])->fresh();
 
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($conversion?->status->equals(ApprovedConversion::class))->toBeTrue()
             ->and($conversion?->approved_at)->not->toBeNull()
@@ -123,10 +124,10 @@ describe('AffiliateConversion Model', function (): void {
 
         $previousStatus = $conversion->status;
         $conversion->update(['status' => ApprovedConversion::class]);
-        ApplyConversionAccounting::run($conversion, $previousStatus);
+        app(ApplyConversionAccounting::class)->handle($conversion, $previousStatus);
 
         $conversion = $conversion->fresh();
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($conversion?->approved_at)->not->toBeNull()
             ->and($balance)->not->toBeNull()
@@ -135,15 +136,15 @@ describe('AffiliateConversion Model', function (): void {
 
         $previousStatus = $conversion->status;
         $conversion?->update(['status' => PaidConversion::class]);
-        ApplyConversionAccounting::run($conversion, $previousStatus);
+        app(ApplyConversionAccounting::class)->handle($conversion, $previousStatus);
 
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($balance?->available_minor)->toBe(0)
             ->and($balance?->lifetime_earnings_minor)->toBe(1000);
     });
 
-    test('belongs to affiliate', function (): void {
+    test('stores the affiliate identity', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -155,8 +156,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($conversion->affiliate->id)->toBe($this->affiliate->id);
+        expect($conversion->affiliate_id)->toBe($this->affiliate->id);
     });
 
     test('belongs to attribution when set', function (): void {
@@ -180,11 +180,10 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->attribution)->toBeInstanceOf(AffiliateAttribution::class);
-        expect($conversion->attribution->id)->toBe($attribution->id);
+        expect($conversion->affiliate_attribution_id)->toBe($attribution->id);
     });
 
-    test('belongs to payout when set', function (): void {
+    test('stores the payout identity when set', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-CONV-' . uniqid(),
             'status' => 'completed',
@@ -207,8 +206,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->payout)->toBeInstanceOf(AffiliatePayout::class);
-        expect($conversion->payout->id)->toBe($payout->id);
+        expect($conversion->affiliate_payout_id)->toBe($payout->id);
     });
 
     test('stores external_reference', function (): void {

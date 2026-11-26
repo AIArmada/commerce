@@ -60,8 +60,8 @@ Every shipped resource is `final`; override `getNavigationLabel()` by writing
 your own resource and reusing the shipped schema/table classes:
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -102,8 +102,8 @@ class AffiliateCampaignResource extends Resource
 `final`. Build your own and reuse `Support\NetworkStatsAggregator`:
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\Queries\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -132,8 +132,8 @@ class NetworkStatsWidget extends StatsOverviewWidget
 on the panel instead:
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource;
 
 public function panel(Panel $panel): Panel
 {

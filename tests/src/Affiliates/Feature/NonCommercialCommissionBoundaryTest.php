@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -33,11 +33,11 @@ function recordedConversionFor(string $externalReference, string $affiliateId): 
 test('explicit commission payload on opaque-purpose affiliate records zero', function (): void {
     $tagged = nonCommercialAffiliate('NCCB-EXPLICIT');
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($tagged, $cart);
+    app(CartAttribution::class)->attach((string) $tagged->getKey(), $cart);
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-EXPLICIT-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'external_reference' => $reference,
         'commission' => 2000,
@@ -52,11 +52,11 @@ test('explicit commission payload on opaque-purpose affiliate records zero', fun
 test('voucher commission override on opaque-purpose affiliate records zero', function (): void {
     $tagged = nonCommercialAffiliate('NCCB-VOUCHER');
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($tagged, $cart);
+    app(CartAttribution::class)->attach((string) $tagged->getKey(), $cart);
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-VOUCHER-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'external_reference' => $reference,
         'commission_override' => ['type' => 'fixed', 'value' => 1500],
@@ -80,11 +80,11 @@ test('program rule commission on opaque-purpose affiliate records zero', functio
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($tagged, $cart);
+    app(CartAttribution::class)->attach((string) $tagged->getKey(), $cart);
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-PROGRAM-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'affiliate_program_id' => $program->getKey(),
         'external_reference' => $reference,
@@ -99,11 +99,11 @@ test('program rule commission on opaque-purpose affiliate records zero', functio
 test('calculator commission on opaque-purpose affiliate records zero', function (): void {
     $tagged = nonCommercialAffiliate('NCCB-CALC');
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($tagged, $cart);
+    app(CartAttribution::class)->attach((string) $tagged->getKey(), $cart);
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-CALC-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'external_reference' => $reference,
     ]);
@@ -121,7 +121,7 @@ test('weighted opaque recipient mints nothing while commercial primary still ear
     $tagged = nonCommercialAffiliate('NCCB-MIXED-B');
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($commercial, $cart);
+    app(CartAttribution::class)->attach((string) $commercial->getKey(), $cart);
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $attribution = AffiliateAttribution::query()
@@ -139,7 +139,7 @@ test('weighted opaque recipient mints nothing while commercial primary still ear
     ]);
 
     $reference = 'NCCB-MIXED-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $commercial->getKey(),
         'external_reference' => $reference,
         'commission' => 2000,
@@ -170,8 +170,8 @@ test('outcome commission override on opaque-purpose affiliate records zero witho
         'last_seen_at' => CarbonImmutable::now()->subHour(),
     ]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        $attribution,
+    $result = app(OutcomePosting::class)->post(
+        (string) $attribution->getKey(),
         'host_signal',
         'nccb-test:outcome:' . Str::uuid(),
         [
@@ -214,8 +214,30 @@ test('reward-award settlement for opaque purposes still settles', function (): v
         'minimum_payout_minor' => 0,
     ]);
 
-    $payout = CreatePayout::run([(string) $conversion->getKey()]);
+    $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
 
     expect($payout->conversion_count)->toBe(1)
         ->and($payout->total_minor)->toBe(1000);
+});
+
+test('an unknown explicit cart affiliate does not fall through to the attributed affiliate', function (): void {
+    $affiliate = createTestAffiliate(['code' => 'NCCB-UNKNOWN-EXPLICIT']);
+    $cart = app('cart')->getCurrentCart();
+    app(CartAttribution::class)->attach($affiliate->id, $cart);
+    $cart->add('nccb-unknown-item', 'Order item', 10.00, 1);
+
+    $reference = 'NCCB-UNKNOWN-' . Str::uuid();
+
+    expect(app(RecordAffiliateConversion::class)->record($cart, [
+        'affiliate_id' => (string) Str::uuid(),
+        'affiliate_code' => $affiliate->code,
+        'external_reference' => $reference,
+    ]))->toBeNull()
+        ->and(AffiliateConversion::query()->where('external_reference', $reference)->exists())->toBeFalse();
+
+    expect(app(RecordAffiliateConversion::class)->record($cart, [
+        'affiliate_id' => 'not-a-uuid',
+        'external_reference' => $reference,
+    ]))->toBeNull()
+        ->and(AffiliateConversion::query()->where('external_reference', $reference)->exists())->toBeFalse();
 });

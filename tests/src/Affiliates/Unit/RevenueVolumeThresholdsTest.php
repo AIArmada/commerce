@@ -5,17 +5,19 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
@@ -106,7 +108,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 60000, 'USD', 'VOL-USD', $now);
         recordThresholdConversion($affiliate, 470000, 'MYR', 'VOL-MYR', $now);
 
-        $result = app(CommissionRuleEngine::class)->calculate($affiliate, 10000, []);
+        $result = app(CommissionRuleCalculation::class)->calculate((string) $affiliate->getKey(), 10000, []);
 
         // Converted volume is 160000, clearing the 150000 tier: 20% - 10% default of 10000.
         expect($result->volumeBonusMinor)->toBe(1000);
@@ -130,7 +132,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 60000, 'USD', 'VOL-USD', $now);
         recordThresholdConversion($affiliate, 470000, 'MYR', 'VOL-MYR', $now);
 
-        $result = app(CommissionRuleEngine::class)->calculate($affiliate, 10000, []);
+        $result = app(CommissionRuleCalculation::class)->calculate((string) $affiliate->getKey(), 10000, []);
 
         // Only the USD 60000 leg is measurable: tier not reached.
         expect($result->volumeBonusMinor)->toBe(0);
@@ -152,8 +154,8 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 60000, 'USD', 'GRO-CUR-USD', $from->addDays(5));
         recordThresholdConversion($affiliate, 235000, 'MYR', 'GRO-CUR-MYR', $from->addDays(6));
 
-        $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
-            CommissionRuleType::Growth,
+        $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
+            CommissionRuleType::Growth->value,
             $from,
             $to
         );
@@ -180,8 +182,8 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($usdAffiliate, 50000, 'USD', 'TOP-USD-1', $from->addDays(5));
         recordThresholdConversion($myrAffiliate, 470000, 'MYR', 'TOP-MYR-1', $from->addDays(5));
 
-        $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
-            CommissionRuleType::TopPerformer,
+        $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
+            CommissionRuleType::TopPerformer->value,
             $from,
             $to
         );
@@ -199,7 +201,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 7000, 'USD', 'RNK-USD', CarbonImmutable::now()->subDays(5));
         recordThresholdConversion($affiliate, 47000, 'MYR', 'RNK-MYR', CarbonImmutable::now()->subDays(5));
 
-        $metrics = app(RankQualificationService::class)->calculateMetrics($affiliate);
+        $metrics = app(RankQualificationApi::class)->calculateMetrics((string) $affiliate->getKey());
 
         expect($metrics['personal_sales'])->toBe(17000)
             ->and($metrics['lifetime_value'])->toBe(17000);
@@ -242,6 +244,6 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 470000, 'MYR', 'TUP-MYR', $now, $link->id);
 
         // Converted revenue is 160000 across 2 conversions: qualifies.
-        expect($tier->meetsUpgradeRequirements($affiliate, $program))->toBeTrue();
+        expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $program->id, $tier->id))->toBeTrue();
     });
 });

@@ -4,27 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
-
 /**
  * Result of a payout provider operation.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class PayoutResult extends Data
+final readonly class PayoutResult
 {
     /**
      * @param  array<string, scalar|null>  $metadata
      */
     public function __construct(
-        public readonly bool $success,
-        public readonly ?string $externalReference = null,
-        public readonly ?string $failureReason = null,
-        public readonly ?string $failureCode = null,
-        public readonly array $metadata = [],
+        public bool $success,
+        public ?string $externalReference = null,
+        public ?string $failureReason = null,
+        public ?string $failureCode = null,
+        public array $metadata = [],
     ) {}
 
     /** @param array<string, scalar|null> $metadata */
@@ -33,9 +26,9 @@ class PayoutResult extends Data
         return new self(true, $externalReference, metadata: $metadata);
     }
 
-    public static function failure(string $reason = 'The payout provider rejected the request.', ?string $code = null): self
+    public static function failure(string $reason = 'The payout provider rejected the request.', ?string $code = null, ?string $externalReference = null): self
     {
-        return new self(false, failureReason: $reason, failureCode: $code);
+        return new self(false, $externalReference, failureReason: $reason, failureCode: $code);
     }
 
     /** @param array<string, scalar|null> $metadata */
@@ -44,10 +37,11 @@ class PayoutResult extends Data
         return new self(true, $externalReference, metadata: array_merge($metadata, ['status' => 'pending']));
     }
 
-    public static function unknown(?string $code = null): self
+    public static function unknown(?string $code = null, ?string $externalReference = null): self
     {
         return new self(
             false,
+            $externalReference,
             failureReason: 'The provider outcome is unknown and requires reconciliation.',
             failureCode: $code ?? 'PROVIDER_OUTCOME_UNKNOWN',
             metadata: ['status' => 'unknown'],

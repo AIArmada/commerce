@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Console\Commands\AggregateDailyStatsCommand;
-use AIArmada\Affiliates\Console\Commands\ExportAffiliatePayoutCommand;
-use AIArmada\Affiliates\Console\Commands\ProcessCommissionMaturityCommand;
-use AIArmada\Affiliates\Console\Commands\ProcessRankUpgradesCommand;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Conversions\EntryPoints\Console\ProcessCommissionMaturityCommand;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
+use AIArmada\Affiliates\Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 
@@ -130,7 +129,22 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
         ->toContain('REF_001')
         ->not->toContain('order_reference');
 
-    // Clean up
+    $this->artisan('affiliates:payout:export', [
+        'payout' => $payout->id,
+        '--path' => $path,
+    ])->assertSuccessful();
+
+    expect(File::get($path))->toBe($content);
+
+    $this->artisan('affiliates:payout:export', [
+        'payout' => $payout->id,
+        '--path' => dirname($path),
+    ])
+        ->expectsOutputToContain('Payout CSV could not be written')
+        ->assertFailed();
+
+    expect(File::get($path))->toBe($content);
+
     File::delete($path);
 });
 
@@ -161,4 +175,23 @@ test('ProcessCommissionMaturityCommand handles dry run mode', function (): void 
         ->expectsOutputToContain('Processing commission maturity')
         ->expectsOutputToContain('dry-run mode')
         ->assertSuccessful();
+});
+
+test('payout export rejects a reference matching more than one payout', function (): void {
+    $first = AffiliatePayout::create([
+        'reference' => 'AMBIGUOUS-FIRST',
+        'total_minor' => 0,
+        'currency' => 'USD',
+        'status' => PendingPayout::class,
+    ]);
+    AffiliatePayout::create([
+        'reference' => $first->id,
+        'total_minor' => 0,
+        'currency' => 'USD',
+        'status' => PendingPayout::class,
+    ]);
+
+    $this->artisan('affiliates:payout:export', ['payout' => $first->id])
+        ->expectsOutputToContain('reference is ambiguous')
+        ->assertFailed();
 });

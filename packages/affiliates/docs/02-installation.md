@@ -10,6 +10,8 @@ title: Installation
 - Laravel 13.x or higher
 - PostgreSQL or SQLite
 
+MySQL and MariaDB are not supported. Affiliate code uniqueness is enforced by a functional `LOWER(code)` unique index, which the package only creates on PostgreSQL and SQLite; the migration fails fast on other drivers instead of silently dropping case-insensitive uniqueness.
+
 ## Install via Composer
 
 ```bash
@@ -60,15 +62,15 @@ public function panel(Panel $panel): Panel
 If using `aiarmada/cart`, attach attribution through the current cart action. The affiliates package does not decorate the cart manager:
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
 $cart = app(CartManagerInterface::class)->getCurrentCart();
-$affiliate = app(AffiliateLookup::class)->findByCode('CODE123');
+$affiliate = app(AffiliateDirectory::class)->findByCode('CODE123');
 
 if ($affiliate !== null) {
-    AttachAffiliateToCart::run($affiliate, $cart);
+    app(CartAttribution::class)->attach($affiliate->id, $cart);
 }
 ```
 

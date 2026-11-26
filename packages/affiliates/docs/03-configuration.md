@@ -132,7 +132,7 @@ this flag.
 | `auto_register_middleware` | Auto-add middleware to `web` group |
 | `respect_dnt` | Honor Do Not Track browser headers |
 | `require_consent` | Require explicit consent before tracking |
-| `consent_cookie` | Cookie name for consent flag |
+| `consent_cookie` | Client-readable consent cookie; its value must explicitly be true (`1`, `true`, `on`, or `yes`) |
 
 ## Public Pages
 
@@ -160,7 +160,7 @@ this flag.
 | `enabled` | Enable package-owned public referral helpers and shared view data |
 | `view_data_key` | View variable populated by the public referral middleware / view composer |
 | `auto_register_middleware` | Push `HydratePublicAffiliateReferralContext` into the `web` middleware group |
-| `route.enabled` | Reserved: entry capture is middleware-based (see below), no route is registered |
+| `route.enabled` | Enable referral suffix capture; no separate route is registered |
 | `route.path` | Referral suffix pattern captured by the middleware, default `r/{affiliateCode}` |
 | `route.name` | Reserved entry-route name (no route is registered) |
 | `route.middleware` | Reserved entry-route middleware stack (no route is registered) |
@@ -205,7 +205,7 @@ Entry capture is handled by the `CaptureAffiliateReferralFromPath` middleware (a
 | `minimum_minor` | Minimum commission amount (minor units) |
 | `maximum_minor` | Maximum commission amount (minor units) |
 
-Every commission path funnels through `CommissionCaps::clamp()`, so these bounds cannot be bypassed. Zero stays zero: an unearned commission (unmatched rule, zero rate, zero portion) is never lifted to the minimum — the minimum floors earned commissions only.
+Every commission path funnels through `CommissionPricing::clamp()`, so these bounds cannot be bypassed. Zero stays zero: an unearned commission (unmatched rule, zero rate, zero portion) is never lifted to the minimum — the minimum floors earned commissions only.
 
 ## Payout Settings
 
@@ -370,7 +370,7 @@ disabled affiliates require the creation-time audited override described in
 ```
 
 Only needed on merchant stores that sell through an `aiarmada/affiliate-network` marketplace.
-`network_url` + `site` + `token` let `NetworkPostbackClient` report paid orders; `referral_param`
+`network_url` + `site` + `token` let `NetworkPostbackGateway` report paid orders; `referral_param`
 and `session_key` drive `CaptureNetworkReferral` middleware. The client uses
 separate connect and total request timeouts.
 
@@ -450,7 +450,7 @@ When false, the domain rejects custom handle writes and assigns a handle on crea
 ],
 ```
 
-`1099_threshold` is stored in minor units of `1099_threshold_currency` (default `USD`). For example, `60000` represents `$600.00`. Only completed payouts in the threshold currency count toward the threshold and the reported total — converted totals are never blended into a filing. Payouts in other currencies are disclosed on the document notes and listed by `TaxDocumentService::excludedPayoutsForYear()` for manual tax-team review.
+`1099_threshold` is stored in minor units of `1099_threshold_currency` (default `USD`). For example, `60000` represents `$600.00`. Only completed payouts in the threshold currency count toward the threshold and the reported total — converted totals are never blended into a worksheet. Payouts in other currencies are disclosed on the document notes and listed by `TaxDocumentApi::excludedPayoutsForYear()` for manual tax-team review. Bind `AIArmada\Affiliates\Contracts\TaxRecipientProvider` to a trusted host implementation that returns an immutable `TaxRecipientDetails` for the affiliate. Without a recipient the document remains `pending_info`. The default writer renders a genuine private PDF preparation worksheet using Spatie Laravel PDF v2. It is not an official tax form or filing. The default local Browsershot renderer requires Node.js, Puppeteer, and Chromium. Configure `AFFILIATES_TAX_PDF_DRIVER=dompdf` after installing `dompdf/dompdf` if a PHP-only renderer is preferred. Remote PDF drivers are rejected for tax worksheets, and PDF caching is disabled.
 
 ## Bonuses
 

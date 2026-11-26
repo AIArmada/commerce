@@ -28,7 +28,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Actions\VoidMerchantStatement;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Queries\CreatorBalancesQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 

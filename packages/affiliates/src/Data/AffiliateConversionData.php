@@ -4,69 +4,60 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * DTO representing a conversion + commission record.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class AffiliateConversionData extends Data
+final readonly class AffiliateConversionData
 {
-    public readonly ConversionStatus $status;
+    public string $status;
 
-    public readonly string $id;
+    public string $id;
 
-    public readonly string $affiliateId;
+    public string $affiliateId;
 
-    public readonly string $affiliateCode;
+    public string $affiliateCode;
 
-    public readonly ?string $subjectType;
+    public ?string $subjectType;
 
-    public readonly ?string $subjectKey;
+    public ?string $subjectKey;
 
-    public readonly ?string $subjectInstance;
+    public ?string $subjectInstance;
 
-    public readonly ?string $subjectTitleSnapshot;
+    public ?string $subjectTitleSnapshot;
 
-    public readonly ?string $voucherCode;
+    public ?string $voucherCode;
 
-    public readonly ?string $affiliateProgramId;
+    public ?string $affiliateProgramId;
 
     /** @var list<array<string, mixed>>|null */
-    public readonly ?array $uplineLevels;
+    public ?array $uplineLevels;
 
-    public readonly ?string $externalReference;
+    public ?string $externalReference;
 
-    public readonly ?string $conversionType;
+    public ?string $conversionType;
 
-    public readonly int $subtotalMinor;
+    public int $subtotalMinor;
 
-    public readonly int $valueMinor;
+    public int $valueMinor;
 
-    public readonly int $commissionMinor;
+    public int $commissionMinor;
 
-    public readonly string $commissionCurrency;
+    public string $commissionCurrency;
 
-    public readonly ?CarbonInterface $occurredAt;
+    public ?CarbonImmutable $occurredAt;
 
-    public readonly ?string $ownerType;
+    public ?string $ownerType;
 
-    public readonly string | int | null $ownerId;
+    public string | int | null $ownerId;
 
     /**
      * @var array<string, mixed>|null
      */
-    public readonly ?array $metadata;
+    public ?array $metadata;
 
     /**
      * @param  array<string, mixed>|null  $metadata
@@ -86,7 +77,7 @@ class AffiliateConversionData extends Data
         int $valueMinor = 0,
         int $commissionMinor = 0,
         string $commissionCurrency = 'MYR',
-        ?ConversionStatus $status = null,
+        string $status = 'pending',
         ?CarbonInterface $occurredAt = null,
         ?string $ownerType = null,
         string | int | null $ownerId = null,
@@ -110,54 +101,49 @@ class AffiliateConversionData extends Data
         $this->valueMinor = $valueMinor;
         $this->commissionMinor = $commissionMinor;
         $this->commissionCurrency = $commissionCurrency;
-        $this->status = $status ?? ConversionStatus::fromString(PendingConversion::class);
-        $this->occurredAt = $occurredAt;
+        $this->status = $status;
+        $this->occurredAt = $occurredAt === null ? null : CarbonImmutable::instance($occurredAt);
         $this->ownerType = $ownerType;
         $this->ownerId = $ownerId;
         $this->metadata = $metadata;
     }
 
-    public static function fromModel(AffiliateConversion $conversion): self
+    /** @return array<string, mixed> */
+    public function toArray(): array
     {
-        $status = $conversion->status;
-
-        if (! $status instanceof ConversionStatus) {
-            $status = ConversionStatus::fromString((string) $status);
-        }
-
-        return new self(
-            id: (string) $conversion->getKey(),
-            affiliateId: (string) $conversion->affiliate_id,
-            affiliateCode: (string) $conversion->affiliate_code,
-            subjectType: $conversion->subject_type,
-            subjectKey: $conversion->subject_key,
-            subjectInstance: $conversion->subject_instance,
-            subjectTitleSnapshot: $conversion->subject_title_snapshot,
-            voucherCode: $conversion->voucher_code,
-            affiliateProgramId: $conversion->affiliate_program_id,
-            uplineLevels: $conversion->upline_levels,
-            externalReference: $conversion->external_reference,
-            subtotalMinor: (int) $conversion->subtotal_minor,
-            valueMinor: (int) $conversion->value_minor,
-            commissionMinor: (int) $conversion->commission_minor,
-            commissionCurrency: (string) $conversion->commission_currency,
-            conversionType: $conversion->conversion_type,
-            status: $status,
-            occurredAt: $conversion->occurred_at,
-            ownerType: $conversion->owner_type,
-            ownerId: $conversion->owner_id,
-            metadata: $conversion->metadata,
-        );
+        return [
+            'status' => $this->status,
+            'id' => $this->id,
+            'affiliate_id' => $this->affiliateId,
+            'affiliate_code' => $this->affiliateCode,
+            'subject_type' => $this->subjectType,
+            'subject_key' => $this->subjectKey,
+            'subject_instance' => $this->subjectInstance,
+            'subject_title_snapshot' => $this->subjectTitleSnapshot,
+            'voucher_code' => $this->voucherCode,
+            'affiliate_program_id' => $this->affiliateProgramId,
+            'upline_levels' => $this->uplineLevels,
+            'external_reference' => $this->externalReference,
+            'conversion_type' => $this->conversionType,
+            'subtotal_minor' => $this->subtotalMinor,
+            'value_minor' => $this->valueMinor,
+            'commission_minor' => $this->commissionMinor,
+            'commission_currency' => $this->commissionCurrency,
+            'occurred_at' => $this->occurredAt?->format('c'),
+            'owner_type' => $this->ownerType,
+            'owner_id' => $this->ownerId,
+            'metadata' => $this->metadata,
+        ];
     }
 
     public function isPending(): bool
     {
-        return $this->status->equals(PendingConversion::class);
+        return $this->status === 'pending';
     }
 
     public function isApproved(): bool
     {
-        return $this->status->equals(ApprovedConversion::class);
+        return $this->status === 'approved';
     }
 
     public function getFormattedValue(): string

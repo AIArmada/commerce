@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Webhooks",
+  "owns": {
+    "table:affiliate_webhook_deliveries": [
+      "AIArmada\\Affiliates\\Features\\Webhooks\\Actions\\EnqueueWebhook",
+      "AIArmada\\Affiliates\\Features\\Webhooks\\Actions\\DeliverAffiliateWebhook"
+    ]
+  },
+  "extensions": {}
+}

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Str;
 
@@ -31,7 +31,7 @@ test('percentage commissions respect basis points precision', function (): void 
         'commission_rate' => 1250, // 12.50%
     ]);
 
-    $commission = app(CommissionCalculator::class)->calculate($affiliate, 20_00);
+    $commission = app(CommissionPricing::class)->calculateBase($affiliate->commission_type->value, $affiliate->commission_rate, 20_00);
 
     expect($commission)->toBe(250);
 });
@@ -42,7 +42,7 @@ test('fixed commissions return static minor units', function (): void {
         'commission_rate' => 1234,
     ]);
 
-    $commission = app(CommissionCalculator::class)->calculate($affiliate, 99_99);
+    $commission = app(CommissionPricing::class)->calculateBase($affiliate->commission_type->value, $affiliate->commission_rate, 99_99);
 
     expect($commission)->toBe(1234);
 });

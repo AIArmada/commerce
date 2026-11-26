@@ -72,6 +72,12 @@ return [
         ],
     ],
 
+    /* Export rendering (local drivers only) */
+
+    'exports' => [
+        'pdf_driver' => env('AFFILIATES_PAYOUT_PDF_DRIVER', 'browsershot'),
+    ],
+
     /* Integrations */
 
     'integrations' => [

@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 
-test('AffiliateAttribution refreshLastSeen updates last_seen_at', function (): void {
+test('Attribution activity updates last_seen_at', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
@@ -23,9 +24,10 @@ test('AffiliateAttribution refreshLastSeen updates last_seen_at', function (): v
         'affiliate_code' => 'AFF1',
         'cart_identifier' => 'cart1',
         'last_seen_at' => Carbon::yesterday(),
+        'cookie_value' => 'refresh-last-seen',
     ]);
 
-    $attribution->refreshLastSeen();
+    app(AttributionActivity::class)->touch('refresh-last-seen');
 
     $attribution->refresh();
 

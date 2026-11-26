@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Commissions\Models;
+
+use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
+
+/**
+ * Volume-based tier for progressive commission rates.
+ *
+ * @property string $id
+ * @property string|null $program_id
+ * @property string $name
+ * @property int $min_volume_minor
+ * @property int|null $max_volume_minor
+ * @property int $commission_rate_basis_points
+ * @property string $currency
+ * @property string $period
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+class AffiliateVolumeTier extends Model implements Auditable
+{
+    use HasCommerceAudit;
+    use HasUuids;
+    use LogsCommerceActivity;
+    use ScopesByProgramOwner;
+
+    protected $fillable = [
+        'program_id',
+        'name',
+        'min_volume_minor',
+        'max_volume_minor',
+        'commission_rate_basis_points',
+        'currency',
+        'period',
+    ];
+
+    protected $casts = [
+        'min_volume_minor' => 'integer',
+        'max_volume_minor' => 'integer',
+        'commission_rate_basis_points' => 'integer',
+    ];
+
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.volume_tiers', 'affiliate_volume_tiers');
+    }
+
+    /**
+     * Tier currency; volume thresholds are denominated in this code.
+     */
+    public function currencyCode(): string
+    {
+        if (is_string($this->currency) && mb_trim($this->currency) !== '') {
+            return mb_strtoupper(mb_trim($this->currency));
+        }
+
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
+    }
+
+    public function containsVolume(int $volumeMinor): bool
+    {
+        if ($volumeMinor < $this->min_volume_minor) {
+            return false;
+        }
+
+        if ($this->max_volume_minor !== null && $volumeMinor > $this->max_volume_minor) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getCommissionRatePercentage(): float
+    {
+        return $this->commission_rate_basis_points / 100;
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
+}

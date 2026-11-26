@@ -1,0 +1,136 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources;
+
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentAffiliates\Contracts\AffiliateRelationContribution;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\CreateAffiliate;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\EditAffiliate;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\ListAffiliates;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\ViewAffiliate;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateForm;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateInfolist;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Tables\AffiliatesTable;
+use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use LogicException;
+use UnitEnum;
+
+final class AffiliateResource extends Resource
+{
+    protected static ?string $model = Affiliate::class;
+
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static ?string $navigationLabel = 'Affiliates';
+
+    protected static ?string $modelLabel = 'Affiliate';
+
+    protected static ?string $pluralModelLabel = 'Affiliates';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.delete')
+            && $record instanceof Affiliate
+            && ! app(ConversionHistoryReader::class)->hasAffiliateHistory((string) $record->getKey(), spl_object_id($record->getConnection()))
+            && ! app(PayoutAccountingReader::class)->hasAffiliateHistory((string) $record->getKey(), spl_object_id($record->getConnection()));
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder $query */
+        $query = parent::getEloquentQuery()->with(['parent']);
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return AffiliateForm::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return AffiliatesTable::configure($table);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return AffiliateInfolist::configure($schema);
+    }
+
+    public static function getRelations(): array
+    {
+        $relations = [];
+        foreach (app(ExtensionRegistry::class)->resolve('identity.relations', AffiliateRelationContribution::class) as $contribution) {
+            if ($contribution instanceof AffiliateRelationContribution) {
+                foreach ($contribution->relations() as $priority => $relation) {
+                    if (isset($relations[$priority])) {
+                        throw new LogicException('Duplicate affiliate relation priority.');
+                    }
+                    $relations[$priority] = $relation;
+                }
+            }
+        }
+        ksort($relations);
+
+        return array_values($relations);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListAffiliates::route('/'),
+            'create' => CreateAffiliate::route('/create'),
+            'view' => ViewAffiliate::route('/{record}'),
+            'edit' => EditAffiliate::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.resources.navigation_sort.affiliates', 60);
+    }
+}

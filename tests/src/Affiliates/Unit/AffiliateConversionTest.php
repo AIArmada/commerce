@@ -2,28 +2,27 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-test('AffiliateConversion has affiliate relationship', function (): void {
+test('AffiliateConversion stores an affiliate identity instead of an ORM relation', function (): void {
     $conversion = new AffiliateConversion;
 
-    expect($conversion->affiliate())->toBeInstanceOf(BelongsTo::class);
+    expect(method_exists($conversion, 'affiliate'))->toBeFalse();
 });
 
-test('AffiliateConversion has attribution relationship', function (): void {
+test('AffiliateConversion stores a nullable attribution identity', function (): void {
     $conversion = new AffiliateConversion;
 
-    expect($conversion->attribution())->toBeInstanceOf(BelongsTo::class);
+    expect($conversion->affiliate_attribution_id)->toBeNull();
 });
 
-test('AffiliateConversion has payout relationship', function (): void {
+test('AffiliateConversion stores a nullable payout identity', function (): void {
     $conversion = new AffiliateConversion;
 
-    expect($conversion->payout())->toBeInstanceOf(BelongsTo::class);
+    expect($conversion->affiliate_payout_id)->toBeNull();
 });
 
 test('AffiliateConversion can be created with fillable attributes', function (): void {

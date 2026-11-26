@@ -3,33 +3,35 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateSupportMessage;
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalConversions;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalCreatives;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalDashboard;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalLinks;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalPayouts;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalProfile;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalPrograms;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalSupport;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -85,16 +87,14 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
         }
     });
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
         'code' => 'PORTAL-B-' . Str::uuid(),
         'name' => 'Portal Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
     AffiliateConversion::create([
         'affiliate_id' => $affiliateB->getKey(),
@@ -179,16 +179,14 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'owner_id' => (string) $ownerA->getKey(),
     ]);
 
-    $affiliateB = Affiliate::create([
+    $affiliateB = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
         'code' => 'PORTAL-B2-' . Str::uuid(),
         'name' => 'Portal Affiliate B',
         'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    ]));
 
     AffiliateAttribution::create([
         'affiliate_id' => $affiliateA->getKey(),
@@ -384,7 +382,7 @@ it('portal dashboard state objects expose label and color helpers for badges', f
 
 it('PortalConversions uses neutral reference and total columns', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
-    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Pages/Portal/PortalConversions.php');
+    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Portal/EntryPoints/Filament/Pages/PortalConversions.php');
 
     expect($source)
         ->toContain("TextColumn::make('external_reference')")
@@ -421,7 +419,7 @@ it('PortalLinks generates links when affiliate exists', function (): void {
     $page->generateLink();
 
     expect($page->generatedLink)->toContain('/go/')
-        ->and($affiliate->links()->count())->toBe(1);
+        ->and(AffiliateLink::query()->where('affiliate_id', $affiliate->getKey())->count())->toBe(1);
 
     $reflection = new ReflectionClass($page);
     $method = $reflection->getMethod('getHeaderActions');
@@ -500,8 +498,17 @@ it('PortalProfile updates affiliate profile and default payout method', function
         ->and($payoutMethod)->not->toBeNull()
         ->and($payoutMethod?->type->value)->toBe($method)
         ->and($payoutMethod?->details['label'] ?? null)->toBe($label)
-        ->and($payoutMethod?->details['account_ref'] ?? null)->toBe($accountRef)
+        ->and($payoutMethod?->details[$method === 'paypal' ? 'email' : 'account_ref'] ?? null)->toBe($accountRef)
         ->and($page->getViewData()['payoutMethodOptions']['manual'])->toBe('Manual');
+
+    $payoutMethod->update(['verified_at' => now()]);
+    $page->saveProfile();
+    expect($payoutMethod->fresh()->verified_at)->not->toBeNull();
+
+    $page->payoutMethodAccountRef = $method === 'paypal' ? 'changed@example.com' : 'changed-account-reference';
+    $page->saveProfile();
+    expect($payoutMethod->fresh()->verified_at)->toBeNull()
+        ->and(AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->id)->where('is_default', true)->count())->toBe(1);
 })->with([
     'paypal' => ['paypal', 'Primary PayPal', 'payouts@example.com'],
     'manual' => ['manual', 'Manual transfer', 'operator-account'],
@@ -572,8 +579,21 @@ it('PortalPrograms returns joined programs and creative assets for the current a
         ->and($assets[0]['thumbnail'])->toBe($media->getUrl())
         ->and($assets[0]['format'])->toBe('PNG');
 
-    AffiliateProgramMembership::query()->where('affiliate_id', $affiliate->getKey())
-        ->where('program_id', $program->getKey())->firstOrFail()->update(['status' => MembershipStatus::Pending]);
+    $membership = AffiliateProgramMembership::query()->where('affiliate_id', $affiliate->getKey())
+        ->where('program_id', $program->getKey())->firstOrFail();
+    $membership->update(['expires_at' => now()->subDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
+
+    $membership->update(['expires_at' => now()->addDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toHaveCount(1);
+
+    $program->update(['ends_at' => now()->subDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
+
+    $program->update(['ends_at' => now()->addDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toHaveCount(1);
+
+    $membership->update(['status' => MembershipStatus::Pending]);
     expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
 });
 
@@ -767,5 +787,5 @@ it('creative portal handles documents and text links without image previews', fu
         ->and($assets[$document->getKey()]['thumbnail'])->toBeNull()
         ->and($assets[$link->getKey()]['download_url'])->toBeNull()
         ->and($assets[$link->getKey()]['thumbnail'])->toBeNull()
-        ->and($assets[$link->getKey()]['affiliate_url'])->toBe($link->getTrackingUrl($affiliate));
+        ->and($assets[$link->getKey()]['affiliate_url'])->toBe($link->getTrackingUrl($affiliate->code));
 });

@@ -3,10 +3,34 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+function balanceAccountingConversion(Affiliate $affiliate, int $commissionMinor, string $status, int $heldMinor = 0): AffiliateConversion
+{
+    $conversion = AffiliateConversion::create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'external_reference' => 'BALANCE-' . uniqid(),
+        'value_minor' => $commissionMinor * 10,
+        'commission_minor' => $commissionMinor,
+        'commission_currency' => 'USD',
+        'status' => $status,
+        'occurred_at' => now(),
+    ]);
+    $conversion->forceFill(['held_minor' => $heldMinor])->save();
+
+    return $conversion;
+}
 
 describe('AffiliateBalance Model', function (): void {
     beforeEach(function (): void {
@@ -37,7 +61,7 @@ describe('AffiliateBalance Model', function (): void {
             ->and($balance->minimum_payout_minor)->toBe(1000);
     });
 
-    it('belongs to affiliate', function (): void {
+    it('resolves affiliate identity without an ORM relationship', function (): void {
         $balance = AffiliateBalance::create([
             'affiliate_id' => $this->affiliate->id,
             'currency' => 'USD',
@@ -47,8 +71,10 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        expect($balance->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($balance->affiliate->id)->toBe($this->affiliate->id);
+        $identity = app(AffiliateDirectory::class)->findById($balance->affiliate_id);
+
+        expect($identity?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($balance, 'affiliate'))->toBeFalse();
     });
 
     it('calculates total balance correctly', function (): void {
@@ -113,7 +139,8 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        $balance->addToHolding(5000);
+        $conversion = balanceAccountingConversion($this->affiliate, 5000, PendingConversion::class);
+        app(ApplyConversionAccounting::class)->handle($conversion);
         $balance->refresh();
 
         expect($balance->holding_minor)->toBe(5000)
@@ -130,14 +157,15 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        $balance->releaseFromHolding(3000);
+        $conversion = balanceAccountingConversion($this->affiliate, 3000, ApprovedConversion::class, 3000);
+        app(ApplyConversionAccounting::class)->handle($conversion, new PendingConversion($conversion));
         $balance->refresh();
 
         expect($balance->holding_minor)->toBe(7000)
             ->and($balance->available_minor)->toBe(3000);
     });
 
-    it('releases only available holding amount when requested more', function (): void {
+    it('releases only recorded holding and credits the remaining commission', function (): void {
         $balance = AffiliateBalance::create([
             'affiliate_id' => $this->affiliate->id,
             'currency' => 'USD',
@@ -147,11 +175,12 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        $balance->releaseFromHolding(5000);
+        $conversion = balanceAccountingConversion($this->affiliate, 5000, ApprovedConversion::class, 5000);
+        app(ApplyConversionAccounting::class)->handle($conversion, new PendingConversion($conversion));
         $balance->refresh();
 
         expect($balance->holding_minor)->toBe(0)
-            ->and($balance->available_minor)->toBe(2000);
+            ->and($balance->available_minor)->toBe(5000);
     });
 
     it('deducts from available balance', function (): void {
@@ -164,7 +193,8 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        $balance->deductFromAvailable(3000);
+        $conversion = balanceAccountingConversion($this->affiliate, 3000, PaidConversion::class);
+        app(ApplyConversionAccounting::class)->handle($conversion, new ApprovedConversion($conversion));
         $balance->refresh();
 
         expect($balance->available_minor)->toBe(7000);
@@ -180,7 +210,8 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        $balance->deductFromAvailable(5000);
+        $conversion = balanceAccountingConversion($this->affiliate, 5000, PaidConversion::class);
+        app(ApplyConversionAccounting::class)->handle($conversion, new ApprovedConversion($conversion));
         $balance->refresh();
 
         expect($balance->available_minor)->toBe(0);
@@ -248,7 +279,7 @@ describe('AffiliateBalance Model', function (): void {
     });
 });
 
-it('exposes the latest balance through the affiliate balance relation', function (): void {
+it('exposes immutable currency balances through the conversions reader', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'BAL-REL-' . uniqid(),
         'name' => 'Balance Relation Affiliate',
@@ -267,7 +298,35 @@ it('exposes the latest balance through the affiliate balance relation', function
         'minimum_payout_minor' => 1000,
     ]);
 
-    expect($affiliate->balance)->toBeInstanceOf(AffiliateBalance::class)
-        ->and($affiliate->balance->available_minor)->toBe(2500)
-        ->and(Affiliate::with('balance')->find($affiliate->id)->balance)->not->toBeNull();
+    $reader = app(BalanceReader::class);
+    $snapshot = $reader->find((string) $affiliate->getKey(), 'usd');
+
+    expect($snapshot)->toBeInstanceOf(BalanceSnapshot::class)
+        ->and($snapshot->availableMinor)->toBe(2500)
+        ->and($reader->find((string) $affiliate->getKey(), 'MYR'))->toBeNull()
+        ->and($reader->canRequestPayout((string) $affiliate->getKey(), 'USD'))->toBeTrue();
+});
+
+it('does not erase a negative available balance when settling another conversion', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'BAL-NEGATIVE-' . uniqid(),
+        'name' => 'Negative Balance Affiliate',
+        'status' => Active::class,
+        'commission_type' => CommissionType::Percentage,
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+    $balance = AffiliateBalance::create([
+        'affiliate_id' => $affiliate->id,
+        'currency' => 'USD',
+        'holding_minor' => 0,
+        'available_minor' => -2000,
+        'lifetime_earnings_minor' => 5000,
+        'minimum_payout_minor' => 1000,
+    ]);
+
+    $conversion = balanceAccountingConversion($affiliate, 1000, PaidConversion::class);
+    app(ApplyConversionAccounting::class)->handle($conversion, new ApprovedConversion($conversion));
+
+    expect($balance->refresh()->available_minor)->toBe(-2000);
 });

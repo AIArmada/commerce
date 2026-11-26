@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 
@@ -42,7 +42,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'ends_at' => now()->addWeek(),
         ]);
 
-        expect($promotion->appliesToAffiliate($this->affiliate))->toBeFalse();
+        expect($promotion->appliesToAffiliate($this->affiliate->id))->toBeFalse();
     });
 
     test('calculateBonus returns zero for unknown type', function (): void {

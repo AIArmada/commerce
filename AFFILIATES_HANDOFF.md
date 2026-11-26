@@ -185,7 +185,7 @@ Remote void symmetry (found missing by E2E S5):
   Reversed/Superseded → idempotent `duplicate: true` no-op;
   Provisional → 422; unknown ref/link → 404; inactive links
   still voidable. Response `{ok, duplicate, leg_status, conversion}`.
-- `NetworkPostbackClient::voidConversion(link, ref, ?reason)`
+- `NetworkPostbackGateway::voidConversion(link, ref, ?reason)`
   returning `{ok, status, body, leg_status, error}`.
 - Tests: `VoidNetworkConversionTest` (4) + 2 MerchantSdk tests.
 - Docs: network 10-merchant-postbacks (Void endpoint),

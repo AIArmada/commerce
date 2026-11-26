@@ -1,0 +1,274 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
+
+use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Platform\EventTicketScope;
+use AIArmada\Products\Models\Product;
+use AIArmada\Ticketing\Models\TicketType;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Filament\Support\Components\Attributes\Unexposed;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+
+final class CommissionRulesRelationManager extends RelationManager
+{
+    use VerifiesRelationManagerOwnerContext;
+
+    protected static string $relationship = 'commissionRules';
+
+    #[Unexposed]
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof AffiliateProgram && FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    #[Unexposed]
+    public function getRelationship(): Relation | Builder
+    {
+        return $this->getOwnerRecord()->hasMany(AffiliateCommissionRule::class, 'program_id')->orderByDesc('priority');
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            TextInput::make('name')
+                ->required()
+                ->maxLength(255),
+
+            Select::make('rule_type')
+                ->options(fn (): array => collect(CommissionRuleType::programRuleCases())
+                    ->mapWithKeys(fn (CommissionRuleType $case): array => [$case->value => $case->label()])
+                    ->toArray())
+                ->helperText('Performance bonuses (top performer, recruitment, consistency, growth) are configured globally in Bonus Settings.')
+                ->required()
+                ->live()
+                ->afterStateUpdated(function (CommissionRuleType $state, Set $set): void {
+                    $set('priority', (string) $state->priority());
+                }),
+
+            Select::make('purchasable_id')
+                ->label('Purchasable Item')
+                ->hint('Only applies when Rule Type is Product')
+                ->searchable()
+                ->placeholder('Search for a product or ticket type...')
+                ->dehydrated(false)
+                ->helperText('Select the specific product or event ticket this rule applies to.')
+                ->afterStateHydrated(function (?string $state, Get $get, Set $set, $record): void {
+                    if ($record === null) {
+                        return;
+                    }
+                    $conditions = $record->conditions ?? [];
+                    $type = $conditions['purchasable_type'] ?? null;
+                    $id = $conditions['purchasable_id'] ?? null;
+                    if ($type === null || $id === null) {
+                        return;
+                    }
+                    $prefix = $this->purchasablePrefix($type);
+                    if ($prefix !== null) {
+                        $set('purchasable_id', "{$prefix}:{$id}");
+                    }
+                })
+                ->options(function (): array {
+                    $options = [];
+
+                    if (class_exists(Product::class)) {
+                        $products = Product::query()
+                            ->where('status', 'active')
+                            ->get(['id', 'name', 'sku']);
+
+                        foreach ($products as $product) {
+                            $label = $product->name;
+                            if (filled($product->sku)) {
+                                $label .= " ({$product->sku})";
+                            }
+                            $options["product:{$product->id}"] = '[Product] ' . $label;
+                        }
+                    }
+
+                    if (class_exists(TicketType::class)) {
+                        $ticketTypes = TicketType::query()
+                            ->where('status', 'active')
+                            ->whereHasMorph('ticketable', [
+                                Event::class,
+                                EventOccurrence::class,
+                                EventSession::class,
+                            ])
+                            ->with('ticketable')
+                            ->get(['id', 'name', 'code', 'ticketable_id', 'ticketable_type']);
+
+                        foreach ($ticketTypes as $ticket) {
+                            $event = EventTicketScope::event($ticket);
+                            $eventName = $event instanceof Event ? $event->title : 'Unknown Event';
+                            $code = filled($ticket->code) ? " ({$ticket->code})" : '';
+                            $options["ticket:{$ticket->id}"] = "[{$eventName}] {$ticket->name}{$code}";
+                        }
+                    }
+
+                    return $options;
+                })
+                ->afterStateUpdated(function (?string $state, Set $set): void {
+                    if ($state === null) {
+                        $set('conditions', null);
+
+                        return;
+                    }
+
+                    [$type, $id] = explode(':', $state, 2);
+
+                    $purchasableType = $this->purchasableClass($type);
+
+                    if ($purchasableType === null) {
+                        $set('conditions', null);
+
+                        return;
+                    }
+
+                    $set('conditions', [
+                        'purchasable_type' => $purchasableType,
+                        'purchasable_id' => $id,
+                    ]);
+                }),
+
+            TextInput::make('priority')
+                ->numeric()
+                ->required()
+                ->default(0)
+                ->helperText('Higher priority rules are evaluated first. Product rules default to 90.'),
+
+            Select::make('commission_type')
+                ->options(CommissionType::class)
+                ->required(),
+
+            TextInput::make('commission_value')
+                ->label('Commission Value')
+                ->numeric()
+                ->required()
+                ->helperText('Percentage in basis points (e.g. 1000 = 10%) or fixed amount in cents (e.g. 1000 = RM10).'),
+
+            DateTimePicker::make('starts_at'),
+
+            DateTimePicker::make('ends_at'),
+
+            Toggle::make('is_active')
+                ->default(true),
+
+            KeyValue::make('conditions')
+                ->keyLabel('Condition')
+                ->valueLabel('Value')
+                ->columnSpanFull()
+                ->helperText('Optional extra matching conditions. Example: {"purchasable_type": "AIArmada\\Ticketing\\Models\\TicketType", "purchasable_id": "uuid-here"} — auto-filled when you select a purchasable item above.')
+                ->addActionLabel('Add Condition'),
+
+            KeyValue::make('metadata')
+                ->keyLabel('Key')
+                ->valueLabel('Value')
+                ->columnSpanFull()
+                ->helperText('Optional metadata for internal reference, e.g. {"notes": "Summer campaign", "approved_by": "Admin"}')
+                ->addActionLabel('Add Metadata'),
+        ]);
+    }
+
+    private function purchasablePrefix(string $fqcn): ?string
+    {
+        return match ($fqcn) {
+            Product::class => 'product',
+            TicketType::class => 'ticket',
+            default => null,
+        };
+    }
+
+    private function purchasableClass(string $prefix): ?string
+    {
+        return match ($prefix) {
+            'product' => Product::class,
+            'ticket' => TicketType::class,
+            default => null,
+        };
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->recordTitleAttribute('name')
+            ->columns([
+                TextColumn::make('name')
+                    ->searchable(),
+
+                TextColumn::make('rule_type')
+                    ->badge(),
+
+                TextColumn::make('priority')
+                    ->sortable(),
+
+                TextColumn::make('commission_type')
+                    ->badge(),
+
+                TextColumn::make('commission_value')
+                    ->sortable(),
+
+                TextColumn::make('starts_at')
+                    ->dateTime()
+                    ->placeholder('—'),
+            ])
+            ->headerActions([
+                CreateAction::make()
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (array $data): AffiliateCommissionRule {
+                        $id = app(ProgramCommissionAdministration::class)->createRule((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return AffiliateCommissionRule::query()->findOrFail($id);
+                    }),
+            ])
+            ->actions([
+                EditAction::make()
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (AffiliateCommissionRule $record, array $data): AffiliateCommissionRule {
+                        app(ProgramCommissionAdministration::class)->updateRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(fn (AffiliateCommissionRule $record): bool => app(ProgramCommissionAdministration::class)->deleteRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(ProgramCommissionAdministration::class)->deleteRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey());
+                            }
+                        }),
+                ]),
+            ]);
+    }
+}

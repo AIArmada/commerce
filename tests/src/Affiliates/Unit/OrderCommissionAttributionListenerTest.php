@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
@@ -26,7 +30,7 @@ it('records affiliate conversions when order commission attribution is required'
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('order-item-1', 'Order item', 10.00, 1);
 
     $cartId = $cart->getId();
@@ -62,7 +66,7 @@ it('fails closed when an order carries a malformed owner tuple', function (): vo
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('order-item-2', 'Order item', 10.00, 1);
 
     $cartId = $cart->getId();
@@ -110,7 +114,7 @@ it('leaves registration-line commissions to the checkout registration step', fun
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('registration-line-item', 'Ticket registration', 10.00, 1);
 
     $order = Order::factory()->paid()->create([
@@ -139,7 +143,7 @@ it('uses the explicit checkout idempotency key for frozen commercial conversions
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
         'affiliate_program_id' => (string) Str::uuid(),
     ]);
     $cart->add('frozen-item', 'Ticket registration', 100.00, 1);
@@ -157,8 +161,8 @@ it('uses the explicit checkout idempotency key for frozen commercial conversions
         'total' => 10_000,
         'commission_currency' => 'MYR',
     ];
-    $first = $action->recordCommercialForFrozenAttribution($cart, $attribution, $payload);
-    $retry = $action->recordCommercialForFrozenAttribution($cart, $attribution, $payload);
+    $first = $action->recordFrozen($cart, (string) $attribution->getKey(), $payload);
+    $retry = $action->recordFrozen($cart, (string) $attribution->getKey(), $payload);
 
     $storedIdempotencyKey = hash('sha256', implode('|', [
         'affiliate-conversion',
@@ -193,7 +197,7 @@ it('namespaces explicit idempotency keys by affiliate', function (): void {
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($firstAffiliate, $cart);
+    app(CartAttribution::class)->attach((string) $firstAffiliate->getKey(), $cart);
     $cart->add('same-key-item-a', 'Same key item', 100.00, 1);
     $firstAttribution = AffiliateAttribution::query()
         ->where('affiliate_id', $firstAffiliate->getKey())
@@ -213,11 +217,11 @@ it('namespaces explicit idempotency keys by affiliate', function (): void {
         'commission_currency' => 'MYR',
     ];
 
-    $first = $action->recordCommercialForFrozenAttribution($cart, $firstAttribution, [
+    $first = $action->recordFrozen($cart, (string) $firstAttribution->getKey(), [
         ...$common,
         'external_reference' => 'ticket:first-affiliate',
     ]);
-    $second = $action->recordCommercialForFrozenAttribution($cart, $secondAttribution, [
+    $second = $action->recordFrozen($cart, (string) $secondAttribution->getKey(), [
         ...$common,
         'external_reference' => 'ticket:second-affiliate',
     ]);
@@ -238,7 +242,7 @@ it('rejects payload attribution overrides that disagree with the frozen row', fu
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
         'affiliate_program_id' => (string) Str::uuid(),
         'affiliate_link_id' => (string) Str::uuid(),
     ]);
@@ -253,7 +257,7 @@ it('rejects payload attribution overrides that disagree with the frozen row', fu
         'affiliate_link_id' => (string) Str::uuid(),
         'affiliate_program_id' => (string) Str::uuid(),
     ] as $key => $value) {
-        expect(fn () => app(RecordAffiliateConversion::class)->recordCommercialForFrozenAttribution($cart, $attribution, [
+        expect(fn () => app(RecordAffiliateConversion::class)->recordFrozen($cart, (string) $attribution->getKey(), [
             'external_reference' => 'ticket:frozen-override:' . $key,
             $key => $value,
             'subtotal' => 10_000,
@@ -277,16 +281,16 @@ it('rejects frozen commercial conversion recording for a Dawah-purpose affiliate
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('dawah-ticket-item', 'Ticket registration', 100.00, 1);
     $attribution = AffiliateAttribution::query()
         ->where('affiliate_id', $affiliate->getKey())
         ->where('cart_identifier', $cart->getIdentifier())
         ->firstOrFail();
 
-    expect(fn () => app(RecordAffiliateConversion::class)->recordCommercialForFrozenAttribution(
+    expect(fn () => app(RecordAffiliateConversion::class)->recordFrozen(
         $cart,
-        $attribution,
+        (string) $attribution->getKey(),
         ['external_reference' => 'dawah-ticket-registration'],
     ))->toThrow(InvalidArgumentException::class, 'commercial-purpose');
 
@@ -304,7 +308,7 @@ it('records zero-value conversions for free orders without phantom money', funct
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('free-item-1', 'Free item', 0.00, 1);
 
     $cartId = $cart->getId();
@@ -328,10 +332,81 @@ it('records zero-value conversions for free orders without phantom money', funct
     event(new CommissionAttributionRequired($order));
 
     $conversion = AffiliateConversion::query()->sole();
-    $balance = $affiliate->balanceFor('MYR')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->fresh();
 
     expect($conversion->commission_minor)->toBe(0)
         ->and($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
         ->and($balance->lifetime_earnings_minor)->toBe(0);
+});
+
+it('does not consume a promotion twice when a conversion is replayed', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'PROMO-RETRY',
+        'name' => 'Promotion retry',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
+    ]);
+    $program = AffiliateProgram::create([
+        'name' => 'Retry program',
+        'slug' => 'promotion-retry',
+        'status' => ProgramStatus::Active,
+        'commission_type' => 'percentage',
+        'default_commission_rate_basis_points' => 1000,
+        'cookie_lifetime_days' => 30,
+    ]);
+    $promotion = AffiliateCommissionPromotion::create([
+        'program_id' => $program->id,
+        'name' => 'Limited bonus',
+        'bonus_type' => 'flat',
+        'bonus_value' => 500,
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addDay(),
+        'max_uses' => 3,
+    ]);
+    $cart = app('cart')->getCurrentCart();
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
+    $cart->add('promo-retry-item', 'Order item', 10.00, 1);
+    $payload = [
+        'affiliate_id' => $affiliate->id,
+        'affiliate_program_id' => $program->id,
+        'external_reference' => 'PROMOTION-RETRY-ORDER',
+        'subtotal' => 10000,
+        'total' => 10000,
+    ];
+
+    $record = app(RecordAffiliateConversion::class);
+    $first = $record->record($cart, $payload);
+    $second = $record->record($cart, $payload);
+
+    expect($first)->not->toBeNull()
+        ->and($second->id)->toBe($first->id)
+        ->and($promotion->fresh()->current_uses)->toBe(1)
+        ->and(AffiliateConversion::query()->where('external_reference', 'PROMOTION-RETRY-ORDER')->count())->toBe(1);
+});
+
+it('does not duplicate a cart conversion after its commission rate changes', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'REPRICE-RETRY',
+        'name' => 'Reprice retry',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
+    ]);
+    $cart = app('cart')->getCurrentCart();
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
+    $cart->add('reprice-item', 'Order item', 10.00, 1);
+    $payload = ['affiliate_id' => $affiliate->id, 'subtotal' => 10000, 'total' => 10000];
+    $record = app(RecordAffiliateConversion::class);
+    $first = $record->record($cart, $payload);
+
+    $affiliate->update(['commission_rate' => 2000]);
+    $second = $record->record($cart, $payload);
+
+    expect($first)->not->toBeNull()
+        ->and($second->id)->toBe($first->id)
+        ->and(AffiliateConversion::query()->where('affiliate_id', $affiliate->id)->count())->toBe(1);
 });

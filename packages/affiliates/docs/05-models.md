@@ -13,7 +13,7 @@ The affiliates package includes 30 Eloquent models. This reference covers the pr
 The main affiliate/partner model.
 
 ```php
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 ```
 
 **Key Attributes:**
@@ -40,36 +40,29 @@ use AIArmada\Affiliates\Models\Affiliate;
 **Relationships:**
 
 ```php
-$affiliate->conversions;      // HasMany<AffiliateConversion>
-$affiliate->attributions;     // HasMany<AffiliateAttribution>
-$affiliate->payouts;          // MorphMany<AffiliatePayout>
-$affiliate->links;            // HasMany<AffiliateLink>
-$affiliate->balances;         // HasMany<AffiliateBalance>, one per currency
+app(\AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader::class)
+    ->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()));
+app(\AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader::class)->count($affiliate->id);
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader::class)->hasAffiliateHistory($affiliate->id, spl_object_id($affiliate->getConnection()));
+app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey());
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
-$affiliate->programs;         // BelongsToMany<AffiliateProgram>
-$affiliate->fraudSignals;     // HasMany<AffiliateFraudSignal>
-$affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
-$affiliate->rank;             // BelongsTo<AffiliateRank>
-$affiliate->payoutMethods;    // HasMany<AffiliatePayoutMethod>
-$affiliate->payoutHolds;      // HasMany<AffiliatePayoutHold>
-$affiliate->vouchers;         // HasMany<Voucher>
-$affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
+app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey());
+app(\AIArmada\Affiliates\Features\Upline\Api\RankDirectory::class)->label($affiliate->rank_id);
+// Optional vouchers are read from the vouchers package by affiliate_id, with owner scope.
 ```
 
-`commissionRules` and `volumeTiers` are **not** relationships on `Affiliate` —
-those rows are program-scoped and reachable via `$program->commissionRules()` and
-`$program->volumeTiers()`.
+Commission rules, promotions and volume tiers are program-scoped and owned by Commissions. Use `ProgramCommissionAdministration` and `VolumeTierAdministration` for mutations, and `CommissionCatalogReader`, `CommissionRulePreview` and `VolumeTierReader` for catalog reads.
 
 **Key Methods:**
 
 ```php
 $affiliate->isActive();                // Check if status is Active
 $affiliate->canBeAttributed();         // Active, or pending under open registration
-$affiliate->hasActivePayoutHold();     // Check for unreleased payout holds
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey());     // Check for unreleased payout holds
 $affiliate->canRequestPayout();        // True when any balance meets its minimum payout
 $affiliate->canRequestPayout('USD');   // True when the USD balance meets its minimum
-$affiliate->balanceFor('USD');         // The USD AffiliateBalance, or null
+app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->find((string) $affiliate->getKey(), 'USD');
 ```
 
 ### AffiliateAttribution
@@ -77,7 +70,7 @@ $affiliate->balanceFor('USD');         // The USD AffiliateBalance, or null
 Tracks when a visitor is attributed to an affiliate.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 ```
 
 **Key Attributes:**
@@ -106,9 +99,9 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 **Relationships:**
 
 ```php
-$attribution->affiliate;    // BelongsTo<Affiliate>
-$attribution->conversions;  // HasMany<AffiliateConversion>
-$attribution->touchpoints;  // HasMany<AffiliateTouchpoint>
+$attribution->affiliate_id; // Resolve identity through AffiliateReferenceReader.
+// Query conversion records by affiliate_attribution_id.  // HasMany<AffiliateConversion>
+app(\AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader::class)->distributionTouches($attribution->id);
 ```
 
 Attribution identity fields describe the originating commerce subject:
@@ -121,7 +114,7 @@ Attribution identity fields describe the originating commerce subject:
 Records a successful conversion (sale, signup, etc.).
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 ```
 
 **Key Attributes:**
@@ -149,9 +142,9 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 **Relationships:**
 
 ```php
-$conversion->affiliate;    // BelongsTo<Affiliate>
-$conversion->attribution;  // BelongsTo<AffiliateAttribution>
-$conversion->payout;       // BelongsTo<AffiliatePayout>
+$conversion->affiliate_id; // Resolve identity through AffiliateReferenceReader.
+$conversion->affiliate_attribution_id; // Nullable attribution identity
+$conversion->affiliate_payout_id; // nullable payout identity
 ```
 
 `external_reference`, `value_minor`, `subject_key`, `subject_instance`, and
@@ -184,7 +177,7 @@ rows, and any pool shortfall is reported via
 Batch payout record for commissions.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 ```
 
 **Key Attributes:**
@@ -204,10 +197,11 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 **Relationships:**
 
 ```php
-$payout->conversions;  // HasMany<AffiliateConversion>
-$payout->events;       // HasMany<AffiliatePayoutEvent>
+app(\AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity::class)->summary($payout->id, $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()));
 $payout->payee;        // MorphTo (Affiliate or custom)
 ```
+
+Read payout event history through `PayoutEventHistory::forPayout()`; see [Payouts](08-payouts.md).
 
 ## Program Models
 
@@ -216,7 +210,7 @@ $payout->payee;        // MorphTo (Affiliate or custom)
 Affiliate program definition with commission rules.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 ```
 
 **Key Attributes:**
@@ -235,21 +229,14 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 | `starts_at` | timestamp | Program start date |
 | `ends_at` | timestamp | Program end date |
 
-**Relationships:**
-
-```php
-$program->tiers;        // HasMany<AffiliateProgramTier>
-$program->memberships;  // HasMany<AffiliateProgramMembership>
-$program->creatives;    // HasMany<AffiliateProgramCreative>
-$program->affiliates;   // BelongsToMany<Affiliate>
-```
+Program tiers and memberships are internal Programs feature records. Use `ProgramTierAdministration`, `MembershipAdministration`, `ProgramMembershipReader` and `ProgramTierManagement` instead of cross-feature ORM relationships.
 
 ### AffiliateProgramMembership
 
 Affiliate enrollment in a program.
 
 ```php
-$membership->affiliate;  // BelongsTo<Affiliate>
+$membership->affiliate_id; // Resolve identity through AffiliateReferenceReader.
 $membership->program;    // BelongsTo<AffiliateProgram>
 $membership->tier;       // BelongsTo<AffiliateProgramTier>
 ```
@@ -258,10 +245,10 @@ $membership->tier;       // BelongsTo<AffiliateProgramTier>
 
 ### AffiliateBalance
 
-Real-time balance tracking.
+Real-time balance tracking. Use `BalanceReader` for balance snapshots and `AffiliateReferenceReader` for affiliate ownership; there is no cross-feature affiliate relation.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 ```
 
 | Attribute | Type | Description |
@@ -288,7 +275,7 @@ $balance->formatLifetimeEarnings(); // Decimal string for display
 Stored payout methods.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 ```
 
 | Attribute | Type | Description |
@@ -303,7 +290,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 Temporary holds on payouts.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 ```
 
 | Attribute | Type | Description |
@@ -318,10 +305,10 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 
 ### AffiliateFraudSignal
 
-Detected fraud signals.
+Detected fraud signals, owned by the Fraud feature. Use its public API instead of traversing a relationship on the affiliate model.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 ```
 
 | Attribute | Type | Description |
@@ -338,10 +325,10 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 
 ### AffiliateDailyStat
 
-Aggregated daily statistics.
+Aggregated daily statistics. Affiliate identity is referenced by ID and resolved through Identity APIs.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 ```
 
 | Attribute | Type | Description |
@@ -428,8 +415,8 @@ Revoked rows are preserved as history and continue to seal the affiliate.
 
 ### AffiliateSupportTicket / AffiliateSupportMessage
 
-Support ticket system for affiliate queries.
+Support ticket system for affiliate queries. Tickets and messages reference an affiliate by ID, not an Eloquent relationship.
 
 ### AffiliateTaxDocument
 
-Tax document storage (W-9, 1099).
+Tax document storage (W-9, 1099). Resolve affiliate identity through the Identity feature's public readers.

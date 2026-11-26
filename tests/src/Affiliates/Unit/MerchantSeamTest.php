@@ -2,26 +2,36 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
-use AIArmada\Affiliates\Contracts\MerchantCatalog;
+use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
+use AIArmada\Affiliates\Data\ClickFraudEvidence;
+use AIArmada\Affiliates\Data\ConversionFraudEvidence;
 use AIArmada\Affiliates\Data\ExternalConversion;
+use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\FraudDetectionService;
-use AIArmada\Affiliates\Services\MerchantLedgerService;
-use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ExternalConversionLedger;
+use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Contacting\Data\ContactMethodData;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
@@ -83,6 +93,21 @@ describe('merchant seam', function (): void {
             ->and(AffiliateConversion::query()->where('origin', 'marketplace')->count())->toBe(1);
     });
 
+    test('ledger rejects an idempotency collision rather than returning a different posting', function (): void {
+        $affiliate = createTestAffiliate();
+        $ledger = app(MerchantLedger::class);
+        $first = merchantSeamDraft((string) $affiliate->getKey(), [
+            'source' => 'a|b', 'sourceRef' => 'c', 'externalReference' => 'd',
+        ]);
+        $collision = merchantSeamDraft((string) $affiliate->getKey(), [
+            'source' => 'a', 'sourceRef' => 'b|c', 'externalReference' => 'd',
+        ]);
+
+        expect($ledger->postExternalConversion($first))->not->toBeNull();
+        expect(fn () => $ledger->postExternalConversion($collision))->toThrow(InvalidArgumentException::class);
+        expect(AffiliateConversion::query()->count())->toBe(1);
+    });
+
     test('ledger rolls back the conversion when accounting fails', function (): void {
         $affiliate = createTestAffiliate();
         $draft = merchantSeamDraft((string) $affiliate->getKey());
@@ -106,15 +131,24 @@ describe('merchant seam', function (): void {
         $affiliate = createTestAffiliate();
         $draft = merchantSeamDraft((string) $affiliate->getKey());
         Event::fake([AffiliateConversionRecorded::class]);
-        $fraud = new FraudDetectionService([new class
+        $fraud = new AnalyzeFraud(app(FraudEvidenceQuery::class), app(ConversionInspectionReader::class), [new class implements FraudRule
         {
-            /** @return array{risk_points: int} */
-            public function analyzeConversion(AffiliateConversion $conversion, array $context): array
+            public function ruleCode(): string
             {
-                return ['risk_points' => 100];
+                return 'TEST_BLOCK';
+            }
+
+            public function analyzeClick(ClickFraudEvidence $evidence): ?FraudFinding
+            {
+                return null;
+            }
+
+            public function analyzeConversion(ConversionFraudEvidence $evidence): FraudFinding
+            {
+                return new FraudFinding($this->ruleCode(), 100, FraudSeverity::Critical, 'Test fraud rejection', []);
             }
         }]);
-        $ledger = new MerchantLedgerService(
+        $ledger = new ExternalConversionLedger(
             app(MerchantIdentity::class),
             app(ApplyConversionAccounting::class),
             $fraud,
@@ -140,6 +174,15 @@ describe('merchant seam', function (): void {
 
         expect($posted)->not->toBeNull()
             ->and($posted->affiliateCode)->toBe($affiliate->code);
+    });
+
+    test('ledger handles malformed external affiliate identifiers without an invalid UUID query', function (): void {
+        $email = 'malformed-' . uniqid() . '@example.com';
+        $affiliate = merchantSeamVerifiedAffiliate($email);
+        $ledger = app(MerchantLedger::class);
+
+        expect($ledger->postExternalConversion(merchantSeamDraft('not-a-uuid')))->toBeNull()
+            ->and($ledger->postExternalConversion(merchantSeamDraft('not-a-uuid', ['affiliateEmail' => $email]))?->affiliateCode)->toBe($affiliate->code);
     });
 
     test('ledger posts nothing for unresolvable affiliates', function (): void {
@@ -201,8 +244,69 @@ describe('merchant seam', function (): void {
             ->toBe((string) $affiliateA->getKey())
             ->and(OwnerContext::withOwner($ownerB, fn (): ?string => $identities->findIdForEmail($email)))
             ->toBe((string) $affiliateB->getKey())
+            ->and(OwnerContext::withOwner($ownerA, fn () => $identities->findAccessible((string) $affiliateA->getKey()))?->id)
+            ->toBe((string) $affiliateA->getKey())
+            ->and(OwnerContext::withOwner($ownerA, fn () => $identities->findAccessible((string) $affiliateB->getKey())))
+            ->toBeNull()
+            ->and(OwnerContext::withOwner($ownerA, fn () => $identities->findAccessible((string) Str::uuid())))
+            ->toBeNull()
             ->and($unverifiedMethod->is_verified)
             ->toBeFalse();
+    });
+
+    test('owner references enforce scope, connection and valid identity keys', function (): void {
+        config()->set('affiliates.owner.enabled', true);
+        config()->set('affiliates.owner.include_global', true);
+
+        $owner = User::query()->create([
+            'name' => 'Reference owner',
+            'email' => 'reference-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $other = User::query()->create([
+            'name' => 'Other reference owner',
+            'email' => 'other-reference-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $owned = OwnerContext::withOwner($owner, fn (): Affiliate => createTestAffiliate());
+        $foreign = OwnerContext::withOwner($other, fn (): Affiliate => createTestAffiliate());
+        $global = OwnerContext::withOwner(null, fn (): Affiliate => createTestAffiliate());
+        $reader = app(AffiliateReferenceReader::class);
+        $profiles = app(AffiliateProfileReader::class);
+        $identity = spl_object_id($owned->getConnection());
+
+        OwnerContext::withOwner($owner, function () use ($reader, $profiles, $owned, $foreign, $global, $identity, $owner): void {
+            expect($reader->ownerReference($owned->id, $identity)?->ownerId)->toBe((string) $owner->getKey())
+                ->and($reader->ownerReference($foreign->id, $identity, includeGlobal: true))->toBeNull()
+                ->and($reader->ownerReference($global->id, $identity))->toBeNull()
+                ->and($reader->ownerReference($global->id, $identity, includeGlobal: true)?->id)->toBe($global->id)
+                ->and($reader->ownerReference('not-a-uuid', $identity))->toBeNull()
+                ->and(OwnerScopeOverride::withoutIncludeGlobal(fn () => $reader->ownerReference($global->id, $identity, includeGlobal: true)))->toBeNull();
+
+            expect(fn () => $reader->ownerReference($owned->id, -1))->toThrow(LogicException::class);
+
+            $profile = $profiles->find($owned->id, $identity);
+            expect($profile?->reference->id)->toBe($owned->id)
+                ->and($profile?->code)->toBe($owned->code)
+                ->and($profile?->handle)->toBe($owned->handle)
+                ->and($profiles->find($foreign->id, $identity, includeGlobal: true))->toBeNull()
+                ->and($profiles->find($global->id, $identity))->toBeNull()
+                ->and($profiles->lock($foreign->id, $identity))->toBeNull()
+                ->and($profiles->lock($global->id, $identity))->toBeNull()
+                ->and($profiles->lock($owned->id, $identity)?->reference->id)->toBe($owned->id);
+        });
+    });
+
+    test('identity rejects ambiguous verified emails instead of selecting an arbitrary payee', function (): void {
+        $email = 'ambiguous-' . uniqid() . '@example.com';
+        merchantSeamVerifiedAffiliate($email);
+        merchantSeamVerifiedAffiliate($email);
+
+        expect(app(MerchantIdentity::class)->findIdForEmail($email))->toBeNull()
+            ->and(app(MerchantLedger::class)->postExternalConversion(merchantSeamDraft(
+                (string) Str::uuid(),
+                ['affiliateEmail' => $email],
+            )))->toBeNull();
     });
 
     test('catalog snapshots programs for mirrors', function (): void {
@@ -225,7 +329,7 @@ describe('merchant seam', function (): void {
         $posted = $ledger->postExternalConversion($draft);
 
         expect($posted)->not->toBeNull()
-            ->and($affiliate->balanceFor('MYR')->holding_minor)->toBe(13485);
+            ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->holding_minor)->toBe(13485);
 
         $voided = $ledger->voidPosted('marketplace', $draft->sourceRef, $draft->externalReference, 'merchant refund');
 
@@ -234,7 +338,7 @@ describe('merchant seam', function (): void {
             ->and($voided->commissionMinor)->toBe(13485);
 
         $conversion = AffiliateConversion::query()->withoutOwnerScope()->findOrFail($posted->id);
-        $balance = $affiliate->balanceFor('MYR')->fresh();
+        $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->fresh();
 
         expect($conversion->status->equals(RejectedConversion::class))->toBeTrue()
             ->and($balance->holding_minor)->toBe(0)
@@ -270,7 +374,7 @@ describe('merchant seam', function (): void {
         $affiliate = OwnerContext::withOwner($owner, fn (): Affiliate => createTestAffiliate());
         $draft = merchantSeamDraft((string) $affiliate->getKey());
         $ledger = app(MerchantLedger::class);
-        $posted = OwnerContext::withOwner($owner, fn (): ?PostedConversion => $ledger->postExternalConversion($draft));
+        $posted = OwnerContext::withOwner(null, fn (): ?PostedConversion => $ledger->postExternalConversion($draft));
 
         expect($posted)->not->toBeNull();
 

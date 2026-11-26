@@ -25,6 +25,7 @@ $tables = [
     'program_tiers' => $tablePrefix . 'program_tiers',
     'program_memberships' => $tablePrefix . 'program_memberships',
     'program_creatives' => $tablePrefix . 'program_creatives',
+    'creative_asset_cleanups' => $tablePrefix . 'creative_asset_cleanups',
     'links' => $tablePrefix . 'links',
     'commission_rules' => $tablePrefix . 'commission_rules',
     'volume_tiers' => $tablePrefix . 'volume_tiers',
@@ -324,7 +325,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Connection details for reporting sales to an affiliate network via
-    | NetworkPostbackClient, plus the referral-capture settings used by the
+    | NetworkPostbackGateway, plus the referral-capture settings used by the
     | CaptureNetworkReferral middleware. Only needed on merchant stores
     | that sell through a network marketplace.
     |
@@ -349,6 +350,7 @@ return [
 
     'tax' => [
         'storage_disk' => env('AFFILIATES_TAX_STORAGE_DISK', 'local'),
+        'pdf_driver' => env('AFFILIATES_TAX_PDF_DRIVER', 'browsershot'),
         // Stored/compared in minor units (e.g. 60000 = $600.00)
         '1099_threshold' => env('AFFILIATES_TAX_1099_THRESHOLD', 60000),
         '1099_threshold_currency' => env('AFFILIATES_TAX_1099_THRESHOLD_CURRENCY', 'USD'),

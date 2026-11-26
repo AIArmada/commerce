@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Illuminate\Support\Facades\Artisan;
 
@@ -28,29 +28,29 @@ beforeEach(function (): void {
     ]);
 
     $this->cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($this->affiliate, $this->cart);
+    app(CartAttribution::class)->attach((string) $this->affiliate->getKey(), $this->cart);
 });
 
 test('affiliate report service summarizes totals and utm', function (): void {
     $recordAffiliateConversion = app(RecordAffiliateConversion::class);
 
     $cart = $this->cart;
-    app(AttachAffiliateToCart::class)->handle($this->affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $this->affiliate->getKey(), $cart, [
         'source' => 'newsletter',
         'campaign' => 'spring',
     ]);
 
-    $recordAffiliateConversion->handle($cart, [
+    $recordAffiliateConversion->record($cart, [
         'order_reference' => 'RPT-1',
         'subtotal' => 1000,
     ]);
 
-    $recordAffiliateConversion->handle($cart, [
+    $recordAffiliateConversion->record($cart, [
         'order_reference' => 'RPT-2',
         'subtotal' => 2000,
     ]);
 
-    $summary = app(AffiliateReportService::class)->affiliateSummary($this->affiliate->getKey());
+    $summary = app(ReportingApi::class)->affiliateSummary($this->affiliate->getKey());
 
     expect($summary['totals']['commission_minor'])->toBe(30)
         ->and($summary['totals']['conversions'])->toBe(2)
@@ -86,7 +86,7 @@ test('affiliate report service prefers neutral revenue fields and attribution fi
         'campaign' => 'ramadan',
     ]);
 
-    $service = app(AffiliateReportService::class);
+    $service = app(ReportingApi::class);
     $startDate = $occurredAt->copy()->subHour();
     $endDate = $occurredAt->copy()->addHour();
 
@@ -198,7 +198,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'touched_at' => $occurredAt,
     ]);
 
-    $subjects = app(AffiliateReportService::class)->getTopSubjects(
+    $subjects = app(ReportingApi::class)->getTopSubjects(
         $occurredAt->copy()->subHour(),
         $occurredAt->copy()->addHour(),
     );
@@ -251,7 +251,7 @@ test('affiliate report service refuses to blend mixed-currency totals without ra
 
     config(['affiliates.currency.default' => 'USD']);
 
-    $service = app(AffiliateReportService::class);
+    $service = app(ReportingApi::class);
     $summary = $service->getSummary($occurredAt->copy()->subHour(), $occurredAt->copy()->addHour());
 
     expect($summary['conversions'])->toBe(2)
@@ -288,7 +288,7 @@ test('affiliate report service converts mixed-currency totals when rates exist',
     config(['affiliates.currency.default' => 'USD']);
     (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 
-    $service = app(AffiliateReportService::class);
+    $service = app(ReportingApi::class);
     $startDate = $occurredAt->copy()->subHour();
     $endDate = $occurredAt->copy()->addHour();
 
@@ -322,4 +322,37 @@ test('affiliate report service converts mixed-currency totals when rates exist',
         'currency' => 'USD',
         'converted' => true,
     ])->and($affiliateSummary['totals']['by_currency'])->toHaveKeys(['USD', 'MYR']);
+});
+
+test('traffic reporting excludes attribution references belonging to another affiliate', function (): void {
+    $other = Affiliate::create([
+        'code' => 'REPORT-OTHER',
+        'name' => 'Other affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 100,
+        'currency' => 'USD',
+    ]);
+
+    $attribution = AffiliateAttribution::create([
+        'affiliate_id' => $other->id,
+        'affiliate_code' => $other->code,
+        'source' => 'foreign-source',
+        'campaign' => 'foreign-campaign',
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $this->affiliate->id,
+        'affiliate_code' => $this->affiliate->code,
+        'affiliate_attribution_id' => $attribution->id,
+        'value_minor' => 1000,
+        'commission_minor' => 100,
+        'commission_currency' => 'USD',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    $report = app(ReportingApi::class);
+    expect($report->affiliateSummary($this->affiliate->id)['utm'])->toBe(['sources' => [], 'campaigns' => []])
+        ->and($report->getTrafficSources(now()->subDay(), now()->addDay()))->toBe(['sources' => [], 'campaigns' => []]);
 });

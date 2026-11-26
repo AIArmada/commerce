@@ -2,30 +2,34 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\DisableAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\PauseAffiliate;
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
-use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\AssertPayoutCompletable;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -54,7 +58,7 @@ function recordCompletionGuardConversion(Affiliate $affiliate, int $commissionMi
         'occurred_at' => now(),
     ]);
 
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
 
     return $conversion;
 }
@@ -64,12 +68,12 @@ function recordCompletionGuardConversion(Affiliate $affiliate, int $commissionMi
 test('reversing a conversion reserved by an open payout throws and moves no money', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    expect(fn (): object => ReverseAffiliateConversion::run($conversion, 'duplicate'))
+    expect(fn (): object => app(ReverseAffiliateConversion::class)->handle($conversion, 'duplicate'))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(0)
         ->and($balance->lifetime_earnings_minor)->toBe(5000)
@@ -80,9 +84,9 @@ test('reversing a conversion reserved by an open payout throws and moves no mone
 test('voiding a conversion reserved by an open payout throws', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    CreatePayout::run([$conversion->id]);
+    app(CreatePayout::class)->handle([$conversion->id]);
 
-    expect(fn (): object => VoidAffiliateConversion::run($conversion, 'fraud'))
+    expect(fn (): object => app(VoidAffiliateConversion::class)->handle($conversion, 'fraud'))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
 
     expect($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
@@ -93,7 +97,7 @@ test('rejecting a reserved conversion through the table status action throws', f
 
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    CreatePayout::run([$conversion->id]);
+    app(CreatePayout::class)->handle([$conversion->id]);
 
     expect(fn (): bool => AffiliateConversionsTable::updateStatus($conversion, RejectedConversion::class))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
@@ -104,7 +108,7 @@ test('marking a reserved conversion paid through the table status action throws'
 
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    CreatePayout::run([$conversion->id]);
+    app(CreatePayout::class)->handle([$conversion->id]);
 
     expect(fn (): bool => AffiliateConversionsTable::updateStatus($conversion, PaidConversion::class))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
@@ -114,29 +118,29 @@ test('caller-supplied override metadata is stripped when no override is needed',
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
 
-    $payout = CreatePayout::run([$conversion->id], [
+    $payout = app(CreatePayout::class)->handle([$conversion->id], [
         'metadata' => ['payout_override' => ['reason' => 'forged'], 'note' => 'kept'],
     ]);
 
     expect($payout->metadata['payout_override'] ?? null)->toBeNull()
         ->and($payout->metadata['note'] ?? null)->toBe('kept');
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
 });
 
 test('a reserved conversion becomes reversible after the payout is cancelled', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    UpdatePayoutStatus::run($payout, 'cancelled');
+    app(UpdatePayoutStatus::class)->handle($payout, 'cancelled');
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'duplicate');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'duplicate');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(0)
         ->and($balance->lifetime_earnings_minor)->toBe(0)
@@ -146,13 +150,13 @@ test('a reserved conversion becomes reversible after the payout is cancelled', f
 test('reversing a paid conversion linked to a completed payout still claws back', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    UpdatePayoutStatus::run($payout, 'completed');
+    app(UpdatePayoutStatus::class)->handle($payout, 'completed');
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'chargeback');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'chargeback');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(-5000)
         ->and($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue();
@@ -161,13 +165,13 @@ test('reversing a paid conversion linked to a completed payout still claws back'
 test('completion refuses when a linked conversion left Approved out of band', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     DB::table((new AffiliateConversion)->getTable())
         ->where('id', $conversion->getKey())
         ->update(['status' => ReversedConversion::value()]);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'left Approved');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeFalse();
@@ -178,11 +182,11 @@ test('completion refuses when a linked conversion left Approved out of band', fu
 test('reconcilePayout refuses completion for a disabled affiliate', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    expect(fn (): bool => app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed', ['reference' => 'ext-1']))
+    expect(fn (): bool => app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed', ['reference' => 'ext-1']))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeFalse();
@@ -191,11 +195,11 @@ test('reconcilePayout refuses completion for a disabled affiliate', function ():
 test('reconcilePayout refuses completion for a paused affiliate', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    PauseAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->pause($affiliate->id);
 
-    expect(fn (): bool => app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed', ['reference' => 'ext-1']))
+    expect(fn (): bool => app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed', ['reference' => 'ext-1']))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
 });
 
@@ -205,17 +209,17 @@ test('an override payout completes through the manual path and stamps the overri
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    $payout = CreatePayout::run([$conversion->id], [
+    $payout = app(CreatePayout::class)->handle([$conversion->id], [
         'payout_override_reason' => 'Account closed in good standing.',
     ]);
 
-    $completed = UpdatePayoutStatus::run($payout, 'completed');
+    $completed = app(UpdatePayoutStatus::class)->handle($payout, 'completed');
 
     expect($completed->status->equals(CompletedPayout::class))->toBeTrue()
         ->and($completed->metadata['payout_override']['override_completed_at'])->not->toBeNull()
-        ->and($completed->events()->where('notes', 'like', '%payout override%')->count())->toBe(1)
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $completed->getKey())->where('notes', 'like', '%payout override%')->count())->toBe(1)
         ->and($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue();
 });
 
@@ -223,13 +227,13 @@ test('an override payout completes through the reconciliation path', function ()
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    $payout = CreatePayout::run([$conversion->id], [
+    $payout = app(CreatePayout::class)->handle([$conversion->id], [
         'payout_override_reason' => 'Account closed in good standing.',
     ]);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed', ['reference' => 'ext-2']);
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed', ['reference' => 'ext-2']);
 
     expect($changed)->toBeTrue()
         ->and($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
@@ -239,15 +243,15 @@ test('an override payout completes through the reconciliation path', function ()
 test('a forged override on a paused affiliate does not unblock completion', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    PauseAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->pause($affiliate->id);
 
     DB::table((new AffiliatePayout)->getTable())
         ->where('id', $payout->getKey())
         ->update(['metadata' => json_encode(['payout_override' => ['reason' => 'forged']])]);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout->fresh(), 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout->fresh(), 'completed'))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
 });
 
@@ -269,7 +273,7 @@ test('completing a bare manual payout checks payee eligibility', function (): vo
     $affiliate = createCompletionGuardAffiliate();
     $payout = createBareManualPayout($affiliate);
 
-    UpdatePayoutStatus::run($payout, 'completed');
+    app(UpdatePayoutStatus::class)->handle($payout, 'completed');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue();
 });
@@ -279,7 +283,7 @@ test('manual completion cannot pay a Dawah-purpose affiliate', function (): void
     $affiliate->forceFill(['purpose' => 'share_member'])->save();
     $payout = createBareManualPayout($affiliate);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'A non-commercial affiliate payout cannot be completed.');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeFalse();
@@ -289,9 +293,9 @@ test('completing a bare manual payout refuses a disabled payee without an overri
     $affiliate = createCompletionGuardAffiliate();
     $payout = createBareManualPayout($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeFalse();
@@ -301,9 +305,9 @@ test('a stamped override unblocks a bare manual payout for a disabled payee', fu
     $affiliate = createCompletionGuardAffiliate();
     $payout = createBareManualPayout($affiliate, ['payout_override' => ['reason' => 'Earned before closure']]);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    UpdatePayoutStatus::run($payout, 'completed');
+    app(UpdatePayoutStatus::class)->handle($payout, 'completed');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
         ->and($payout->fresh()->metadata['payout_override']['override_completed_at'])->not->toBeNull();
@@ -318,14 +322,14 @@ test('completing a payout that names no affiliate throws', function (): void {
         'currency' => 'USD',
     ]);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'names no affiliate');
 });
 
 test('linking a foreign affiliate conversion is rejected before it is persisted', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
     $other = createCompletionGuardAffiliate();
     $foreign = recordCompletionGuardConversion($other);
 
@@ -333,15 +337,15 @@ test('linking a foreign affiliate conversion is rejected before it is persisted'
         ->toThrow(InvalidArgumentException::class, 'across 2 affiliates');
 
     expect($foreign->fresh()->affiliate_payout_id)->toBeNull()
-        ->and($other->balanceFor('USD')->available_minor)->toBe(5000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $other->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and($payout->fresh()->total_minor)->toBe(5000)
-        ->and($payout->conversions()->count())->toBe(1);
+        ->and(app(PayoutConversionIntegrity::class)->summary($payout->id, $payout->owner_type, $payout->owner_id, spl_object_id($payout->getConnection()))->count)->toBe(1);
 });
 
 test('changing the affiliate of a payout-linked conversion is rejected', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    CreatePayout::run([$conversion->id]);
+    app(CreatePayout::class)->handle([$conversion->id]);
     $other = createCompletionGuardAffiliate();
 
     expect(fn (): bool => $conversion->fresh()->update(['affiliate_id' => $other->id]))
@@ -353,7 +357,7 @@ test('changing the affiliate of a payout-linked conversion is rejected', functio
 test('changing the currency of a payout-linked conversion is rejected', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    CreatePayout::run([$conversion->id]);
+    app(CreatePayout::class)->handle([$conversion->id]);
 
     expect(fn (): bool => $conversion->fresh()->update(['commission_currency' => 'EUR']))
         ->toThrow(InvalidArgumentException::class, 'same currency');
@@ -369,7 +373,7 @@ test('a record-only payout accepts conversions for its own affiliate', function 
     $conversion->update(['affiliate_payout_id' => $payout->getKey()]);
 
     expect($conversion->fresh()->affiliate_payout_id)->toBe($payout->getKey())
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(5000);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000);
 });
 
 test('a conversion cannot be linked to another owners payout', function (): void {
@@ -380,7 +384,7 @@ test('a conversion cannot be linked to another owners payout', function (): void
     $payout = OwnerContext::withOwner($ownerA, function (): AffiliatePayout {
         $affiliate = createCompletionGuardAffiliate();
 
-        return CreatePayout::run([recordCompletionGuardConversion($affiliate)->id]);
+        return app(CreatePayout::class)->handle([recordCompletionGuardConversion($affiliate)->id]);
     });
 
     OwnerContext::withOwner($ownerB, function () use ($payout): void {
@@ -396,7 +400,7 @@ test('a conversion cannot be linked to another owners payout', function (): void
 test('completing a payout linked across affiliates throws', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     $other = createCompletionGuardAffiliate();
     $foreign = recordCompletionGuardConversion($other);
@@ -406,7 +410,7 @@ test('completing a payout linked across affiliates throws', function (): void {
         ->where('id', $foreign->getKey())
         ->update(['affiliate_payout_id' => $payout->getKey()]);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(PayoutCompletionBlockedException::class, 'across 2 affiliates');
 
     expect($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
@@ -416,17 +420,17 @@ test('completing a payout linked across affiliates throws', function (): void {
 test('completion refuses extra same-affiliate conversions that were never reserved', function (bool $reconcile): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
     $extra = recordCompletionGuardConversion($affiliate);
     $extra->update(['affiliate_payout_id' => $payout->id]);
 
     expect(fn (): mixed => $reconcile
-        ? app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed')
-        : UpdatePayoutStatus::run($payout, 'completed'))
+        ? app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed')
+        : app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(PayoutCompletionBlockedException::class, 'reservation');
 
     expect($extra->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(5000);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000);
 })->with([false, true]);
 
 test('the gate resolves eligibility in the payout owner scope', function (): void {
@@ -449,13 +453,13 @@ test('the gate resolves eligibility in the payout owner scope', function (): voi
         $affiliate = createCompletionGuardAffiliate();
         $conversion = recordCompletionGuardConversion($affiliate);
 
-        return CreatePayout::run([$conversion->id]);
+        return app(CreatePayout::class)->handle([$conversion->id]);
     });
 
     // Evaluated under a mismatched ambient owner (cross-owner console
     // work): eligibility still resolves, instead of failing on an
     // ambient-scoped miss.
-    $reason = OwnerContext::withOwner($ownerA, fn (): ?string => AssertPayoutCompletable::run($payout));
+    $reason = OwnerContext::withOwner($ownerA, fn (): ?string => app(AssertPayoutCompletable::class)->handle($payout));
 
     expect($reason)->toBeNull();
 });
@@ -480,7 +484,7 @@ test('completion sync reads conversions in the payout owner scope', function ():
         $affiliate = createCompletionGuardAffiliate();
         $conversion = recordCompletionGuardConversion($affiliate);
 
-        return [CreatePayout::run([$conversion->id]), $conversion];
+        return [app(CreatePayout::class)->handle([$conversion->id]), $conversion];
     });
 
     $action = app(UpdatePayoutStatus::class);
@@ -490,16 +494,19 @@ test('completion sync reads conversions in the payout owner scope', function ():
     // Evaluated under a mismatched ambient owner: the Approved→Paid
     // flip and the operation sync must still land on the payout's own
     // rows instead of silently matching zero rows (0 === 0 pass).
-    OwnerContext::withOwner($ownerA, fn (): mixed => $sync->invoke($action, $payout, new CompletedPayout($payout)));
+    $payout->getConnection()->transaction(function () use ($ownerA, $ownerB, $payout, $sync, $action): void {
+        OwnerContext::withOwner($ownerB, fn () => $payout->status->transitionTo(CompletedPayout::class));
+        OwnerContext::withOwner($ownerA, fn (): mixed => $sync->invoke($action, $payout, new CompletedPayout($payout)));
+    });
 
     expect($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue()
-        ->and($payout->operation()->withoutGlobalScopes()->first()->status)->toBe('completed');
+        ->and(AffiliatePayoutOperation::query()->withoutGlobalScopes()->findOrFail($payout->affiliate_payout_operation_id)->status)->toBe('completed');
 });
 
 test('manual completion refuses mixed-currency linked conversions', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     $eur = AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
@@ -512,7 +519,7 @@ test('manual completion refuses mixed-currency linked conversions', function ():
         'occurred_at' => now(),
     ]);
 
-    ApplyConversionAccounting::run($eur);
+    app(ApplyConversionAccounting::class)->handle($eur);
 
     // Raw linking bypasses CreatePayout's single-currency guard and
     // the conversion model's saving link guard, the way corrupt data
@@ -521,7 +528,7 @@ test('manual completion refuses mixed-currency linked conversions', function ():
         ->where('id', $eur->getKey())
         ->update(['affiliate_payout_id' => $payout->getKey()]);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'same currency');
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeFalse();
@@ -530,10 +537,184 @@ test('manual completion refuses mixed-currency linked conversions', function ():
 test('the gate fails legibly when the affiliate is missing', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     DB::table($affiliate->getTable())->where('id', $affiliate->getKey())->delete();
 
-    expect(fn (): ?string => AssertPayoutCompletable::run($payout->fresh()))
+    expect(fn (): ?string => app(AssertPayoutCompletable::class)->handle($payout->fresh()))
         ->toThrow(PayoutCompletionBlockedException::class, 'missing or outside the payout owner scope');
+});
+
+test('a missing reserved balance rolls back payout failure without unlinking conversions', function (bool $reconcile): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->delete();
+
+    expect(fn (): mixed => $reconcile
+        ? app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed')
+        : app(UpdatePayoutStatus::class)->handle($payout, 'failed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'reserved balance is missing');
+
+    expect($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
+        ->and($payout->fresh()->status->getValue())->toBe('pending')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->funds_released_at)->toBeNull();
+})->with([false, true]);
+
+test('payout failure refuses to resurrect a conversion changed outside settlement', function (bool $reconcile): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    $conversion->newQuery()->whereKey($conversion->id)->update(['status' => 'rejected']);
+
+    expect(fn (): mixed => $reconcile
+        ? app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed')
+        : app(UpdatePayoutStatus::class)->handle($payout, 'failed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'no longer approved');
+
+    expect($conversion->fresh()->status->getValue())->toBe('rejected')
+        ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
+})->with([false, true]);
+
+test('manual payout reservation refuses duplicate conversion identifiers', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+
+    expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id, $conversion->id]))
+        ->toThrow(InvalidArgumentException::class, 'unique conversion IDs');
+
+    expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000);
+});
+
+test('manual payout reservation accepts a normalized conversion currency', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $conversion->newQuery()->whereKey($conversion->id)->update(['commission_currency' => 'usd']);
+
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    expect($payout->currency)->toBe('USD')
+        ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
+});
+
+test('manual payout creation cannot reserve funds while an active hold exists', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $holds = app(PayoutHoldAdministration::class);
+    $holdId = $holds->place($affiliate->id, 'Manual review');
+
+    expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id]))
+        ->toThrow(InvalidArgumentException::class, 'active payout hold')
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh()->available_minor)->toBe(5000)
+        ->and($conversion->fresh()->affiliate_payout_id)->toBeNull();
+
+    $holds->release($affiliate->id, $holdId);
+
+    expect(app(CreatePayout::class)->handle([$conversion->id])->total_minor)->toBe(5000);
+});
+
+test('a hold placed after reservation blocks submission and completion until released', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+    $holds = app(PayoutHoldAdministration::class);
+    $holdId = $holds->place($affiliate->id, 'Review after reservation');
+
+    expect(fn (): ?string => app(AssertPayoutCompletable::class)->handle($payout, false))
+        ->toThrow(PayoutCompletionBlockedException::class, 'active payout hold')
+        ->and(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'active payout hold')
+        ->and(fn (): bool => app(PayoutReconciliation::class)->reconcile($payout->id, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'active payout hold')
+        ->and($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+        ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+
+    $holds->release($affiliate->id, $holdId);
+
+    expect(app(UpdatePayoutStatus::class)->handle($payout, 'completed')->status->equals(CompletedPayout::class))->toBeTrue();
+});
+
+test('payout settlement rejects hidden conversions with a forged matching affiliate', function (string $status): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => false]);
+    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => uniqid() . '@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => uniqid() . '@example.com', 'password' => 'secret']);
+
+    [$affiliate, $conversion, $payout] = OwnerContext::withOwner($ownerA, function (): array {
+        $affiliate = createCompletionGuardAffiliate();
+        $conversion = recordCompletionGuardConversion($affiliate);
+
+        return [$affiliate, $conversion, app(CreatePayout::class)->handle([$conversion->id])];
+    });
+
+    $foreign = OwnerContext::withOwner($ownerB, fn (): AffiliateConversion => recordCompletionGuardConversion(createCompletionGuardAffiliate()));
+
+    AffiliateConversion::query()->withoutOwnerScope()->whereKey($foreign->id)->update([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_payout_id' => $payout->id,
+    ]);
+
+    OwnerContext::withOwner($ownerA, function () use ($payout, $conversion, $status): void {
+        expect(fn () => app(UpdatePayoutStatus::class)->handle($payout, $status))
+            ->toThrow(PayoutCompletionBlockedException::class, 'outside its owner scope');
+
+        expect($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+            ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
+            ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($foreign, $payout): void {
+        expect($foreign->fresh()->affiliate_payout_id)->toBe($payout->id)
+            ->and($foreign->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+    });
+})->with(['completed', 'cancelled']);
+
+test('manual payout creation refuses a substituted payee before reserving funds', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $other = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+
+    expect(fn () => app(CreatePayout::class)->handle([$conversion->id], [
+        'payee_type' => $other->getMorphClass(),
+        'payee_id' => $other->id,
+    ]))->toThrow(InvalidArgumentException::class, 'payee must match');
+
+    expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->id)->where('currency', 'USD')->first()->available_minor)->toBe(5000);
+});
+
+test('completion refuses a substituted reservation payee', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $other = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    AffiliatePayout::query()->whereKey($payout->id)->update(['payee_id' => $other->id]);
+
+    expect(fn () => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'payee does not match')
+        ->and($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+        ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+});
+
+test('manual payout selection rejects malformed conversion IDs before querying UUID columns', function (): void {
+    expect(fn () => app(CreatePayout::class)->handle(['not-a-uuid']))
+        ->toThrow(InvalidArgumentException::class, 'All conversions must be approved');
+});
+
+test('completion refuses a reservation whose operation no longer points to its payout', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    AffiliatePayoutOperation::query()->whereKey($payout->affiliate_payout_operation_id)->update(['affiliate_payout_id' => null]);
+
+    expect(fn () => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'reservation')
+        ->and($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+        ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
 });

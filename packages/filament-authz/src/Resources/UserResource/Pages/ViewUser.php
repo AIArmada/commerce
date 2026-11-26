@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources\UserResource\Pages;
 
-use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccountSnapshot;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Features\Identity\Api\AffiliateAdminLinks;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use Filament\Actions\EditAction;
 use Filament\Infolists\Components\TextEntry;
@@ -69,20 +69,16 @@ class ViewUser extends ViewRecord
                     TextEntry::make('affiliate_commission')
                         ->label('Commission')
                         ->state(function () use ($affiliate): string {
-                            $type = $affiliate->commission_type instanceof CommissionType
-                                ? $affiliate->commission_type
-                                : CommissionType::from((string) $affiliate->commission_type);
-
-                            return $type === CommissionType::Percentage
-                                ? number_format((int) $affiliate->commission_rate / 100, 2) . ' %'
-                                : MoneyFormatter::formatMinor((int) $affiliate->commission_rate, $affiliate->currency);
+                            return $affiliate->commissionType === 'percentage'
+                                ? number_format($affiliate->commissionRate / 100, 2) . ' %'
+                                : MoneyFormatter::formatMinor($affiliate->commissionRate, $affiliate->currency);
                         }),
                     TextEntry::make('affiliate_link')
                         ->label('Affiliate')
                         ->state('View Affiliate Profile')
                         ->url(
-                            class_exists(AffiliateResource::class)
-                                ? AffiliateResource::getUrl('view', ['record' => $affiliate])
+                            interface_exists(AffiliateAdminLinks::class) && app()->bound(AffiliateAdminLinks::class)
+                                ? app(AffiliateAdminLinks::class)->view($affiliate->id)
                                 : null,
                             shouldOpenInNewTab: true,
                         )
@@ -138,17 +134,14 @@ class ViewUser extends ViewRecord
         return $permissions->pluck('name')->toArray();
     }
 
-    private function resolveAffiliate(Model $user): ?Affiliate
+    private function resolveAffiliate(Model $user): ?AffiliateAccountSnapshot
     {
-        if (! class_exists(Affiliate::class)) {
+        if (! interface_exists(AffiliateReferenceReader::class) || ! app()->bound(AffiliateReferenceReader::class)) {
             return null;
         }
 
         try {
-            return Affiliate::query()
-                ->where('owner_type', $user->getMorphClass())
-                ->where('owner_id', $user->getKey())
-                ->first();
+            return app(AffiliateReferenceReader::class)->forOwner($user->getMorphClass(), (string) $user->getKey());
         } catch (NoCurrentOwnerException) {
             return null;
         }

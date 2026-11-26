@@ -16,11 +16,11 @@ posts exactly the validated amount or refuses before any money effect.
 ## The action
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateAward;
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Features\Conversions\Api\AwardPosting;
+use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 
-$result = app(RecordAffiliateAward::class)->handle(
-    $recipient,            // Affiliate model: the eligible recipient
+$result = app(AwardPosting::class)->post(
+    $recipientId,          // Identifier of the eligible affiliate
     'acme:award:2026-10-07:9f2c', // caller-owned bounded stable award key
     1500,                 // positive integer minor-unit amount, posted exactly
     'MYR',                // explicit 3-letter currency
@@ -31,8 +31,6 @@ if ($result->disposition === AffiliateOutcomeDisposition::Created) {
     // $result->conversion is AffiliateConversionData for the new backing row.
 }
 ```
-
-Or via the action shortcut: `RecordAffiliateAward::run($recipient, $key, $amount, $currency, $attributes)`.
 
 ## Award identity
 
@@ -51,7 +49,7 @@ hashes the exact validated identity with `sha256` for the unique
 ## Amount exactness
 
 The posted `commission_minor` always equals the validated `$amountMinor`.
-The action never applies commercial `CommissionCaps`, never derives an
+The action never applies commercial `CommissionPricing::clamp()`, never derives an
 amount from a percentage, and never mutates an existing zero-value row:
 every award is a separate new conversion with
 `conversion_type = 'reward_award'` and a null attribution.
@@ -66,11 +64,11 @@ namespace AIArmada\Affiliates\Contracts;
 
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 
 interface AffiliateAwardPolicy
 {
-    public function decide(Affiliate $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision;
+    public function decide(AwardRecipient $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision;
 }
 ```
 
@@ -102,7 +100,9 @@ Rules:
   never on invented attribution.
 
 Atomicity contract: `decide()` runs INSIDE the posting transaction on
-the award connection, after the idempotency and recipient row locks.
+the award connection, after the idempotency and recipient row locks. The
+policy receives an immutable `AwardRecipient` snapshot, including the resolved
+connection name and owner tuple; same-connection reads remain atomic.
 The connection transaction level is at least 1 at invocation, and any
 same-connection `SELECT ... FOR UPDATE` the host performs (approval,
 budget, or eligibility source rows) is held through commit. Reads over

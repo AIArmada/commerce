@@ -19,7 +19,7 @@ use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\UpsertOfferDeal;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferDeal;
 use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Support\Facades\Event;
 
 function marketplaceAffiliate(): Affiliate

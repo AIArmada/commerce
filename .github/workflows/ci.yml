@@ -215,12 +215,18 @@ jobs:
           done
           exit 1
 
-      - name: Verify Authz, Commerce Support, and Filament boundaries and write ownership
+      - name: Verify package boundaries and write ownership
         run: |
-          composer --working-dir=packages/authz arch:check
-          composer --working-dir=packages/commerce-support arch:check
-          composer --working-dir=packages/filament-authz arch:check
-          composer --working-dir=packages/filament-commerce-support arch:check
+          failed=0
+          for package in authz commerce-support filament-authz filament-commerce-support affiliates affiliate-network filament-affiliates filament-affiliate-network; do
+            echo "::group::${package} boundaries"
+            composer --working-dir="packages/${package}" arch:boundaries || failed=1
+            echo "::endgroup::"
+            echo "::group::${package} write ownership"
+            composer --working-dir="packages/${package}" arch:writes || failed=1
+            echo "::endgroup::"
+          done
+          exit "$failed"
 
       - name: Verify Addressing boundaries and write ownership
         run: composer --working-dir=packages/addressing arch:check
@@ -357,6 +363,33 @@ jobs:
         # Disable TIA explicitly because Pest's parallel test-discovery child
         # process does not inherit the `--ci` flag.
         run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20
+
+      - name: Setup Node for real affiliate PDF verification
+        if: matrix.shard == 1
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install local PDF rendering prerequisites
+        if: matrix.shard == 1
+        run: |
+          npm install --prefix "$RUNNER_TEMP/affiliate-pdf" --ignore-scripts --no-save --package-lock=false puppeteer@24.31.0
+          echo "AFFILIATE_PDF_NODE_MODULES=$RUNNER_TEMP/affiliate-pdf/node_modules" >> "$GITHUB_ENV"
+          echo "AFFILIATE_PDF_CHROME=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
+
+      - name: Verify real private affiliate tax PDF rendering
+        if: matrix.shard == 1
+        env:
+          AFFILIATE_REAL_PDF_TEST: '1'
+        run: vendor/bin/pest --no-tia tests/src/Affiliates/Unit/SpatieTaxWorksheetWriterTest.php --filter='renders a real private tax worksheet'
+
+      - name: Verify real affiliate payout PDF rendering
+        if: matrix.shard == 1
+        env:
+          AFFILIATE_REAL_PDF_TEST: '1'
+        run: vendor/bin/pest --no-tia tests/src/FilamentAffiliates/Unit/PayoutExportServiceTest.php --filter='renders a real private affiliate payout PDF'
+
 
   ci:
     name: CI

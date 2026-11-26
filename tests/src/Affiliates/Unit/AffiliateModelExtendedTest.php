@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 // Affiliate Model Tests - Full Coverage
 test('Affiliate can be created with required fields', function (): void {
@@ -25,5 +25,5 @@ test('Affiliate can be created with required fields', function (): void {
 test('Affiliate has programs relationship', function (): void {
     $affiliate = new Affiliate;
 
-    expect($affiliate->programs())->toBeInstanceOf(BelongsToMany::class);
+    expect(app(ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([]);
 });

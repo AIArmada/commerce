@@ -2,26 +2,25 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
-use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\CancelledPayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
+use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CancelledPayout;
-use AIArmada\Affiliates\States\CompletedPayout;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
 beforeEach(function (): void {
@@ -66,11 +65,11 @@ test('commission caps clamp negative and out-of-range commissions', function ():
     config()->set('affiliates.commissions.minimum_minor', 100);
     config()->set('affiliates.commissions.maximum_minor', 500);
 
-    expect(CommissionCaps::clamp(-50))->toBe(100)
-        ->and(CommissionCaps::clamp(50))->toBe(100)
-        ->and(CommissionCaps::clamp(200))->toBe(200)
-        ->and(CommissionCaps::clamp(600))->toBe(500)
-        ->and(CommissionCaps::clamp(0))->toBe(0, 'The minimum floors earned commissions; it must not conjure one from zero.');
+    expect(app(CommissionPricing::class)->clamp(-50))->toBe(100)
+        ->and(app(CommissionPricing::class)->clamp(50))->toBe(100)
+        ->and(app(CommissionPricing::class)->clamp(200))->toBe(200)
+        ->and(app(CommissionPricing::class)->clamp(600))->toBe(500)
+        ->and(app(CommissionPricing::class)->clamp(0))->toBe(0, 'The minimum floors earned commissions; it must not conjure one from zero.');
 });
 
 test('commission calculator honors caps on fixed and percentage paths', function (): void {
@@ -86,8 +85,8 @@ test('commission calculator honors caps on fixed and percentage paths', function
         'currency' => 'USD',
     ]);
 
-    expect(app(CommissionCalculator::class)->calculate($fixed, 10000))->toBe(500)
-        ->and(app(CommissionCalculator::class)->calculate($this->affiliate, 100000))->toBe(500);
+    expect(app(CommissionPricing::class)->calculateBase($fixed->commission_type->value, $fixed->commission_rate, 10000))->toBe(500)
+        ->and(app(CommissionPricing::class)->calculateBase($this->affiliate->commission_type->value, $this->affiliate->commission_rate, 100000))->toBe(500);
 });
 
 test('create payout rejects non-approved conversions', function (): void {
@@ -113,7 +112,7 @@ test('create payout reserves available balance for approved conversions', functi
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     expect($payout->total_minor)->toBe(2000)
-        ->and($this->affiliate->balanceFor('USD')->available_minor)->toBe(3000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(3000)
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->getKey());
 });
 
@@ -158,7 +157,7 @@ test('payout cancellation refunds balance and unlinks conversions', function ():
 
     app(UpdatePayoutStatus::class)->handle($payout, CancelledPayout::class);
 
-    expect($this->affiliate->balanceFor('USD')->available_minor)->toBe(5000)
+    expect(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and(AffiliateConversion::query()->find($conversion->id)->affiliate_payout_id)->toBeNull()
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(ApprovedConversion::class);
 });
@@ -169,7 +168,7 @@ test('reconcile completion marks conversions paid like status update', function 
     $conversion = makeApprovedConversionFor($this->affiliate, 2000);
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed');
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed');
 
     expect($changed)->toBeTrue()
         ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
@@ -185,11 +184,11 @@ test('reconcile ignores provider events that would illegally regress a terminal 
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
     app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::class);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout->fresh(), 'failed');
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed');
 
     expect($changed)->toBeFalse()
         ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
-        ->and($this->affiliate->balanceFor('USD')->available_minor)->toBe(3000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(3000)
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(PaidConversion::class);
 });
 
@@ -199,11 +198,11 @@ test('reconcile failure releases reserved funds and unlinks conversions', functi
     $conversion = makeApprovedConversionFor($this->affiliate, 2000);
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'failed');
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed');
 
     expect($changed)->toBeTrue()
         ->and($payout->fresh()->failed_at)->not->toBeNull()
-        ->and($this->affiliate->balanceFor('USD')->available_minor)->toBe(5000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and(AffiliateConversion::query()->find($conversion->id)->affiliate_payout_id)->toBeNull()
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(ApprovedConversion::class);
 });
@@ -267,7 +266,7 @@ test('webhook dispatcher sends nothing without a signing secret', function (): v
     config()->set('affiliates.webhooks.signature_secret', '');
     config()->set('affiliates.webhooks.endpoints.conversion', ['https://example.com/hook']);
 
-    app(WebhookDispatcher::class)->dispatch('conversion', ['id' => '1']);
+    app(WebhookApi::class)->dispatch('conversion', ['id' => '1']);
 
     expect(AffiliateWebhookDelivery::query()->count())->toBe(0);
 });

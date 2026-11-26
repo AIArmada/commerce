@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 function homogeneityAffiliate(): Affiliate
 {
@@ -88,6 +91,35 @@ test('reconciliation refuses to complete a mixed-currency payout', function (): 
     AffiliateConversion::query()->whereKey($conversion->id)->update(['affiliate_payout_id' => $payout->id]);
     $payout->forceFill(['status' => ProcessingPayout::value()])->save();
 
-    expect(fn (): bool => app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed'))
+    expect(fn (): bool => app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed'))
         ->toThrow(InvalidArgumentException::class, 'same currency');
+});
+
+test('payout integrity sees conversions hidden by the current owner scope', function (): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => false]);
+
+    $ownerA = User::query()->create([
+        'name' => 'Payout Owner A', 'email' => 'payout-integrity-a@example.com', 'password' => 'secret',
+    ]);
+    $ownerB = User::query()->create([
+        'name' => 'Payout Owner B', 'email' => 'payout-integrity-b@example.com', 'password' => 'secret',
+    ]);
+
+    $payout = OwnerContext::withOwner($ownerA, function (): AffiliatePayout {
+        $affiliate = homogeneityAffiliate();
+
+        return homogeneityPayout($affiliate, 'MYR');
+    });
+
+    $conversion = OwnerContext::withOwner($ownerB, fn (): AffiliateConversion => homogeneityConversion(homogeneityAffiliate(), 'USD'));
+    AffiliateConversion::query()->withoutOwnerScope()->whereKey($conversion->id)->update(['affiliate_payout_id' => $payout->id]);
+
+    OwnerContext::withOwner($ownerA, function () use ($payout): void {
+        expect(fn () => $payout->assertHomogeneousConversions())->toThrow(InvalidArgumentException::class, 'same currency');
+
+        expect(fn () => $payout->assertSingleAffiliateConversions())->toThrow(InvalidArgumentException::class, 'one affiliate');
+
+        $integrity = app(PayoutConversionIntegrity::class);
+        expect($integrity->hasConversions($payout->id, spl_object_id($payout->getConnection())))->toBeTrue();
+    });
 });

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
@@ -12,10 +12,10 @@ test('AffiliateTouchpoint has attribution relationship', function (): void {
     expect($touchpoint->attribution())->toBeInstanceOf(BelongsTo::class);
 });
 
-test('AffiliateTouchpoint has affiliate relationship', function (): void {
+test('AffiliateTouchpoint stores an affiliate identity instead of an ORM relation', function (): void {
     $touchpoint = new AffiliateTouchpoint;
 
-    expect($touchpoint->affiliate())->toBeInstanceOf(BelongsTo::class);
+    expect(method_exists($touchpoint, 'affiliate'))->toBeFalse();
 });
 
 test('AffiliateTouchpoint can be created with fillable attributes', function (): void {

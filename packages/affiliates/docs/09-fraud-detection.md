@@ -13,7 +13,7 @@ Fraud detection operates at multiple levels:
 1. **Velocity Checks** - Rate limiting for clicks and conversions
 2. **Anomaly Detection** - Unusual patterns in behavior
 3. **Fingerprinting** - Duplicate detection across sessions
-4. **Geographic Analysis** - Location-based fraud signals
+4. **Rapid IP Changes** - Unusually frequent IP changes (not geographic distance)
 5. **Conversion Time Analysis** - Suspiciously fast conversions
 
 ## Configuration
@@ -41,35 +41,31 @@ Fraud detection operates at multiple levels:
 ],
 ```
 
-## Using FraudDetectionService
+## Using FraudApi
 
 ```php
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 
-$service = app(FraudDetectionService::class);
+$service = app(FraudApi::class);
 ```
 
-Both entrypoints return the same array shape:
-
-```php
-['allowed' => bool, 'score' => int, 'signals' => AffiliateFraudSignal[]]
-```
+Both entrypoints return an immutable `FraudAssessment` with `allowed`, `score`, and `signals` (`FraudSignalRecord[]`).
 
 `allowed` is `false` once the summed `risk_points` reach
 `affiliates.fraud.blocking_threshold`. Rules are registered under the
-`affiliates.fraud_rule` tag, so you can add your own.
+`affiliates.fraud_rule` tag. Implement `FraudRule` using immutable `ClickFraudEvidence` and `ConversionFraudEvidence`; return a `FraudFinding` or null. Rules never persist signals; `RecordFraudFinding` owns persistence.
 
 ### Analyzing Clicks
 
 ```php
-$result = $service->analyzeClick($affiliate, request());
+$result = $service->analyzeClick((string) $affiliate->getKey(), request()->ip(), request()->userAgent());
 
-foreach ($result['signals'] as $signal) {
-    // Each signal is a persisted AffiliateFraudSignal model
-    echo $signal->rule_code;    // e.g. 'CLICK_VELOCITY'
+foreach ($result->signals as $signal) {
+    // Each signal is an immutable FraudSignalRecord for a persisted signal
+    echo $signal->ruleCode;    // e.g. 'CLICK_VELOCITY'
     echo $signal->severity;     // FraudSeverity enum
-    echo $signal->risk_points;  // points this rule contributed
+    echo $signal->riskPoints;  // points this rule contributed
 }
 ```
 
@@ -77,14 +73,14 @@ foreach ($result['signals'] as $signal) {
 
 ```php
 // Check conversion for suspicious patterns
-$result = $service->analyzeConversion($conversion);
+$result = $service->analyzeConversion((string) $conversion->getKey());
 ```
 
 ### Getting the Risk Profile
 
 ```php
 // Rolling 30-day fraud profile for an affiliate
-$profile = $service->getRiskProfile($affiliate);
+$profile = $service->getRiskProfile((string) $affiliate->getKey());
 // ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 
 if ($profile['severity'] === FraudSeverity::Critical) {
@@ -94,13 +90,13 @@ if ($profile['severity'] === FraudSeverity::Critical) {
 
 ## Fraud Rules
 
-Six rules ship in `AIArmada\Affiliates\Rules`, identified by `rule_code`:
+Six rules ship in `AIArmada\Affiliates\Features\Fraud\Extensions`, identified by `rule_code`:
 
 | `rule_code` | Rule | Risk points |
 |-------------|------|-------------|
 | `CLICK_VELOCITY` | `ClickVelocityRule` — too many clicks in the hour | 30 |
 | `CONVERSION_VELOCITY` | `ConversionVelocityRule` — too many conversions in the day | 35 |
-| `GEO_ANOMALY` | `GeoAnomalyRule` — geography looks anomalous | 40 |
+| `GEO_ANOMALY` | `GeoAnomalyRule` — rapid IP change detected | 40 |
 | `FAST_CONVERSION` | `FastConversionRule` — conversion too soon after attribution | 45 |
 | `FINGERPRINT_REPEAT` | `FingerprintRepeatRule` — fingerprint seen too many times | 25 |
 | `SELF_REFERRAL` | `SelfReferralRule` — affiliate crediting themselves | 100 |
@@ -108,7 +104,7 @@ Six rules ship in `AIArmada\Affiliates\Rules`, identified by `rule_code`:
 ## Fraud Severity Levels
 
 ```php
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 
 FraudSeverity::Low;       // riskThreshold() 20 — minor concern
 FraudSeverity::Medium;    // riskThreshold() 50 — investigate
@@ -122,7 +118,7 @@ FraudSeverity::Critical;  // riskThreshold() 100 — immediate action needed
 ## Fraud Signal Statuses
 
 ```php
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 
 FraudSignalStatus::Detected;  // Newly detected and awaiting review
 FraudSignalStatus::Reviewed;  // Reviewed by admin
@@ -136,28 +132,20 @@ Confirmed as blocking.
 
 ## Recording Signals Manually
 
-There is no `FraudDetectionService::recordSignal()`. Persist the row directly —
-the `FraudSignalDetected` event is dispatched by the detection service, not by
-the model, so fire it yourself if listeners must run.
+Use the feature's named record action for a trusted manual finding. It
+persists the signal and emits the normal after-commit event.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Data\FraudFinding;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Actions\RecordFraudFinding;
 
-$signal = AffiliateFraudSignal::create([
-    'affiliate_id' => $affiliate->id,
-    'rule_code' => 'CUSTOM_PATTERN',
-    'description' => 'Unusual conversion pattern detected',
-    'severity' => FraudSeverity::High,
-    'status' => FraudSignalStatus::Detected,
-    'risk_points' => 50,
-    'detected_at' => now(),
-    'evidence' => [
-        'conversions_today' => 47,
-        'average_daily' => 5,
-    ],
-]);
+$signal = app(RecordFraudFinding::class)->execute(
+    (string) $affiliate->getKey(),
+    null,
+    new FraudFinding('CUSTOM_PATTERN', 50, FraudSeverity::High,
+        'Unusual conversion pattern detected', ['conversions_today' => 47, 'average_daily' => 5]),
+);
 ```
 
 ## Fingerprint Detection
@@ -216,7 +204,7 @@ protected $listen = [
 ];
 ```
 
-The event carries the `AffiliateFraudSignal` (reach the affiliate and severity through it). It fires from the model on every create — detection rules, manual analyst flags, and host integrations — and implements `ShouldDispatchAfterCommit`, so listeners run after the signal transaction commits.
+The event carries an immutable `FraudSignalReference`. Trusted integrations re-read canonical data through `FraudSignalReader`. It fires from the model on every create — detection rules, manual analyst flags, and host integrations — and implements `ShouldDispatchAfterCommit`, so listeners run after the signal transaction commits.
 
 ## Fraud Review in Filament
 
@@ -230,21 +218,10 @@ The `filament-affiliates` package includes:
 
 ```php
 // Mark as reviewed
-$signal->update([
-    'status' => FraudSignalStatus::Reviewed,
-    'reviewed_at' => now(),
-    'reviewed_by' => auth()->id(),
-    'description' => 'Investigated - appears legitimate',
-]);
+app(\AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi::class)->execute($signal->id, FraudSignalStatus::Reviewed, $reviewerId);
 
 // Confirm fraud
-$signal->update([
-    'status' => FraudSignalStatus::Confirmed,
-    'confirmed_at' => now(),
-]);
-
-// Optionally reject the linked conversion
-$signal->conversion?->update(['status' => RejectedConversion::class]);
+app(\AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi::class)->execute($signal->id, FraudSignalStatus::Confirmed, $reviewerId, rejectLinkedConversion: true);
 ```
 
 > **warning:**

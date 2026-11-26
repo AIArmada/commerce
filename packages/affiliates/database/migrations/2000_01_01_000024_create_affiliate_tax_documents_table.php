@@ -26,7 +26,7 @@ return new class extends Migration
             $table->timestampTz('sent_at')->nullable();
             $table->timestampsTz();
 
-            $table->index(['affiliate_id', 'tax_year']);
+            $table->unique(['affiliate_id', 'document_type', 'tax_year', 'currency']);
         });
     }
 };

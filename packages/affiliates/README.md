@@ -45,15 +45,15 @@ Both integrations are lazy – the service provider detects presence via `class_
 When `aiarmada/cart` is present, attach affiliates and record conversions through the cart-aware actions:
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
-AttachAffiliateToCart::run($affiliate, $cart, [
+app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
 ]);
 
-RecordAffiliateConversion::run($cart, [
+app(CartConversionRecording::class)->record($cart, [
     'external_reference' => 'SO-100234',
     'subtotal' => $order->subtotal_minor, // optional
     'total' => $order->total_minor,
@@ -111,7 +111,7 @@ Rate limiting and consent
 
 Payout batches
 
-Use `Actions/Payouts/CreatePayout` and `Actions/Payouts/UpdatePayoutStatus` to manage payout batches for exports or provider handoff. Conversions are linked via `affiliate_payout_id`, and payout records store aggregate totals and schedule/paid timestamps.
+Use `Features/Payouts/Api/PayoutAdministration` to manage payout batches for exports or provider handoff. Conversions are linked via `affiliate_payout_id`, and payout records store aggregate totals and schedule/paid timestamps.
 Multi-level uplines are supported via `parent_affiliate_id` on affiliates and `payouts.multi_level.*` config to define commission shares per level.
 
 Webhook + link utilities
@@ -148,3 +148,14 @@ composer test -- --group=affiliates
 ## License
 
 Released under the [MIT license](../../LICENSE).
+
+
+### Creative media cleanup
+
+Creative replacements and deletions persist detached-file cleanup records in the same database transaction. A post-commit attempt removes the files; failed attempts remain available for retry. Register the command in the application's scheduler for recovery after storage or worker failures:
+
+```php
+Schedule::command('affiliates:retry-creative-cleanup --limit=100')->everyFiveMinutes()->withoutOverlapping();
+```
+
+The command also runs manually and exits unsuccessfully if any attempted cleanup fails. Keep the media model, disk and path-generator configuration stable while cleanup records are outstanding.

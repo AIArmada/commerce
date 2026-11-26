@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -32,7 +32,7 @@ describe('ReverseAffiliateConversion', function (): void {
     test('reversing marks the original and posts a negated leg', function (): void {
         $conversion = reversalConversion();
 
-        $reversal = ReverseAffiliateConversion::run($conversion, 'chargeback');
+        $reversal = app(ReverseAffiliateConversion::class)->handle($conversion, 'chargeback');
 
         expect($reversal->commission_minor)->toBe(-13485)
             ->and($reversal->conversion_type)->toBe('reversal')
@@ -65,7 +65,7 @@ describe('ReverseAffiliateConversion', function (): void {
 
         $reversal = OwnerContext::withOwner(
             $owner,
-            fn (): AffiliateConversion => ReverseAffiliateConversion::run($conversion, 'refund'),
+            fn (): AffiliateConversion => app(ReverseAffiliateConversion::class)->handle($conversion, 'refund'),
         );
 
         expect($conversion->fresh()->owner_type)->toBe($owner->getMorphClass())
@@ -77,7 +77,7 @@ describe('ReverseAffiliateConversion', function (): void {
     test('zero-commission conversions reverse without a leg', function (): void {
         $conversion = reversalConversion(0);
 
-        ReverseAffiliateConversion::run($conversion, 'cancelled');
+        app(ReverseAffiliateConversion::class)->handle($conversion, 'cancelled');
 
         expect($conversion->refresh()->status->equals(ReversedConversion::class))->toBeTrue()
             ->and(AffiliateConversion::query()->where('conversion_type', 'reversal')->exists())->toBeFalse();

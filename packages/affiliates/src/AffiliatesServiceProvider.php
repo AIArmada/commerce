@@ -4,82 +4,70 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
-use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
-use AIArmada\Affiliates\Contracts\MerchantCatalog;
-use AIArmada\Affiliates\Contracts\MerchantIdentity;
-use AIArmada\Affiliates\Contracts\MerchantLedger;
-use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
+use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Contracts\CreativeAssetFilesystem;
+use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
+use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Contracts\PayoutCsvWriter;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
+use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
+use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Exports\LocalPayoutCsvWriter;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetFilesystem;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetRemoval;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetReplacement;
+use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
+use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Tax\UnavailableTaxRecipientProvider;
+use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Listeners\AutoApproveOpenAffiliate;
-use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
-use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
-use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Models\AffiliateSupportMessage;
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Models\AffiliateUpline;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
-use AIArmada\Affiliates\Rules\ClickVelocityRule;
-use AIArmada\Affiliates\Rules\ConversionVelocityRule;
-use AIArmada\Affiliates\Rules\FastConversionRule;
-use AIArmada\Affiliates\Rules\FingerprintRepeatRule;
-use AIArmada\Affiliates\Rules\GeoAnomalyRule;
-use AIArmada\Affiliates\Rules\SelfReferralRule;
-use AIArmada\Affiliates\Services\AttributionModel;
-use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\DailyAggregationService;
-use AIArmada\Affiliates\Services\FraudDetectionService;
-use AIArmada\Affiliates\Services\MerchantCatalogService;
-use AIArmada\Affiliates\Services\MerchantIdentityService;
-use AIArmada\Affiliates\Services\MerchantLedgerService;
-use AIArmada\Affiliates\Services\OpenApprovalPolicy;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
-use AIArmada\Affiliates\Services\ProgramCatalogService;
-use AIArmada\Affiliates\Services\ProgramService;
-use AIArmada\Affiliates\Services\RankQualificationService;
-use AIArmada\Affiliates\Services\UplineService;
-use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
-use AIArmada\Affiliates\Strategies\LastTouchAttribution;
-use AIArmada\Affiliates\Strategies\LinearAttribution;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Conversions\Api\OrderCommissionRegistration;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyConversionRecorded;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyProgramJoined;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
+use AIArmada\Affiliates\Platform\ExtensionRegistry;
+use AIArmada\Affiliates\Platform\FeatureCatalog;
+use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
-use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
-use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
-use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
-use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
-use AIArmada\Links\Contracts\LinkGateInterface;
-use AIArmada\Links\Events\LinkClicked;
-use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -92,6 +80,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class AffiliatesServiceProvider extends PackageServiceProvider
 {
+    /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>}|null */
+    private ?array $catalog = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -100,45 +91,46 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->hasViews('affiliates')
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['api', 'web'])
             ->hasCommands([
-                Console\Commands\AwardPerformanceBonusesCommand::class,
-                Console\Commands\ExportAffiliatePayoutCommand::class,
-                Console\Commands\AggregateDailyStatsCommand::class,
-                Console\Commands\ProcessRankUpgradesCommand::class,
-                Console\Commands\ProcessScheduledPayoutsCommand::class,
-                Console\Commands\ProcessCommissionMaturityCommand::class,
+                Features\Commissions\EntryPoints\Console\AwardPerformanceBonusesCommand::class,
+                Features\Programs\EntryPoints\Console\RetryCreativeAssetCleanupCommand::class,
+                Features\Payouts\EntryPoints\Console\ExportAffiliatePayoutCommand::class,
+                Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand::class,
+                Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand::class,
+                Features\Payouts\EntryPoints\Console\ProcessScheduledPayoutsCommand::class,
+                Features\Conversions\EntryPoints\Console\ProcessCommissionMaturityCommand::class,
             ]);
     }
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(CommissionCalculator::class);
-        $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
-        $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
-        $this->app->singleton(WebhookDispatcher::class);
-        $this->app->singleton(AttributionModel::class);
-        $this->app->singleton(UplineService::class);
-        $this->app->scoped(RankQualificationService::class);
-        $this->app->singleton(DailyAggregationService::class);
-        $this->app->singleton(FraudDetectionService::class);
-        $this->app->singleton(PayoutProcessorFactory::class);
-        $this->app->scoped(CommissionRuleEngine::class);
-        $this->app->singleton(ProgramService::class);
-        $this->app->singleton(Support\Catalog\PromotableRegistry::class);
-        $this->app->singleton(ProgramCatalogService::class);
-        $this->app->singleton(PayoutReconciliationService::class);
-        $this->app->singleton(CartBridge::class);
+        $catalog = $this->catalog();
 
-        $this->registerAttributionStrategies();
-        $this->registerFraudRules();
+        $this->app->bindIf(CreativeAssetFilesystem::class, SpatieCreativeAssetFilesystem::class);
+        $this->app->bindIf(CreativeAssetRemoval::class, SpatieCreativeAssetRemoval::class);
+        $this->app->bindIf(CreativeAssetReplacement::class, SpatieCreativeAssetReplacement::class);
+        $this->app->bindIf(PayoutCsvWriter::class, LocalPayoutCsvWriter::class);
+        $this->app->bindIf(NetworkPostbackGateway::class, HttpNetworkPostbackGateway::class);
+        $this->app->bindIf(TaxRecipientProvider::class, UnavailableTaxRecipientProvider::class);
+        $this->app->bindIf(TaxWorksheetWriter::class, SpatieTaxWorksheetWriter::class);
+        $this->app->bindIf(AffiliateWebhookTransport::class, PinnedAffiliateWebhookTransport::class);
+
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make($this->moduleClass($name));
+
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
+        $this->app->singleton(PayoutProcessorRegistry::class, PayoutProcessorFactory::class);
+        $this->app->singleton(Support\Catalog\PromotableRegistry::class);
+        $this->app->singleton(CartBridge::class);
 
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
-
-        $this->app->singleton(MerchantLedger::class, MerchantLedgerService::class);
-        $this->app->singleton(MerchantIdentity::class, MerchantIdentityService::class);
-        $this->app->singleton(MerchantCatalog::class, MerchantCatalogService::class);
 
         $this->registerSettingsMigrationPath();
     }
@@ -162,7 +154,17 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        foreach (array_keys($this->catalog()['features']) as $name) {
+            $module = $this->app->make($this->moduleClass($name));
+
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
         $this->registerMorphMap();
+        $this->loadRoutesFrom(__DIR__ . '/Features/Identity/Routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/Features/Programs/Routes/api.php');
 
         Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');
 
@@ -184,7 +186,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             && class_exists(CartManager::class)
             && ! $this->networkCoordinatesAttribution()
         ) {
-            Event::listen(CommissionAttributionRequired::class, RecordCommissionForOrder::class);
+            $this->app->make(OrderCommissionRegistration::class)->register();
         }
 
         Event::listen(AffiliateProgramJoined::class, NotifyProgramJoined::class);
@@ -197,10 +199,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             $this->registerCookieTrackingMiddleware();
         }
 
-        if (class_exists(LinksServiceProvider::class)) {
-            $this->app->tag([Support\Links\AffiliateLinkGate::class], LinkGateInterface::class);
-            Event::listen(LinkClicked::class, Listeners\IncrementAffiliateLinkClicks::class);
-        }
     }
 
     private function registerMorphMap(): void
@@ -335,24 +333,14 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             && config('affiliate-network.checkout.listen_for_orders', true);
     }
 
-    private function registerAttributionStrategies(): void
+    private function moduleClass(string $feature): string
     {
-        $this->app->tag([
-            LastTouchAttribution::class,
-            FirstTouchAttribution::class,
-            LinearAttribution::class,
-        ], 'affiliates.attribution_strategy');
+        return __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
     }
 
-    private function registerFraudRules(): void
+    /** @return array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
+    private function catalog(): array
     {
-        $this->app->tag([
-            ClickVelocityRule::class,
-            GeoAnomalyRule::class,
-            FingerprintRepeatRule::class,
-            SelfReferralRule::class,
-            ConversionVelocityRule::class,
-            FastConversionRule::class,
-        ], 'affiliates.fraud_rule');
+        return $this->catalog ??= FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
     }
 }

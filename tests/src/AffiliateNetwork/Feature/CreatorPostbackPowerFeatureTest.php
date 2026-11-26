@@ -20,7 +20,7 @@ use AIArmada\AffiliateNetwork\Features\Postbacks\EntryPoints\Jobs\DeliverCreator
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Queue;
 
@@ -177,6 +177,50 @@ describe('power feature: creator S2S postbacks', function (): void {
             ->toBe(hash_hmac('sha256', (string) $delivery->resolved_url, 'top-secret'));
     });
 
+    test('delivery does not contact a disabled endpoint', function (): void {
+        $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => false]);
+        $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create();
+        $transport = new RecordingPostbackTransport;
+        app()->instance(CreatorPostbackTransport::class, $transport);
+
+        $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+        expect($result->status)->toBe(PostbackDeliveryStatus::Failed)
+            ->and($result->last_error)->toBe('endpoint_disabled')
+            ->and($transport->sent)->toBe([]);
+    });
+
+    test('delivery does not contact an endpoint after postbacks are disabled globally', function (): void {
+        config()->set('affiliate-network.creator_postbacks.enabled', false);
+
+        $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => true]);
+        $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create();
+        $transport = new RecordingPostbackTransport;
+        app()->instance(CreatorPostbackTransport::class, $transport);
+
+        $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+        expect($result->status)->toBe(PostbackDeliveryStatus::Failed)
+            ->and($result->last_error)->toBe('endpoint_disabled')
+            ->and($transport->sent)->toBe([]);
+    });
+
+    test('delivery fails closed when its configured signing secret cannot be decrypted', function (): void {
+        $endpoint = CreatorPostbackEndpoint::factory()->create([
+            'is_active' => true,
+            'signing_secret_encrypted' => 'invalid-ciphertext',
+        ]);
+        $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create();
+        $transport = new RecordingPostbackTransport;
+        app()->instance(CreatorPostbackTransport::class, $transport);
+
+        $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+        expect($result->status)->toBe(PostbackDeliveryStatus::Failed)
+            ->and($result->last_error)->toBe('signing_secret_invalid')
+            ->and($transport->sent)->toBe([]);
+    });
+
     test('failed deliveries record the error and retry status', function (): void {
         $affiliate = postbackAffiliate();
         app(ConfigureCreatorPostback::class)->execute((string) $affiliate->getKey(), [
@@ -253,7 +297,7 @@ describe('power feature: creator S2S postbacks', function (): void {
         $result = (new HttpCreatorPostbackDriver($guard))->send('GET', (string) $delivery->resolved_url);
 
         expect($result->successful)->toBeFalse()
-            ->and($result->error)->not->toBeEmpty();
+            ->and($result->error)->toBe('transport_failed');
     });
 });
 
@@ -313,4 +357,61 @@ describe('power feature: dynamic sub id passthrough', function (): void {
         expect($leg->status)->toBe(LegStatus::Posted)
             ->and(NetworkConversionLeg::query()->where('external_reference', 'STATUS-1')->exists())->toBeTrue();
     });
+});
+
+test('an active delivery lease blocks overlapping transport attempts', function (): void {
+    $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => true]);
+    $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create([
+        'status' => PostbackDeliveryStatus::Pending,
+        'attempt_token' => (string) Str::uuid(),
+        'lease_expires_at' => now()->addMinutes(5),
+    ]);
+
+    $transport = new RecordingPostbackTransport;
+    app()->instance(CreatorPostbackTransport::class, $transport);
+
+    expect(fn () => app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey()))
+        ->toThrow(RuntimeException::class, 'already in progress')
+        ->and($transport->sent)->toBe([]);
+});
+
+test('a stale delivery finalization cannot overwrite a newer attempt', function (): void {
+    $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => true]);
+    $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create([
+        'status' => PostbackDeliveryStatus::Pending,
+    ]);
+
+    $transport = new class implements CreatorPostbackTransport
+    {
+        public function send(string $method, string $url, array $headers = [], ?array $body = null): CreatorPostbackResponse
+        {
+            $deliveryId = request()->attributes->get('delivery_id');
+
+            CreatorPostbackDelivery::query()->whereKey($deliveryId)->update([
+                'attempt_token' => 'newer-attempt',
+                'lease_expires_at' => now()->addMinutes(5),
+            ]);
+
+            return new CreatorPostbackResponse(true, 200);
+        }
+    };
+
+    request()->attributes->set('delivery_id', (string) $delivery->getKey());
+    app()->instance(CreatorPostbackTransport::class, $transport);
+
+    $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+    expect($result->status)->toBe(PostbackDeliveryStatus::Pending)
+        ->and($result->attempt_token)->toBe('newer-attempt');
+});
+
+test('configuration rejects an unknown offer reference', function (): void {
+    $affiliate = postbackAffiliate();
+
+    expect(fn () => app(ConfigureCreatorPostback::class)->execute((string) $affiliate->getKey(), [
+        'offer_id' => (string) Str::uuid(),
+        'url_template' => 'https://creator.example/pb?leg={leg_id}',
+        'http_method' => 'GET',
+        'events' => [PostbackEventType::ConversionRecorded->value],
+    ]))->toThrow(RuntimeException::class, 'does not exist');
 });

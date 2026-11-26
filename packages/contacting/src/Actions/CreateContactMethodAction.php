@@ -9,7 +9,6 @@ use AIArmada\Contacting\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\LaravelData\Optional;
 
@@ -73,7 +72,7 @@ final class CreateContactMethodAction
             $contactMethod->sort_order = $data->sortOrder;
         }
 
-        DB::transaction(function () use ($contactMethod): void {
+        $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
             $contactMethod->save();
         });
 

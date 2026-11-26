@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateDailyStat Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -43,7 +43,7 @@ describe('AffiliateDailyStat Model', function (): void {
             ->and($stat->revenue_cents)->toBe(50000);
     });
 
-    it('belongs to an affiliate', function (): void {
+    it('resolves affiliate identity without an ORM relationship', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'STAT-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -64,8 +64,10 @@ describe('AffiliateDailyStat Model', function (): void {
             'commission_cents' => 2000,
         ]);
 
-        expect($stat->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($stat->affiliate->id)->toBe($affiliate->id);
+        $identity = app(AffiliateDirectory::class)->findById($stat->affiliate_id);
+
+        expect($identity?->id)->toBe($affiliate->id)
+            ->and(method_exists($stat, 'affiliate'))->toBeFalse();
     });
 
     it('has revenue_minor accessor', function (): void {

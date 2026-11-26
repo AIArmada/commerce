@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource\Schemas;
+
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+
+final class AffiliateOfferApplicationInfolist
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Application Details')
+                    ->schema([
+                        TextEntry::make('offer.name')
+                            ->label('Offer'),
+
+                        TextEntry::make('affiliate_id')
+                            ->label('Affiliate ID')
+                            ->copyable(),
+
+                        TextEntry::make('status')
+                            ->label('Status')
+                            ->badge()
+                            ->color(fn (ApplicationStatus | string $state): string => $state instanceof ApplicationStatus ? $state->color() : (ApplicationStatus::tryFrom((string) $state)?->color() ?? 'gray')),
+
+                        TextEntry::make('reason')
+                            ->label('Application Reason')
+                            ->placeholder('—'),
+
+                        TextEntry::make('rejection_reason')
+                            ->label('Rejection Reason')
+                            ->placeholder('—'),
+
+                        TextEntry::make('reviewed_by')
+                            ->label('Reviewed By'),
+
+                        TextEntry::make('reviewed_at')
+                            ->label('Reviewed At')
+                            ->dateTime(),
+
+                        TextEntry::make('created_at')
+                            ->label('Created At')
+                            ->dateTime(),
+                    ])
+                    ->columns(2),
+            ]);
+    }
+}

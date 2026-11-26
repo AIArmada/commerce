@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\DailyAggregationService;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
@@ -105,9 +106,9 @@ test('aggregated period stats use period-end rates, not current rates', function
         'occurred_at' => $day->setTime(11, 0),
     ]);
 
-    app(DailyAggregationService::class)->aggregateForAffiliate($affiliate, $day);
+    app(DailyStatsWriter::class)->aggregateForAffiliate((string) $affiliate->getKey(), $day);
 
-    $stats = app(DailyAggregationService::class)->getAggregatedStats($affiliate, $day, $day);
+    $stats = app(DailyStatsReader::class)->getAggregatedStats((string) $affiliate->getKey(), $day, $day);
 
     // Historic: 4000 MYR @ 4.0 = 1000 USD, 800 EUR @ 0.8 = 1000 USD.
     expect($stats['converted'])->toBeTrue()

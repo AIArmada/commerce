@@ -5,12 +5,19 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('AffiliateProgramMembership Model', function (): void {
     beforeEach(function (): void {
@@ -65,8 +72,8 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        expect($membership->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($membership->affiliate->id)->toBe($this->affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($membership->affiliate_id)?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($membership, 'affiliate'))->toBeFalse();
     });
 
     test('belongs to program', function (): void {
@@ -92,6 +99,40 @@ describe('AffiliateProgramMembership Model', function (): void {
 
         expect($membership->tier)->toBeInstanceOf(AffiliateProgramTier::class);
         expect($membership->tier->id)->toBe($this->tier->id);
+    });
+
+    test('rejects a tier from another program even when owner scoping is disabled', function (): void {
+        config(['affiliates.owner.enabled' => false]);
+
+        $otherProgram = $this->program->replicate();
+        $otherProgram->slug = 'other-program-' . uniqid();
+        $otherProgram->save();
+
+        $otherTier = $this->tier->replicate();
+        $otherTier->program_id = $otherProgram->id;
+        $otherTier->save();
+
+        $attributes = [
+            'affiliate_id' => $this->affiliate->id,
+            'program_id' => $this->program->id,
+            'status' => MembershipStatus::Pending,
+            'applied_at' => now(),
+        ];
+
+        expect(fn () => AffiliateProgramMembership::create([
+            ...$attributes,
+            'tier_id' => $otherTier->id,
+        ]))->toThrow(AuthorizationException::class);
+
+        $membership = AffiliateProgramMembership::create([
+            ...$attributes,
+            'tier_id' => $this->tier->id,
+        ]);
+
+        expect(fn () => $membership->update(['tier_id' => $otherTier->id]))
+            ->toThrow(AuthorizationException::class);
+
+        expect($membership->refresh()->tier_id)->toBe($this->tier->id);
     });
 
     test('isActive returns true when approved and not expired', function (): void {
@@ -162,7 +203,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        $membership->approve('admin@example.com');
+        app(MembershipReviewApi::class)->approve((string) $membership->getKey(), 'admin@example.com');
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Approved);
@@ -178,7 +219,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        $membership->approve();
+        app(MembershipReviewApi::class)->approve((string) $membership->getKey());
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Approved);
@@ -193,7 +234,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        $membership->reject();
+        app(MembershipReviewApi::class)->reject((string) $membership->getKey());
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Rejected);
@@ -208,10 +249,59 @@ describe('AffiliateProgramMembership Model', function (): void {
             'approved_at' => now(),
         ]);
 
-        $membership->suspend();
+        expect(app(MembershipAdministration::class)->suspend($membership->id))->toBeTrue();
+        expect(app(MembershipAdministration::class)->suspend($membership->id))->toBeFalse();
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Suspended);
+    });
+
+    test('administers memberships without changing their affiliate or program identity', function (): void {
+        $api = app(MembershipAdministration::class);
+        $created = $api->create($this->affiliate->id, $this->program->id, [
+            'tier_id' => $this->tier->id,
+            'status' => MembershipStatus::Approved,
+        ]);
+
+        expect($created->status)->toBe(MembershipStatus::Approved->value)
+            ->and($created->approvedAt)->not->toBeNull();
+
+        $updated = $api->update($created->id, [
+            'affiliate_id' => 'untrusted-affiliate',
+            'program_id' => 'untrusted-program',
+            'status' => MembershipStatus::Suspended,
+        ]);
+
+        expect($updated->affiliateId)->toBe($this->affiliate->id)
+            ->and($updated->programId)->toBe($this->program->id)
+            ->and($updated->status)->toBe(MembershipStatus::Suspended->value);
+
+        $api->delete($created->id);
+
+        expect(AffiliateProgramMembership::query()->whereKey($created->id)->exists())->toBeFalse();
+    });
+
+    test('tier administration removes membership references without deleting members', function (): void {
+        $membership = app(MembershipAdministration::class)->create($this->affiliate->id, $this->program->id, [
+            'tier_id' => $this->tier->id,
+        ]);
+
+        app(ProgramTierAdministration::class)->delete($this->tier->id);
+
+        expect(AffiliateProgramMembership::query()->findOrFail($membership->id)->tier_id)->toBeNull()
+            ->and(AffiliateProgramTier::query()->whereKey($this->tier->id)->exists())->toBeFalse();
+    });
+
+    test('program administration owns creation, updates and deletion', function (): void {
+        $api = app(ProgramAdministration::class);
+        $programId = $api->create(['name' => 'Managed program']);
+        $api->update($programId, ['name' => 'Renamed program']);
+
+        expect(AffiliateProgram::query()->findOrFail($programId)->name)->toBe('Renamed program');
+
+        $api->delete($programId);
+
+        expect(AffiliateProgram::query()->whereKey($programId)->exists())->toBeFalse();
     });
 
     test('upgradeTier method updates tier', function (): void {
@@ -233,7 +323,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'approved_at' => now(),
         ]);
 
-        $membership->upgradeTier($silverTier);
+        app(ProgramTierManagement::class)->upgrade($membership->affiliate_id, $membership->program_id, $silverTier->id);
 
         $membership->refresh();
         expect($membership->tier_id)->toBe($silverTier->id);

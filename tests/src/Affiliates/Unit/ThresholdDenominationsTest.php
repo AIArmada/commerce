@@ -2,23 +2,27 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
+use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\PayoutMinimums;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Carbon\CarbonImmutable;
@@ -84,7 +88,7 @@ test('new balances inherit the minimum of their own currency', function (): void
 
     app(ApplyConversionAccounting::class)->handle($conversion);
 
-    expect($affiliate->balanceFor('USD')?->minimum_payout_minor)->toBe(1000);
+    expect(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()?->minimum_payout_minor)->toBe(1000);
 });
 
 test('volume tiers measure the boundary in the tier currency', function (): void {
@@ -103,7 +107,7 @@ test('volume tiers measure the boundary in the tier currency', function (): void
     // 40,000 MYR clears a 40,000 MYR floor but converts to ~8,511 USD.
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-002');
 
-    $result = app(CommissionRuleEngine::class)->calculate($affiliate, 10000);
+    $result = app(CommissionRuleCalculation::class)->calculate((string) $affiliate->getKey(), 10000);
 
     expect($result->volumeBonusMinor)->toBe(500)
         ->and($result->finalCommissionMinor)->toBe(1500);
@@ -141,7 +145,7 @@ test('program tier upgrades measure revenue in the tier currency', function (): 
 
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-003', ['affiliate_link_id' => $link->id]);
 
-    expect($tier->meetsUpgradeRequirements($affiliate, $program))->toBeTrue();
+    expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $program->id, $tier->id))->toBeTrue();
 });
 
 test('program eligibility honors a denominated revenue rule', function (): void {
@@ -161,7 +165,7 @@ test('program eligibility honors a denominated revenue rule', function (): void 
 
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-004');
 
-    expect($program->canJoin($affiliate))->toBeTrue();
+    expect(app(ProgramEligibilityReader::class)->canJoin((string) $affiliate->getKey(), (string) $program->getKey()))->toBeTrue();
 });
 
 test('top performer threshold compares in its declared currency', function (): void {
@@ -176,8 +180,8 @@ test('top performer threshold compares in its declared currency', function (): v
     $affiliate = denominationsAffiliate('DENOM005');
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-005');
 
-    $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+    $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
+        CommissionRuleType::TopPerformer->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );
@@ -203,8 +207,8 @@ test('growth previous-revenue floor compares in its declared currency', function
     ]);
     denominationsConversion($affiliate, 80000, 'ORD-DENOM-006B');
 
-    $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
-        CommissionRuleType::Growth,
+    $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
+        CommissionRuleType::Growth->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );
@@ -231,5 +235,5 @@ test('rank qualification measures sales in the rank currency', function (): void
 
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-007');
 
-    expect(app(RankQualificationService::class)->evaluate($affiliate)?->id)->toBe($rank->id);
+    expect(app(RankQualificationApi::class)->evaluate((string) $affiliate->getKey())?->id)->toBe($rank->id);
 });

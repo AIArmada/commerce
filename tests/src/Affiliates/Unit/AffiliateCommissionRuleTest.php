@@ -5,9 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 
 // AffiliateCommissionRule Tests
 test('AffiliateCommissionRule can be created with required fields', function (): void {
@@ -36,10 +35,10 @@ test('AffiliateCommissionRule can be created with required fields', function ():
     expect($rule->priority)->toBe(100);
 });
 
-test('AffiliateCommissionRule has program relationship', function (): void {
+test('AffiliateCommissionRule stores a nullable program identity', function (): void {
     $rule = new AffiliateCommissionRule;
 
-    expect($rule->program())->toBeInstanceOf(BelongsTo::class);
+    expect($rule->program_id)->toBeNull();
 });
 
 test('AffiliateCommissionRule isActive returns true when all conditions met', function (): void {
@@ -249,4 +248,23 @@ test('AffiliateCommissionRule scopeOrdered orders by priority descending', funct
 
     expect($orderedRules->first())->toBe('High Priority');
     expect($orderedRules->last())->toBe('Low Priority');
+});
+
+test('commission rule conditions fail closed when context or operands are invalid', function (): void {
+    foreach ([
+        ['not_in' => ['US']],
+        ['max' => 10],
+        ['min' => 1],
+        ['equals' => null],
+    ] as $condition) {
+        $rule = new AffiliateCommissionRule(['is_active' => true, 'conditions' => ['field' => $condition]]);
+        expect($rule->matches([]))->toBeFalse();
+    }
+
+    $rule = new AffiliateCommissionRule(['is_active' => true, 'conditions' => ['amount' => ['max' => 10]]]);
+    expect($rule->matches(['amount' => null]))->toBeFalse()
+        ->and($rule->matches(['amount' => 'invalid']))->toBeFalse();
+
+    $rule->conditions = ['country' => ['not_in' => 'invalid']];
+    expect($rule->matches(['country' => 'MY']))->toBeFalse();
 });

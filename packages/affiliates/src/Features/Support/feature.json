@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "Support",
+  "owns": {
+    "table:affiliate_support_tickets": [
+      "AIArmada\\Affiliates\\Features\\Support\\Actions\\OpenSupportTicket",
+      "AIArmada\\Affiliates\\Features\\Support\\Actions\\ReplyToSupportTicket",
+      "AIArmada\\Affiliates\\Features\\Support\\Actions\\UpdateSupportTicket"
+    ],
+    "table:affiliate_support_messages": [
+      "AIArmada\\Affiliates\\Features\\Support\\Actions\\OpenSupportTicket",
+      "AIArmada\\Affiliates\\Features\\Support\\Actions\\ReplyToSupportTicket",
+      "AIArmada\\Affiliates\\Features\\Support\\Actions\\DeleteTicketMessages"
+    ]
+  },
+  "extensions": {}
+}

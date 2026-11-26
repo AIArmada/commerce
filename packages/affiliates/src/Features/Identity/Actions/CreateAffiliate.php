@@ -1,0 +1,218 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Identity\Actions;
+
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Queries\GenerateAffiliateCode;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Contacting\Data\ContactMethodData;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+use LogicException;
+
+/**
+ * Create a new affiliate.
+ */
+final readonly class CreateAffiliate
+{
+    public function __construct(
+        private GenerateAffiliateCode $generateCode,
+    ) {}
+
+    /**
+     * Create a new affiliate with the given data.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function handle(array $data, ?Model $owner = null, ?Model $registrationActor = null): Affiliate
+    {
+        $name = $this->resolveName($data);
+        $commissionType = $this->resolveCommissionType($data);
+        $commissionRate = $this->resolveCommissionRate($data, $commissionType);
+
+        $codeProvided = array_key_exists('code', $data) && $data['code'] !== null;
+        $attempts = $codeProvided ? 1 : 3;
+        $mode = $this->getApprovalMode();
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                return (new Affiliate)->getConnection()->transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $mode, $registrationActor): Affiliate {
+                    $parentId = $this->resolveParentId($data);
+                    $status = $mode->defaultStatus();
+
+                    $affiliate = new Affiliate([
+                        'code' => $data['code'] ?? $this->generateCode->handle($name),
+                        'name' => $name,
+                        'handle' => $data['handle'] ?? null,
+                        'description' => $data['description'] ?? null,
+                        'status' => $status,
+                        'registration_approval_mode' => $mode->value,
+                        'commission_type' => $commissionType,
+                        'commission_rate' => $commissionRate,
+                        'currency' => $data['currency'] ?? config('affiliates.currency.default', 'MYR'),
+                        'parent_affiliate_id' => $parentId,
+                        'metadata' => $data['metadata'] ?? [],
+                    ]);
+
+                    if ($owner) {
+                        $affiliate->owner_type = $owner->getMorphClass();
+                        $affiliate->owner_id = $owner->getKey();
+                    }
+
+                    if ($registrationActor !== null) {
+                        $affiliate->setAttribute('registration_actor_type', $registrationActor->getMorphClass());
+                        $affiliate->setAttribute('registration_actor_id', (string) $registrationActor->getKey());
+                    }
+
+                    if ($status === Active::class) {
+                        $affiliate->activated_at = CarbonImmutable::now();
+                    }
+
+                    $affiliate->save();
+
+                    if ($email = $data['contact_email'] ?? null) {
+                        OwnerContext::withOwner($affiliate->owner, fn () => $affiliate->addContactMethod(ContactMethodData::email($email, 'general')));
+                    }
+
+                    if ($website = $data['website_url'] ?? null) {
+                        OwnerContext::withOwner($affiliate->owner, fn () => $affiliate->addContactMethod(ContactMethodData::website($website)));
+                    }
+
+                    if ($phone = $data['phone'] ?? null) {
+                        OwnerContext::withOwner($affiliate->owner, fn () => $affiliate->addContactMethod(ContactMethodData::phone($phone, countryCode: 'MY', purpose: 'general')));
+                    }
+
+                    return $affiliate;
+                });
+            } catch (QueryException $exception) {
+                if ($codeProvided || ! $this->isUniqueConstraintViolation($exception) || $attempt === $attempts) {
+                    throw $exception;
+                }
+            }
+        }
+
+        throw new LogicException('Unable to generate a unique affiliate code.');
+    }
+
+    private function getApprovalMode(): RegistrationApprovalMode
+    {
+        $mode = (string) config('affiliates.registration.approval_mode', 'admin');
+
+        return RegistrationApprovalMode::tryFrom($mode)
+            ?? throw new InvalidArgumentException("Unknown affiliates registration approval mode [{$mode}].");
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveName(array $data): string
+    {
+        $name = $data['name'] ?? null;
+
+        if (! is_string($name) || mb_trim($name) === '') {
+            throw new InvalidArgumentException('Affiliate name is required.');
+        }
+
+        return mb_trim($name);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveCommissionType(array $data): CommissionType
+    {
+        $type = $data['commission_type'] ?? $this->getDefaultCommissionType();
+
+        if ($type instanceof CommissionType) {
+            return $type;
+        }
+
+        if (is_string($type) && CommissionType::tryFrom($type) !== null) {
+            return CommissionType::from($type);
+        }
+
+        throw new InvalidArgumentException('Affiliate commission type is invalid.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveCommissionRate(array $data, CommissionType $type): int
+    {
+        $rate = $data['commission_rate'] ?? $this->getDefaultCommissionRate();
+
+        if (! is_numeric($rate) || (int) $rate < 0) {
+            throw new InvalidArgumentException('Affiliate commission rate must be zero or greater.');
+        }
+
+        $rate = (int) $rate;
+
+        if ($type === CommissionType::Percentage && $rate > 10000) {
+            throw new InvalidArgumentException('Affiliate percentage commission rate must not exceed 10000 basis points.');
+        }
+
+        return $rate;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveParentId(array $data): ?string
+    {
+        $parentId = $data['parent_affiliate_id'] ?? null;
+
+        if ($parentId === null || $parentId === '') {
+            return null;
+        }
+
+        if (! is_string($parentId) || ! Str::isUuid($parentId)) {
+            throw new InvalidArgumentException('Parent affiliate id is invalid.');
+        }
+
+        if (config('affiliates.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(
+                Affiliate::class,
+                $parentId,
+                message: 'Parent affiliate is not accessible in the current owner scope.',
+            );
+        }
+
+        $parent = Affiliate::query()->forOwner()->whereKey($parentId)->lockForUpdate()->first();
+
+        if (! $parent instanceof Affiliate) {
+            throw new InvalidArgumentException('Parent affiliate does not exist.');
+        }
+
+        if (! $parent->isCommercialPurpose()) {
+            throw new InvalidArgumentException('Parent affiliate is not a commercial profile.');
+        }
+
+        return (string) $parent->getKey();
+    }
+
+    private function getDefaultCommissionType(): CommissionType
+    {
+        $type = config('affiliates.registration.default_commission_type', 'percentage');
+
+        return CommissionType::tryFrom($type) ?? CommissionType::Percentage;
+    }
+
+    private function getDefaultCommissionRate(): int
+    {
+        return (int) config('affiliates.registration.default_commission_rate', 1000);
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
+    }
+}

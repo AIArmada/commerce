@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
-use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\IpHasher;
 use Illuminate\Http\Request;
@@ -60,7 +62,7 @@ test('package resolves public referral context from query parameters', function 
 });
 
 test('package resolves public referral context from encrypted cookies', function (): void {
-    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, [], 'public-cookie-value');
+    app(AttributionTracking::class)->track($this->affiliate->code, [], 'public-cookie-value');
 
     $request = Request::create('/', 'GET');
     $request->cookies->set(
@@ -140,7 +142,7 @@ test('path referral redirect preserves its emitted cookie instead of the tracker
         'default_voucher_code' => 'REFPREV' . uniqid(),
     ]);
 
-    app(TrackAffiliateVisit::class)->handle(
+    app(AttributionTracking::class)->track(
         $previous->code,
         ['user_agent' => 'previous-agent', 'ip_address' => '203.0.113.5'],
         'previous-cookie',
@@ -167,20 +169,88 @@ test('touching attribution preserves the stored hash unless a new raw IP arrives
     $firstIp = '198.51.100.11';
     $secondIp = '198.51.100.22';
 
-    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, ['ip_address' => $firstIp], 'touch-cookie-f03');
+    app(AttributionTracking::class)->track($this->affiliate->code, ['ip_address' => $firstIp], 'touch-cookie-f03');
 
     $stored = AffiliateAttribution::query()->where('cookie_value', 'touch-cookie-f03')->sole();
 
     expect($stored->ip_address)->toBe(IpHasher::hash($firstIp));
 
-    app(TouchAffiliateAttribution::class)->handle('touch-cookie-f03', []);
+    app(AttributionActivity::class)->touch('touch-cookie-f03', []);
 
     expect($stored->refresh()->ip_address)->toBe(IpHasher::hash($firstIp));
 
-    app(TouchAffiliateAttribution::class)->handle('touch-cookie-f03', ['ip_address' => $secondIp]);
+    app(AttributionActivity::class)->touch('touch-cookie-f03', ['ip_address' => $secondIp]);
 
     $touched = $stored->refresh();
 
     expect($touched->ip_address)->toBe(IpHasher::hash($secondIp))
         ->and($touched->ip_address)->not->toBe(IpHasher::hash((string) IpHasher::hash($secondIp)));
+});
+
+test('attribution activity does not revive expired cookies', function (): void {
+    app(AttributionTracking::class)->track($this->affiliate->code, [], 'expired-touch-cookie');
+    $attribution = AffiliateAttribution::query()->where('cookie_value', 'expired-touch-cookie')->sole();
+    $attribution->update(['expires_at' => now()->subDay()]);
+    $expiresAt = $attribution->fresh()->expires_at;
+
+    expect(app(AttributionActivity::class)->touch('expired-touch-cookie'))->toBeNull()
+        ->and($attribution->fresh()->expires_at->equalTo($expiresAt))->toBeTrue();
+});
+
+test('visit tracking rotates an expired cookie instead of reusing its identifier', function (): void {
+    $tracking = app(AttributionTracking::class);
+    $first = $tracking->track($this->affiliate->code, [], 'expired-visit-cookie');
+    AffiliateAttribution::query()->whereKey($first->id)->update(['expires_at' => now()->subDay()]);
+
+    $second = $tracking->track($this->affiliate->code, [], 'expired-visit-cookie');
+
+    expect($second)->not->toBeNull()
+        ->and($second->cookieValue)->not->toBe('expired-visit-cookie')
+        ->and($second->id)->not->toBe($first->id);
+});
+
+test('path referrals respect disabled cookies, do not track and consent settings', function (string $setting, bool $value, array $headers): void {
+    config()->set($setting, $value);
+
+    $response = $this->withHeaders($headers)->get('/r/' . $this->affiliate->code);
+
+    $response->assertRedirect(url('/'))
+        ->assertCookieMissing((string) config('affiliates.cookies.name', 'affiliate_session'));
+
+    expect(AffiliateAttribution::query()->count())->toBe(0);
+})->with([
+    ['affiliates.cookies.enabled', false, []],
+    ['affiliates.cookies.respect_dnt', true, ['DNT' => '1']],
+    ['affiliates.cookies.require_consent', true, []],
+]);
+
+test('a false consent cookie does not authorize path referral tracking', function (): void {
+    config()->set('affiliates.cookies.require_consent', true);
+
+    $this->withUnencryptedCookie((string) config('affiliates.cookies.consent_cookie'), 'false')
+        ->get('/r/' . $this->affiliate->code)
+        ->assertRedirect(url('/'))
+        ->assertCookieMissing((string) config('affiliates.cookies.name', 'affiliate_session'));
+
+    expect(AffiliateAttribution::query()->count())->toBe(0);
+});
+
+test('disabled path referral capture does not intercept the request', function (): void {
+    config()->set('affiliates.public_pages.route.enabled', false);
+
+    $request = Request::create('/r/' . $this->affiliate->code, 'GET');
+    $response = app(CaptureAffiliateReferralFromPath::class)
+        ->handle($request, fn () => response('next'));
+
+    expect($response->getContent())->toBe('next')
+        ->and(AffiliateAttribution::query()->count())->toBe(0);
+});
+
+test('malformed tracking link IDs do not reach UUID database queries', function (): void {
+    $request = Request::create('/?aff_link=not-a-uuid', 'GET');
+    $response = app(TrackAffiliateCookie::class)
+        ->handle($request, fn () => response('next'));
+
+    expect($response->getContent())->toBe('next')
+        ->and(AffiliateAttribution::query()->count())->toBe(0);
 });

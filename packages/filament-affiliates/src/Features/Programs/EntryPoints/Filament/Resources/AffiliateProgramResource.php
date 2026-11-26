@@ -1,0 +1,304 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources;
+
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CommissionRulesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\MembershipsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\TiersRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
+use UnitEnum;
+
+final class AffiliateProgramResource extends Resource
+{
+    protected static ?string $model = AffiliateProgram::class;
+
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<AffiliateProgram> $query */
+        $query = parent::getEloquentQuery();
+
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            /** @var Builder<Model> $unscopedQuery */
+            $unscopedQuery = $query;
+
+            return $unscopedQuery;
+        }
+
+        $scopedQuery = $query->forOwner();
+
+        /** @var Builder<Model> $modelQuery */
+        $modelQuery = $scopedQuery;
+
+        return $modelQuery;
+    }
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.resources.navigation_sort.affiliate_programs', 63);
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('Program Details')
+                ->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255),
+
+                    Forms\Components\TextInput::make('slug')
+                        ->required()
+                        ->maxLength(255)
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, AffiliateProgram::class)),
+
+                    Forms\Components\Textarea::make('description')
+                        ->rows(3),
+
+                    Forms\Components\Select::make('status')
+                        ->options(ProgramStatus::class)
+                        ->required()
+                        ->default(ProgramStatus::Draft),
+                ])
+                ->columns(2),
+
+            Section::make('Schedule')
+                ->schema([
+                    Forms\Components\DateTimePicker::make('starts_at')
+                        ->label('Start Date'),
+
+                    Forms\Components\DateTimePicker::make('ends_at')
+                        ->label('End Date')
+                        ->after('starts_at'),
+                ])
+                ->columns(2),
+
+            Section::make('Commission Settings')
+                ->schema([
+                    Forms\Components\Select::make('commission_type')
+                        ->options(CommissionType::class)
+                        ->required()
+                        ->default(CommissionType::Percentage),
+
+                    Forms\Components\TextInput::make('default_commission_rate_basis_points')
+                        ->label('Default Commission Rate (basis points)')
+                        ->numeric()
+                        ->required()
+                        ->default(1000)
+                        ->helperText('1000 = 10%'),
+
+                    Forms\Components\TextInput::make('cookie_lifetime_days')
+                        ->label('Cookie Lifetime (days)')
+                        ->numeric()
+                        ->required()
+                        ->default(30),
+
+                    Forms\Components\Select::make('currency')
+                        ->label('Program Currency')
+                        ->options([
+                            'USD' => 'USD',
+                            'MYR' => 'MYR',
+                            'SGD' => 'SGD',
+                            'IDR' => 'IDR',
+                        ])
+                        ->nullable()
+                        ->placeholder('Default (' . (string) config('affiliates.currency.default', 'MYR') . ')')
+                        ->helperText('Denominates fixed commissions and the network catalog snapshot. Blank uses the default.'),
+                ])
+                ->columns(3),
+
+            Section::make('Settings')
+                ->schema([
+                    Forms\Components\Select::make('visibility')
+                        ->options(ProgramVisibility::class)
+                        ->default(ProgramVisibility::Public),
+
+                    Forms\Components\Toggle::make('requires_approval')
+                        ->label('Requires Approval')
+                        ->default(true)
+                        ->helperText('New members require admin approval'),
+
+                    Forms\Components\TextInput::make('terms_url')
+                        ->label('Terms & Conditions URL')
+                        ->url(),
+                ])
+                ->columns(3),
+
+            Section::make('Eligibility Rules')
+                ->schema([
+                    Forms\Components\KeyValue::make('eligibility_rules')
+                        ->keyLabel('Requirement')
+                        ->valueLabel('Value')
+                        ->addActionLabel('Add Requirement'),
+                ])
+                ->collapsed(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('slug')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'gray' => ProgramStatus::Draft->value,
+                        'success' => ProgramStatus::Active->value,
+                        'warning' => ProgramStatus::Paused->value,
+                        'danger' => ProgramStatus::Archived->value,
+                    ]),
+
+                Tables\Columns\BadgeColumn::make('visibility')
+                    ->label('Visibility')
+                    ->colors([
+                        'success' => ProgramVisibility::Public->value,
+                        'gray' => ProgramVisibility::Private->value,
+                    ]),
+
+                Tables\Columns\TextColumn::make('default_commission_rate_basis_points')
+                    ->label('Commission')
+                    ->formatStateUsing(fn ($state) => ($state / 100) . '%'),
+
+                Tables\Columns\TextColumn::make('currency')
+                    ->label('Currency')
+                    ->badge()
+                    ->placeholder('Default (' . (string) config('affiliates.currency.default', 'MYR') . ')'),
+
+                Tables\Columns\TextColumn::make('affiliates_count')
+                    ->counts('affiliates')
+                    ->label('Members'),
+
+                Tables\Columns\TextColumn::make('starts_at')
+                    ->date()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('ends_at')
+                    ->date()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(ProgramStatus::class),
+
+                Tables\Filters\SelectFilter::make('visibility')
+                    ->options(ProgramVisibility::class),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(ProgramAdministration::class)->delete((string) $record->getKey());
+                            }
+                        }),
+                ]),
+            ]);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return AffiliateProgramInfolist::configure($schema);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            TiersRelationManager::class,
+            MembershipsRelationManager::class,
+            CreativesRelationManager::class,
+            CommissionRulesRelationManager::class,
+            CommissionPromotionsRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => AffiliateProgramResource\Pages\ListAffiliatePrograms::route('/'),
+            'create' => AffiliateProgramResource\Pages\CreateAffiliateProgram::route('/create'),
+            'view' => AffiliateProgramResource\Pages\ViewAffiliateProgram::route('/{record}'),
+            'edit' => AffiliateProgramResource\Pages\EditAffiliateProgram::route('/{record}/edit'),
+        ];
+    }
+}

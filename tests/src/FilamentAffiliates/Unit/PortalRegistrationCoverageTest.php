@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalRegistration;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     Affiliate::query()->delete();
@@ -190,4 +192,63 @@ it('exposes a register action and custom affiliate form components', function ()
     $affiliateName = $reflection->getMethod('getAffiliateNameFormComponent');
 
     expect($affiliateName->invoke($page))->toBeInstanceOf(TextInput::class);
+});
+
+it('uses configured commission terms even when forged terms are passed to the registration API', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+    config()->set('affiliates.registration.enabled', true);
+    config()->set('affiliates.registration.default_commission_type', 'percentage');
+    config()->set('affiliates.registration.default_commission_rate', 750);
+    config()->set('affiliates.currency.default', 'MYR');
+
+    $user = User::factory()->create();
+    $reference = EloquentRecordReference::fromModel($user);
+    $record = app(RegistrationApi::class)->register([
+        'name' => 'Public Applicant',
+        'commission_type' => 'fixed',
+        'commission_rate' => 999999,
+        'currency' => 'USD',
+        'parent_affiliate_id' => (string) Str::uuid(),
+        'metadata' => ['forged' => true],
+    ], $reference, null, null);
+
+    $affiliate = Affiliate::query()->findOrFail($record->id);
+
+    expect($affiliate->commission_type->value)->toBe('percentage')
+        ->and($affiliate->commission_rate)->toBe(750)
+        ->and($affiliate->currency)->toBe('MYR')
+        ->and($affiliate->parent_affiliate_id)->toBeNull()
+        ->and($affiliate->metadata)->toBe([]);
+});
+
+it('enforces registration availability and schema limits at the API boundary', function (): void {
+    $user = User::factory()->create();
+    $reference = EloquentRecordReference::fromModel($user);
+    $registration = app(RegistrationApi::class);
+
+    config()->set('affiliates.registration.enabled', false);
+
+    expect(fn () => $registration->register(['name' => 'Applicant'], $reference, null, null))
+        ->toThrow(InvalidArgumentException::class, 'Affiliate registration is disabled.');
+
+    config()->set('affiliates.registration.enabled', true);
+
+    expect(fn () => $registration->register(['name' => 'Applicant', 'code' => str_repeat('A', 65)], $reference, null, null))
+        ->toThrow(ValidationException::class)
+        ->and(Affiliate::query()->count())->toBe(0);
+});
+
+it('rejects a differently cased existing code with a validation error', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+    config()->set('affiliates.registration.enabled', true);
+
+    $user = User::factory()->create();
+    $reference = EloquentRecordReference::fromModel($user);
+    $registration = app(RegistrationApi::class);
+
+    $registration->register(['name' => 'Original Applicant', 'code' => 'Public-Code'], $reference, null, null);
+
+    expect(fn () => $registration->register(['name' => 'Other Applicant', 'code' => 'PUBLIC-CODE'], $reference, null, null))
+        ->toThrow(ValidationException::class, 'The affiliate code has already been taken.')
+        ->and(Affiliate::query()->count())->toBe(1);
 });

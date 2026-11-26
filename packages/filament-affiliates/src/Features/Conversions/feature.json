@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Conversions",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Conversions\\Extensions\\AdminPanelContribution"
+    ],
+    "identity.relations": [
+      "AIArmada\\FilamentAffiliates\\Features\\Conversions\\Extensions\\AffiliateRelations"
+    ]
+  }
+}

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
-use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 
 function createPayoutCandidate(int $availableMinor = 10_000, int $commissionMinor = 10_000): array
 {
@@ -73,7 +73,7 @@ test('current holds and pending payouts are rechecked before reserving', functio
     expect(app(ClaimScheduledPayout::class)->handle((string) $affiliate->id, 5_000, 'USD'))->toBeNull()
         ->and($balance->refresh()->available_minor)->toBe(10_000);
 
-    $affiliate->payoutHolds()->update(['released_at' => now()]);
+    AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->id)->update(['released_at' => now()]);
     AffiliatePayout::query()->create([
         'reference' => 'PENDING-' . uniqid(),
         'payee_type' => $affiliate->getMorphClass(),

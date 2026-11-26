@@ -5,21 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Events;
 
 use AIArmada\Affiliates\Enums\RankQualificationReason;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-final class AffiliateRankChanged
+final readonly class AffiliateRankChanged
 {
     use Dispatchable;
-    use SerializesModels;
 
     public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly ?AffiliateRank $fromRank,
-        public readonly ?AffiliateRank $toRank,
-        public readonly RankQualificationReason $reason
+        public string $affiliateId,
+        public ?QualifiedRank $fromRank,
+        public ?QualifiedRank $toRank,
+        public RankQualificationReason $reason
     ) {}
 
     public function isPromotion(): bool
@@ -32,7 +29,7 @@ final class AffiliateRankChanged
             return false;
         }
 
-        return $this->toRank->isHigherThan($this->fromRank);
+        return $this->toRank->level > $this->fromRank->level;
     }
 
     public function isDemotion(): bool
@@ -45,6 +42,6 @@ final class AffiliateRankChanged
             return true;
         }
 
-        return $this->toRank->isLowerThan($this->fromRank);
+        return $this->toRank->level < $this->fromRank->level;
     }
 }

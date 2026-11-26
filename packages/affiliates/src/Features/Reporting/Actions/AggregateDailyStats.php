@@ -1,0 +1,166 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Reporting\Actions;
+
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
+
+final readonly class AggregateDailyStats implements DailyStatsWriter
+{
+    public function __construct(private DeleteAffiliateDailyStats $delete, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions, private ConversionStatisticsReader $conversions) {}
+
+    /**
+     * Aggregate statistics for all affiliates on a given date.
+     */
+    public function aggregate(CarbonImmutable $date): int
+    {
+        $affiliateCount = 0;
+
+        $connectionIdentity = spl_object_id((new AffiliateDailyStat)->getConnection());
+
+        foreach (app(AffiliateReportingReader::class)->scopedIds($connectionIdentity) as $id) {
+            $this->aggregateForAffiliate($id, $date);
+            $affiliateCount++;
+        }
+
+        return $affiliateCount;
+    }
+
+    /**
+     * Aggregate statistics for a specific affiliate on a date.
+     *
+     * One row per active currency. Click-level counts live on the affiliate
+     * currency row only so period sums never double-count; conversion counts
+     * and money are per leg and sum cleanly.
+     *
+     * @return list<DailyStatRecord>
+     */
+    public function aggregateForAffiliate(string $affiliateId, CarbonImmutable $date): array
+    {
+        $connection = (new AffiliateDailyStat)->getConnection();
+
+        return $connection->transaction(function () use ($affiliateId, $date, $connection): array {
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id($connection))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
+            $dayStart = $date->startOfDay();
+            $dayEnd = $date->endOfDay();
+            $reference = $this->referenceCurrency($affiliate->currency);
+
+            $touchpointStats = $this->touchpoints->clickStats($affiliateId, $dayStart, $dayEnd);
+            $clicks = $touchpointStats['clicks'];
+            $uniqueClicks = $touchpointStats['unique_clicks'];
+
+            $attributions = $this->attributions->countFirstSeen($affiliateId, $dayStart, $dayEnd);
+
+            $legs = [];
+
+            foreach ($this->conversions->totals($affiliateId, $reference, spl_object_id($connection), $dayStart, $dayStart->addDay()) as $row) {
+                $legs[$row->currency] = [
+                    'conversions' => $row->count,
+                    'revenue' => $row->revenueMinor,
+                    'commission' => $row->commissionMinor,
+                ];
+            }
+
+            if ($legs === [] || ($clicks > 0 || $attributions > 0) && ! isset($legs[$reference])) {
+                $legs[$reference] = ['conversions' => 0, 'revenue' => 0, 'commission' => 0];
+            }
+
+            $totalConversions = array_sum(array_column($legs, 'conversions'));
+            $conversionRate = $clicks > 0 ? $totalConversions / $clicks : 0;
+            $breakdown = json_encode($this->touchpoints->breakdown($affiliateId, $dayStart, $dayEnd), JSON_THROW_ON_ERROR);
+            $now = CarbonImmutable::now();
+            $upsertRows = [];
+
+            foreach ($legs as $currency => $leg) {
+                $primary = $currency === $reference;
+
+                $upsertRows[] = [
+                    'id' => (string) Str::uuid(),
+                    'affiliate_id' => $affiliate->reference->id,
+                    'date' => $date->toDateString(),
+                    'currency' => $currency,
+                    'owner_type' => $affiliate->reference->ownerType,
+                    'owner_id' => $affiliate->reference->ownerId,
+                    'clicks' => $primary ? $clicks : 0,
+                    'unique_clicks' => $primary ? $uniqueClicks : 0,
+                    'attributions' => $primary ? $attributions : 0,
+                    'conversions' => $leg['conversions'],
+                    'revenue_cents' => $leg['revenue'],
+                    'commission_cents' => $leg['commission'],
+                    'refunds' => 0,
+                    'refund_amount_cents' => 0,
+                    'conversion_rate' => $primary ? $conversionRate : 0,
+                    'epc_cents' => $clicks > 0 ? $leg['commission'] / $clicks : 0,
+                    'breakdown' => $primary ? $breakdown : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            AffiliateDailyStat::upsert(
+                $upsertRows,
+                ['affiliate_id', 'date', 'currency'],
+                ['owner_type', 'owner_id', 'clicks', 'unique_clicks', 'attributions', 'conversions', 'revenue_cents', 'commission_cents', 'conversion_rate', 'epc_cents', 'breakdown', 'updated_at'],
+            );
+
+            AffiliateDailyStat::query()->where('affiliate_id', $affiliate->reference->id)->where('date', $date->toDateString())->whereNotIn('currency', array_keys($legs))->delete();
+
+            return AffiliateDailyStat::query()
+                ->where('affiliate_id', $affiliate->reference->id)
+                ->where('date', $date->toDateString())
+                ->orderBy('currency')
+                ->get()->map(static fn (AffiliateDailyStat $stat): DailyStatRecord => new DailyStatRecord(
+                    (string) $stat->getKey(),
+                    $stat->currency,
+                    $stat->clicks,
+                    $stat->unique_clicks,
+                    $stat->attributions,
+                    $stat->conversions,
+                    $stat->revenue_cents,
+                    $stat->commission_cents,
+                ))->values()->all();
+        }, attempts: 3);
+    }
+
+    /**
+     * Recalculate derived statistics for a requested date range.
+     */
+    public function aggregateRange(CarbonImmutable $startDate, CarbonImmutable $endDate): int
+    {
+        $totalProcessed = 0;
+        $currentDate = $startDate;
+
+        while ($currentDate->lte($endDate)) {
+            $totalProcessed += $this->aggregate($currentDate);
+            $currentDate = $currentDate->addDay();
+        }
+
+        return $totalProcessed;
+    }
+
+    public function deleteForAffiliate(string $affiliateId): void
+    {
+        $this->delete->execute($affiliateId);
+    }
+
+    private function referenceCurrency(?string $currency): string
+    {
+        if (is_string($currency) && mb_trim($currency) !== '') {
+            return mb_strtoupper(mb_trim($currency));
+        }
+
+        return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
+    }
+}

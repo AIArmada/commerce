@@ -97,7 +97,7 @@ $affiliate->commission_type; // CommissionType::Percentage or CommissionType::Fi
 ```php
 // The payload key is `total` (minor units). `value_minor` is the persisted
 // column name and is NOT read from the payload.
-RecordAffiliateConversion::run($cart, [
+app(CartConversionRecording::class)->record($cart, [
     'external_reference' => 'ORD-123',
     'total' => 15000,     // Required for percentage commissions
     'subtotal' => 14000,
@@ -119,9 +119,8 @@ AffiliateVolumeTier::where('program_id', $program->id)->get();
 
 3. **Commission rules priority:**
 ```php
-$program->commissionRules()
-    ->orderBy('priority', 'desc')
-    ->get();
+app(\AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview::class)
+    ->previewCatalogRules((string) $program->getKey(), [$context]);
 ```
 
 4. **Opaque purpose:** affiliates with a host-defined non-commercial
@@ -133,14 +132,14 @@ unaffected.
 
 ### Sealed Identity on Claim
 
-**Symptoms:** `ClaimAffiliateIdentity` throws `SealedIdentityException`.
+**Symptoms:** `IdentityProofApi::claim()` throws `SealedIdentityException`.
 
 **Check:**
 
 1. A claim row already exists for the affiliate (active or revoked — both
 seal permanently). Replays by the same claimant return the active claim;
 any other claimant, and any replay after revocation, is sealed.
-2. Mutating writers must revalidate with `RevalidateIdentitySeal` under
+2. Mutating writers must revalidate with `IdentityProofApi::assertActivityWritable()` under
 the affiliate row lock immediately before writing; a claim committed
 between validation and write seals the write.
 3. PostgreSQL `REPEATABLE READ` transactions may fail with SQLSTATE `40001`
@@ -155,7 +154,7 @@ revoked, or invalid capability.
 
 **Check:** the capability row state (`status`, `expires_at`,
 `consumed_at`, `revoked_at`), not the seal — the seal only fires when a
-claim row exists. A second `IssueOwnershipCapability` while one is
+claim row exists. A second `IdentityProofApi::issueOwnershipCapability()` while one is
 active throws; wait for expiry/revocation instead of reissuing.
 
 ## Payout Issues
@@ -184,9 +183,7 @@ $conversion->occurred_at->addDays(30)->isPast();
 
 3. **No active holds:**
 ```php
-$affiliate->payoutHolds()
-    ->whereNull('released_at')
-    ->exists(); // Should be false
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey()); // Should be false
 ```
 
 4. **Minimum payout threshold:**
@@ -197,7 +194,7 @@ $affiliate->payoutHolds()
 ],
 
 // Affiliate must have at least this amount available in the payout currency
-$affiliate->balanceFor('USD')?->available_minor >= 5000;
+app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->find((string) $affiliate->getKey(), 'USD')?->availableMinor >= 5000;
 ```
 
 ### Payout Processing Fails
@@ -206,9 +203,7 @@ $affiliate->balanceFor('USD')?->available_minor >= 5000;
 
 1. **Payout method is configured:**
 ```php
-$affiliate->payoutMethods()
-    ->whereNotNull('verified_at')
-    ->exists();
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader::class)->hasVerified((string) $affiliate->getKey());
 ```
 
 2. **Provider credentials are set:**
@@ -229,7 +224,7 @@ on the operation, reason on the payout timeline):
 1. **Affiliate can no longer receive payouts** (paused, or disabled
    without an override): cancel the payout and re-create it with a
    `payout_override_reason` when the balance was legitimately earned —
-   via `CreatePayout` attributes or the payout create form's override
+   via `PayoutAdministration::create()` attributes or the payout create form's override
    field. The reason is audited onto `metadata.payout_override` and
    stamped with `override_completed_at` on completion. Note the gate
    also covers manual-record payouts (resolved via the payee), but
@@ -410,9 +405,9 @@ php artisan tinker
 ```
 
 ```php
-$affiliateLookup = app(\AIArmada\Affiliates\Contracts\AffiliateLookup::class);
+$affiliateLookup = app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class);
 $affiliate = $affiliateLookup->findByCode('PARTNER42');
-$affiliate->toArray();
+$affiliate;
 ```
 
 ### Inspect Middleware

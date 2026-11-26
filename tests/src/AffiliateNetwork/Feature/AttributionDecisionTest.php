@@ -12,12 +12,12 @@ use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Listeners\RecordProvis
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\AttributionCookie;
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
@@ -149,7 +149,7 @@ describe('attribution decision', function (): void {
                 'owner_id' => (string) $owner->getKey(),
             ]);
             $cart = new Cart(new InMemoryStorage, 'profileless-cart-' . uniqid(), events: null, eventsEnabled: false);
-            app(AttachAffiliateToCart::class)->handle($engineAffiliate, $cart);
+            app(CartAttribution::class)->attach((string) $engineAffiliate->getKey(), $cart);
             $cart->add('profileless-network-item', 'Order item', 10.00, 1);
 
             AffiliateAttribution::query()
@@ -162,10 +162,10 @@ describe('attribution decision', function (): void {
         $cartManager = mock(CartManagerInterface::class);
         $cartManager->shouldReceive('getById')->once()->with($cartId)->andReturn($cart);
         app()->instance(CartManagerInterface::class, $cartManager);
-        $engineAttribution = OwnerContext::withOwner($owner, fn () => app(RecordAffiliateConversion::class)
-            ->resolveAttributionFor($cart));
+        $engineTouch = OwnerContext::withOwner($owner, fn () => app(RecordAffiliateConversion::class)
+            ->attributionTouchFor($cart));
 
-        expect($engineAttribution)->toBeInstanceOf(AffiliateAttribution::class);
+        expect($engineTouch)->not->toBeNull();
 
         $networkTouch = now()->subMinute()->toIso8601String();
         $order = OwnerContext::withOwner($owner, fn (): Order => Order::factory()->paid()->create([
@@ -489,7 +489,7 @@ describe('attribution decision', function (): void {
 
         expect(Event::getRawListeners()[CommissionAttributionRequired::class])->toBe([
             RecordProvisionalNetworkConversion::class,
-            'AIArmada\Affiliates\Listeners\RecordCommissionForOrder',
+            'AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder',
             FinalizeNetworkAttribution::class,
         ]);
     });

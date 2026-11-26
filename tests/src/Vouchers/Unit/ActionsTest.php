@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -165,6 +165,19 @@ describe('CreateVoucher Action', function (): void {
             ->and($voucher->affiliate_upline_levels)->toBe([
                 ['level' => 1, 'share' => 0.05],
             ]);
+    });
+
+    it('rejects invalid affiliate references even without affiliate owner scoping', function (): void {
+        config()->set('affiliates.owner.enabled', false);
+
+        foreach (['affiliate_id', 'affiliate_program_id'] as $field) {
+            expect(fn (): Voucher => CreateVoucher::run([
+                'code' => 'ACTION-INVALID-REFERENCE-' . $field,
+                'type' => VoucherType::Fixed,
+                'value' => 100,
+                $field => 'not-a-uuid',
+            ]))->toThrow(ValidationException::class);
+        }
     });
 
     it('rejects affiliate program ids outside the current owner scope', function (): void {

@@ -1,0 +1,85 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Reporting\Models;
+
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * @property string $id
+ * @property string $affiliate_id
+ * @property CarbonInterface $date
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $currency
+ * @property int $clicks
+ * @property int $unique_clicks
+ * @property int $attributions
+ * @property int $conversions
+ * @property int $revenue_cents
+ * @property int $commission_cents
+ * @property int $refunds
+ * @property int $refund_amount_cents
+ * @property float $conversion_rate
+ * @property float $epc_cents
+ * @property array<string, mixed>|null $breakdown
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ */
+class AffiliateDailyStat extends Model
+{
+    use HasOwner;
+    use HasOwnerScopeConfig;
+    use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
+
+    protected $fillable = [
+        'affiliate_id',
+        'date',
+        'currency',
+        'clicks',
+        'unique_clicks',
+        'attributions',
+        'conversions',
+        'revenue_cents',
+        'commission_cents',
+        'refunds',
+        'refund_amount_cents',
+        'conversion_rate',
+        'epc_cents',
+        'breakdown',
+    ];
+
+    protected $casts = [
+        'date' => 'immutable_date',
+        'clicks' => 'integer',
+        'unique_clicks' => 'integer',
+        'attributions' => 'integer',
+        'conversions' => 'integer',
+        'revenue_cents' => 'integer',
+        'commission_cents' => 'integer',
+        'refunds' => 'integer',
+        'refund_amount_cents' => 'integer',
+        'conversion_rate' => 'float',
+        'epc_cents' => 'float',
+        'breakdown' => 'array',
+    ];
+
+    public function setDateAttribute(DateTimeInterface | string $value): void
+    {
+        $this->attributes['date'] = CarbonImmutable::parse($value)->toDateString();
+    }
+
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.daily_stats', 'affiliate_daily_stats');
+    }
+}

@@ -2,21 +2,20 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
-use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Actions\CreateAffiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Pending;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables\AffiliatesTable;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Tables\AffiliatesTable;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 
@@ -66,7 +65,7 @@ function createOpenTestConversion(Affiliate $affiliate, ?AffiliateAttribution $a
 
 function dispatchRecorded(AffiliateConversion $conversion): void
 {
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+    Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
 }
 
 test('open-pending affiliate activates on first qualifying conversion', function (): void {
@@ -269,8 +268,8 @@ test('visit tracking admits open-pending and blocks admin-pending', function ():
     $open = createOpenTestAffiliate('OPEN015A', 'open');
     $admin = createOpenTestAffiliate('OPEN015B', 'admin');
 
-    $tracker = app(TrackAffiliateVisit::class);
+    $tracker = app(AttributionTracking::class);
 
-    expect($tracker->handle($open->code, [], 'cookie-open-015a'))->not->toBeNull()
-        ->and($tracker->handle($admin->code, [], 'cookie-open-015b'))->toBeNull();
+    expect($tracker->track($open->code, [], 'cookie-open-015a'))->not->toBeNull()
+        ->and($tracker->track($admin->code, [], 'cookie-open-015b'))->toBeNull();
 });

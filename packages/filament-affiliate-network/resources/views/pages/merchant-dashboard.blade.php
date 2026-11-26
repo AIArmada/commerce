@@ -44,11 +44,11 @@
                         <div class="flex items-center justify-between py-3">
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">
-                                    {{ $application->offer?->name ?? 'Unknown Offer' }}
+                                    {{ $application->offerName ?? 'Unknown Offer' }}
                                 </p>
                                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ $application->affiliate?->code ?? 'Unknown Affiliate' }}
-                                    &mdash; {{ $application->created_at->diffForHumans() }}
+                                    {{ $application->affiliateCode ?? 'Unknown Affiliate' }}
+                                    &mdash; {{ $application->createdAt->diffForHumans() }}
                                 </p>
                             </div>
                             <x-filament::badge color="warning">

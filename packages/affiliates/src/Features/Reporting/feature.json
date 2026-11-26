@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Reporting",
+  "owns": {
+    "table:affiliate_daily_stats": [
+      "AIArmada\\Affiliates\\Features\\Reporting\\Actions\\AggregateDailyStats",
+      "AIArmada\\Affiliates\\Features\\Reporting\\Actions\\DeleteAffiliateDailyStats"
+    ]
+  },
+  "extensions": {}
+}

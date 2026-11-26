@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "Upline",
+  "owns": {
+    "table:affiliate_upline": [
+      "AIArmada\\Affiliates\\Features\\Upline\\Actions\\ManageUpline"
+    ],
+    "table:affiliate_rank_histories": [
+      "AIArmada\\Affiliates\\Features\\Upline\\Actions\\QualifyAffiliateRank"
+    ],
+    "table:affiliate_ranks": [
+      "AIArmada\\Affiliates\\Features\\Upline\\Actions\\AdministerRank"
+    ]
+  },
+  "extensions": {}
+}

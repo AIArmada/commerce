@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
@@ -38,7 +38,7 @@ function winnerOrder(string $cartId, string $reference, ?string $networkTouch): 
 function touchCart(Affiliate $affiliate, string $item, CarbonImmutable $touch): string
 {
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add($item, 'Order item', 10.00, 1);
 
     AffiliateAttribution::query()
@@ -70,7 +70,7 @@ describe('cross-system winner protocol (engine side)', function (): void {
         $firstClick = CarbonImmutable::parse('2026-02-01T10:00:00+00:00');
         CarbonImmutable::setTestNow($firstClick);
 
-        app(TrackAffiliateVisit::class)->handle($affiliate->code, [
+        app(AttributionTracking::class)->track($affiliate->code, [
             'cart_identifier' => $cart->getIdentifier(),
             'cart_instance' => $cart->instance(),
         ], 'winner-repeat-cookie');
@@ -82,7 +82,7 @@ describe('cross-system winner protocol (engine side)', function (): void {
         $secondClick = $firstClick->addHour();
         CarbonImmutable::setTestNow($secondClick);
 
-        app(TrackAffiliateVisit::class)->handle($affiliate->code, [
+        app(AttributionTracking::class)->track($affiliate->code, [
             'cart_identifier' => $cart->getIdentifier(),
             'cart_instance' => $cart->instance(),
         ], 'winner-repeat-cookie');
@@ -146,7 +146,7 @@ describe('cross-system winner protocol (engine side)', function (): void {
     test('engine records alone with no network marker', function (): void {
         $affiliate = winnerAffiliate('WIN-ALONE');
         $cart = app('cart')->getCurrentCart();
-        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+        app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
         $cart->add('winner-5', 'Order item', 10.00, 1);
 
         $order = Order::factory()->paid()->create([

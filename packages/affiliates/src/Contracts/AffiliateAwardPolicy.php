@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Contracts;
 
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Data\AwardRecipient;
 
 /**
  * Neutral host boundary for fixed-amount award authorization.
@@ -38,11 +38,11 @@ use AIArmada\Affiliates\Models\Affiliate;
  * must be read-only (no row writes anywhere: posting retries after a
  * deadlock re-invoke `decide()`), and must keep any long-lived state in
  * container scope (never request-leaking statics) for Octane safety.
- * The recipient passed in is the locked in-transaction row: fresh, but
+ * The recipient passed in is an immutable snapshot of the locked in-transaction row;
  * attribution status alone is never sufficient — the returned decision
  * is the financial authorization for new money.
  */
 interface AffiliateAwardPolicy
 {
-    public function decide(Affiliate $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision;
+    public function decide(AwardRecipient $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision;
 }

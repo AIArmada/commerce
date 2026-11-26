@@ -2,22 +2,27 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks;
+use AIArmada\Affiliates\Features\Attribution\Extensions\AffiliateLinkGate;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Links\Events\LinkClicked;
+use AIArmada\Links\Models\LinkClick;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
@@ -36,7 +41,7 @@ beforeEach(function (): void {
 
 test('it creates a permanent tracked link and preserves subject provenance', function (): void {
     config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
-    $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+    $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
         'subject_type' => 'event', 'subject_key' => 'event:ramadan',
     ]);
     expect($link->tracking_url)->toContain('/go/')
@@ -46,7 +51,7 @@ test('it creates a permanent tracked link and preserves subject provenance', fun
 
 test('it stores a caller-supplied opaque public token atomically', function (): void {
     config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
-    $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+    $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
         'custom_slug' => 'abc123xyz7890001',
     ]);
     expect($link->custom_slug)->toBe('abc123xyz7890001')
@@ -57,7 +62,7 @@ test('it stores a caller-supplied opaque public token atomically', function (): 
 
 test('it rejects a malformed caller-supplied public token', function (): void {
     config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
-    expect(fn () => CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+    expect(fn () => app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
         'custom_slug' => 'NOT-A-TOKEN!',
     ]))->toThrow(ValidationException::class);
 });
@@ -72,8 +77,8 @@ test('it records an attributed outcome without requiring a cart', function (): v
         'subject_instance' => 'web',
     ]);
 
-    $result = app(RecordAffiliateOutcome::class)->handle(
-        attribution: $attribution,
+    $result = app(OutcomePosting::class)->post(
+        attributionId: (string) $attribution->getKey(),
         conversionType: 'event_checkin',
         businessKey: 'tracking-link-test:event_checkin:event-checkin-1',
         payload: [
@@ -108,15 +113,14 @@ test('it creates a program tracking link when owner scoping is disabled without 
             'cookie_lifetime_days' => 30,
         ]);
 
-        $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+        $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
             'program_id' => $program->getKey(),
         ]);
 
         expect($link->program_id)->toBe((string) $program->getKey())
             ->and($link->tracking_url)->toContain('/go/')
             ->and(AffiliateLink::query()->whereKey($link->getKey())->exists())->toBeTrue()
-            ->and($link->trackedLink()->exists())->toBeTrue()
-            ->and($link->program?->getKey())->toBe((string) $program->getKey());
+            ->and($link->trackedLink()->exists())->toBeTrue();
     } finally {
         config(['affiliates.owner.enabled' => $previousOwnerEnabled, 'affiliates.links.allowed_hosts' => $previousAllowedHosts]);
         app()->instance(OwnerResolverInterface::class, $previousResolver);
@@ -132,7 +136,7 @@ test('it rejects an unknown program when owner scoping is disabled without an ow
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     try {
-        expect(fn () => CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+        expect(fn () => app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
             'program_id' => (string) Str::uuid(),
         ]))->toThrow(ModelNotFoundException::class);
     } finally {
@@ -187,7 +191,7 @@ test('it rejects a cross-tenant program when owner scoping is enabled', function
         ]));
 
         OwnerContext::withOwner($ownerA, function () use ($affiliateA, $programB): void {
-            expect(fn () => CreateTrackingLink::run($affiliateA, 'https://merchant.example/summer', [
+            expect(fn () => app(CreateTrackingLink::class)->handle((string) $affiliateA->getKey(), 'https://merchant.example/summer', [
                 'program_id' => $programB->getKey(),
             ]))->toThrow(AuthorizationException::class, 'Selected program is not accessible in the current owner scope.');
         });
@@ -199,4 +203,56 @@ test('it rejects a cross-tenant program when owner scoping is enabled', function
             'affiliates.links.allowed_hosts' => $previousAllowedHosts,
         ]);
     }
+});
+
+test('it counts only human clicks associated with the public tracking link', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/event');
+    $tracked = $link->trackedLink()->firstOrFail();
+    $listener = app(IncrementAffiliateLinkClicks::class);
+
+    $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => (string) Str::uuid()])));
+    $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => $tracked->getKey(), 'is_bot' => true])));
+    $forged = clone $tracked;
+    $forged->setAttribute($forged->getKeyName(), (string) Str::uuid());
+    $listener->handle(new LinkClicked($forged, new LinkClick(['link_id' => $forged->getKey()])));
+    expect(app(AffiliateLinkGate::class)->blockedReason($tracked))->toBeNull()
+        ->and(app(AffiliateLinkGate::class)->blockedReason($forged))->toBe('link_unknown');
+    $forged->subject_id = 'malformed-subject';
+    expect(app(AffiliateLinkGate::class)->blockedReason($forged))->toBe('link_unknown');
+
+    expect($link->refresh()->clicks)->toBe(0);
+
+    $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => $tracked->getKey()])));
+
+    expect($link->refresh()->clicks)->toBe(1);
+});
+
+test('tracking link commands reject malformed program references and null affiliate reassignment', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $links = app(TrackingLinkAdministration::class);
+    $destination = 'https://ilmu360.test/event';
+    $affiliateId = (string) $this->affiliate->getKey();
+    foreach (['invalid-uuid', [], 123] as $invalid) {
+        expect(fn () => $links->create($affiliateId, $destination, ['program_id' => $invalid]))->toThrow(ValidationException::class);
+    }
+    $link = $links->create($affiliateId, $destination);
+    expect(fn () => $links->update($link->id, ['program_id' => 'invalid-uuid']))->toThrow(ValidationException::class)
+        ->and(fn () => $links->update($link->id, ['affiliate_id' => null]))->toThrow(ValidationException::class);
+    expect(AffiliateLink::query()->findOrFail($link->id)->affiliate_id)->toBe($affiliateId);
+});
+
+test('link administration persists deactivation and preserves an existing disable timestamp', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $links = app(TrackingLinkAdministration::class);
+    $created = $links->create((string) $this->affiliate->getKey(), 'https://ilmu360.test/event');
+    $links->update($created->id, ['deactivated_at' => '2024-01-01 12:00:00']);
+    $link = AffiliateLink::query()->findOrFail($created->id);
+    expect($link->isEnabled())->toBeFalse();
+    $timestamp = $link->deactivated_at;
+    $links->setEnabled($created->id, false);
+    expect($link->refresh()->deactivated_at?->equalTo($timestamp))->toBeTrue();
+    $links->update($created->id, ['deactivated_at' => null]);
+    expect($link->refresh()->isEnabled())->toBeTrue();
+    expect(fn () => $links->update($created->id, ['deactivated_at' => 'invalid-date']))->toThrow(ValidationException::class);
 });

@@ -21,25 +21,26 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\RelationManagers\StatementsRelationManager;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tables\AffiliateSitesTable;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\Pages\CreateCreatorPostback;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\Pages\EditCreatorPostback;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\RelationManagers\DeliveriesRelationManager;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\Schemas\CreatorPostbackForm;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\Tables\CreatorPostbacksTable;
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
-use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
-use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Pages\MerchantDashboardPage;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Widgets\NetworkStatsWidget;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Widgets\TopOffersWidget;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\Queries\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\Pages\CreateCreatorPostback;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\Pages\EditCreatorPostback;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\RelationManagers\DeliveriesRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\Schemas\CreatorPostbackForm;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\Tables\CreatorPostbacksTable;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource\RelationManagers\StatementsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource\Tables\AffiliateSitesTable;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
@@ -78,6 +79,18 @@ function powerFeatureSite(): AffiliateSite
 {
     return AffiliateSite::factory()->verified()->create([
         'domain' => 'power-' . uniqid() . '.example.com',
+    ]);
+}
+
+function powerFeatureAffiliate(): Affiliate
+{
+    return Affiliate::create([
+        'code' => 'POWER-' . uniqid(),
+        'name' => 'Power Feature Affiliate',
+        'status' => 'active',
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
     ]);
 }
 
@@ -366,6 +379,7 @@ describe('creator postback resource', function (): void {
 
     test('edit page encrypts a supplied secret and keeps the existing one when blank', function (): void {
         $endpoint = CreatorPostbackEndpoint::factory()->create([
+            'affiliate_id' => (string) powerFeatureAffiliate()->getKey(),
             'signing_secret_encrypted' => encrypt('original'),
         ]);
 
@@ -396,6 +410,27 @@ describe('creator postback resource', function (): void {
         ]);
 
         expect(decrypt($endpoint->fresh()->signing_secret_encrypted))->toBe('rotated');
+    });
+
+    test('editing an endpoint cannot retarget it to a different affiliate or expose ciphertext', function (): void {
+        $endpoint = CreatorPostbackEndpoint::factory()->create([
+            'affiliate_id' => (string) powerFeatureAffiliate()->getKey(),
+            'signing_secret_encrypted' => encrypt('private'),
+        ]);
+        $page = (new ReflectionClass(EditCreatorPostback::class))->newInstanceWithoutConstructor();
+        $method = new ReflectionMethod(EditCreatorPostback::class, 'handleRecordUpdate');
+
+        $method->invoke($page, $endpoint, [
+            'affiliate_id' => 'different-affiliate',
+            'offer_id' => null,
+            'url_template' => 'https://example.com/hook',
+            'http_method' => 'POST',
+            'events' => ['conversion.recorded'],
+            'is_active' => true,
+        ]);
+
+        expect($endpoint->fresh()->affiliate_id)->toBe($endpoint->affiliate_id)
+            ->and($endpoint->fresh()->toArray())->not->toHaveKey('signing_secret_encrypted');
     });
 
     test('table exposes the endpoint columns, filters, and delete actions', function (): void {

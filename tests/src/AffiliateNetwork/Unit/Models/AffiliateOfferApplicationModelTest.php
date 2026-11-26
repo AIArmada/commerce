@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
@@ -100,14 +102,17 @@ describe('AffiliateOfferApplication Model', function (): void {
             expect($application->offer->id)->toBe($this->offer->id);
         });
 
-        test('belongs to affiliate', function (): void {
+        test('resolves affiliate through the identity contract', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
-            expect($application->affiliate)->toBeInstanceOf(Affiliate::class);
-            expect($application->affiliate->id)->toBe($this->affiliate->id);
+            $identity = app(AffiliateIdentityResolver::class)->find($application->affiliate_id);
+
+            expect($identity)->toBeInstanceOf(NetworkAffiliate::class)
+                ->and($identity?->id)->toBe($this->affiliate->id)
+                ->and(method_exists($application, 'affiliate'))->toBeFalse();
         });
     });
 

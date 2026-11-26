@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource\Pages;
+
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\UpdateAffiliateFraudSignalStatus;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ViewRecord;
+
+final class ViewAffiliateFraudSignal extends ViewRecord
+{
+    protected static string $resource = AffiliateFraudSignalResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof AffiliateFraudSignal) {
+            return [];
+        }
+
+        return [
+            Actions\Action::make('dismiss')
+                ->icon('heroicon-o-x-mark')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->visible(fn (): bool => $record->status === FraudSignalStatus::Detected)
+                ->action(fn () => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Dismissed)),
+            Actions\Action::make('confirm')
+                ->icon('heroicon-o-check')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->visible(fn (): bool => $record->status === FraudSignalStatus::Detected)
+                ->action(fn () => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Confirmed)),
+        ];
+    }
+}

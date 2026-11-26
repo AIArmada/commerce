@@ -7,7 +7,7 @@ namespace AIArmada\Referrals\Support;
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Enums\ReferralRewardSide;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -18,7 +18,7 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
 {
     public function __construct(private readonly ReferralProgramGuard $guard, private readonly ReferralAffiliateResolver $affiliateResolver) {}
 
-    public function decide(Affiliate $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision
+    public function decide(AwardRecipient $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision
     {
         if (preg_match('/^referrals:award:([0-9a-f-]{36}):(referrer|referee)$/', $proposal->awardKey, $matches) !== 1) {
             return AffiliateAwardDecision::deny('Referral award key is malformed.');
@@ -31,14 +31,15 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
             return AffiliateAwardDecision::deny('Referral award side is invalid.');
         }
 
-        return DB::transaction(function () use ($recipient, $proposal, $inviteId, $side): AffiliateAwardDecision {
+        return DB::connection($recipient->connectionName)->transaction(function () use ($recipient, $proposal, $inviteId, $side): AffiliateAwardDecision {
             try {
                 $reward = $this->guard->rewardForInviteSide($inviteId, $side, true);
             } catch (Throwable) {
                 return AffiliateAwardDecision::deny('No pending referral reward matches this award.');
             }
 
-            if ($reward->status !== ReferralRewardStatus::Pending
+            if ($reward->getConnection()->getName() !== $recipient->connectionName
+                || $reward->status !== ReferralRewardStatus::Pending
                 || $reward->driver !== 'affiliate_cash'
                 || $reward->amount_minor === null
                 || $reward->currency === null
@@ -57,9 +58,12 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
 
             $expectedAffiliate = $this->affiliateResolver->resolve($reward);
 
-            if (! $expectedAffiliate instanceof Affiliate
-                || $expectedAffiliate->getMorphClass() !== $recipient->getMorphClass()
-                || (string) $expectedAffiliate->getKey() !== (string) $recipient->getKey()) {
+            if ($expectedAffiliate === null
+                || $expectedAffiliate->id !== $recipient->id
+                || $expectedAffiliate->morphType !== $recipient->morphType
+                || $expectedAffiliate->connectionName !== $recipient->connectionName
+                || $expectedAffiliate->ownerType !== $recipient->ownerType
+                || $expectedAffiliate->ownerId !== $recipient->ownerId) {
                 return AffiliateAwardDecision::deny('Affiliate recipient does not match the referral beneficiary.');
             }
 

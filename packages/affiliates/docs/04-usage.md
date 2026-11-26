@@ -11,15 +11,15 @@ This guide covers common workflows for tracking affiliates, recording conversion
 ### Using the Current Cart (with aiarmada/cart)
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
 $cart = app(CartManagerInterface::class)->getCurrentCart();
-$affiliate = app(AffiliateLookup::class)->findByCode('PARTNER42');
+$affiliate = app(AffiliateDirectory::class)->findByCode('PARTNER42');
 
 if ($affiliate !== null) {
-    AttachAffiliateToCart::run($affiliate, $cart, [
+    app(CartAttribution::class)->attach($affiliate->id, $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
     'subject_type' => 'product',
@@ -33,16 +33,16 @@ if ($affiliate !== null) {
 ### Using Actions Directly
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 
-$affiliateLookup = app(AffiliateLookup::class);
+$affiliateLookup = app(AffiliateDirectory::class);
 
 // Find affiliate by code
 $affiliate = $affiliateLookup->findByCode('PARTNER42');
 
 // Attach to cart with context
-$attribution = AttachAffiliateToCart::run($affiliate, $cart, [
+$attribution = app(CartAttribution::class)->attach($affiliate->id, $cart, [
     'source' => 'instagram',
     'campaign' => 'summer-sale',
 ]);
@@ -102,7 +102,7 @@ https://shop.test/r/PARTNER42
 https://shop.test/offers/spring/r/PARTNER42?sort=new
 ```
 
-The middleware resolves the affiliate (active only), records the visit via `TrackAffiliateVisit`, persists the affiliate cookie, and redirects back to the prefix path with the incoming query string preserved. The `home` and `checkout` destinations under `affiliates.public_pages.route.destinations` feed the `entry_url`/`checkout_url` links in the public-page referral payload below.
+The middleware resolves an eligible affiliate and redirects back to the prefix path with the incoming query string preserved. It records the visit and sets the affiliate cookie only when cookie tracking is enabled, configured Do Not Track restrictions permit it, and any required consent has been granted. The `home` and `checkout` destinations under `affiliates.public_pages.route.destinations` feed the `entry_url`/`checkout_url` links in the public-page referral payload below.
 
 ## Public Page Referral Context
 
@@ -133,10 +133,10 @@ The package ships a ready-made banner view at `affiliates::components.public-ref
 ### From Cart
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
 // Record conversion when order is placed
-RecordAffiliateConversion::run($cart, [
+app(CartConversionRecording::class)->record($cart, [
     'external_reference' => $order->reference,
     'subtotal' => $order->subtotal_minor,
     'total' => $order->total_minor,
@@ -172,7 +172,7 @@ example, one event registration per paid ticket line) should mark the frozen
 order `payment_data.affiliate_commission.strategy` as `registration_lines`.
 The generic order listener skips that marked order so it cannot create a
 second order-level commission. After payment, the integration can call
-`RecordAffiliateConversion::recordCommercialForFrozenAttribution($cart, $attribution, $payload)` for each eligible child record. This method requires
+`app(CartConversionRecording::class)->recordFrozen($cart, $attributionId, $payload)` for each eligible child record. This method requires
 a commercial-purpose affiliate and preserves the frozen attribution as the
 sole commission source. Use a stable per-child `idempotency_key` and
 `external_reference`; the normal conversion status and maturity rules still
@@ -182,9 +182,9 @@ for paid commissions.
 ### Direct Recording
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
-$conversion = RecordAffiliateConversion::run(
+$conversion = app(CartConversionRecording::class)->record(
     cart: $cart,
     payload: [
         'external_reference' => 'ORD-12345',
@@ -223,9 +223,9 @@ Mixed-currency summaries return per-currency legs plus one converted total carry
 ## Creating Subject-Aware Tracking Links
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 
-$link = CreateTrackingLink::run($affiliate, 'https://example.com/products/sku-1001', [
+$link = app(TrackingLinkAdministration::class)->create((string) $affiliate->getKey(), 'https://example.com/products/sku-1001', [
     'params' => ['utm_source' => 'affiliate-campaign'],
     'link_style' => 'branded',
     'link_label' => 'summer',
@@ -268,17 +268,17 @@ When the maturity workflow is enabled, conversions typically move from `Pending`
 
 ### Attributed Outcomes Without a Cart
 
-Referral, signup, and engagement flows use `RecordAffiliateOutcome` with a
+Referral, signup, and engagement flows use `OutcomePosting::post()` with a
 caller-owned namespaced business key. The key is hashed for the unique
 `idempotency_key`, independent of affiliate/link, so one source transition
 yields exactly one winner. Replays return the stored row untouched.
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
+use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 
-$result = RecordAffiliateOutcome::run(
-    $attribution,
+$result = app(OutcomePosting::class)->post(
+    $attributionId,
     'referral',
     'my-app:referral:'.$sourceTransitionId,
     ['dispatch_event' => false],
@@ -307,12 +307,12 @@ when the caller holds a stale instance. Attributed outcomes apply the same
 provenance precedence before validating link and program references.
 
 ```php
-$result = RecordAffiliateOutcome::run(
+$result = app(OutcomePosting::class)->post(
     null,
     'host_signal',
     'my-app:signal:'.$sourceId,
     ['dispatch_event' => false],
-    $affiliate,
+    $affiliateId,
     ['subject_key' => 'subject:abc', 'origin' => 'host_signal'],
 );
 ```
@@ -324,29 +324,27 @@ affiliates that have no owner yet. The plaintext secret is returned once at
 issuance; only its hash is stored.
 
 ```php
-use AIArmada\Affiliates\Actions\Identity\ClaimAffiliateIdentity;
-use AIArmada\Affiliates\Actions\Identity\IssueActivityCredential;
-use AIArmada\Affiliates\Actions\Identity\IssueOwnershipCapability;
-use AIArmada\Affiliates\Actions\Identity\RevalidateIdentitySeal;
-use AIArmada\Affiliates\Actions\Identity\RevokeAffiliateClaim;
+use AIArmada\Affiliates\Features\Identity\Api\IdentityProofApi;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
-$credential = IssueActivityCredential::run($affiliate); // reusable, expirable
-$capability = IssueOwnershipCapability::run($affiliate); // one-time, consumable
+$proofs = app(IdentityProofApi::class);
+$credential = $proofs->issueActivityCredential($affiliateId);
+$capability = $proofs->issueOwnershipCapability($affiliateId);
 
-$claim = ClaimAffiliateIdentity::run(
-    $capability['plaintext_secret'],
-    $claimantType,   // polymorphic host model type
-    $claimantId,     // polymorphic host model id
-    true,            // explicit caller authorization assertion
+$claim = $proofs->claim(
+    $capability->plaintextSecret,
+    new RecordReference($claimantType, $claimantId),
+    true, // explicit caller authorization assertion
 );
+
+// Revocation preserves the permanent seal.
+$proofs->revoke($claim->id);
 ```
 
 Exactly one claim row ever exists per affiliate. Replaying a claim with the
 same claimant returns the active claim; any other claimant — and any replay
 after revocation — throws `SealedIdentityException`. Revocation preserves
-the row as history. Mutating activity writers must hold the affiliate row
-lock, then the credential row lock, then call `RevalidateIdentitySeal`
-immediately before writing, so in-flight activity racing a committing claim
+the row as history. Mutating activity writers must use the same affiliate database transaction and call `IdentityProofApi::assertActivityWritable($affiliateId, $credentialId)` immediately before writing. The API acquires the affiliate lock before the credential lock and verifies the seal and credential, so in-flight activity racing a committing claim
 is sealed instead of appending to sealed history. Claiming also permanently
 sets `identity_sealed_at` on the locked affiliate row. Under PostgreSQL
 `REPEATABLE READ`, an older activity transaction fails with SQLSTATE `40001`
@@ -355,24 +353,24 @@ the fresh attempt observes the seal and throws `SealedIdentityException`.
 
 ## Commission Calculation
 
-The `CommissionCalculator` service handles all commission logic. It takes the subtotal in minor
+The `CommissionPricing` API calculates base commissions. It takes the subtotal in minor
 units and returns the commission in minor units:
 
 ```php
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 
-$calculator = app(CommissionCalculator::class);
+$calculator = app(CommissionPricing::class);
 
 $affiliate->commission_type = CommissionType::Percentage;
 $affiliate->commission_rate = 1000; // 10% (basis points)
 
-$commission = $calculator->calculate($affiliate, 14000); // 1400 = 14.00
+$commission = $calculator->calculateBase($affiliate->commission_type, $affiliate->commission_rate, 14000); // 1400 = 14.00
 ```
 
 Percentage math uses `affiliates.currency.percentage_scale` (default `100`, so 1000 basis points
 = 10%). Fixed commissions ignore the amount entirely and return `commission_rate` as minor units.
-Both paths run through `CommissionCaps::clamp()`.
+Both paths run through `CommissionPricing::clamp()`.
 
 ### Commission Types
 
@@ -408,7 +406,7 @@ values.
 ### Creating Affiliates
 
 ```php
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\States\Active;
 
@@ -450,12 +448,14 @@ When an affiliate has downlines (affiliates they referred), the affiliate portal
 
 Downlines are loaded via the `children()` relationship on the `Affiliate` model (`parent_affiliate_id`).
 
+Affiliate codes are globally unique, case-insensitive public identifiers. Use `AffiliateDirectory::codeAvailable($code)` to check availability without retrieving another owner's affiliate record. Registration accepts public profile and contact fields; commission type, rate and currency come from package configuration. Referral sponsorship is resolved and revalidated inside the registration transaction. PostgreSQL and SQLite enforce code uniqueness at the database level through a functional `LOWER(code)` unique index. MySQL and MariaDB are not supported by the package migration.
+
 ### Registration with Referral Code
 
 New affiliates can optionally enter a referral code during self-registration. If the code matches an existing affiliate:
 
 - The new affiliate's `parent_affiliate_id` is set to the referrer
-- The `UplineService::addToUpline()` is called to build the closure table when upline features are enabled
+- The `UplineApi::add()` is called to build the closure table when upline features are enabled
 
 ```php
 // The portal registration form includes a "Referral Code (optional)" field.
@@ -466,21 +466,21 @@ New affiliates can optionally enter a referral code during self-registration. If
 ### Working with the Upline Programmatically
 
 ```php
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 
-$upline = app(UplineService::class);
+$upline = app(UplineApi::class);
 
 // Get direct downlines
-$downlines = $upline->getDirectRecruits($affiliate);
+$downlines = $upline->descendants((string) $affiliate->getKey(), 1);
 
 // Get entire downline tree
-$allDownlines = $upline->getDownline($affiliate);
+$allDownlines = $upline->descendants((string) $affiliate->getKey());
 
 // Get upline
-$ancestors = $upline->getUpline($affiliate);
+$ancestors = $upline->ancestors((string) $affiliate->getKey());
 
 // Build a tree structure for visualization
-$tree = $upline->buildTree($affiliate, $maxDepth = 3);
+$tree = $upline->tree((string) $affiliate->getKey(), $maxDepth = 3);
 ```
 
 ### Querying Affiliates
@@ -546,7 +546,7 @@ contexts automatically.
 ## Public handles and permanent campaign URLs
 
 Affiliates receive a generated public `handle` on creation. Pass `handle` to
-`CreateAffiliate::run()` to choose one, or update the owned affiliate's `handle`
+`AffiliateAdministration::create()` to choose one, or update the owned affiliate's `handle`
 when `affiliates.handles.allow_custom` is enabled. Values are normalized to
 lowercase and globally unique across affiliate owners in this installation.
 Handles are public branding; attribution continues to use the affiliate ID.

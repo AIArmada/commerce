@@ -34,4 +34,4 @@ composer require aiarmada/affiliates
 composer require aiarmada/rewards
 ```
 
-Enable a driver in `referrals.fulfillment.drivers`. For affiliates cash, bind both a host `ReferralAffiliateResolver` and an `AffiliateAwardPolicy`; the policy binding is shared by all affiliate awards in the host. See [Usage](04-usage.md) for the policy requirements and Rewards source-fact integration.
+Enable a driver in `referrals.fulfillment.drivers`. For affiliates cash, bind both a host `ReferralAffiliateResolver` returning immutable `AwardRecipient` snapshots and an `AffiliateAwardPolicy`; the policy binding is shared by all affiliate awards in the host. See [Usage](04-usage.md) for the policy requirements and Rewards source-fact integration.

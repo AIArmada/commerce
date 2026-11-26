@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "Conversions",
+  "owns": {
+    "table:affiliate_conversions": [
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ExternalConversionLedger",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\AdministerConversion",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ProcessConversionMaturity",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\SettlePayoutConversions",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ApplyConversionAccounting",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\AllocateUplineCommissions",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\RecordAffiliateAward",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\RecordAffiliateConversion",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\RecordAffiliateOutcome",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReverseAffiliateConversion",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\VoidAffiliateConversion",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\AwardPerformanceBonuses",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\DetachConversionAttribution"
+    ],
+    "table:affiliate_balances": [
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\SettlePayoutConversions",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ApplyConversionAccounting",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\RemoveUnusedAffiliateBalances"
+    ]
+  },
+  "extensions": {}
+}

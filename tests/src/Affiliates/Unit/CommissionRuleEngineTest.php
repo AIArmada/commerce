@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionCalculationResult;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionCalculationResult;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\QualifiedConversion;
 
-// CommissionRuleEngine Tests
-test('CommissionRuleEngine calculate returns CommissionCalculationResult', function (): void {
-    $engine = app(CommissionRuleEngine::class);
+// CommissionRuleCalculation Tests
+test('CommissionRuleCalculation calculate returns CommissionCalculationResult', function (): void {
+    $engine = app(CommissionRuleCalculation::class);
 
     $affiliate = Affiliate::create([
         'code' => 'ENGINE001',
@@ -24,14 +24,14 @@ test('CommissionRuleEngine calculate returns CommissionCalculationResult', funct
         'currency' => 'USD',
     ]);
 
-    $result = $engine->calculate($affiliate, 10000);
+    $result = $engine->calculate((string) $affiliate->getKey(), 10000);
 
     expect($result)->toBeInstanceOf(CommissionCalculationResult::class);
     expect($result->baseCommissionMinor)->toBe(1000);
 });
 
-test('CommissionRuleEngine uses neutral revenue for volume tiers', function (): void {
-    $engine = app(CommissionRuleEngine::class);
+test('CommissionRuleCalculation uses neutral revenue for volume tiers', function (): void {
+    $engine = app(CommissionRuleCalculation::class);
 
     $affiliate = Affiliate::create([
         'code' => 'ENGINE003',
@@ -63,15 +63,15 @@ test('CommissionRuleEngine uses neutral revenue for volume tiers', function (): 
         'occurred_at' => now()->startOfMonth()->addDay(),
     ]);
 
-    $result = $engine->calculate($affiliate, 10000);
+    $result = $engine->calculate((string) $affiliate->getKey(), 10000);
 
     expect($result->baseCommissionMinor)->toBe(1000)
         ->and($result->volumeBonusMinor)->toBe(500)
         ->and($result->finalCommissionMinor)->toBe(1500);
 });
 
-test('CommissionRuleEngine getApplicableRules filters and memoizes rules', function (): void {
-    $engine = app(CommissionRuleEngine::class);
+test('CommissionRuleCalculation getApplicableRules filters rules and always reads current state', function (): void {
+    $engine = app(CommissionRuleCalculation::class);
 
     $affiliate = Affiliate::create([
         'code' => 'ENGINE002',
@@ -102,12 +102,11 @@ test('CommissionRuleEngine getApplicableRules filters and memoizes rules', funct
         'priority' => 1,
     ]);
 
-    $first = $engine->getApplicableRules($affiliate, []);
+    $first = $engine->calculate((string) $affiliate->getKey(), 10000)->appliedRules;
 
-    expect($first->pluck('id')->all())->toBe([$active->id]);
+    expect($first)->toBe([$active->id]);
 
-    // Repeat reads hit the memoized set.
-    expect($engine->getApplicableRules($affiliate, []))->toBe($first);
+    expect($engine->calculate((string) $affiliate->getKey(), 10000)->appliedRules)->toBe($first);
 
     AffiliateCommissionRule::create([
         'name' => 'Late Rule',
@@ -119,6 +118,6 @@ test('CommissionRuleEngine getApplicableRules filters and memoizes rules', funct
         'priority' => 1,
     ]);
 
-    // Rule writes bust the cache so workers never price off stale rules.
-    expect($engine->getApplicableRules($affiliate, []))->toHaveCount(2);
+    // A subsequent calculation observes new rules without a mutable tenant-shared cache.
+    expect($engine->calculate((string) $affiliate->getKey(), 10000)->appliedRules)->toHaveCount(2);
 });

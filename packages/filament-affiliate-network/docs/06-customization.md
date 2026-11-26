@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -60,12 +60,12 @@ class AffiliateCampaignResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CreativesRelationManager::class,
-            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager::class,
-            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager::class,
-            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\InvitationsRelationManager::class,
-            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\DealsRelationManager::class,
-            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\CreativesRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\InvitationsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\DealsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager::class,
         ];
     }
 
@@ -108,7 +108,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
 use Filament\Pages\Page;
 
 class MerchantInsights extends Page
@@ -136,8 +136,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\Queries\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -272,8 +272,8 @@ declare(strict_types=1);
 
 namespace App\Filament;
 
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferCategoryResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 

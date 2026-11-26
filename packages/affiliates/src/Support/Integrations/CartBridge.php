@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Integrations;
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateFromCookie;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -28,7 +28,7 @@ final class CartBridge
             return null;
         }
 
-        if (app(AffiliateLookup::class)->findAttachedAttribution($cart) !== null) {
+        if (app(AttributionLookup::class)->attached($cart->getIdentifier(), $cart->instance()) !== null) {
             return null;
         }
 
@@ -38,7 +38,7 @@ final class CartBridge
             return null;
         }
 
-        return app(AttachAffiliateFromCookie::class)->handle($cart, $cookieValue);
+        return app(CartAttribution::class)->attachFromCookie($cart, $cookieValue);
     }
 
     public function isAvailable(): bool
@@ -53,16 +53,7 @@ final class CartBridge
         }
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-
-            $hasReference = AffiliateConversion::query()
-                ->forOwner($owner, false)
-                ->where('subject_key', $identifier)
-                ->when(
-                    $instance !== null,
-                    fn ($query) => $query->where('subject_instance', $instance),
-                )
-                ->exists();
+            $hasReference = app(ConversionHistoryReader::class)->hasSubjectReference($identifier, $instance);
 
             if (! $hasReference) {
                 return null;

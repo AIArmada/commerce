@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentLinks\Resources\LinkResource\Schemas;
 
-use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Rules\DestinationUrlRule;
 use Filament\Forms;
@@ -27,14 +26,16 @@ final class LinkForm
         $configuredTypes = config('filament-links.protected_subject_types');
         $subjectTypes = is_array($configuredTypes)
             ? $configuredTypes
-            : (class_exists(AffiliateLink::class)
-                ? [AffiliateLink::class]
-                : []);
+            : ['affiliate_link'];
 
         foreach ($subjectTypes as $subjectType) {
-            if (is_string($subjectType)
-                && ($subjectType === $link->subject_type
-                    || (class_exists($subjectType) && is_a($subjectClass, $subjectType, true)))) {
+            if (! is_string($subjectType) || $subjectType === '') {
+                continue;
+            }
+
+            $protectedClass = Relation::getMorphedModel($subjectType) ?? $subjectType;
+            if ($subjectType === $link->subject_type
+                || (class_exists($protectedClass) && is_a($subjectClass, $protectedClass, true))) {
                 return true;
             }
         }

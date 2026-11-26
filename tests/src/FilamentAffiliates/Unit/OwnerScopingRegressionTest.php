@@ -2,28 +2,34 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusReader;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateCreativeResource;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     config()->set('affiliates.owner.enabled', true);
@@ -184,5 +190,123 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
         ]);
 
         $approve?->call(['record' => $signalA]);
+    });
+});
+
+it('projects compliance names and searches only strict current-owner records', function (): void {
+    config()->set('affiliates.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $create = function (string $name): Affiliate {
+        $affiliate = Affiliate::create([
+            'code' => 'COMPLIANCE-' . Str::uuid(),
+            'name' => $name,
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        AffiliateSupportTicket::create([
+            'affiliate_id' => $affiliate->id,
+            'subject' => 'Test support',
+            'category' => 'general',
+            'priority' => 'medium',
+            'status' => 'open',
+        ]);
+
+        AffiliateTaxDocument::create([
+            'affiliate_id' => $affiliate->id,
+            'document_type' => '1099',
+            'tax_year' => 2025,
+            'status' => 'pending',
+            'total_amount_minor' => 100,
+            'currency' => 'USD',
+        ]);
+
+        return $affiliate;
+    };
+
+    $owned = OwnerContext::withOwner($owner, fn (): Affiliate => $create('Owned Compliance'));
+    $foreign = OwnerContext::withOwner($other, fn (): Affiliate => $create('Foreign Compliance'));
+    $global = OwnerContext::withOwner(null, fn (): Affiliate => $create('Global Compliance'));
+
+    OwnerContext::withOwner($owner, function () use ($owned, $foreign, $global): void {
+        foreach ([AffiliateSupportTicketResource::class, AffiliateTaxDocumentResource::class] as $resource) {
+            $query = $resource::getEloquentQuery();
+
+            expect((clone $query)->get()->pluck('affiliate_name')->all())->toBe(['Owned Compliance'])
+                ->and(AffiliateReferenceProjection::search(clone $query, 'Foreign')->exists())->toBeFalse()
+                ->and(AffiliateReferenceProjection::search(clone $query, 'Owned')->count())->toBe(1);
+        }
+
+        expect(AffiliateReferenceProjection::options('Compliance'))->toBe([$owned->id => 'Owned Compliance'])
+            ->and(AffiliateReferenceProjection::label($owned->id))->toBe('Owned Compliance')
+            ->and(AffiliateReferenceProjection::label($foreign->id))->toBeNull()
+            ->and(AffiliateReferenceProjection::label($global->id))->toBeNull();
+    });
+});
+
+it('rejects changes to an existing affiliate owner through administration', function (): void {
+    config()->set('auth.providers.users.model', User::class);
+
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($owner, $other): void {
+        $affiliate = Affiliate::create([
+            'code' => 'IMMUTABLE-OWNER-' . Str::uuid(),
+            'name' => 'Immutable Owner',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+        $administration = app(AffiliateAdministration::class);
+
+        expect(fn () => $administration->update($affiliate->id, [
+            'linked_user' => $other->getKey(),
+            'name' => 'Attempted Transfer',
+        ]))->toThrow(ValidationException::class, 'The affiliate owner cannot be changed after creation.');
+
+        $affiliate->refresh();
+        expect((string) $affiliate->owner_id)->toBe((string) $owner->getKey())
+            ->and($affiliate->name)->toBe('Immutable Owner');
+
+        $administration->update($affiliate->id, [
+            'linked_user' => $owner->getKey(),
+            'description' => 'Allowed edit',
+        ]);
+
+        expect($affiliate->fresh()->description)->toBe('Allowed edit');
+    });
+});
+
+it('reads bonus preview currencies only for eligible affiliates in the current owner scope', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $create = static function (string $name, string $currency): Affiliate {
+        return Affiliate::create([
+            'code' => 'BONUS-' . Str::uuid(),
+            'name' => $name,
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => $currency,
+        ]);
+    };
+
+    $owned = OwnerContext::withOwner($owner, fn (): Affiliate => $create('Owned Bonus', 'USD'));
+    $foreign = OwnerContext::withOwner($other, fn (): Affiliate => $create('Foreign Bonus', 'MYR'));
+    $global = OwnerContext::withOwner(null, fn (): Affiliate => $create('Global Bonus', 'EUR'));
+
+    config()->set('affiliates.owner.include_global', true);
+
+    OwnerContext::withOwner($owner, function () use ($owned, $foreign, $global): void {
+        expect(app(AffiliateBonusReader::class)->currencies([
+            $owned->id, $foreign->id, $global->id, $owned->id, 'invalid',
+        ]))->toBe([$owned->id => 'USD']);
     });
 });

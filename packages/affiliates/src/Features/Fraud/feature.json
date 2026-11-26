@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "Fraud",
+  "owns": {
+    "table:affiliate_fraud_signals": [
+      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\RecordFraudFinding",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\ReviewFraudSignal",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\MaintainFraudSignals"
+    ],
+    "store:affiliate-fraud-clicks": [
+      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\CountFraudClick"
+    ]
+  },
+  "extensions": {
+    "affiliates.fraud_rule": [
+      "AIArmada\\Affiliates\\Features\\Fraud\\Extensions\\ClickVelocityRule",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Extensions\\GeoAnomalyRule",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Extensions\\FingerprintRepeatRule",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Extensions\\SelfReferralRule",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Extensions\\ConversionVelocityRule",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Extensions\\FastConversionRule"
+    ]
+  }
+}

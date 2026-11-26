@@ -2,49 +2,50 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
-use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers\PayoutEventsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionRulesRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\MembershipsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\TiersRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\EditAffiliate;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ConversionsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\DownlinesRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ProgramsRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\VouchersRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
-use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateTouchpointResource;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateCommissionTemplateResource;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Relations\ConversionsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\EditAffiliate;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\VouchersRelationManager;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutHoldsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutMethodsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\RelationManagers\PayoutEventsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Relations\ProgramsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CommissionRulesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\MembershipsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\TiersRelationManager;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Relations\DownlinesRelationManager;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankResource;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateUplineResource;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -221,7 +222,7 @@ it('prevents deleting affiliates after conversion or payout history exists', fun
         ->and(AffiliateResource::canDelete($payoutAffiliate))->toBeFalse();
 });
 
-it('strips identity and ownership edits from a Dawah affiliate edit payload', function (): void {
+it('rejects forged identity and ownership mutations when saving a Dawah affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-DAWAH-EDIT-' . Str::uuid(),
         'name' => 'Dawah Member',
@@ -232,11 +233,12 @@ it('strips identity and ownership edits from a Dawah affiliate edit payload', fu
         'currency' => 'USD',
     ]);
     $page = new EditAffiliate;
-    $page->record = $affiliate;
-    $method = new ReflectionMethod(EditAffiliate::class, 'mutateFormDataBeforeSave');
+    $method = new ReflectionMethod(EditAffiliate::class, 'handleRecordUpdate');
     $method->setAccessible(true);
 
-    $mutated = $method->invoke($page, [
+    $affiliate->refresh();
+    $original = $affiliate->getAttributes();
+    $method->invoke($page, $affiliate, [
         'name' => 'Updated member name',
         'handle' => 'forged-handle',
         'apply_template' => (string) Str::uuid(),
@@ -255,33 +257,18 @@ it('strips identity and ownership edits from a Dawah affiliate edit payload', fu
         'owner_type' => User::class,
         'owner_id' => (string) Str::uuid(),
         'linked_user' => (string) Str::uuid(),
-        'status' => 'suspended',
+        'status' => 'paused',
     ]);
 
-    expect($mutated['status'])->toBe('suspended')
-        ->and($mutated)->not->toHaveKeys([
-            'name',
-            'handle',
-            'apply_template',
-            'commission_type',
-            'commission_rate',
-            'currency',
-            'network_depth',
-            'rank_id',
-            'parent_affiliate_id',
-            'default_voucher_code',
-            'tracking_domain',
-            'payout_terms',
-            'code',
-            'purpose',
-            'metadata',
-            'owner_type',
-            'owner_id',
-            'linked_user',
-        ]);
+    $affiliate->refresh();
+    expect($affiliate->status->getValue())->toBe('paused');
+
+    foreach (['name', 'handle', 'commission_type', 'commission_rate', 'currency', 'network_depth', 'rank_id', 'parent_affiliate_id', 'default_voucher_code', 'tracking_domain', 'payout_terms', 'code', 'purpose', 'metadata', 'owner_type', 'owner_id'] as $attribute) {
+        expect($affiliate->getAttributes()[$attribute] ?? null)->toBe($original[$attribute] ?? null);
+    }
 });
 
-it('keeps commercial affiliate edit fields available to the normal save pipeline', function (): void {
+it('persists allowed commercial affiliate changes through the edit page', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-COMMERCIAL-EDIT-' . Str::uuid(),
         'name' => 'Commercial Affiliate',
@@ -299,8 +286,7 @@ it('keeps commercial affiliate edit fields available to the normal save pipeline
         'currency' => 'USD',
     ]);
     $page = new EditAffiliate;
-    $page->record = $affiliate;
-    $method = new ReflectionMethod(EditAffiliate::class, 'mutateFormDataBeforeSave');
+    $method = new ReflectionMethod(EditAffiliate::class, 'handleRecordUpdate');
     $method->setAccessible(true);
 
     $data = [
@@ -309,7 +295,6 @@ it('keeps commercial affiliate edit fields available to the normal save pipeline
         'commission_type' => 'fixed',
         'commission_rate' => 1000,
         'currency' => 'MYR',
-        'rank_id' => (string) Str::uuid(),
         'parent_affiliate_id' => (string) $parent->getKey(),
         'default_voucher_code' => 'COMMERCIAL-VOUCHER',
         'tracking_domain' => 'track.example.test',
@@ -317,7 +302,19 @@ it('keeps commercial affiliate edit fields available to the normal save pipeline
         'status' => 'active',
     ];
 
-    expect($method->invoke($page, $data))->toMatchArray($data);
+    $method->invoke($page, $affiliate, $data);
+
+    $affiliate->refresh();
+    expect($affiliate->name)->toBe($data['name'])
+        ->and($affiliate->handle)->toBe($data['handle'])
+        ->and($affiliate->commission_type->value)->toBe($data['commission_type'])
+        ->and($affiliate->commission_rate)->toBe($data['commission_rate'])
+        ->and($affiliate->currency)->toBe($data['currency'])
+        ->and($affiliate->parent_affiliate_id)->toBe($data['parent_affiliate_id'])
+        ->and($affiliate->default_voucher_code)->toBe($data['default_voucher_code'])
+        ->and($affiliate->tracking_domain)->toBe($data['tracking_domain'])
+        ->and($affiliate->payout_terms)->toBe($data['payout_terms'])
+        ->and($affiliate->status->getValue())->toBe($data['status']);
 });
 
 it('strips destination edits from a Dawah affiliate link edit payload', function (): void {
@@ -331,7 +328,7 @@ it('strips destination edits from a Dawah affiliate link edit payload', function
         'currency' => 'USD',
     ]);
     $destinationUrl = mb_rtrim((string) config('app.url'), '/') . '/kongsi';
-    $link = CreateTrackingLink::run($affiliate, $destinationUrl, [
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), $destinationUrl, [
         'custom_slug' => 'frozenlink',
     ]);
     $frozenTrackingUrl = $link->tracking_url;
@@ -696,4 +693,43 @@ it('AffiliateFraudSignalResource returns null badge when no detected signals', f
     AffiliateFraudSignal::query()->delete();
 
     expect(AffiliateFraudSignalResource::getNavigationBadge())->toBeNull();
+});
+
+it('keeps payout eligibility and lifecycle timestamps consistent when editing status', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-LIFECYCLE-EDIT-' . Str::uuid(),
+        'name' => 'Lifecycle Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'MYR',
+    ]);
+
+    $administration = app(AffiliateAdministration::class);
+    $id = (string) $affiliate->getKey();
+
+    $administration->update($id, ['status' => 'paused']);
+    $affiliate->refresh();
+
+    expect($affiliate->paused_at)->not->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeFalse();
+
+    $administration->update($id, ['status' => 'active']);
+    $affiliate->refresh();
+
+    expect($affiliate->paused_at)->toBeNull()
+        ->and($affiliate->activated_at)->not->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeTrue();
+
+    $administration->update($id, ['status' => 'disabled']);
+    $affiliate->refresh();
+
+    expect($affiliate->deactivated_at)->not->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeFalse();
+
+    $administration->update($id, ['status' => 'active']);
+    $affiliate->refresh();
+
+    expect($affiliate->deactivated_at)->toBeNull()
+        ->and($affiliate->canReceivePayout())->toBeTrue();
 });

@@ -5,25 +5,45 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
+use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
-use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 describe('Affiliate Model - Owner Scopes', function (): void {
     test('scopeForOwner filters by owner when enabled', function (): void {
@@ -125,14 +145,42 @@ describe('Affiliate Model - Owner Scopes', function (): void {
     });
 });
 
+describe('Affiliate Directory - Unambiguous Lookup', function (): void {
+    test('rejects empty and ambiguous default voucher codes', function (): void {
+        config(['affiliates.owner.enabled' => false]);
+
+        $first = Affiliate::create([
+            'code' => 'LOOKUP-ONE',
+            'name' => 'Lookup One',
+            'status' => Active::class,
+            'default_voucher_code' => 'shared-code',
+        ]);
+
+        $directory = app(AffiliateDirectory::class);
+
+        expect($directory->findByDefaultVoucherCode(' SHARED-CODE ')?->id)->toBe($first->id)
+            ->and($directory->findByCode(' '))->toBeNull()
+            ->and($directory->findByDefaultVoucherCode(' '))->toBeNull();
+
+        Affiliate::create([
+            'code' => 'LOOKUP-TWO',
+            'name' => 'Lookup Two',
+            'status' => Active::class,
+            'default_voucher_code' => 'SHARED-CODE',
+        ]);
+
+        expect($directory->findByDefaultVoucherCode('shared-code'))->toBeNull();
+    });
+});
+
 describe('Affiliate Model - Status Methods', function (): void {
     test('isActive returns true for active status', function (): void {
-        $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Active::class)]);
+        $affiliate = new Affiliate(['status' => new Active(new Affiliate)]);
         expect($affiliate->isActive())->toBeTrue();
     });
 
     test('isActive returns false for non-active status', function (): void {
-        $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Pending::class)]);
+        $affiliate = new Affiliate(['status' => new Pending(new Affiliate)]);
         expect($affiliate->isActive())->toBeFalse();
     });
 
@@ -162,7 +210,7 @@ describe('Affiliate Model - Status Methods', function (): void {
 });
 
 describe('Affiliate Model - Relationships', function (): void {
-    test('has attributions relationship', function (): void {
+    test('reads attribution counts from the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate',
@@ -171,10 +219,10 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        expect($affiliate->attributions())->toBeInstanceOf(HasMany::class);
+        expect(app(AttributionReportingReader::class)->count((string) $affiliate->getKey()))->toBe(0);
     });
 
-    test('has conversions relationship', function (): void {
+    test('reads conversion counts through the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate',
@@ -183,7 +231,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        expect($affiliate->conversions())->toBeInstanceOf(HasMany::class);
+        expect(app(ConversionStatisticsReader::class)->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection())))->toBe(0);
     });
 
     test('has parent relationship', function (): void {
@@ -196,7 +244,7 @@ describe('Affiliate Model - Relationships', function (): void {
         expect($affiliate->children())->toBeInstanceOf(HasMany::class);
     });
 
-    test('has many links', function (): void {
+    test('checks tracking link records through Attribution', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'LINK-001',
             'name' => 'Link Test',
@@ -205,10 +253,19 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->links())->toBeInstanceOf(HasMany::class);
+        $reader = app(TrackingLinkReader::class);
+        expect($reader->hasRecords((string) $affiliate->getKey()))->toBeFalse();
+        $link = AffiliateLink::query()->create([
+            'affiliate_id' => $affiliate->getKey(),
+            'destination_url' => 'https://example.com',
+            'tracking_url' => 'https://example.com/go/test',
+        ]);
+        expect($reader->hasRecords((string) $affiliate->getKey()))->toBeTrue()
+            ->and($reader->belongsTo((string) $link->getKey(), (string) $affiliate->getKey()))->toBeTrue()
+            ->and($reader->belongsTo('invalid-id', (string) $affiliate->getKey()))->toBeFalse();
     });
 
-    test('has many payouts', function (): void {
+    test('reads payout history through the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAY-001',
             'name' => 'Payout Test',
@@ -217,10 +274,10 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->payouts())->toBeInstanceOf(MorphMany::class);
+        expect(app(PayoutAccountingReader::class)->hasAffiliateHistory($affiliate->id, spl_object_id($affiliate->getConnection())))->toBeFalse();
     });
 
-    test('has many fraud signals', function (): void {
+    test('deleting an affiliate clears fraud signals through the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-001',
             'name' => 'Fraud Test',
@@ -229,22 +286,22 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->fraudSignals())->toBeInstanceOf(HasMany::class);
-    });
-
-    test('has many daily stats', function (): void {
-        $affiliate = Affiliate::create([
-            'code' => 'STATS-001',
-            'name' => 'Stats Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
+        $signal = AffiliateFraudSignal::query()->create([
+            'affiliate_id' => $affiliate->getKey(),
+            'rule_code' => 'TEST',
+            'risk_points' => 10,
+            'severity' => FraudSeverity::Low,
+            'description' => 'Fraud signal cleanup',
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => now(),
         ]);
-        expect($affiliate->dailyStats())->toBeInstanceOf(HasMany::class);
+
+        app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
+
+        expect(AffiliateFraudSignal::query()->whereKey($signal->getKey())->exists())->toBeFalse();
     });
 
-    test('has one balance', function (): void {
+    test('reads balance records through the conversions feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'BAL-001',
             'name' => 'Balance Test',
@@ -253,7 +310,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->balances())->toBeInstanceOf(HasMany::class);
+        expect(app(BalanceReader::class)->forAffiliate((string) $affiliate->getKey()))->toBe([]);
     });
 
     test('has many payout methods', function (): void {
@@ -265,7 +322,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->payoutMethods())->toBeInstanceOf(HasMany::class);
+        expect(app(PayoutMethodReader::class)->hasRecords($affiliate->id))->toBeFalse();
     });
 
     test('has many payout holds', function (): void {
@@ -277,12 +334,19 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->payoutHolds())->toBeInstanceOf(HasMany::class);
+        expect(app(PayoutHoldReader::class)->count($affiliate->id))->toBe(0);
     });
 
-    test('belongs to rank', function (): void {
-        $affiliate = new Affiliate;
-        expect($affiliate->rank())->toBeInstanceOf(BelongsTo::class);
+    test('resolves assigned rank through the Upline directory', function (): void {
+        $rankId = app(RankAdministration::class)->create([
+            'name' => 'Directory Rank',
+            'slug' => 'directory-rank',
+            'level' => 1,
+            'commission_rate_basis_points' => 1000,
+        ]);
+        $affiliate = new Affiliate(['rank_id' => $rankId]);
+
+        expect(app(RankDirectory::class)->label($affiliate->rank_id))->toBe('Directory Rank');
     });
 
     test('parent-child relationship works correctly', function (): void {
@@ -328,7 +392,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'released_at' => null,
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeTrue();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeTrue();
     });
 
     test('hasActivePayoutHold returns false when hold is released', function (): void {
@@ -347,7 +411,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'released_at' => now(),
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeFalse();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeFalse();
     });
 
     test('hasActivePayoutHold returns false when hold is expired', function (): void {
@@ -366,7 +430,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'expires_at' => now()->subDay(),
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeFalse();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeFalse();
     });
 
     test('hasActivePayoutHold returns false with no holds', function (): void {
@@ -379,7 +443,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeFalse();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeFalse();
     });
 });
 
@@ -395,6 +459,23 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         ]);
 
         expect($affiliate->canRequestPayout())->toBeFalse();
+    });
+
+    test('inconsistent lifecycle timestamps fail closed for payout eligibility', function (): void {
+        $affiliate = new Affiliate(['status' => Active::class, 'paused_at' => now()]);
+
+        expect($affiliate->canReceivePayout())->toBeFalse()
+            ->and($affiliate->canRequestPayout())->toBeFalse();
+
+        $affiliate->paused_at = null;
+        $affiliate->deactivated_at = now();
+
+        expect($affiliate->canReceivePayout())->toBeFalse()
+            ->and($affiliate->canRequestPayout())->toBeFalse();
+    });
+
+    test('does not expose an optional voucher ORM relationship', function (): void {
+        expect(method_exists(Affiliate::class, 'vouchers'))->toBeFalse();
     });
 
     test('canRequestPayout returns false with active hold', function (): void {
@@ -488,6 +569,21 @@ describe('Affiliate Model - Accessors', function (): void {
         expect($affiliate->email)->toBe('test@example.com');
     });
 
+    test('invalid contact replacement preserves the existing email', function (): void {
+        $affiliate = Affiliate::create([
+            'code' => 'EMAIL-ROLLBACK',
+            'name' => 'Contact Rollback',
+            'status' => Active::class,
+            'contact_email' => 'original@example.com',
+            'website_url' => 'https://example.com',
+        ]);
+
+        expect(fn () => $affiliate->update(['contact_email' => 'not-an-email']))
+            ->toThrow(ValidationException::class)
+            ->and($affiliate->fresh()->contact_email)->toBe('original@example.com')
+            ->and($affiliate->fresh()->website_url)->toBe('https://example.com');
+    });
+
     test('stores commission rate in basis points', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RATE-001',
@@ -563,7 +659,7 @@ describe('Affiliate Model - Events', function (): void {
     test('dispatches AffiliateCreated event on creation', function (): void {
         Event::fake([AffiliateCreated::class]);
 
-        Affiliate::create([
+        $affiliate = Affiliate::create([
             'code' => 'EVENT-001',
             'name' => 'Event Test Affiliate',
             'status' => Draft::class,
@@ -572,7 +668,7 @@ describe('Affiliate Model - Events', function (): void {
             'currency' => 'USD',
         ]);
 
-        Event::assertDispatched(AffiliateCreated::class);
+        Event::assertDispatched(AffiliateCreated::class, fn (AffiliateCreated $event): bool => $event->affiliate->id === $affiliate->id);
     });
 
     test('dispatches AffiliateActivated event when status changes to Active', function (): void {
@@ -589,7 +685,7 @@ describe('Affiliate Model - Events', function (): void {
 
         $affiliate->update(['status' => Active::class]);
 
-        Event::assertDispatched(AffiliateActivated::class);
+        Event::assertDispatched(AffiliateActivated::class, fn (AffiliateActivated $event): bool => $event->affiliate->id === $affiliate->id);
     });
 
     test('does not dispatch AffiliateActivated when status stays same', function (): void {
@@ -631,12 +727,12 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'user_agent' => 'Test Browser',
         ]);
 
-        $affiliate->delete();
+        app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
 
         expect(AffiliateAttribution::where('affiliate_id', $affiliate->id)->count())->toBe(0);
     });
 
-    test('cascade deletes conversions on delete', function (): void {
+    test('rejects deletion when the affiliate has conversion history', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'CASCADE-002',
             'name' => 'Cascade Conversion Test',
@@ -656,9 +752,10 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'status' => PendingConversion::class,
         ]);
 
-        $affiliate->delete();
-
-        expect(AffiliateConversion::where('affiliate_id', $affiliate->id)->count())->toBe(0);
+        expect(fn () => app(AffiliateRemoval::class)->delete((string) $affiliate->getKey()))
+            ->toThrow(ValidationException::class)
+            ->and($affiliate->fresh())->not->toBeNull()
+            ->and(AffiliateConversion::where('affiliate_id', $affiliate->id)->count())->toBe(1);
     });
 
     test('nulls parent_affiliate_id of children on delete', function (): void {
@@ -681,7 +778,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'parent_affiliate_id' => $parent->id,
         ]);
 
-        $parent->delete();
+        app(AffiliateRemoval::class)->delete((string) $parent->getKey());
         $child->refresh();
 
         expect($child->parent_affiliate_id)->toBeNull();
@@ -693,4 +790,117 @@ describe('Affiliate Model - Table Configuration', function (): void {
         $affiliate = new Affiliate;
         expect($affiliate->getTable())->toBe('affiliate_affiliates');
     });
+});
+
+test('identity write guard rejects foreign owners and mismatched connections', function (): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => true]);
+    $ownerA = User::create(['name' => 'Guard Owner A', 'email' => 'guard-owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::create(['name' => 'Guard Owner B', 'email' => 'guard-owner-b@example.com', 'password' => 'secret']);
+    $affiliate = OwnerContext::withOwner($ownerA, fn (): Affiliate => Affiliate::create([
+        'code' => 'IDENTITY-GUARD',
+        'name' => 'Identity Guard Affiliate',
+        'status' => Active::class,
+    ]));
+
+    $guard = app(AffiliateAccessGuard::class);
+    $connection = $affiliate->getConnection();
+    $identity = spl_object_id($connection);
+
+    OwnerContext::withOwner($ownerA, function () use ($guard, $affiliate, $connection, $identity): void {
+        $guard->assertCanWrite($affiliate->id, $identity);
+        $connection->transaction(fn () => $guard->lockForWrite($affiliate->id, $identity));
+        expect(fn () => $guard->assertCanWrite($affiliate->id, -1))->toThrow(LogicException::class)
+            ->and(fn () => $guard->assertCanWrite('not-a-uuid', $identity))->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($guard, $affiliate, $connection, $identity): void {
+        expect(fn () => $connection->transaction(fn () => $guard->lockForWrite($affiliate->id, $identity)))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    $global = OwnerContext::withOwner(null, fn (): Affiliate => Affiliate::create([
+        'code' => 'IDENTITY-GUARD-GLOBAL',
+        'name' => 'Global Identity Guard Affiliate',
+        'status' => Active::class,
+    ]));
+
+    OwnerContext::withOwner($ownerA, function () use ($guard, $global, $connection, $identity): void {
+        expect(Affiliate::query()->forOwner(includeGlobal: true)->whereKey($global->id)->exists())->toBeTrue()
+            ->and(fn () => $guard->assertCanWrite($global->id, $identity))->toThrow(AuthorizationException::class)
+            ->and(fn () => $connection->transaction(fn () => $guard->lockForWrite($global->id, $identity)))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function () use ($guard, $global, $connection, $identity): void {
+        $guard->assertCanWrite($global->id, $identity);
+        $connection->transaction(fn () => $guard->lockForWrite($global->id, $identity));
+    });
+});
+
+test('affiliate-derived owner scope protects retained records against cross-tenant writes', function (): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => true]);
+    $ownerA = User::create(['name' => 'Derived Owner A', 'email' => 'derived-owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::create(['name' => 'Derived Owner B', 'email' => 'derived-owner-b@example.com', 'password' => 'secret']);
+
+    [$first, $hold] = OwnerContext::withOwner($ownerA, function (): array {
+        $affiliate = Affiliate::create(['code' => 'DERIVED-A', 'name' => 'Derived A', 'status' => Active::class]);
+
+        return [$affiliate, AffiliatePayoutHold::create(['affiliate_id' => $affiliate->id, 'reason' => 'Owner A hold'])];
+    });
+    $second = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
+        'code' => 'DERIVED-B', 'name' => 'Derived B', 'status' => Active::class,
+    ]));
+
+    OwnerContext::withOwner($ownerB, function () use ($hold, $second): void {
+        expect(AffiliatePayoutHold::query()->find($hold->id))->toBeNull()
+            ->and(fn () => $hold->delete())->toThrow(AuthorizationException::class)
+            ->and(fn () => $hold->update(['affiliate_id' => $second->id]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($hold, $first): void {
+        $saved = AffiliatePayoutHold::query()->findOrFail($hold->id);
+        expect($saved->affiliate_id)->toBe($first->id)
+            ->and($saved->reason)->toBe('Owner A hold');
+    });
+});
+
+test('enforces global case-insensitive affiliate code uniqueness across owner scopes', function (): void {
+    config(['affiliates.owner.enabled' => true]);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $affiliate = OwnerContext::withOwner($owner, fn (): Affiliate => Affiliate::create([
+        'code' => 'Case-Sensitive-Code',
+        'name' => 'Case Code Owner',
+        'status' => Active::class,
+    ]));
+
+    $directory = app(AffiliateDirectory::class);
+
+    OwnerContext::withOwner($owner, function () use ($affiliate, $directory): void {
+        expect($directory->findByCode(' CASE-SENSITIVE-CODE ')?->id)->toBe($affiliate->id)
+            ->and($directory->codeAvailable('case-sensitive-code', $affiliate->id))->toBeTrue();
+    });
+
+    OwnerContext::withOwner($other, function () use ($affiliate, $directory): void {
+        expect($directory->findByCode('case-sensitive-code'))->toBeNull()
+            ->and($directory->codeAvailable('case-sensitive-code'))->toBeFalse()
+            ->and($directory->codeAvailable('bad code'))->toBeFalse()
+            ->and($directory->codeAvailable('Unused-Code'))->toBeTrue();
+
+        expect(fn () => $affiliate->getConnection()->transaction(fn () => Affiliate::create([
+            'code' => 'case-sensitive-code',
+            'name' => 'Different Code Owner',
+            'status' => Active::class,
+        ])))->toThrow(QueryException::class);
+    });
+});
+
+it('honors an aliased table for self-join queries', function (): void {
+    $affiliate = new Affiliate;
+    $default = $affiliate->getTable();
+
+    $affiliate->setTable('affiliate_alias');
+
+    expect($affiliate->getTable())->toBe('affiliate_alias')
+        ->and($default)->toBe(config('affiliates.database.tables.affiliates', 'affiliates'));
 });

@@ -7,10 +7,10 @@ use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Events\AffiliateTierUpgraded;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -19,8 +19,8 @@ test('AffiliateActivated event uses Dispatchable trait', function (): void {
     expect(in_array(Dispatchable::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
 });
 
-test('AffiliateActivated event uses SerializesModels trait', function (): void {
-    expect(in_array(SerializesModels::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
+test('AffiliateActivated event does not serialize Eloquent models', function (): void {
+    expect(in_array(SerializesModels::class, class_uses_recursive(AffiliateActivated::class)))->toBeFalse();
 });
 
 test('AffiliateTierUpgraded event allows null fromTier for initial tier assignment', function (): void {
@@ -49,10 +49,12 @@ test('AffiliateTierUpgraded event allows null fromTier for initial tier assignme
         'commission_rate_basis_points' => 500,
     ]);
 
-    $event = new AffiliateTierUpgraded($affiliate, $program, null, $toTier);
+    $event = new AffiliateTierUpgraded($affiliate->id, $program->id, null, $toTier->id);
 
-    expect($event->fromTier)->toBeNull();
-    expect($event->toTier)->toBe($toTier);
+    expect($event->fromTierId)->toBeNull()
+        ->and($event->toTierId)->toBe($toTier->id)
+        ->and($event->affiliateId)->toBe($affiliate->id)
+        ->and($event->programId)->toBe($program->id);
 });
 
 test('DailyStatsAggregated event uses Dispatchable and SerializesModels traits', function (): void {
@@ -80,14 +82,15 @@ test('AffiliateRankChanged event allows null fromRank for initial rank', functio
     ]);
 
     $event = new AffiliateRankChanged(
-        affiliate: $affiliate,
+        affiliateId: $affiliate->id,
         fromRank: null,
-        toRank: $toRank,
+        toRank: $toRank->toQualifiedRank(),
         reason: RankQualificationReason::Initial
     );
 
     expect($event->fromRank)->toBeNull();
-    expect($event->toRank)->toBe($toRank);
+    expect($event->toRank)->toEqual($toRank->toQualifiedRank());
+    expect($event->affiliateId)->toBe($affiliate->id);
     expect($event->reason)->toBe(RankQualificationReason::Initial);
 });
 
@@ -102,30 +105,28 @@ test('AffiliateRankChanged event detects demotion correctly', function (): void 
     ]);
 
     $fromRank = AffiliateRank::create([
-        'name' => 'Silver',
-        'slug' => 'silver-2',
-        'level' => 2,
+        'name' => 'Gold',
+        'slug' => 'gold-2',
+        'level' => 3,
         'commission_rate_basis_points' => 100,
     ]);
 
     $toRank = AffiliateRank::create([
-        'name' => 'Gold',
-        'slug' => 'gold',
-        'level' => 3,
+        'name' => 'Silver',
+        'slug' => 'silver',
+        'level' => 2,
         'commission_rate_basis_points' => 200,
     ]);
 
     $event = new AffiliateRankChanged(
-        affiliate: $affiliate,
-        fromRank: $fromRank,
-        toRank: $toRank,
+        affiliateId: $affiliate->id,
+        fromRank: $fromRank->toQualifiedRank(),
+        toRank: $toRank->toQualifiedRank(),
         reason: RankQualificationReason::Qualified
     );
 
-    // Test isPromotion - lower level number means higher rank
     expect($event->isPromotion())->toBeFalse();
 
-    // Test isDemotion - toRank has higher level number (lower rank)
     expect($event->isDemotion())->toBeTrue();
 });
 
@@ -140,23 +141,23 @@ test('AffiliateRankChanged event detects promotion correctly', function (): void
     ]);
 
     $fromRank = AffiliateRank::create([
-        'name' => 'Gold',
-        'slug' => 'gold-2',
-        'level' => 3,
+        'name' => 'Silver',
+        'slug' => 'silver-2',
+        'level' => 2,
         'commission_rate_basis_points' => 200,
     ]);
 
     $toRank = AffiliateRank::create([
-        'name' => 'Silver',
-        'slug' => 'silver-3',
-        'level' => 2,
+        'name' => 'Gold',
+        'slug' => 'gold-3',
+        'level' => 3,
         'commission_rate_basis_points' => 100,
     ]);
 
     $event = new AffiliateRankChanged(
-        affiliate: $affiliate,
-        fromRank: $fromRank,
-        toRank: $toRank,
+        affiliateId: $affiliate->id,
+        fromRank: $fromRank->toQualifiedRank(),
+        toRank: $toRank->toQualifiedRank(),
         reason: RankQualificationReason::Qualified
     );
 

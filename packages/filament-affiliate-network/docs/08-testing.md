@@ -60,7 +60,7 @@ abstract class FilamentTestCase extends TestCase
 ```php
 use AIArmada\AffiliateNetwork\Data\SiteStatus;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Sites\EntryPoints\Filament\Resources\AffiliateSiteResource;
 
 use function Pest\Livewire\livewire;
 
@@ -104,7 +104,7 @@ it('verifies a pending site via the action', function (): void {
 use AIArmada\AffiliateNetwork\Data\OfferStatus;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource;
 
 it('creates an offer', function (): void {
     $site = AffiliateSite::factory()->verified()->create();
@@ -152,7 +152,7 @@ it('archives a published offer via pause', function (): void {
 ```php
 use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource;
 
 it('approves a pending application', function (): void {
     $application = AffiliateOfferApplication::factory()->pending()->create();
@@ -178,7 +178,7 @@ it('rejects with a reason', function (): void {
 ```php
 use AIArmada\AffiliateNetwork\Data\SettlementStatus;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
-use AIArmada\FilamentAffiliateNetwork\Resources\MerchantStatementResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Ledger\EntryPoints\Filament\Resources\MerchantStatementResource;
 
 it('renders statements for admins', function (): void {
     livewire(MerchantStatementResource\Pages\ListMerchantStatements::class)
@@ -207,7 +207,7 @@ it('blocks non-admins', function (): void {
 ```php
 use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferCoupon;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
 
 use function Pest\Livewire\livewire;
 
@@ -238,7 +238,7 @@ Use the same `ownerRecord` + `pageClass` shape for `InvitationsRelationManager`
 ```php
 use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager;
 
 it('reverses a posted leg', function (): void {
     $offer = AffiliateOffer::factory()->published()->create();
@@ -259,7 +259,7 @@ it('reverses a posted leg', function (): void {
 ```php
 use AIArmada\AffiliateNetwork\Features\Catalog\Queries\EvaluateActivePromotion;
 use AIArmada\AffiliateNetwork\Features\Catalog\Queries\EvaluateOfferRestrictions;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
 use Filament\Schemas\Schema;
 
 it('hydrates and dehydrates event rates, promotions, and restrictions', function (): void {
@@ -301,8 +301,8 @@ searchable select of published offers that excludes the record being edited.
 use AIArmada\AffiliateNetwork\Contracts\CreatorPostbackTransport;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\RelationManagers\DeliveriesRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\RelationManagers\DeliveriesRelationManager;
 
 it('renders the postbacks list for admins', function (): void {
     livewire(CreatorPostbackResource\Pages\ListCreatorPostbacks::class)->assertSuccessful();
@@ -351,7 +351,7 @@ Paid, Void) and can be tested with the `ownerRecord` + `pageClass` pattern.
 ## Testing metrics and stats
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\Queries\NetworkStatsAggregator;
 
 it('exposes offer metrics columns', function (): void {
     $table = AffiliateOffersTable::configure(Table::make($host));
@@ -375,8 +375,8 @@ it('aggregates pending legs and issued statements', function (): void {
 network-gated and (for the widgets) network-wide.
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
-use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Pages\MerchantDashboardPage;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Widgets\NetworkStatsWidget;
 
 it('renders the merchant dashboard', function (): void {
     livewire(MerchantDashboardPage::class)->assertSuccessful();
@@ -396,7 +396,7 @@ it('renders network stats', function (): void {
 ## Authorization tests
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
 use Illuminate\Support\Facades\Gate;
 
 it('reports admin access from the configured ability', function (): void {

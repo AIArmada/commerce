@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Features\Attribution\Actions\IncrementLinkClicks;
 use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
 use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
 
@@ -153,14 +155,17 @@ describe('AffiliateOfferLink Model', function (): void {
             expect($link->offer->id)->toBe($this->offer->id);
         });
 
-        test('belongs to affiliate', function (): void {
+        test('resolves affiliate through the identity contract', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
-            expect($link->affiliate)->toBeInstanceOf(Affiliate::class);
-            expect($link->affiliate->id)->toBe($this->affiliate->id);
+            $identity = app(AffiliateIdentityResolver::class)->find($link->affiliate_id);
+
+            expect($identity)->toBeInstanceOf(NetworkAffiliate::class)
+                ->and($identity?->id)->toBe($this->affiliate->id)
+                ->and(method_exists($link, 'affiliate'))->toBeFalse();
         });
 
         test('belongs to site', function (): void {
