@@ -118,7 +118,7 @@ final readonly class ReadConversionStatistics implements ConversionStatisticsRea
     }
 
     /**
-     * @param list<string>|null $statuses
+     * @param  list<string>|null  $statuses
      * @return Builder<AffiliateConversion>
      */
     private function query(int $connectionIdentity, ?DateTimeInterface $from, ?DateTimeInterface $until, ?array $statuses, bool $includeGlobal, bool $inclusiveUntil): Builder

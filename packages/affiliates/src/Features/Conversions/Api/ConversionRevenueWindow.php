@@ -7,8 +7,8 @@ namespace AIArmada\Affiliates\Features\Conversions\Api;
 final readonly class ConversionRevenueWindow
 {
     /**
-     * @param array<string, int> $personalByCurrency
-     * @param array<string, int> $lifetimeByCurrency
+     * @param  array<string, int>  $personalByCurrency
+     * @param  array<string, int>  $lifetimeByCurrency
      */
     public function __construct(
         public array $personalByCurrency,

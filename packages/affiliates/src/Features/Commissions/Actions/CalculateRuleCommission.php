@@ -12,8 +12,8 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Queries\FindCommissionRules;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
