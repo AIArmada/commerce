@@ -6,10 +6,10 @@ namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
 use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Models\Address;
-use LogicException;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
+use LogicException;
 
 final class CreateAddress extends CreateRecord
 {

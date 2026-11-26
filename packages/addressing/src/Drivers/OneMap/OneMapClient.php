@@ -7,6 +7,7 @@ namespace AIArmada\Addressing\Drivers\OneMap;
 use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Exceptions\OneMapException;
 use Carbon\CarbonImmutable;
+use Exception;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -14,7 +15,6 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Exception;
 
 /**
  * Minimal client for SLA's OneMap API (search + token auth).

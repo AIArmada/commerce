@@ -42,7 +42,7 @@ final class ResolutionGapResource extends Resource
 
     public static function getModel(): string
     {
-        return (config('filament-addressing.resources.resolution_gaps.model') ?? ResolutionGap::configuredClass());
+        return config('filament-addressing.resources.resolution_gaps.model') ?? ResolutionGap::configuredClass();
     }
 
     public static function shouldRegisterNavigation(): bool

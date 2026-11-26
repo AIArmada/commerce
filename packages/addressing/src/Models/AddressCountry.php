@@ -6,13 +6,13 @@ namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\AddressCountryFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -45,7 +45,6 @@ class AddressCountry extends TransactionalDeletionModel
             app(GeographyReferenceMaintenance::class)->clearCountry((string) $country->getKey());
         });
     }
-
 
     protected $fillable = [
         'iso2',

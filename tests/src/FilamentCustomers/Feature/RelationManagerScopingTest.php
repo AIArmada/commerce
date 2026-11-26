@@ -22,6 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component as LivewireComponent;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
@@ -117,7 +118,7 @@ it('scopes the address attach picker to the current owner', function (): void {
     expect($ids)->toEqual([$inScope->id]);
 
     expect(fn () => OwnerContext::withOwner($ownerB, fn () => $query->invoke($manager)))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
 });
 
 it('validates country codes as two ascii letters', function (): void {

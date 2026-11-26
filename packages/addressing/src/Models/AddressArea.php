@@ -6,8 +6,9 @@ namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\AddressAreaFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
-use AIArmada\Addressing\Support\AddressingTableResolver;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
 use AIArmada\Addressing\Traits\HasSpatialLocation;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -76,7 +76,6 @@ class AddressArea extends TransactionalDeletionModel
             app(GeographyReferenceMaintenance::class)->clearArea((string) $area->getKey());
         });
     }
-
 
     protected $fillable = [
         'country_id',

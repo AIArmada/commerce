@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Models;
 
-use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
+use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

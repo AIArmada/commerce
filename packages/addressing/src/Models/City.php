@@ -6,11 +6,11 @@ namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\CityFactory;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -35,7 +35,6 @@ class City extends TransactionalDeletionModel
             app(GeographyReferenceMaintenance::class)->clearCity((string) $city->getKey());
         });
     }
-
 
     protected $fillable = [
         'country_id',

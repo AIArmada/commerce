@@ -10,6 +10,7 @@ use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Database\Factories\AddressFactory;
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Traits\HasSpatialLocation;
@@ -17,7 +18,6 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -133,7 +133,6 @@ class Address extends TransactionalDeletionModel
 
         return ['formatted_address' => $formatted, 'formatted_lines' => explode("\n", $formatted)];
     }
-
 
     protected $fillable = [
         'country_id',

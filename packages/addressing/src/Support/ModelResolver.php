@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Support;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -14,7 +15,6 @@ use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\AddressSnapshot;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;

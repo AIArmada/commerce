@@ -6,11 +6,11 @@ namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\PostalCodeFactory;
 use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
@@ -31,7 +31,6 @@ class PostalCode extends TransactionalDeletionModel
             app(AreaCoverageMaintenance::class)->clearPostalCode((string) $postalCode->getKey());
         });
     }
-
 
     protected $fillable = [
         'country_code',
