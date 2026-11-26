@@ -6,13 +6,11 @@ namespace AIArmada\FilamentAffiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutExportRow;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
+use AIArmada\Affiliates\Features\Payouts\Api\SettlementPayoutRow;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use BackedEnum;
 use League\Csv\Writer;
 use OpenSpout\Common\Entity\Row;
@@ -62,26 +60,8 @@ final class PayoutExportService
      */
     public function downloadSettlementCsv(?string $startDate = null, ?string $endDate = null): StreamedResponse
     {
-        $query = AffiliatePayout::query()->orderBy('currency')->orderBy('reference');
-
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-            $query->withoutGlobalScope(OwnerScope::class);
-            OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
-        }
-
-        if ($startDate !== null) {
-            $query->where('created_at', '>=', $startDate);
-        }
-
-        if ($endDate !== null) {
-            $query->where('created_at', '<=', $endDate);
-        }
-
-        $payouts = $query->with('payee')->get();
-        $report = app(PayoutReconciliationQueries::class)->summarizePayoutIds($payouts->modelKeys(), $startDate, $endDate, (bool) config('affiliates.owner.include_global', false));
-        $rows = $this->buildSettlementData($payouts, $report);
+        $settlement = app(PayoutReconciliationQueries::class)->settlementExport($startDate, $endDate);
+        $rows = $this->buildSettlementData($settlement['rows'], $settlement['report']);
 
         return response()->streamDownload(
             function () use ($rows): void {
@@ -162,13 +142,8 @@ final class PayoutExportService
                 : $payout;
         }
 
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-        $query = AffiliatePayout::query()->withoutGlobalScope(OwnerScope::class);
-        OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
-
-        return $query
+        return AffiliatePayout::query()
+            ->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal())
             ->whereKey($payout->getKey())
             ->firstOrFail();
     }
@@ -250,7 +225,7 @@ final class PayoutExportService
     }
 
     /**
-     * @param  iterable<int, AffiliatePayout>  $payouts
+     * @param  iterable<int, SettlementPayoutRow>  $payouts
      * @param  array<string, mixed>  $report
      * @return array<int, array<string>>
      */
@@ -267,17 +242,14 @@ final class PayoutExportService
         ]];
 
         foreach ($payouts as $payout) {
-            $payee = $payout->payee;
-            $payeeCode = $payee instanceof Affiliate ? $payee->code : (string) $payout->payee_id;
-
             $rows[] = [
-                $this->sanitizeCell((string) $payout->reference),
-                $this->sanitizeCell((string) $payeeCode),
-                $this->sanitizeCell(MoneyFormatter::decimalFromMinor((int) $payout->total_minor, (string) $payout->currency)),
-                $this->sanitizeCell((string) $payout->currency),
-                $this->sanitizeCell($this->stringifyStatus($payout->status)),
-                $this->sanitizeCell((string) $payout->conversion_count),
-                $this->sanitizeCell($payout->created_at?->format('Y-m-d H:i:s') ?? ''),
+                $this->sanitizeCell($payout->reference),
+                $this->sanitizeCell($payout->payeeCode),
+                $this->sanitizeCell(MoneyFormatter::decimalFromMinor($payout->totalMinor, $payout->currency)),
+                $this->sanitizeCell($payout->currency),
+                $this->sanitizeCell($payout->status),
+                $this->sanitizeCell((string) $payout->conversionCount),
+                $this->sanitizeCell($payout->createdAt ?? ''),
             ];
         }
 

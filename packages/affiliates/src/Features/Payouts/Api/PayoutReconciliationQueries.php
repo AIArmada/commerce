@@ -9,6 +9,11 @@ interface PayoutReconciliationQueries
     /** @return list<string> */
     public function payoutIdsNeedingReconciliation(): array;
 
+    /**
+     * @return array{rows: list<SettlementPayoutRow>, report: array<string, mixed>}
+     */
+    public function settlementExport(?string $startDate = null, ?string $endDate = null): array;
+
     /** @return array<string, mixed> */
     public function generateReport(?string $startDate = null, ?string $endDate = null): array;
 

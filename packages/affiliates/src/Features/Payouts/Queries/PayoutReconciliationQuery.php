@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
+use AIArmada\Affiliates\Features\Payouts\Api\SettlementPayoutRow;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
@@ -18,11 +21,13 @@ use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use LogicException;
@@ -48,10 +53,68 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
             ->values()->all();
     }
 
+    public function settlementExport(?string $startDate = null, ?string $endDate = null): array
+    {
+        $model = new AffiliatePayout;
+        $connection = $model->getConnection();
+        $identity = app(MerchantIdentity::class)->ownerTable();
+
+        if ($identity->connectionIdentity !== spl_object_id($connection)) {
+            throw new LogicException('Settlement export requires a shared affiliate database connection.');
+        }
+
+        $table = $model->getTable();
+        $affiliate = 'settlement_affiliate';
+        $morph = app(AffiliateProfileReader::class)->morphType();
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal();
+
+        $query = AffiliatePayout::query()->forOwner(includeGlobal: $includeGlobal)
+            ->leftJoin($identity->table . ' as ' . $affiliate, static function (JoinClause $join) use ($table, $affiliate, $identity, $morph): void {
+                $join->on($table . '.payee_id', '=', $affiliate . '.' . $identity->keyColumn)
+                    ->where($table . '.payee_type', '=', $morph);
+
+                if (config('affiliates.owner.enabled', false)) {
+                    foreach (['owner_type', 'owner_id'] as $column) {
+                        $left = $table . '.' . $column;
+                        $right = $affiliate . '.' . $column;
+                        $join->where(static fn ($match) => $match->whereColumn($left, $right)
+                            ->orWhere(static fn ($both) => $both->whereNull($left)->whereNull($right)));
+                    }
+                }
+            })
+            ->select($table . '.*', $affiliate . '.code as settlement_payee_code')
+            ->orderBy($table . '.currency')->orderBy($table . '.reference')->orderBy($table . '.id');
+
+        if ($startDate !== null) {
+            $query->where($table . '.created_at', '>=', $startDate);
+        }
+
+        if ($endDate !== null) {
+            $query->where($table . '.created_at', '<=', $endDate);
+        }
+
+        $payouts = $query->get();
+        $rows = [];
+
+        foreach ($payouts as $payout) {
+            $rows[] = new SettlementPayoutRow(
+                reference: $payout->reference,
+                payeeCode: (string) ($payout->getAttribute('settlement_payee_code') ?? $payout->payee_id),
+                totalMinor: $payout->total_minor,
+                currency: $payout->currency,
+                status: $payout->status->getValue(),
+                conversionCount: $payout->conversion_count,
+                createdAt: $payout->created_at?->format('Y-m-d H:i:s'),
+            );
+        }
+
+        return ['rows' => $rows, 'report' => $this->summarizePayouts($payouts, $startDate, $endDate)];
+    }
+
     /** @return array<string, mixed> */
     public function generateReport(?string $startDate = null, ?string $endDate = null): array
     {
-        $query = AffiliatePayout::query();
+        $query = AffiliatePayout::query()->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal());
 
         if ($startDate !== null) {
             $query->where('created_at', '>=', $startDate);
@@ -74,7 +137,7 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
             }
         }
 
-        $payouts = AffiliatePayout::query()->forOwner(OwnerContext::CURRENT, $includeGlobal)->whereKey($ids)->get();
+        $payouts = AffiliatePayout::query()->forOwner(OwnerContext::CURRENT, $includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal())->whereKey($ids)->get();
 
         if ($payouts->count() !== count($ids)) {
             throw new AuthorizationException('One or more payouts are not accessible.');
