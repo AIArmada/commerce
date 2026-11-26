@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
-use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Validation\ValidationException;
 

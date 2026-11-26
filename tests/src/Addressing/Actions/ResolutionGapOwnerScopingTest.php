@@ -7,16 +7,16 @@ use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Artisan;
 

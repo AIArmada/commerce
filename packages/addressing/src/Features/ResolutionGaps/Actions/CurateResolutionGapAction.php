@@ -40,7 +40,11 @@ final readonly class CurateResolutionGapAction implements ResolutionGapCuration
             ]);
         }
 
-        $attempt = fn () => ModelResolver::resolutionGapClass()::query()->getConnection()->transaction(fn () => $this->persistMatch($gapId, $areaId, $matchedBy));
+        $attempt = function () use ($gapId, $areaId, $matchedBy): void {
+            ModelResolver::resolutionGapClass()::query()->getConnection()->transaction(function () use ($gapId, $areaId, $matchedBy): void {
+                $this->persistMatch($gapId, $areaId, $matchedBy);
+            });
+        };
 
         try {
             $attempt();
@@ -153,7 +157,6 @@ final readonly class CurateResolutionGapAction implements ResolutionGapCuration
         if (! $gap->save()) {
             throw new RuntimeException('The resolution gap could not be matched.');
         }
-
     }
 
     private function areaMatchesDefinition(AddressArea $area, AddressLevelDefinition $definition): bool
