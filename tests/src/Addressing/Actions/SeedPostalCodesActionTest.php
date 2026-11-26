@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
@@ -14,7 +14,7 @@ beforeEach(function (): void {
 
 it('seeds postcodes and links for one country', function (): void {
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 
     $result = app(PostalCodeSeeder::class)->execute('BL');
 
@@ -27,7 +27,7 @@ it('seeds postcodes and links for one country', function (): void {
 
 it('is idempotent on re-run', function (): void {
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 
     app(PostalCodeSeeder::class)->execute('BL');
     $second = app(PostalCodeSeeder::class)->execute('BL');

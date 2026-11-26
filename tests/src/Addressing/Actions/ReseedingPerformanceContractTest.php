@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -110,7 +110,7 @@ beforeEach(function (): void {
 it('keeps real Saint Barthélemy geography and postcode rows unchanged on a no-op reseed', function (): void {
     $country = $this->seedCountry('BL');
 
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
     app(PostalCodeSeeder::class)->execute('BL');
 
     $area = AddressArea::query()->where('country_id', $country->getKey())->firstOrFail();
@@ -179,7 +179,7 @@ it('keeps real Saint Barthélemy geography and postcode rows unchanged on a no-o
 
     $this->travel(1)->minutes();
     $captureQueries = true;
-    $geographyResult = app(SeedCountryGeographiesAction::class)->execute('BL');
+    $geographyResult = app(CountryGeographySeeder::class)->execute('BL');
     $postalCodeResult = app(PostalCodeSeeder::class)->execute('BL');
     $captureQueries = false;
 
@@ -198,7 +198,7 @@ it('updates source changes by stable identity, overwriting local edits', functio
     ReseedingContractGeographyProvider::$areaCount = 2;
     ReseedingContractGeographyProvider::$areaName = 'Version A';
 
-    $seeder = app(SeedCountryGeographiesAction::class);
+    $seeder = app(CountryGeographySeeder::class);
     $seeder->execute('BL');
 
     $area = AddressArea::query()
@@ -242,7 +242,7 @@ it('keeps geography select counts bounded as a provider grows from 25 to 100 are
             }
         });
 
-        app(SeedCountryGeographiesAction::class)->execute('BL');
+        app(CountryGeographySeeder::class)->execute('BL');
         $captureQueries = false;
 
         return $selects;

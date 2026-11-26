@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Commands;
+namespace AIArmada\Addressing\Features\Geography\EntryPoints\Commands;
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use Illuminate\Console\Command;
@@ -22,7 +22,7 @@ class ImportAddressAreasCommand extends Command
 
     protected $description = 'Import address areas from a configured area source or a CSV file';
 
-    public function handle(ImportAddressAreasAction $action, Application $app): int
+    public function handle(AddressAreaImporter $action, Application $app): int
     {
         $dryRun = (bool) $this->option('dry-run');
 

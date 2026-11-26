@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\ExportAddressingReferencesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -172,7 +172,7 @@ it('keeps decimal geography and JSON stable on PostgreSQL no-op reseeds', functi
     config(['addressing.geography.providers' => [PostgresReseedingGeographyProvider::class]]);
     $this->seedCountry('BL');
 
-    $seeder = app(SeedCountryGeographiesAction::class);
+    $seeder = app(CountryGeographySeeder::class);
     $seeder->execute('BL');
 
     $area = AddressArea::query()
@@ -213,7 +213,7 @@ it('holds the PostgreSQL area row lock until its source update commits', functio
     config(['addressing.geography.providers' => [PostgresReseedingGeographyProvider::class]]);
     $this->seedCountry('BL');
 
-    $seeder = app(SeedCountryGeographiesAction::class);
+    $seeder = app(CountryGeographySeeder::class);
     $seeder->execute('BL');
 
     $area = AddressArea::query()
@@ -303,7 +303,7 @@ it('holds the PostgreSQL area row lock until its source update commits', functio
 it('exports the same PostgreSQL reference snapshot as canonical JSON records', function (): void {
     config(['addressing.geography.providers' => [PostgresReseedingGeographyProvider::class]]);
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 
     DB::connection('testing')->commit();
 

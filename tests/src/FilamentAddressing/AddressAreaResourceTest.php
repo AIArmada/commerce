@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressAreaData;
@@ -44,7 +44,7 @@ it('area resource omits edit pages when read only', function (): void {
 it('rejects cyclic parents when editing areas', function (): void {
     app(SeedAddressCountriesAction::class)->execute();
 
-    $action = app(ImportAddressAreasAction::class);
+    $action = app(AddressAreaImporter::class);
 
     $action->execute(new ArrayAddressAreaSource('test', [
         new AddressAreaData(

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
 use AIArmada\Addressing\Models\PostalCode;
 
 beforeEach(function (): void {
     config(['addressing.geography.providers' => [SaintBarthelemyGeographyProvider::class]]);
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
 });
 
 it('seeds postcodes for one country', function (): void {

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Commands;
+namespace AIArmada\Addressing\Features\Geography\EntryPoints\Commands;
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Support\ConsoleSeedProgress;
 use Illuminate\Console\Command;
 
@@ -15,7 +15,7 @@ class SeedCountryGeographiesCommand extends Command
 
     protected $description = 'Seed state/city data from configured geography providers';
 
-    public function handle(SeedCountryGeographiesAction $action): int
+    public function handle(CountryGeographySeeder $action): int
     {
         $result = $action->execute($this->argument('country'), ConsoleSeedProgress::for($this->output));
 

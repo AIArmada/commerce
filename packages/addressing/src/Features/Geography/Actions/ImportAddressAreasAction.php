@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Data\AddressAreaData;
@@ -16,7 +18,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use SplPriorityQueue;
 
-class ImportAddressAreasAction
+final readonly class ImportAddressAreasAction implements AddressAreaImporter
 {
     public function execute(
         AddressAreaSource $source,

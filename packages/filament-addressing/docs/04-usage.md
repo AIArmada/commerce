@@ -101,7 +101,7 @@ identity fields in the panel. Filament forms reject edits to provider area
 source/source ID, state code/country, city name/country/state, and postcode
 country/code. To correct imported geography identity, update the authoritative
 provider/source data and rerun its core seed/import workflow (`SeedAddressStatesAction`,
-`SeedAddressCitiesAction`, `ImportAddressAreasAction`, or `ImportPostalCodesAction`
+`SeedAddressCitiesAction`, `AddressAreaImporter`, or `ImportPostalCodesAction`
 as appropriate), then review references to any newly keyed rows. In the panel,
 state names are editable only when the state has a stable code; code-less state
 names are protected because the seed workflow identifies them by country and
@@ -136,7 +136,7 @@ MY,district,2,Petaling,Petaling,PETALING,MY-10,contains,administrative,app.malay
 MY,locality,2,Bangsar,Bangsar,BANGSAR,MY-10,contains,postal,app.malaysia,MY-10-BANGSAR,,,
 ```
 
-The importer calls the core `ImportAddressAreasAction`; it does not insert rows
+The importer calls the core `AddressAreaImporter`; it does not insert rows
 directly. It checks the areas read-only setting and create/update policy again
 for each imported row. `relationship_type` and `hierarchy_type` describe the
 row's source-owned parent edge. Export includes the scalar area fields and the

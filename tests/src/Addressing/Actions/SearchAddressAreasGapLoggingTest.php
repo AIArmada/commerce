@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
@@ -12,7 +12,7 @@ use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 beforeEach(function (): void {
     $this->seedCountry('MY');
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'kl', countryCode: 'MY', type: 'wilayah_persekutuan', level: 1, name: 'Wilayah Persekutuan Kuala Lumpur'),
         new AddressAreaData(source: 'areas', sourceId: 'wangsa', countryCode: 'MY', parentSourceId: 'kl', type: 'locality', level: 2, name: 'Wangsa Maju'),
     ]));

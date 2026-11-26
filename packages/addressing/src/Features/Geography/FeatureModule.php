@@ -20,6 +20,10 @@ use AIArmada\Addressing\Contracts\AddressAreaSearch;
 use AIArmada\Addressing\Features\Geography\Actions\GuardAddressAreaDeletionAction;
 use AIArmada\Addressing\Features\Geography\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Features\Geography\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
+use AIArmada\Addressing\Features\Geography\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Features\Geography\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -27,6 +31,8 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(AddressAreaImporter::class, ImportAddressAreasAction::class);
+        $app->singleton(CountryGeographySeeder::class, SeedCountryGeographiesAction::class);
         $app->singleton(AddressAreaDeletionGuard::class, GuardAddressAreaDeletionAction::class);
         $app->singleton(AddressCountryDeletionGuard::class, GuardAddressCountryDeletionAction::class);
         $app->scoped(AddressAreaSearch::class, SearchAddressAreasAction::class);

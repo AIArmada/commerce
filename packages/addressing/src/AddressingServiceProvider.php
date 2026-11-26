@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing;
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Actions\SeedAddressingAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffGoogleAddressReferenceCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\ExportAddressingReferencesCommand;
 use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ExportResolutionGapAliasesCommand;
-use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
+use AIArmada\Addressing\Features\Geography\EntryPoints\Commands\ImportAddressAreasCommand;
 use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ReportResolutionGapsCommand;
-use AIArmada\Addressing\Commands\SeedCountryGeographiesCommand;
+use AIArmada\Addressing\Features\Geography\EntryPoints\Commands\SeedCountryGeographiesCommand;
 use AIArmada\Addressing\Features\PostalCodes\EntryPoints\Commands\SeedPostalCodesCommand;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\Contracts\PostalAddressLookup;
@@ -85,10 +83,8 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(SeedAddressCountryReferencesAction::class);
         $this->app->singleton(SeedAddressStatesAction::class);
         $this->app->singleton(SeedAddressCitiesAction::class);
-        $this->app->singleton(SeedCountryGeographiesAction::class);
         $this->app->singleton(CountryAddressProfileResolver::class);
         $this->app->singleton(CountryAddressFormatterResolver::class);
-        $this->app->singleton(ImportAddressAreasAction::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
         $this->app->singleton(GoogleMapsUrlParser::class);
         $this->app->singleton(GoogleMapsLookup::class, GoogleMapsRemoteLookup::class);

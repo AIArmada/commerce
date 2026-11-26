@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -18,12 +21,12 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
-final class SeedCountryGeographiesAction
+final readonly class SeedCountryGeographiesAction implements CountryGeographySeeder
 {
     public function __construct(
-        private readonly Container $container,
-        private readonly ImportAddressAreasAction $importAddressAreas,
-        private readonly CountryStateSeeder $stateSeeder,
+        private Container $container,
+        private AddressAreaImporter $importAddressAreas,
+        private CountryStateSeeder $stateSeeder,
     ) {}
 
     /**

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\MatchGapToAreaAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
@@ -75,7 +75,7 @@ final class GapScopingFakeGeographyProvider implements CountryAddressAreaMetadat
 beforeEach(function (): void {
     $this->seedCountry('MY');
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'a-area', countryCode: 'MY', type: 'locality', level: 2, name: 'A Area Official'),
         new AddressAreaData(source: 'areas', sourceId: 'b-area', countryCode: 'MY', type: 'locality', level: 2, name: 'B Area Official'),
         new AddressAreaData(source: 'areas', sourceId: 'g-area', countryCode: 'MY', type: 'locality', level: 2, name: 'G Area Official'),

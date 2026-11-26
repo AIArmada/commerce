@@ -75,9 +75,9 @@ before postcodes so area links resolve.
 ## Seed a Country Geography Provider
 
 ```php
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
-app(SeedCountryGeographiesAction::class)->execute('MY');
+app(CountryGeographySeeder::class)->execute('MY');
 ```
 
 The `address:seed-geographies` command always shows progress.

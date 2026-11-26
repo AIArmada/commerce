@@ -38,5 +38,5 @@ addressing reference data.
 - Streaming seed readers index raw bytes: use
   `mb_strlen($chunk, '8bit')`, never bare `mb_strlen` — Pint's
   `mb_str_functions` will otherwise corrupt multibyte parsing.
-- `SeedCountryGeographiesAction` is final: test orchestration with a tiny
+- `CountryGeographySeeder` is final: test orchestration with a tiny
   real provider (e.g. Saint-Barthélemy) plus config, not subclass fakes.

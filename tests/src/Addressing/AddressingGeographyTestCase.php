@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Addressing;
 
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -169,7 +169,7 @@ abstract class AddressingGeographyTestCase extends Orchestra
 
         try {
             $country = $this->seedCountry($code);
-            $result = app(SeedCountryGeographiesAction::class)->execute($code);
+            $result = app(CountryGeographySeeder::class)->execute($code);
         } catch (Throwable $exception) {
             return ["{$code}: seeding threw {$exception->getMessage()}."];
         }

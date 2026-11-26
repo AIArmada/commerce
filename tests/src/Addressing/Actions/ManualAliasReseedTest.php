@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -72,7 +72,7 @@ it('preserves manual gap-match aliases across geography reseeds', function (): v
     $this->seedCountry('MY');
     config()->set('addressing.geography.providers', [GapReseedFakeGeographyProvider::class]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     $area = AddressArea::query()->where('source_id', 'kl')->firstOrFail();
 
@@ -84,7 +84,7 @@ it('preserves manual gap-match aliases across geography reseeds', function (): v
         'is_preferred' => false,
     ]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     expect(AddressAreaName::query()->where('address_area_id', $area->getKey())->where('source', 'manual')->count())->toBe(1)
         ->and(AddressAreaName::query()->where('address_area_id', $area->getKey())->where('source', 'test.fake')->count())->toBe(1)

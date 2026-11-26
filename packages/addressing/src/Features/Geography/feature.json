@@ -4,17 +4,27 @@
   "owns": {
     "table:address_areas": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction",
-      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SetAddressAreaBoundaryAction"
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SetAddressAreaBoundaryAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\ImportAddressAreasAction"
     ],
     "table:address_area_names": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAliasAction",
-      "AIArmada\\Addressing\\Features\\Geography\\Actions\\DeleteAddressAreaAliasAction"
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\DeleteAddressAreaAliasAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
     ],
     "table:address_area_relationships": [
-      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction"
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\ImportAddressAreasAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
     ],
     "table:states": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryStatesAction"
+    ],
+    "table:address_area_roles": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
+    ],
+    "table:address_area_state_links": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
     ]
   },
   "extensions": {}

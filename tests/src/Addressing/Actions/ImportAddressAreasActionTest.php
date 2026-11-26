@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
-    $this->action = app(ImportAddressAreasAction::class);
+    $this->action = app(AddressAreaImporter::class);
 });
 
 it('imports valid hierarchy', function (): void {

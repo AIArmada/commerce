@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
@@ -24,7 +24,7 @@ beforeEach(function (): void {
 it('reports import progress per row with totals', function (): void {
     $events = [];
 
-    app(ImportAddressAreasAction::class)->execute(
+    app(AddressAreaImporter::class)->execute(
         new ArrayAddressAreaSource('areas', [
             new AddressAreaData(source: 'areas', sourceId: 'a-1', countryCode: 'MY', type: 'locality', name: 'One'),
             new AddressAreaData(source: 'areas', sourceId: 'a-2', countryCode: 'MY', type: 'locality', name: 'Two'),
@@ -150,7 +150,7 @@ it('emits terminal codes and links on a no-op postcode reseed', function (): voi
     config(['addressing.geography.providers' => [SaintBarthelemyGeographyProvider::class]]);
 
     $this->seedCountry('BL');
-    app(SeedCountryGeographiesAction::class)->execute('BL');
+    app(CountryGeographySeeder::class)->execute('BL');
     app(PostalCodeSeeder::class)->execute('BL');
 
     $events = [];

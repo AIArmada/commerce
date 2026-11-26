@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -103,7 +103,7 @@ it('removes obsolete provider-owned state links when reseeding', function (): vo
     $this->seedCountry('MY');
     config()->set('addressing.geography.providers', [ObsoleteLinkFakeGeographyProvider::class]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $state = State::query()->where('country_id', $country->id)->where('code', 'T1')->firstOrFail();
@@ -123,7 +123,7 @@ it('removes obsolete provider-owned state links when reseeding', function (): vo
         'metadata' => ['provider' => 'test.obsolete-links'],
     ]);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     expect(AddressAreaStateLink::query()->whereKey($oldLink->id)->exists())->toBeFalse()
         ->and(AddressAreaStateLink::query()->where('metadata->provider', 'test.obsolete-links')->count())->toBe(1);
@@ -195,11 +195,11 @@ it('deactivates prior areas when a provider changes its imported source key', fu
     config()->set('addressing.geography.providers', [get_class($provider)]);
     config()->set('addressing.test_provider_source', 'test-feed-v1');
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
     $firstArea = AddressArea::query()->where('source', 'test-feed-v1')->firstOrFail();
 
     config()->set('addressing.test_provider_source', 'test-feed-v2');
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     expect($firstArea->refresh()->is_active)->toBeFalse()
         ->and(AddressArea::query()->where('source', 'test-feed-v2')->value('is_active'))->toBeTrue()

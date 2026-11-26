@@ -58,7 +58,7 @@ Three exceptions need deliberate handling:
 
 ## Missing Malaysia States or Federal Territories
 
-`AddressCountrySeeder` only seeds ISO countries. For structured Malaysia geography, run `app(SeedCountryGeographiesAction::class)->execute('MY')` after countries exist. This also imports the hierarchy and creates explicit State↔AddressArea links. Postal localities and administrative districts are separate branches; neither requires a postal-town record.
+`AddressCountrySeeder` only seeds ISO countries. For structured Malaysia geography, run `app(CountryGeographySeeder::class)->execute('MY')` after countries exist. This also imports the hierarchy and creates explicit State↔AddressArea links. Postal localities and administrative districts are separate branches; neither requires a postal-town record.
 
 ## Missing Singapore Districts or Planning Areas
 

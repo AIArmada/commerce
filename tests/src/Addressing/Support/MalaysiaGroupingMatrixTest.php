@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
@@ -18,7 +18,7 @@ it('groups subdivision and locality correctly for every Malaysian state and WP',
 
     app(SeedAddressStatesAction::class)->execute($states);
 
-    app(SeedCountryGeographiesAction::class)->execute('MY');
+    app(CountryGeographySeeder::class)->execute('MY');
 
     // [subdivision gate, locality gate, grouped, subdivision label, locality label]
     // Kedah keeps no postal-locality rows: the book-to-row pass proved every

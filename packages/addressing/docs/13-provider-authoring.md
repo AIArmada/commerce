@@ -263,7 +263,7 @@ Assert at minimum:
 1. `stateSeedData()` creates every `State` (count plus one renamed-value check proving `updateOrCreate` overwrites stale names).
 2. `stateAreaMappings()` covers every state code, with keys in a fixed order.
 3. `addressHierarchies()` has the expected keys, kinds, and assignment roles.
-4. `SeedCountryGeographiesAction::execute('<ISO2>')` imports the tree: active-area counts per type, one `AddressAreaStateLink` per mapping, and any declared aliases present.
+4. `CountryGeographySeeder::execute('<ISO2>')` imports the tree: active-area counts per type, one `AddressAreaStateLink` per mapping, and any declared aliases present.
 
 Then exercise the consumer path once: seed the country, create an address with the role assignments from the new hierarchy, and run `SyncAddressAreaAssignmentsAction` — unknown roles and wrong-level areas must be rejected, correct assignments must persist.
 

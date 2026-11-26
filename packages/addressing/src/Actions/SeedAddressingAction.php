@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Actions;
 
 use AIArmada\Addressing\Support\CitySeedRowReader;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
 class SeedAddressingAction
 {
@@ -14,7 +15,7 @@ class SeedAddressingAction
         private SeedAddressCountryReferencesAction $seedCountryReferences,
         private SeedAddressStatesAction $seedStates,
         private SeedAddressCitiesAction $seedCities,
-        private SeedCountryGeographiesAction $seedGeographies,
+        private CountryGeographySeeder $seedGeographies,
         private PostalCodeSeeder $seedPostalCodes,
     ) {}
 

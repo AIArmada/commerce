@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
@@ -27,7 +27,7 @@ it('lists only the four mapped nations for GB after a full seed', function (): v
 
     app(SeedAddressStatesAction::class)->execute($states);
     app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
-    app(SeedCountryGeographiesAction::class)->execute('GB');
+    app(CountryGeographySeeder::class)->execute('GB');
 
     $resolver = app(CountryAddressProfileResolver::class);
 
@@ -63,7 +63,7 @@ it('lists only the ten mapped counties for LT after a full seed', function (): v
 
     app(SeedAddressStatesAction::class)->execute($states);
     app(CountryStateSeeder::class)->execute($country, app(LithuaniaGeographyProvider::class)->stateSeedData());
-    app(SeedCountryGeographiesAction::class)->execute('LT');
+    app(CountryGeographySeeder::class)->execute('LT');
 
     $resolver = app(CountryAddressProfileResolver::class);
     $expected = ['AL', 'KU', 'KL', 'MR', 'PN', 'SA', 'TA', 'TE', 'UT', 'VL'];

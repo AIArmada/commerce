@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\MatchGapToAreaAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
@@ -77,7 +77,7 @@ beforeEach(function (): void {
     $this->seedCountry('MY');
     $this->seedCountry('ID');
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'b-area', countryCode: 'MY', type: 'locality', level: 2, name: 'B Area Official'),
         new AddressAreaData(source: 'areas', sourceId: 'a-area', countryCode: 'MY', type: 'locality', level: 2, name: 'A Area Official'),
     ]));
@@ -209,7 +209,7 @@ it('refuses countries without a configured provider', function (): void {
 });
 
 it('prunes only manual aliases exactly duplicated by a provider pair', function (): void {
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'id-area', countryCode: 'ID', type: 'locality', level: 2, name: 'ID Area'),
     ]));
     $idArea = AddressArea::query()->where('source_id', 'id-area')->firstOrFail();

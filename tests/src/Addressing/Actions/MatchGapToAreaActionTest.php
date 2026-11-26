@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\MatchGapToAreaAction;
 use AIArmada\Addressing\Data\AddressAreaData;
@@ -16,7 +16,7 @@ beforeEach(function (): void {
     $this->seedCountry('MY');
     $this->seedCountry('ID');
 
-    app(ImportAddressAreasAction::class)->execute(new ArrayAddressAreaSource('areas', [
+    app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'kl', countryCode: 'MY', type: 'locality', level: 2, name: 'Wilayah Persekutuan Kuala Lumpur'),
         new AddressAreaData(source: 'areas', sourceId: 'pj', countryCode: 'MY', type: 'locality', level: 2, name: 'Petaling Jaya'),
         new AddressAreaData(source: 'areas', sourceId: 'district', countryCode: 'MY', type: 'district', level: 2, name: 'Petaling'),

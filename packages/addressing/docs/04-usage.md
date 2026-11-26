@@ -124,10 +124,10 @@ $options = $resolver->stateOptionsQuery('GB')?->pluck('name', 'id')->all() ?? []
 ### Seed Malaysia geography
 
 ```php
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
 // After AddressingSeeder
-app(SeedCountryGeographiesAction::class)->execute('MY');
+app(CountryGeographySeeder::class)->execute('MY');
 ```
 
 This uses the bundled Malaysia country provider. Other country providers can define different address structures without changing `State`, `City`, or `AddressArea` core tables.
@@ -137,10 +137,10 @@ Malaysia exposes one first-level region type whose values are either a state or 
 ### Seed Singapore geography
 
 ```php
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
 // After AddressingSeeder
-app(SeedCountryGeographiesAction::class)->execute('SG');
+app(CountryGeographySeeder::class)->execute('SG');
 ```
 
 Singapore exposes two separate hierarchies: postal/delivery geography (`postal district → postal sector`, 28 districts and 81 sectors) and administrative/planning geography (`planning region → planning area`, 5 URA regions and 55 planning areas). The five `State` rows are the ISO 3166-2 community development council districts; they link to matching district areas but are not roots of either hierarchy, because CDC boundaries do not nest inside URA or postal boundaries.
@@ -148,10 +148,10 @@ Singapore exposes two separate hierarchies: postal/delivery geography (`postal d
 ### Seed Indonesia geography
 
 ```php
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
 // After AddressingSeeder
-app(SeedCountryGeographiesAction::class)->execute('ID');
+app(CountryGeographySeeder::class)->execute('ID');
 ```
 
 Indonesia exposes one administrative hierarchy: `province → regency / city → district → village` (38 provinces, 514 regencies and cities, 7,285 districts, plus 83,762 opt-in villages). Provinces are the ISO 3166-2 states, so the first level resolves through the selected `State`; regencies, districts, and (when seeded) villages are directly assignable. Villages are opt-in via `addressing.geography.indonesia.villages`; postcodes are intentionally not bundled; see `05-country-data.md`.
@@ -159,10 +159,10 @@ Indonesia exposes one administrative hierarchy: `province → regency / city →
 ### Seed Brunei geography
 
 ```php
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
 // After AddressingSeeder
-app(SeedCountryGeographiesAction::class)->execute('BN');
+app(CountryGeographySeeder::class)->execute('BN');
 ```
 
 Brunei exposes one administrative hierarchy: `district → mukim` (4 districts, 39 mukims). Districts are the ISO 3166-2 states, so the first level resolves through the selected `State` and only mukims are directly assignable. Villages and postcodes are intentionally not bundled; see `05-country-data.md`.
@@ -170,10 +170,10 @@ Brunei exposes one administrative hierarchy: `district → mukim` (4 districts, 
 ### Seed Gulf geography
 
 ```php
-use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
 // After AddressingSeeder; repeat per country.
-app(SeedCountryGeographiesAction::class)->execute('BH');
+app(CountryGeographySeeder::class)->execute('BH');
 ```
 
 Bahrain (4 governorates) and the UAE (7 emirates) each expose a
@@ -810,7 +810,7 @@ coverage unchanged.
 ### From a custom source
 
 ```php
-use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Data\AddressAreaData;
 
@@ -824,7 +824,7 @@ $source = new ArrayAddressAreaSource('my-source', [
     ),
 ]);
 
-$result = app(ImportAddressAreasAction::class)->execute($source);
+$result = app(AddressAreaImporter::class)->execute($source);
 
 echo $result->created; // 1
 ```
