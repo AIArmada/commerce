@@ -17,6 +17,7 @@ use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -79,6 +80,7 @@ final readonly class CreatePayout
                 throw new InvalidArgumentException('An active payout hold blocks payout reservation.');
             }
 
+            $this->assertPayeeMatchesAffiliate($affiliate, $attributes);
             $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);
 
             $ownerType = $selection->ownerType;
@@ -135,8 +137,8 @@ final readonly class CreatePayout
                 'conversion_count' => $selection->count,
                 'currency' => $currency,
                 'metadata' => $this->payoutMetadata($attributes, $payoutOverride),
-                'payee_type' => $attributes['payee_type'] ?? $affiliate->getMorphClass(),
-                'payee_id' => $attributes['payee_id'] ?? $affiliate->getKey(),
+                'payee_type' => $affiliate->getMorphClass(),
+                'payee_id' => $affiliate->getKey(),
                 'scheduled_at' => $attributes['scheduled_at'] ?? null,
                 'paid_at' => $attributes['paid_at'] ?? null,
             ]);
@@ -230,6 +232,20 @@ final readonly class CreatePayout
             if ((string) $attributes[$key] !== (string) $expected) {
                 throw new InvalidArgumentException('Payout owner must match the conversions being paid.');
             }
+        }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function assertPayeeMatchesAffiliate(Affiliate $affiliate, array $attributes): void
+    {
+        $type = $attributes['payee_type'] ?? $affiliate->getMorphClass();
+        $id = $attributes['payee_id'] ?? $affiliate->getKey();
+
+        if (! is_string($type)
+            || (Relation::getMorphedModel($type) ?? $type) !== $affiliate::class
+            || ! is_string($id)
+            || $id !== (string) $affiliate->getKey()) {
+            throw new InvalidArgumentException('Payout payee must match the affiliate whose conversions are reserved.');
         }
     }
 

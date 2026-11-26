@@ -182,6 +182,14 @@ class AffiliatePayout extends Model implements Auditable
             }
         }
 
+        if ($expectedAffiliateId !== null) {
+            $payeeType = $this->payee_type === null ? null : (Relation::getMorphedModel($this->payee_type) ?? $this->payee_type);
+
+            if ($payeeType === null || ! is_a($payeeType, Affiliate::class, true) || $this->payee_id !== $expectedAffiliateId) {
+                throw new InvalidArgumentException('Payout payee does not match its reservation affiliate.');
+            }
+        }
+
         if ($expectedAffiliateId === null && $this->payee_type !== null && $this->payee_id !== null) {
             $payeeType = Relation::getMorphedModel($this->payee_type) ?? $this->payee_type;
 

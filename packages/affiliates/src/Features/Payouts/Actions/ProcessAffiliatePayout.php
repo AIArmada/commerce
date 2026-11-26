@@ -81,6 +81,11 @@ final readonly class ProcessAffiliatePayout
                     return ['error' => PayoutResult::failure('The payout affiliate is missing.', 'MISSING_PAYOUT_AFFILIATE')];
                 }
 
+                if ($operation->affiliate_id !== (string) $affiliate->getKey()
+                    || $operation->affiliate_payout_id !== (string) $locked->getKey()) {
+                    return ['error' => PayoutResult::failure('The payout payee or operation does not match the reservation.', 'PAYOUT_RESERVATION_MISMATCH')];
+                }
+
                 $needsReconciliation = $locked->status->equals(ProcessingPayout::class)
                     || in_array($operation->status, ['submitting', 'unknown', 'submitted'], true);
 

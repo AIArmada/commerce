@@ -671,3 +671,36 @@ test('payout settlement rejects hidden conversions with a forged matching affili
             ->and($foreign->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
     });
 })->with(['completed', 'cancelled']);
+
+test('manual payout creation refuses a substituted payee before reserving funds', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $other = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+
+    expect(fn () => app(CreatePayout::class)->handle([$conversion->id], [
+        'payee_type' => $other->getMorphClass(),
+        'payee_id' => $other->id,
+    ]))->toThrow(InvalidArgumentException::class, 'payee must match');
+
+    expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->id)->where('currency', 'USD')->first()->available_minor)->toBe(5000);
+});
+
+test('completion refuses a substituted reservation payee', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $other = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+
+    AffiliatePayout::query()->whereKey($payout->id)->update(['payee_id' => $other->id]);
+
+    expect(fn () => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'payee does not match')
+        ->and($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+        ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+});
+
+test('manual payout selection rejects malformed conversion IDs before querying UUID columns', function (): void {
+    expect(fn () => app(CreatePayout::class)->handle(['not-a-uuid']))
+        ->toThrow(InvalidArgumentException::class, 'All conversions must be approved');
+});

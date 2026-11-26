@@ -32,7 +32,7 @@ $payoutId = app(PayoutAdministration::class)->create((string) $affiliate->getKey
 `CreatePayout` reads only `reference`, `status`, `currency`, `metadata`,
 `payee_type`, `payee_id`, `scheduled_at`, `paid_at`, `owner_type`, and
 `owner_id` from `$attributes`. There is no `method` or `notes` key — both are
-silently ignored. The payout method is chosen later at processing time.
+silently ignored. The payout method is chosen later at processing time. A supplied payee must identify the same affiliate whose conversions are being reserved; the canonical affiliate morph type and ID are persisted. Substituted payees are rejected before reservation and again before provider submission or completion.
 
 ### One Currency Per Payout
 
