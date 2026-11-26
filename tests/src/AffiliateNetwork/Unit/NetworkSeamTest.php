@@ -28,6 +28,7 @@ use AIArmada\AffiliateNetwork\Features\Catalog\Actions\SyncSiteOffers;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Api\EnrollmentApi;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Queries\ApplicationStatusQuery;
 use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
@@ -459,6 +460,24 @@ describe('Network seam', function (): void {
 
         expect($map[(string) $offer->getKey()])->toBe(ApplicationStatus::Approved)
             ->and($map[(string) $programOffer->getKey()])->toBe(ApplicationStatus::Pending);
+    });
+
+    test('recent pending applications use identity projections without an affiliate model', function (): void {
+        [, $offer] = seamFixtures('seam-recent.example');
+        app()->instance(AffiliateIdentityResolver::class, new FakeAffiliateIdentities([
+            'aff-1' => new NetworkAffiliate(id: 'aff-1', code: 'SEAM1', handle: 'seam-one'),
+        ]));
+        config(['affiliate-network.models.affiliate' => null]);
+
+        $application = app(ApplyToOffer::class)->execute($offer->id, 'aff-1', 'Recent application');
+        $application->forceFill(['status' => ApplicationStatus::Pending])->save();
+
+        $record = app(EnrollmentApi::class)->recentPendingApplications()[0];
+
+        expect($record->id)->toBe((string) $application->getKey())
+            ->and($record->affiliateCode)->toBe('SEAM1')
+            ->and($record->offerName)->toBe($offer->name)
+            ->and(method_exists($application, 'affiliate'))->toBeFalse();
     });
 
     test('affiliate relations fail explicitly without a bound model', function (): void {

@@ -25,7 +25,7 @@ network-wide widgets, so its counts cannot mix merchants.
 
 ```php
 $this->getStats(): array;              // ['sites'=>…, 'verifiedSites'=>…, …]
-$this->getRecentApplications();        // Collection<AffiliateOfferApplication>
+$this->getRecentApplications();        // Collection<RecentApplication>
 $this->getTopOffers();                 // Collection<AffiliateOffer>
 $this->getSitesCount(): int;
 $this->getVerifiedSitesCount(): int;

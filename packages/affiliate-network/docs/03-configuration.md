@@ -158,7 +158,7 @@ registers its own relation keys at boot, and you may override any of them:
 
 | Key | Bound by | Purpose |
 |-----|----------|---------|
-| `models.affiliate` | `aiarmada/affiliates` or your app | Model behind `affiliate()` relations |
+| `models.affiliate` | `aiarmada/affiliates` or your app | Model behind link and conversion-leg owner scoping |
 | `models.site` | Sites feature | `AffiliateSite` |
 | `models.offer` | Catalog feature | `AffiliateOffer` |
 | `models.offer_category` | Catalog feature | `AffiliateOfferCategory` |
@@ -173,8 +173,7 @@ registers its own relation keys at boot, and you may override any of them:
 | `models.creator_postback` | Postbacks feature | `CreatorPostbackEndpoint` |
 | `models.postback_delivery` | Postbacks feature | `CreatorPostbackDelivery` |
 
-When `models.affiliate` is `null` and the engine is absent, `affiliate()`
-relations throw `AffiliatesNotInstalled`.
+The link and conversion-leg owner scopes use this model when available. Applications resolve affiliate identity through `AffiliateIdentityResolver`.
 
 ### Owner (Multi-Tenancy)
 

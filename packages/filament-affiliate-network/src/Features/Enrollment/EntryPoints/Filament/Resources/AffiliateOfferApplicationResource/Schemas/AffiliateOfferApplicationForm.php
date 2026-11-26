@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource\Schemas;
 
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use Filament\Forms\Components\DateTimePicker;
@@ -30,7 +31,7 @@ final class AffiliateOfferApplicationForm
 
                         Select::make('affiliate_id')
                             ->label('Affiliate')
-                            ->relationship('affiliate', 'code')
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => is_string($value) ? (app(AffiliateIdentityResolver::class)->find($value)?->code ?? $value) : null)
                             ->required()
                             ->disabled(),
 

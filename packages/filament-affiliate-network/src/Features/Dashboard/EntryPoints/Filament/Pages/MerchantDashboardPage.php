@@ -10,6 +10,8 @@ use AIArmada\AffiliateNetwork\Data\OfferStatus;
 use AIArmada\AffiliateNetwork\Data\SettlementStatus;
 use AIArmada\AffiliateNetwork\Data\SiteStatus;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Api\EnrollmentApi;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Api\RecentApplication;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
@@ -20,6 +22,7 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use UnitEnum;
 
 final class MerchantDashboardPage extends Page
@@ -34,8 +37,8 @@ final class MerchantDashboardPage extends Page
 
     protected string $view = 'filament-affiliate-network::pages.merchant-dashboard';
 
-    /** @var Collection<int, AffiliateOfferApplication>|null */
-    private ?Collection $memoizedRecentApplications = null;
+    /** @var SupportCollection<int, RecentApplication>|null */
+    private ?SupportCollection $memoizedRecentApplications = null;
 
     /** @var Collection<int, AffiliateOffer>|null */
     private ?Collection $memoizedTopOffers = null;
@@ -108,14 +111,9 @@ final class MerchantDashboardPage extends Page
     /**
      * @return Collection<int, AffiliateOfferApplication>
      */
-    public function getRecentApplications(): Collection
+    public function getRecentApplications(): SupportCollection
     {
-        return $this->memoizedRecentApplications ??= AffiliateOfferApplication::query()
-            ->with(['offer', 'affiliate'])
-            ->where('status', ApplicationStatus::Pending)
-            ->latest('created_at')
-            ->limit(5)
-            ->get();
+        return $this->memoizedRecentApplications ??= collect(app(EnrollmentApi::class)->recentPendingApplications());
     }
 
     /**

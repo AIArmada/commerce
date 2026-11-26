@@ -6,7 +6,6 @@ namespace AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Fila
 
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications;
 use AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource\Pages\ViewAffiliateOfferApplication;
 use AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource\Schemas\AffiliateOfferApplicationForm;
@@ -83,7 +82,6 @@ final class AffiliateOfferApplicationResource extends Resource
         $query = parent::getEloquentQuery()
             ->with([
                 'offer' => fn ($builder) => $builder->withoutGlobalScope(ScopesByBelongsToOwner::class),
-                'affiliate' => fn ($builder) => $builder->withoutGlobalScope(OwnerScope::class),
             ]);
 
         return $query->withoutGlobalScope(ScopesByBelongsToOwner::class);

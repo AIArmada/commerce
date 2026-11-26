@@ -162,7 +162,7 @@ Properties: `id`, `offer_id`, `affiliate_id`, `invitation_id`, `status`
 (`ApplicationStatus`), `reason`, `rejection_reason`, `reviewed_by`,
 `reviewed_at`, `approved_at`, `rejected_at`, `revoked_at`, `metadata`.
 
-Relations: `offer()`, `affiliate()` (bound at `models.affiliate`).
+Relations: `offer()`. Affiliate identity is resolved through `AffiliateIdentityResolver` using `affiliate_id`, not an Eloquent relationship.
 
 Methods: `isPending()`, `isApproved()`, `toRecord(): ApplicationRecord`.
 
