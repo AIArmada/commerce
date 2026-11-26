@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\EntryPoints\Console;
 
-use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use Illuminate\Console\Command;
 
 final class ProcessRankUpgradesCommand extends Command
@@ -22,7 +22,6 @@ final class ProcessRankUpgradesCommand extends Command
         }
 
         $this->info('Processing rank qualifications...');
-
 
         $upgraded = app(AffiliateReportingReader::class)->runForOwners(fn (): int => $service->processAllRankUpgrades((bool) $this->option('dry-run')));
 

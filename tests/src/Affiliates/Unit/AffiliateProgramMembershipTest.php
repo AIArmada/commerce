@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
@@ -71,7 +72,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        expect(app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class)->findById($membership->affiliate_id)?->id)->toBe($this->affiliate->id)
+        expect(app(AffiliateDirectory::class)->findById($membership->affiliate_id)?->id)->toBe($this->affiliate->id)
             ->and(method_exists($membership, 'affiliate'))->toBeFalse();
     });
 

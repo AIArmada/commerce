@@ -6,7 +6,6 @@ namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resou
 
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
-use LogicException;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
@@ -31,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Validation\Rules\Unique;
+use LogicException;
 use Throwable;
 use UnitEnum;
 

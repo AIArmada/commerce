@@ -11,7 +11,7 @@ interface AffiliateReportingReader
     public function available(): bool;
 
     /**
-     * @param list<string> $ids
+     * @param  list<string>  $ids
      * @return array<string, string>
      */
     public function names(array $ids): array;
@@ -27,7 +27,8 @@ interface AffiliateReportingReader
 
     /**
      * @template T of array<string, int>
-     * @param callable(): T $callback
+     *
+     * @param  callable(): T  $callback
      * @return T|null
      */
     public function summarizeForOwners(callable $callback): ?array;

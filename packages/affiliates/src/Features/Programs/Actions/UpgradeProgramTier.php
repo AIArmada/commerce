@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Features\Programs\Actions;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Events\AffiliateTierUpgraded;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
@@ -13,11 +15,9 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramTierQualificationQuery;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use RuntimeException;
 

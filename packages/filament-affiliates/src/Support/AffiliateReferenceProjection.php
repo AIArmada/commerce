@@ -19,7 +19,8 @@ final class AffiliateReferenceProjection
 {
     /**
      * @template TModel of Model
-     * @param Builder<TModel> $query
+     *
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function apply(Builder $query, bool $includeGlobal = false): Builder
@@ -48,7 +49,8 @@ final class AffiliateReferenceProjection
 
     /**
      * @template TModel of Model
-     * @param Builder<TModel> $query
+     *
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function search(Builder $query, string $search, bool $byCode = false): Builder

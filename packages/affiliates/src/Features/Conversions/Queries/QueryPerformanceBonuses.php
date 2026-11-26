@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
-use AIArmada\Affiliates\Contracts\MerchantIdentity;
-use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use Illuminate\Database\Query\JoinClause;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\JoinClause;
 use LogicException;
 
 final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries

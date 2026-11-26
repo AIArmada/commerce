@@ -31,7 +31,6 @@ final class ProcessCommissionMaturityCommand extends Command
             $this->warn('Running in dry-run mode - no changes will be made.');
         }
 
-
         $matured = app(AffiliateReportingReader::class)->runForOwners(fn (): int => $this->processConversionMaturity->process($dryRun));
 
         $this->info($dryRun ? "Would mature {$matured} conversions." : "Matured {$matured} conversions.");

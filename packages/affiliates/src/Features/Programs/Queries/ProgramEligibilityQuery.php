@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Illuminate\Support\Str;
 use LogicException;

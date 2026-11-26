@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
-use AIArmada\Affiliates\Features\Payouts\Api\AnnualPayoutReader;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
-use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Payouts\Api\AnnualPayoutReader;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;

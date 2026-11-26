@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Queries;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Upline\Api\RankAssignmentGuard;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;

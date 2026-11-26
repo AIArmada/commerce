@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Events\AffiliateProgramLeft;
 use AIArmada\Affiliates\Exceptions\ProgramEnrollmentDenied;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
@@ -15,12 +16,10 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramEligibilityQuery;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use RuntimeException;
 
 final readonly class ManageProgramEnrollment implements ProgramEnrollment

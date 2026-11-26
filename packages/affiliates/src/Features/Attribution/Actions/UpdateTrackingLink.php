@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Attribution\Support\AffiliateLinkDestination;
-use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Models\Link;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

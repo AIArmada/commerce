@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
 use Illuminate\Support\Str;
-use LogicException;
 use InvalidArgumentException;
+use LogicException;
 
 final class ProgramJoinQuery implements ProgramJoinReader
 {

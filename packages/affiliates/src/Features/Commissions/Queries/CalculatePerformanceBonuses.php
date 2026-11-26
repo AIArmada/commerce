@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusCandidate;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusReader;
 use AIArmada\Affiliates\Support\BonusConfig;

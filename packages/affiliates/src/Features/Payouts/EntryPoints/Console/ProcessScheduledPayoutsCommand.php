@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\EntryPoints\Console;
 
-use AIArmada\Affiliates\Features\Payouts\Actions\RunScheduledPayoutSweep;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use AIArmada\Affiliates\Features\Payouts\Actions\RunScheduledPayoutSweep;
 use Illuminate\Console\Command;
 
 final class ProcessScheduledPayoutsCommand extends Command

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -67,7 +68,7 @@ describe('AffiliateRankHistory Model', function (): void {
             'qualified_at' => now(),
         ]);
 
-        expect(app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class)->findById($history->affiliate_id)?->id)->toBe($affiliate->id)
+        expect(app(AffiliateDirectory::class)->findById($history->affiliate_id)?->id)->toBe($affiliate->id)
             ->and(method_exists($history, 'affiliate'))->toBeFalse();
     });
 

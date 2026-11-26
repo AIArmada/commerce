@@ -11,8 +11,8 @@ use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
-use RuntimeException;
 use LogicException;
+use RuntimeException;
 
 final readonly class ReadAffiliateReporting implements AffiliateReportingReader
 {

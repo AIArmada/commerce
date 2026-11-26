@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

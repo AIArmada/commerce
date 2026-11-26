@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands;
 
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
-use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 

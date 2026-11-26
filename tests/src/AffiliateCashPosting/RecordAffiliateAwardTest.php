@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
@@ -19,10 +20,10 @@ use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\Support\Awards\AffiliateAwardKey;
 use AIArmada\Affiliates\Support\Awards\NullAffiliateAwardPolicy;
@@ -40,7 +41,7 @@ function bindCashPostAllow(?int $min = null, ?int $max = null): void
     app()->bind(AffiliateAwardPolicy::class, fn (): FixtureAffiliateAwardPolicy => FixtureAffiliateAwardPolicy::allow($min, $max));
 }
 
-function cashPostAwardRecipient(Affiliate $affiliate): \AIArmada\Affiliates\Data\AwardRecipient
+function cashPostAwardRecipient(Affiliate $affiliate): AwardRecipient
 {
     return app(AffiliateProfileReader::class)->find((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))->awardRecipient;
 }

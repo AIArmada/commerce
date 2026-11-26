@@ -7,14 +7,14 @@ namespace AIArmada\Affiliates\Features\Reporting\Actions;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 
 final readonly class AggregateDailyStats implements DailyStatsWriter
 {

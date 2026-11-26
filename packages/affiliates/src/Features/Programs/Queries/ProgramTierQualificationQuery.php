@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
-use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Support\RevenueVolume;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 
 final readonly class ProgramTierQualificationQuery implements TierQualificationReader

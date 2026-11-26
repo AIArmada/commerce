@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Programs\Api\PortalProgramRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramPortalReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class ProgramPortalQuery implements ProgramPortalReader

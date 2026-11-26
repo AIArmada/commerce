@@ -7,14 +7,14 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSelection;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use Carbon\CarbonImmutable;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -190,5 +190,4 @@ final class ClaimScheduledPayout
             return $operation->refresh();
         }, attempts: 3);
     }
-
 }

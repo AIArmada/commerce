@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
-use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource\Pages\ListAffiliateRankHistories;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource\Pages\ViewAffiliateRankHistory;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;

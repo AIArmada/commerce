@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Models;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
-use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;
