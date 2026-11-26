@@ -133,7 +133,7 @@ function createOffRecordPendingHeld(Affiliate $affiliate, int $commissionMinor):
 
 test('approving an off-record conversion does not release a neighboring hold', function (): void {
     $held = createHeldConversion('HOLDMIX1');
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
     expect(AffiliateConversionsTable::updateStatus($offRecord, ApprovedConversion::class))->toBeTrue();
@@ -155,7 +155,7 @@ test('approving an off-record conversion does not release a neighboring hold', f
 
 test('rejecting an off-record conversion does not void a neighboring hold', function (): void {
     $held = createHeldConversion('HOLDMIX2');
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
     expect(AffiliateConversionsTable::updateStatus($offRecord, RejectedConversion::class))->toBeTrue();
@@ -169,7 +169,7 @@ test('rejecting an off-record conversion does not void a neighboring hold', func
 
 test('reversing an off-record pending conversion does not void a neighboring hold', function (): void {
     $held = createHeldConversion('HOLDMIX3');
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
     app(ReverseAffiliateConversion::class)->handle($offRecord, 'duplicate');
@@ -183,7 +183,7 @@ test('reversing an off-record pending conversion does not void a neighboring hol
 
 test('approving a held conversion voids stale hold left by a downward adjustment', function (): void {
     $held = createHeldConversion('HOLDMIX4', 5000);
-    $affiliate = $held->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($held->affiliate_id);
 
     $held->forceFill(['commission_minor' => 3000])->save();
 

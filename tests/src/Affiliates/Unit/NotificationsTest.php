@@ -67,11 +67,22 @@ describe('engine notifications', function (): void {
         app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
         $cart->add('notify-item', 'Order item', 10.00, 1);
 
-        app(RecordAffiliateConversion::class)->record($cart, [
+        $conversion = app(RecordAffiliateConversion::class)->record($cart, [
             'external_reference' => 'NOTIFY-1',
         ]);
 
-        expect(Communication::query()->where('purpose', 'affiliates.conversion_recorded')->exists())->toBeTrue();
+        expect($conversion)->not->toBeNull();
+
+        OwnerContext::withOwner(null, function () use ($affiliate, $conversion): void {
+            $communication = Communication::query()->where('purpose', 'affiliates.conversion_recorded')->firstOrFail();
+
+            expect($communication->owner_type)->toBeNull()
+                ->and($communication->owner_id)->toBeNull()
+                ->and($communication->subject_id)->toBe($conversion->id)
+                ->and($communication->idempotency_key)->toStartWith('conversion:')
+                ->and($communication->recipients()->sole()->recipient_id)->toBe($affiliate->id)
+                ->and($communication->recipients()->sole()->recipient_type)->toBe($affiliate->getMorphClass());
+        });
     });
 
     test('forged conversion events do not send affiliate notifications', function (): void {

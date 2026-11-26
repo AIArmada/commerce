@@ -93,7 +93,7 @@ test('a partially drained pool still pays every approval in full', function (): 
     Event::fake([HoldingShortfallDetected::class]);
 
     $first = createShortfallHeldConversion('SHORT002');
-    $affiliate = $first->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($first->affiliate_id);
 
     $second = AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
@@ -165,7 +165,7 @@ test('rejecting a conversion with a divergent hold voids without throwing and re
 
 test('reversing a held conversion zeroed after recording releases its hold', function (): void {
     $conversion = createShortfallHeldConversion('SHORT006');
-    $affiliate = $conversion->affiliate;
+    $affiliate = Affiliate::query()->findOrFail($conversion->affiliate_id);
 
     // Downward adjustment to zero after the hold was recorded.
     $conversion->forceFill(['commission_minor' => 0])->save();
