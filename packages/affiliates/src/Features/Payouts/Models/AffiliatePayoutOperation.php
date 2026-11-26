@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -31,7 +30,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $owner_id
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * @property-read Affiliate|null $affiliate
  * @property-read AffiliatePayout|null $payout
  */
 final class AffiliatePayoutOperation extends Model
@@ -65,12 +63,6 @@ final class AffiliatePayoutOperation extends Model
     public function getTable(): string
     {
         return config('affiliates.database.tables.payout_operations', 'affiliate_payout_operations');
-    }
-
-    /** @return BelongsTo<Affiliate, $this> */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 
     /** @return BelongsTo<AffiliatePayout, $this> */

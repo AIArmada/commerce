@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
@@ -13,7 +14,6 @@ use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 function balanceAccountingConversion(Affiliate $affiliate, int $commissionMinor, string $status, int $heldMinor = 0): AffiliateConversion
 {
@@ -61,7 +61,7 @@ describe('AffiliateBalance Model', function (): void {
             ->and($balance->minimum_payout_minor)->toBe(1000);
     });
 
-    it('belongs to affiliate', function (): void {
+    it('resolves affiliate identity without an ORM relationship', function (): void {
         $balance = AffiliateBalance::create([
             'affiliate_id' => $this->affiliate->id,
             'currency' => 'USD',
@@ -71,8 +71,10 @@ describe('AffiliateBalance Model', function (): void {
             'minimum_payout_minor' => 1000,
         ]);
 
-        expect($balance->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($balance->affiliate->id)->toBe($this->affiliate->id);
+        $identity = app(AffiliateDirectory::class)->findById($balance->affiliate_id);
+
+        expect($identity?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($balance, 'affiliate'))->toBeFalse();
     });
 
     it('calculates total balance correctly', function (): void {

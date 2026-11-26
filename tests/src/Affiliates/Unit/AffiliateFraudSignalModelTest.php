@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Fraud\Actions\ReviewFraudSignal;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateFraudSignal Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -39,7 +39,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             ->and($signal->status)->toBe(FraudSignalStatus::Detected);
     });
 
-    it('belongs to an affiliate', function (): void {
+    it('resolves affiliate identity without an ORM relationship', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -59,8 +59,10 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        expect($signal->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($signal->affiliate->id)->toBe($affiliate->id);
+        $identity = app(AffiliateDirectory::class)->findById($signal->affiliate_id);
+
+        expect($identity?->id)->toBe($affiliate->id)
+            ->and(method_exists($signal, 'affiliate'))->toBeFalse();
     });
 
     it('scopes pending signals', function (): void {

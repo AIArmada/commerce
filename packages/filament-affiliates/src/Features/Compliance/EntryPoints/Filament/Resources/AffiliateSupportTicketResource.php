@@ -11,7 +11,7 @@ use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resourc
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages\ListAffiliateSupportTickets;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages\ViewAffiliateSupportTicket;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
-use AIArmada\FilamentAffiliates\Features\Compliance\Queries\AffiliateReferenceProjection;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;

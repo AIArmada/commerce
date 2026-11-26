@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\BulkFraudReviewAction;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\UpdateAffiliateFraudSignalStatus;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -22,6 +23,7 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class FraudReviewPage extends Page implements HasForms, HasTable
@@ -60,16 +62,15 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
     {
         return $table
             ->query(
-                AffiliateFraudSignal::query()
+                AffiliateReferenceProjection::apply(AffiliateFraudSignal::query(), includeGlobal: true)
                     ->where('status', FraudSignalStatus::Detected)
-                    ->with('affiliate')
                     ->latest()
             )
             ->columns([
-                Tables\Columns\TextColumn::make('affiliate.code')
+                Tables\Columns\TextColumn::make('affiliate_code')
                     ->label('Affiliate')
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search, byCode: true))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_code', $direction)),
 
                 Tables\Columns\TextColumn::make('rule_code')
                     ->label('Signal')

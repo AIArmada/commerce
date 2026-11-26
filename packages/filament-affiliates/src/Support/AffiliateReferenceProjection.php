@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Features\Compliance\Queries;
+namespace AIArmada\FilamentAffiliates\Support;
 
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
@@ -22,27 +22,27 @@ final class AffiliateReferenceProjection
      * @param Builder<TModel> $query
      * @return Builder<TModel>
      */
-    public static function apply(Builder $query): Builder
+    public static function apply(Builder $query, bool $includeGlobal = false): Builder
     {
         $model = $query->getModel();
         $connection = $model->getConnection();
         $reference = app(MerchantIdentity::class)->ownerTable();
 
         if ($reference->connectionIdentity !== spl_object_id($connection)) {
-            throw new LogicException('Compliance records require the affiliate database connection.');
+            throw new LogicException('Affiliate projections require a shared database connection.');
         }
 
         $affiliates = $connection->table($reference->table)
-            ->select($reference->keyColumn . ' as affiliate_reference_id', 'name as affiliate_name');
+            ->select($reference->keyColumn . ' as affiliate_reference_id', 'name as affiliate_name', 'code as affiliate_code');
         $config = OwnerScopeConfigFactory::fromConfig('affiliates.owner');
 
         if ($config->enabled) {
             $owner = OwnerContext::resolveConfigured($config);
             OwnerContext::assertResolvedOrExplicitGlobal($owner);
-            OwnerQuery::applyToQueryBuilder($affiliates, $owner, false, $config->ownerTypeColumn, $config->ownerIdColumn);
+            OwnerQuery::applyToQueryBuilder($affiliates, $owner, $includeGlobal && $config->includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(), $config->ownerTypeColumn, $config->ownerIdColumn);
         }
 
-        return $query->select($model->qualifyColumn('*'), 'affiliate_reference.affiliate_name')
+        return $query->select($model->qualifyColumn('*'), 'affiliate_reference.affiliate_name', 'affiliate_reference.affiliate_code')
             ->joinSub($affiliates, 'affiliate_reference', $model->qualifyColumn('affiliate_id'), '=', 'affiliate_reference.affiliate_reference_id');
     }
 
@@ -51,9 +51,9 @@ final class AffiliateReferenceProjection
      * @param Builder<TModel> $query
      * @return Builder<TModel>
      */
-    public static function search(Builder $query, string $search): Builder
+    public static function search(Builder $query, string $search, bool $byCode = false): Builder
     {
-        LikeSearch::whereLike($query, 'affiliate_reference.affiliate_name', LikeSearch::contains($search));
+        LikeSearch::whereLike($query, $byCode ? 'affiliate_reference.affiliate_code' : 'affiliate_reference.affiliate_name', LikeSearch::contains($search));
 
         return $query;
     }

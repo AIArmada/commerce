@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
@@ -12,7 +11,6 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
@@ -34,7 +32,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<string, mixed>|null $breakdown
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read Affiliate $affiliate
  */
 class AffiliateDailyStat extends Model
 {
@@ -84,10 +81,5 @@ class AffiliateDailyStat extends Model
     public function getTable(): string
     {
         return config('affiliates.database.tables.daily_stats', 'affiliate_daily_stats');
-    }
-
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 }

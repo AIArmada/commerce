@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource\Pages\ListAffiliateTaxDocuments;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource\Pages\ViewAffiliateTaxDocument;
-use AIArmada\FilamentAffiliates\Features\Compliance\Queries\AffiliateReferenceProjection;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;

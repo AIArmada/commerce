@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Features\Fraud\Models;
 use AIArmada\Affiliates\Features\Fraud\Actions\PublishFraudSignalDetected;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -15,7 +14,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -37,7 +35,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property CarbonImmutable|null $confirmed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Affiliate $affiliate
  */
 class AffiliateFraudSignal extends Model implements Auditable
 {
@@ -84,14 +81,6 @@ class AffiliateFraudSignal extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals');
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 
     public function scopePending(Builder $query): Builder
