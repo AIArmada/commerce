@@ -185,7 +185,7 @@ describe('AffiliateConversion Model', function (): void {
         expect($conversion->attribution->id)->toBe($attribution->id);
     });
 
-    test('belongs to payout when set', function (): void {
+    test('stores the payout identity when set', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-CONV-' . uniqid(),
             'status' => 'completed',
@@ -208,8 +208,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->payout)->toBeInstanceOf(AffiliatePayout::class);
-        expect($conversion->payout->id)->toBe($payout->id);
+        expect($conversion->affiliate_payout_id)->toBe($payout->id);
     });
 
     test('stores external_reference', function (): void {

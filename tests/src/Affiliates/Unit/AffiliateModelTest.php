@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
@@ -33,7 +34,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
@@ -229,7 +229,7 @@ describe('Affiliate Model - Relationships', function (): void {
             ->and($reader->belongsTo('invalid-id', (string) $affiliate->getKey()))->toBeFalse();
     });
 
-    test('has many payouts', function (): void {
+    test('reads payout history through the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAY-001',
             'name' => 'Payout Test',
@@ -238,7 +238,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->payouts())->toBeInstanceOf(MorphMany::class);
+        expect(app(PayoutAccountingReader::class)->hasAffiliateHistory($affiliate->id, spl_object_id($affiliate->getConnection())))->toBeFalse();
     });
 
     test('deleting an affiliate clears fraud signals through the owning feature', function (): void {

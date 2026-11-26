@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\States\Active;
@@ -36,7 +37,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -79,7 +79,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Affiliate> $children
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
- * @property-read Collection<int, AffiliatePayout> $payouts
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
@@ -203,14 +202,6 @@ class Affiliate extends Model implements Auditable
     public function conversions(): HasMany
     {
         return $this->hasMany(AffiliateConversion::class);
-    }
-
-    /**
-     * @return MorphMany<AffiliatePayout, $this>
-     */
-    public function payouts(): MorphMany
-    {
-        return $this->morphMany(AffiliatePayout::class, 'payee');
     }
 
     /**
@@ -413,7 +404,7 @@ class Affiliate extends Model implements Auditable
         self::deleting(function (self $affiliate): void {
             if ($affiliate->identity_sealed_at !== null
                 || $affiliate->conversions()->exists()
-                || $affiliate->payouts()->exists()
+                || app(PayoutAccountingReader::class)->hasAffiliateHistory((string) $affiliate->getKey(), spl_object_id($affiliate->getConnection()))
                 || $affiliate->attributions()->exists()
                 || app(TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(BalanceReader::class)->hasRecords((string) $affiliate->getKey())

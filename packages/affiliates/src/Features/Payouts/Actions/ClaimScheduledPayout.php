@@ -54,7 +54,7 @@ final class ClaimScheduledPayout
             return false;
         }
 
-        if ($affiliate->payouts()
+        if (AffiliatePayout::query()->forOwner()->where('payee_type', $affiliate->getMorphClass())->where('payee_id', $affiliateId)
             ->where('currency', $currency)
             ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
             ->exists()) {
@@ -105,7 +105,7 @@ final class ClaimScheduledPayout
                 return null;
             }
 
-            $pending = $affiliate->payouts()
+            $pending = AffiliatePayout::query()->forOwner()->where('payee_type', $affiliate->getMorphClass())->where('payee_id', $affiliateId)
                 ->where('currency', $currency)
                 ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
                 ->lockForUpdate()

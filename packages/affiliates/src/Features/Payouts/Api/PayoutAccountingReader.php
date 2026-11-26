@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Features\Payouts\Api;
 
 interface PayoutAccountingReader
 {
+    public function hasAffiliateHistory(string $affiliateId, int $connectionIdentity): bool;
+
     public function isOpen(string $payoutId, int $connectionIdentity): bool;
 
     public function assertConversionLink(

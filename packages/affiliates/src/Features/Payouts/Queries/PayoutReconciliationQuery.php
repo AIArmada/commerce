@@ -216,9 +216,9 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
         $completedPayoutConversions = (int) $affiliate->conversions()
             ->where('status', PaidConversion::value())
             ->where('commission_currency', $currency)
-            ->whereHas('payout', static fn (Builder $query): Builder => $query
+            ->whereIn('affiliate_payout_id', AffiliatePayout::query()->forOwner()
                 ->where('status', CompletedPayout::value())
-                ->where('currency', $currency))
+                ->where('currency', $currency)->select('id'))
             ->sum('commission_minor');
         $directPaidClawbacks = (int) $affiliate->conversions()
             ->where('status', ReversedConversion::value())

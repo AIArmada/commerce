@@ -458,14 +458,17 @@ describe('PayoutReconciliationQueries', function (): void {
             $payee = User::query()->create([
                 'name' => 'Alternate payee', 'email' => uniqid() . '@example.com', 'password' => 'secret',
             ]);
-            $payout = app(CreatePayout::class)->handle([$conversion->id], $alternatePayee ? [
-                'payee_type' => $payee->getMorphClass(), 'payee_id' => $payee->id,
-            ] : []);
+            $payout = app(CreatePayout::class)->handle([$conversion->id]);
             if ($complete) {
                 app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
             }
 
-            $payout->update(['total_minor' => 20000]);
+            // Simulate out-of-band corruption after the canonical reservation.
+            AffiliatePayout::query()->whereKey($payout->id)->update([
+                'total_minor' => 20000,
+                'payee_type' => $alternatePayee ? $payee->getMorphClass() : $payout->payee_type,
+                'payee_id' => $alternatePayee ? $payee->id : $payout->payee_id,
+            ]);
 
             $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 

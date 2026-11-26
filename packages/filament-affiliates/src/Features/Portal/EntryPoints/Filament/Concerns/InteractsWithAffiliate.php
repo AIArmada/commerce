@@ -131,7 +131,7 @@ trait InteractsWithAffiliate
             return new Collection;
         }
 
-        return $affiliate->payouts()
+        return AffiliatePayout::query()->forOwner()->where('payee_type', $affiliate->getMorphClass())->where('payee_id', $affiliate->getKey())
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();

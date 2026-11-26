@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingRecord;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -16,6 +18,24 @@ use LogicException;
 
 final readonly class ReadPayoutAccounting implements PayoutAccountingReader
 {
+    public function hasAffiliateHistory(string $affiliateId, int $connectionIdentity): bool
+    {
+        $this->assertConnection($connectionIdentity);
+
+        if (spl_object_id((new AffiliatePayoutOperation)->getConnection()) !== $connectionIdentity) {
+            throw new LogicException('Payout history requires a shared database connection.');
+        }
+
+        if (! Str::isUuid($affiliateId)) {
+            return false;
+        }
+
+        return AffiliatePayout::query()->withoutOwnerScope()
+            ->where('payee_type', (new Affiliate)->getMorphClass())
+            ->where('payee_id', $affiliateId)->exists()
+            || AffiliatePayoutOperation::query()->withoutOwnerScope()->where('affiliate_id', $affiliateId)->exists();
+    }
+
     public function isOpen(string $payoutId, int $connectionIdentity): bool
     {
         $this->assertConnection($connectionIdentity);

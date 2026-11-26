@@ -20,10 +20,10 @@ test('AffiliateConversion has attribution relationship', function (): void {
     expect($conversion->attribution())->toBeInstanceOf(BelongsTo::class);
 });
 
-test('AffiliateConversion has payout relationship', function (): void {
+test('AffiliateConversion stores a nullable payout identity', function (): void {
     $conversion = new AffiliateConversion;
 
-    expect($conversion->payout())->toBeInstanceOf(BelongsTo::class);
+    expect($conversion->affiliate_payout_id)->toBeNull();
 });
 
 test('AffiliateConversion can be created with fillable attributes', function (): void {

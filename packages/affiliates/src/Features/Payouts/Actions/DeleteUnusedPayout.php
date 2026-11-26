@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
@@ -18,7 +19,7 @@ use LogicException;
 
 final readonly class DeleteUnusedPayout implements PayoutRemoval
 {
-    public function __construct(private PayoutConversionIntegrity $conversions) {}
+    public function __construct(private PayoutConversionIntegrity $conversions, private PayoutAccountingReader $history) {}
 
     public function deleteUnused(string $payoutId): bool
     {
@@ -66,8 +67,7 @@ final readonly class DeleteUnusedPayout implements PayoutRemoval
         $connection->transaction(function () use ($affiliateId): void {
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
 
-            if ($affiliate->payouts()->exists()
-                || AffiliatePayoutOperation::query()->where('affiliate_id', $affiliateId)->exists()) {
+            if ($this->history->hasAffiliateHistory($affiliateId, spl_object_id($affiliate->getConnection()))) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with payout history cannot be deleted.']);
             }
 
