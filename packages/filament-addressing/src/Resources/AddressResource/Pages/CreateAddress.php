@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
 use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Models\Address;
+use LogicException;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
@@ -22,6 +23,10 @@ final class CreateAddress extends CreateRecord
     protected function handleRecordCreation(array $data): Address
     {
         $modelClass = AddressResource::getModel();
+
+        if (! is_a($modelClass, Address::class, true)) {
+            throw new LogicException('Invalid addressing resource model.');
+        }
         $id = app(AddressWriter::class)->execute(
             $data,
             $this->areaAssignments(),

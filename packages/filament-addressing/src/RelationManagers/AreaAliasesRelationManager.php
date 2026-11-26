@@ -77,7 +77,7 @@ final class AreaAliasesRelationManager extends RelationManager
 
                         $this->assertOwnerCanEdit($owner);
 
-                        app(AddressAreaAliasWriter::class)->handle((string) $owner->getKey(), $data, $record);
+                        app(AddressAreaAliasWriter::class)->handle((string) $owner->getKey(), $data, (string) $record->getKey());
 
                         Notification::make()->title('Alias updated')->success()->send();
                     }),

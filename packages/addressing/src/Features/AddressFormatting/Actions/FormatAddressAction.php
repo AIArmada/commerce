@@ -23,7 +23,7 @@ final readonly class FormatAddressAction implements AddressFormatter
         $address = $this->normalizer->normalize($address->toArray());
         $countryFormatter = $this->countryFormatters->resolve($address->countryCode);
 
-        if ($countryFormatter !== null && $countryFormatter !== $this) {
+        if ($countryFormatter !== null) {
             return $countryFormatter->format($address);
         }
 

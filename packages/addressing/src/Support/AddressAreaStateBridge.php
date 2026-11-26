@@ -46,7 +46,7 @@ final class AddressAreaStateBridge
             return null;
         }
 
-        $link = ModelResolver::areaStateLinkClass()::query()
+        $areaId = ModelResolver::areaStateLinkClass()::query()
             ->where('state_id', $state->getKey())
             ->whereHas('addressArea', fn ($query) => $query->where('is_active', true))
             ->when($hierarchyType !== null, function ($query) use ($hierarchyType): void {

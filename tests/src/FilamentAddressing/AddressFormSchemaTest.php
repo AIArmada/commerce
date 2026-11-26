@@ -236,7 +236,7 @@ it('lists only provider state-kind roots in the state selector', function (): vo
     ));
 
     app(StateDatasetSeeder::class)->execute($states);
-    app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
+    app(CountryStateSeeder::class)->execute((string) $country->getKey(), app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $field = collect(AddressFormSchema::make())
         ->first(fn ($component): bool => $component->getName() === 'state_id');

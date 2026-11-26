@@ -5,11 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PlaceLookup;
 
 use AIArmada\Addressing\Contracts\GoogleMapsInputNormalizer;
-use AIArmada\Addressing\Contracts\GooglePlaceDetailsLookup;
-use AIArmada\Addressing\Contracts\GooglePlacePhotoLookup;
 use AIArmada\Addressing\Contracts\GooglePlaceSelectionResolver;
-use AIArmada\Addressing\Drivers\GooglePlaces\GooglePlaceDetailsClient;
-use AIArmada\Addressing\Drivers\GooglePlaces\GooglePlacePhotoPreviewsClient;
 use AIArmada\Addressing\Features\PlaceLookup\Actions\NormalizeGoogleMapsInputAction;
 use AIArmada\Addressing\Features\PlaceLookup\Actions\ResolveGooglePlaceSelectionAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
@@ -21,8 +17,6 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->singleton(GoogleMapsInputNormalizer::class, NormalizeGoogleMapsInputAction::class);
         $app->singleton(GooglePlaceSelectionResolver::class, ResolveGooglePlaceSelectionAction::class);
-        $app->singleton(GooglePlaceDetailsLookup::class, GooglePlaceDetailsClient::class);
-        $app->singleton(GooglePlacePhotoLookup::class, GooglePlacePhotoPreviewsClient::class);
     }
 
     public function boot(Application $app): void {}

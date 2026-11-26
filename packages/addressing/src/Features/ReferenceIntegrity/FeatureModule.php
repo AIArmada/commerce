@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\ReferenceIntegrity;
 
-use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
-use AIArmada\Addressing\Drivers\GoogleAddressReference\GoogleAddressReferenceClient;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\CompareAddressingReferenceExportsAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffCldrSubdivisionsAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\Actions\DiffGoogleAddressReferenceAction;
@@ -19,7 +17,6 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
-        $app->singleton(GoogleAddressReferenceSource::class, GoogleAddressReferenceClient::class);
 
         foreach ([
             DiffCldrSubdivisionsAction::class,

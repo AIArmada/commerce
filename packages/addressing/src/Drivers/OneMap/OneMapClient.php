@@ -10,10 +10,11 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Sleep;
+use Exception;
 
 /**
  * Minimal client for SLA's OneMap API (search + token auth).
@@ -105,42 +106,28 @@ class OneMapClient implements PostalAddressLookup
         $token = $this->token();
         $retries = min(5, max(0, (int) config('addressing.onemap.retries', 2)));
 
-        $response = null;
-
-        for ($attempt = 0; $attempt <= $retries; $attempt++) {
-            try {
-                $response = $this->http()
-                    ->withToken($token)
-                    ->get($this->baseUrl() . '/common/elastic/search', [
-                        'searchVal' => $query,
-                        'returnGeom' => 'Y',
-                        'getAddrDetails' => 'Y',
-                        'pageNum' => $page,
-                    ]);
-            } catch (ConnectionException $exception) {
-                if ($attempt >= $retries) {
-                    throw new OneMapException('OneMap search failed: ' . $exception->getMessage(), previous: $exception);
-                }
-
-                $this->delayRetry($attempt, null);
-
-                continue;
-            }
-
-            if ($response->status() === 401) {
-                return $response;
-            }
-
-            if (($response->status() === 429 || $response->serverError()) && $attempt < $retries) {
-                $this->delayRetry($attempt, $response->header('Retry-After'));
-
-                continue;
-            }
-
-            return $response;
+        try {
+            return $this->http()
+                ->withToken($token)
+                ->retry(
+                    $retries + 1,
+                    static fn (int $attempt, Exception $exception): int => (int) (self::retryDelaySeconds(
+                        $attempt - 1,
+                        $exception instanceof RequestException ? $exception->response->header('Retry-After') : null,
+                    ) * 1000),
+                    static fn (Exception $exception): bool => $exception instanceof ConnectionException
+                        || ($exception instanceof RequestException && ($exception->response->status() === 429 || $exception->response->serverError())),
+                    throw: false,
+                )
+                ->get($this->baseUrl() . '/common/elastic/search', [
+                    'searchVal' => $query,
+                    'returnGeom' => 'Y',
+                    'getAddrDetails' => 'Y',
+                    'pageNum' => $page,
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new OneMapException('OneMap search failed: ' . $exception->getMessage(), previous: $exception);
         }
-
-        throw new OneMapException('OneMap search failed: no response was received.');
     }
 
     /**
@@ -230,11 +217,6 @@ class OneMapClient implements PostalAddressLookup
         $now = CarbonImmutable::now();
 
         return $cachedUntil->greaterThan($now) ? $cachedUntil : $now;
-    }
-
-    private function delayRetry(int $attempt, ?string $retryAfter): void
-    {
-        Sleep::usleep((int) (self::retryDelaySeconds($attempt, $retryAfter) * 1000000));
     }
 
     public static function retryDelaySeconds(int $attempt, ?string $retryAfter): float

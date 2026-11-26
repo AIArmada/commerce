@@ -129,6 +129,10 @@ class AddressesRelationManager extends RelationManager
                                     ])->all();
                             })
                             ->getOptionLabelUsing(function (mixed $value): ?string {
+                                if (! is_string($value) || $value === '') {
+                                    return null;
+                                }
+
                                 $address = $this->availableAddresses()->whereKey($value)->first();
 
                                 return $address instanceof Address ? ($address->formatted_address ?: (string) $address->line1) : null;
@@ -136,7 +140,9 @@ class AddressesRelationManager extends RelationManager
                     ])
                     ->action(function (array $data): void {
                         $customer = $this->authorizedCustomer();
-                        $address = $this->availableAddresses()->whereKey($data['address_id'] ?? null)->firstOrFail();
+                        $id = $data['address_id'] ?? null;
+                        abort_unless(is_string($id) && $id !== '', 422);
+                        $address = $this->availableAddresses()->whereKey($id)->firstOrFail();
 
                         Gate::forUser(Filament::auth()->user())->authorize('view', $address);
                         $customer->attachAddress($address);
@@ -221,7 +227,10 @@ class AddressesRelationManager extends RelationManager
     {
         $customer = $this->authorizedCustomer();
 
-        return OwnerUiScope::applyForRecordOwner(ModelResolver::addressClass()::query(), $customer);
+        $model = ModelResolver::addressClass();
+        Gate::forUser(Filament::auth()->user())->authorize('viewAny', $model);
+
+        return OwnerUiScope::applyForRecordOwner($model::query(), $customer);
     }
 
     private static function isPrimaryForType(Address $address, string $type): bool

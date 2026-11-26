@@ -169,14 +169,6 @@ it('keeps natural keys stable for states without provider codes', function (): v
         'name' => 'Manual state',
         'code' => null,
     ]);
-    $page = app(EditAddressState::class);
-    $page->record = $state;
-    $mutate = new ReflectionMethod(EditAddressState::class, 'mutateFormDataBeforeSave');
-    $mutate->setAccessible(true);
-
-    expect($mutate->invoke($page, ['name' => 'Forged rename', 'latitude' => 3.12]))
-        ->not->toHaveKey('name');
-
     Livewire::test(EditAddressState::class, ['record' => $state->getRouteKey()])
         ->fillForm(['name' => 'Forged rename', 'latitude' => 3.12])
         ->call('save')

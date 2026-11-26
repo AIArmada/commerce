@@ -6,8 +6,14 @@ namespace AIArmada\Addressing;
 
 use AIArmada\Addressing\Contracts\CountryAddressFormatter;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\GooglePlaceDetailsLookup;
+use AIArmada\Addressing\Contracts\GooglePlacePhotoLookup;
+use AIArmada\Addressing\Contracts\GoogleAddressReferenceSource;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\Contracts\PostalAddressLookup;
+use AIArmada\Addressing\Drivers\GooglePlaces\GooglePlaceDetailsClient;
+use AIArmada\Addressing\Drivers\GooglePlaces\GooglePlacePhotoPreviewsClient;
+use AIArmada\Addressing\Drivers\GoogleAddressReference\GoogleAddressReferenceClient;
 use AIArmada\Addressing\Drivers\GooglePlaces\GoogleMapsRemoteLookup;
 use AIArmada\Addressing\Drivers\OneMap\OneMapClient;
 use AIArmada\Addressing\Features\Geography\EntryPoints\Commands\ImportAddressAreasCommand;
@@ -77,6 +83,9 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(CountryAddressFormatterResolver::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
         $this->app->singleton(GoogleMapsUrlParser::class);
+        $this->app->singleton(GooglePlaceDetailsLookup::class, GooglePlaceDetailsClient::class);
+        $this->app->singleton(GooglePlacePhotoLookup::class, GooglePlacePhotoPreviewsClient::class);
+        $this->app->singleton(GoogleAddressReferenceSource::class, GoogleAddressReferenceClient::class);
         $this->app->singleton(GoogleMapsLookup::class, GoogleMapsRemoteLookup::class);
         $this->app->singleton(GooglePlaceGeographyMatcher::class);
         $this->app->singleton(GooglePlaceResolutionGapLogger::class);

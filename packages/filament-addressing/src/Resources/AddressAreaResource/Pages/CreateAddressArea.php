@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages;
 
 use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Models\AddressArea;
+use LogicException;
 use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use Filament\Resources\Pages\CreateRecord;
@@ -24,6 +25,10 @@ final class CreateAddressArea extends CreateRecord
         unset($data['source'], $data['source_id'], $data['parent_source_id']);
 
         $modelClass = AddressAreaResource::getModel();
+
+        if (! is_a($modelClass, AddressArea::class, true)) {
+            throw new LogicException('Invalid addressing resource model.');
+        }
         $id = app(AddressAreaWriter::class)->handle($data, modelClass: $modelClass);
 
         AddressingFilterOptions::forgetAreaOptions();
