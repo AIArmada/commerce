@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Support;
 
-use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 

@@ -6,9 +6,9 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Identity\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use InvalidArgumentException;

@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Api;
 interface AffiliateNetworkMaintenance
 {
     /**
-     * @param list<string> $ids
+     * @param  list<string>  $ids
      * @return array<string, AffiliateNetworkMember>
      */
     public function lockMembers(array $ids, int $connectionIdentity): array;

@@ -17,8 +17,8 @@ final readonly class UplinePathQuery
     public function __construct(private MerchantIdentity $identity) {}
 
     /**
-     * @param Builder<AffiliateUpline> $paths
-     * @param 'ancestor_id'|'descendant_id' $column
+     * @param  Builder<AffiliateUpline>  $paths
+     * @param  'ancestor_id'|'descendant_id'  $column
      * @return Builder<AffiliateUpline>
      */
     public function commercialEndpoint(Builder $paths, string $column, bool $active = false): Builder

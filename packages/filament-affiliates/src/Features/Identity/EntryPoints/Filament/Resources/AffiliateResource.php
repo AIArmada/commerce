@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Contracts\AffiliateRelationContribution;

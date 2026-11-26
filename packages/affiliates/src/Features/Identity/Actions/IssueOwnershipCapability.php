@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Exceptions\SealedIdentityException;
-use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;

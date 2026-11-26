@@ -7,8 +7,8 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateVoucherIssuer;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateVoucherProvisioning;
-use AIArmada\Affiliates\Features\Identity\Queries\AffiliateLifecycleQuery;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Queries\AffiliateLifecycleQuery;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use LogicException;
 

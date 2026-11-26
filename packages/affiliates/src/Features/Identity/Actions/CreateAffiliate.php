@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
-use AIArmada\Affiliates\Features\Identity\Queries\GenerateAffiliateCode;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Queries\GenerateAffiliateCode;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

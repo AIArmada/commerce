@@ -6,9 +6,9 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Paused;
 use Carbon\CarbonImmutable;
@@ -549,7 +549,6 @@ test('administrative parent changes keep the closure tree and counts consistent'
         ->and($root->fresh()->total_downline_count)->toBe(0)
         ->and(AffiliateUpline::query()->where('ancestor_id', $root->id)->where('descendant_id', $grandchildId)->exists())->toBeFalse();
 });
-
 
 test('upline mutations reject malformed sponsors before writing closure rows', function (): void {
     $affiliate = $this->rootAffiliate;

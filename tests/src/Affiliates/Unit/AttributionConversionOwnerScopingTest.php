@@ -479,7 +479,6 @@ class AffiliatesTestOwner extends Model
     protected $keyType = 'string';
 }
 
-
 it('locks conversion beneficiaries only on the shared connection and within the current owner', function (): void {
     config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => false, 'affiliates.owner.auto_assign_on_create' => true]);
 

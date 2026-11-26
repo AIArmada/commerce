@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMaintenance;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Identity\Queries\GuardAffiliateAccess;
 use AIArmada\Affiliates\Features\Identity\Queries\ReadAffiliateNetwork;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -114,7 +114,7 @@ final readonly class MaintainAffiliateNetwork implements AffiliateNetworkMainten
     }
 
     /**
-     * @param list<string> $ids
+     * @param  list<string>  $ids
      * @return Collection<int, Affiliate>
      */
     private function lockedModels(array $ids, int $connectionIdentity): Collection

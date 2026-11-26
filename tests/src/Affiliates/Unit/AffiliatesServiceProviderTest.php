@@ -12,10 +12,10 @@ use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegr
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
-use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyProgramJoined;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;

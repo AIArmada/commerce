@@ -16,6 +16,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Livewire\LivewireServiceProvider;
 
 function notificationProgram(): AffiliateProgram
@@ -89,7 +90,7 @@ describe('engine notifications', function (): void {
         $affiliate = createTestAffiliate(['contact_email' => 'forged-notify-' . uniqid() . '@example.com']);
 
         event(new AffiliateConversionRecorded(new AffiliateConversionData(
-            id: (string) \Illuminate\Support\Str::uuid(),
+            id: (string) Str::uuid(),
             affiliateId: $affiliate->id,
             affiliateCode: $affiliate->code,
             commissionMinor: 500000,

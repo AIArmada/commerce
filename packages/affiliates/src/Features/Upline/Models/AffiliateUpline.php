@@ -55,5 +55,4 @@ class AffiliateUpline extends Model implements Auditable
     {
         return config('affiliates.database.tables.upline', 'affiliate_upline');
     }
-
 }

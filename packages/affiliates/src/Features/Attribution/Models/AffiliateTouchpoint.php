@@ -97,5 +97,4 @@ class AffiliateTouchpoint extends Model
     {
         return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
     }
-
 }

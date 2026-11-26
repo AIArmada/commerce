@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
@@ -18,7 +19,6 @@ use AIArmada\Affiliates\Features\Programs\Api\MembershipRemovalGuard;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Upline\Api\RankHistoryRemovalGuard;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

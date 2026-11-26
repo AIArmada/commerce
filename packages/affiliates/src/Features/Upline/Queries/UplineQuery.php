@@ -35,8 +35,8 @@ final readonly class UplineQuery
     }
 
     /**
-     * @param 'ancestor_id'|'descendant_id' $source
-     * @param 'ancestor_id'|'descendant_id' $target
+     * @param  'ancestor_id'|'descendant_id'  $source
+     * @param  'ancestor_id'|'descendant_id'  $target
      * @return list<UplineMember>
      */
     private function members(string $id, string $source, string $target, ?int $depth = null): array

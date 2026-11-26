@@ -11,9 +11,9 @@ use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -219,7 +219,6 @@ test('reward-award settlement for opaque purposes still settles', function (): v
     expect($payout->conversion_count)->toBe(1)
         ->and($payout->total_minor)->toBe(1000);
 });
-
 
 test('an unknown explicit cart affiliate does not fall through to the attributed affiliate', function (): void {
     $affiliate = createTestAffiliate(['code' => 'NCCB-UNKNOWN-EXPLICIT']);

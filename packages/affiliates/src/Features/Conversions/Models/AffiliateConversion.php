@@ -156,7 +156,6 @@ class AffiliateConversion extends Model
         return config('affiliates.database.tables.conversions', parent::getTable());
     }
 
-
     /**
      * Refuse to leave Approved while an open payout reserves this row.
      *

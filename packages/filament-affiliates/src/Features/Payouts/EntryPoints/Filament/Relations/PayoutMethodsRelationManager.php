@@ -6,9 +6,9 @@ namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Rela
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
