@@ -7,9 +7,9 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\VoucherConversionRecord;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingContext;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingReader;
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 
 final readonly class VoucherReportingQuery implements VoucherReportingReader
 {
@@ -117,5 +117,4 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
     {
         return in_array($column, ['source', 'medium', 'campaign'], true) ? $this->attributions->options($column) : [];
     }
-
 }

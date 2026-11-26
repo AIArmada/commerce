@@ -41,7 +41,7 @@ final readonly class ReadAffiliateReporting implements AffiliateReportingReader
     {
         $options = [];
 
-        foreach (Affiliate::query()->forOwner()->orderBy('name')->orderBy('code')->toBase()->cursor() as $row) {
+        foreach (Affiliate::query()->forOwner()->orderBy('name')->orderBy('code')->select(['code', 'name'])->toBase()->cursor() as $row) {
             $code = mb_trim((string) $row->code);
 
             if ($code === '') {

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active as ActiveAffiliate;
@@ -20,6 +22,7 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active as ActiveVoucher;
 use AIArmada\Vouchers\Support\AffiliateReportingContextResolver;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);
 
@@ -447,4 +450,28 @@ it('builds voucher usage table with affiliate reporting columns', function (): v
         ->toContain("SelectFilter::make('affiliate_campaign')")
         ->toContain('ExportAction::make()')
         ->toContain('VoucherUsageExporter::class');
+});
+
+it('rejects forged owner coordinates in affiliate name reporting', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+    $affiliate = filamentVouchers_makeAffiliate(['code' => 'AFF-REPORT-COORDINATES']);
+    $reader = app(AffiliateReportingReader::class);
+    $connection = spl_object_id($affiliate->getConnection());
+
+    expect($reader->nameFor($affiliate->id, null, null, $connection))->toBe($affiliate->name)
+        ->and($reader->nameFor($affiliate->id, 'other-owner', 'forged', $connection))->toBeNull()
+        ->and($reader->nameFor('invalid', null, null, $connection))->toBeNull();
+});
+
+it('protects affiliate deletion through the registered voucher removal guard', function (): void {
+    config()->set('affiliates.owner.enabled', false);
+    config()->set('vouchers.owner.enabled', false);
+    $affiliate = filamentVouchers_makeAffiliate(['code' => 'AFF-PROTECTED-VOUCHER']);
+    $voucher = filamentVouchers_makeVoucher('LINKED-DELETION');
+    $voucher->forceFill(['affiliate_id' => $affiliate->id])->save();
+
+    expect(fn () => app(AffiliateRemoval::class)->delete($affiliate->id))
+        ->toThrow(ValidationException::class)
+        ->and($affiliate->fresh())->not->toBeNull()
+        ->and($voucher->fresh()->affiliate_id)->toBe($affiliate->id);
 });

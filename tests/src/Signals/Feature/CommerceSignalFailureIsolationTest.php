@@ -37,6 +37,7 @@ uses(SignalsTestCase::class);
 
 beforeEach(function (): void {
     (new FeatureModule)->register(app());
+    (new AIArmada\Affiliates\Features\Identity\FeatureModule)->register(app());
     (new AIArmada\Affiliates\Features\Conversions\FeatureModule)->register(app());
 
     Schema::dropIfExists('affiliate_conversions');

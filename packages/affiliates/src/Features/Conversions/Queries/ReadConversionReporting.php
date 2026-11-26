@@ -73,7 +73,16 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
         $revenueExpression = "COALESCE({$valueColumn}, 0)";
 
         $query = $connection->table($conversionsTable)
-            ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
+            ->join($affiliatesTable, static function (JoinClause $join) use ($conversionsTable, $affiliatesTable): void {
+                $join->on("{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id");
+
+                foreach (['owner_type', 'owner_id'] as $column) {
+                    $left = "{$conversionsTable}.{$column}";
+                    $right = "{$affiliatesTable}.{$column}";
+                    $join->where(static fn ($query) => $query->whereColumn($left, $right)
+                        ->orWhere(static fn ($query) => $query->whereNull($left)->whereNull($right)));
+                }
+            })
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
@@ -85,6 +94,8 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             ->whereBetween("{$conversionsTable}.occurred_at", [$start, $end])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
             ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
+            ->whereNull("{$affiliatesTable}.paused_at")
+            ->whereNull("{$affiliatesTable}.deactivated_at")
             ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
                 $query->whereNull("{$affiliatesTable}.purpose")
                     ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
