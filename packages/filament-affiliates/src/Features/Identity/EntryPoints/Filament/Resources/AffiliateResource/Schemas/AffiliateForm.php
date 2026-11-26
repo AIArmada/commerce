@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -46,15 +47,11 @@ final class AffiliateForm
                             ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
                             ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record))
                             ->rule(fn (mixed $component): Closure => function (string $attribute, string $value, Closure $fail) use ($component): void {
-                                $query = Affiliate::query()
-                                    ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)]);
+                                $record = method_exists($component, 'getRecord') ? $component->getRecord() : null;
+                                $ignore = $record instanceof Affiliate ? (string) $record->getKey() : null;
 
-                                if (method_exists($component, 'getRecord') && $record = $component->getRecord()) {
-                                    $query->whereKeyNot($record->getKey());
-                                }
-
-                                if ($query->exists()) {
-                                    $fail('The code has already been taken.');
+                                if (! app(AffiliateDirectory::class)->codeAvailable($value, $ignore)) {
+                                    $fail('The code is invalid or has already been taken.');
                                 }
                             }),
 

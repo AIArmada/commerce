@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
@@ -859,5 +860,37 @@ test('affiliate-derived owner scope protects retained records against cross-tena
         $saved = AffiliatePayoutHold::query()->findOrFail($hold->id);
         expect($saved->affiliate_id)->toBe($first->id)
             ->and($saved->reason)->toBe('Owner A hold');
+    });
+});
+
+test('enforces global case-insensitive affiliate code uniqueness across owner scopes', function (): void {
+    config(['affiliates.owner.enabled' => true]);
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $affiliate = OwnerContext::withOwner($owner, fn (): Affiliate => Affiliate::create([
+        'code' => 'Case-Sensitive-Code',
+        'name' => 'Case Code Owner',
+        'status' => Active::class,
+    ]));
+
+    $directory = app(AffiliateDirectory::class);
+
+    OwnerContext::withOwner($owner, function () use ($affiliate, $directory): void {
+        expect($directory->findByCode(' CASE-SENSITIVE-CODE ')?->id)->toBe($affiliate->id)
+            ->and($directory->codeAvailable('case-sensitive-code', $affiliate->id))->toBeTrue();
+    });
+
+    OwnerContext::withOwner($other, function () use ($affiliate, $directory): void {
+        expect($directory->findByCode('case-sensitive-code'))->toBeNull()
+            ->and($directory->codeAvailable('case-sensitive-code'))->toBeFalse()
+            ->and($directory->codeAvailable('bad code'))->toBeFalse()
+            ->and($directory->codeAvailable('Unused-Code'))->toBeTrue();
+
+        expect(fn () => $affiliate->getConnection()->transaction(fn () => Affiliate::create([
+            'code' => 'case-sensitive-code',
+            'name' => 'Different Code Owner',
+            'status' => Active::class,
+        ])))->toThrow(QueryException::class);
     });
 });

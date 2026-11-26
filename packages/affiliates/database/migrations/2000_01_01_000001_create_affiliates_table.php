@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,10 +13,15 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.affiliates', 'affiliates');
         $jsonType = commerce_json_column_type('affiliates');
+        $connection = Schema::getConnection();
+
+        if (! in_array(ConnectionDriver::name($connection), ['pgsql', 'sqlite'], true)) {
+            throw new RuntimeException('Affiliate code uniqueness requires PostgreSQL or SQLite.');
+        }
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->string('code', 64)->unique();
+            $table->string('code', 64)->index();
             $table->string('handle', 40)->unique();
             $table->string('name', 120);
             $table->text('description')->nullable();
@@ -47,5 +53,13 @@ return new class extends Migration
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
             $table->index(['registration_approval_mode', 'status'], 'affiliates_open_approval_idx');
         });
+
+        $grammar = $connection->getQueryGrammar();
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (LOWER(%s))',
+            $grammar->wrap('affiliates_code_ci_unique'),
+            $grammar->wrapTable($tableName),
+            $grammar->wrap('code'),
+        ));
     }
 };

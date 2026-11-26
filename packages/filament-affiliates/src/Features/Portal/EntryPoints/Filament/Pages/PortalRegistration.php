@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\InteractsWithAffiliate;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as FilamentRegister;
@@ -205,10 +206,11 @@ class PortalRegistration extends FilamentRegister
                 ? ['style' => '--affiliate-code-checking: 1;']
                 : [],
             )
-            ->unique(
-                table: config('affiliates.database.tables.affiliates', 'affiliates'),
-                column: 'code',
-            );
+            ->rule(static fn (): Closure => static function (string $attribute, string $value, Closure $fail): void {
+                if (! app(AffiliateDirectory::class)->codeAvailable($value)) {
+                    $fail('The code is invalid or has already been taken.');
+                }
+            });
     }
 
     public function checkCodeAvailability(?string $value): void
@@ -224,7 +226,7 @@ class PortalRegistration extends FilamentRegister
         $this->isCodeChecking = true;
         $this->codeAvailabilityMessage = '';
 
-        $exists = app(AffiliateDirectory::class)->findByCode($value) !== null;
+        $exists = ! app(AffiliateDirectory::class)->codeAvailable($value);
 
         $this->isCodeChecking = false;
         $this->isCodeAvailable = ! $exists;

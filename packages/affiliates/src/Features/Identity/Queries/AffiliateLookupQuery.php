@@ -28,9 +28,33 @@ final readonly class AffiliateLookupQuery
         return $query->forOwner();
     }
 
+    public function codeAvailable(string $code, ?string $ignoreAffiliateId = null): bool
+    {
+        if (! preg_match('/\\A[A-Za-z0-9_-]{1,64}\\z/D', $code)
+            || ($ignoreAffiliateId !== null && ! Str::isUuid($ignoreAffiliateId))) {
+            return false;
+        }
+
+        $query = Affiliate::query()->withoutOwnerScope()->whereRaw('LOWER(code) = ?', [mb_strtolower($code)]);
+
+        if ($ignoreAffiliateId !== null) {
+            $query->whereKeyNot($ignoreAffiliateId);
+        }
+
+        return ! $query->exists();
+    }
+
     public function findByCode(string $code): ?Affiliate
     {
-        return $this->findByColumn($this->query(), 'code', $code);
+        $normalized = mb_trim($code);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $matches = $this->query()->whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])->limit(2)->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate

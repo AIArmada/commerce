@@ -12,6 +12,11 @@ final readonly class AffiliateDirectoryQuery implements AffiliateDirectory
 {
     public function __construct(private AffiliateLookupQuery $lookup) {}
 
+    public function codeAvailable(string $code, ?string $ignoreAffiliateId = null): bool
+    {
+        return $this->lookup->codeAvailable($code, $ignoreAffiliateId);
+    }
+
     public function findByCode(string $code): ?AffiliateRecord
     {
         return $this->project($this->lookup->findByCode($code));

@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * Generate a unique affiliate code.
@@ -27,14 +28,14 @@ final class GenerateAffiliateCode
             $base = 'AFF';
         }
 
-        $suffix = Str::random(4);
-        $code = $base . $suffix;
+        for ($attempt = 0; $attempt < 32; $attempt++) {
+            $code = $base . Str::random(4);
 
-        while (Affiliate::whereRaw('LOWER(code) = ?', [mb_strtolower($code)])->exists()) {
-            $suffix = Str::random(4);
-            $code = $base . $suffix;
+            if (! Affiliate::query()->withoutOwnerScope()->whereRaw('LOWER(code) = ?', [mb_strtolower($code)])->exists()) {
+                return $code;
+            }
         }
 
-        return $code;
+        throw new RuntimeException('Unable to allocate an unused affiliate code.');
     }
 }
