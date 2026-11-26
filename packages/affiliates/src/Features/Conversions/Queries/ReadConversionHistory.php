@@ -10,6 +10,14 @@ use LogicException;
 
 final readonly class ReadConversionHistory implements ConversionHistoryReader
 {
+    public function hasSubjectReference(string $identifier, ?string $instance): bool
+    {
+        return AffiliateConversion::query()->forOwner(includeGlobal: false)
+            ->where('subject_key', $identifier)
+            ->when($instance !== null, fn ($query) => $query->where('subject_instance', $instance))
+            ->exists();
+    }
+
     public function hasAffiliateHistory(string $affiliateId, int $connectionIdentity): bool
     {
         if (spl_object_id((new AffiliateConversion)->getConnection()) !== $connectionIdentity) {

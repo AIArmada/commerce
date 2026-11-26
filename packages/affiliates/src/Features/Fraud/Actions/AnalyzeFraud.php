@@ -11,9 +11,10 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudRiskProfileQuery;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Support\IpHasher;
 use Illuminate\Container\Attributes\Tag;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class AnalyzeFraud implements FraudApi
 {
@@ -23,6 +24,7 @@ final readonly class AnalyzeFraud implements FraudApi
     /** @param iterable<FraudRule> $rules */
     public function __construct(
         private FraudEvidenceQuery $evidence,
+        private ConversionInspectionReader $conversions,
         #[Tag('affiliates.fraud_rule')]
         iterable $rules = [],
         private CountFraudClick $counter = new CountFraudClick,
@@ -63,7 +65,11 @@ final readonly class AnalyzeFraud implements FraudApi
             return new FraudAssessment(true, 0, []);
         }
 
-        $conversion = AffiliateConversion::query()->with('affiliate')->findOrFail($conversionId);
+        $conversion = $this->conversions->find($conversionId);
+
+        if ($conversion === null) {
+            throw new ModelNotFoundException('Conversion not found.');
+        }
         $evidence = $this->evidence->conversion($conversion);
         $signals = [];
 
@@ -71,7 +77,7 @@ final readonly class AnalyzeFraud implements FraudApi
             $finding = $rule->analyzeConversion($evidence);
 
             if ($finding !== null) {
-                $signals[] = $this->record->execute((string) $conversion->affiliate_id, $conversionId, $finding);
+                $signals[] = $this->record->execute($conversion->affiliateId, $conversionId, $finding);
             }
         }
 

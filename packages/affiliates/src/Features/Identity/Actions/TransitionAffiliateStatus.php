@@ -7,18 +7,17 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
-use RuntimeException;
 
 final readonly class TransitionAffiliateStatus implements AffiliateLifecycle
 {
-    public function __construct(private QualifiesForOpenApproval $openApproval) {}
+    public function __construct(private QualifiesForOpenApproval $openApproval, private ConversionInspectionReader $conversions) {}
 
     public function approve(string $affiliateId): bool
     {
@@ -64,22 +63,20 @@ final readonly class TransitionAffiliateStatus implements AffiliateLifecycle
     {
         $connection = (new Affiliate)->getConnection();
 
-        if ((new AffiliateConversion)->getConnection() !== $connection) {
-            throw new RuntimeException('Open approval requires a shared database connection.');
-        }
+        $this->conversions->assertConnection(spl_object_id($connection));
 
         if (! $this->openApproval->qualifies($conversionId)) {
             return;
         }
 
-        $connection->transaction(function () use ($conversionId): void {
-            $conversion = AffiliateConversion::query()->whereKey($conversionId)->lockForUpdate()->first();
+        $connection->transaction(function () use ($conversionId, $connection): void {
+            $conversion = $this->conversions->lock($conversionId, spl_object_id($connection));
 
             if ($conversion === null) {
                 return;
             }
 
-            $affiliate = Affiliate::query()->whereKey($conversion->affiliate_id)->lockForUpdate()->first();
+            $affiliate = Affiliate::query()->whereKey($conversion->affiliateId)->lockForUpdate()->first();
 
             if ($affiliate === null || ! $affiliate->status instanceof Pending || ! $this->openApproval->qualifies($conversionId)) {
                 return;

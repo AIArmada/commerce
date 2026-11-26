@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Support\Integrations;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionLookup;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -53,16 +53,7 @@ final class CartBridge
         }
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-
-            $hasReference = AffiliateConversion::query()
-                ->forOwner($owner, false)
-                ->where('subject_key', $identifier)
-                ->when(
-                    $instance !== null,
-                    fn ($query) => $query->where('subject_instance', $instance),
-                )
-                ->exists();
+            $hasReference = app(ConversionHistoryReader::class)->hasSubjectReference($identifier, $instance);
 
             if (! $hasReference) {
                 return null;

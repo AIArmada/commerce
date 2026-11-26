@@ -62,7 +62,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
             ->query(
                 AffiliateFraudSignal::query()
                     ->where('status', FraudSignalStatus::Detected)
-                    ->with(['affiliate', 'conversion'])
+                    ->with('affiliate')
                     ->latest()
             )
             ->columns([

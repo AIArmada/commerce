@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
@@ -27,7 +28,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         ]);
     });
 
-    test('belongs to conversion when set', function (): void {
+    test('reads its conversion through the owning feature', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -50,8 +51,11 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        expect($signal->conversion)->toBeInstanceOf(AffiliateConversion::class);
-        expect($signal->conversion->id)->toBe($conversion->id);
+        $record = app(ConversionInspectionReader::class)->find($signal->conversion_id);
+
+        expect($record?->id)->toBe($conversion->id)
+            ->and($record?->affiliateId)->toBe($this->affiliate->id)
+            ->and(app(ConversionInspectionReader::class)->find('invalid'))->toBeNull();
     });
 
     test('resolves its touchpoint through attribution when set', function (): void {

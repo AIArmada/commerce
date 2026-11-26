@@ -8,24 +8,25 @@ use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 
 final readonly class OpenApprovalPolicy implements QualifiesForOpenApproval
 {
-    public function __construct(private FraudApi $fraud, private AttributionConversionReader $attributions) {}
+    public function __construct(private FraudApi $fraud, private AttributionConversionReader $attributions, private ConversionInspectionReader $conversions) {}
 
     public function qualifies(string $conversionId): bool
     {
-        $conversion = AffiliateConversion::query()->with('affiliate')->find($conversionId);
+        $conversion = $this->conversions->find($conversionId);
 
-        if (! $conversion instanceof AffiliateConversion) {
+        if ($conversion === null) {
             return false;
         }
 
-        $affiliate = $conversion->affiliate;
+        $affiliate = Affiliate::query()->forOwner(includeGlobal: true)->find($conversion->affiliateId);
 
         if (! $affiliate) {
             return false;
@@ -39,24 +40,24 @@ final readonly class OpenApprovalPolicy implements QualifiesForOpenApproval
             return false;
         }
 
-        $attribution = $conversion->affiliate_attribution_id === null ? null : $this->attributions->evidence(
-            $conversion->affiliate_attribution_id,
-            $conversion->owner_type,
-            $conversion->owner_id,
-            spl_object_id($conversion->getConnection()),
+        $attribution = $conversion->attributionId === null ? null : $this->attributions->evidence(
+            $conversion->attributionId,
+            $conversion->ownerType,
+            $conversion->ownerId,
+            $conversion->connectionIdentity,
         );
 
         if ($attribution === null || $attribution->affiliateId !== (string) $affiliate->getKey()) {
             return false;
         }
 
-        if ($conversion->status->equals(RejectedConversion::class, ReversedConversion::class)) {
+        if (in_array($conversion->status, [RejectedConversion::value(), ReversedConversion::value()], true)) {
             return false;
         }
 
         $minimum = (int) config('affiliates.registration.open_approval_min_commission_minor', 0);
 
-        if ((int) $conversion->commission_minor <= $minimum) {
+        if ($conversion->commissionMinor <= $minimum) {
             return false;
         }
 

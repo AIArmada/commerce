@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,11 +44,11 @@ final readonly class FraudEvidenceQuery
         );
     }
 
-    public function conversion(AffiliateConversion $conversion): ConversionFraudEvidence
+    public function conversion(ConversionInspection $conversion): ConversionFraudEvidence
     {
-        $affiliate = $conversion->affiliate;
+        $affiliate = Affiliate::query()->forOwner(includeGlobal: true)->find($conversion->affiliateId);
         $date = CarbonImmutable::today();
-        $actor = $conversion->actor_user_id;
+        $actor = $conversion->actorUserId;
         $userModel = config('auth.providers.users.model');
         $ownerType = $affiliate?->owner_type;
         $ownerId = $affiliate?->owner_id;
@@ -57,11 +57,11 @@ final readonly class FraudEvidenceQuery
             && is_string($userModel) && is_a($userModel, Model::class, true)
             && ($ownerType === $userModel || $ownerType === (new $userModel)->getMorphClass());
 
-        $attribution = $conversion->affiliate_attribution_id === null ? null : $this->attributions->evidence(
-            $conversion->affiliate_attribution_id,
-            $conversion->owner_type,
-            $conversion->owner_id,
-            spl_object_id($conversion->getConnection()),
+        $attribution = $conversion->attributionId === null ? null : $this->attributions->evidence(
+            $conversion->attributionId,
+            $conversion->ownerType,
+            $conversion->ownerId,
+            $conversion->connectionIdentity,
         );
 
         return new ConversionFraudEvidence(
@@ -72,7 +72,7 @@ final readonly class FraudEvidenceQuery
             $ownerId,
             $actor === null ? null : (string) $actor,
             $attribution?->firstSeenAt,
-            $conversion->occurred_at?->toImmutable(),
+            $conversion->occurredAt,
             max(0, (int) config('affiliates.fraud.anomaly.conversion_time.min_seconds', 5)),
         );
     }
