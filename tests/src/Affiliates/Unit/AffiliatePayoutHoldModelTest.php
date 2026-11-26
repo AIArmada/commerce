@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 describe('AffiliatePayoutHold Model', function (): void {
@@ -36,7 +36,7 @@ describe('AffiliatePayoutHold Model', function (): void {
             ->and($hold->placed_by)->toBe('admin@example.com');
     });
 
-    it('belongs to an affiliate', function (): void {
+    it('references an affiliate through its identity directory', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
@@ -51,8 +51,8 @@ describe('AffiliatePayoutHold Model', function (): void {
             'reason' => 'verification_needed',
         ]);
 
-        expect($hold->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($hold->affiliate->id)->toBe($affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($hold->affiliate_id)?->id)->toBe($affiliate->id)
+            ->and(method_exists($hold, 'affiliate'))->toBeFalse();
     });
 
     it('is active when not released and not expired', function (): void {

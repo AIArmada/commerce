@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
 
 // AffiliatePayoutMethod Tests
@@ -35,10 +34,10 @@ test('AffiliatePayoutMethod can be created with required fields', function (): v
     expect($method->type)->toBe(PayoutMethodType::PayPal);
 });
 
-test('AffiliatePayoutMethod has affiliate relationship', function (): void {
+test('AffiliatePayoutMethod stores an affiliate identity without an ORM relationship', function (): void {
     $method = new AffiliatePayoutMethod;
 
-    expect($method->affiliate())->toBeInstanceOf(BelongsTo::class);
+    expect(method_exists($method, 'affiliate'))->toBeFalse();
 });
 
 test('Payout method administration verifies a method', function (): void {

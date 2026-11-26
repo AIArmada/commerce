@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Models;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -13,7 +12,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -26,7 +24,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read string $label Computed label from type and details
- * @property-read Affiliate $affiliate
  */
 class AffiliatePayoutMethod extends Model implements Auditable
 {
@@ -69,14 +66,6 @@ class AffiliatePayoutMethod extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.payout_methods', 'affiliate_payout_methods');
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 
     public function isVerified(): bool

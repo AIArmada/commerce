@@ -11,7 +11,8 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\CancelledPayout;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -21,6 +22,7 @@ final readonly class ReadPayoutAccounting implements PayoutAccountingReader
     public function hasAffiliateHistory(string $affiliateId, int $connectionIdentity): bool
     {
         $this->assertConnection($connectionIdentity);
+        app(AffiliateAccessGuard::class)->assertConnection($connectionIdentity);
 
         if (spl_object_id((new AffiliatePayoutOperation)->getConnection()) !== $connectionIdentity) {
             throw new LogicException('Payout history requires a shared database connection.');
@@ -31,7 +33,7 @@ final readonly class ReadPayoutAccounting implements PayoutAccountingReader
         }
 
         return AffiliatePayout::query()->withoutOwnerScope()
-            ->where('payee_type', (new Affiliate)->getMorphClass())
+            ->where('payee_type', app(AffiliateProfileReader::class)->morphType())
             ->where('payee_id', $affiliateId)->exists()
             || AffiliatePayoutOperation::query()->withoutOwnerScope()->where('affiliate_id', $affiliateId)->exists();
     }

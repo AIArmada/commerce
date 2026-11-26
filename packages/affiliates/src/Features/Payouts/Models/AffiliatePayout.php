@@ -9,7 +9,8 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -20,7 +21,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -174,19 +174,24 @@ class AffiliatePayout extends Model implements Auditable
             }
         }
 
-        if ($expectedAffiliateId !== null) {
-            $payeeType = $this->payee_type === null ? null : (Relation::getMorphedModel($this->payee_type) ?? $this->payee_type);
+        $profiles = app(AffiliateProfileReader::class);
 
-            if ($payeeType === null || ! is_a($payeeType, Affiliate::class, true) || $this->payee_id !== $expectedAffiliateId) {
+        if ($expectedAffiliateId !== null) {
+            if (! $profiles->matchesMorphType($this->payee_type) || $this->payee_id !== $expectedAffiliateId) {
                 throw new InvalidArgumentException('Payout payee does not match its reservation affiliate.');
             }
         }
 
-        if ($expectedAffiliateId === null && $this->payee_type !== null && $this->payee_id !== null) {
-            $payeeType = Relation::getMorphedModel($this->payee_type) ?? $this->payee_type;
+        if ($expectedAffiliateId === null && $this->payee_id !== null && $profiles->matchesMorphType($this->payee_type)) {
+            $resolve = fn (): ?string => app(AffiliateReferenceReader::class)->ownerReference(
+                $this->payee_id,
+                spl_object_id($this->getConnection()),
+            )?->id;
 
-            if (is_a($payeeType, Affiliate::class, true)) {
-                $expectedAffiliateId = Affiliate::query()->forOwner($owner)->whereKey($this->payee_id)->value('id');
+            if ($owner === OwnerContext::CURRENT) {
+                $expectedAffiliateId = $resolve();
+            } elseif ($owner instanceof Model || $owner === null) {
+                $expectedAffiliateId = OwnerContext::withOwner($owner, $resolve);
             }
         }
 
