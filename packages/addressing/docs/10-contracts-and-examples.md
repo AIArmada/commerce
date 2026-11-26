@@ -62,8 +62,9 @@ ISO2 code explicitly. Removed aliases (`lat`, `lng`, `lon`,
 ```php
 namespace AIArmada\Customers\Actions;
 
+use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
+use AIArmada\Addressing\Contracts\AddressWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
 use AIArmada\Customers\Models\Customer;
 
 final class StoreCustomerShippingAddressAction
@@ -73,11 +74,20 @@ final class StoreCustomerShippingAddressAction
      */
     public function execute(Customer $customer, array $input): void
     {
-        $address = Address::query()->create(
-            AddressData::from($input)->toModelAttributes()
-        );
+        $customer->getConnection()->transaction(function () use ($customer, $input): void {
+            $id = app(AddressWriter::class)->execute(
+                AddressData::from($input)->toModelAttributes(),
+                null,
+            );
 
-        $customer->attachAddress($address, type: 'shipping', isPrimary: true);
+            app(AddressAttachmentWriter::class)->attach(
+                $id,
+                $customer->getMorphClass(),
+                (string) $customer->getKey(),
+                type: 'shipping',
+                isPrimary: true,
+            );
+        });
     }
 }
 ```
@@ -87,20 +97,21 @@ final class StoreCustomerShippingAddressAction
 ```php
 namespace AIArmada\Orders\Actions;
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Orders\Models\Order;
 
 final class SnapshotOrderShippingAddressAction
 {
     public function __construct(
-        private readonly CreateAddressSnapshotAction $createAddressSnapshot,
+        private readonly AddressSnapshotWriter $createAddressSnapshot,
     ) {}
 
     public function execute(Order $order, AddressData $shippingAddress): void
     {
         $this->createAddressSnapshot->execute(
-            snapshotable: $order,
+            snapshotableType: $order->getMorphClass(),
+            snapshotableId: $order->getKey(),
             address: $shippingAddress,
             reason: 'order_shipping',
         );
@@ -162,14 +173,14 @@ final class ResolveEventAddressAction
 ```php
 namespace MajlisIlmu\Events\Actions;
 
-use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
+use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use MajlisIlmu\Events\Models\Event;
 
 final class SnapshotEventLocationAction
 {
     public function __construct(
         private readonly ResolveEventAddressAction $resolveEventAddress,
-        private readonly CreateAddressSnapshotAction $createAddressSnapshot,
+        private readonly AddressSnapshotWriter $createAddressSnapshot,
     ) {}
 
     public function execute(Event $event): void
@@ -181,7 +192,8 @@ final class SnapshotEventLocationAction
         }
 
         $this->createAddressSnapshot->execute(
-            snapshotable: $event,
+            snapshotableType: $event->getMorphClass(),
+            snapshotableId: $event->getKey(),
             address: $address,
             reason: 'event_location',
         );

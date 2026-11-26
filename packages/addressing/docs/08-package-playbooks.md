@@ -123,7 +123,7 @@ app(CreateOrder::class)->addAddress($order, $addressData, 'shipping');
 $shipping = $order->primaryAddress('shipping');
 ```
 
-Use `CreateAddressSnapshotAction` instead only when tamper-proof immutable
+Use `AddressSnapshotWriter` instead only when tamper-proof immutable
 snapshots are required rather than per-order copies.
 
 ## Events, venues, and institutions

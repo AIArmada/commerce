@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
-use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
 use AIArmada\Addressing\Traits\HasAddresses;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
@@ -53,8 +53,7 @@ it('skips normalization when only non-address attributes change', function (): v
 });
 
 it('deletes pivots through model events and detaches snapshots on delete', function (): void {
-    $host = new class extends Model
-    {
+    $host = new class extends Model {
         use HasAddresses;
 
         protected $table = 'test_owners';
@@ -64,8 +63,7 @@ it('deletes pivots through model events and detaches snapshots on delete', funct
     $address = Address::create(['line1' => 'Doomed', 'country_code' => 'MY']);
     $host->attachAddress($address, type: 'primary', label: 'Home');
 
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();
@@ -86,8 +84,7 @@ it('deletes pivots through model events and detaches snapshots on delete', funct
 });
 
 it('rolls back address reference cleanup when a later deleting observer vetoes deletion', function (): void {
-    $host = new class extends Model
-    {
+    $host = new class extends Model {
         use HasAddresses;
 
         protected $table = 'test_owners';

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressSnapshotWriter;
 use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressSnapshot;
+use AIArmada\Addressing\Models\Address;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
@@ -13,8 +13,7 @@ beforeEach(function (): void {
 });
 
 it('snapshots address data from AddressData', function (): void {
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();
@@ -38,8 +37,7 @@ it('snapshots address data from AddressData', function (): void {
 });
 
 it('rejects an empty snapshot reason', function (): void {
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();
@@ -53,8 +51,7 @@ it('rejects an empty snapshot reason', function (): void {
 });
 
 it('snapshots address from Address model', function (): void {
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();
@@ -76,8 +73,7 @@ it('snapshots address from Address model', function (): void {
 });
 
 it('snapshots the address label from AddressData and Address', function (): void {
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();
@@ -100,8 +96,7 @@ it('snapshots the address label from AddressData and Address', function (): void
 });
 
 it('snapshot copies latitude and longitude from address', function (): void {
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();
@@ -120,8 +115,7 @@ it('snapshot copies latitude and longitude from address', function (): void {
 });
 
 it('snapshot remains unchanged when original address changes', function (): void {
-    $snapshotable = new class extends Model
-    {
+    $snapshotable = new class extends Model {
         protected $table = 'test_models';
     };
     $snapshotable->save();

@@ -172,7 +172,7 @@ Shipping a provider class is not enough to use it: a provider takes effect only 
 ],
 ```
 
-Registration gates everything. Seeding iterates registered providers only, so `CountryGeographySeeder::execute('VN')` silently seeds nothing when Vietnam is absent. `CountryAddressProfileResolver` likewise resolves registered providers only: for an unregistered country it returns no profile, `hierarchies()` is empty, and `definitionForRole()` returns null for every role — which makes `SyncAddressAreaAssignmentsAction` reject any non-empty assignment map with "The selected address area role is not defined by the country address profile." Only the empty map (delete-all) succeeds without a profile. Boot validation rejects configured entries that do not exist or do not implement `CountryGeographyProvider`, so a typo fails fast instead of seeding silently.
+Registration gates everything. Seeding iterates registered providers only, so `CountryGeographySeeder::execute('VN')` silently seeds nothing when Vietnam is absent. `CountryAddressProfileResolver` likewise resolves registered providers only: for an unregistered country it returns no profile, `hierarchies()` is empty, and `definitionForRole()` returns null for every role — which makes `AddressAssignmentWriter` reject any non-empty assignment map with "The selected address area role is not defined by the country address profile." Only the empty map (delete-all) succeeds without a profile. Boot validation rejects configured entries that do not exist or do not implement `CountryGeographyProvider`, so a typo fails fast instead of seeding silently.
 
 ## Navigation Links
 

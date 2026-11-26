@@ -17,7 +17,7 @@ country address profiles in `aiarmada/addressing`:
 Role selects only appear for the selected country, only offer areas under the
 selected parent (state or parent role), and clear their children automatically
 when a parent changes. Selections are validated twice: by form rules at input
-time and by `SyncAddressAreaAssignmentsAction` at save time.
+time and by `AddressAssignmentWriter` at save time.
 
 The canonical city selector searches on demand and only returns cities in the
 selected country and state. Its submitted ID is revalidated server-side;
@@ -66,11 +66,11 @@ On an edit form, pass the record so area selects pre-fill from its assignments:
 ...AddressFormSchema::make(record: $record)
 ```
 
-## Save Assignments After The Record
+## Save The Address And Assignments Atomically
 
 Area selects are `dehydrated(false)`: they never reach `$form->getState()`.
-Read them from raw state with `extractAreaAssignments()` and sync them in the
-same transaction as the address save:
+Read them from raw state with `extractAreaAssignments()` and pass them to the
+canonical `AddressWriter`, which saves both in one transaction:
 
 ```php
 <?php
@@ -79,40 +79,32 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\VenueResource\Pages;
 
-use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
+use AIArmada\Addressing\Contracts\AddressWriter;
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\DB;
 
 final class CreateVenueAddress extends CreateRecord
 {
     protected function handleRecordCreation(array $data): Address
     {
-        return DB::transaction(function () use ($data): Address {
-            $address = new Address;
-            $address->fill($data);
-            $address->save();
+        $rawState = $this->form->getRawState();
+        $state = is_array($rawState) ? $rawState : $rawState->toArray();
 
-            $rawState = $this->form->getRawState();
-            $state = is_array($rawState) ? $rawState : $rawState->toArray();
+        $id = app(AddressWriter::class)->execute(
+            $data,
+            AddressFormSchema::extractAreaAssignments($state),
+        );
 
-            app(SyncAddressAreaAssignmentsAction::class)->execute(
-                $address,
-                AddressFormSchema::extractAreaAssignments($state, prefix: 'shipping_'),
-                $address->state_id,
-                ['source' => 'venue-form'],
-            );
-
-            return $address;
-        });
+        return ModelResolver::addressClass()::query()->findOrFail($id);
     }
 }
 ```
 
-Omit `prefix:` when the schema was built without one. The same pattern applies
-on edit pages: update the record, then execute the sync with the fresh
-`state_id`.
+For prefixed schemas, pass the matching `prefix:` to `extractAreaAssignments()`
+and map the dehydrated address fields to their canonical names. On edit pages,
+pass the persisted address ID as `recordId:` to the same writer.
 
 > **warning**
 > Calling `getState()` instead of `getRawState()` silently drops every area
@@ -124,7 +116,7 @@ Three layers protect the write path:
 
 1. `StateBelongsToCountry` and `AddressAreasBelongToCountry` rules on the form
    reject areas outside the selected country before submit.
-2. `SyncAddressAreaAssignmentsAction` re-checks country, active flag, role
+2. `AddressAssignmentWriter` re-checks country, active flag, role
    definition, type/level match, and parent linkage inside the transaction, so
    stale or tampered IDs throw a `ValidationException` instead of persisting.
 3. `AddressOwnerGuard` inside the sync aborts writes to addresses outside the

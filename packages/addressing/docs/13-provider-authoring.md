@@ -243,8 +243,11 @@ When the verdict in [postal overlays](18-postal-overlays.md) is
 areas CSV. Import with the generic source — no per-country seeder:
 
 ```php
+use AIArmada\Addressing\Contracts\PostalCodeImporter;
+use AIArmada\Addressing\Support\CsvPostalCodeSource;
+
 $source = new CsvPostalCodeSource('SM', $codesPath, $linksPath, $areaSource);
-app(ImportPostalCodesAction::class)->execute($source);
+app(PostalCodeImporter::class)->execute($source);
 ```
 
 `PostalCodeCsvImportShard*Test` pick up every pair automatically and
@@ -265,7 +268,7 @@ Assert at minimum:
 3. `addressHierarchies()` has the expected keys, kinds, and assignment roles.
 4. `CountryGeographySeeder::execute('<ISO2>')` imports the tree: active-area counts per type, one `AddressAreaStateLink` per mapping, and any declared aliases present.
 
-Then exercise the consumer path once: seed the country, create an address with the role assignments from the new hierarchy, and run `SyncAddressAreaAssignmentsAction` — unknown roles and wrong-level areas must be rejected, correct assignments must persist.
+Then exercise the consumer path once: seed the country, create an address with the role assignments from the new hierarchy, and run `AddressAssignmentWriter` — unknown roles and wrong-level areas must be rejected, correct assignments must persist.
 
 Add two formatter cases to the country's own `tests/src/Addressing/Geography/<Country>GeographyProviderTest.php` (bundled providers test their formatter there, not in a shared file): the main UPU layout with a real example from the research, plus one variant (missing postcode, twin dedup, or a documented edge such as a pass-through prefix). Use the country's real division names so the tests double as usage examples.
 
