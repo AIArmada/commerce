@@ -6,6 +6,8 @@ namespace AIArmada\FilamentAffiliates;
 
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
+use AIArmada\FilamentAffiliates\Contracts\PayoutPdfRenderer;
+use AIArmada\FilamentAffiliates\Drivers\SpatiePayoutPdfRenderer;
 use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
 use AIArmada\FilamentAffiliates\Platform\FeatureCatalog;
 use AIArmada\FilamentAffiliates\Platform\FeatureModule;
@@ -40,6 +42,7 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->app->singleton(FilamentAffiliatesPlugin::class);
+        $this->app->bind(PayoutPdfRenderer::class, SpatiePayoutPdfRenderer::class);
         $this->app->singleton(VoucherBridge::class);
 
         $this->registerSettingsMigrationPath();

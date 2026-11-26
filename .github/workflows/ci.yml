@@ -301,6 +301,12 @@ jobs:
           AFFILIATE_REAL_PDF_TEST: '1'
         run: vendor/bin/pest --no-tia tests/src/Affiliates/Unit/SpatieTaxWorksheetWriterTest.php --filter='renders a real private tax worksheet'
 
+      - name: Verify real affiliate payout PDF rendering
+        if: matrix.shard == 1
+        env:
+          AFFILIATE_REAL_PDF_TEST: '1'
+        run: vendor/bin/pest --no-tia tests/src/FilamentAffiliates/Unit/PayoutExportServiceTest.php --filter='renders a real private affiliate payout PDF'
+
 
   ci:
     name: CI

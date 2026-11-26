@@ -12,9 +12,11 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Illuminate\Support\Str;
 use OpenSpout\Reader\XLSX\Reader;
+use Spatie\LaravelPdf\Drivers\BrowsershotDriver;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Process\Process;
 
 beforeEach(function (): void {
     AffiliatePayout::query()->delete();
@@ -171,8 +173,10 @@ it('streams bytes returned by the Spatie PDF renderer', function (): void {
     $payout = createPayoutWithConversions();
     $bytes = "%PDF-1.7\n% renderer test payload\n%%EOF";
     $builder = Mockery::mock(PdfBuilder::class);
+    $builder->shouldReceive('driver')->once()->with('browsershot')->andReturnSelf();
     $builder->shouldReceive('format')->once()->with('a4')->andReturnSelf();
-    $builder->shouldReceive('base64')->once()->andReturn(base64_encode($bytes));
+    $builder->shouldReceive('dontCache')->once()->andReturnSelf();
+    $builder->shouldReceive('generatePdfContent')->once()->andReturn($bytes);
     Pdf::shouldReceive('html')->once()->withArgs(static fn (string $html): bool => str_contains($html, 'Affiliate Payout Report') && str_contains($html, 'REF-001'))->andReturn($builder);
 
     $response = (new PayoutExportService)->downloadPdf($payout);
@@ -186,8 +190,10 @@ it('streams bytes returned by the Spatie PDF renderer', function (): void {
 it('refuses non-PDF renderer output rather than serving HTML as a PDF', function (): void {
     $payout = createPayoutWithConversions();
     $builder = Mockery::mock(PdfBuilder::class);
+    $builder->shouldReceive('driver')->once()->with('browsershot')->andReturnSelf();
     $builder->shouldReceive('format')->once()->with('a4')->andReturnSelf();
-    $builder->shouldReceive('base64')->once()->andReturn(base64_encode('<html>invalid PDF</html>'));
+    $builder->shouldReceive('dontCache')->once()->andReturnSelf();
+    $builder->shouldReceive('generatePdfContent')->once()->andReturn('<html>invalid PDF</html>');
     Pdf::shouldReceive('html')->once()->andReturn($builder);
 
     expect(fn () => (new PayoutExportService)->downloadPdf($payout))
@@ -221,3 +227,37 @@ it('handles payouts with zero conversions', function (): void {
 
     expect($response)->toBeInstanceOf(StreamedResponse::class);
 });
+
+it('rejects remote payout PDF drivers before disclosing report content', function (): void {
+    config(['filament-affiliates.exports.pdf_driver' => 'cloudflare']);
+    $payout = createPayoutWithConversions();
+    Pdf::shouldReceive('html')->never();
+
+    expect(fn () => (new PayoutExportService)->downloadPdf($payout))
+        ->toThrow(RuntimeException::class, 'Payout exports require a local PDF driver.');
+});
+
+it('renders a real private affiliate payout PDF with Browsershot', function (): void {
+    config(['filament-affiliates.exports.pdf_driver' => 'browsershot']);
+    app()->instance('laravel-pdf.driver.browsershot', new BrowsershotDriver([
+        'chrome_path' => getenv('AFFILIATE_PDF_CHROME'),
+        'node_modules_path' => getenv('AFFILIATE_PDF_NODE_MODULES'),
+        'no_sandbox' => true,
+    ]));
+
+    $payout = createPayoutWithConversions();
+    $response = (new PayoutExportService)->downloadPdf($payout);
+    ob_start();
+    $response->sendContent();
+    $bytes = (string) ob_get_clean();
+
+    expect($response->headers->get('Content-Type'))->toBe('application/pdf')
+        ->and($bytes)->toStartWith('%PDF-')
+        ->and(mb_trim($bytes))->toEndWith('%%EOF');
+
+    $process = new Process(['pdftotext', '-', '-']);
+    $process->setInput($bytes);
+    $process->mustRun();
+
+    expect($process->getOutput())->toContain('Affiliate Payout Report', 'REF-001', 'ORD-002');
+})->skip(fn (): bool => getenv('AFFILIATE_REAL_PDF_TEST') !== '1');

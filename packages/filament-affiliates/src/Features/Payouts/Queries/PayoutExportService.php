@@ -10,13 +10,12 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Features\Payouts\Api\SettlementPayoutRow;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentAffiliates\Contracts\PayoutPdfRenderer;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use BackedEnum;
 use League\Csv\Writer;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
-use RuntimeException;
-use Spatie\LaravelPdf\Facades\Pdf;
 use SplTempFileObject;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -121,11 +120,7 @@ final class PayoutExportService
         $filename = $this->sanitizeFilename($payout->reference, 'pdf');
 
         $html = $this->buildPdfHtml($payout, $data);
-        $bytes = base64_decode(Pdf::html($html)->format('a4')->base64(), true);
-
-        if ($bytes === false || ! str_starts_with($bytes, '%PDF-')) {
-            throw new RuntimeException('Payout PDF renderer returned invalid PDF data.');
-        }
+        $bytes = app(PayoutPdfRenderer::class)->render($html);
 
         return response()->streamDownload(
             static fn () => print $bytes,
