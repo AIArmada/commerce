@@ -15,6 +15,12 @@ use AIArmada\Signals\Contracts\SignalEventIngestor;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Features\Alerts\Actions\SetAlertReadState;
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
+use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
+use AIArmada\Signals\Features\Alerts\Actions\DetachAlertsFromProperty;
+use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
+use AIArmada\Signals\Features\Alerts\Queries\AlertSummaryQuery;
+use AIArmada\Signals\Features\Alerts\Api\AlertEventEvaluation;
+use AIArmada\Signals\Features\Alerts\Actions\EvaluateIngestedEvent;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
@@ -80,6 +86,9 @@ final class SignalsServiceProvider extends PackageServiceProvider
     {
         $this->app->bind(SignalEventIngestor::class, IngestSignalEvent::class);
         $this->app->bind(AlertReadState::class, SetAlertReadState::class);
+        $this->app->bind(DetachPropertyAlerts::class, DetachAlertsFromProperty::class);
+        $this->app->bind(AlertSummary::class, AlertSummaryQuery::class);
+        $this->app->bind(AlertEventEvaluation::class, EvaluateIngestedEvent::class);
         $this->app->bind(AlertTransport::class, DefaultAlertTransport::class);
         $this->app->singleton(SignalsDashboardService::class);
         $this->app->singleton(SignalMetricsAggregator::class);

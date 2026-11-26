@@ -66,7 +66,10 @@ final class SignalAlertDelivery extends Model
     protected static function booted(): void
     {
         static::saving(function (SignalAlertDelivery $delivery): void {
-            SignalOwnershipGuard::assertAlertDeliveryWrite((string) $delivery->signal_alert_log_id);
+            if (SignalOwnershipGuard::ownerScopingEnabled()) {
+                $owner = SignalOwnershipGuard::resolveOwnerOrFail('save signal alert deliveries');
+                SignalOwnershipGuard::findOwnedOrFail(SignalAlertLog::class, (string) $delivery->signal_alert_log_id, $owner);
+            }
         });
     }
 

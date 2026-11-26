@@ -7,10 +7,8 @@ namespace AIArmada\Signals\Features\Alerts\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
-use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Actions\EvaluateAlertRules;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -43,9 +41,6 @@ final class EvaluateSignalAlertsForEvent implements OwnerScopedJob, ShouldQueue
 
     protected function performJob(): void
     {
-        $evaluator = app(SignalAlertEvaluator::class);
-        $dispatcher = app(SignalAlertDispatcher::class);
-
         $event = SignalEvent::query()
             ->find($this->signalEventId);
 
@@ -67,26 +62,7 @@ final class EvaluateSignalAlertsForEvent implements OwnerScopedJob, ShouldQueue
         }
 
         try {
-            SignalAlertRule::query()
-                ->where('is_active', true)
-                ->where(function ($query) use ($event): void {
-                    $query->whereNull('tracked_property_id')
-                        ->orWhere('tracked_property_id', $event->tracked_property_id);
-                })
-                ->orderByDesc('priority')
-                ->each(function (SignalAlertRule $rule) use ($evaluator, $dispatcher): void {
-                    if ($rule->isInCooldown()) {
-                        return;
-                    }
-
-                    $result = $evaluator->evaluate($rule);
-
-                    if (! $result['matched']) {
-                        return;
-                    }
-
-                    $dispatcher->dispatch($rule, $result['metric_value'], $result['context']);
-                });
+            app(EvaluateAlertRules::class)->handle((string) $event->tracked_property_id);
         } catch (Throwable $exception) {
             throw new RuntimeException(
                 sprintf(

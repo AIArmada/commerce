@@ -6,7 +6,6 @@ namespace AIArmada\Signals\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
@@ -135,17 +134,6 @@ final class SignalOwnershipGuard
         if ($trackedPropertyId !== null && $trackedPropertyId !== '') {
             self::findPropertyOrFail($trackedPropertyId, $owner);
         }
-    }
-
-    public static function assertAlertDeliveryWrite(string $signalAlertLogId): void
-    {
-        if (! self::ownerScopingEnabled()) {
-            return;
-        }
-
-        $owner = self::resolveOwnerOrFail('save signal alert deliveries');
-
-        self::findOwnedOrFail(SignalAlertLog::class, $signalAlertLogId, $owner);
     }
 
     public static function findPropertyOrFail(string $propertyId, ?Model $owner): TrackedProperty

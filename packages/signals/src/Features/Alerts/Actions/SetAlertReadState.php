@@ -15,13 +15,13 @@ final readonly class SetAlertReadState implements AlertReadState
 {
     public function set(array $alertIds, bool $read): void
     {
-        $ids = array_values(array_unique($alertIds));
-
-        foreach ($ids as $id) {
+        foreach ($alertIds as $id) {
             if (! is_string($id) || ! Str::isUuid($id)) {
                 throw new AuthorizationException('Alert is not accessible.');
             }
         }
+
+        $ids = array_values(array_unique($alertIds));
 
         if ($ids === []) {
             return;

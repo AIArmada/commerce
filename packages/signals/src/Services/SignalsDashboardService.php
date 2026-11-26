@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
@@ -19,6 +18,7 @@ final class SignalsDashboardService
 {
     public function __construct(
         private readonly ReportRegistry $reportRegistry,
+        private readonly AlertSummary $alertSummary,
     ) {}
 
     /**
@@ -32,16 +32,11 @@ final class SignalsDashboardService
             $trackedProperties = TrackedProperty::query();
             $identities = SignalIdentity::query();
             $dailyMetrics = SignalDailyMetric::query()->whereBetween('date', [$startAt->toDateString(), $endAt->toDateString()]);
-            $alertRules = SignalAlertRule::query()->where('is_active', true);
-            $alertLogs = SignalAlertLog::query()
-                ->whereNull('read_at');
 
             if ($trackedProperty instanceof TrackedProperty) {
                 $trackedProperties->whereKey($trackedProperty->getKey());
                 $identities->where('tracked_property_id', $trackedProperty->id);
                 $dailyMetrics->where('tracked_property_id', $trackedProperty->id);
-                $alertRules->where('tracked_property_id', $trackedProperty->id);
-                $alertLogs->where('tracked_property_id', $trackedProperty->id);
             }
 
             $identities->whereBetween('last_seen_at', [$startAt, $endAt]);
@@ -66,8 +61,7 @@ final class SignalsDashboardService
                 'sessions' => (int) ($metricTotals->sessions ?? 0),
                 'events' => (int) ($metricTotals->events ?? 0),
                 'conversions' => (int) ($metricTotals->conversions ?? 0),
-                'active_alert_rules' => $alertRules->count(),
-                'unread_alerts' => $alertLogs->count(),
+                ...$this->alertSummary->counts($trackedProperty?->id),
                 ...SignalReportRevenue::shape(
                     $trackedProperty?->id,
                     SignalReportRevenue::fromCurrencyRows($revenueRows->all()),

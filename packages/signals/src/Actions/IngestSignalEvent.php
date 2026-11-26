@@ -7,14 +7,11 @@ namespace AIArmada\Signals\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Contracts\SignalEventIngestor;
 use AIArmada\Signals\Exceptions\CommerceSignalRecordingFailed;
-use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
-use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Api\AlertEventEvaluation;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
-use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use AIArmada\Signals\Services\SignalEventPropertyTypeInferrer;
 use AIArmada\Signals\Services\SignalPropertyFilter;
 use AIArmada\Signals\Services\SignalsIngestionRequestValidator;
@@ -41,6 +38,7 @@ final class IngestSignalEvent implements SignalEventIngestor
         private readonly SignalsIngestionRequestValidator $requestValidator,
         private readonly ResolveSession $resolveSession,
         private readonly SignalPropertyFilter $propertyFilter,
+        private readonly AlertEventEvaluation $alertEvaluation,
     ) {}
 
     /**
@@ -275,47 +273,7 @@ final class IngestSignalEvent implements SignalEventIngestor
 
     private function evaluateAlertsAfterIngest(SignalEvent $event): void
     {
-        if (! (bool) config('signals.features.alerts.evaluate_on_ingest.enabled', false)) {
-            return;
-        }
-
-        if ((bool) config('signals.features.alerts.evaluate_on_ingest.queue', true)) {
-            EvaluateSignalAlertsForEvent::dispatch(
-                signalEventId: (string) $event->getKey(),
-                ownerType: $event->owner_type,
-                ownerId: $event->owner_id,
-                ownerIsGlobal: $event->owner_type === null && $event->owner_id === null,
-            );
-
-            return;
-        }
-
-        $evaluator = app(SignalAlertEvaluator::class);
-        $dispatcher = app(SignalAlertDispatcher::class);
-        $owner = OwnerContext::fromTypeAndId($event->owner_type, $event->owner_id);
-
-        OwnerContext::withOwner($owner, function () use ($event, $evaluator, $dispatcher): void {
-            SignalAlertRule::query()
-                ->where('is_active', true)
-                ->where(function ($query) use ($event): void {
-                    $query->whereNull('tracked_property_id')
-                        ->orWhere('tracked_property_id', $event->tracked_property_id);
-                })
-                ->orderByDesc('priority')
-                ->each(function (SignalAlertRule $rule) use ($evaluator, $dispatcher): void {
-                    if ($rule->isInCooldown()) {
-                        return;
-                    }
-
-                    $result = $evaluator->evaluate($rule);
-
-                    if (! $result['matched']) {
-                        return;
-                    }
-
-                    $dispatcher->dispatch($rule, $result['metric_value'], $result['context']);
-                });
-        });
+        $this->alertEvaluation->afterIngest((string) $event->getKey(), (string) $event->tracked_property_id, $event->owner_type, $event->owner_id);
     }
 
     /**

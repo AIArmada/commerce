@@ -55,8 +55,9 @@ final class SignalAlertRule extends Model implements Auditable
     use HasOwnerScopeKey;
     use HasUuids;
 
-    protected $table = 'signal_alert_rules';
     use LogsCommerceActivity;
+
+    protected $table = 'signal_alert_rules';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 
@@ -153,11 +154,6 @@ final class SignalAlertRule extends Model implements Auditable
         }
 
         return (int) CarbonImmutable::now()->diffInMinutes($this->last_triggered_at->copy()->addMinutes($this->cooldown_minutes));
-    }
-
-    public function markTriggered(): void
-    {
-        $this->update(['last_triggered_at' => CarbonImmutable::now()]);
     }
 
     /**

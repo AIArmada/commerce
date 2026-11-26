@@ -63,7 +63,7 @@ final readonly class SignalAlertDispatcher
             }
 
             $this->refreshLogSummary($log);
-            $rule->markTriggered();
+            $rule->update(['last_triggered_at' => CarbonImmutable::now()]);
 
             return $log;
         });
