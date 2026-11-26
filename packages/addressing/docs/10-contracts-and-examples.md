@@ -32,7 +32,7 @@ them as area assignments.
 
 ## Supported legacy/provider aliases
 
-`AddressData::from()` normalizes these aliases (see `AddressAliasMap`):
+`AddressData::from()` normalizes these aliases (see `Data\\AddressAliasMap`):
 
 ```txt
 address_line_1 -> line1

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Data;
 
-class AddressAliasMap
+final readonly class AddressAliasMap
 {
     private const ALIASES = [
         'address_line_1' => 'line1',

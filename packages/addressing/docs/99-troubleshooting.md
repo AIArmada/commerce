@@ -196,7 +196,7 @@ ADDRESSING_JSON_COLUMN_TYPE=json
 
 Make sure the addressing migrations have run. Check the `google_maps_url` and `waze_url` columns exist on your `addresses` table.
 
-If a manual URL is set but not appearing in the output, verify it passes `NormalizeNavigationUrl` validation — it must have an `http://` or `https://` scheme.
+If a manual URL is set but not appearing in the output, verify it passes `Data\\NormalizeNavigationUrl` validation — it must have an `http://` or `https://` scheme.
 
 ## Command Not Found
 

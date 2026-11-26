@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Support;
+namespace AIArmada\Addressing\Data;
 
-final class NormalizeNavigationUrl
+final readonly class NormalizeNavigationUrl
 {
     public function normalize(?string $url): ?string
     {
@@ -22,7 +22,13 @@ final class NormalizeNavigationUrl
             return null;
         }
 
-        $scheme = mb_strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $parts = parse_url($url);
+
+        if ($parts === false || isset($parts['user']) || isset($parts['pass'])) {
+            return null;
+        }
+
+        $scheme = mb_strtolower((string) ($parts['scheme'] ?? ''));
 
         if (! in_array($scheme, ['http', 'https'], true)) {
             return null;
