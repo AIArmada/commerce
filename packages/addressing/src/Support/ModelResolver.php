@@ -11,7 +11,6 @@ use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
@@ -125,12 +124,14 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<AddressAreaRole>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole>
      */
     public static function areaRoleClass(): string
     {
-        /** @var class-string<AddressAreaRole> $modelClass */
-        $modelClass = self::resolve('area_role', AddressAreaRole::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole> $modelClass */
+        /** @var class-string<Model> $default */
+        $default = app('addressing.model-default.area_role');
+        $modelClass = self::resolve('area_role', $default);
 
         return $modelClass;
     }
@@ -174,7 +175,7 @@ final class ModelResolver
      */
     private static function resolve(string $key, string $default): string
     {
-        $modelClass = config("addressing.models.{$key}", $default);
+        $modelClass = config("addressing.models.{$key}") ?? $default;
 
         if (! is_string($modelClass) || ! is_a($modelClass, $default, true)) {
             throw new LogicException(sprintf(

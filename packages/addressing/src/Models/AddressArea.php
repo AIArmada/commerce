@@ -168,7 +168,7 @@ class AddressArea extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaNameClass(), 'address_area_id');
     }
 
-    /** @return HasMany<AddressAreaRole, $this> */
+    /** @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole, $this> */
     public function roles(): HasMany
     {
         return $this->hasMany(ModelResolver::areaRoleClass(), 'address_area_id');

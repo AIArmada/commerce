@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaSearch;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
 use AIArmada\Addressing\Geography\Lithuania\LithuaniaGeographyProvider;
-use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 

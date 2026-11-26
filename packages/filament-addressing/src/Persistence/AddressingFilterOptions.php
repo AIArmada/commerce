@@ -6,8 +6,8 @@ namespace AIArmada\FilamentAddressing\Persistence;
 
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Illuminate\Support\Facades\Cache;
@@ -79,9 +79,9 @@ final class AddressingFilterOptions
     public static function areaRoles(): array
     {
         return Cache::remember(
-            self::key('area-roles', AddressAreaRole::class),
+            self::key('area-roles', ModelResolver::areaRoleClass()),
             self::TTL_SECONDS,
-            static fn (): array => AddressAreaRole::query()
+            static fn (): array => ModelResolver::areaRoleClass()::query()
                 ->distinct()
                 ->orderBy('role')
                 ->pluck('role', 'role')
@@ -149,7 +149,7 @@ final class AddressingFilterOptions
         Cache::forget(self::key('area-types', $areaClass));
         Cache::forget(self::key('area-levels', $areaClass));
         Cache::forget(self::key('area-sources', $areaClass));
-        Cache::forget(self::key('area-roles', AddressAreaRole::class));
+        Cache::forget(self::key('area-roles', ModelResolver::areaRoleClass()));
     }
 
     public static function forgetCountryOptions(): void
