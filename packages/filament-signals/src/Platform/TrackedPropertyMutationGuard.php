@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Support;
+namespace AIArmada\FilamentSignals\Platform;
 
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;

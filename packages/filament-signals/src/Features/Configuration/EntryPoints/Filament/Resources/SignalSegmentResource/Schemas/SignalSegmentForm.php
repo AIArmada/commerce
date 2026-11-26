@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
+use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;

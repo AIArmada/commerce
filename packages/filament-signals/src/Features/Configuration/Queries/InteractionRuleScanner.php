@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Support;
+namespace AIArmada\FilamentSignals\Features\Configuration\Queries;
 
-use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
-use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
+use AIArmada\FilamentSignals\Contracts\PageMarkupFetcher;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use DOMDocument;
 use DOMElement;
 use DOMNodeList;
@@ -46,8 +48,7 @@ final class InteractionRuleScanner
 
     public function __construct(
         private readonly Filesystem $filesystem,
-        private readonly PublicHttpUrlGuard $urlGuard,
-        private readonly PinnedHttpClient $httpClient,
+        private readonly PageMarkupFetcher $markupFetcher,
     ) {}
 
     /**
@@ -56,16 +57,23 @@ final class InteractionRuleScanner
     public function scan(string $pageUrl, string $triggerType, int $maxCandidates = 25): array
     {
         $normalizedTriggerType = $this->normalizeTriggerType($triggerType);
-        $html = $this->fetchHtml($pageUrl);
+        $html = $this->markupFetcher->fetch($pageUrl);
 
-        if ($html === null) {
+        if ($html === null || $html === '') {
             return [];
         }
 
         $document = new DOMDocument;
-        libxml_use_internal_errors(true);
-        $document->loadHTML($html);
-        libxml_clear_errors();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            if (! $document->loadHTML($html, LIBXML_NONET)) {
+                return [];
+            }
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
 
         $xpath = new DOMXPath($document);
         $nodes = $this->nodesForTriggerType($xpath, $normalizedTriggerType);
@@ -102,7 +110,7 @@ final class InteractionRuleScanner
                 'confidence_note' => $confidence['note'],
             ];
 
-            if (count($candidatesByKey) >= max(1, $maxCandidates)) {
+            if (count($candidatesByKey) >= min(self::MAX_SCAN_FILES, max(1, $maxCandidates))) {
                 break;
             }
         }
@@ -135,9 +143,17 @@ final class InteractionRuleScanner
                 continue;
             }
 
-            foreach ($this->filesystem->allFiles($path) as $file) {
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS));
+
+            foreach ($files as $file) {
                 if ($scannedFiles >= self::MAX_SCAN_FILES) {
                     break 2;
+                }
+
+                $scannedFiles++;
+
+                if ($file->isLink() || ! $file->isFile()) {
+                    continue;
                 }
 
                 $extension = mb_strtolower((string) $file->getExtension());
@@ -150,10 +166,14 @@ final class InteractionRuleScanner
                     continue;
                 }
 
-                $scannedFiles++;
-
                 $relativePath = str_replace(base_path() . DIRECTORY_SEPARATOR, '', $file->getPathname());
-                $lines = preg_split('/\R/u', $this->filesystem->get($file->getPathname())) ?: [];
+                $source = file_get_contents($file->getPathname(), false, null, 0, self::MAX_SCAN_FILE_BYTES + 1);
+
+                if ($source === false || strlen($source) > self::MAX_SCAN_FILE_BYTES) {
+                    continue;
+                }
+
+                $lines = preg_split('/\R/u', $source) ?: [];
 
                 foreach ($lines as $lineNumber => $line) {
                     $candidate = $this->candidateFromSourceLine(
@@ -253,30 +273,6 @@ final class InteractionRuleScanner
         }
 
         return false;
-    }
-
-    private function fetchHtml(string $pageUrl): ?string
-    {
-        $target = $this->urlGuard->validate($pageUrl);
-        $response = $this->httpClient->send(
-            method: 'GET',
-            target: $target,
-            headers: ['Accept' => 'text/html'],
-            connectTimeout: 3,
-            timeout: 15,
-        );
-
-        if (! $response->successful()) {
-            return null;
-        }
-
-        $contentType = mb_strtolower((string) ($response->header('Content-Type') ?? ''));
-
-        if ($contentType !== '' && ! str_contains($contentType, 'text/html')) {
-            return null;
-        }
-
-        return $response->body();
     }
 
     private function normalizeTriggerType(string $triggerType): string

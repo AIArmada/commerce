@@ -8,7 +8,7 @@ use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource;
-use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
+use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateSignalGoal extends CreateRecord

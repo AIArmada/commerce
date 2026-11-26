@@ -8,7 +8,7 @@ use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
-use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
+use AIArmada\FilamentSignals\Platform\TrackedPropertyMutationGuard;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateSignalAlertRule extends CreateRecord

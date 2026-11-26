@@ -5,7 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
-use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
+use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
+use AIArmada\FilamentSignals\Drivers\PinnedPageMarkupFetcher;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Http;
 
@@ -16,8 +17,7 @@ it('rejects private page scan destinations before sending a request', function (
 
     $scanner = new InteractionRuleScanner(
         new Filesystem,
-        new PublicHttpUrlGuard(static fn (string $host): array => $host === 'private.example' ? ['10.0.0.5'] : []),
-        new PinnedHttpClient,
+        new PinnedPageMarkupFetcher(new PublicHttpUrlGuard(static fn (string $host): array => $host === 'private.example' ? ['10.0.0.5'] : []), new PinnedHttpClient),
     );
 
     expect(fn () => $scanner->scan('https://private.example/admin', 'click'))
@@ -33,8 +33,7 @@ it('does not follow redirects while scanning public pages', function (): void {
 
     $scanner = new InteractionRuleScanner(
         new Filesystem,
-        new PublicHttpUrlGuard(static fn (string $host): array => $host === 'public.example' ? ['93.184.216.34'] : []),
-        new PinnedHttpClient,
+        new PinnedPageMarkupFetcher(new PublicHttpUrlGuard(static fn (string $host): array => $host === 'public.example' ? ['93.184.216.34'] : []), new PinnedHttpClient),
     );
 
     expect($scanner->scan('https://public.example/page', 'click'))->toBe([]);

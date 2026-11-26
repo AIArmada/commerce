@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Support;
+namespace AIArmada\FilamentSignals\Features\Reporting\Support;
 
+use AIArmada\FilamentSignals\Platform\SignalsModelReferenceGuard;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resou
 use AIArmada\Signals\Features\Reporting\Api\SavedReportAdministration;
 use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
-use AIArmada\FilamentSignals\Support\SavedSignalReportMutationGuard;
+use AIArmada\FilamentSignals\Features\Reporting\Support\SavedSignalReportMutationGuard;
 use Filament\Resources\Pages\EditRecord;
 
 final class EditSavedSignalReport extends EditRecord

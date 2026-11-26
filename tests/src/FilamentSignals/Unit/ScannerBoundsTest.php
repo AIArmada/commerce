@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
+use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use Illuminate\Support\Facades\Route;
 
 uses(FilamentSignalsTestCase::class);

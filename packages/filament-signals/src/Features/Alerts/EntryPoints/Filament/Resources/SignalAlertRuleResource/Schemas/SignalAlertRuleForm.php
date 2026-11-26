@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
+use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Forms;

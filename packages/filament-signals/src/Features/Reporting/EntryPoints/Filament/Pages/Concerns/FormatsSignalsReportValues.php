@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentSignals\Support\SignalsUiConfig;
+use AIArmada\FilamentSignals\Platform\SignalsUiConfig;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Support\Facades\FilamentTimezone;

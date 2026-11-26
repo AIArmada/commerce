@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets;
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\FormatsSignalsReportValues;
-use AIArmada\FilamentSignals\Support\SignalsUiConfig;
+use AIArmada\FilamentSignals\Platform\SignalsUiConfig;
 use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;

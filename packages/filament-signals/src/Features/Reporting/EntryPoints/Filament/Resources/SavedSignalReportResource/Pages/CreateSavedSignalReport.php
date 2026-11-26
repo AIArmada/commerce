@@ -8,7 +8,7 @@ use AIArmada\Signals\Features\Reporting\Api\SavedReportAdministration;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
-use AIArmada\FilamentSignals\Support\SavedSignalReportMutationGuard;
+use AIArmada\FilamentSignals\Features\Reporting\Support\SavedSignalReportMutationGuard;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateSavedSignalReport extends CreateRecord

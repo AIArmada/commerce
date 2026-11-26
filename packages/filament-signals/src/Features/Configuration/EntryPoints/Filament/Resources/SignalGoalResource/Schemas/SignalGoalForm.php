@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
+use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Forms;

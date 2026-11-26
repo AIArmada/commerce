@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns;
 
-use AIArmada\FilamentSignals\Support\SignalsReportStateSanitizer;
+use AIArmada\FilamentSignals\Features\Reporting\Support\SignalsReportStateSanitizer;
 
 trait InteractsWithSavedSignalReportState
 {
