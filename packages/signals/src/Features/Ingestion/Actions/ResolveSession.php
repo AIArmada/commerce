@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Contracts\UserAgentParser;
 use AIArmada\Signals\Features\Ingestion\Queries\CrossTenantQuery;
 use AIArmada\Signals\Support\DuplicateKeyViolation;

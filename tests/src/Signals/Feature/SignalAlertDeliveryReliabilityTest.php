@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;

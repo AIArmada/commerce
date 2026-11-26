@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resource
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;

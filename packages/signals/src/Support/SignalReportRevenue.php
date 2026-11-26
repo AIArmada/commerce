@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Support;
 
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 use stdClass;
 

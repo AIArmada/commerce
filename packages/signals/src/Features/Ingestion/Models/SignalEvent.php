@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Ingestion\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Signals\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +50,8 @@ final class SignalEvent extends Model
     public const string INGESTION_SOURCE_BROWSER = 'browser';
 
     public const string INGESTION_SOURCE_TRUSTED = 'trusted';
+
+    protected $table = 'signal_events';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 

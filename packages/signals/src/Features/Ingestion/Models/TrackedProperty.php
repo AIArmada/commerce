@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Ingestion\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -46,6 +46,8 @@ final class TrackedProperty extends Model implements Auditable
     use HasOwnerScopeKey;
     use HasUuids;
     use LogsCommerceActivity;
+
+    protected $table = 'signal_tracked_properties';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 

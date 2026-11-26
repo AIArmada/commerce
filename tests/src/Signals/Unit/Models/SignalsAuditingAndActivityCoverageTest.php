@@ -8,13 +8,13 @@ use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('signals control-plane models are auditable and activity loggable', function (): void {

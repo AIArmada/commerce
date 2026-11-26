@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Ingestion\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
-use AIArmada\Signals\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,6 +42,8 @@ final class SignalInteractionRule extends Model implements Auditable
     use HasOwnerScopeKey;
     use HasUuids;
     use LogsCommerceActivity;
+
+    protected $table = 'signal_interaction_rules';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 

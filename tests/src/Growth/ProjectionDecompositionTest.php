@@ -12,8 +12,8 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Support\ExperimentAssignmentResolver;
 use AIArmada\Growth\Support\ExperimentContextMerger;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 

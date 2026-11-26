@@ -12,7 +12,7 @@ use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Validation\ValidationException;
 
 uses(FilamentSignalsTestCase::class);

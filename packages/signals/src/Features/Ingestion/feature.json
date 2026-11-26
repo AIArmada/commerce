@@ -4,7 +4,8 @@
   "owns": {
     "table:signal_events": [
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent",
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\DetachDeletedTelemetry"
     ],
     "table:signal_identities": [
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IdentifySignalIdentity",
@@ -15,7 +16,8 @@
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent",
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CaptureSignalGeolocation",
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\SignalLocationResolverPipeline",
-      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty"
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CleanUpTrackedProperty",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\DetachDeletedTelemetry"
     ],
     "table:signal_tracked_properties": [
       "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveTrackedProperty"

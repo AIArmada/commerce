@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Signals\Features\Ingestion\Actions\ResolveTrackedProperty;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\AffiliateNetworkSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\AffiliateSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\CartSignalRecorder;

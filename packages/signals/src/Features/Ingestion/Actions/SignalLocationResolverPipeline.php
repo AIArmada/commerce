@@ -8,7 +8,7 @@ use AIArmada\Signals\Contracts\ReverseGeocoderContract;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Data\GeocodingResult;
 use AIArmada\Signals\Data\SessionLocation;
-use AIArmada\Signals\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use Carbon\CarbonImmutable;
 
 final class SignalLocationResolverPipeline

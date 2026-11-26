@@ -17,7 +17,7 @@ use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 

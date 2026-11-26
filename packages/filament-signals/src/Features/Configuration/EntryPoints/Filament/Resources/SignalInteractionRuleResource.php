@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\R
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Schemas\SignalInteractionRuleForm;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Tables\SignalInteractionRuleTable;
-use AIArmada\Signals\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

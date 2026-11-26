@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Features\Reporting\Support\SignalCondition;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 
 final class SignalEventConditionMatcher
 {

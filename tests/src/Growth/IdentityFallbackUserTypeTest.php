@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Support\Http\DefaultRequestExperimentSubjectResolver;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 

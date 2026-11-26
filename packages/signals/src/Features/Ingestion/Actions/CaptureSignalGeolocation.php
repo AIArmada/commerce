@@ -6,8 +6,8 @@ namespace AIArmada\Signals\Features\Ingestion\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Jobs\ReverseGeocodeSessionJob;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 
 final readonly class CaptureSignalGeolocation

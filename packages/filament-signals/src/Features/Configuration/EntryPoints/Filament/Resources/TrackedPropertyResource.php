@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\R
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Pages;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Schemas\TrackedPropertyForm;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Tables\TrackedPropertyTable;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\EntryPoints\Http;
 
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

@@ -6,8 +6,8 @@ namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;

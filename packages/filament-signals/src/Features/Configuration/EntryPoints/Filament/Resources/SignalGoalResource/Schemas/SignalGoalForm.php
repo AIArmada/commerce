@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\R
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentSignals\Support\SignalFormOptionLists;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;

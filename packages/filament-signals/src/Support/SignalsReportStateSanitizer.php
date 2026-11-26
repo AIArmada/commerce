@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Support;
 
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;

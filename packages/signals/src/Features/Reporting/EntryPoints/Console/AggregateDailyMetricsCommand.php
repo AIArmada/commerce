@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\EntryPoints\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;

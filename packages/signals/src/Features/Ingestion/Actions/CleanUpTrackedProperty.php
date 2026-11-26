@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
 use AIArmada\Signals\Features\Reporting\Api\DetachPropertyReports;
 use AIArmada\Signals\Features\Ingestion\Api\TrackedPropertyDeleting;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 
 final readonly class CleanUpTrackedProperty
 {

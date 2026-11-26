@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Alerts\Queries;
 
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Support\SignalCurrency;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

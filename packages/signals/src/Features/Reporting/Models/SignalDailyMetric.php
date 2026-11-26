@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Models;
 
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Signals\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use AIArmada\Signals\Support\SignalCurrency;
 use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

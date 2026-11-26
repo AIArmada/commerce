@@ -6,7 +6,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\CheckoutSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\OrderSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Actions\Recorders\SignalRecorderSupport;

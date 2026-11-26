@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use InvalidArgumentException;
 
 final class AffiliateSignalRecorder

@@ -12,7 +12,7 @@ use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDeliver
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;

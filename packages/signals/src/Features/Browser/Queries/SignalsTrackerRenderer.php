@@ -7,7 +7,7 @@ namespace AIArmada\Signals\Features\Browser\Queries;
 use AIArmada\Signals\Features\Browser\Api\TrackerMarkup;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
-use AIArmada\Signals\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Api\BrowserPropertyResolver;
 use AIArmada\Signals\Features\Ingestion\Api\BrowserProperty;
 use Illuminate\Contracts\Auth\Authenticatable;

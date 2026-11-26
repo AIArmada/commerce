@@ -6,8 +6,8 @@ use AIArmada\AffiliateNetwork\Events\OfferCreated;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Exceptions\CommerceSignalRecordingFailed;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 
 uses(SignalsTestCase::class);

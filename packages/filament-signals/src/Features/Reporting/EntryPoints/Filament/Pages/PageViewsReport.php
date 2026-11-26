@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\PageViewReportService;
 use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
 use BackedEnum;

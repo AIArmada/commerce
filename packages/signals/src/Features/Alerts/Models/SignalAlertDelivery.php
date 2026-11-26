@@ -6,7 +6,7 @@ namespace AIArmada\Signals\Features\Alerts\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Signals\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

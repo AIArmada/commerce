@@ -11,7 +11,7 @@ use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Signa
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\CreateSignalInteractionRule;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\EditSignalInteractionRule;
 use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource\Pages\ListSignalInteractionRules;
-use AIArmada\Signals\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use Filament\Panel;
 use Filament\PanelRegistry;
 use Illuminate\Database\QueryException;

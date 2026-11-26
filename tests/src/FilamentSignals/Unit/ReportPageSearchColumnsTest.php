@@ -7,7 +7,7 @@ use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Acqui
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ContentPerformanceReport;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\JourneyReport;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Filament\Tables\Table;
 
 uses(FilamentSignalsTestCase::class);

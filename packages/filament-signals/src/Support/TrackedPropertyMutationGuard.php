@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;

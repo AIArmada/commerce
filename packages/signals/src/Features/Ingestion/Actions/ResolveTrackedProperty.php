@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Ingestion\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Model;
 
 final readonly class ResolveTrackedProperty

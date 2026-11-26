@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Models;
+namespace AIArmada\Signals\Features\Ingestion\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Signals\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
+use AIArmada\Signals\Features\Ingestion\Actions\DetachDeletedTelemetry;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -36,6 +37,8 @@ final class SignalIdentity extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected $table = 'signal_identities';
 
     protected static string $ownerScopeConfigKey = 'signals.owner';
 
@@ -100,8 +103,7 @@ final class SignalIdentity extends Model
         });
 
         static::deleting(function (SignalIdentity $identity): void {
-            $identity->sessions()->update(['signal_identity_id' => null]);
-            $identity->events()->update(['signal_identity_id' => null]);
+            app(DetachDeletedTelemetry::class)->identity((string) $identity->getKey());
         });
     }
 }

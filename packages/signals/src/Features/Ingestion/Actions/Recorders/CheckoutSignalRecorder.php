@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Actions\Recorders;
 
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Illuminate\Database\Eloquent\Model;
 
 final class CheckoutSignalRecorder

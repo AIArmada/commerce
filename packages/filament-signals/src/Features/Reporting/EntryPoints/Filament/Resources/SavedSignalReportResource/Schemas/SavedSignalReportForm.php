@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Support\SavedSignalReportDefinition;
 use AIArmada\Signals\Features\Reporting\Support\SignalRouteCatalog;
 use Filament\Forms;

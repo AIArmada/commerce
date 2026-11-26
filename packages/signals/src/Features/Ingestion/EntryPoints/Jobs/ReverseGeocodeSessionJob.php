@@ -7,7 +7,7 @@ namespace AIArmada\Signals\Features\Ingestion\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Signals\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
