@@ -44,7 +44,6 @@ final class SignalsServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['api'])
             ->hasCommand(AggregateDailyMetricsCommand::class)
             ->hasCommand(ProcessSignalAlertsCommand::class);
     }
@@ -78,6 +77,8 @@ final class SignalsServiceProvider extends PackageServiceProvider
 
         $this->registerIngestionRateLimiter();
         $this->registerMorphMap();
+        $this->loadRoutesFrom(__DIR__ . '/Features/Browser/Routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/Features/Ingestion/Routes/api.php');
     }
 
     private function registerIngestionRateLimiter(): void

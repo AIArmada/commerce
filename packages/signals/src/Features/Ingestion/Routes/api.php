@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\BrowserEventController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\GeolocationController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\IdentifyController;
@@ -14,9 +13,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(config('signals.http.middleware', ['api']))
     ->prefix(config('signals.http.prefix', 'api/signals'))
     ->group(function (): void {
-        Route::get('/' . config('signals.http.tracker_script', 'tracker.js'), TrackerScriptController::class)
-            ->name('signals.tracker.script');
-
         Route::middleware('throttle:signals-collect')->group(function (): void {
             Route::post('/collect/identify', IdentifyController::class)
                 ->name('signals.collect.identify');

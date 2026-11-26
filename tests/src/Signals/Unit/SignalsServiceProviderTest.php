@@ -9,6 +9,7 @@ use AIArmada\Signals\Data\SessionLocation;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\Middleware\VerifyTrustedSignalSignature;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Signals\Features\Ingestion\Support\SignalEventMap;
@@ -16,6 +17,7 @@ use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetric
 use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
 use AIArmada\Signals\SignalsServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Mockery\MockInterface;
 use Spatie\LaravelPackageTools\Package;
 
@@ -32,7 +34,6 @@ it('configures the package name, config, and migrations', function (): void {
     $package->shouldReceive('hasConfigFile')->once()->withNoArgs()->andReturnSelf();
     $package->shouldReceive('runsMigrations')->once()->withNoArgs()->andReturnSelf();
     $package->shouldReceive('discoversMigrations')->once()->withNoArgs()->andReturnSelf();
-    $package->shouldReceive('hasRoutes')->once()->with(['api'])->andReturnSelf();
     $package->shouldReceive('hasCommand')->once()->with(AggregateDailyMetricsCommand::class)->andReturnSelf();
     $package->shouldReceive('hasCommand')->once()->with(ProcessSignalAlertsCommand::class)->andReturnSelf();
 
@@ -151,5 +152,27 @@ it('discovers and resolves every built-in report extension', function (): void {
     foreach ($registry->all() as $type => $report) {
         expect($report->type())->toBe($type)
             ->and($registry->get($type))->toBe($report);
+    }
+});
+
+it('preserves all signal route names, HTTP methods and middleware', function (): void {
+    $prefix = mb_trim((string) config('signals.http.prefix', 'api/signals'), '/');
+    $middleware = config('signals.http.middleware', ['api']);
+    $routes = [
+        'signals.tracker.script' => [(string) config('signals.http.tracker_script', 'tracker.js'), ['GET', 'HEAD'], $middleware],
+        'signals.collect.identify' => ['collect/identify', ['POST'], [...$middleware, 'throttle:signals-collect']],
+        'signals.collect.browser-event' => ['collect/browser-event', ['POST'], [...$middleware, 'throttle:signals-collect']],
+        'signals.collect.pageview' => ['collect/pageview', ['POST'], [...$middleware, 'throttle:signals-collect']],
+        'signals.collect.geo' => ['collect/geo', ['POST'], [...$middleware, 'throttle:signals-collect']],
+        'signals.collect.server-outcome' => ['collect/server-outcome', ['POST'], [...$middleware, VerifyTrustedSignalSignature::class]],
+    ];
+
+    foreach ($routes as $name => [$path, $methods, $expectedMiddleware]) {
+        $route = Route::getRoutes()->getByName($name);
+
+        expect($route)->not->toBeNull()
+            ->and($route->uri())->toBe($prefix . '/' . $path)
+            ->and($route->methods())->toBe($methods)
+            ->and($route->middleware())->toBe($expectedMiddleware);
     }
 });
