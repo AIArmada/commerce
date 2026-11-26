@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\PostalCodes\Models;
 
+use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -49,7 +50,7 @@ final class AddressAreaPostalCode extends Pivot
     /** @return BelongsTo<PostalCode, $this> */
     public function postalCode(): BelongsTo
     {
-        return $this->belongsTo(PostalCode::class, 'postal_code_id');
+        return $this->belongsTo(ModelResolver::postalCodeClass(), 'postal_code_id');
     }
 
     protected function casts(): array

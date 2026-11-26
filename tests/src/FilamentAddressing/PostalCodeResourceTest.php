@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 
 it('registers the postcode resource with the configured model', function (): void {

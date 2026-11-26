@@ -156,7 +156,7 @@ class AddressArea extends TransactionalDeletionModel
         return $this->hasMany(ModelResolver::areaRelationshipClass(), 'parent_address_area_id');
     }
 
-    /** @return HasMany<AddressAreaPostalCode, $this> */
+    /** @return HasMany<\AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode, $this> */
     public function postalCodeCoverage(): HasMany
     {
         return $this->hasMany(ModelResolver::areaPostalCodeClass(), 'address_area_id');
@@ -198,7 +198,7 @@ class AddressArea extends TransactionalDeletionModel
         )->withPivot(['relationship_type', 'hierarchy_type', 'source', 'valid_from', 'valid_until', 'metadata']);
     }
 
-    /** @return BelongsToMany<PostalCode, $this, AddressAreaPostalCode, 'pivot'> */
+    /** @return BelongsToMany<\AIArmada\Addressing\Features\PostalCodes\Models\PostalCode, $this, \AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode, 'pivot'> */
     public function postalCodes(): BelongsToMany
     {
         return $this->belongsToMany(

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Models;
+namespace AIArmada\Addressing\Features\PostalCodes\Models;
 
 use AIArmada\Addressing\Database\Factories\PostalCodeFactory;
 use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
+use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;

@@ -8,10 +8,8 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
@@ -88,12 +86,14 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<PostalCode>
+     * @return class-string<\AIArmada\Addressing\Features\PostalCodes\Models\PostalCode>
      */
     public static function postalCodeClass(): string
     {
-        /** @var class-string<PostalCode> $modelClass */
-        $modelClass = self::resolve('postal_code', PostalCode::class);
+        /** @var class-string<\AIArmada\Addressing\Features\PostalCodes\Models\PostalCode> $default */
+        $default = app('addressing.model-default.postal_code');
+        /** @var class-string<\AIArmada\Addressing\Features\PostalCodes\Models\PostalCode> $modelClass */
+        $modelClass = self::resolve('postal_code', $default);
 
         return $modelClass;
     }
@@ -149,12 +149,14 @@ final class ModelResolver
     }
 
     /**
-     * @return class-string<AddressAreaPostalCode>
+     * @return class-string<\AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode>
      */
     public static function areaPostalCodeClass(): string
     {
-        /** @var class-string<AddressAreaPostalCode> $modelClass */
-        $modelClass = self::resolve('area_postal_code', AddressAreaPostalCode::class);
+        /** @var class-string<\AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode> $default */
+        $default = app('addressing.model-default.area_postal_code');
+        /** @var class-string<\AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode> $modelClass */
+        $modelClass = self::resolve('area_postal_code', $default);
 
         return $modelClass;
     }

@@ -462,10 +462,8 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 
@@ -483,13 +481,13 @@ return [
         'address' => Address::class,
         'snapshot' => null, // Defaults to the AddressLifecycle feature model.
         'addressable' => Addressable::class,
-        'postal_code' => PostalCode::class,
+        'postal_code' => null, // Defaults to the PostalCodes feature model.
         'resolution_gap' => null, // Uses the owning feature's model unless overridden.
         'area_assignment' => AddressAreaAssignment::class,
         'area_name' => null, // Defaults to the Geography feature model.
         'area_role' => null, // Defaults to the Geography feature model.
         'area_state_link' => null, // Defaults to the Geography feature model.
-        'area_postal_code' => AddressAreaPostalCode::class,
+        'area_postal_code' => null, // Defaults to the PostalCodes feature model.
         'area_relationship' => null, // Defaults to the Geography feature model.
     ],
 

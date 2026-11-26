@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
 
 beforeEach(function (): void {
     config(['addressing.geography.providers' => [SaintBarthelemyGeographyProvider::class]]);

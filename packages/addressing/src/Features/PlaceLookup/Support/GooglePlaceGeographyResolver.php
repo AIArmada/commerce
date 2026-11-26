@@ -6,9 +6,9 @@ namespace AIArmada\Addressing\Features\PlaceLookup\Support;
 
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Features\PostalCodes\Api\PostalAreaLookup;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\AddressAreaHierarchyResolver;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
@@ -21,6 +21,7 @@ final readonly class GooglePlaceGeographyResolver
         private CountryAddressProfileResolver $profiles,
         private GooglePlaceGeographyMatcher $matcher,
         private GooglePlaceResolutionGapLogger $gapLogger,
+        private PostalAreaLookup $postalAreas,
     ) {}
 
     /**
@@ -489,26 +490,10 @@ final readonly class GooglePlaceGeographyResolver
             return;
         }
 
-        $areas = ModelResolver::postalCodeClass()::query()
-            ->where('country_code', $countryCode)
-            ->where('code', $code)
-            ->where('is_active', true)
-            ->with('areas')
-            ->get()
-            ->flatMap(static fn (PostalCode $postalCode) => $postalCode->areas)
-            ->filter(static fn (AddressArea $area): bool => $area->is_active !== false)
-            ->filter(static fn (AddressArea $area): bool => $countryId === null
-                || (string) $area->country_id === $countryId)
-            ->unique(static fn (AddressArea $area): string => (string) $area->getKey())
-            ->values();
-
-        $primary = $areas->filter(static function (AddressArea $area): bool {
-            $pivot = $area->getRelation('pivot');
-
-            return $pivot !== null && (bool) $pivot->is_primary;
-        });
-
-        $candidates = $primary->isNotEmpty() ? $primary : $areas;
+        $candidateIds = $this->postalAreas->candidateAreaIds($countryCode, $code, $countryId);
+        $candidates = ModelResolver::areaClass()::query()
+            ->whereIn('id', $candidateIds)
+            ->get();
 
         foreach ($hierarchy->levels as $level) {
             if ($level->kind !== 'area') {

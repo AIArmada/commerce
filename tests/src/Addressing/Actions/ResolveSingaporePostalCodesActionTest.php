@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\SingaporePostalCodeResolver;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\PostalCode;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 

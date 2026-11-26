@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Addressing\Geography\Postal;
 
 use AIArmada\Addressing\Contracts\PostalCodeImporter;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\BundledPostalDatasets;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 use Generator;

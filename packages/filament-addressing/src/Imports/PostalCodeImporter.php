@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAddressing\Imports;
 use AIArmada\Addressing\Contracts\PostalCodeAdminImporter;
 use AIArmada\Addressing\Contracts\PostalCodeImporter as CorePostalCodeImporter;
 use AIArmada\Addressing\Data\PostalCodeData;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Support\ArrayPostalCodeSource;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;

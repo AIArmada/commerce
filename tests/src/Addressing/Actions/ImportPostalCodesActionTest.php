@@ -6,8 +6,8 @@ use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\PostalCodeImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\PostalCodeData;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\ArrayPostalCodeSource;
 

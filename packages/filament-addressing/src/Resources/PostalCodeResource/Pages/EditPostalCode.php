@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages;
 
 use AIArmada\Addressing\Contracts\PostalCodeWriter;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Resources\Pages\EditRecord;

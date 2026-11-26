@@ -117,7 +117,7 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
     'postal_codes' => [
         'enabled' => true,
         'read_only' => false,
-        'model' => \AIArmada\Addressing\Models\PostalCode::class,
+        'model' => \AIArmada\Addressing\Features\PostalCodes\Models\PostalCode::class,
     ],
 
     'resolution_gaps' => [

@@ -8,8 +8,8 @@ use AIArmada\Addressing\Contracts\PostalCodeImporter;
 use AIArmada\Addressing\Contracts\PostalCodeSource;
 use AIArmada\Addressing\Data\ImportPostalCodeFailureData;
 use AIArmada\Addressing\Data\ImportPostalCodesResultData;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 
 final readonly class ImportPostalCodesAction implements PostalCodeImporter

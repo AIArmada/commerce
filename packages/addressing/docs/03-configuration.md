@@ -104,13 +104,13 @@ or when the two gates differ for the selected state.
     'address' => AIArmada\Addressing\Models\Address::class,
     'snapshot' => null, // Defaults to the AddressLifecycle feature model.
     'addressable' => AIArmada\Addressing\Models\Addressable::class,
-    'postal_code' => AIArmada\Addressing\Models\PostalCode::class,
+    'postal_code' => null, // PostalCodes feature default; override with a configured model.
     'resolution_gap' => null, // Defaults to the ResolutionGaps feature model.
     'area_assignment' => AIArmada\Addressing\Models\AddressAreaAssignment::class,
     'area_name' => null, // Geography feature default; override with a subclass.
     'area_role' => null, // Geography feature default; override with a subclass.
     'area_state_link' => null, // Geography feature default; override with a subclass.
-    'area_postal_code' => AIArmada\Addressing\Models\AddressAreaPostalCode::class,
+    'area_postal_code' => null, // PostalCodes feature default; override with a configured model.
     'area_relationship' => null, // Geography feature default; override with a subclass.
 ],
 'geography' => [

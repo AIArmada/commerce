@@ -7,10 +7,10 @@ use AIArmada\Addressing\Data\AddressAreaMatchData;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaName;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Geography\Argentina\ArgentinaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
-use AIArmada\Addressing\Models\PostalCode;
 
 beforeEach(function (): void {
     $country = AddressCountry::query()->create(['iso2' => 'MY', 'name' => 'Malaysia']);

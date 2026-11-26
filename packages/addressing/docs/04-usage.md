@@ -813,8 +813,8 @@ coverage unchanged.
 
 ```php
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
-use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Data\AddressAreaData;
+use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 
 $source = new ArrayAddressAreaSource('my-source', [
     new AddressAreaData(
@@ -1228,15 +1228,8 @@ Per-country postcodes stay on `address:seed-postal-codes {country?}`. Both comma
 show progress; the underlying actions run silently without a progress callback, which is
 what queued jobs and tests want.
 
-Breaking change: `MalaysiaPostalCodeSeeder` is removed; `PostalCodeSeeder` seeds Malaysia
-from the same CSVs. Link rows now carry source `my_postal_v1` instead of `pos_malaysia_v1`,
-so after upgrading, prune the stale rows once:
-
-```php
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-
-AddressAreaPostalCode::query()->where('source', 'pos_malaysia_v1')->delete();
-```
+Malaysia postcode coverage uses the source `my_postal_v1` and is seeded through
+`PostalCodeSeeder`.
 
 ## Spatial queries
 

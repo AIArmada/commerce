@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\ConsoleSeedProgress;
 use AIArmada\Addressing\Support\SeedAddressingSummary;

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
+use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaPostalCode;
-use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Commerce\Tests\Fixtures\FilamentAddressingPanelUser;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAddressing\Exports\PostalCodeExporter;
