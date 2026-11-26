@@ -17,10 +17,10 @@ use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Signa
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
-use AIArmada\FilamentSignals\Resources\SignalGoalResource;
-use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
-use AIArmada\FilamentSignals\Resources\SignalSegmentResource;
-use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource;
 use Filament\Panel;
 use Mockery\MockInterface;
 

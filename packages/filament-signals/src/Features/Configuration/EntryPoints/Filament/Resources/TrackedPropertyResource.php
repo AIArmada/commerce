@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources;
+
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Pages;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Schemas\TrackedPropertyForm;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource\Tables\TrackedPropertyTable;
+use AIArmada\Signals\Models\TrackedProperty;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
+
+final class TrackedPropertyResource extends Resource
+{
+    protected static ?string $model = TrackedProperty::class;
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rss';
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    /**
+     * @return Builder<TrackedProperty>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return TrackedProperty::query()->forOwner();
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-signals.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-signals.resources.navigation_sort.properties', 30);
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return TrackedPropertyForm::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return TrackedPropertyTable::configure($table);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListTrackedProperties::route('/'),
+            'create' => Pages\CreateTrackedProperty::route('/create'),
+            'edit' => Pages\EditTrackedProperty::route('/{record}/edit'),
+        ];
+    }
+}

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Configuration\Extensions;
 
 use AIArmada\FilamentSignals\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentSignals\Resources\SignalGoalResource;
-use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
-use AIArmada\FilamentSignals\Resources\SignalSegmentResource;
-use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalGoalResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalInteractionRuleResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\SignalSegmentResource;
+use AIArmada\FilamentSignals\Features\Configuration\EntryPoints\Filament\Resources\TrackedPropertyResource;
 
 final class AdminPanelContribution implements ContributionContract
 {
