@@ -29,7 +29,7 @@ use AIArmada\Signals\Services\CommerceSignalsRecorder;
 use AIArmada\Signals\Services\ContentPerformanceReportService;
 use AIArmada\Signals\Services\ConversionFunnelReportService;
 use AIArmada\Signals\Services\DevicesReportService;
-use AIArmada\Signals\Services\Geocoders\NominatimGeocoder;
+use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Services\GoalsReportService;
 use AIArmada\Signals\Services\JourneyReportService;
 use AIArmada\Signals\Services\LiveActivityReportService;

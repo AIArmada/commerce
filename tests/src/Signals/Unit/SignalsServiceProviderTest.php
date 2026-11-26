@@ -8,7 +8,7 @@ use AIArmada\Signals\Console\Commands\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Services\Geocoders\NominatimGeocoder;
+use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Services\SignalLocationResolverPipeline;
 use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
