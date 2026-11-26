@@ -142,6 +142,7 @@ final class ResolutionGapTable
     public static function matchActionVisible(ResolutionGap $record): bool
     {
         return self::mutatingActionsEnabled()
+            && ! AddressAreaResource::isReadOnly()
             && OwnerUiScope::canMutateRecord($record)
             && ResolutionGapResource::canEdit($record)
             && $record->status === 'open';

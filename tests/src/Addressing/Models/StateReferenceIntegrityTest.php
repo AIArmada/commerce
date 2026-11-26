@@ -465,8 +465,12 @@ it('prunes state assignments in bounded batch reads instead of per address', fun
     $assignmentSelects = collect($queries)->filter(
         static fn (string $sql): bool => str_starts_with($sql, 'select') && str_contains($sql, 'from "address_area_assignments"'),
     );
+    $areaSelects = collect($queries)->filter(
+        static fn (string $sql): bool => str_starts_with($sql, 'select') && str_contains($sql, 'from "address_areas"'),
+    );
 
     expect($addressSelects->count())->toBeLessThanOrEqual(2)
         ->and($assignmentSelects->count())->toBe(1)
+        ->and($areaSelects->count())->toBe(1)
         ->and($addresses)->toHaveCount(3);
 });

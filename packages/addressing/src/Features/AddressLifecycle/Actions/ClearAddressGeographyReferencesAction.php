@@ -60,6 +60,7 @@ final readonly class ClearAddressGeographyReferencesAction implements AddressRef
                 }
 
                 $removedByRole = [];
+                $validatedAssignments = [];
 
                 foreach ($addresses as $address) {
                     $current = $currentByAddress[(string) $address->getKey()] ?? [];
@@ -68,8 +69,10 @@ final readonly class ClearAddressGeographyReferencesAction implements AddressRef
                         continue;
                     }
 
-                    $valid = $this->assignments->narrowToValidAssignments(
-                        $address->getAttribute('country_code'),
+                    $countryCode = $address->getAttribute('country_code');
+                    $validationKey = serialize([$countryCode, $current]);
+                    $valid = $validatedAssignments[$validationKey] ??= $this->assignments->narrowToValidAssignments(
+                        $countryCode,
                         null,
                         $current,
                     );

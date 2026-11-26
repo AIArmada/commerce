@@ -148,7 +148,8 @@ it('requires editable areas even when the area policy allows updates', function 
     Gate::policy(AddressArea::class, AllowedGapAreaPolicy::class);
     config()->set('filament-addressing.resources.areas.read_only', true);
 
-    expect(ResolutionGapTable::searchAreas('petaling', $gap))->not->toBe([])
+    expect(ResolutionGapTable::matchActionVisible($gap))->toBeFalse()
+        ->and(ResolutionGapTable::searchAreas('petaling', $gap))->not->toBe([])
         ->and(fn (): mixed => ResolutionGapTable::runMatch($gap, ['address_area_id' => $this->areas['kl']->getKey()]))
         ->toThrow(HttpException::class);
 });

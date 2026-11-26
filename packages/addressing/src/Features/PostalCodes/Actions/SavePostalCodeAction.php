@@ -117,7 +117,7 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
             ->where('source', 'manual')
             ->orderBy((new $pivotClass)->getKeyName())
             ->lockForUpdate()
-            ->get(['id', 'address_area_id', 'relationship_type']);
+            ->get(['id', 'address_area_id', 'relationship_type', 'source_id']);
 
         return $edges;
     }
@@ -129,8 +129,8 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
      */
     private function validateManualCoverage(array $coverage, string $countryCode, Collection $existingManualEdges): array
     {
-        $existingKeys = $existingManualEdges->mapWithKeys(
-            static fn (AddressAreaPostalCode $edge): array => [self::coverageKey((string) $edge->address_area_id, $edge->relationship_type) => true],
+        $existingSources = $existingManualEdges->mapWithKeys(
+            static fn (AddressAreaPostalCode $edge): array => [self::coverageKey((string) $edge->address_area_id, $edge->relationship_type) => $edge->source_id],
         )->all();
 
         $normalized = [];
@@ -161,6 +161,12 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
             if (isset($seen[$key])) {
                 throw ValidationException::withMessages([
                     'manual_coverage' => 'Manual coverage cannot contain the same area and relationship type twice.',
+                ]);
+            }
+
+            if (isset($existingSources[$key])) {
+                throw ValidationException::withMessages([
+                    'manual_coverage' => 'An imported coverage link already uses this area and relationship type.',
                 ]);
             }
 
@@ -196,7 +202,7 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
                 $key = self::coverageKey($item['area_id'], $item['relationship_type']);
                 $area = $areas->get($item['area_id']);
 
-                if ($area === null || (! $area->is_active && ! isset($existingKeys[$key]))) {
+                if ($area === null || (! $area->is_active && ! array_key_exists($key, $existingSources))) {
                     throw ValidationException::withMessages([
                         'manual_coverage' => 'New manual postcode coverage must use an active area in the postcode country.',
                     ]);
@@ -248,7 +254,7 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
             $retained[$key] = true;
         }
 
-        $existing->reject(static fn (AddressAreaPostalCode $edge, string $key): bool => isset($retained[$key]))
+        $existing->reject(static fn (AddressAreaPostalCode $edge, string $key): bool => $edge->source_id !== null || isset($retained[$key]))
             ->each(static function (AddressAreaPostalCode $edge): void {
                 if (! $edge->delete()) {
                     throw new DomainException('Manual postcode coverage could not be removed.');

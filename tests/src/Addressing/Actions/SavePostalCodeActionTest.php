@@ -136,28 +136,33 @@ it('keeps country and postcode identity immutable during updates with coverage',
         ->and($postcode->fresh()->is_active)->toBeFalse();
 });
 
-it('matches manual coverage by its unique source identity instead of provenance id', function (): void {
+it('preserves imported manual coverage and rejects a duplicate operator edge', function (): void {
     $area = AddressArea::query()->create([
         'country_code' => 'MY', 'type' => 'locality', 'level' => 1, 'name' => 'Bangsar',
         'slug' => 'bangsar', 'source' => 'areas', 'source_id' => 'bangsar',
     ]);
     $postcode = PostalCode::query()->create(['country_code' => 'MY', 'code' => '50450']);
-    AddressAreaPostalCode::query()->create([
+    $importedLink = AddressAreaPostalCode::query()->create([
         'postal_code_id' => $postcode->getKey(), 'address_area_id' => $area->getKey(),
-        'source' => 'manual', 'source_id' => 'legacy-provenance', 'relationship_type' => 'served_by', 'is_primary' => false,
+        'source' => 'manual', 'source_id' => 'batch-coverage', 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(PostalCodeWriter::class)->execute([
+    $writer = app(PostalCodeWriter::class);
+    $writer->execute(['manual_coverage' => []], (string) $postcode->getKey());
+
+    expect($importedLink->fresh())->not->toBeNull();
+
+    expect(fn () => $writer->execute([
         'manual_coverage' => [[
             'area_id' => $area->getKey(),
             'relationship_type' => 'served_by',
             'is_primary' => true,
         ]],
-    ], (string) $postcode->getKey());
+    ], (string) $postcode->getKey()))->toThrow(ValidationException::class, 'An imported coverage link already uses this area and relationship type.');
 
     expect(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->count())->toBe(1)
-        ->and(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->value('source_id'))->toBe('legacy-provenance')
-        ->and(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->value('is_primary'))->toBeTrue();
+        ->and($importedLink->fresh()?->source_id)->toBe('batch-coverage')
+        ->and($importedLink->fresh()?->is_primary)->toBeFalse();
 });
 
 it('locks selected manual coverage areas in primary-key order', function (): void {

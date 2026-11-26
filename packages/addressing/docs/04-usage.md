@@ -777,12 +777,11 @@ Distinct-type lookups are memoised in request attributes by configured area mode
 
 Use `PostalCodeWriter` for an operator-managed postcode row. Country and
 postcode code identify the row; the action validates each manual coverage area
-against the postcode country and changes only `source = manual` coverage.
-Manual coverage is matched by its unique edge identity (area, postcode,
-relationship, source), so an existing manual edge keeps its stored provenance
-ID instead of being duplicated. Metadata must be an array or `null`; omitting
-it during an update preserves the stored value, while explicit `null` clears
-it.
+against the postcode country and changes only coverage with `source = manual`
+and a null `source_id`. Imported coverage is preserved. If a submitted link
+shares an imported link's area, postcode, relationship type, and source, the
+writer reports a validation error. Metadata accepts an array or `null`.
+Omitting metadata preserves the stored value. Passing `null` clears it.
 
 ```php
 use AIArmada\Addressing\Contracts\PostalCodeWriter;
