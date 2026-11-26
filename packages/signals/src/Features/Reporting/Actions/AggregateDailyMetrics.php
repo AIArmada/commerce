@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Services;
+namespace AIArmada\Signals\Features\Reporting\Actions;
 
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
@@ -11,7 +11,7 @@ use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Support\SignalCurrency;
 use Illuminate\Support\Carbon;
 
-final class SignalMetricsAggregator
+final readonly class AggregateDailyMetrics
 {
     public function aggregateForDate(Carbon $date, TrackedProperty $trackedProperty): SignalDailyMetric
     {
@@ -64,7 +64,7 @@ final class SignalMetricsAggregator
         );
     }
 
-    public function backfill(Carbon $from, Carbon $to): int
+    public function aggregateRange(Carbon $from, Carbon $to): int
     {
         $count = 0;
 

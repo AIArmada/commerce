@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting;
 
 use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
 use AIArmada\Signals\Features\Reporting\Queries\ReportRegistry;
 use AIArmada\Signals\Features\Reporting\Queries\AcquisitionReportService;
 use AIArmada\Signals\Features\Reporting\Queries\ContentPerformanceReportService;
@@ -24,6 +25,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->singleton(SignalsDashboardService::class);
+        $app->singleton(AggregateDailyMetrics::class);
         $app->singleton(ReportRegistry::class, function ($app): ReportRegistry {
             $registry = new ReportRegistry;
 

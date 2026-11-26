@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
+use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Listeners\RecordCommerceSignal;

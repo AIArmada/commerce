@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals;
 
-use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
+use AIArmada\Signals\Features\Reporting\EntryPoints\Console\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
@@ -22,7 +22,6 @@ use AIArmada\Signals\Platform\ExtensionRegistry;
 use AIArmada\Signals\Platform\FeatureCatalog;
 use AIArmada\Signals\Platform\FeatureModule;
 use Illuminate\Contracts\Foundation\Application;
-use AIArmada\Signals\Services\SignalMetricsAggregator;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -57,7 +56,6 @@ final class SignalsServiceProvider extends PackageServiceProvider
             }
         }
 
-        $this->app->singleton(SignalMetricsAggregator::class);
         $this->app->singleton(TrackedPropertyResolver::class);
 
     }

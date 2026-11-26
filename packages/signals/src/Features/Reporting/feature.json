@@ -1,6 +1,10 @@
 {
   "schema": 1,
   "name": "Reporting",
-  "owns": {},
+  "owns": {
+    "table:signal_daily_metrics": [
+      "AIArmada\\Signals\\Features\\Reporting\\Actions\\AggregateDailyMetrics"
+    ]
+  },
   "extensions": {}
 }

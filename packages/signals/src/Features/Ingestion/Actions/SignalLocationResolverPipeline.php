@@ -65,7 +65,7 @@ final class SignalLocationResolverPipeline
                 return;
             }
 
-        $locked->update([
+            $locked->update([
                 'resolved_country_code' => $result->countryCode,
                 'resolved_country_name' => $result->countryName,
                 'resolved_state' => $result->state,
