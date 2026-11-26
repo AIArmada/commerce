@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
@@ -125,4 +127,28 @@ it('represents partial destination success independently', function (): void {
     $log->refresh();
     expect($log->delivery_results['webhook']['sent'] ?? null)->toBe(1)
         ->and($log->delivery_results['webhook']['failed'] ?? null)->toBe(1);
+});
+
+
+it('rejects a stale second dispatch during the rule cooldown and removes delivery history on deletion', function (): void {
+    Queue::fake();
+    config()->set('signals.features.alerts.destinations.webhook', [
+        'ops' => ['url' => 'https://alerts.example.test/primary'],
+        'backup' => ['url' => 'https://alerts.example.test/backup'],
+    ]);
+
+    $rule = createAlertDeliveryRule();
+    $staleRule = SignalAlertRule::query()->findOrFail($rule->id);
+    $dispatcher = app(SignalAlertDispatcher::class);
+
+    $log = $dispatcher->dispatch($rule, 2.0);
+
+    expect($log)->not->toBeNull()
+        ->and($dispatcher->dispatch($staleRule, 2.0))->toBeNull()
+        ->and(SignalAlertLog::query()->where('signal_alert_rule_id', $rule->id)->count())->toBe(1)
+        ->and(SignalAlertDelivery::query()->where('signal_alert_log_id', $log->id)->count())->toBe(2);
+
+    expect(app(AlertRuleAdministration::class)->delete($rule->id))->toBeTrue()
+        ->and(SignalAlertLog::query()->whereKey($log->id)->exists())->toBeFalse()
+        ->and(SignalAlertDelivery::query()->where('signal_alert_log_id', $log->id)->exists())->toBeFalse();
 });

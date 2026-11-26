@@ -15,6 +15,10 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
+use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
@@ -463,4 +467,43 @@ it('updates alert read state atomically and rejects another owner', function ():
     });
 
     OwnerContext::withOwner($ownerB, fn () => expect($logB->fresh()->read_at)->toBeNull());
+});
+
+
+it('keeps feature administration writes inside their owner and ignores forged owner attributes', function (): void {
+    $ownerA = ownershipGuardOwner('admin-a');
+    $ownerB = ownershipGuardOwner('admin-b');
+
+    $propertyId = OwnerContext::withOwner($ownerA, fn (): string => app(PropertyAdministration::class)->create([
+        'name' => 'Admin Property',
+        'slug' => 'admin-property',
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]));
+
+    $goalId = OwnerContext::withOwner($ownerA, fn (): string => app(GoalAdministration::class)->create([
+        'tracked_property_id' => $propertyId,
+        'name' => 'Admin Goal',
+        'slug' => 'admin-goal',
+        'goal_type' => 'conversion',
+        'event_name' => 'order.paid',
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]));
+
+    expect(TrackedProperty::query()->withoutOwnerScope()->findOrFail($propertyId)->owner_id)->toBe($ownerA->getKey())
+        ->and(SignalGoal::query()->withoutOwnerScope()->findOrFail($goalId)->owner_id)->toBe($ownerA->getKey());
+
+    OwnerContext::withOwner($ownerB, function () use ($propertyId, $goalId): void {
+        expect(fn () => app(PropertyAdministration::class)->update($propertyId, ['name' => 'Forged']))
+            ->toThrow(ModelNotFoundException::class)
+            ->and(fn () => app(GoalAdministration::class)->delete($goalId))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($propertyId, $goalId): void {
+        app(PropertyAdministration::class)->update($propertyId, ['name' => 'Updated']);
+        expect(TrackedProperty::query()->findOrFail($propertyId)->name)->toBe('Updated')
+            ->and(app(GoalAdministration::class)->delete($goalId))->toBeTrue();
+    });
 });

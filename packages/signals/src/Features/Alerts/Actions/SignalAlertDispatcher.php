@@ -20,12 +20,20 @@ final readonly class SignalAlertDispatcher
         $deliveries = [];
 
         $log = $rule->getConnection()->transaction(function () use ($rule, $metricValue, $context, &$deliveries): ?SignalAlertLog {
-            $rule = SignalAlertRule::query()->whereKey($rule->getKey())->lockForUpdate()->first();
+            $current = SignalAlertRule::query()->forOwner()->whereKey($rule->getKey())->lockForUpdate()->first();
 
-            if ($rule === null || ! $rule->is_active || $rule->isInCooldown()) {
+            if ($current === null || ! $current->is_active || $current->isInCooldown()) {
                 return null;
             }
 
+            // Never dispatch an evaluation calculated against a concurrently edited definition.
+            foreach (['tracked_property_id', 'metric_key', 'operator', 'threshold', 'timeframe_minutes', 'event_filters'] as $field) {
+                if ($current->getRawOriginal($field) !== $rule->getRawOriginal($field)) {
+                    return null;
+                }
+            }
+
+            $rule = $current;
             $message = $this->buildMessage($rule, $metricValue);
             $log = SignalAlertLog::query()->create([
                 'signal_alert_rule_id' => $rule->id,
