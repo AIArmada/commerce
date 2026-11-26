@@ -15,9 +15,8 @@ final readonly class GuardAddressAreaDeletionAction implements AddressAreaDeleti
 
     public function handle(string $key): void
     {
-        if (ModelResolver::areaRelationshipClass()::query()
-            ->where('parent_address_area_id', $key)
-            ->where('relationship_type', 'contains')
+        if (ModelResolver::areaClass()::query()
+            ->where('parent_id', $key)
             ->exists()) {
             throw ValidationException::withMessages([
                 'address_area' => 'Delete or reassign this address area\'s child areas before deleting it.',

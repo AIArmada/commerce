@@ -202,6 +202,7 @@ final class ResolutionGapTable
             ->orderBy('name')
             ->limit(50)
             ->get()
+            ->filter(static fn (AddressArea $area): bool => AddressAreaResource::canView($area))
             ->mapWithKeys(static fn (AddressArea $area): array => [(string) $area->getKey() => self::areaLabel($area)])
             ->toArray();
     }
@@ -218,6 +219,13 @@ final class ResolutionGapTable
 
         $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
         $area = $areaClass::query()->whereKey(mb_trim($areaId))->firstOrFail();
+
+        abort_unless(
+            ! AddressAreaResource::isReadOnly()
+                && AddressAreaResource::canView($area)
+                && AddressAreaResource::canEdit($area),
+            403,
+        );
 
         app(ResolutionGapCuration::class)->match((string) $record->getKey(), (string) $area->getKey(), self::actor());
 
@@ -288,7 +296,11 @@ final class ResolutionGapTable
         $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
         $area = $areaClass::query()->with('parent')->whereKey(mb_trim($value))->first();
 
-        return $area instanceof AddressArea ? self::areaLabel($area) : null;
+        if (! $area instanceof AddressArea || ! AddressAreaResource::canView($area)) {
+            return null;
+        }
+
+        return self::areaLabel($area);
     }
 
     private static function areaLabel(AddressArea $area): string

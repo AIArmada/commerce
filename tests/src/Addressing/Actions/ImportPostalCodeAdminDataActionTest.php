@@ -180,6 +180,35 @@ it('keeps null and empty source identifiers as distinct replacement scopes', fun
         ]);
 });
 
+it('reports a conflict when a retained source id owns the same unique coverage edge', function (): void {
+    $area = AddressArea::query()->create([
+        'country_code' => 'MY', 'type' => 'locality', 'level' => 1, 'name' => 'Area One',
+        'slug' => 'area-one', 'source' => 'areas', 'source_id' => 'one',
+    ]);
+    $postcode = PostalCode::query()->create(['country_code' => 'MY', 'code' => '47500']);
+    AddressAreaPostalCode::query()->create([
+        'postal_code_id' => $postcode->getKey(), 'address_area_id' => $area->getKey(),
+        'source' => 'provider', 'source_id' => 'retained', 'relationship_type' => 'served_by', 'is_primary' => false,
+    ]);
+
+    expect(fn () => app(PostalCodeAdminImporter::class)->execute(
+        countryCode: 'MY',
+        code: '47500',
+        isActive: true,
+        metadata: null,
+        coverage: [[
+            'source' => 'provider',
+            'source_id' => 'incoming',
+            'area_source' => 'areas',
+            'area_source_id' => 'one',
+            'relationship_type' => 'served_by',
+            'is_primary' => true,
+        ]],
+    ))->toThrow(ValidationException::class, 'already owned by source');
+
+    expect(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->value('source_id'))->toBe('retained');
+});
+
 it('validates the full imported coverage set before mutating the postcode or its links', function (): void {
     $area = AddressArea::query()->create([
         'country_code' => 'MY', 'type' => 'locality', 'level' => 1, 'name' => 'Area One',

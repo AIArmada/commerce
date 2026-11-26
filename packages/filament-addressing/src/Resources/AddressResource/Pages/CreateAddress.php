@@ -31,6 +31,7 @@ final class CreateAddress extends CreateRecord
             $data,
             $this->areaAssignments(),
             modelClass: $modelClass,
+            assignmentMetadata: ['source' => 'filament-addressing'],
         );
 
         return $modelClass::query()->findOrFail($id);

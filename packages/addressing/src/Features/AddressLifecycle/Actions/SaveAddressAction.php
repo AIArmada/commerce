@@ -19,9 +19,15 @@ final readonly class SaveAddressAction implements AddressWriter
      * @param  array<string, mixed>  $data
      * @param  array<string, string|null>|null  $areaAssignments
      * @param  class-string<Address>|null  $modelClass
+     * @param  array<string, mixed>  $assignmentMetadata
      */
-    public function execute(array $data, ?array $areaAssignments, ?string $recordId = null, ?string $modelClass = null): string
-    {
+    public function execute(
+        array $data,
+        ?array $areaAssignments,
+        ?string $recordId = null,
+        ?string $modelClass = null,
+        array $assignmentMetadata = [],
+    ): string {
         $modelClass ??= ModelResolver::addressClass();
         if (! is_a($modelClass, Address::class, true)) {
             throw new LogicException('Configured address model must extend Address.');
@@ -29,7 +35,7 @@ final readonly class SaveAddressAction implements AddressWriter
 
         $address = new $modelClass;
 
-        return $address->getConnection()->transaction(function () use ($address, $recordId, $data, $areaAssignments): string {
+        return $address->getConnection()->transaction(function () use ($address, $recordId, $data, $areaAssignments, $assignmentMetadata): string {
             if ($recordId !== null) {
                 $address = AddressOwnerGuard::lockAddressForWrite($recordId, $address::class);
             }
@@ -41,7 +47,13 @@ final readonly class SaveAddressAction implements AddressWriter
             }
 
             if ($areaAssignments !== null && ($recordId !== null || $areaAssignments !== [])) {
-                $this->assignments->execute((string) $address->getKey(), $areaAssignments, $address->state_id, ['source' => 'filament-addressing']);
+                $this->assignments->execute(
+                    (string) $address->getKey(),
+                    $areaAssignments,
+                    $address->state_id,
+                    $assignmentMetadata,
+                    $address::class,
+                );
             }
 
             return (string) $address->getKey();

@@ -20,7 +20,7 @@ use Carbon\CarbonImmutable;
  */
 final class AddressAreaStateBridge
 {
-    private const string REQUEST_CACHE_KEY = 'aiarmada.addressing.state-area-bridge';
+    private const string CACHE_BUCKET = 'hierarchy-ancestors';
 
     /**
      * Resolve the explicitly linked AddressArea node for a State.
@@ -29,22 +29,32 @@ final class AddressAreaStateBridge
     {
         $cacheKey = self::stateCacheKey($state, $hierarchyType);
 
-        if ($cacheKey !== null && app()->bound('request')) {
-            $request = request();
-            $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
-
-            if (is_array($cache) && array_key_exists($cacheKey, $cache)) {
-                $cachedAreaId = $cache[$cacheKey];
-
-                return is_string($cachedAreaId) ? $cachedAreaId : null;
-            }
+        if ($cacheKey === null) {
+            return self::resolveAreaIdForState($state, $hierarchyType);
         }
 
+        $linkClass = ModelResolver::areaStateLinkClass();
+        $scopeKey = implode('|', [
+            $cacheKey,
+            ModelResolver::stateClass(),
+            ModelResolver::areaClass(),
+        ]);
+
+        $areaId = RequestCache::remember(
+            self::CACHE_BUCKET,
+            new $linkClass,
+            'state:' . $scopeKey,
+            static fn (): ?string => self::resolveAreaIdForState($state, $hierarchyType),
+        );
+
+        return is_string($areaId) ? $areaId : null;
+    }
+
+    private static function resolveAreaIdForState(State | string | null $state, ?string $hierarchyType): ?string
+    {
         $state = self::resolveState($state);
 
         if (! $state instanceof State) {
-            self::remember($cacheKey, null);
-
             return null;
         }
 
@@ -60,47 +70,26 @@ final class AddressAreaStateBridge
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->value('address_area_id');
-        self::remember($cacheKey, is_string($areaId) ? $areaId : null);
 
         return is_string($areaId) ? $areaId : null;
     }
 
     /**
-     * Forget cached bridge entries for a state.
+     * Forget hierarchy bridge entries after links for a state are removed.
      *
-     * Call after the state's links are deleted (state delete, provider
-     * prune) so primed forward lookups and reverse lookups pointing at the
-     * state re-query instead of returning the deleted mapping later in the
-     * same request. Unrelated cached entries are kept.
+     * Forward and reverse lookups share one memo bucket, so invalidating
+     * the hierarchy bucket keeps both directions from returning mappings
+     * for the deleted state later in the same request.
      */
     public static function forgetState(State | string | null $state): void
     {
         $stateId = $state instanceof State ? (string) $state->getKey() : $state;
 
-        if (! is_string($stateId) || $stateId === '' || ! app()->bound('request')) {
+        if (! is_string($stateId) || $stateId === '') {
             return;
         }
 
-        $request = request();
-        $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
-
-        if (! is_array($cache)) {
-            return;
-        }
-
-        foreach ($cache as $key => $value) {
-            if (! is_string($key)) {
-                continue;
-            }
-
-            if (str_starts_with($key, $stateId . ':')) {
-                unset($cache[$key]);
-            } elseif (str_starts_with($key, 'area:') && $value === $stateId) {
-                unset($cache[$key]);
-            }
-        }
-
-        $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
+        self::forgetAll();
     }
 
     /**
@@ -110,27 +99,37 @@ final class AddressAreaStateBridge
     {
         $cacheKey = self::areaCacheKey($area);
 
-        if ($cacheKey !== null && app()->bound('request')) {
-            $cache = request()->attributes->get(self::REQUEST_CACHE_KEY, []);
-
-            if (is_array($cache) && array_key_exists('area:' . $cacheKey, $cache)) {
-                $cachedStateId = $cache['area:' . $cacheKey];
-
-                return is_string($cachedStateId) ? $cachedStateId : null;
-            }
+        if ($cacheKey === null) {
+            return self::resolveStateIdForArea($area);
         }
 
+        $areaClass = ModelResolver::areaClass();
+        $scopeKey = implode('|', [
+            $cacheKey,
+            ModelResolver::stateClass(),
+            ModelResolver::areaStateLinkClass(),
+            ModelResolver::areaRelationshipClass(),
+        ]);
+
+        $stateId = RequestCache::remember(
+            self::CACHE_BUCKET,
+            new $areaClass,
+            'area:' . $scopeKey,
+            static fn (): ?string => self::resolveStateIdForArea($area),
+        );
+
+        return is_string($stateId) ? $stateId : null;
+    }
+
+    private static function resolveStateIdForArea(AddressArea | string | null $area): ?string
+    {
         $area = self::resolveArea($area);
 
         if (! $area instanceof AddressArea) {
-            self::rememberArea($cacheKey, null);
-
             return null;
         }
 
         if ($area->getAttribute('is_active') === false) {
-            self::rememberArea($cacheKey, null);
-
             return null;
         }
 
@@ -161,8 +160,6 @@ final class AddressAreaStateBridge
                 ->value('state_id');
 
             if (is_string($stateId) && $stateId !== '') {
-                self::rememberArea($cacheKey, $stateId);
-
                 return $stateId;
             }
 
@@ -184,18 +181,12 @@ final class AddressAreaStateBridge
             $pending = array_map(static fn (mixed $id): string => (string) $id, $parentIds);
         }
 
-        self::rememberArea($cacheKey, null);
-
         return null;
     }
 
     public static function forgetAll(): void
     {
-        RequestCache::forget('hierarchy-ancestors');
-
-        if (app()->bound('request')) {
-            request()->attributes->remove(self::REQUEST_CACHE_KEY);
-        }
+        RequestCache::forget(self::CACHE_BUCKET);
     }
 
     private static function resolveState(State | string | null $state): ?State
@@ -223,32 +214,6 @@ final class AddressAreaStateBridge
         }
 
         return $stateId . ':' . ($hierarchyType ?? 'any');
-    }
-
-    private static function remember(?string $key, ?string $areaId): void
-    {
-        if ($key === null || ! app()->bound('request')) {
-            return;
-        }
-
-        $request = request();
-        $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
-        $cache = is_array($cache) ? $cache : [];
-        $cache[$key] = $areaId;
-        $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
-    }
-
-    private static function rememberArea(?string $key, ?string $stateId): void
-    {
-        if ($key === null || ! app()->bound('request')) {
-            return;
-        }
-
-        $request = request();
-        $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
-        $cache = is_array($cache) ? $cache : [];
-        $cache['area:' . $key] = $stateId;
-        $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
     }
 
     private static function areaCacheKey(AddressArea | string | null $area): ?string

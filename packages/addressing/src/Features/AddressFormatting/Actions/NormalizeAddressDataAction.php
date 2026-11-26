@@ -208,9 +208,14 @@ final readonly class NormalizeAddressDataAction implements AddressNormalizer
             ));
         }
 
-        $model = $modelClass::query()->whereKey($id)->first();
+        $reference = RequestCache::remember(
+            'reference-lookups',
+            new $modelClass,
+            "id|{$field}|{$id}",
+            static fn (): ?Model => $modelClass::query()->whereKey($id)->first(),
+        );
 
-        if (! $model instanceof Model) {
+        if (! $reference instanceof Model) {
             throw new InvalidArgumentException(sprintf(
                 'The address %s reference [%s] could not be found.',
                 $field,
@@ -218,7 +223,7 @@ final readonly class NormalizeAddressDataAction implements AddressNormalizer
             ));
         }
 
-        return $model;
+        return $reference;
     }
 
     /**

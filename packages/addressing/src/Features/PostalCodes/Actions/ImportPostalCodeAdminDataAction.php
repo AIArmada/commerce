@@ -58,8 +58,10 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
                 ->first() ?? new $postalCodeClass;
 
             $normalizedCoverage = $this->normalizeCoverage($coverage);
-            $existingLinks = $this->lockCoverageScopes($postalCode, $normalizedCoverage);
             $validatedCoverage = $this->resolveCoverage($countryCode, $normalizedCoverage);
+            $existingLinks = $this->lockSourceCoverage($postalCode, $normalizedCoverage);
+            $replacementScopes = $this->replacementScopes($normalizedCoverage);
+            $this->assertNoRetainedConflicts($validatedCoverage, $existingLinks, $replacementScopes);
             $postalCode->country_code = $countryCode;
             $postalCode->code = $code;
             $postalCode->is_active = $isActive;
@@ -71,6 +73,10 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
 
             if ($validatedCoverage !== []) {
                 foreach ($existingLinks as $existingLink) {
+                    if (! isset($replacementScopes[self::sourceScopeKey((string) $existingLink->source, $existingLink->source_id)])) {
+                        continue;
+                    }
+
                     if (! $existingLink->delete()) {
                         throw new DomainException('Existing postcode coverage could not be replaced.');
                     }
@@ -153,47 +159,96 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
     }
 
     /**
-     * Lock existing edges in deterministic order after the postcode row has been locked.
+     * Lock every existing edge owned by the incoming sources so the real
+     * unique identity can be checked before any replacement.
      *
      * @param  list<array{index: int, source: string, source_id: string|null, area_source: string, area_source_id: string, relationship_type: string, is_primary: bool}>  $coverage
      * @return Collection<int, AddressAreaPostalCode>
      */
-    private function lockCoverageScopes(PostalCode $postalCode, array $coverage): Collection
+    private function lockSourceCoverage(PostalCode $postalCode, array $coverage): Collection
     {
         if ($coverage === []) {
             return new Collection;
         }
 
-        $scopes = collect($coverage)
-            ->map(static fn (array $item): array => [$item['source'], $item['source_id']])
-            ->unique(static fn (array $scope): string => self::sourceScopeKey($scope[0], $scope[1]))
-            ->sortBy(static fn (array $scope): string => self::sourceScopeKey($scope[0], $scope[1]))
-            ->values();
+        $sources = collect($coverage)
+            ->map(static fn (array $item): string => $item['source'])
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
         $pivotClass = ModelResolver::areaPostalCodeClass();
-        $pivotKeyName = (new $pivotClass)->getKeyName();
 
         return $pivotClass::query()
             ->where('postal_code_id', $postalCode->getKey())
-            ->where(static function ($query) use ($scopes): void {
-                foreach ($scopes as [$source, $sourceId]) {
-                    $query->orWhere(static function ($query) use ($source, $sourceId): void {
-                        $query->where('source', $source);
-                        $sourceId === null
-                            ? $query->whereNull('source_id')
-                            : $query->where('source_id', $sourceId);
-                    });
-                }
-            })
-            ->orderBy($pivotKeyName)
+            ->whereIn('source', $sources)
+            ->orderBy((new $pivotClass)->getKeyName())
             ->lockForUpdate()
-            ->get();
+            ->get(['id', 'address_area_id', 'source', 'source_id', 'relationship_type']);
+    }
+
+    /**
+     * @param  list<array{index: int, source: string, source_id: string|null, area_source: string, area_source_id: string, relationship_type: string, is_primary: bool}>  $coverage
+     * @return array<string, true>
+     */
+    private function replacementScopes(array $coverage): array
+    {
+        $scopes = [];
+
+        foreach ($coverage as $item) {
+            $scopes[self::sourceScopeKey($item['source'], $item['source_id'])] = true;
+        }
+
+        return $scopes;
+    }
+
+    /**
+     * @param  list<array{index: int, source: string, source_id: string|null, address_area_id: string, relationship_type: string, is_primary: bool}>  $coverage
+     * @param  Collection<int, AddressAreaPostalCode>  $existingLinks
+     * @param  array<string, true>  $replacementScopes
+     */
+    private function assertNoRetainedConflicts(array $coverage, Collection $existingLinks, array $replacementScopes): void
+    {
+        $existingByUniqueKey = [];
+
+        foreach ($existingLinks as $existingLink) {
+            $existingByUniqueKey[self::coverageUniqueKey(
+                (string) $existingLink->address_area_id,
+                (string) $existingLink->relationship_type,
+                (string) $existingLink->source,
+            )] = $existingLink;
+        }
+
+        foreach ($coverage as $item) {
+            $existing = $existingByUniqueKey[self::coverageUniqueKey(
+                $item['address_area_id'],
+                $item['relationship_type'],
+                $item['source'],
+            )] ?? null;
+
+            if (! $existing instanceof AddressAreaPostalCode) {
+                continue;
+            }
+
+            if (isset($replacementScopes[self::sourceScopeKey((string) $existing->source, $existing->source_id)])) {
+                continue;
+            }
+
+            throw ValidationException::withMessages([
+                "coverage.{$item['index']}.source_id" => sprintf(
+                    'The postcode coverage area is already owned by source "%s" with source ID "%s".',
+                    (string) $existing->source,
+                    (string) ($existing->source_id ?? ''),
+                ),
+            ]);
+        }
     }
 
     /**
      * Resolve and lock every referenced area in primary-key order before returning validated links.
      *
      * @param  list<array{index: int, source: string, source_id: string|null, area_source: string, area_source_id: string, relationship_type: string, is_primary: bool}>  $coverage
-     * @return list<array{source: string, source_id: string|null, address_area_id: string, relationship_type: string, is_primary: bool}>
+     * @return list<array{index: int, source: string, source_id: string|null, address_area_id: string, relationship_type: string, is_primary: bool}>
      */
     private function resolveCoverage(string $countryCode, array $coverage): array
     {
@@ -247,6 +302,7 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
 
             $keys[$key] = true;
             $validated[] = [
+                'index' => $item['index'],
                 'source' => $item['source'],
                 'source_id' => $item['source_id'],
                 'address_area_id' => (string) $area->getKey(),
@@ -261,5 +317,10 @@ final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminI
     private static function sourceScopeKey(string $source, ?string $sourceId): string
     {
         return mb_strlen($source) . ':' . $source . ($sourceId === null ? 'N' : 'S' . mb_strlen($sourceId) . ':' . $sourceId);
+    }
+
+    private static function coverageUniqueKey(string $areaId, string $relationshipType, string $source): string
+    {
+        return $areaId . "\0" . $relationshipType . "\0" . $source;
     }
 }

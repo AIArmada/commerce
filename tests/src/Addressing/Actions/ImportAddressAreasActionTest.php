@@ -546,18 +546,35 @@ it('rejects a foreign-country parent when updating an existing row', function ()
     AddressCountry::query()->create(['iso2' => 'ZZ', 'name' => 'Testland']);
 
     $this->action->execute(new ArrayAddressAreaSource('test', [
-        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
-        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root'),
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'ZZ', type: 'state', name: 'Testland'),
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling'),
     ]));
 
     $result = $this->action->execute(new ArrayAddressAreaSource('test', [
-        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'ZZ', type: 'district', name: 'Petaling', parentSourceId: 'root'),
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root'),
     ]));
 
     expect($result->updated)->toBe(0)
         ->and($result->hasFailures())->toBeTrue()
         ->and($result->failures[0]->reason)->toContain('same country')
         ->and(AddressArea::query()->where('source', 'test')->where('source_id', 'child')->firstOrFail()->country_code)->toBe('MY');
+});
+
+it('rejects changing the country of an existing area during import', function (): void {
+    AddressCountry::query()->create(['iso2' => 'ZZ', 'name' => 'Testland']);
+
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
+    ]));
+
+    $result = $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'root', countryCode: 'ZZ', type: 'state', name: 'Selangor'),
+    ]));
+
+    expect($result->updated)->toBe(0)
+        ->and($result->hasFailures())->toBeTrue()
+        ->and($result->failures[0]->reason)->toContain('country')
+        ->and(AddressArea::query()->where('source', 'test')->where('source_id', 'root')->firstOrFail()->country_code)->toBe('MY');
 });
 
 it('rejects inverted and equal parent levels for new rows', function (): void {

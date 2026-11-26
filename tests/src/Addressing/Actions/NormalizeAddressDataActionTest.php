@@ -6,6 +6,8 @@ use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Features\Geography\Models\AddressCountry;
 use AIArmada\Addressing\Features\Geography\Models\City;
 use AIArmada\Addressing\Features\Geography\Models\State;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     $this->seedCountry('US');
@@ -53,6 +55,29 @@ it('resolves a country name before resolving its free-text geography', function 
     expect($address->countryId)->not->toBeNull()
         ->and($address->cityId)->toBe($this->city->getKey())
         ->and($address->countryCode)->toBe('US');
+});
+
+it('reuses explicit reference lookups within the request', function (): void {
+    $normalizer = app(AddressNormalizer::class);
+    $payload = [
+        'country_id' => $this->city->country_id,
+        'state_id' => $this->city->state_id,
+        'city_id' => $this->city->getKey(),
+    ];
+    $queries = [];
+
+    DB::listen(static function (QueryExecuted $query) use (&$queries): void {
+        $sql = mb_strtolower($query->sql);
+
+        if (str_starts_with($sql, 'select') && preg_match('/from "(countries|states|cities)"/', $sql) === 1) {
+            $queries[] = $sql;
+        }
+    });
+
+    $normalizer->normalize($payload);
+    $normalizer->normalize($payload);
+
+    expect($queries)->toHaveCount(3);
 });
 
 it('rejects an explicit city linked to a different state', function (): void {

@@ -771,15 +771,18 @@ Without a state the static level label applies. With one, the label joins the di
 
 Malaysia declares its base type labels explicitly; state overrides still take precedence. Labels remain language-neutral and consumers own translation. Consumers can preserve an exact phrase translation first, then translate individual terms separated by ` / ` when no phrase translation exists.
 
-Distinct-type lookups, including empty results, are memoised in request attributes by area model, connection, table, parent, hierarchy type, ordered type filters, and level filters. Labels still adapt when the selection changes. The cache holds raw types rather than translated labels, expires with the request, and is bypassed when no request is bound. Geography writes become visible to a previously cached scope on the next request.
+Distinct-type lookups are memoised in request attributes by configured area model, connection, database, table prefix, parent, hierarchy type, ordered type filters, and level filters. Missing results are not cached, so a later seed or link is visible immediately. Labels still adapt when the selection changes. The cache holds raw types rather than translated labels, expires with the request, and is bypassed when no request is bound. Hierarchy writes clear the shared hierarchy bucket so the same request sees new containment and state links.
 
 ## Save and import postcode admin data
 
 Use `PostalCodeWriter` for an operator-managed postcode row. Country and
 postcode code identify the row; the action validates each manual coverage area
-against the postcode country and changes only manual coverage without source
-identities. Metadata must be an array or `null`; omitting it during an update
-preserves the stored value, while explicit `null` clears it.
+against the postcode country and changes only `source = manual` coverage.
+Manual coverage is matched by its unique edge identity (area, postcode,
+relationship, source), so an existing manual edge keeps its stored provenance
+ID instead of being duplicated. Metadata must be an array or `null`; omitting
+it during an update preserves the stored value, while explicit `null` clears
+it.
 
 ```php
 use AIArmada\Addressing\Contracts\PostalCodeWriter;
@@ -805,7 +808,10 @@ and an explicit list of coverage edges. Every area is resolved by source and
 source ID within the selected country before any mutation. Each edge preserves
 its own source, source ID, relationship type, and primary flag. Only coverage
 groups named in the input are replaced; an empty coverage list leaves current
-coverage unchanged.
+coverage unchanged. Replacement scopes are `(source, source_id)`, while
+uniqueness is enforced on `(area, postcode, relationship, source)`; an incoming
+edge that would collide with a retained source ID is reported as a validation
+conflict instead of overwriting the retained edge.
 
 ## Import Areas
 
@@ -850,7 +856,7 @@ Re-imports are idempotent: rows without changes are reported as skipped. Parent 
 php artisan address:import-areas --csv=/path/to/areas.csv --source-key=my-source --reactivate
 ```
 
-Existing rows are updated through Eloquent `save()`, so model observers may mutate or cancel an update. A cancelled update is reported as skipped and leaves the stored area and its provider relationships unchanged.
+Existing rows are updated through Eloquent `save()`, so model observers may mutate or cancel an update. A cancelled update is reported as skipped and leaves the stored area and its provider relationships unchanged. The country of an existing area is immutable: a feed row that changes it is reported as a failure instead of moving the area and breaking its references.
 
 ### Saving a single area
 
@@ -871,7 +877,8 @@ $area = \AIArmada\Addressing\Support\ModelResolver::areaClass()::query()->findOr
 `handle()` validates that the country exists and the parent belongs to the
 same country, derives the slug from the name, and honors an explicit
 `is_active` boolean (omitted keeps the column default on create and the
-stored value on update). Source-owned `contains` edges follow the parent:
+stored value on update). The country of an existing area cannot be changed;
+create a replacement area and remap its references instead. Source-owned `contains` edges follow the parent:
 a parent-only move carries existing edges with their hierarchy types, a
 detach clears them and `parent_source_id`, and unrelated sources or
 relationship types are left untouched. Manual rows use

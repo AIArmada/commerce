@@ -43,7 +43,7 @@ class AddressAreaFormSchema
                             )
                             ->searchable()
                             ->required()
-                            ->disabled($isSourceManaged)
+                            ->disabled($isSourceManaged || $currentArea !== null)
                             ->live()
                             ->afterStateUpdated(function (mixed $state, callable $set): void {
                                 $set('parent_id', null);

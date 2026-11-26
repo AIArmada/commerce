@@ -33,6 +33,29 @@ it('saves a top-level area with derived fields', function (): void {
         ->and($area->source_id)->toStartWith('my-state-selangor-');
 });
 
+it('keeps the existing area country immutable on edits', function (): void {
+    $malaysia = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $otherCountry = AddressCountry::query()->create([
+        'iso2' => 'ZZ',
+        'name' => 'Other Country',
+        'iso3' => 'ZZZ',
+        'numeric_code' => '999',
+    ]);
+    $area = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $malaysia->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+    ]));
+
+    expect(fn (): string => $this->action->handle([
+        'country_id' => $otherCountry->id,
+        'name' => 'Selangor Updated',
+    ], (string) $area->getKey()))->toThrow(ValidationException::class, 'cannot be changed');
+
+    expect($area->fresh()?->country_id)->toBe($malaysia->id)
+        ->and($area->fresh()?->name)->toBe('Selangor');
+});
+
 it('derives child level and parent source id', function (): void {
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $state = AddressArea::query()->findOrFail($this->action->handle([

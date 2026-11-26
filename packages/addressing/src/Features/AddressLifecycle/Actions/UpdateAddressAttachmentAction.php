@@ -185,6 +185,11 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
 
         return (new $pivotClass)->getConnection()->transaction(function () use ($addressId, $addressableType, $addressableId, $type): string {
             $this->lockAddressable($addressId, $addressableType, $addressableId);
+            $type = mb_trim($type);
+
+            if ($type === '') {
+                throw ValidationException::withMessages(['type' => 'An attachment type is required.']);
+            }
 
             $pivot = $this->writablePivots()
                 ->where('address_id', $addressId)

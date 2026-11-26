@@ -27,7 +27,13 @@ final class EditAddress extends EditRecord
             throw new LogicException('Expected an address record.');
         }
 
-        $id = app(AddressWriter::class)->execute($data, $this->areaAssignments(), (string) $record->getKey(), $record::class);
+        $id = app(AddressWriter::class)->execute(
+            $data,
+            $this->areaAssignments(),
+            (string) $record->getKey(),
+            $record::class,
+            ['source' => 'filament-addressing'],
+        );
 
         return $record->newQuery()->findOrFail($id);
     }

@@ -92,6 +92,11 @@ final class StoreCustomerShippingAddressAction
 }
 ```
 
+`AddressWriter::execute()` accepts an optional fifth `assignmentMetadata`
+argument. Pass the caller's provenance there (for example
+`['source' => 'filament-addressing']`) when an explicit area assignment map
+is written; the core action no longer assumes a Filament source.
+
 ## Order snapshot example
 
 ```php

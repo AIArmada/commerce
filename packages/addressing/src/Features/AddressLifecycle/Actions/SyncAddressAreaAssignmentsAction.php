@@ -19,17 +19,19 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
     /**
      * @param  array<string, string|null>  $assignments
      * @param  array<string, mixed>  $metadata
+     * @param  class-string|null  $addressModelClass
      */
     public function execute(
         string $addressId,
         array $assignments,
         ?string $stateId = null,
         array $metadata = [],
+        ?string $addressModelClass = null,
     ): void {
-        $addressClass = ModelResolver::addressClass();
+        $addressClass = $addressModelClass ?? ModelResolver::addressClass();
 
-        (new $addressClass)->getConnection()->transaction(function () use ($addressId, $assignments, $stateId, $metadata): void {
-            $address = AddressOwnerGuard::lockAddressForWrite($addressId);
+        (new $addressClass)->getConnection()->transaction(function () use ($addressId, $assignments, $stateId, $metadata, $addressClass): void {
+            $address = AddressOwnerGuard::lockAddressForWrite($addressId, $addressClass);
             $selectedAssignments = $assignments === [] ? [] : $this->validate($address->country_code, $address->state_id, $assignments, $stateId);
             ModelResolver::areaAssignmentClass()::query()
                 ->where('address_id', $address->getKey())

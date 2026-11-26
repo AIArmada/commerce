@@ -9,6 +9,7 @@ use AIArmada\Addressing\Features\PostalCodes\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Features\PostalCodes\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
@@ -48,6 +49,7 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
             }
 
             $manualCoverage = null;
+            $existingManualCoverage = new Collection;
 
             if (array_key_exists('manual_coverage', $attributes)) {
                 if (! is_array($attributes['manual_coverage'])) {
@@ -56,10 +58,14 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
                     ]);
                 }
 
+                $existingManualCoverage = $postalCode->exists
+                    ? $this->lockManualCoverage((string) $postalCode->getKey())
+                    : new Collection;
+
                 $manualCoverage = $this->validateManualCoverage(
                     $attributes['manual_coverage'],
                     $countryCode,
-                    $postalCode->exists ? (string) $postalCode->getKey() : null,
+                    $existingManualCoverage,
                 );
             }
 
@@ -91,7 +97,7 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
             }
 
             if ($manualCoverage !== null) {
-                $this->saveManualCoverage($postalCode, $manualCoverage);
+                $this->saveManualCoverage($postalCode, $manualCoverage, $existingManualCoverage);
             }
 
             return (string) $postalCode->getKey();
@@ -99,19 +105,30 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
     }
 
     /**
+     * @return Collection<int, AddressAreaPostalCode>
+     */
+    private function lockManualCoverage(string $postalCodeId): Collection
+    {
+        $pivotClass = ModelResolver::areaPostalCodeClass();
+
+        /** @var Collection<int, AddressAreaPostalCode> $edges */
+        $edges = $pivotClass::query()
+            ->where('postal_code_id', $postalCodeId)
+            ->where('source', 'manual')
+            ->orderBy((new $pivotClass)->getKeyName())
+            ->lockForUpdate()
+            ->get(['id', 'address_area_id', 'relationship_type']);
+
+        return $edges;
+    }
+
+    /**
      * @param  array<array-key, mixed>  $coverage
+     * @param  Collection<int, AddressAreaPostalCode>  $existingManualEdges
      * @return list<array{area_id: string, relationship_type: string, is_primary: bool}>
      */
-    private function validateManualCoverage(array $coverage, string $countryCode, ?string $postalCodeId): array
+    private function validateManualCoverage(array $coverage, string $countryCode, Collection $existingManualEdges): array
     {
-        $existingManualEdges = $postalCodeId === null
-            ? collect()
-            : ModelResolver::areaPostalCodeClass()::query()
-                ->where('postal_code_id', $postalCodeId)
-                ->where('source', 'manual')
-                ->whereNull('source_id')
-                ->lockForUpdate()
-                ->get(['address_area_id', 'relationship_type']);
         $existingKeys = $existingManualEdges->mapWithKeys(
             static fn (AddressAreaPostalCode $edge): array => [self::coverageKey((string) $edge->address_area_id, $edge->relationship_type) => true],
         )->all();
@@ -192,19 +209,14 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
 
     /**
      * @param  list<array{area_id: string, relationship_type: string, is_primary: bool}>  $coverage
+     * @param  Collection<int, AddressAreaPostalCode>  $existing
      */
-    private function saveManualCoverage(PostalCode $postalCode, array $coverage): void
+    private function saveManualCoverage(PostalCode $postalCode, array $coverage, Collection $existing): void
     {
-        $existing = ModelResolver::areaPostalCodeClass()::query()
-            ->where('postal_code_id', $postalCode->getKey())
-            ->where('source', 'manual')
-            ->whereNull('source_id')
-            ->lockForUpdate()
-            ->get()
-            ->keyBy(static fn (AddressAreaPostalCode $edge): string => self::coverageKey(
-                (string) $edge->address_area_id,
-                $edge->relationship_type,
-            ));
+        $existing = $existing->keyBy(static fn (AddressAreaPostalCode $edge): string => self::coverageKey(
+            (string) $edge->address_area_id,
+            $edge->relationship_type,
+        ));
         $retained = [];
 
         foreach ($coverage as $item) {

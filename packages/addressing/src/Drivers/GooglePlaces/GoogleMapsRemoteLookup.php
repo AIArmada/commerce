@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Drivers\GooglePlaces;
 
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsInputValues;
+use AIArmada\Addressing\GooglePlaces\GoogleMapsTrustedHosts;
 use AIArmada\Addressing\GooglePlaces\GoogleMapsUrlParser;
 use AIArmada\Addressing\GooglePlaces\GooglePlacesConfiguration;
 use AIArmada\Addressing\Support\GeoDistance;
@@ -31,12 +32,19 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
         $guard = $this->guard ?? app(PublicHttpUrlGuard::class);
         $http = $this->http ?? app(PinnedHttpClient::class);
         $currentUrl = $url;
+        $lastApprovedUrl = $url;
 
         for ($redirectDepth = 0; $redirectDepth < 5; $redirectDepth++) {
             $currentUrl = $this->urls->unwrapConsent($currentUrl);
 
-            if ($currentUrl === null) {
-                return null;
+            if ($currentUrl === null || ! GoogleMapsTrustedHosts::isSupportedUrl($currentUrl)) {
+                return $lastApprovedUrl;
+            }
+
+            $lastApprovedUrl = $currentUrl;
+
+            if (! ($this->urls->parse($currentUrl)['needs_redirect_resolution'] ?? false)) {
+                return $currentUrl;
             }
 
             try {
@@ -65,7 +73,7 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
             $nextUrl = $this->urls->resolveRelative($currentUrl, $location);
             $unwrappedNext = $this->urls->unwrapConsent($nextUrl);
 
-            if ($unwrappedNext === null) {
+            if ($unwrappedNext === null || ! GoogleMapsTrustedHosts::isSupportedUrl($unwrappedNext)) {
                 return $currentUrl;
             }
 
@@ -75,14 +83,16 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
                 return $currentUrl;
             }
 
-            $currentUrl = $nextUrl;
-
-            if (! ($this->urls->parse($currentUrl)['needs_redirect_resolution'] ?? false)) {
-                return $currentUrl;
-            }
+            $currentUrl = $unwrappedNext;
         }
 
-        return $this->urls->unwrapConsent($currentUrl);
+        $currentUrl = $this->urls->unwrapConsent($currentUrl);
+
+        if ($currentUrl !== null && GoogleMapsTrustedHosts::isSupportedUrl($currentUrl)) {
+            return $currentUrl;
+        }
+
+        return $lastApprovedUrl;
     }
 
     /**
@@ -177,6 +187,10 @@ final readonly class GoogleMapsRemoteLookup implements GoogleMapsLookup
      */
     public function placeDetails(string $placeId): ?array
     {
+        if (GooglePlacesConfiguration::serverApiKey() === null) {
+            return null;
+        }
+
         try {
             $response = Http::withHeaders([
                 'X-Goog-Api-Key' => GooglePlacesConfiguration::serverApiKey(),

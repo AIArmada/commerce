@@ -18,9 +18,11 @@ use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function (): void {
     app(CountryDatasetSeeder::class)->execute();
@@ -35,6 +37,32 @@ beforeEach(function (): void {
 });
 
 final class CustomResolutionGapResourceModel extends ResolutionGap {}
+
+final class DeniedGapAreaPolicy
+{
+    public function view(User $user, AddressArea $area): bool
+    {
+        return false;
+    }
+
+    public function update(User $user, AddressArea $area): bool
+    {
+        return false;
+    }
+}
+
+final class AllowedGapAreaPolicy
+{
+    public function view(User $user, AddressArea $area): bool
+    {
+        return true;
+    }
+
+    public function update(User $user, AddressArea $area): bool
+    {
+        return true;
+    }
+}
 
 function logTestGap(string $value = 'Kuala Lumpur', string $role = 'postal_locality', string $reason = 'unmatched'): ResolutionGap
 {
@@ -102,6 +130,27 @@ it('matches a gap through the core action', function (): void {
     expect($gap->fresh()?->status)->toBe('matched')
         ->and($gap->fresh()?->matched_area_id)->toBe($this->areas['kl']->getKey())
         ->and(AddressAreaName::query()->where('address_area_id', $this->areas['kl']->getKey())->where('name', 'Kuala Lumpur')->exists())->toBeTrue();
+});
+
+it('requires area view and update authorization for gap matching', function (): void {
+    $this->actingAs(User::factory()->create());
+    $gap = logTestGap();
+    Gate::policy(AddressArea::class, DeniedGapAreaPolicy::class);
+
+    expect(ResolutionGapTable::searchAreas('petaling', $gap))->toBe([])
+        ->and(fn (): mixed => ResolutionGapTable::runMatch($gap, ['address_area_id' => $this->areas['kl']->getKey()]))
+        ->toThrow(HttpException::class);
+});
+
+it('requires editable areas even when the area policy allows updates', function (): void {
+    $this->actingAs(User::factory()->create());
+    $gap = logTestGap();
+    Gate::policy(AddressArea::class, AllowedGapAreaPolicy::class);
+    config()->set('filament-addressing.resources.areas.read_only', true);
+
+    expect(ResolutionGapTable::searchAreas('petaling', $gap))->not->toBe([])
+        ->and(fn (): mixed => ResolutionGapTable::runMatch($gap, ['address_area_id' => $this->areas['kl']->getKey()]))
+        ->toThrow(HttpException::class);
 });
 
 it('surfaces core match failures', function (): void {

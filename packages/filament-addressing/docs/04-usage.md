@@ -82,7 +82,9 @@ restore provider-managed values. Inactive areas remain in existing references
 and are marked in the detail view. When a country profile defines one hierarchy,
 the form selects it automatically; when it defines parallel hierarchies, choose
 the labeled hierarchy explicitly for a parent relationship. Countries without
-a profile accept a custom hierarchy type.
+a profile accept a custom hierarchy type. An existing area's country is locked
+in the form and enforced by the core writer, because changing it would break
+its children, state links, coverage, and address assignments.
 
 Area details expose aliases, roles, incoming and outgoing typed area
 relationships, canonical state mappings, child areas, and postcode coverage.

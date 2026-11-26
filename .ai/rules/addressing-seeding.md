@@ -1,7 +1,7 @@
 ---
 paths:
-  - packages/addressing/src/Actions/Seed*.php
-  - packages/addressing/src/Commands/Seed*.php
+  - packages/addressing/src/Features/*/Actions/Seed*.php
+  - packages/addressing/src/Features/*/EntryPoints/Commands/Seed*.php
   - packages/addressing/src/Support/CitySeedRowReader.php
   - packages/addressing/src/Support/SeedAddressingSummary.php
   - packages/addressing/database/seeders/**
@@ -18,7 +18,8 @@ addressing reference data.
   `AIArmada\Addressing\Database\Seeders\AddressingSeeder`; they never
   hand-roll the orchestration.
 - The granular `address:seed-geographies` and `address:seed-postal-codes`
-  commands exist for per-country partial work only.
+  commands live in their owning features' `EntryPoints/Commands` folders and
+  exist for per-country partial work only.
 - City volume is config, not app code:
   `addressing.seed.full_city_countries` filters cities outside production.
   Production always seeds the full city dataset.

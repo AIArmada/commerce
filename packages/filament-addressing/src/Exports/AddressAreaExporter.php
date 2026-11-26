@@ -8,6 +8,7 @@ use AIArmada\Addressing\Features\Geography\Models\AddressArea;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class AddressAreaExporter extends Exporter
 {
@@ -34,13 +35,9 @@ class AddressAreaExporter extends Exporter
             ExportColumn::make('parent_source_id')
                 ->label('Parent Source ID'),
             ExportColumn::make('relationship_type')
-                ->state(static fn (AddressArea $record): ?string => $record->ancestors()
-                    ->wherePivot('source', $record->source)
-                    ->first()?->pivot?->getAttribute('relationship_type')),
+                ->state(static fn (AddressArea $record): ?string => self::ancestorPivotValue($record, 'relationship_type')),
             ExportColumn::make('hierarchy_type')
-                ->state(static fn (AddressArea $record): ?string => $record->ancestors()
-                    ->wherePivot('source', $record->source)
-                    ->first()?->pivot?->getAttribute('hierarchy_type')),
+                ->state(static fn (AddressArea $record): ?string => self::ancestorPivotValue($record, 'hierarchy_type')),
             ExportColumn::make('source')
                 ->label('Source'),
             ExportColumn::make('source_id')
@@ -60,7 +57,33 @@ class AddressAreaExporter extends Exporter
                     : (string) ($state ?? '')),
             ExportColumn::make('synced_at')
                 ->label('Synced At'),
+            ExportColumn::make('ancestors.id')
+                ->hidden()
+                ->state(static fn (): null => null),
         ];
+    }
+
+    private static function ancestorPivotValue(AddressArea $record, string $column): ?string
+    {
+        $record->loadMissing('ancestors');
+
+        $ancestor = $record->getRelation('ancestors')->first(
+            static fn (AddressArea $candidate): bool => self::pivotValue($candidate, 'source') === (string) $record->source,
+        );
+
+        if (! $ancestor instanceof AddressArea) {
+            return null;
+        }
+
+        return self::pivotValue($ancestor, $column);
+    }
+
+    private static function pivotValue(AddressArea $area, string $column): ?string
+    {
+        $pivot = $area->getRelation('pivot');
+        $value = $pivot instanceof Pivot ? $pivot->getAttribute($column) : null;
+
+        return is_string($value) ? $value : null;
     }
 
     public static function getCompletedNotificationBody(Export $export): string

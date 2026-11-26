@@ -118,6 +118,16 @@ final readonly class ImportAddressAreasAction implements AddressAreaImporter
                 $parent = null;
                 $parentId = null;
 
+                if ($existing !== null && (string) ($existing['country_id'] ?? '') !== $countryId) {
+                    $failures[] = new ImportAddressAreaFailureData(
+                        sourceId: $areaData->sourceId,
+                        reason: 'The country of an existing address area cannot be changed.',
+                        name: $areaData->name,
+                    );
+
+                    continue;
+                }
+
                 if ($areaData->parentSourceId !== null && $areaData->parentSourceId !== '') {
                     $parent = $areasByKey[$areaData->source . "\0" . $areaData->parentSourceId] ?? null;
 
@@ -477,7 +487,8 @@ final readonly class ImportAddressAreasAction implements AddressAreaImporter
      */
     private function hydrateArea(array $attributes): AddressArea
     {
-        $area = new AddressArea;
+        $areaClass = ModelResolver::areaClass();
+        $area = new $areaClass;
         $area->setRawAttributes($attributes, true);
         $area->exists = true;
 

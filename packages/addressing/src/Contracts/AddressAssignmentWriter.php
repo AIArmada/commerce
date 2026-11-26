@@ -9,8 +9,9 @@ interface AddressAssignmentWriter
     /**
      * @param  array<string, string|null>  $assignments
      * @param  array<string, mixed>  $metadata
+     * @param  class-string|null  $addressModelClass
      */
-    public function execute(string $addressId, array $assignments, ?string $stateId = null, array $metadata = []): void;
+    public function execute(string $addressId, array $assignments, ?string $stateId = null, array $metadata = [], ?string $addressModelClass = null): void;
 
     /**
      * @param  array<string, string|null>  $assignments

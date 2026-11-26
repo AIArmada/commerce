@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\AddressLifecycle\Support;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
+use AIArmada\Addressing\Features\AddressLifecycle\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Support\AddressFormatRenderer;
 use AIArmada\Addressing\Support\LocationLevelLabels;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -136,16 +137,21 @@ final class AddressHierarchyFormatter
             return null;
         }
 
-        return $address->areaAssignments()
-            ->with('area')
-            ->get()
-            ->firstWhere('role', $role)?->area?->name;
+        return self::areaNamesForAssignments([self::assignmentForRole($address, $role)])[0] ?? null;
     }
 
     public static function subdivisionOrLocalityName(?Address $address): ?string
     {
-        return self::roleAreaName($address, AddressAssignments::ADMINISTRATIVE_SUBDIVISION)
-            ?? self::roleAreaName($address, AddressAssignments::POSTAL_LOCALITY);
+        if (! $address instanceof Address) {
+            return null;
+        }
+
+        $names = self::areaNamesForAssignments([
+            self::assignmentForRole($address, AddressAssignments::ADMINISTRATIVE_SUBDIVISION),
+            self::assignmentForRole($address, AddressAssignments::POSTAL_LOCALITY),
+        ]);
+
+        return $names[0] ?? $names[1] ?? null;
     }
 
     public static function roleAreaLabel(?Address $address, string $role, string $fallback): string
@@ -170,6 +176,74 @@ final class AddressHierarchyFormatter
         }
 
         return self::roleAreaLabel($address, AddressAssignments::POSTAL_LOCALITY, $fallback);
+    }
+
+    private static function assignmentForRole(Address $address, string $role): ?AddressAreaAssignment
+    {
+        $preloaded = $address->relationLoaded('areaAssignments');
+
+        if (! $preloaded) {
+            $address->load(['areaAssignments' => static fn ($query) => $query->with('area')]);
+        }
+
+        $assignments = $address->getRelation('areaAssignments');
+        $assignment = $assignments->first(
+            static fn (AddressAreaAssignment $candidate): bool => (string) $candidate->getAttribute('role') === $role,
+        );
+
+        if ($assignment instanceof AddressAreaAssignment || ! $preloaded) {
+            return $assignment instanceof AddressAreaAssignment ? $assignment : null;
+        }
+
+        $found = $address->areaAssignments()
+            ->with('area')
+            ->where('role', $role)
+            ->first();
+
+        return $found instanceof AddressAreaAssignment ? $found : null;
+    }
+
+    /**
+     * @param  list<AddressAreaAssignment|null>  $assignments
+     * @return list<string|null>
+     */
+    private static function areaNamesForAssignments(array $assignments): array
+    {
+        $names = [];
+        $missing = [];
+
+        foreach ($assignments as $index => $assignment) {
+            if (! $assignment instanceof AddressAreaAssignment) {
+                $names[$index] = null;
+
+                continue;
+            }
+
+            if ($assignment->relationLoaded('area')) {
+                $names[$index] = self::clean($assignment->getRelation('area')?->getAttribute('name'));
+
+                continue;
+            }
+
+            $missing[$index] = (string) $assignment->getAttribute('address_area_id');
+        }
+
+        if ($missing !== []) {
+            $areaClass = ModelResolver::areaClass();
+            $areaNames = $areaClass::query()
+                ->whereKey(array_values(array_unique($missing)))
+                ->pluck('name', 'id')
+                ->all();
+
+            foreach ($missing as $index => $areaId) {
+                $name = $areaNames[$areaId] ?? null;
+                $names[$index] = is_string($name) ? self::clean($name) : null;
+            }
+        }
+
+        ksort($names);
+
+        return array_values($names);
     }
 
     /**

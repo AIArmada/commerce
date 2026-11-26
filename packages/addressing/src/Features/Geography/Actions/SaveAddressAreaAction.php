@@ -33,7 +33,7 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
 
             $countryId = $this->resolveCountryId($attributes, $record);
             $country = ModelResolver::countryClass()::query()->lockForUpdate()->findOrFail($countryId);
-            $parent = $this->resolveParent($attributes, $record);
+            $parent = $this->resolveParent($attributes, $record, $modelClass);
 
             if ($parent instanceof AddressArea && (string) $parent->country_id !== $countryId) {
                 throw ValidationException::withMessages([
@@ -185,17 +185,26 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
             ]);
         }
 
-        return mb_trim($countryId);
+        $countryId = mb_trim($countryId);
+
+        if ($record->exists && (string) $record->country_id !== $countryId) {
+            throw ValidationException::withMessages([
+                'country_id' => __('The country of an existing address area cannot be changed.'),
+            ]);
+        }
+
+        return $countryId;
     }
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  class-string<AddressArea>  $modelClass
      */
-    private function resolveParent(array $attributes, AddressArea $record): ?AddressArea
+    private function resolveParent(array $attributes, AddressArea $record, string $modelClass): ?AddressArea
     {
         if (! array_key_exists('parent_id', $attributes)) {
             return $record->parent_id !== null
-                ? ModelResolver::areaClass()::query()->lockForUpdate()->findOrFail($record->parent_id)
+                ? $modelClass::query()->lockForUpdate()->findOrFail($record->parent_id)
                 : null;
         }
 
@@ -211,7 +220,7 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
             ]);
         }
 
-        return ModelResolver::areaClass()::query()->lockForUpdate()->findOrFail(mb_trim($parentId));
+        return $modelClass::query()->lockForUpdate()->findOrFail(mb_trim($parentId));
     }
 
     /**

@@ -235,6 +235,25 @@ invoked directly, regardless of this flag.
 
 Register your `AddressAreaSource` implementations here. They become available to the `address:import-areas` command.
 
+## Google Places
+
+```php
+'google_places' => [
+    'enabled' => env('ADDRESSING_GOOGLE_PLACES_ENABLED'),
+    'api_key' => env('ADDRESSING_GOOGLE_MAPS_API_KEY'),
+    'server_api_key' => env('ADDRESSING_GOOGLE_PLACES_SERVER_API_KEY'),
+    'link_resolution_enabled' => env('ADDRESSING_GOOGLE_PLACE_LINK_RESOLUTION_ENABLED'),
+    'user_agent' => env('ADDRESSING_GOOGLE_PLACES_USER_AGENT'),
+],
+```
+
+Link resolution follows only the documented Google Maps, shortener
+(`maps.app.goo.gl`, `goo.gl`, `g.co`), and consent hosts. Every redirect,
+including the final target, must stay on an approved host; unsupported
+regional domains fail closed instead of being fetched. Server-side place
+search and place-details calls are skipped when `server_api_key` is missing,
+so the integration stays optional.
+
 ## OneMap Postcodes
 
 ```php

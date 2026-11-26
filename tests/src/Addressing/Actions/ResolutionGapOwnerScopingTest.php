@@ -16,6 +16,8 @@ use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAlias
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Artisan;
@@ -68,6 +70,19 @@ final class GapScopingFakeGeographyProvider implements CountryAddressAreaMetadat
     public function areaRelationships(): array
     {
         return [];
+    }
+}
+
+final class FixedOwnerResolutionGap extends ResolutionGap
+{
+    public static ?string $ownerId = null;
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(
+            enabled: true,
+            owner: self::$ownerId !== null ? new RecordReference(User::class, self::$ownerId) : null,
+        );
     }
 }
 
@@ -206,4 +221,50 @@ it('reports gaps consolidated across every owner', function (): void {
         ->and($output)->toContain('Alpha Tenant Value')
         ->and($output)->toContain('Beta Tenant Value')
         ->and($output)->toContain('Global Telemetry Value');
+});
+
+it('dedupes global gaps when auto assignment is disabled', function (): void {
+    $owner = User::factory()->create();
+    config()->set('addressing.features.owner.auto_assign_on_create', false);
+
+    $first = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->withoutOwnerScope()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Auto Assign Off')));
+    $second = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->withoutOwnerScope()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Auto Assign Off')));
+
+    expect($first->getKey())->toBe($second->getKey())
+        ->and($first->fresh()?->owner_type)->toBeNull()
+        ->and($first->fresh()?->owner_id)->toBeNull()
+        ->and((int) $first->fresh()?->hits)->toBe(2)
+        ->and(ResolutionGap::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('dedupes global gaps when owner scoping is disabled', function (): void {
+    $owner = User::factory()->create();
+    config()->set('addressing.features.owner.enabled', false);
+
+    $first = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Owner Scoping Off')));
+    $second = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Owner Scoping Off')));
+
+    expect($first->getKey())->toBe($second->getKey())
+        ->and($first->fresh()?->owner_type)->toBeNull()
+        ->and((int) $first->fresh()?->hits)->toBe(2)
+        ->and(ResolutionGap::query()->count())->toBe(1);
+});
+
+it('uses a configured fixed owner for dedupe, scope, and insert', function (): void {
+    $owner = User::factory()->create();
+    FixedOwnerResolutionGap::$ownerId = (string) $owner->getKey();
+    config()->set('addressing.models.resolution_gap', FixedOwnerResolutionGap::class);
+
+    try {
+        $first = app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Fixed Owner');
+        $second = app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Fixed Owner');
+        $gap = FixedOwnerResolutionGap::query()->findOrFail($first);
+
+        expect($second)->toBe($first)
+            ->and($gap->owner_type)->toBe($owner->getMorphClass())
+            ->and((string) $gap->owner_id)->toBe((string) $owner->getKey())
+            ->and((int) $gap->hits)->toBe(2);
+    } finally {
+        FixedOwnerResolutionGap::$ownerId = null;
+    }
 });

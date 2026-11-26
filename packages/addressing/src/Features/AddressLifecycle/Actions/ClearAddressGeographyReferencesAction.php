@@ -13,35 +13,78 @@ final readonly class ClearAddressGeographyReferencesAction implements AddressRef
 {
     private const int CHUNK_SIZE = 500;
 
+    public function __construct(private AddressAssignmentWriter $assignments) {}
+
     public function clearState(string $stateId): void
     {
         $addressClass = ModelResolver::addressClass();
 
         (new $addressClass)->getConnection()->transaction(function () use ($stateId, $addressClass): void {
+            $assignmentClass = ModelResolver::areaAssignmentClass();
+            $assignmentKeyName = (new $assignmentClass)->getKeyName();
             $lastId = null;
 
             do {
-                $ids = $addressClass::query()->withoutOwnerScope()
+                $addresses = $addressClass::query()->withoutOwnerScope()
                     ->where('state_id', $stateId)
                     ->when($lastId !== null, static fn ($query) => $query->where('id', '>', $lastId))
                     ->orderBy('id')
                     ->limit(self::CHUNK_SIZE)
                     ->lockForUpdate()
-                    ->pluck('id')
-                    ->map(static fn (mixed $id): string => (string) $id)
-                    ->all();
+                    ->get(['id', 'country_code']);
 
-                if ($ids === []) {
+                if ($addresses->isEmpty()) {
                     break;
                 }
+
+                $ids = $addresses
+                    ->map(static fn ($address): string => (string) $address->getKey())
+                    ->all();
 
                 $addressClass::query()->withoutOwnerScope()
                     ->whereIn('id', $ids)
                     ->where('state_id', $stateId)
                     ->update(['state_id' => null]);
 
-                foreach ($ids as $id) {
-                    $this->pruneAddressAssignments($addressClass, $id);
+                $assignments = $assignmentClass::query()
+                    ->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)
+                    ->whereIn('address_id', $ids)
+                    ->orderBy($assignmentKeyName)
+                    ->lockForUpdate()
+                    ->get(['address_id', 'role', 'address_area_id']);
+
+                $currentByAddress = [];
+
+                foreach ($assignments as $assignment) {
+                    $currentByAddress[(string) $assignment->getAttribute('address_id')][(string) $assignment->getAttribute('role')] = (string) $assignment->getAttribute('address_area_id');
+                }
+
+                $removedByRole = [];
+
+                foreach ($addresses as $address) {
+                    $current = $currentByAddress[(string) $address->getKey()] ?? [];
+
+                    if ($current === []) {
+                        continue;
+                    }
+
+                    $valid = $this->assignments->narrowToValidAssignments(
+                        $address->getAttribute('country_code'),
+                        null,
+                        $current,
+                    );
+
+                    foreach (array_keys(array_diff_key($current, $valid)) as $role) {
+                        $removedByRole[(string) $role][] = (string) $address->getKey();
+                    }
+                }
+
+                foreach ($removedByRole as $role => $addressIds) {
+                    $assignmentClass::query()
+                        ->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)
+                        ->whereIn('address_id', $addressIds)
+                        ->where('role', $role)
+                        ->delete();
                 }
 
                 $lastId = end($ids);
@@ -61,41 +104,6 @@ final readonly class ClearAddressGeographyReferencesAction implements AddressRef
         ModelResolver::areaAssignmentClass()::query()
             ->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)
             ->where('address_area_id', $areaId)
-            ->delete();
-    }
-
-    private function pruneAddressAssignments(string $addressClass, string $addressId): void
-    {
-        $address = $addressClass::query()->withoutOwnerScope()->whereKey($addressId)->first();
-
-        if ($address === null) {
-            return;
-        }
-
-        $current = ModelResolver::areaAssignmentClass()::query()
-            ->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)
-            ->where('address_id', $addressId)
-            ->pluck('address_area_id', 'role')
-            ->map(static fn (mixed $areaId): string => (string) $areaId)
-            ->all();
-
-        if ($current === []) {
-            return;
-        }
-
-        $removedRoles = array_map(
-            static fn (int | string $role): string => (string) $role,
-            array_keys(array_diff_key($current, app(AddressAssignmentWriter::class)->narrowToValidAssignments($address->country_code, $address->state_id, $current))),
-        );
-
-        if ($removedRoles === []) {
-            return;
-        }
-
-        ModelResolver::areaAssignmentClass()::query()
-            ->withoutGlobalScope(AddressAreaAssignmentOwnerScope::class)
-            ->where('address_id', $addressId)
-            ->whereIn('role', $removedRoles)
             ->delete();
     }
 }

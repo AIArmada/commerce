@@ -26,6 +26,10 @@ final class DestinationAddressValidator
      */
     public function validate(AddressData $destination): array
     {
+        if (! interface_exists(AddressValidator::class) || ! app()->bound(AddressValidator::class)) {
+            return [];
+        }
+
         return app(AddressValidator::class)->validate(AddressingAddressData::from([
             'line1' => $destination->line1,
             'line2' => $destination->line2,

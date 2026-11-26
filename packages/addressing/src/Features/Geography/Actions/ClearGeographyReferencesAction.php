@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceMaintenance;
+use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceReader;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
@@ -15,6 +16,7 @@ final readonly class ClearGeographyReferencesAction implements GeographyReferenc
 {
     public function __construct(
         private AddressReferenceMaintenance $addresses,
+        private AddressReferenceReader $references,
         private AreaCoverageMaintenance $coverage,
     ) {}
 
@@ -65,7 +67,7 @@ final readonly class ClearGeographyReferencesAction implements GeographyReferenc
             $referenced = ModelResolver::stateClass()::query()->where('country_id', $countryId)->exists()
                 || ModelResolver::cityClass()::query()->where('country_id', $countryId)->exists()
                 || ModelResolver::areaClass()::query()->where('country_id', $countryId)->exists()
-                || ModelResolver::addressClass()::query()->withoutOwnerScope()->where('country_id', $countryId)->exists();
+                || $this->references->hasCountryReferences($countryId);
 
             if ($referenced) {
                 throw new DomainException('Countries with states, cities, areas, or addresses cannot be deleted.');

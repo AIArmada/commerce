@@ -16,9 +16,11 @@ final readonly class GuardAddressCountryDeletionAction implements AddressCountry
     public function handle(string $key): void
     {
         if (ModelResolver::areaClass()::query()->where('country_id', $key)->exists()
+            || ModelResolver::stateClass()::query()->where('country_id', $key)->exists()
+            || ModelResolver::cityClass()::query()->where('country_id', $key)->exists()
             || $this->addresses->hasCountryReferences($key)) {
             throw ValidationException::withMessages([
-                'country' => 'Delete or reassign this country\'s areas and addresses before deleting it.',
+                'country' => 'Delete or reassign this country\'s states, cities, areas, and addresses before deleting it.',
             ]);
         }
     }

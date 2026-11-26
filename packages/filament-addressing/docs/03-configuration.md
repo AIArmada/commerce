@@ -84,7 +84,7 @@ Area source payloads and metadata can be large and provider-specific. Keep hidde
 
 ### Gap Actions
 
-Enabled by default. Disable to hide the match-to-area and ignore row actions (plus bulk ignore) on the resolution gap list. The actions are also hidden when `resources.resolution_gaps.read_only` is `true`.
+Enabled by default. Disable to hide the match-to-area and ignore row actions (plus bulk ignore) on the resolution gap list. The actions are also hidden when `resources.resolution_gaps.read_only` is `true`. Matching requires the existing gap edit permission plus area view and update authorization; area selections are filtered by area view authorization, and matching is blocked while the areas resource is read-only because it writes global area aliases.
 
 ## Resources
 

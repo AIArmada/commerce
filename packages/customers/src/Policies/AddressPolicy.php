@@ -44,30 +44,48 @@ final class AddressPolicy
 
     private function resolveOwner(): ?Model
     {
-        if (! Address::ownerScopeConfig()->enabled) {
+        $config = Address::ownerScopeConfig();
+
+        if (! $config->enabled) {
             return null;
         }
 
-        return OwnerContext::resolve();
+        return OwnerContext::resolveConfigured($config);
     }
 
-    private function isAccessible(Address $address): bool
+    private function isViewable(Address $address): bool
     {
-        $ownerScopeConfig = Address::ownerScopeConfig();
+        $config = Address::ownerScopeConfig();
 
-        if (! $ownerScopeConfig->enabled) {
+        if (! $config->enabled) {
             return true;
         }
 
         $owner = $this->resolveOwner();
-        $includeGlobal = $ownerScopeConfig->includeGlobal;
 
         if ($owner === null) {
-            return $address->owner_type === null && $address->owner_id === null;
+            return OwnerContext::isExplicitGlobal() && $address->isGlobal();
         }
 
-        if ($includeGlobal && $address->isGlobal()) {
+        if ($address->belongsToOwner($owner)) {
             return true;
+        }
+
+        return $config->includeGlobal && $address->isGlobal();
+    }
+
+    private function isMutable(Address $address): bool
+    {
+        $config = Address::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return true;
+        }
+
+        $owner = $this->resolveOwner();
+
+        if ($owner === null) {
+            return OwnerContext::isExplicitGlobal() && $address->isGlobal();
         }
 
         return $address->belongsToOwner($owner);
@@ -80,7 +98,7 @@ final class AddressPolicy
 
     public function view(mixed $user, Address $address): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.view') && $this->isAccessible($address);
+        return $this->hasPermission($user, 'customers.addresses.view') && $this->isViewable($address);
     }
 
     public function create(mixed $user): bool
@@ -90,11 +108,11 @@ final class AddressPolicy
 
     public function update(mixed $user, Address $address): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.update') && $this->isAccessible($address);
+        return $this->hasPermission($user, 'customers.addresses.update') && $this->isMutable($address);
     }
 
     public function delete(mixed $user, Address $address): bool
     {
-        return $this->hasPermission($user, 'customers.addresses.delete') && $this->isAccessible($address);
+        return $this->hasPermission($user, 'customers.addresses.delete') && $this->isMutable($address);
     }
 }

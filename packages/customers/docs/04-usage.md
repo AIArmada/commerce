@@ -325,6 +325,10 @@ customer's owner context and attachment type before changing the primary
 pivot. Deleting a customer removes its addressable links; shared address rows
 remain reusable by other addressables. Attach addresses through `HasAddresses`; `SetDefaultCustomerAddress` works against these canonical primaries.
 
+`AddressPolicy` fails closed when no owner context is resolved. Global address
+reads require explicit global context or `addressing.features.owner.include_global`,
+and global updates/deletes always require explicit global context.
+
 ## Marketing Preferences
 
 New customers default to `accepts_marketing = false`. Marketing consent is

@@ -8,6 +8,7 @@ use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Features\ResolutionGaps\Models\ResolutionGap;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -93,29 +94,36 @@ final readonly class ReportResolutionGapAction implements ResolutionGapReporter
             ]);
         }
 
-        $attempt = fn (): ResolutionGap => ResolutionGap::configuredClass()::query()->getConnection()->transaction(fn (): ResolutionGap => $this->upsert($source, $countryCode, $role, $value, $reason, $normalized, $context));
+        $gapClass = ResolutionGap::configuredClass();
+        $config = $gapClass::ownerScopeConfig();
+        $owner = $config->enabled ? OwnerContext::resolveConfigured($config) : null;
+        $effectiveOwner = $config->enabled && $config->autoAssignOnCreate ? $owner : null;
+        $attempt = fn (): ResolutionGap => $gapClass::query()->getConnection()->transaction(
+            fn (): ResolutionGap => $this->upsert($effectiveOwner, $source, $countryCode, $role, $value, $reason, $normalized, $context),
+        );
 
         try {
-            return (string) $this->runWithinOwnerContext($attempt)->getKey();
+            return (string) $this->runWithEffectiveOwner($config->enabled, $effectiveOwner, $attempt)->getKey();
         } catch (UniqueConstraintViolationException) {
-            return (string) $this->runWithinOwnerContext($attempt)->getKey();
+            return (string) $this->runWithEffectiveOwner($config->enabled, $effectiveOwner, $attempt)->getKey();
         }
     }
 
     /**
-     * Gaps are telemetry: callers with a resolved owner stay in that scope,
-     * while unauthenticated misses (public widgets, import probes) land as
-     * global rows inside explicit global context so audit tooling still sees them.
+     * Gaps are telemetry: rows land under the effective owner tuple that the
+     * model would persist. When that tuple is global, enter explicit global
+     * context so global rows can be created or updated regardless of the
+     * caller's ambient owner.
      *
      * @param  callable(): ResolutionGap  $attempt
      */
-    private function runWithinOwnerContext(callable $attempt): ResolutionGap
+    private function runWithEffectiveOwner(bool $ownerScopingEnabled, ?Model $effectiveOwner, callable $attempt): ResolutionGap
     {
-        if (OwnerContext::resolve() !== null) {
-            return $attempt();
+        if ($ownerScopingEnabled && $effectiveOwner === null) {
+            return OwnerContext::withOwner(null, $attempt);
         }
 
-        return OwnerContext::withOwner(null, $attempt);
+        return $attempt();
     }
 
     public static function normalize(string $value): string
@@ -127,6 +135,7 @@ final readonly class ReportResolutionGapAction implements ResolutionGapReporter
      * @param  array<string, mixed>|null  $context
      */
     private function upsert(
+        ?Model $owner,
         string $source,
         string $countryCode,
         string $role,
@@ -135,7 +144,6 @@ final readonly class ReportResolutionGapAction implements ResolutionGapReporter
         string $normalized,
         ?array $context,
     ): ResolutionGap {
-        $owner = OwnerContext::resolve();
         $gapClass = ResolutionGap::configuredClass();
         $dedupeHash = $gapClass::dedupeHashFor(
             $owner?->getMorphClass(),

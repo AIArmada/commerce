@@ -143,8 +143,6 @@ final class AddressOwnerGuard
 
     public static function lockAddressableForWrite(string $addressableType, string | int $addressableId): void
     {
-        self::assertAddressableIsWritable($addressableType, $addressableId);
-
         $class = Relation::getMorphedModel($addressableType) ?? $addressableType;
 
         if (! is_a($class, Model::class, true)) {
@@ -157,7 +155,10 @@ final class AddressOwnerGuard
             $query->withoutGlobalScopes();
         }
 
-        $query->whereKey($addressableId)->lockForUpdate()->firstOrFail();
+        if ($query->whereKey($addressableId)->lockForUpdate()->first() === null) {
+            throw new AuthorizationException(self::inaccessibleMessage());
+        }
+
         self::assertAddressableIsWritable($addressableType, $addressableId);
     }
 
