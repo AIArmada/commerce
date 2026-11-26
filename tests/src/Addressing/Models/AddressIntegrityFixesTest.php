@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Models\Address;
-use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Models\State;
@@ -79,11 +79,11 @@ it('rejects duplicate addressable pivots and second primaries at the database', 
 });
 
 it('dedupes global resolution gaps through the dedupe hash', function (): void {
-    $action = app(LogAddressResolutionGapAction::class);
+    $action = app(ResolutionGapReporter::class);
 
     OwnerContext::withOwner(null, function () use ($action): void {
-        $action->execute('search', 'MY', 'area', 'Nowhere Town');
-        $action->execute('search', 'MY', 'area', 'Nowhere Town');
+        $action->report('search', 'MY', 'area', 'Nowhere Town');
+        $action->report('search', 'MY', 'area', 'Nowhere Town');
     });
 
     $gaps = OwnerContext::withOwner(

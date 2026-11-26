@@ -7,9 +7,9 @@ use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\ResolutionGap;
@@ -70,12 +70,12 @@ beforeEach(function (): void {
     $this->seedCountry('MY');
     $this->seedCountry('ID');
 
-    $log = app(LogAddressResolutionGapAction::class);
-    $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
-    $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
-    $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
-    $log->execute('onemap', 'MY', 'postal_locality', 'Bangsar');
-    $log->execute('google-picker', 'ID', 'regency', 'Jakarta Pusat', 'ambiguous');
+    $log = app(ResolutionGapReporter::class);
+    $log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $log->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $log->report('onemap', 'MY', 'postal_locality', 'Bangsar');
+    $log->report('google-picker', 'ID', 'regency', 'Jakarta Pusat', 'ambiguous');
 
     ResolutionGap::query()->where('value', 'Bangsar')->update(['last_seen_at' => CarbonImmutable::now()->subDays(60)]);
 });

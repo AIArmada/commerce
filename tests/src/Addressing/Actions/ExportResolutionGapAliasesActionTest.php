@@ -8,13 +8,14 @@ use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Data\ExportResolutionGapAliasesResultData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
+use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Support\Facades\Artisan;
 
@@ -95,7 +96,7 @@ beforeEach(function (): void {
 
 function matchGapForExport(string $value, AddressArea $area): void
 {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', $value);
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', $value));
     app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $area->getKey());
 }
 
@@ -124,7 +125,7 @@ it('skips aliases whose area is not shipped by the provider', function (): void 
         new AddressAreaData(source: 'fake', sourceId: 'a-area', countryCode: 'MY', type: 'locality', level: 2, name: 'A Area Official'),
     ];
 
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'B Area Common');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'B Area Common'));
     AddressAreaName::query()->create([
         'address_area_id' => $this->areas['b-area']->getKey(),
         'name' => 'B Area Common',
@@ -150,7 +151,7 @@ it('skips values already declared in the provider area names', function (): void
         ],
     ];
 
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'A Area Alpha');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'A Area Alpha'));
     AddressAreaName::query()->create([
         'address_area_id' => $this->areas['a-area']->getKey(),
         'name' => 'A Area Alpha',
@@ -169,7 +170,7 @@ it('skips values already declared in the provider area names', function (): void
 });
 
 it('skips matched gaps whose manual alias went missing', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'A Area Alpha');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'A Area Alpha'));
     $gap->status = 'matched';
     $gap->matched_area_id = $this->areas['a-area']->getKey();
     $gap->save();
@@ -182,7 +183,7 @@ it('skips matched gaps whose manual alias went missing', function (): void {
 
 it('dedupes the same value matched from several sources', function (): void {
     foreach (['google-picker', 'onemap'] as $source) {
-        $gap = app(LogAddressResolutionGapAction::class)->execute($source, 'MY', 'postal_locality', 'A Area Alpha');
+        $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report($source, 'MY', 'postal_locality', 'A Area Alpha'));
         $gap->status = 'matched';
         $gap->matched_area_id = $this->areas['a-area']->getKey();
         $gap->save();
@@ -245,7 +246,7 @@ it('prunes only manual aliases exactly duplicated by a provider pair', function 
 });
 
 it('emits copy-paste-ready provider entries from the command', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'A Area Alpha');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'A Area Alpha'));
     AddressAreaName::query()->create([
         'address_area_id' => $this->areas['a-area']->getKey(),
         'name' => 'A Area Alpha',
@@ -271,7 +272,7 @@ it('requires a country for the export command', function (): void {
 
 it('groups several aliases per area into one provider block', function (): void {
     foreach (['A Area Alpha', 'A Area Zed'] as $value) {
-        $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', $value);
+        $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', $value));
         AddressAreaName::query()->create([
             'address_area_id' => $this->areas['a-area']->getKey(),
             'name' => $value,

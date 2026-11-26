@@ -72,7 +72,7 @@ final readonly class ExportResolutionGapAliasesAction
 
             foreach ($provider->areaNames() as $sourceId => $names) {
                 foreach ($names as $name) {
-                    $declared[(string) $sourceId][LogAddressResolutionGapAction::normalize((string) ($name['name'] ?? ''))] = true;
+                    $declared[(string) $sourceId][ReportResolutionGapAction::normalize((string) ($name['name'] ?? ''))] = true;
                 }
             }
 

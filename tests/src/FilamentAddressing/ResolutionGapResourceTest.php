@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
 use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
@@ -34,7 +34,7 @@ beforeEach(function (): void {
 
 function logTestGap(string $value = 'Kuala Lumpur', string $role = 'postal_locality', string $reason = 'unmatched'): ResolutionGap
 {
-    return app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', $role, $value, $reason);
+    return ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', $role, $value, $reason));
 }
 
 it('registers the resolution gap resource with the configured model', function (): void {

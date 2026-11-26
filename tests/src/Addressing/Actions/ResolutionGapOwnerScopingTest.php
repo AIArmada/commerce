@@ -8,10 +8,10 @@ use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
@@ -91,7 +91,7 @@ beforeEach(function (): void {
 
 function logGapForScoping(?User $owner, string $value): ResolutionGap
 {
-    $log = fn (): ResolutionGap => app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', $value);
+    $log = fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', $value));
 
     if ($owner === null) {
         return OwnerContext::withOwner(null, $log);
@@ -118,8 +118,8 @@ function matchGapForScoping(?User $owner, ResolutionGap $gap, AddressArea $area)
 it('logs gaps under the current owner and falls back to global rows', function (): void {
     $owner = User::factory()->create();
 
-    $owned = OwnerContext::withOwner($owner, fn (): ResolutionGap => app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Owned Value'));
-    $global = OwnerContext::withOwner(null, fn (): ResolutionGap => app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Global Value'));
+    $owned = OwnerContext::withOwner($owner, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Owned Value')));
+    $global = OwnerContext::withOwner(null, fn (): ResolutionGap => ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Global Value')));
 
     expect($owned->owner_type)->toBe($owner->getMorphClass())
         ->and($owned->owner_id)->toBe((string) $owner->getKey())

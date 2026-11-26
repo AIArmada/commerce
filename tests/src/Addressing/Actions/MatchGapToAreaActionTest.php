@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\ResolutionGapCuration;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
 use AIArmada\Addressing\Data\AddressAreaData;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
+use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use Illuminate\Validation\ValidationException;
 
@@ -28,7 +29,7 @@ beforeEach(function (): void {
 });
 
 it('matches a gap by creating a manual alias', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur'));
 
     app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey(), 'admin@example.com');
     $result = $gap->refresh();
@@ -46,7 +47,7 @@ it('matches a gap by creating a manual alias', function (): void {
 });
 
 it('rejects overlong actor identifiers', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey(), str_repeat('a', 256)))
         ->toThrow(ValidationException::class, 'must not exceed 255 characters');
@@ -55,11 +56,11 @@ it('rejects overlong actor identifiers', function (): void {
 it('refuses to match non-open gaps', function (): void {
     $match = app(ResolutionGapCuration::class);
 
-    $matched = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');
+    $matched = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur'));
     $matched->status = 'matched';
     $matched->save();
 
-    $ignored = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'junk');
+    $ignored = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'junk'));
     $ignored->status = 'ignored';
     $ignored->save();
 
@@ -70,35 +71,35 @@ it('refuses to match non-open gaps', function (): void {
 });
 
 it('refuses to match ambiguous gaps', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Springfield', 'ambiguous');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Springfield', 'ambiguous'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey()))
         ->toThrow(ValidationException::class, 'Ambiguous gaps need data cleanup');
 });
 
 it('refuses to match custom non-unmatched reasons with an accurate message', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Springfield', 'timeout');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Springfield', 'timeout'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey()))
         ->toThrow(ValidationException::class, 'Only gaps with an unmatched reason can be matched');
 });
 
 it('refuses to match state-role gaps', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'state', 'Johor');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'state', 'Johor'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey()))
         ->toThrow(ValidationException::class, 'states have no alias table');
 });
 
 it('refuses areas from another country', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Jakarta');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Jakarta'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['jkt']->getKey()))
         ->toThrow(ValidationException::class, 'must belong to the gap country');
 });
 
 it('refuses roles the country profile does not define', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'not_a_role', 'Kuala Lumpur');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'not_a_role', 'Kuala Lumpur'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey()))
         ->toThrow(ValidationException::class, 'not defined by the country address profile');
@@ -107,8 +108,8 @@ it('refuses roles the country profile does not define', function (): void {
 it('refuses areas that miss the role type or level', function (): void {
     $match = app(ResolutionGapCuration::class);
 
-    $typeGap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Petaling');
-    $levelGap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'Deep Locality');
+    $typeGap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Petaling'));
+    $levelGap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'Deep Locality'));
 
     expect(fn () => $match->match((string) $typeGap->getKey(), (string) $this->areas['district']->getKey()))
         ->toThrow(ValidationException::class, 'does not match the required hierarchy level')
@@ -117,7 +118,7 @@ it('refuses areas that miss the role type or level', function (): void {
 });
 
 it('matches gaps to district-parented level-3 localities', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'District Town');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'District Town'));
 
     app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['town']->getKey());
     $result = $gap->refresh();
@@ -127,7 +128,7 @@ it('matches gaps to district-parented level-3 localities', function (): void {
 });
 
 it('refuses when the value already resolves to a different area primary name', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'PETALING JAYA');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'PETALING JAYA'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey()))
         ->toThrow(ValidationException::class, 'already resolves to a different area');
@@ -142,14 +143,14 @@ it('refuses when the value already resolves to a different area alias', function
         'is_preferred' => false,
     ]);
 
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'pj city');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'pj city'));
 
     expect(fn () => app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['kl']->getKey()))
         ->toThrow(ValidationException::class, 'already resolves to a different area');
 });
 
 it('does not create a duplicate alias when matching to the already-resolving area', function (): void {
-    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'PETALING JAYA');
+    $gap = ResolutionGap::query()->findOrFail(app(ResolutionGapReporter::class)->report('google-picker', 'MY', 'postal_locality', 'PETALING JAYA'));
 
     app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $this->areas['pj']->getKey());
     $result = $gap->refresh();
