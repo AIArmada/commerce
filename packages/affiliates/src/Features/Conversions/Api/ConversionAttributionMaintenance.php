@@ -6,5 +6,5 @@ namespace AIArmada\Affiliates\Features\Conversions\Api;
 
 interface ConversionAttributionMaintenance
 {
-    public function detachAttribution(string $attributionId): void;
+    public function detachAttribution(string $attributionId, int $connectionIdentity): void;
 }

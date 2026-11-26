@@ -7,17 +7,16 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use stdClass;
 
 final readonly class AffiliateReportQuery implements ReportingApi
 {
-    public function __construct(private CurrencyConverter $converter, private TouchpointReader $touchpoints) {}
+    public function __construct(private CurrencyConverter $converter, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions) {}
 
     /**
      * Money legs are grouped by the conversion currency. Single-currency
@@ -40,11 +39,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
             ->groupBy('commission_currency')
             ->get();
 
-        $attributions = (int) $this->applyAttributionWindow(
-            AffiliateAttribution::query()->forOwner(),
-            $startDate,
-            $endDate,
-        )->count();
+        $attributions = $this->attributions->countWindow($startDate, $endDate);
 
         $totals = $this->summarizeMoney($rows, $endDate);
 
@@ -147,7 +142,8 @@ final readonly class AffiliateReportQuery implements ReportingApi
     public function getTrafficSources(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
         $conversionsTable = (new AffiliateConversion)->getTable();
-        $attributionsTable = (new AffiliateAttribution)->getTable();
+        $this->attributions->assertSharedConnection(spl_object_id((new AffiliateConversion)->getConnection()));
+        $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
 
         $rows = AffiliateConversion::query()
             ->forOwner()
@@ -202,25 +198,15 @@ final readonly class AffiliateReportQuery implements ReportingApi
             ];
         }
 
-        $attributionRows = $this->applyAttributionWindow(
-            AffiliateAttribution::query()->forOwner(),
-            $startDate,
-            $endDate,
-        )
-            ->whereNotNull('subject_type')
-            ->whereNotNull('subject_key')
-            ->toBase()
-            ->selectRaw('subject_type, subject_key, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as attributions')
-            ->groupBy('subject_type', 'subject_key')
-            ->get();
+        $attributionRows = $this->attributions->subjectCounts($startDate, $endDate);
 
         foreach ($attributionRows as $row) {
-            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_key);
+            $key = $this->subjectKey((string) $row['subject_type'], (string) $row['subject_key']);
 
             $subjects[$key] ??= [
-                'subject_type' => (string) $row->subject_type,
-                'subject_key' => (string) $row->subject_key,
-                'subject_title_snapshot' => $this->nullableString($row->subject_title_snapshot),
+                'subject_type' => (string) $row['subject_type'],
+                'subject_key' => (string) $row['subject_key'],
+                'subject_title_snapshot' => $this->nullableString($row['subject_title_snapshot']),
                 'visits' => 0,
                 'attributions' => 0,
                 'conversions' => 0,
@@ -228,8 +214,8 @@ final readonly class AffiliateReportQuery implements ReportingApi
                 'commission_minor' => 0,
             ];
 
-            $subjects[$key]['subject_title_snapshot'] ??= $this->nullableString($row->subject_title_snapshot);
-            $subjects[$key]['attributions'] = (int) $row->attributions;
+            $subjects[$key]['subject_title_snapshot'] ??= $this->nullableString($row['subject_title_snapshot']);
+            $subjects[$key]['attributions'] = (int) $row['attributions'];
         }
 
         $conversionRows = AffiliateConversion::query()
@@ -306,7 +292,8 @@ final readonly class AffiliateReportQuery implements ReportingApi
         }
 
         $conversionsTable = (new AffiliateConversion)->getTable();
-        $attributionsTable = (new AffiliateAttribution)->getTable();
+        $this->attributions->assertSharedConnection(spl_object_id((new AffiliateConversion)->getConnection()));
+        $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
 
         $moneyRows = AffiliateConversion::query()
             ->forOwner()
@@ -347,10 +334,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
             }
         }
 
-        $attributionCount = (int) AffiliateAttribution::query()
-            ->forOwner()
-            ->where('affiliate_id', $affiliateId)
-            ->count();
+        $attributionCount = $this->attributions->count($affiliateId);
 
         $funnel = [
             'attributions' => $attributionCount,
@@ -378,19 +362,6 @@ final readonly class AffiliateReportQuery implements ReportingApi
             'funnel' => $funnel,
             'utm' => $utm,
         ];
-    }
-
-    private function applyAttributionWindow(Builder $query, DateTimeInterface $startDate, DateTimeInterface $endDate): Builder
-    {
-        return $query->where(function (Builder $builder) use ($startDate, $endDate): void {
-            $builder
-                ->whereBetween('first_seen_at', [$startDate, $endDate])
-                ->orWhere(function (Builder $fallback) use ($startDate, $endDate): void {
-                    $fallback
-                        ->whereNull('first_seen_at')
-                        ->whereBetween('created_at', [$startDate, $endDate]);
-                });
-        });
     }
 
     private function revenueMinorExpression(): string

@@ -7,16 +7,18 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingContext;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final readonly class VoucherReportingQuery implements VoucherReportingReader
 {
+    public function __construct(private AttributionReportingReader $attributions) {}
+
     public function available(): bool
     {
-        return $this->hasTableFor(AffiliateConversion::class) || $this->hasTableFor(AffiliateAttribution::class);
+        return $this->hasTableFor(AffiliateConversion::class) || $this->attributions->available();
     }
 
     public function resolve(string $voucherCode, ?string $orderReference): ?VoucherReportingContext
@@ -27,8 +29,7 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
         $context = $conversion === null ? null : $this->contextFromConversion($conversion);
 
         if ($context === null || ! array_filter($context, fn (mixed $value): bool => $this->normalizeString($value) !== null)) {
-            $attribution = $this->findMatchingAttribution($voucherCode);
-            $context = $attribution === null ? null : $this->contextFromAttribution($attribution);
+            $context = $this->attributions->latestForVoucher($voucherCode)?->toArray();
         }
 
         if ($context === null) {
@@ -69,19 +70,7 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
             return $options;
         }
 
-        if (! $this->hasTableFor(AffiliateAttribution::class)) {
-            return [];
-        }
-
-        /** @var array<string, string> $options */
-        $options = AffiliateAttribution::query()
-            ->whereNotNull('affiliate_code')
-            ->distinct()
-            ->orderBy('affiliate_code')
-            ->pluck('affiliate_code', 'affiliate_code')
-            ->all();
-
-        return $options;
+        return $this->attributions->options('affiliate_code');
     }
 
     private function findMatchingConversion(string $voucherCode, ?string $orderReference): ?AffiliateConversion
@@ -91,7 +80,7 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
         }
 
         $query = AffiliateConversion::query()
-            ->with(['affiliate', 'attribution.affiliate'])
+            ->with('affiliate')
             ->whereRaw('LOWER(voucher_code) = ?', [$voucherCode])
             ->orderByDesc('occurred_at')
             ->orderByDesc('created_at')
@@ -114,21 +103,6 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
         return $matches->first();
     }
 
-    private function findMatchingAttribution(string $voucherCode): ?AffiliateAttribution
-    {
-        if (! $this->hasTableFor(AffiliateAttribution::class)) {
-            return null;
-        }
-
-        return AffiliateAttribution::query()
-            ->with(['affiliate'])
-            ->whereRaw('LOWER(voucher_code) = ?', [$voucherCode])
-            ->orderByDesc('last_seen_at')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->first();
-    }
-
     /**
      * @return array{
      *     affiliate_code: string|null,
@@ -140,40 +114,20 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
      */
     private function contextFromConversion(AffiliateConversion $conversion): array
     {
-        $attribution = $conversion->attribution;
+        $attribution = $conversion->affiliate_attribution_id === null ? null : $this->attributions->find($conversion->affiliate_attribution_id);
 
         return [
             'affiliate_code' => $this->firstNonEmpty(
                 $conversion->affiliate_code,
-                $attribution?->affiliate_code,
+                $attribution?->affiliateCode,
             ),
             'affiliate_name' => $this->firstNonEmpty(
                 $conversion->affiliate?->name,
-                $attribution?->affiliate?->name,
+                $attribution?->affiliateName,
             ),
             'source' => $attribution?->source,
             'medium' => $attribution?->medium,
             'campaign' => $attribution?->campaign,
-        ];
-    }
-
-    /**
-     * @return array{
-     *     affiliate_code: string|null,
-     *     affiliate_name: string|null,
-     *     source: string|null,
-     *     medium: string|null,
-     *     campaign: string|null,
-     * }
-     */
-    private function contextFromAttribution(AffiliateAttribution $attribution): array
-    {
-        return [
-            'affiliate_code' => $attribution->affiliate_code,
-            'affiliate_name' => $attribution->affiliate?->name,
-            'source' => $attribution->source,
-            'medium' => $attribution->medium,
-            'campaign' => $attribution->campaign,
         ];
     }
 
@@ -206,19 +160,7 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
      */
     public function attributionOptions(string $column): array
     {
-        if (! in_array($column, ['source', 'medium', 'campaign'], true) || ! $this->hasTableFor(AffiliateAttribution::class)) {
-            return [];
-        }
-
-        /** @var array<string, string> $options */
-        $options = AffiliateAttribution::query()
-            ->whereNotNull($column)
-            ->distinct()
-            ->orderBy($column)
-            ->pluck($column, $column)
-            ->all();
-
-        return $options;
+        return in_array($column, ['source', 'medium', 'campaign'], true) ? $this->attributions->options($column) : [];
     }
 
     /**

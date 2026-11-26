@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
 use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
@@ -15,7 +15,8 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Query\JoinClause;
+use LogicException;
 use RuntimeException;
 
 /**
@@ -23,6 +24,8 @@ use RuntimeException;
  */
 final class CohortQuery implements CohortApi
 {
+    public function __construct(private readonly AttributionReportingReader $attributions) {}
+
     /**
      * Analyze cohorts by month of acquisition.
      *
@@ -298,13 +301,26 @@ final class CohortQuery implements CohortApi
 
         $affiliatesTable = (new Affiliate)->getTable();
         $conversionsTable = (new AffiliateConversion)->getTable();
-        $attributionsTable = (new AffiliateAttribution)->getTable();
+        $connection = (new Affiliate)->getConnection();
+
+        if ($connection !== (new AffiliateConversion)->getConnection()) {
+            throw new LogicException('Cohort reporting requires a shared database connection.');
+        }
+
+        $this->attributions->assertSharedConnection(spl_object_id($connection));
+        $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
         $sourceExpression = "COALESCE(aa.source, 'direct')";
         $revenueExpression = 'COALESCE(c.value_minor, 0)';
 
-        $query = DB::table("{$affiliatesTable} as a")
-            ->leftJoin("{$conversionsTable} as c", 'c.affiliate_id', '=', 'a.id')
-            ->leftJoin("{$attributionsTable} as aa", 'aa.id', '=', 'c.affiliate_attribution_id')
+        $query = $connection->table("{$affiliatesTable} as a")
+            ->leftJoin("{$conversionsTable} as c", function (JoinClause $join): void {
+                $join->on('c.affiliate_id', '=', 'a.id');
+                $this->applyConversionsOwnerScope($join, 'c');
+            })
+            ->leftJoin("{$attributionsTable} as aa", function (JoinClause $join): void {
+                $join->on('aa.id', '=', 'c.affiliate_attribution_id');
+                $this->applyConversionsOwnerScope($join, 'aa');
+            })
             ->selectRaw("{$sourceExpression} as source")
             ->selectRaw('COUNT(DISTINCT a.id) as total_affiliates')
             ->selectRaw('COUNT(c.id) as total_conversions')
@@ -322,8 +338,6 @@ final class CohortQuery implements CohortApi
             $includeGlobal = (bool) config('affiliates.owner.include_global', false);
 
             OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'a.owner_type', 'a.owner_id');
-            OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'c.owner_type', 'c.owner_id');
-            OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, 'aa.owner_type', 'aa.owner_id');
         }
 
         /** @var array<int, object{source: string, total_affiliates: int|string, total_conversions: int|string, with_conversions: int|string, total_revenue: int|string}> $rows */
@@ -358,7 +372,7 @@ final class CohortQuery implements CohortApi
     private function getCohorts(CarbonImmutable $from, CarbonImmutable $to): Collection
     {
         $affiliatesTable = (new Affiliate)->getTable();
-        $driver = ConnectionDriver::name(DB::connection());
+        $driver = ConnectionDriver::name((new Affiliate)->getConnection());
 
         $dateFormat = match ($driver) {
             'pgsql' => "to_char(created_at, 'YYYY-MM')",
@@ -366,8 +380,8 @@ final class CohortQuery implements CohortApi
             default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
         };
 
-        $cohortQuery = DB::table($affiliatesTable)
-            ->select('id', DB::raw("$dateFormat as cohort_month"))
+        $cohortQuery = (new Affiliate)->getConnection()->table($affiliatesTable)
+            ->select('id')->selectRaw("$dateFormat as cohort_month")
             ->whereBetween('created_at', [$from, $to])->orderBy('cohort_month');
 
         if ((bool) config('affiliates.owner.enabled', false)) {
@@ -468,7 +482,7 @@ final class CohortQuery implements CohortApi
 
         $conversionsTable = (new AffiliateConversion)->getTable();
 
-        $query = DB::table($conversionsTable)
+        $query = (new AffiliateConversion)->getConnection()->table($conversionsTable)
             ->whereIn('affiliate_id', $affiliateIds)
             ->select('affiliate_id')
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions')
@@ -505,7 +519,7 @@ final class CohortQuery implements CohortApi
         }
 
         $conversionsTable = (new AffiliateConversion)->getTable();
-        $driver = ConnectionDriver::name(DB::connection());
+        $driver = ConnectionDriver::name((new AffiliateConversion)->getConnection());
 
         $monthExpression = match ($driver) {
             'pgsql' => "to_char(occurred_at, 'YYYY-MM')",
@@ -516,7 +530,7 @@ final class CohortQuery implements CohortApi
         $rangeStart = $cohortDate->copy()->startOfMonth();
         $rangeEnd = $cohortDate->copy()->addMonths($maxMonth - 1)->endOfMonth();
 
-        $query = DB::table($conversionsTable)
+        $query = (new AffiliateConversion)->getConnection()->table($conversionsTable)
             ->whereIn('affiliate_id', $affiliateIds)
             ->whereBetween('occurred_at', [$rangeStart, $rangeEnd])
             ->selectRaw("{$monthExpression} as month_key")

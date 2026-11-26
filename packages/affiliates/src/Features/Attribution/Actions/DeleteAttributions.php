@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 
@@ -38,7 +37,6 @@ final readonly class DeleteAttributions implements AttributionRemoval
         $connection = $query->getModel()->getConnection();
 
         if ($connection !== (new AffiliateTouchpoint)->getConnection()
-            || $connection !== (new AffiliateConversion)->getConnection()
             || $connection !== (new Affiliate)->getConnection()) {
             throw new LogicException('Attribution removal requires a shared database connection.');
         }
@@ -47,7 +45,7 @@ final readonly class DeleteAttributions implements AttributionRemoval
             (clone $query)->lockForUpdate()->chunkById(100, function ($attributions): void {
                 foreach ($attributions as $attribution) {
                     AffiliateTouchpoint::query()->where('affiliate_attribution_id', $attribution->getKey())->delete();
-                    $this->conversions->detachAttribution((string) $attribution->getKey());
+                    $this->conversions->detachAttribution((string) $attribution->getKey(), spl_object_id($attribution->getConnection()));
 
                     if (! $attribution->delete()) {
                         throw new LogicException('The affiliate attribution could not be deleted.');

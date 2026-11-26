@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Actions;
 
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 final readonly class AggregateDailyStats implements DailyStatsWriter
 {
-    public function __construct(private DeleteAffiliateDailyStats $delete, private TouchpointReader $touchpoints) {}
+    public function __construct(private DeleteAffiliateDailyStats $delete, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions) {}
 
     /**
      * Aggregate statistics for all affiliates on a given date.
@@ -55,9 +56,7 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
             $clicks = $touchpointStats['clicks'];
             $uniqueClicks = $touchpointStats['unique_clicks'];
 
-            $attributions = $affiliate->attributions()
-                ->whereBetween('first_seen_at', [$dayStart, $dayEnd])
-                ->count();
+            $attributions = $this->attributions->countFirstSeen($affiliateId, $dayStart, $dayEnd);
 
             $moneyRows = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$dayStart, $dayEnd])
