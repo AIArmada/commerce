@@ -20,6 +20,9 @@
     "table:affiliate_program_creatives": [
       "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
       "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerCreative"
+    ],
+    "table:affiliate_creative_asset_cleanups": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ProcessCreativeAssetCleanup"
     ]
   },
   "extensions": {}

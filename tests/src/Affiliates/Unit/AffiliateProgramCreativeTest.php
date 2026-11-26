@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Contracts\CreativeAssetFilesystem;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetFilesystem;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Actions\ProcessCreativeAssetCleanup;
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateCreativeAssetCleanup;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -387,4 +391,25 @@ test('creative upload size is limited by bytes rather than multibyte characters'
         'type' => 'image', 'name' => 'Oversized', 'tracking_code' => 'SIZE',
     ], $bytes))->toThrow(ValidationException::class);
     expect(AffiliateProgramCreative::query()->where('tracking_code', 'SIZE')->exists())->toBeFalse();
+});
+
+test('failed post-commit creative cleanup is retained and can be retried', function (): void {
+    $api = app(CreativeAdministration::class);
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Retry', 'tracking_code' => 'RETRY'], UploadedFile::fake()->image('retry.png')->get());
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $asset = $creative->getFirstMedia('creative_asset');
+    $path = $asset->getPathRelativeToRoot();
+
+    $this->mock(CreativeAssetFilesystem::class)->shouldReceive('removeDetached')->once()->andThrow(new RuntimeException('storage unavailable'));
+
+    expect($api->delete(null, $id))->toBeTrue()
+        ->and($asset->fresh())->toBeNull()
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(1);
+    Storage::disk('public')->assertExists($path);
+
+    app()->instance(CreativeAssetFilesystem::class, new SpatieCreativeAssetFilesystem);
+
+    expect(app(ProcessCreativeAssetCleanup::class)->drain(100))->toBe(0)
+        ->and(AffiliateCreativeAssetCleanup::query()->count())->toBe(0);
+    Storage::disk('public')->assertMissing($path);
 });

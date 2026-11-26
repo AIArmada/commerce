@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Contracts\CreativeAssetFilesystem;
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
 use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
@@ -14,6 +15,7 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
 use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
 use AIArmada\Affiliates\Drivers\Exports\LocalPayoutCsvWriter;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetFilesystem;
 use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetRemoval;
 use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetReplacement;
 use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
@@ -91,6 +93,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->discoversMigrations()
             ->hasCommands([
                 Features\Commissions\EntryPoints\Console\AwardPerformanceBonusesCommand::class,
+                Features\Programs\EntryPoints\Console\RetryCreativeAssetCleanupCommand::class,
                 Features\Payouts\EntryPoints\Console\ExportAffiliatePayoutCommand::class,
                 Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand::class,
                 Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand::class,
@@ -103,6 +106,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     {
         $catalog = $this->catalog();
 
+        $this->app->bindIf(CreativeAssetFilesystem::class, SpatieCreativeAssetFilesystem::class);
         $this->app->bindIf(CreativeAssetRemoval::class, SpatieCreativeAssetRemoval::class);
         $this->app->bindIf(CreativeAssetReplacement::class, SpatieCreativeAssetReplacement::class);
         $this->app->bindIf(PayoutCsvWriter::class, LocalPayoutCsvWriter::class);

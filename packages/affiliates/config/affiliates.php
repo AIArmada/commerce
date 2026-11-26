@@ -25,6 +25,7 @@ $tables = [
     'program_tiers' => $tablePrefix . 'program_tiers',
     'program_memberships' => $tablePrefix . 'program_memberships',
     'program_creatives' => $tablePrefix . 'program_creatives',
+    'creative_asset_cleanups' => $tablePrefix . 'creative_asset_cleanups',
     'links' => $tablePrefix . 'links',
     'commission_rules' => $tablePrefix . 'commission_rules',
     'volume_tiers' => $tablePrefix . 'volume_tiers',

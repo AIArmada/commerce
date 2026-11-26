@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs;
 
+use AIArmada\Affiliates\Contracts\CreativeCleanupQueue;
 use AIArmada\Affiliates\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -26,6 +27,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\ProgramPortalReader::class, Queries\ProgramPortalQuery::class);
         $app->bind(Api\PortalCreativeReader::class, Queries\PortalCreativeQuery::class);
         $app->bind(Api\CreativeAdministration::class, Actions\AdministerCreative::class);
+        $app->bind(CreativeCleanupQueue::class, Actions\ProcessCreativeAssetCleanup::class);
         $app->bind(Api\MembershipRemovalGuard::class, Queries\AssertNoProgramMembership::class);
     }
 

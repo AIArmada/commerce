@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Drivers\Media;
 
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
+use AIArmada\Affiliates\Contracts\CreativeCleanupQueue;
 use LogicException;
-use Spatie\MediaLibrary\MediaCollections\Filesystem;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-final class SpatieCreativeAssetRemoval implements CreativeAssetRemoval
+final readonly class SpatieCreativeAssetRemoval implements CreativeAssetRemoval
 {
+    public function __construct(private CreativeCleanupQueue $cleanup) {}
+
     public function remove(string $creativeId, string $morphType, int $connectionIdentity, ?string $collection): void
     {
         $mediaClass = config('media-library.media_model', Media::class);
@@ -37,10 +39,8 @@ final class SpatieCreativeAssetRemoval implements CreativeAssetRemoval
         $media = $query->lockForUpdate()->get();
 
         foreach ($media as $asset) {
-            // The media observer deletes files immediately; remove the database row
-            // transactionally and release its files only after the outer commit.
+            $this->cleanup->enqueue($mediaClass, $asset->getAttributes(), $connectionIdentity);
             $asset->newModelQuery()->whereKey($asset->getKey())->delete();
-            $connection->afterCommit(static fn () => app(Filesystem::class)->removeAllFiles($asset));
         }
     }
 }
