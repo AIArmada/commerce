@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 final readonly class ReadAffiliateBonusCandidates implements AffiliateBonusReader
 {
@@ -18,6 +19,20 @@ final readonly class ReadAffiliateBonusCandidates implements AffiliateBonusReade
         foreach ($this->eligible($includeGlobal)->select(['id', 'name', 'currency'])->lazyById(100) as $affiliate) {
             yield new AffiliateBonusCandidate($affiliate->id, $affiliate->name, $affiliate->currency);
         }
+    }
+
+    public function currencies(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (string $id): bool => Str::isUuid($id))));
+        $currencies = [];
+
+        foreach (array_chunk($ids, 500) as $chunk) {
+            foreach ($this->eligible(false)->whereKey($chunk)->pluck('currency', 'id') as $id => $currency) {
+                $currencies[(string) $id] = $currency === null ? null : (string) $currency;
+            }
+        }
+
+        return $currencies;
     }
 
     public function recruiters(CarbonImmutable $from, CarbonImmutable $to, int $minimum, bool $includeGlobal): iterable

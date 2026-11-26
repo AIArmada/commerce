@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusReader;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
@@ -279,5 +280,33 @@ it('rejects changes to an existing affiliate owner through administration', func
         ]);
 
         expect($affiliate->fresh()->description)->toBe('Allowed edit');
+    });
+});
+
+it('reads bonus preview currencies only for eligible affiliates in the current owner scope', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    $create = static function (string $name, string $currency): Affiliate {
+        return Affiliate::create([
+            'code' => 'BONUS-' . Str::uuid(),
+            'name' => $name,
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => $currency,
+        ]);
+    };
+
+    $owned = OwnerContext::withOwner($owner, fn (): Affiliate => $create('Owned Bonus', 'USD'));
+    $foreign = OwnerContext::withOwner($other, fn (): Affiliate => $create('Foreign Bonus', 'MYR'));
+    $global = OwnerContext::withOwner(null, fn (): Affiliate => $create('Global Bonus', 'EUR'));
+
+    config()->set('affiliates.owner.include_global', true);
+
+    OwnerContext::withOwner($owner, function () use ($owned, $foreign, $global): void {
+        expect(app(AffiliateBonusReader::class)->currencies([
+            $owned->id, $foreign->id, $global->id, $owned->id, 'invalid',
+        ]))->toBe([$owned->id => 'USD']);
     });
 });

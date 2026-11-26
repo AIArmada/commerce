@@ -44,6 +44,31 @@ final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
         return $bonuses;
     }
 
+    public function awardedTypes(): array
+    {
+        $types = AffiliateConversion::query()->forOwner()
+            ->whereNotNull('performance_bonus_key')
+            ->whereNotNull('metadata->bonus_type')
+            ->toBase()
+            ->select('metadata->bonus_type as bonus_type')
+            ->distinct()
+            ->pluck('bonus_type');
+
+        $options = [];
+
+        foreach ($types as $type) {
+            if (! is_string($type) || $type === '') {
+                continue;
+            }
+
+            $options[$type] = CommissionRuleType::tryFrom($type)?->label() ?? $type;
+        }
+
+        ksort($options);
+
+        return $options;
+    }
+
     public function getLeaderboard(
         ?CarbonImmutable $from = null,
         ?CarbonImmutable $to = null,

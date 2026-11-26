@@ -505,3 +505,31 @@ describe('PerformanceBonusQueries', function (): void {
         });
     });
 });
+
+test('lists distinct awarded bonus types without including ordinary conversions', function (): void {
+    foreach (['top_performer', 'recruitment', 'top_performer'] as $index => $type) {
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'performance_bonus_key' => 'filter-' . $index,
+            'commission_minor' => 100,
+            'commission_currency' => 'USD',
+            'status' => ApprovedConversion::class,
+            'metadata' => ['bonus_type' => $type],
+        ]);
+    }
+
+    AffiliateConversion::create([
+        'affiliate_id' => $this->affiliate->id,
+        'affiliate_code' => $this->affiliate->code,
+        'commission_minor' => 100,
+        'commission_currency' => 'USD',
+        'status' => ApprovedConversion::class,
+        'metadata' => ['bonus_type' => 'growth'],
+    ]);
+
+    expect($this->service->awardedTypes())->toBe([
+        'recruitment' => CommissionRuleType::Recruitment->label(),
+        'top_performer' => CommissionRuleType::TopPerformer->label(),
+    ]);
+});

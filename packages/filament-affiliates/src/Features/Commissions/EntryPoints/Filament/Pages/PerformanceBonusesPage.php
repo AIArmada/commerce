@@ -8,7 +8,8 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateBonusReader;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -106,7 +107,9 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
                 ->label('Preview')
                 ->icon('heroicon-o-eye')
                 ->color('gray')
-                ->action(fn (): null => $this->refreshPreview()),
+                ->action(function (): void {
+                    $this->refreshPreview();
+                }),
 
             Action::make('award')
                 ->label('Award calculated bonuses')
@@ -176,15 +179,7 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
             ->filters([
                 Tables\Filters\SelectFilter::make('bonus_type')
                     ->label('Bonus')
-                    ->options(fn (): array => AffiliateConversion::query()
-                        ->forOwner()
-                        ->whereNotNull('performance_bonus_key')
-                        ->get()
-                        ->mapWithKeys(fn (AffiliateConversion $row): array => [
-                            (string) ($row->metadata['bonus_type'] ?? '') => CommissionRuleType::tryFrom((string) ($row->metadata['bonus_type'] ?? ''))?->label() ?? (string) ($row->metadata['bonus_type'] ?? ''),
-                        ])
-                        ->filter()
-                        ->toArray())
+                    ->options(fn (): array => app(PerformanceBonusQueries::class)->awardedTypes())
                     ->query(function ($query, array $data): void {
                         $value = $data['value'] ?? null;
 
@@ -208,17 +203,18 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
         [$from, $to] = $range;
         $bonuses = $this->calculate($from, $to);
 
-        $currencies = Affiliate::query()
-            ->forOwner()
-            ->whereIn('id', collect($bonuses)->map(fn (array $bonus): string => (string) $bonus['affiliate_id'])->unique()->values()->all())
-            ->pluck('currency', 'id');
+        $currencies = app(AffiliateBonusReader::class)->currencies(array_values(array_unique(array_column($bonuses, 'affiliate_id'))));
 
         $defaultCurrency = mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
         $preview = [];
 
         foreach ($bonuses as $bonus) {
             $type = (string) $bonus['bonus_type'];
-            $currency = mb_strtoupper((string) ($currencies->get($bonus['affiliate_id']) ?? $defaultCurrency));
+            if (! array_key_exists($bonus['affiliate_id'], $currencies)) {
+                continue;
+            }
+
+            $currency = mb_strtoupper((string) ($currencies[$bonus['affiliate_id']] ?? $defaultCurrency));
 
             $preview[$type] ??= ['count' => 0, 'totals' => []];
             $preview[$type]['count']++;
