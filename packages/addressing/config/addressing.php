@@ -465,7 +465,6 @@ use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
@@ -491,7 +490,7 @@ return [
         'area_assignment' => AddressAreaAssignment::class,
         'area_name' => AddressAreaName::class,
         'area_role' => null, // Defaults to the Geography feature model.
-        'area_state_link' => AddressAreaStateLink::class,
+        'area_state_link' => null, // Defaults to the Geography feature model.
         'area_postal_code' => AddressAreaPostalCode::class,
         'area_relationship' => AddressAreaRelationship::class,
     ],

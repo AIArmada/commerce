@@ -109,7 +109,7 @@ or when the two gates differ for the selected state.
     'area_assignment' => AIArmada\Addressing\Models\AddressAreaAssignment::class,
     'area_name' => AIArmada\Addressing\Models\AddressAreaName::class,
     'area_role' => null, // Geography feature default; override with a subclass.
-    'area_state_link' => AIArmada\Addressing\Models\AddressAreaStateLink::class,
+    'area_state_link' => null, // Geography feature default; override with a subclass.
     'area_postal_code' => AIArmada\Addressing\Models\AddressAreaPostalCode::class,
     'area_relationship' => AIArmada\Addressing\Models\AddressAreaRelationship::class,
 ],

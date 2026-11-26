@@ -11,7 +11,6 @@ use AIArmada\Addressing\Models\AddressAreaAssignment;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
@@ -128,21 +127,23 @@ final class ModelResolver
      */
     public static function areaRoleClass(): string
     {
-        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole> $modelClass */
-        /** @var class-string<Model> $default */
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole> $default */
         $default = app('addressing.model-default.area_role');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaRole> $modelClass */
         $modelClass = self::resolve('area_role', $default);
 
         return $modelClass;
     }
 
     /**
-     * @return class-string<AddressAreaStateLink>
+     * @return class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink>
      */
     public static function areaStateLinkClass(): string
     {
-        /** @var class-string<AddressAreaStateLink> $modelClass */
-        $modelClass = self::resolve('area_state_link', AddressAreaStateLink::class);
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink> $default */
+        $default = app('addressing.model-default.area_state_link');
+        /** @var class-string<\AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink> $modelClass */
+        $modelClass = self::resolve('area_state_link', $default);
 
         return $modelClass;
     }

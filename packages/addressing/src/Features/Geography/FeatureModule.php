@@ -41,6 +41,7 @@ use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
 use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\Geography\Api\ResolutionAliasMaintenance;
 use AIArmada\Addressing\Features\Geography\Models\AddressAreaRole;
+use AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -49,6 +50,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->instance('addressing.model-default.area_role', AddressAreaRole::class);
+        $app->instance('addressing.model-default.area_state_link', AddressAreaStateLink::class);
         $app->singleton(GeographyReferenceMaintenance::class, ClearGeographyReferencesAction::class);
         $app->singleton(ResolutionAliasMaintenance::class, PruneDuplicateManualAliasesAction::class);
         $app->singleton(GeographyReferenceEditor::class, EditGeographyReferenceAction::class);

@@ -137,7 +137,7 @@ class AddressArea extends TransactionalDeletionModel
     }
 
     /**
-     * @return HasMany<AddressAreaStateLink, $this>
+     * @return HasMany<\AIArmada\Addressing\Features\Geography\Models\AddressAreaStateLink, $this>
      */
     public function stateLinks(): HasMany
     {
