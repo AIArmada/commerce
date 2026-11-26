@@ -34,6 +34,8 @@ use AIArmada\Addressing\Features\Geography\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedAddressCountryReferencesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedAddressingAction;
+use AIArmada\Addressing\Contracts\GeographyReferenceEditor;
+use AIArmada\Addressing\Features\Geography\Actions\EditGeographyReferenceAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -41,6 +43,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(GeographyReferenceEditor::class, EditGeographyReferenceAction::class);
         $app->singleton(CityDatasetSeeder::class, SeedAddressCitiesAction::class);
         $app->singleton(CountryDatasetSeeder::class, SeedAddressCountriesAction::class);
         $app->singleton(CountryLinkSeeder::class, SeedAddressCountryReferencesAction::class);
