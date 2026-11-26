@@ -8,7 +8,10 @@ use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Illuminate\Support\Collection;
 
@@ -16,7 +19,8 @@ final readonly class ProgramTierQualificationQuery implements TierQualificationR
 {
     public function qualifies(string $affiliateId, string $programId, string $tierId): bool
     {
-        $affiliate = Affiliate::query()->findOrFail($affiliateId);
+        $affiliate = app(AffiliateProfileReader::class)->find($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+            ?? throw new ModelNotFoundException('Affiliate not found.');
         $program = AffiliateProgram::query()->findOrFail($programId);
         $tier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->whereKey($tierId)->firstOrFail();
 
@@ -24,16 +28,16 @@ final readonly class ProgramTierQualificationQuery implements TierQualificationR
     }
 
     /** @param Collection<int, AffiliateProgramTier> $tiers */
-    public function best(Affiliate $affiliate, AffiliateProgram $program, Collection $tiers): ?AffiliateProgramTier
+    public function best(AffiliateProfile $affiliate, AffiliateProgram $program, Collection $tiers): ?AffiliateProgramTier
     {
         if ($tiers->isEmpty()) {
             return null;
         }
 
         $totals = app(TrackingLinkReader::class)->programVolume(
-            (string) $affiliate->getKey(),
+            $affiliate->reference->id,
             (string) $program->getKey(),
-            RevenueVolume::referenceFor($affiliate),
+            $affiliate->currency !== null && mb_trim($affiliate->currency) !== '' ? mb_strtoupper(mb_trim($affiliate->currency)) : RevenueVolume::default(),
             approvedOnly: true,
         );
 

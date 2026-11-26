@@ -13,7 +13,9 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -29,9 +31,10 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
     public function create(string $affiliateId, string $programId, array $data): MembershipRecord
     {
         return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($affiliateId, $programId, $data): MembershipRecord {
-            $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
             $program = $this->program($programId);
-            $this->assertSharedConnection($affiliate, $program);
+            $this->assertSharedConnection($program);
 
             if (AffiliateProgramMembership::query()->where('affiliate_id', $affiliateId)->where('program_id', $programId)->exists()) {
                 throw ValidationException::withMessages(['program_id' => 'This affiliate is already a member of the program.']);
@@ -51,9 +54,10 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
     {
         return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId, $data): MembershipRecord {
             $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
-            $affiliate = Affiliate::query()->findOrFail($membership->affiliate_id);
+            $affiliate = app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
             $program = $this->program($membership->program_id);
-            $this->assertSharedConnection($affiliate, $program);
+            $this->assertSharedConnection($program);
             $this->persist($membership, $affiliate, $program, $data, false);
 
             return $this->memberships->project($membership);
@@ -64,12 +68,13 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
     {
         (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId): void {
             $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
-            $affiliate = Affiliate::query()->findOrFail($membership->affiliate_id);
+            $affiliate = app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
             $program = $this->program($membership->program_id);
-            $this->assertSharedConnection($affiliate, $program);
+            $this->assertSharedConnection($program);
 
             $membership->delete();
-            $this->events->dispatch(new AffiliateProgramLeft((string) $affiliate->getKey(), (string) $program->getKey(), (string) $membership->getKey()));
+            $this->events->dispatch(new AffiliateProgramLeft($affiliate->reference->id, (string) $program->getKey(), (string) $membership->getKey()));
         }, attempts: 3);
     }
 
@@ -77,6 +82,7 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
     {
         return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId): bool {
             $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
+            app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection())) ?? throw new ModelNotFoundException('Affiliate not found.');
             $this->program($membership->program_id);
 
             if ($membership->status === MembershipStatus::Suspended) {
@@ -93,7 +99,7 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
     }
 
     /** @param array<string, mixed> $data */
-    private function persist(AffiliateProgramMembership $membership, Affiliate $affiliate, AffiliateProgram $program, array $data, bool $creating): void
+    private function persist(AffiliateProgramMembership $membership, AffiliateProfile $affiliate, AffiliateProgram $program, array $data, bool $creating): void
     {
         $previous = $creating ? null : $membership->status;
         $data['status'] = ($data['status'] ?? null) instanceof MembershipStatus ? $data['status']->value : ($data['status'] ?? $previous?->value ?? MembershipStatus::Pending->value);
@@ -135,7 +141,7 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
         $membership->fill($attributes)->save();
 
         if ($status === MembershipStatus::Approved && $previous !== MembershipStatus::Approved) {
-            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
+            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate->reference, $program)));
         }
     }
 
@@ -146,11 +152,11 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
             : AffiliateProgram::query()->findOrFail($programId);
     }
 
-    private function assertSharedConnection(Affiliate $affiliate, AffiliateProgram $program): void
+    private function assertSharedConnection(AffiliateProgram $program): void
     {
         $connection = (new AffiliateProgramMembership)->getConnection();
 
-        if ($affiliate->getConnection() !== $connection || $program->getConnection() !== $connection || (new AffiliateProgramTier)->getConnection() !== $connection) {
+        if ($program->getConnection() !== $connection || (new AffiliateProgramTier)->getConnection() !== $connection) {
             throw new RuntimeException('Program administration requires a shared database connection.');
         }
     }

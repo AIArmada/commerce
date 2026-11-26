@@ -9,7 +9,8 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramPortalReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final readonly class ProgramPortalQuery implements ProgramPortalReader
 {
@@ -22,7 +23,8 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
 
     public function programs(string $affiliateId): array
     {
-        $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
+        $affiliate = app(AffiliateProfileReader::class)->find($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+            ?? throw new ModelNotFoundException('Affiliate not found.');
         $programs = AffiliateProgram::query()->forOwner(includeGlobal: false)->active()->public()->orderBy('id')->get();
 
         $memberships = AffiliateProgramMembership::query()

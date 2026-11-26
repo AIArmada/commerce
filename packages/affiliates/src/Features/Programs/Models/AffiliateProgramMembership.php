@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Programs\Models;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;
@@ -31,7 +31,6 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $custom_terms
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Affiliate $affiliate
  * @property-read AffiliateProgram $program
  * @property-read AffiliateProgramTier|null $tier
  */
@@ -74,14 +73,6 @@ class AffiliateProgramMembership extends Pivot
     }
 
     /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
      * @return BelongsTo<AffiliateProgram, $this>
      */
     public function program(): BelongsTo
@@ -97,10 +88,10 @@ class AffiliateProgramMembership extends Pivot
         return $this->belongsTo(AffiliateProgramTier::class, 'tier_id');
     }
 
-    public function joinReference(Affiliate $affiliate, AffiliateProgram $program): ProgramJoinReference
+    public function joinReference(AffiliateLifecycleReference $affiliate, AffiliateProgram $program): ProgramJoinReference
     {
         return new ProgramJoinReference(
-            affiliate: $affiliate->lifecycleReference(),
+            affiliate: $affiliate,
             programId: (string) $program->getKey(),
             programOwnerType: $program->owner_type,
             programOwnerId: $program->owner_id === null ? null : (string) $program->owner_id,

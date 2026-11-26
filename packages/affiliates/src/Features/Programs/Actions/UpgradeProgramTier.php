@@ -13,7 +13,9 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramTierQualificationQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
@@ -30,7 +32,8 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
     public function upgrade(string $affiliateId, string $programId, string $tierId): MembershipRecord
     {
         return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($affiliateId, $programId, $tierId): MembershipRecord {
-            $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
             $program = $this->resolveProgram($programId);
             $tier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->whereKey($tierId)->first();
 
@@ -77,7 +80,7 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
     private function processMembership(string $membershipId, string $affiliateId, AffiliateProgram $program, Collection $tiers): bool
     {
         return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId, $affiliateId, $program, $tiers): bool {
-            $affiliate = Affiliate::query()->lockForUpdate()->find($affiliateId);
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()));
             $membership = AffiliateProgramMembership::query()
                 ->where('program_id', $program->id)
                 ->where('affiliate_id', $affiliateId)
@@ -99,7 +102,7 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
         }, attempts: 3);
     }
 
-    private function change(Affiliate $affiliate, AffiliateProgram $program, AffiliateProgramMembership $membership, AffiliateProgramTier $tier): bool
+    private function change(AffiliateProfile $affiliate, AffiliateProgram $program, AffiliateProgramMembership $membership, AffiliateProgramTier $tier): bool
     {
         if ($membership->tier_id === $tier->id) {
             return false;
@@ -108,7 +111,7 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
         $oldTierId = $membership->tier_id;
         $membership->update(['tier_id' => $tier->id]);
 
-        $this->events->dispatch(new AffiliateTierUpgraded((string) $affiliate->getKey(), (string) $program->getKey(), $oldTierId, (string) $tier->getKey()));
+        $this->events->dispatch(new AffiliateTierUpgraded($affiliate->reference->id, (string) $program->getKey(), $oldTierId, (string) $tier->getKey()));
 
         return true;
     }

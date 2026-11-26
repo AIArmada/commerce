@@ -8,8 +8,9 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEligibilityReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Illuminate\Support\Str;
 use LogicException;
@@ -24,7 +25,7 @@ final readonly class ProgramEligibilityQuery implements ProgramEligibilityReader
             return false;
         }
 
-        $affiliate = Affiliate::query()->forOwner()->find($affiliateId);
+        $affiliate = app(AffiliateProfileReader::class)->find($affiliateId, spl_object_id((new AffiliateProgramMembership)->getConnection()));
         $program = AffiliateProgram::query()->forOwner(includeGlobal: true)->find($programId);
 
         if ($affiliate === null || $program === null || AffiliateProgramMembership::query()
@@ -41,15 +42,16 @@ final readonly class ProgramEligibilityQuery implements ProgramEligibilityReader
      * @param  iterable<AffiliateProgram>  $programs
      * @return list<string>
      */
-    public function eligibleIds(Affiliate $affiliate, iterable $programs): array
+    public function eligibleIds(AffiliateProfile $affiliate, iterable $programs): array
     {
-        $connection = $affiliate->getConnection();
+        $connection = (new AffiliateProgramMembership)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
         if ((new AffiliateProgram)->getConnection() !== $connection || (new AffiliateProgramMembership)->getConnection() !== $connection) {
             throw new LogicException('Program eligibility requires a shared database connection.');
         }
 
-        $affiliateId = (string) $affiliate->getKey();
+        $affiliateId = $affiliate->reference->id;
         $connectionIdentity = spl_object_id($connection);
         $count = null;
         $byCurrency = null;
@@ -63,7 +65,7 @@ final readonly class ProgramEligibilityQuery implements ProgramEligibilityReader
 
             $rules = $program->eligibility_rules ?? [];
 
-            if (isset($rules['required_status']) && AffiliateStatus::normalize($affiliate->status) !== $rules['required_status']) {
+            if (isset($rules['required_status']) && $affiliate->status !== $rules['required_status']) {
                 continue;
             }
 
@@ -79,7 +81,7 @@ final readonly class ProgramEligibilityQuery implements ProgramEligibilityReader
                 if ($byCurrency === null) {
                     $byCurrency = [];
 
-                    foreach ($this->statistics->totals($affiliateId, RevenueVolume::referenceFor($affiliate), $connectionIdentity) as $row) {
+                    foreach ($this->statistics->totals($affiliateId, $affiliate->currency !== null && mb_trim($affiliate->currency) !== '' ? mb_strtoupper(mb_trim($affiliate->currency)) : RevenueVolume::default(), $connectionIdentity) as $row) {
                         $byCurrency[$row->currency] = $row->revenueMinor;
                     }
                 }

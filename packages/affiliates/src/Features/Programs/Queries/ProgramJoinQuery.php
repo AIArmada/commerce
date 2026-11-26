@@ -9,7 +9,11 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
+use Illuminate\Support\Str;
+use LogicException;
 use InvalidArgumentException;
 
 final class ProgramJoinQuery implements ProgramJoinReader
@@ -25,17 +29,28 @@ final class ProgramJoinQuery implements ProgramJoinReader
         [$affiliate, $program, $membership] = $resolved;
 
         return new ProgramJoinRecord(
-            $membership->joinReference($affiliate, $program),
+            $membership->joinReference($affiliate->reference, $program),
             $affiliate->code,
             $membership->approved_at?->toIso8601String(),
         );
     }
 
-    /** @return array{Affiliate, AffiliateProgram, AffiliateProgramMembership}|null */
-    public function resolve(ProgramJoinReference $reference): ?array
+    /** @return array{AffiliateLifecycleRecord, AffiliateProgram, AffiliateProgramMembership}|null */
+    private function resolve(ProgramJoinReference $reference): ?array
     {
+        if (! Str::isUuid($reference->membershipId) || ! Str::isUuid($reference->programId)) {
+            return null;
+        }
+
+        $connection = (new AffiliateProgramMembership)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
+
+        if ((new AffiliateProgram)->getConnection() !== $connection) {
+            throw new LogicException('Program join references require a shared database connection.');
+        }
+
         $membership = AffiliateProgramMembership::query()->withoutGlobalScope('affiliate_owner')->find($reference->membershipId);
-        $affiliate = Affiliate::query()->withoutOwnerScope()->find($reference->affiliate->id);
+        $affiliate = app(AffiliateLifecycleReader::class)->find($reference->affiliate);
         $program = AffiliateProgram::query()->withoutOwnerScope()->find($reference->programId);
 
         if ($membership === null || $affiliate === null || $program === null) {
@@ -48,7 +63,7 @@ final class ProgramJoinQuery implements ProgramJoinReader
         self::assertReference($reference->membershipProgramId, $membership->program_id, 'supplied membership program_id');
         self::assertReference($reference->tierId, $membership->tier_id, 'supplied membership tier_id');
 
-        $canonical = $membership->joinReference($affiliate, $program);
+        $canonical = $membership->joinReference($affiliate->reference, $program);
 
         if (! $reference->affiliate->matches($canonical->affiliate)) {
             throw new InvalidArgumentException('Trusted affiliate owner or identity does not match the canonical source.');

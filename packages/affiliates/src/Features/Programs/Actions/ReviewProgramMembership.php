@@ -9,7 +9,8 @@ use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -36,6 +37,9 @@ final readonly class ReviewProgramMembership implements MembershipReviewApi
                 ? OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $membership->program_id, includeGlobal: true)
                 : AffiliateProgram::query()->findOrFail($membership->program_id);
 
+            $affiliate = app(AffiliateProfileReader::class)->lock($membership->affiliate_id, spl_object_id((new AffiliateProgramMembership)->getConnection()))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
+
             if ($membership->status !== MembershipStatus::Pending) {
                 return false;
             }
@@ -49,8 +53,6 @@ final readonly class ReviewProgramMembership implements MembershipReviewApi
                 return true;
             }
 
-            $affiliate = Affiliate::query()->findOrFail($membership->affiliate_id);
-
             $membership->update([
                 'status' => MembershipStatus::Approved,
                 'approved_at' => CarbonImmutable::now(),
@@ -59,7 +61,7 @@ final readonly class ReviewProgramMembership implements MembershipReviewApi
                 'suspended_at' => null,
             ]);
 
-            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
+            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate->reference, $program)));
 
             return true;
         }, attempts: 3);

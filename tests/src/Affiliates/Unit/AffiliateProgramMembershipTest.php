@@ -71,8 +71,8 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        expect($membership->affiliate)->toBeInstanceOf(Affiliate::class);
-        expect($membership->affiliate->id)->toBe($this->affiliate->id);
+        expect(app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class)->findById($membership->affiliate_id)?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($membership, 'affiliate'))->toBeFalse();
     });
 
     test('belongs to program', function (): void {

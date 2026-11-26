@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -62,7 +62,8 @@ final class MembershipsRelationManager extends RelationManager
     {
         return $schema->schema([
             Select::make('affiliate_id')
-                ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                ->getSearchResultsUsing(fn (string $search): array => AffiliateReferenceProjection::options($search))
+                ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : AffiliateReferenceProjection::label($id))
                 ->disabledOn('edit')
                 ->searchable()
                 ->required(),
@@ -92,9 +93,9 @@ final class MembershipsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('affiliate_id')
             ->columns([
-                TextColumn::make('affiliate.name')
+                TextColumn::make('affiliate_name')
                     ->label('Affiliate')
-                    ->searchable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search)),
 
                 TextColumn::make('tier.name')
                     ->label('Tier')
@@ -117,7 +118,7 @@ final class MembershipsRelationManager extends RelationManager
                     ->dateTime()
                     ->placeholder('—'),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->with(['affiliate', 'tier']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => AffiliateReferenceProjection::apply($query)->with('tier'))
             ->headerActions([
                 CreateAction::make()
                     ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
