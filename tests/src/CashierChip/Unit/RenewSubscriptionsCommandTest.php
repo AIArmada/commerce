@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
@@ -14,11 +14,8 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 uses(CashierChipTestCase::class);
 
@@ -77,15 +74,9 @@ describe('RenewSubscriptionsCommand', function (): void {
             'quantity' => 2,
         ]);
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'processRenewals');
+        $action = $this->app->make(RenewSubscriptions::class);
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, false, 0);
+        $result = $action->processRenewals(false, 0);
 
         $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
 
@@ -112,15 +103,9 @@ describe('RenewSubscriptionsCommand', function (): void {
             'quantity' => 1,
         ]);
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'processRenewals');
+        $action = $this->app->make(RenewSubscriptions::class);
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, false, 0);
+        $result = $action->processRenewals(false, 0);
 
         $this->assertSame(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0], $result);
 
@@ -151,15 +136,9 @@ describe('RenewSubscriptionsCommand', function (): void {
             'quantity' => 1,
         ]);
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'processRenewals');
+        $action = $this->app->make(RenewSubscriptions::class);
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, false, 0);
+        $result = $action->processRenewals(false, 0);
 
         $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
 
@@ -207,15 +186,9 @@ describe('RenewSubscriptionsCommand', function (): void {
             'quantity' => 1,
         ]);
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'processRenewals');
+        $action = $this->app->make(RenewSubscriptions::class);
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, false, 0);
+        $result = $action->processRenewals(false, 0);
 
         $this->assertSame(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0], $result);
 
@@ -317,14 +290,8 @@ describe('RenewSubscriptionsCommand', function (): void {
         $attempt?->refresh();
         $item->forceFill(['unit_amount' => 2000])->save();
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'executeAttempt');
-        $result = $method->invoke($command, $attempt);
+        $action = $this->app->make(RenewSubscriptions::class);
+        $result = $action->executeAttempt($attempt);
         $purchases = array_values($this->fakeChip->getFakeClient()->getPurchases());
 
         expect($result)->toBe('renewed')
@@ -359,14 +326,8 @@ describe('RenewSubscriptionsCommand', function (): void {
             ->update(['amount_minor' => 5001]);
         $attempt->refresh();
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'executeAttempt');
-        $result = $method->invoke($command, $attempt);
+        $action = $this->app->make(RenewSubscriptions::class);
+        $result = $action->executeAttempt($attempt);
 
         expect($result)->toBe('failed')
             ->and($attempt->fresh()?->status)->toBe('failed')
@@ -387,15 +348,9 @@ describe('RenewSubscriptionsCommand', function (): void {
             'quantity' => 1,
         ]);
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'processRenewals');
+        $action = $this->app->make(RenewSubscriptions::class);
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, false, 0);
+        $result = $action->processRenewals(false, 0);
 
         expect($result)->toBe(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0])
             ->and($subscription->fresh()?->chip_status)->toBe(SubscriptionStatus::PastDue)
@@ -446,15 +401,9 @@ describe('RenewSubscriptionsCommand', function (): void {
 
         $attempt?->update(['lease_expires_at' => CarbonImmutable::now()->subMinute()]);
 
-        $command = $this->app->make(RenewSubscriptionsCommand::class);
-        $command->setLaravel($this->app);
-        $command->setOutput(new OutputStyle(
-            new ArrayInput([]),
-            new BufferedOutput,
-        ));
-        $method = new ReflectionMethod($command, 'processRenewals');
+        $action = $this->app->make(RenewSubscriptions::class);
         /** @var array{renewed: int, failed: int, unknown: int, skipped: int} $result */
-        $result = $method->invoke($command, false, 0);
+        $result = $action->processRenewals(false, 0);
 
         expect($result)->toBe(['renewed' => 0, 'failed' => 1, 'unknown' => 0, 'skipped' => 0])
             ->and($subscription->fresh()?->chip_status)->toBe(SubscriptionStatus::PastDue)

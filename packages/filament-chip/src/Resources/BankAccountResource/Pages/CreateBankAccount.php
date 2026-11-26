@@ -55,9 +55,11 @@ final class CreateBankAccount extends CreateRecord
                 'status' => $bankAccount->status,
             ]);
         } catch (Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to create bank account')
-                ->body($e->getMessage())
+                ->body('The request could not be completed. Check its status before retrying.')
                 ->danger()
                 ->send();
 

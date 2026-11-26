@@ -11,6 +11,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 describe('CleanWebhooksCommand', function (): void {
+    it('rejects nonpositive retention periods and unknown statuses', function (): void {
+        $this->artisan(CleanWebhooksCommand::class, ['--days' => -1])
+            ->assertFailed();
+
+        $this->artisan(CleanWebhooksCommand::class, ['--status' => 'unexpected'])
+            ->assertFailed();
+    });
+
     it('shows message when no webhooks found', function (): void {
         $this->artisan(CleanWebhooksCommand::class)
             ->expectsOutput('No webhooks found matching the criteria.')

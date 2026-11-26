@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Commands;
 
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Actions\CleanWebhooks;
 use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class CleanWebhooksCommand extends Command
@@ -20,25 +19,30 @@ final class CleanWebhooksCommand extends Command
 
     protected $description = 'Clean old webhook records from the database';
 
-    public function handle(WebhookOwnerBatchRunner $batchRunner): int
+    public function handle(WebhookOwnerBatchRunner $batchRunner, CleanWebhooks $action): int
     {
         $days = (int) $this->option('days');
         $status = (string) $this->option('status');
+        if ($days < 1 || ! in_array($status, ['processed', 'failed', 'all'], true)) {
+            $this->error('Days must be positive and status must be processed, failed, or all.');
+
+            return self::FAILURE;
+        }
+
         $cutoffDate = CarbonImmutable::now()->subDays($days);
         $dryRun = (bool) $this->option('dry-run');
 
-        return $batchRunner->run(function (?Model $owner, ?int $_remainingLimit = null) use ($cutoffDate, $status, $days, $dryRun): array {
-            return $this->handleForOwner($cutoffDate, $status, $days, $dryRun, $owner);
+        return $batchRunner->run(function (?Model $owner, ?int $_remainingLimit = null) use ($action, $cutoffDate, $status, $days, $dryRun): array {
+            return $this->handleForOwner($action, $cutoffDate, $status, $days, $dryRun, $owner);
         })['failed'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
     /**
      * @return array{processed: int, succeeded: int, failed: int}
      */
-    private function handleForOwner(CarbonImmutable $cutoffDate, string $status, int $days, bool $dryRun, ?Model $owner): array
+    private function handleForOwner(CleanWebhooks $action, CarbonImmutable $cutoffDate, string $status, int $days, bool $dryRun, ?Model $owner): array
     {
-        $query = $this->buildQuery($cutoffDate, $status, $owner);
-        $count = $query->count();
+        $count = $action->count($cutoffDate, $status, $owner);
 
         if ($count === 0) {
             $this->info('No webhooks found matching the criteria.');
@@ -60,23 +64,10 @@ final class CleanWebhooksCommand extends Command
             return ['processed' => 0, 'succeeded' => 0, 'failed' => 0];
         }
 
-        $deleted = $query->delete();
+        $deleted = $action->handle($cutoffDate, $status, $owner);
 
         $this->info("Successfully deleted {$deleted} webhook record(s).");
 
         return ['processed' => $count, 'succeeded' => $deleted, 'failed' => 0];
-    }
-
-    private function buildQuery(CarbonImmutable $cutoffDate, string $status, ?Model $owner): Builder
-    {
-        $query = Webhook::query()
-            ->forOwner($owner, false)
-            ->where('created_at', '<', $cutoffDate);
-
-        if ($status !== 'all') {
-            $query->where('status', $status);
-        }
-
-        return $query;
     }
 }

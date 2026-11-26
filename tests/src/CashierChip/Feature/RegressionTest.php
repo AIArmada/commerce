@@ -6,7 +6,7 @@ use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
 use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
-use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
@@ -310,10 +310,8 @@ describe('RepairRegression renewal idempotency', function (): void {
             'quantity' => 1,
         ]);
 
-        $command = app(RenewSubscriptionsCommand::class);
-        $method = new ReflectionMethod($command, 'processRenewals');
-        $method->setAccessible(true);
-        $result = $method->invoke($command, false, 0);
+        $action = app(RenewSubscriptions::class);
+        $result = $action->processRenewals(false, 0);
 
         $purchases = array_values($this->fakeChip->getFakeClient()->getPurchases());
         $attempt = RenewalAttempt::query()->where('subscription_id', $subscription->id)->first();
@@ -346,10 +344,8 @@ describe('RepairRegression renewal idempotency', function (): void {
             'last_error_code' => 'TRANSPORT_OUTCOME_UNKNOWN',
         ]);
 
-        $command = app(RenewSubscriptionsCommand::class);
-        $method = new ReflectionMethod($command, 'processRenewals');
-        $method->setAccessible(true);
-        $result = $method->invoke($command, false, 0);
+        $action = app(RenewSubscriptions::class);
+        $result = $action->processRenewals(false, 0);
 
         expect($result['renewed'])->toBe(1)
             ->and($unknown->fresh()?->status)->toBe('completed')

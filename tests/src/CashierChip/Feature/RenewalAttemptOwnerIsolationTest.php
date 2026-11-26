@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
@@ -89,9 +89,8 @@ it('blocks cross-owner renewal attempt creation and processing', function (): vo
         'period_key' => '2026-09',
         'lease_expires_at' => CarbonImmutable::now()->addHour(),
     ]));
-    $command = app(RenewSubscriptionsCommand::class);
-    $method = new ReflectionMethod($command, 'executeAttempt');
+    $action = app(RenewSubscriptions::class);
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => $method->invoke($command, $attemptB)))
+    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => $action->executeAttempt($attemptB)))
         ->toThrow(AuthorizationException::class);
 });

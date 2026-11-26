@@ -83,9 +83,11 @@ final class CreateSendInstruction extends CreateRecord
                 'state' => $instruction->state,
             ]);
         } catch (Throwable $e) {
+            report($e);
+
             Notification::make()
                 ->title('Failed to create payout')
-                ->body($e->getMessage())
+                ->body('The request could not be completed. Check its status before retrying.')
                 ->danger()
                 ->send();
 
