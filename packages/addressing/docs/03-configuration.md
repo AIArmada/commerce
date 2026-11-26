@@ -153,7 +153,7 @@ Country-specific formatters are configured separately from geography providers:
 ],
 ```
 
-`FormatAddressAction` resolves a formatter by `AddressData::countryCode` and falls back to the generic formatter when no country formatter is registered. This keeps formatting independent from geography seeding.
+`AddressFormatter` resolves a formatter by `AddressData::countryCode` and falls back to the generic formatter when no country formatter is registered. This keeps formatting independent from geography seeding.
 
 ### Provider registration
 

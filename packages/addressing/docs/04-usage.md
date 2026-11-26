@@ -83,7 +83,7 @@ $state->cities;  // HasMany cities when this country uses a state relationship
 
 `City::state()` may be null. Use the selected country's address profile to decide whether the UI should ask for a state, province, prefecture, county, municipality, or no parent region.
 
-`NormalizeAddressDataAction` treats reference IDs as authoritative. When only
+`AddressNormalizer` treats reference IDs as authoritative. When only
 country/state/city names or codes are supplied, it resolves matching reference
 rows and returns their IDs and canonical names. Explicit IDs are validated for
 existence and country/state consistency; no database foreign-key constraint is
@@ -1042,7 +1042,7 @@ human-readable tag alongside the snapshot.
 ## Formatting
 
 ```php
-use AIArmada\Addressing\Actions\FormatAddressAction;
+use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Data\AddressData;
 
 $address = AddressData::from([
@@ -1053,7 +1053,7 @@ $address = AddressData::from([
     'countryCode' => 'MY',
 ]);
 
-$formatted = app(FormatAddressAction::class)->format($address);
+$formatted = app(AddressFormatter::class)->format($address);
 // "123 Jalan Ampang
 //  50450 Kuala Lumpur
 //  Malaysia"
@@ -1066,9 +1066,9 @@ Saving an `Address` regenerates `formatted_address` and `formatted_lines` automa
 ## Normalization
 
 ```php
-use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
+use AIArmada\Addressing\Contracts\AddressNormalizer;
 
-$address = app(NormalizeAddressDataAction::class)->normalize([
+$address = app(AddressNormalizer::class)->normalize([
     'street_address' => '123 Jalan Ampang',
     'zip_code' => '50450',
 ]);
@@ -1080,13 +1080,13 @@ echo $address->postcode; // "50450"
 ## Validation
 
 ```php
-use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
-use AIArmada\Addressing\Actions\ValidateAddressAction;
+use AIArmada\Addressing\Contracts\AddressNormalizer;
+use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Rules\ValidPostalCode;
 
 // Ensure countryCode is set (normalize() keeps it canonical), then validate.
-$address = app(NormalizeAddressDataAction::class)->normalize($input);
-$violations = app(ValidateAddressAction::class)->execute($address);
+$address = app(AddressNormalizer::class)->normalize($input);
+$violations = app(AddressValidator::class)->validate($address);
 // ['postcode' => 'The postcode [ABCDE] is not a valid MY postcode.']
 // Empty array when valid.
 

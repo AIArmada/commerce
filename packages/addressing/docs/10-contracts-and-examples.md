@@ -348,9 +348,9 @@ Do not add `HasAddresses` to order snapshots, shipment snapshots, gateway payloa
 ## Formatting example
 
 ```php
-use AIArmada\Addressing\Actions\FormatAddressAction;
+use AIArmada\Addressing\Contracts\AddressFormatter;
 
-$formatted = app(FormatAddressAction::class)->format($addressData);
+$formatted = app(AddressFormatter::class)->format($addressData);
 ```
 
 Output may be:

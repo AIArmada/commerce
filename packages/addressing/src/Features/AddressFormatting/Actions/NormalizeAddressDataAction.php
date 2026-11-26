@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressFormatting\Actions;
 
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
-class NormalizeAddressDataAction implements AddressNormalizer
+final readonly class NormalizeAddressDataAction implements AddressNormalizer
 {
-    public function __construct(private readonly AddressCountryResolver $countryResolver) {}
+    public function __construct(private AddressCountryResolver $countryResolver) {}
 
     public function normalize(array $data): AddressData
     {

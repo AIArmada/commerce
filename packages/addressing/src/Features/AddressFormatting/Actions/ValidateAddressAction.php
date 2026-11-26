@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressFormatting\Actions;
 
+use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Support\AddressCountryResolver;
 use AIArmada\Addressing\Support\AddressValidationProfiles;
@@ -11,7 +12,7 @@ use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SchemaTableCache;
 use InvalidArgumentException;
 
-final class ValidateAddressAction
+final readonly class ValidateAddressAction implements AddressValidator
 {
     private const array FIELD_LABELS = [
         'line1' => 'address line 1',
@@ -21,13 +22,13 @@ final class ValidateAddressAction
     ];
 
     public function __construct(
-        private readonly AddressCountryResolver $countryResolver,
+        private AddressCountryResolver $countryResolver,
     ) {}
 
     /**
      * Validate an address against its country's validation profile.
      *
-     * Callers set countryCode first (NormalizeAddressDataAction keeps it
+     * Callers set countryCode first (AddressNormalizer keeps it
      * canonical); this action only reads AddressData as given. Known
      * countries without a profile are unconstrained and pass; unknown
      * codes fail only when countries are seeded (otherwise there is
@@ -37,7 +38,7 @@ final class ValidateAddressAction
      *
      * @return array<string, string> Field name to violation message; empty when valid.
      */
-    public function execute(AddressData $address): array
+    public function validate(AddressData $address): array
     {
         $code = $address->countryCode !== null ? mb_strtoupper(mb_trim($address->countryCode)) : '';
 

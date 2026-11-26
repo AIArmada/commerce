@@ -11,7 +11,6 @@ use AIArmada\Addressing\Actions\DiffGoogleAddressReferenceAction;
 use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Actions\FetchGooglePlaceDetailsAction;
 use AIArmada\Addressing\Actions\FetchGooglePlacePhotoPreviewsAction;
-use AIArmada\Addressing\Actions\FormatAddressAction;
 use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
 use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
 use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
@@ -19,7 +18,6 @@ use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
 use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Actions\MatchGapToAreaAction;
-use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
 use AIArmada\Addressing\Actions\NormalizeGoogleMapsInputAction;
 use AIArmada\Addressing\Actions\ResolveGooglePlaceSelectionAction;
 use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
@@ -33,7 +31,6 @@ use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
-use AIArmada\Addressing\Actions\ValidateAddressAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
 use AIArmada\Addressing\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Commands\DiffGoogleAddressReferenceCommand;
@@ -43,10 +40,8 @@ use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
 use AIArmada\Addressing\Commands\ReportResolutionGapsCommand;
 use AIArmada\Addressing\Commands\SeedCountryGeographiesCommand;
 use AIArmada\Addressing\Commands\SeedPostalCodesCommand;
-use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
 use AIArmada\Addressing\Contracts\PostalAddressLookup;
-use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Contracts\CountryAddressFormatter;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Drivers\GooglePlaces\GoogleMapsRemoteLookup;
@@ -119,8 +114,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(CountryAddressFormatterResolver::class);
         $this->app->singleton(ImportAddressAreasAction::class);
         $this->app->singleton(CreateAddressSnapshotAction::class);
-        $this->app->singleton(NormalizeAddressDataAction::class);
-        $this->app->singleton(FormatAddressAction::class);
         $this->app->singleton(BuildAddressNavigationLinksAction::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
         $this->app->singleton(ResolveSingaporePostalCodesAction::class);
@@ -129,7 +122,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(IgnoreResolutionGapAction::class);
         $this->app->singleton(ExportResolutionGapAliasesAction::class);
         $this->app->singleton(SaveAddressAreaAction::class);
-        $this->app->singleton(ValidateAddressAction::class);
         $this->app->singleton(DiffGoogleAddressReferenceAction::class);
         $this->app->singleton(DiffCldrSubdivisionsAction::class);
         $this->app->singleton(GuardAddressAreaDeletionAction::class);
@@ -144,8 +136,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(NormalizeGoogleMapsInputAction::class);
         $this->app->singleton(ResolveGooglePlaceSelectionAction::class);
 
-        $this->app->bind(AddressNormalizer::class, NormalizeAddressDataAction::class);
-        $this->app->bind(AddressFormatter::class, FormatAddressAction::class);
     }
 
     public function bootingPackage(): void

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\AddressFormatting\Actions;
 
 use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
@@ -11,11 +11,11 @@ use AIArmada\Addressing\Support\AddressLineFilter;
 use AIArmada\Addressing\Support\CountryAddressFormatterResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class FormatAddressAction implements AddressFormatter
+final readonly class FormatAddressAction implements AddressFormatter
 {
     public function __construct(
-        private readonly CountryAddressFormatterResolver $countryFormatters,
-        private readonly AddressNormalizer $normalizer,
+        private CountryAddressFormatterResolver $countryFormatters,
+        private AddressNormalizer $normalizer,
     ) {}
 
     public function format(AddressData $address): string

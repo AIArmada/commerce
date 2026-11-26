@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions;
 
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
-use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
+use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -356,7 +356,7 @@ final class CreateOrder
      */
     private function normalizeAddressData(array $addressData): array
     {
-        $normalized = app(NormalizeAddressDataAction::class)->normalize($addressData);
+        $normalized = app(AddressNormalizer::class)->normalize($addressData);
 
         /** @var array<string, mixed> $modelAttributes */
         $modelAttributes = $normalized->toModelAttributes();

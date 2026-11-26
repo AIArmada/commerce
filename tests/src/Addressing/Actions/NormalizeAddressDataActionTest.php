@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
+use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
@@ -28,7 +28,7 @@ beforeEach(function (): void {
 });
 
 it('resolves free-text geography to canonical country state and city ids', function (): void {
-    $address = app(NormalizeAddressDataAction::class)->normalize([
+    $address = app(AddressNormalizer::class)->normalize([
         'country_code' => ' us ',
         'state' => ' new york ',
         'city' => ' new york city ',
@@ -44,7 +44,7 @@ it('resolves free-text geography to canonical country state and city ids', funct
 });
 
 it('resolves a country name before resolving its free-text geography', function (): void {
-    $address = app(NormalizeAddressDataAction::class)->normalize([
+    $address = app(AddressNormalizer::class)->normalize([
         'country' => ' United States ',
         'state' => 'New York',
         'city' => 'New York City',
@@ -63,7 +63,7 @@ it('rejects an explicit city linked to a different state', function (): void {
         'code' => 'CA',
     ]);
 
-    expect(fn (): mixed => app(NormalizeAddressDataAction::class)->normalize([
+    expect(fn (): mixed => app(AddressNormalizer::class)->normalize([
         'country_id' => $this->city->country_id,
         'state_id' => $otherState->getKey(),
         'city_id' => $this->city->getKey(),

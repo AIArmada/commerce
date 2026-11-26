@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ValidateAddressAction;
+use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\AddressCountry;
 
 it('passes a complete address', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => '1 Jalan Ampang',
         'city' => 'Kuala Lumpur',
         'state' => 'Kuala Lumpur',
@@ -19,7 +19,7 @@ it('passes a complete address', function (): void {
 });
 
 it('reports every missing required field', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'countryCode' => 'MY',
     ]));
 
@@ -29,7 +29,7 @@ it('reports every missing required field', function (): void {
 });
 
 it('rejects postcodes outside the country pattern', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => '1 Jalan Ampang',
         'city' => 'Kuala Lumpur',
         'state' => 'Kuala Lumpur',
@@ -41,7 +41,7 @@ it('rejects postcodes outside the country pattern', function (): void {
 });
 
 it('accepts stored identifiers for city and state', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => '1 Jalan Ampang',
         'cityId' => '01JTESTCITY00000000000001',
         'stateId' => '01JTESTSTATE0000000000001',
@@ -53,22 +53,22 @@ it('accepts stored identifiers for city and state', function (): void {
 });
 
 it('checks supplied postcodes even where optional', function (): void {
-    $action = app(ValidateAddressAction::class);
+    $action = app(AddressValidator::class);
 
-    $without = $action->execute(AddressData::from([
+    $without = $action->validate(AddressData::from([
         'line1' => '1 Main Street',
         'city' => 'Dublin',
         'countryCode' => 'IE',
     ]));
 
-    $withBad = $action->execute(AddressData::from([
+    $withBad = $action->validate(AddressData::from([
         'line1' => '1 Main Street',
         'city' => 'Dublin',
         'postcode' => 'AB',
         'countryCode' => 'IE',
     ]));
 
-    $withExcludedLetters = $action->execute(AddressData::from([
+    $withExcludedLetters = $action->validate(AddressData::from([
         'line1' => '1 Main Street',
         'city' => 'Dublin',
         'postcode' => 'ZZZ',
@@ -84,7 +84,7 @@ it('passes countries without a profile', function (): void {
     AddressCountry::query()->create(['iso2' => 'MY', 'name' => 'Malaysia']);
     AddressCountry::query()->create(['iso2' => 'AQ', 'name' => 'Antarctica']);
 
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'countryCode' => 'AQ',
     ]));
 
@@ -92,7 +92,7 @@ it('passes countries without a profile', function (): void {
 });
 
 it('passes unknown codes when countries are unseeded', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'countryCode' => 'XX',
     ]));
 
@@ -102,7 +102,7 @@ it('passes unknown codes when countries are unseeded', function (): void {
 it('rejects unknown codes once countries are seeded', function (): void {
     AddressCountry::query()->create(['iso2' => 'MY', 'name' => 'Malaysia']);
 
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => '1 Jalan Ampang',
         'countryCode' => 'XX',
     ]));
@@ -111,7 +111,7 @@ it('rejects unknown codes once countries are seeded', function (): void {
 });
 
 it('passes addresses without a country code', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => '1 Jalan Ampang',
     ]));
 
@@ -119,7 +119,7 @@ it('passes addresses without a country code', function (): void {
 });
 
 it('matches patterns case-insensitively', function (): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => 'Dam 1',
         'city' => 'Amsterdam',
         'postcode' => '1011 ab',
@@ -130,7 +130,7 @@ it('matches patterns case-insensitively', function (): void {
 });
 
 it('accepts outward and full British postcodes', function (string $postcode): void {
-    $violations = app(ValidateAddressAction::class)->execute(AddressData::from([
+    $violations = app(AddressValidator::class)->validate(AddressData::from([
         'line1' => '1 High Street',
         'city' => 'Aberdeen',
         'postcode' => $postcode,
@@ -144,12 +144,12 @@ it('accepts outward and full British postcodes', function (string $postcode): vo
 ]);
 
 it('validates adjudicated single-code and extended formats', function (string $countryCode, string $good, string $bad): void {
-    $action = app(ValidateAddressAction::class);
+    $action = app(AddressValidator::class);
 
     $base = ['line1' => 'Station', 'city' => 'Wake', 'state' => 'Wake Island'];
 
-    $pass = $action->execute(AddressData::from($base + ['postcode' => $good, 'countryCode' => $countryCode]));
-    $fail = $action->execute(AddressData::from($base + ['postcode' => $bad, 'countryCode' => $countryCode]));
+    $pass = $action->validate(AddressData::from($base + ['postcode' => $good, 'countryCode' => $countryCode]));
+    $fail = $action->validate(AddressData::from($base + ['postcode' => $bad, 'countryCode' => $countryCode]));
 
     expect($pass)->not->toHaveKey('postcode')
         ->and($fail)->toHaveKey('postcode');
@@ -167,10 +167,10 @@ it('validates adjudicated single-code and extended formats', function (string $c
 it('profiles country names through seeded rows', function (): void {
     $this->seedCountry('MY');
 
-    $action = app(ValidateAddressAction::class);
+    $action = app(AddressValidator::class);
 
-    $missing = $action->execute(AddressData::from(['line1' => 'Station', 'countryCode' => 'Malaysia']));
-    $complete = $action->execute(AddressData::from(['line1' => 'Station', 'city' => 'Ampang', 'state' => 'Selangor', 'postcode' => '68000', 'countryCode' => 'malaysia']));
+    $missing = $action->validate(AddressData::from(['line1' => 'Station', 'countryCode' => 'Malaysia']));
+    $complete = $action->validate(AddressData::from(['line1' => 'Station', 'city' => 'Ampang', 'state' => 'Selangor', 'postcode' => '68000', 'countryCode' => 'malaysia']));
 
     expect($missing)->toHaveKey('city')
         ->and($missing['city'])->toContain('MY')
