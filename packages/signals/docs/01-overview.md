@@ -31,7 +31,7 @@ The `aiarmada/signals` package is the analytics foundation for Commerce. It owns
 ## Main models services or surfaces
 
 - **Actions** — `IngestSignalEvent`, `ResolveSession`, `EvaluateAlertRules`, `IdentifySignalIdentity`, `CaptureSignalPageView`, `CaptureSignalGeolocation`, `ServeSignalsTracker`, and alert-read actions
-- **Contracts** — `BrowserContextResolverInterface`, `ReportInterface`, `ReverseGeocoderContract`, `SignalEventIngestor`, `SignalLocationResolverContract`
+- **Contracts** — `BrowserContextResolverInterface`, `ReportInterface`, `ReverseGeocoderContract`, `IngestSignalEvent`, `SignalLocationResolverContract`
 - **Ingestion surface** — HTTP actions for identity, page-view, custom-event capture, geolocation capture, and tracker-script delivery
 - **Browser surface** — browser-context cookies, optional automatic tracker injection, and Blade `@signalsTracker` rendering
 - **Models and services** — signals domain models, report services (`PageViewReportService`, `SignalsDashboardService`, funnel/acquisition/journey/retention/content/goals/live/devices), alerting, ingestion helpers, route catalogs, and daily aggregation

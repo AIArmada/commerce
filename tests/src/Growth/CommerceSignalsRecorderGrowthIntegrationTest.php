@@ -14,7 +14,7 @@ use AIArmada\Growth\Models\Variant;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\CommerceSignalsRecorder;
+use AIArmada\Signals\Features\Ingestion\Actions\CommerceSignalsRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;

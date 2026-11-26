@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\Signals\Actions\IdentifySignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Actions\IdentifySignalIdentity;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Support\Facades\DB;

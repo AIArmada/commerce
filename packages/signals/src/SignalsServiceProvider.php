@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals;
 
-use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
-use AIArmada\Signals\Contracts\SignalEventIngestor;
-use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
@@ -26,16 +23,12 @@ use AIArmada\Signals\Platform\ExtensionRegistry;
 use AIArmada\Signals\Platform\FeatureCatalog;
 use AIArmada\Signals\Platform\FeatureModule;
 use Illuminate\Contracts\Foundation\Application;
-use AIArmada\Signals\Services\CommerceSignalsRecorder;
-use AIArmada\Signals\Drivers\NominatimGeocoder;
-use AIArmada\Signals\Services\SignalLocationResolverPipeline;
 use AIArmada\Signals\Services\SignalMetricsAggregator;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
 use AIArmada\Signals\Support\Browser\InjectSignalsTrackerIntoHtmlResponse;
 use AIArmada\Signals\Support\Browser\SignalsBrowserContextManager;
 use AIArmada\Signals\Support\Browser\SignalsBrowserContextResolver;
 use AIArmada\Signals\Support\Browser\SignalsTrackerRenderer;
-use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Http\Kernel;
@@ -74,23 +67,12 @@ final class SignalsServiceProvider extends PackageServiceProvider
             }
         }
 
-        $this->app->bind(SignalEventIngestor::class, IngestSignalEvent::class);
         $this->app->singleton(SignalMetricsAggregator::class);
         $this->app->singleton(TrackedPropertyResolver::class);
-        $this->app->singleton(CommerceSignalsRecorder::class);
         $this->app->scoped(SignalsBrowserContextManager::class);
         $this->app->bind(SignalsTrackerRenderer::class);
         $this->app->bind(InjectSignalsTrackerIntoHtmlResponse::class);
-        $this->app->singleton(SignalLocationResolverPipeline::class, function ($app): SignalLocationResolverPipeline {
-            $pipeline = new SignalLocationResolverPipeline;
-            $pipeline->registerGeocoder($app->make(NominatimGeocoder::class));
 
-            if ($app->bound(SignalLocationResolverContract::class)) {
-                $pipeline->registerResolver($app->make(SignalLocationResolverContract::class));
-            }
-
-            return $pipeline;
-        });
 
         $this->app->bind(BrowserContextResolverInterface::class, SignalsBrowserContextResolver::class);
     }
@@ -109,7 +91,6 @@ final class SignalsServiceProvider extends PackageServiceProvider
         $this->registerSignalsTrackerDirective();
         $this->registerBrowserMiddleware();
         $this->registerBrowserAutoInjection();
-        app(CommerceSignalsIntegrationRegistrar::class)->boot();
     }
 
     private function registerIngestionRateLimiter(): void

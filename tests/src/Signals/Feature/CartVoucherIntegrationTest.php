@@ -13,7 +13,7 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
+use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;

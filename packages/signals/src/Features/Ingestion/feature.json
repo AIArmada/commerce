@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "Ingestion",
+  "owns": {
+    "table:signal_events": [
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent"
+    ],
+    "table:signal_identities": [
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IdentifySignalIdentity"
+    ],
+    "table:signal_sessions": [
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\ResolveSession",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\IngestSignalEvent",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\CaptureSignalGeolocation",
+      "AIArmada\\Signals\\Features\\Ingestion\\Actions\\SignalLocationResolverPipeline"
+    ]
+  },
+  "extensions": {}
+}

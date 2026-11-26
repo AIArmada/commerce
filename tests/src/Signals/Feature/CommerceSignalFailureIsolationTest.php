@@ -22,7 +22,7 @@ use AIArmada\Signals\Exceptions\CommerceSignalTransactionControlFailed;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\CommerceSignalsRecorder;
+use AIArmada\Signals\Features\Ingestion\Actions\CommerceSignalsRecorder;
 use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Database\Eloquent\Model;

@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
-use AIArmada\Signals\Jobs\ReverseGeocodeSessionJob;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Jobs\ReverseGeocodeSessionJob;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;

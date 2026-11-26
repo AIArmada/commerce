@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Actions\IdentifySignalIdentity;
-use AIArmada\Signals\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Actions\IdentifySignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;

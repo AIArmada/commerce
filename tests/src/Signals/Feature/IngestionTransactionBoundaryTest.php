@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
