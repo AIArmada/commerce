@@ -23,10 +23,11 @@ final class CreateAddressArea extends CreateRecord
     {
         unset($data['source'], $data['source_id'], $data['parent_source_id']);
 
-        $area = app(AddressAreaWriter::class)->handle($data);
+        $modelClass = AddressAreaResource::getModel();
+        $id = app(AddressAreaWriter::class)->handle($data, modelClass: $modelClass);
 
         AddressingFilterOptions::forgetAreaOptions();
 
-        return $area;
+        return $modelClass::query()->with(['country', 'parent'])->findOrFail($id);
     }
 }

@@ -10,21 +10,24 @@ use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 final readonly class SavePostalCodeAction implements PostalCodeWriter
 {
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  class-string<PostalCode>|null  $modelClass
      */
-    public function execute(array $attributes, ?PostalCode $record = null): PostalCode
+    public function execute(array $attributes, ?string $recordId = null, ?string $modelClass = null): string
     {
-        return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($attributes, $record): PostalCode {
-            $postalCodeClass = ModelResolver::postalCodeClass();
-            $postalCode = $record instanceof PostalCode
-                ? ($record->exists
-                    ? $record::query()->lockForUpdate()->findOrFail($record->getKey())
-                    : $record)
-                : new $postalCodeClass;
+        $modelClass ??= ModelResolver::postalCodeClass();
+
+        if (! is_a($modelClass, PostalCode::class, true)) {
+            throw new LogicException('Configured postcode model must extend PostalCode.');
+        }
+
+        return (new $modelClass)->getConnection()->transaction(function () use ($attributes, $recordId, $modelClass): string {
+            $postalCode = $recordId === null ? new $modelClass : $modelClass::query()->lockForUpdate()->findOrFail($recordId);
             $countryCode = $postalCode->exists
                 ? (string) $postalCode->country_code
                 : $this->stringAttribute($attributes, 'country_code', null, uppercase: true);
@@ -91,7 +94,7 @@ final readonly class SavePostalCodeAction implements PostalCodeWriter
                 $this->saveManualCoverage($postalCode, $manualCoverage);
             }
 
-            return $postalCode->fresh(['areas']) ?? $postalCode;
+            return (string) $postalCode->getKey();
         });
     }
 

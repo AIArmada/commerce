@@ -51,6 +51,8 @@ final class EditPostalCode extends EditRecord
             throw new LogicException('Expected a PostalCode record.');
         }
 
-        return app(PostalCodeWriter::class)->execute($data, $record);
+        $id = app(PostalCodeWriter::class)->execute($data, (string) $record->getKey(), $record::class);
+
+        return $record->newQuery()->with('areas')->findOrFail($id);
     }
 }

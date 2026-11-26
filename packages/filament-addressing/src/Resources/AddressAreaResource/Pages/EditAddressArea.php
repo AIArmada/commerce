@@ -124,10 +124,10 @@ final class EditAddressArea extends EditRecord
             unset($data['source'], $data['source_id'], $data['parent_source_id']);
         }
 
-        $area = app(AddressAreaWriter::class)->handle($data, $record);
+        $id = app(AddressAreaWriter::class)->handle($data, (string) $record->getKey(), $record::class);
 
         AddressingFilterOptions::forgetAreaOptions();
 
-        return $area;
+        return $record->newQuery()->with(['country', 'parent'])->findOrFail($id);
     }
 }

@@ -783,7 +783,7 @@ preserves the stored value, while explicit `null` clears it.
 ```php
 use AIArmada\Addressing\Contracts\PostalCodeWriter;
 
-$postcode = app(PostalCodeWriter::class)->execute([
+$postcodeId = app(PostalCodeWriter::class)->execute([
     'country_code' => 'MY',
     'code' => '47500',
     'is_active' => true,
@@ -796,6 +796,7 @@ $postcode = app(PostalCodeWriter::class)->execute([
         ],
     ],
 ]);
+$postcode = \AIArmada\Addressing\Support\ModelResolver::postalCodeClass()::query()->findOrFail($postcodeId);
 ```
 
 For grouped import rows, `PostalCodeAdminImporter` accepts one postcode
@@ -855,14 +856,15 @@ Existing rows are updated through Eloquent `save()`, so model observers may muta
 ```php
 use AIArmada\Addressing\Contracts\AddressAreaWriter;
 
-$area = app(AddressAreaWriter::class)->handle([
+$areaId = app(AddressAreaWriter::class)->handle([
     'country_id' => $country->id,
     'parent_id' => $district->id,
     'type' => 'mukim',
     'name' => 'Mukim Baru',
 ]);
+$area = \AIArmada\Addressing\Support\ModelResolver::areaClass()::query()->findOrFail($areaId);
 
-// Pass an existing record as the second argument to update it.
+// Pass an existing record ID as the second argument to update it.
 ```
 
 `handle()` validates that the country exists and the parent belongs to the

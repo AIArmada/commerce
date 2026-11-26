@@ -20,19 +20,19 @@ final readonly class SaveAddressAction implements AddressWriter
      * @param  array<string, string|null>  $areaAssignments
      * @param  class-string<Address>|null  $modelClass
      */
-    public function execute(array $data, array $areaAssignments, ?Address $address = null, ?string $modelClass = null): Address
+    public function execute(array $data, array $areaAssignments, ?string $recordId = null, ?string $modelClass = null): string
     {
         $modelClass ??= ModelResolver::addressClass();
-        $address ??= new $modelClass;
-
-        if (! $address instanceof Address) {
+        if (! is_a($modelClass, Address::class, true)) {
             throw new LogicException('Configured address model must extend Address.');
         }
 
-        return $address->getConnection()->transaction(function () use ($address, $data, $areaAssignments): Address {
-            if ($address->exists) {
-                AddressOwnerGuard::assertAddressIsWritable($address->getKey());
-                $address = $address->newQuery()->whereKey($address->getKey())->lockForUpdate()->firstOrFail();
+        $address = new $modelClass;
+
+        return $address->getConnection()->transaction(function () use ($address, $recordId, $data, $areaAssignments): string {
+            if ($recordId !== null) {
+                AddressOwnerGuard::assertAddressIsWritable($recordId);
+                $address = $address->newQuery()->whereKey($recordId)->lockForUpdate()->firstOrFail();
             }
 
             $address->fill($data);
@@ -43,7 +43,7 @@ final readonly class SaveAddressAction implements AddressWriter
 
             $this->assignments->execute((string) $address->getKey(), $areaAssignments, $address->state_id, ['source' => 'filament-addressing']);
 
-            return $address->fresh() ?? $address;
+            return (string) $address->getKey();
         });
     }
 }

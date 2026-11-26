@@ -21,11 +21,14 @@ final class CreateAddress extends CreateRecord
 
     protected function handleRecordCreation(array $data): Address
     {
-        return app(AddressWriter::class)->execute(
+        $modelClass = AddressResource::getModel();
+        $id = app(AddressWriter::class)->execute(
             $data,
             $this->areaAssignments(),
-            modelClass: AddressResource::getModel(),
+            modelClass: $modelClass,
         );
+
+        return $modelClass::query()->findOrFail($id);
     }
 
     /** @return array<string, string|null> */

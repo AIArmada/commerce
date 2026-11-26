@@ -21,7 +21,7 @@ it('normalizes postcode identity and links validated manual coverage', function 
         'slug' => 'bangsar', 'source' => 'areas', 'source_id' => 'bangsar',
     ]);
 
-    $postcode = app(PostalCodeWriter::class)->execute([
+    $postcode = PostalCode::query()->findOrFail(app(PostalCodeWriter::class)->execute([
         'country_code' => 'my',
         'code' => ' 50450 ',
         'metadata' => ['owner' => 'admin'],
@@ -30,7 +30,7 @@ it('normalizes postcode identity and links validated manual coverage', function 
             'relationship_type' => 'served_by',
             'is_primary' => true,
         ]],
-    ]);
+    ]));
 
     $link = AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->firstOrFail();
 
@@ -64,7 +64,7 @@ it('preserves provider and inactive manual coverage when manual coverage is omit
         'source' => 'manual', 'source_id' => 'retained-source-id', 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(PostalCodeWriter::class)->execute(['is_active' => false], $postcode);
+    app(PostalCodeWriter::class)->execute(['is_active' => false], (string) $postcode->getKey());
 
     expect($postcode->fresh()->is_active)->toBeFalse()
         ->and($postcode->fresh()->metadata)->toBe(['existing' => true])
@@ -81,7 +81,7 @@ it('allows an unchanged inactive manual edge but rejects new inactive or cross-c
         'country_code' => 'SG', 'type' => 'locality', 'level' => 1, 'name' => 'Singapore Area',
         'slug' => 'singapore-area', 'source' => 'areas', 'source_id' => 'singapore',
     ]);
-    $postcode = app(PostalCodeWriter::class)->execute(['country_code' => 'MY', 'code' => '50450']);
+    $postcode = PostalCode::query()->findOrFail(app(PostalCodeWriter::class)->execute(['country_code' => 'MY', 'code' => '50450']));
 
     expect(fn () => app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [[
@@ -89,14 +89,14 @@ it('allows an unchanged inactive manual edge but rejects new inactive or cross-c
             'relationship_type' => 'served_by',
             'is_primary' => false,
         ]],
-    ], $postcode))->toThrow(ValidationException::class, 'New manual postcode coverage')
+    ], (string) $postcode->getKey()))->toThrow(ValidationException::class, 'New manual postcode coverage')
         ->and(fn () => app(PostalCodeWriter::class)->execute([
             'manual_coverage' => [[
                 'area_id' => $foreign->getKey(),
                 'relationship_type' => 'served_by',
                 'is_primary' => false,
             ]],
-        ], $postcode))->toThrow(ValidationException::class, 'New manual postcode coverage');
+        ], (string) $postcode->getKey()))->toThrow(ValidationException::class, 'New manual postcode coverage');
 
     AddressAreaPostalCode::query()->create([
         'postal_code_id' => $postcode->getKey(), 'address_area_id' => $inactive->getKey(),
@@ -109,7 +109,7 @@ it('allows an unchanged inactive manual edge but rejects new inactive or cross-c
             'relationship_type' => 'served_by',
             'is_primary' => true,
         ]],
-    ], $postcode);
+    ], (string) $postcode->getKey());
 
     expect(AddressAreaPostalCode::query()->where('postal_code_id', $postcode->getKey())->value('is_primary'))->toBeTrue();
 });
@@ -129,7 +129,7 @@ it('keeps country and postcode identity immutable during updates with coverage',
         'country_code' => 'SG',
         'code' => '99999',
         'is_active' => false,
-    ], $postcode);
+    ], (string) $postcode->getKey());
 
     expect($postcode->fresh()->country_code)->toBe('MY')
         ->and($postcode->fresh()->code)->toBe('50450')
@@ -158,7 +158,7 @@ it('locks selected manual coverage areas in primary-key order', function (): voi
             ['area_id' => $areaTwo->getKey(), 'relationship_type' => 'served_by', 'is_primary' => false],
             ['area_id' => $areaOne->getKey(), 'relationship_type' => 'covers', 'is_primary' => true],
         ],
-    ], $postcode);
+    ], (string) $postcode->getKey());
 
     $areaTable = mb_strtolower((new AddressArea)->getTable());
     $areaLockQueries = collect($queries)->filter(static fn (string $sql): bool => str_contains($sql, $areaTable)
