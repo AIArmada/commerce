@@ -14,6 +14,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(Api\BalanceReader::class, Queries\ReadBalances::class);
         $app->bind(Api\ConversionHistoryReader::class, Queries\ReadConversionHistory::class);
+        $app->bind(Api\ConversionStatisticsReader::class, Queries\ReadConversionStatistics::class);
         $app->bind(Api\LinkConversionReader::class, Queries\ReadLinkConversions::class);
         $app->bind(Api\ConversionAdministration::class, Actions\AdministerConversion::class);
         $app->bind(Api\ConversionSignalReader::class, Queries\ConversionSignalQuery::class);

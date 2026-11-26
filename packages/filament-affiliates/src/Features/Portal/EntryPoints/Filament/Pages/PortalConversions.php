@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -133,25 +134,22 @@ class PortalConversions extends PortalPage implements HasTable
     {
         $affiliate = $this->getAffiliate();
 
-        $ownConversions = $affiliate
-            ? (int) $affiliate->conversions()->count()
-            : 0;
-
-        $uplineConversions = 0;
+        $affiliateIds = $affiliate ? [(string) $affiliate->getKey()] : [];
 
         if ($affiliate && config('affiliates.upline.enabled', false)) {
-            $descendantIds = app(UplineApi::class)->descendantIds((string) $affiliate->getKey());
-
-            if ($descendantIds !== []) {
-                $uplineConversions = (int) AffiliateConversion::query()
-                    ->whereIn('affiliate_id', $descendantIds)
-                    ->count();
-            }
+            $affiliateIds = array_values(array_unique(array_merge(
+                $affiliateIds,
+                app(UplineApi::class)->descendantIds((string) $affiliate->getKey()),
+            )));
         }
+
+        $totalConversions = $affiliate
+            ? app(ConversionStatisticsReader::class)->count($affiliateIds, spl_object_id($affiliate->getConnection()))
+            : 0;
 
         return [
             'hasAffiliate' => $this->hasAffiliate(),
-            'totalConversions' => $ownConversions + $uplineConversions,
+            'totalConversions' => $totalConversions,
             'totalEarnings' => $this->getTotalEarnings(),
             'pendingEarnings' => $this->getPendingEarnings(),
         ];

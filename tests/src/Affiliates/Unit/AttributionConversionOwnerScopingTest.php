@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -224,6 +225,12 @@ it('scopes conversions to current owner and global when enabled', function (): v
         ->and($ids)->toContain($ownedA->id)
         ->and($ids)->not->toContain($ownedB->id)
         ->and($ids)->not->toContain($corrupt->id);
+
+    $statistics = app(ConversionStatisticsReader::class);
+    $connectionIdentity = spl_object_id($affiliate->getConnection());
+    expect($statistics->count([$affiliate->id], $connectionIdentity))->toBe(2)
+        ->and($statistics->totals($affiliate->id, 'USD', $connectionIdentity))->toHaveCount(1)
+        ->and($statistics->totals($affiliate->id, 'USD', $connectionIdentity)[0]->commissionMinor)->toBe(1000);
 });
 
 it('returns strict global-only when enabled and resolved owner is null', function (): void {
@@ -425,6 +432,37 @@ it('protects conversion history that is not visible to the affiliate owner', fun
         expect(Affiliate::query()->whereKey($affiliate->id)->exists())->toBeTrue()
             ->and(AffiliateConversion::query()->withoutOwnerScope()->whereKey($conversion->getKey())->exists())->toBeTrue();
     });
+});
+
+it('aggregates conversion currencies and half-open date ranges without hydrating models', function (): void {
+    config(['affiliates.owner.enabled' => false, 'affiliates.commissions.auto_approve' => false]);
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-STATS-RANGE', 'name' => 'Range statistics', 'status' => Active::class,
+        'commission_type' => 'percentage', 'commission_rate' => 500, 'currency' => 'USD',
+    ]);
+    $start = now()->toImmutable()->startOfDay();
+    $end = $start->addDay();
+
+    foreach ([['USD', 1000, $start], ['MYR', 3000, $start->addHour()], ['USD', 5000, $end]] as [$currency, $value, $occurredAt]) {
+        AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id, 'affiliate_code' => $affiliate->code,
+            'value_minor' => $value, 'subtotal_minor' => $value,
+            'commission_minor' => 100, 'commission_currency' => $currency,
+            'status' => PendingConversion::class, 'occurred_at' => $occurredAt,
+        ]);
+    }
+
+    $reader = app(ConversionStatisticsReader::class);
+    $connectionIdentity = spl_object_id($affiliate->getConnection());
+    $rows = collect($reader->totals($affiliate->id, 'USD', $connectionIdentity, $start, $end))->keyBy('currency');
+
+    expect($reader->count([$affiliate->id], $connectionIdentity, $start, $end))->toBe(2)
+        ->and($reader->count([], $connectionIdentity))->toBe(0)
+        ->and($rows->keys()->all())->toBe(['MYR', 'USD'])
+        ->and($rows['USD']->revenueMinor)->toBe(1000)
+        ->and($rows['MYR']->revenueMinor)->toBe(3000)
+        ->and($rows['USD']->commissionMinor)->toBe(100);
+    expect(fn () => $reader->count([$affiliate->id], -1))->toThrow(LogicException::class);
 });
 
 class AffiliatesTestOwner extends Model

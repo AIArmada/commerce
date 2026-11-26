@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
@@ -63,7 +64,7 @@ final class AffiliateResource extends Resource
     {
         return FilamentPermission::hasAbility('affiliate.delete')
             && $record instanceof Affiliate
-            && ! $record->conversions()->exists()
+            && ! app(ConversionHistoryReader::class)->hasAffiliateHistory((string) $record->getKey(), spl_object_id($record->getConnection()))
             && ! app(PayoutAccountingReader::class)->hasAffiliateHistory((string) $record->getKey(), spl_object_id($record->getConnection()));
     }
 

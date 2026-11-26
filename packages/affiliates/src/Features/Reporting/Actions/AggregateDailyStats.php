@@ -6,16 +6,18 @@ namespace AIArmada\Affiliates\Features\Reporting\Actions;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use LogicException;
 
 final readonly class AggregateDailyStats implements DailyStatsWriter
 {
-    public function __construct(private DeleteAffiliateDailyStats $delete, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions) {}
+    public function __construct(private DeleteAffiliateDailyStats $delete, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions, private ConversionStatisticsReader $conversions) {}
 
     /**
      * Aggregate statistics for all affiliates on a given date.
@@ -46,7 +48,13 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
      */
     public function aggregateForAffiliate(string $affiliateId, CarbonImmutable $date): array
     {
-        return (new AffiliateDailyStat)->getConnection()->transaction(function () use ($affiliateId, $date): array {
+        $connection = (new AffiliateDailyStat)->getConnection();
+
+        if ($connection !== (new Affiliate)->getConnection()) {
+            throw new LogicException('Daily affiliate aggregation requires a shared database connection.');
+        }
+
+        return $connection->transaction(function () use ($affiliateId, $date): array {
             $affiliate = Affiliate::query()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
             $dayStart = $date->startOfDay();
             $dayEnd = $date->endOfDay();
@@ -58,25 +66,14 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
 
             $attributions = $this->attributions->countFirstSeen($affiliateId, $dayStart, $dayEnd);
 
-            $moneyRows = $affiliate->conversions()
-                ->whereBetween('occurred_at', [$dayStart, $dayEnd])
-                ->toBase()
-                ->selectRaw(sprintf(
-                    'commission_currency as currency, COUNT(*) as conversion_count, COALESCE(SUM(%s), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor',
-                    $this->revenueMinorExpression(),
-                ))
-                ->groupBy('commission_currency')
-                ->get();
-
             $legs = [];
 
-            foreach ($moneyRows as $row) {
-                $currency = $this->normalizeCurrency($row->currency ?? null, $reference);
-
-                $legs[$currency] ??= ['conversions' => 0, 'revenue' => 0, 'commission' => 0];
-                $legs[$currency]['conversions'] += (int) $row->conversion_count;
-                $legs[$currency]['revenue'] += (int) $row->revenue_minor;
-                $legs[$currency]['commission'] += (int) $row->commission_minor;
+            foreach ($this->conversions->totals($affiliateId, $reference, spl_object_id($affiliate->getConnection()), $dayStart, $dayStart->addDay()) as $row) {
+                $legs[$row->currency] = [
+                    'conversions' => $row->count,
+                    'revenue' => $row->revenueMinor,
+                    'commission' => $row->commissionMinor,
+                ];
             }
 
             if ($legs === [] || ($clicks > 0 || $attributions > 0) && ! isset($legs[$reference])) {
@@ -167,20 +164,6 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
     private function buildBreakdown(Affiliate $affiliate, CarbonImmutable $dayStart, CarbonImmutable $dayEnd): array
     {
         return $this->touchpoints->breakdown((string) $affiliate->getKey(), $dayStart, $dayEnd);
-    }
-
-    private function revenueMinorExpression(): string
-    {
-        return 'COALESCE(value_minor, 0)';
-    }
-
-    private function normalizeCurrency(mixed $value, string $fallback): string
-    {
-        if (! is_string($value) || mb_trim($value) === '') {
-            return $fallback;
-        }
-
-        return mb_strtoupper(mb_trim($value));
     }
 
     private function referenceCurrency(Affiliate $affiliate): string

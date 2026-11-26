@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use Carbon\CarbonImmutable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 
 final readonly class FraudEvidenceQuery
 {
-    public function __construct(private TouchpointReader $touchpoints, private AttributionConversionReader $attributions) {}
+    public function __construct(private TouchpointReader $touchpoints, private AttributionConversionReader $attributions, private ConversionStatisticsReader $statistics) {}
 
     public function click(string $affiliateId, ?string $ipAddress, string $fingerprint, ?int $clickCount): ClickFraudEvidence
     {
@@ -64,7 +65,7 @@ final readonly class FraudEvidenceQuery
         );
 
         return new ConversionFraudEvidence(
-            $affiliate instanceof Affiliate ? $affiliate->conversions()->where('occurred_at', '>=', $date)->where('occurred_at', '<', $date->addDay())->count() : 0,
+            $affiliate instanceof Affiliate ? $this->statistics->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()), $date, $date->addDay()) : 0,
             max(0, (int) config('affiliates.fraud.velocity.max_conversions_per_day', 50)),
             $date->toDateString(),
             $selfReferral,

@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Models;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -213,24 +214,27 @@ class AffiliateProgram extends Model implements Auditable
     {
         $rules = $this->eligibility_rules ?? [];
 
-        if (isset($rules['min_conversions'])) {
-            if ($affiliate->conversions()->count() < $rules['min_conversions']) {
-                return false;
-            }
+        $statistics = app(ConversionStatisticsReader::class);
+        $affiliateId = (string) $affiliate->getKey();
+        $connectionIdentity = spl_object_id($affiliate->getConnection());
+
+        if (isset($rules['min_conversions'])
+            && $statistics->count([$affiliateId], $connectionIdentity) < $rules['min_conversions']) {
+            return false;
         }
 
         if (isset($rules['min_revenue'])) {
-            $rows = $affiliate->conversions()
-                ->toBase()
-                ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-                ->groupBy('commission_currency')
-                ->get();
-
             $reference = RevenueVolume::referenceFor($affiliate);
+            $byCurrency = [];
+
+            foreach ($statistics->totals($affiliateId, $reference, $connectionIdentity) as $row) {
+                $byCurrency[$row->currency] = $row->revenueMinor;
+            }
+
             $currency = is_string($rules['min_revenue_currency'] ?? null) && mb_trim($rules['min_revenue_currency']) !== ''
                 ? mb_strtoupper(mb_trim($rules['min_revenue_currency']))
                 : mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
-            $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency);
+            $revenue = RevenueVolume::measurableIn($byCurrency, $currency);
 
             if ($revenue < $rules['min_revenue']) {
                 return false;
