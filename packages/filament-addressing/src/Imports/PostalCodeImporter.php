@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Imports;
 
-use AIArmada\Addressing\Actions\ImportPostalCodeAdminDataAction;
-use AIArmada\Addressing\Actions\ImportPostalCodesAction;
+use AIArmada\Addressing\Contracts\PostalCodeAdminImporter;
+use AIArmada\Addressing\Contracts\PostalCodeImporter as CorePostalCodeImporter;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ArrayPostalCodeSource;
@@ -184,7 +184,7 @@ class PostalCodeImporter extends Importer
             }
 
             try {
-                $this->record = app(ImportPostalCodeAdminDataAction::class)->execute(
+                $this->record = app(PostalCodeAdminImporter::class)->execute(
                     countryCode: (string) $this->data['country_code'],
                     code: (string) $this->data['code'],
                     isActive: filter_var($this->data['is_active'] ?? ($record->exists ? $record->is_active : true), FILTER_VALIDATE_BOOLEAN),
@@ -208,7 +208,7 @@ class PostalCodeImporter extends Importer
         $postalData = $this->buildPostalCodeData();
         $source = new ArrayPostalCodeSource($postalData->source, [$postalData]);
 
-        $result = app(ImportPostalCodesAction::class)->execute($source);
+        $result = app(CorePostalCodeImporter::class)->execute($source);
 
         if ($result->hasFailures()) {
             throw new RowImportFailedException(implode(

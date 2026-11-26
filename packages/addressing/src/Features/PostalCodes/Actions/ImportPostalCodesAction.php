@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PostalCodes\Actions;
+
+use AIArmada\Addressing\Contracts\PostalCodeImporter;
 
 use AIArmada\Addressing\Contracts\PostalCodeSource;
 use AIArmada\Addressing\Data\ImportPostalCodeFailureData;
@@ -10,9 +12,8 @@ use AIArmada\Addressing\Data\ImportPostalCodesResultData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
-use Illuminate\Support\Facades\DB;
 
-final class ImportPostalCodesAction
+final readonly class ImportPostalCodesAction implements PostalCodeImporter
 {
     public function execute(PostalCodeSource $source): ImportPostalCodesResultData
     {
@@ -22,7 +23,7 @@ final class ImportPostalCodesAction
             ->flip()
             ->all();
 
-        return DB::transaction(function () use ($source, $countryCodes): ImportPostalCodesResultData {
+        return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($source, $countryCodes): ImportPostalCodesResultData {
             $created = 0;
             $updated = 0;
             $skipped = 0;
@@ -45,8 +46,8 @@ final class ImportPostalCodesAction
                     continue;
                 }
 
-                if ($code === '') {
-                    $failures[] = new ImportPostalCodeFailureData($item->sourceId, 'Missing required field: code', null);
+                if ($code === '' || mb_strlen($code) > 20) {
+                    $failures[] = new ImportPostalCodeFailureData($item->sourceId, 'Postcode must contain between 1 and 20 characters', null);
 
                     continue;
                 }

@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PostalCodes\Actions;
+
+use AIArmada\Addressing\Contracts\SingaporePostalCodeResolver;
+use AIArmada\Addressing\Contracts\PostalCodeImporter;
 
 use AIArmada\Addressing\Data\ResolveSingaporePostalCodesResultData;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -10,11 +13,11 @@ use AIArmada\Addressing\Contracts\PostalAddressLookup;
 use AIArmada\Addressing\Support\OneMapPostalCodeSource;
 use InvalidArgumentException;
 
-final class ResolveSingaporePostalCodesAction
+final readonly class ResolveSingaporePostalCodesAction implements SingaporePostalCodeResolver
 {
     public function __construct(
-        private readonly PostalAddressLookup $oneMap,
-        private readonly ImportPostalCodesAction $importPostalCodes,
+        private PostalAddressLookup $oneMap,
+        private PostalCodeImporter $importPostalCodes,
     ) {}
 
     /**
@@ -98,11 +101,11 @@ final class ResolveSingaporePostalCodesAction
         foreach ($postcodes as $postcode) {
             $code = mb_strtoupper(mb_trim((string) $postcode));
 
-            if ($code !== '' && ! in_array($code, $codes, true)) {
-                $codes[] = $code;
+            if ($code !== '') {
+                $codes['postcode:' . $code] = $code;
             }
         }
 
-        return $codes;
+        return array_values($codes);
     }
 }

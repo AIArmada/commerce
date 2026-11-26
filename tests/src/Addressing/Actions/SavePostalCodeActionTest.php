@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\PostalCode;
@@ -21,7 +21,7 @@ it('normalizes postcode identity and links validated manual coverage', function 
         'slug' => 'bangsar', 'source' => 'areas', 'source_id' => 'bangsar',
     ]);
 
-    $postcode = app(SavePostalCodeAction::class)->execute([
+    $postcode = app(PostalCodeWriter::class)->execute([
         'country_code' => 'my',
         'code' => ' 50450 ',
         'metadata' => ['owner' => 'admin'],
@@ -64,7 +64,7 @@ it('preserves provider and inactive manual coverage when manual coverage is omit
         'source' => 'manual', 'source_id' => 'retained-source-id', 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(SavePostalCodeAction::class)->execute(['is_active' => false], $postcode);
+    app(PostalCodeWriter::class)->execute(['is_active' => false], $postcode);
 
     expect($postcode->fresh()->is_active)->toBeFalse()
         ->and($postcode->fresh()->metadata)->toBe(['existing' => true])
@@ -81,16 +81,16 @@ it('allows an unchanged inactive manual edge but rejects new inactive or cross-c
         'country_code' => 'SG', 'type' => 'locality', 'level' => 1, 'name' => 'Singapore Area',
         'slug' => 'singapore-area', 'source' => 'areas', 'source_id' => 'singapore',
     ]);
-    $postcode = app(SavePostalCodeAction::class)->execute(['country_code' => 'MY', 'code' => '50450']);
+    $postcode = app(PostalCodeWriter::class)->execute(['country_code' => 'MY', 'code' => '50450']);
 
-    expect(fn () => app(SavePostalCodeAction::class)->execute([
+    expect(fn () => app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [[
             'area_id' => $inactive->getKey(),
             'relationship_type' => 'served_by',
             'is_primary' => false,
         ]],
     ], $postcode))->toThrow(ValidationException::class, 'New manual postcode coverage')
-        ->and(fn () => app(SavePostalCodeAction::class)->execute([
+        ->and(fn () => app(PostalCodeWriter::class)->execute([
             'manual_coverage' => [[
                 'area_id' => $foreign->getKey(),
                 'relationship_type' => 'served_by',
@@ -103,7 +103,7 @@ it('allows an unchanged inactive manual edge but rejects new inactive or cross-c
         'source' => 'manual', 'source_id' => null, 'relationship_type' => 'served_by', 'is_primary' => false,
     ]);
 
-    app(SavePostalCodeAction::class)->execute([
+    app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [[
             'area_id' => $inactive->getKey(),
             'relationship_type' => 'served_by',
@@ -125,7 +125,7 @@ it('keeps country and postcode identity immutable during updates with coverage',
         'source' => 'provider', 'source_id' => 'provider-1', 'relationship_type' => 'served_by', 'is_primary' => true,
     ]);
 
-    app(SavePostalCodeAction::class)->execute([
+    app(PostalCodeWriter::class)->execute([
         'country_code' => 'SG',
         'code' => '99999',
         'is_active' => false,
@@ -153,7 +153,7 @@ it('locks selected manual coverage areas in primary-key order', function (): voi
         }
     });
 
-    app(SavePostalCodeAction::class)->execute([
+    app(PostalCodeWriter::class)->execute([
         'manual_coverage' => [
             ['area_id' => $areaTwo->getKey(), 'relationship_type' => 'served_by', 'is_primary' => false],
             ['area_id' => $areaOne->getKey(), 'relationship_type' => 'covers', 'is_primary' => true],

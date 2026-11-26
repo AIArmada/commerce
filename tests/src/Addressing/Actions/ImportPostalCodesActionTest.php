@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\ImportPostalCodesAction;
+use AIArmada\Addressing\Contracts\PostalCodeImporter;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\AddressArea;
@@ -27,7 +27,7 @@ it('imports postcode coverage and preserves source metadata', function (): void 
         ),
     ]));
 
-    $result = app(ImportPostalCodesAction::class)->execute(new ArrayPostalCodeSource('postcodes', [
+    $result = app(PostalCodeImporter::class)->execute(new ArrayPostalCodeSource('postcodes', [
         new PostalCodeData(
             source: 'official-postcodes',
             sourceId: '50450',
@@ -47,7 +47,7 @@ it('imports postcode coverage and preserves source metadata', function (): void 
 });
 
 it('fails instead of silently dropping missing postcode area links', function (): void {
-    $result = app(ImportPostalCodesAction::class)->execute(new ArrayPostalCodeSource('postcodes', [
+    $result = app(PostalCodeImporter::class)->execute(new ArrayPostalCodeSource('postcodes', [
         new PostalCodeData(
             source: 'official-postcodes',
             sourceId: '99999',
@@ -92,8 +92,8 @@ it('moves source-owned postcode coverage when the source changes its area', func
         ),
     ]);
 
-    $firstResult = app(ImportPostalCodesAction::class)->execute($source('locality-1'));
-    $secondResult = app(ImportPostalCodesAction::class)->execute($source('locality-2'));
+    $firstResult = app(PostalCodeImporter::class)->execute($source('locality-1'));
+    $secondResult = app(PostalCodeImporter::class)->execute($source('locality-2'));
 
     $postcode = PostalCode::query()->where('code', '50450')->firstOrFail();
 
@@ -132,8 +132,8 @@ it('does not delete source-owned coverage for another country', function (): voi
         ),
     ]);
 
-    app(ImportPostalCodesAction::class)->execute($source('MY', 'my-locality', '50450'));
-    app(ImportPostalCodesAction::class)->execute($source('SG', 'sg-locality', '238801'));
+    app(PostalCodeImporter::class)->execute($source('MY', 'my-locality', '50450'));
+    app(PostalCodeImporter::class)->execute($source('SG', 'sg-locality', '238801'));
 
     expect(AddressArea::query()->where('name', 'Bangsar')->firstOrFail()->postalCodes()->exists())->toBeTrue()
         ->and(AddressArea::query()->where('name', 'Orchard')->firstOrFail()->postalCodes()->exists())->toBeTrue();

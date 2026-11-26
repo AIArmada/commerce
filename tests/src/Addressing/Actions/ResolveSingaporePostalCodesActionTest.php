@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
+use AIArmada\Addressing\Contracts\SingaporePostalCodeResolver;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -59,7 +59,7 @@ it('serves cached postcodes without calling OneMap', function (): void {
         'is_active' => true,
     ]);
 
-    $result = app(ResolveSingaporePostalCodesAction::class)->execute(['569933']);
+    $result = app(SingaporePostalCodeResolver::class)->execute(['569933']);
 
     expect($result->resolved)->toBe(['569933'])
         ->and($result->invalid)->toBe([]);
@@ -72,7 +72,7 @@ it('imports missing postcodes from OneMap and links their sector', function (): 
     app(SeedCountryGeographiesAction::class)->execute('SG');
     fakeOneMap(['569933' => [oneMapResult('569933')]]);
 
-    $result = app(ResolveSingaporePostalCodesAction::class)->execute(['569933']);
+    $result = app(SingaporePostalCodeResolver::class)->execute(['569933']);
 
     $postalCode = PostalCode::query()->where('country_code', 'SG')->where('code', '569933')->firstOrFail();
     $sector = AddressArea::query()->where('source_id', 'sg:postal-sector:56')->firstOrFail();
@@ -86,7 +86,7 @@ it('imports missing postcodes from OneMap and links their sector', function (): 
 it('reports malformed postcodes as invalid without calling OneMap', function (): void {
     Http::fake();
 
-    $result = app(ResolveSingaporePostalCodesAction::class)->execute(['ABC', '12345', '']);
+    $result = app(SingaporePostalCodeResolver::class)->execute(['ABC', '12345', '']);
 
     expect($result->resolved)->toBe([])
         ->and($result->invalid)->toBe(['ABC', '12345']);
@@ -99,7 +99,7 @@ it('reports postcodes OneMap does not know as invalid', function (): void {
     app(SeedCountryGeographiesAction::class)->execute('SG');
     fakeOneMap([]);
 
-    $result = app(ResolveSingaporePostalCodesAction::class)->execute(['999999']);
+    $result = app(SingaporePostalCodeResolver::class)->execute(['999999']);
 
     expect($result->resolved)->toBe([])
         ->and($result->invalid)->toBe(['999999'])
@@ -115,6 +115,6 @@ it('fails fast when the sector tree is not seeded', function (): void {
 
     fakeOneMap(['569933' => [oneMapResult('569933')]]);
 
-    expect(fn (): mixed => app(ResolveSingaporePostalCodesAction::class)->execute(['569933']))
+    expect(fn (): mixed => app(SingaporePostalCodeResolver::class)->execute(['569933']))
         ->toThrow(InvalidArgumentException::class, 'Area not found');
 });

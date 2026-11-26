@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages;
 
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Resources\Pages\CreateRecord;
@@ -29,6 +29,6 @@ final class CreatePostalCode extends CreateRecord
             throw new LogicException('Configured postcode model must extend PostalCode.');
         }
 
-        return app(SavePostalCodeAction::class)->execute($data, $record);
+        return app(PostalCodeWriter::class)->execute($data, $record);
     }
 }

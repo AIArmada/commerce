@@ -2,23 +2,24 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PostalCodes\Actions;
+
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
 
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-final class SavePostalCodeAction
+final readonly class SavePostalCodeAction implements PostalCodeWriter
 {
     /**
      * @param  array<string, mixed>  $attributes
      */
     public function execute(array $attributes, ?PostalCode $record = null): PostalCode
     {
-        return DB::transaction(function () use ($attributes, $record): PostalCode {
+        return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($attributes, $record): PostalCode {
             $postalCodeClass = ModelResolver::postalCodeClass();
             $postalCode = $record instanceof PostalCode
                 ? ($record->exists
@@ -38,9 +39,9 @@ final class SavePostalCodeAction
                 ]);
             }
 
-            if (mb_strlen($code) > 20) {
+            if ($code === '' || mb_strlen($code) > 20) {
                 throw ValidationException::withMessages([
-                    'code' => 'The postcode may not be greater than 20 characters.',
+                    'code' => 'The postcode must contain between 1 and 20 characters.',
                 ]);
             }
 

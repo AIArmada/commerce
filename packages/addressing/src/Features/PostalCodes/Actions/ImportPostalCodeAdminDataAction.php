@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\PostalCodes\Actions;
+
+use AIArmada\Addressing\Contracts\PostalCodeAdminImporter;
 
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-final class ImportPostalCodeAdminDataAction
+final readonly class ImportPostalCodeAdminDataAction implements PostalCodeAdminImporter
 {
     /**
      * Import one postcode row and its explicitly supplied source-owned coverage.
@@ -43,7 +44,7 @@ final class ImportPostalCodeAdminDataAction
             ]);
         }
 
-        return DB::transaction(function () use ($code, $countryCode, $isActive, $metadata, $coverage): PostalCode {
+        return ModelResolver::postalCodeClass()::query()->getConnection()->transaction(function () use ($code, $countryCode, $isActive, $metadata, $coverage): PostalCode {
             if (! ModelResolver::countryClass()::query()->where('iso2', $countryCode)->exists()) {
                 throw ValidationException::withMessages([
                     'country_code' => 'The selected country is invalid.',

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "PostalCodes",
+  "owns": {
+    "table:postal_codes": [
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\SavePostalCodeAction",
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodeAdminDataAction",
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodesAction"
+    ],
+    "table:address_area_postal_codes": [
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\SavePostalCodeAction",
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodeAdminDataAction",
+      "AIArmada\\Addressing\\Features\\PostalCodes\\Actions\\ImportPostalCodesAction"
+    ]
+  },
+  "extensions": {}
+}

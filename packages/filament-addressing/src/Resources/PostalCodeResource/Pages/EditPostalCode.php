@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages;
 
-use AIArmada\Addressing\Actions\SavePostalCodeAction;
+use AIArmada\Addressing\Contracts\PostalCodeWriter;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -51,6 +51,6 @@ final class EditPostalCode extends EditRecord
             throw new LogicException('Expected a PostalCode record.');
         }
 
-        return app(SavePostalCodeAction::class)->execute($data, $record);
+        return app(PostalCodeWriter::class)->execute($data, $record);
     }
 }
