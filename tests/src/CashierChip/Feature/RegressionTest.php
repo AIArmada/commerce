@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
+use AIArmada\CashierChip\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
-use AIArmada\CashierChip\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
