@@ -19,10 +19,10 @@ use RuntimeException;
 final readonly class UpdateAddressAttachmentAction implements AddressAttachmentWriter
 {
     /** @param array{type: string, label?: string|null, is_primary: bool} $data */
-    public function execute(Addressable $pivot, array $data): Addressable
+    public function execute(string $pivotId, array $data): string
     {
-        return $pivot->getConnection()->transaction(function () use ($pivot, $data): Addressable {
-            $candidate = ModelResolver::addressableClass()::query()->whereKey($pivot->getKey())->firstOrFail();
+        return (new (ModelResolver::addressableClass()))->getConnection()->transaction(function () use ($pivotId, $data): string {
+            $candidate = ModelResolver::addressableClass()::query()->whereKey($pivotId)->firstOrFail();
             $address = $candidate->address()->firstOrFail();
             $addressable = $candidate->addressable()->firstOrFail();
 
@@ -30,7 +30,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
             AddressOwnerGuard::assertAddressableIsWritable($candidate->addressable_type, $candidate->addressable_id);
             $addressable->newQuery()->whereKey($addressable->getKey())->lockForUpdate()->firstOrFail();
 
-            $current = ModelResolver::addressableClass()::query()->whereKey($pivot->getKey())->lockForUpdate()->firstOrFail();
+            $current = ModelResolver::addressableClass()::query()->whereKey($pivotId)->lockForUpdate()->firstOrFail();
 
             if ($current->address_id !== $candidate->address_id
                 || $current->addressable_type !== $candidate->addressable_type
@@ -77,14 +77,14 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
                 throw new RuntimeException('The address attachment could not be updated.');
             }
 
-            return $current->fresh() ?? $current;
+            return (string) $current->getKey();
         });
     }
 
-    public function detach(Addressable $pivot): void
+    public function detach(string $pivotId): void
     {
-        $pivot->getConnection()->transaction(function () use ($pivot): void {
-            $candidate = ModelResolver::addressableClass()::query()->whereKey($pivot->getKey())->firstOrFail();
+        (new (ModelResolver::addressableClass()))->getConnection()->transaction(function () use ($pivotId): void {
+            $candidate = ModelResolver::addressableClass()::query()->whereKey($pivotId)->firstOrFail();
             $address = $candidate->address()->firstOrFail();
             $addressable = $candidate->addressable()->firstOrFail();
 
@@ -92,7 +92,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
             AddressOwnerGuard::assertAddressableIsWritable($candidate->addressable_type, $candidate->addressable_id);
             $addressable->newQuery()->whereKey($addressable->getKey())->lockForUpdate()->firstOrFail();
 
-            $current = ModelResolver::addressableClass()::query()->whereKey($pivot->getKey())->lockForUpdate()->firstOrFail();
+            $current = ModelResolver::addressableClass()::query()->whereKey($pivotId)->lockForUpdate()->firstOrFail();
 
             if ($current->address_id !== $candidate->address_id
                 || $current->addressable_type !== $candidate->addressable_type
@@ -181,7 +181,7 @@ final readonly class UpdateAddressAttachmentAction implements AddressAttachmentW
             }
 
             $this->demotePrimary($addressableType, $addressableId, $type);
-            $pivotClass::query()->whereKey($pivot->getKey())->update(['is_primary' => true]);
+            $pivotClass::query()->whereKey($pivotId)->update(['is_primary' => true]);
 
             return (string) $pivot->getKey();
         });

@@ -254,7 +254,7 @@ it('hides attachments whose related address is outside the current owner scope',
     OwnerContext::withOwner($owner, function () use ($customer, $forgedAttachment): void {
         expect(Addressable::query()->whereKey($forgedAttachment->getKey())->exists())->toBeTrue();
         expect($customer->addressAttachments()->exists())->toBeFalse();
-        expect(fn () => app(AddressAttachmentWriter::class)->execute($forgedAttachment, [
+        expect(fn () => app(AddressAttachmentWriter::class)->execute((string) $forgedAttachment->getKey(), [
             'type' => 'billing',
             'is_primary' => true,
         ]))->toThrow(ModelNotFoundException::class);

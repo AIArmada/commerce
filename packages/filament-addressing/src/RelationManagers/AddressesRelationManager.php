@@ -112,7 +112,7 @@ class AddressesRelationManager extends RelationManager
                     ->action(function (Addressable $record, array $data): void {
                         $this->assertCanMutateAddress($record);
 
-                        app(AddressAttachmentWriter::class)->execute($record, [
+                        app(AddressAttachmentWriter::class)->execute((string) $record->getKey(), [
                             'type' => (string) ($data['type'] ?? ''),
                             'label' => isset($data['label']) ? (string) $data['label'] : null,
                             'is_primary' => (bool) ($data['is_primary'] ?? false),
@@ -125,7 +125,7 @@ class AddressesRelationManager extends RelationManager
                     ->visible(fn (Addressable $record): bool => $this->canMutateAddress($record))
                     ->action(function (Addressable $record): void {
                         $this->assertCanMutateAddress($record);
-                        app(AddressAttachmentWriter::class)->detach($record);
+                        app(AddressAttachmentWriter::class)->detach((string) $record->getKey());
                     }),
             ]);
     }

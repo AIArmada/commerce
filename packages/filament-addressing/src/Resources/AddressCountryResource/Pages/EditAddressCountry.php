@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressCountryResource\Pages;
 use AIArmada\Addressing\Contracts\GeographyReferenceEditor;
 
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,6 +23,7 @@ final class EditAddressCountry extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         app(GeographyReferenceEditor::class)->country((string) $record->getKey(), $data);
+        AddressingFilterOptions::forgetCountryOptions();
 
         return $record->fresh() ?? $record;
     }

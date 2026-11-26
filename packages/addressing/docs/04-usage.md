@@ -939,13 +939,13 @@ use AIArmada\Addressing\Models\Addressable;
 
 $attachment = Addressable::query()->findOrFail($attachmentId);
 
-$attachment = app(AddressAttachmentWriter::class)->execute($attachment, [
+$attachmentId = app(AddressAttachmentWriter::class)->execute((string) $attachment->getKey(), [
     'type' => 'billing',
     'label' => 'Accounts office',
     'is_primary' => true,
 ]);
 
-app(AddressAttachmentWriter::class)->detach($attachment);
+app(AddressAttachmentWriter::class)->detach((string) $attachment->getKey());
 ```
 
 The action refuses a duplicate address/type attachment and changes primary
