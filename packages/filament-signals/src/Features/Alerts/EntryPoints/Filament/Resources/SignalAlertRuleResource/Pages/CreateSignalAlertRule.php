@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources\SignalAlertRuleResource\Pages;
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Pages;
 
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Support\TrackedPropertyMutationGuard;
 use Filament\Resources\Pages\CreateRecord;
 

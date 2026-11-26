@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentSignals\Pages\SignalsDashboard;
 use AIArmada\FilamentSignals\Widgets\EventTrendWidget;
-use AIArmada\FilamentSignals\Widgets\PendingSignalAlertsWidget;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets\PendingSignalAlertsWidget;
 use AIArmada\FilamentSignals\Widgets\SignalsStatsWidget;
 use AIArmada\Signals\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalAlertRule;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Alerts\Extensions;
 
 use AIArmada\FilamentSignals\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 
 final class AdminPanelContribution implements ContributionContract
 {

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentSignals\Widgets\EventTrendWidget;
-use AIArmada\FilamentSignals\Widgets\PendingSignalAlertsWidget;
+use AIArmada\FilamentSignals\Features\Alerts\Api\AlertDashboardWidgets;
 use AIArmada\FilamentSignals\Widgets\SignalsStatsWidget;
 use BackedEnum;
 use Filament\Pages\Dashboard;
@@ -69,7 +69,7 @@ final class SignalsDashboard extends Dashboard
         }
 
         if (config('filament-signals.features.pending_alerts_widget', true)) {
-            $widgets[] = PendingSignalAlertsWidget::class;
+            array_push($widgets, ...app(AlertDashboardWidgets::class)->widgets());
         }
 
         return $widgets;

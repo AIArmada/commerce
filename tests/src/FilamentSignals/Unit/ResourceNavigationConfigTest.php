@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
-use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Resources\SignalGoalResource;
 use AIArmada\FilamentSignals\Resources\SignalSegmentResource;
 use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;

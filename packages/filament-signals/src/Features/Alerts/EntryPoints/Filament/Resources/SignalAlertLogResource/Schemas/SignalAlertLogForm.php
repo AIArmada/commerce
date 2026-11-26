@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Schemas;
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Schemas;
 
 use Filament\Schemas\Schema;
 

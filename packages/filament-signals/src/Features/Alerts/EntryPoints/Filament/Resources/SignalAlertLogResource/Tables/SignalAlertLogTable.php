@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Tables;
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Tables;
 
 use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
 use AIArmada\Signals\Actions\MarkSignalAlertAsUnread;

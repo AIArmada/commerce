@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Resources;
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources;
 
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource\Pages;
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource\Schemas\SignalAlertRuleForm;
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource\Tables\SignalAlertRuleTable;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Pages;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Schemas\SignalAlertRuleForm;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Tables\SignalAlertRuleTable;
 use AIArmada\Signals\Models\SignalAlertRule;
 use BackedEnum;
 use Filament\Resources\Resource;

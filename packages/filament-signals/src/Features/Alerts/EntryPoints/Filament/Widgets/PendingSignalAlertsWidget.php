@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentSignals\Widgets;
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
 use AIArmada\Signals\Actions\MarkAllSignalAlertsAsRead;
 use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
 use AIArmada\Signals\Models\SignalAlertLog;
