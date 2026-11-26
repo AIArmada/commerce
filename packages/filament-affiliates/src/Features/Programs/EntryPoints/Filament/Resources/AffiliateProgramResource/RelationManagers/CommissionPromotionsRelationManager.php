@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Filament\Actions\BulkActionGroup;

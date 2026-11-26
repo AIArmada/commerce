@@ -219,7 +219,7 @@ $templateId = $templates->createMlm(
 $templates->applyToAffiliate($templateId, (string) $affiliate->getKey());
 
 // Apply template to program
-$template->applyToProgram(\AIArmada\Affiliates\Models\AffiliateProgram::query()->findOrFail($programId));
+$template->applyToProgram(\AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram::query()->findOrFail($programId));
 ```
 
 ## Volume Tiers

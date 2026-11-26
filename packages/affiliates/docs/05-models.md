@@ -210,7 +210,7 @@ Read payout event history through `PayoutEventHistory::forPayout()`; see [Payout
 Affiliate program definition with commission rules.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 ```
 
 **Key Attributes:**

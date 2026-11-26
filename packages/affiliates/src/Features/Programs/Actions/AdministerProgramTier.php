@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Actions;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Arr;
 use RuntimeException;

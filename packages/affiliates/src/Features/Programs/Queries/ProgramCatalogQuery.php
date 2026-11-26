@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierSnapshot;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramSnapshot;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 
 final readonly class ProgramCatalogQuery implements MerchantCatalog
