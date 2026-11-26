@@ -817,3 +817,30 @@ test('identity write guard rejects foreign owners and mismatched connections', f
             ->toThrow(AuthorizationException::class);
     });
 });
+
+test('affiliate-derived owner scope protects retained records against cross-tenant writes', function (): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => true]);
+    $ownerA = User::create(['name' => 'Derived Owner A', 'email' => 'derived-owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::create(['name' => 'Derived Owner B', 'email' => 'derived-owner-b@example.com', 'password' => 'secret']);
+
+    [$first, $hold] = OwnerContext::withOwner($ownerA, function (): array {
+        $affiliate = Affiliate::create(['code' => 'DERIVED-A', 'name' => 'Derived A', 'status' => Active::class]);
+
+        return [$affiliate, AffiliatePayoutHold::create(['affiliate_id' => $affiliate->id, 'reason' => 'Owner A hold'])];
+    });
+    $second = OwnerContext::withOwner($ownerB, fn (): Affiliate => Affiliate::create([
+        'code' => 'DERIVED-B', 'name' => 'Derived B', 'status' => Active::class,
+    ]));
+
+    OwnerContext::withOwner($ownerB, function () use ($hold, $second): void {
+        expect(AffiliatePayoutHold::query()->find($hold->id))->toBeNull()
+            ->and(fn () => $hold->delete())->toThrow(AuthorizationException::class)
+            ->and(fn () => $hold->update(['affiliate_id' => $second->id]))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($hold, $first): void {
+        $saved = AffiliatePayoutHold::query()->findOrFail($hold->id);
+        expect($saved->affiliate_id)->toBe($first->id)
+            ->and($saved->reason)->toBe('Owner A hold');
+    });
+});
