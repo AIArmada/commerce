@@ -100,7 +100,7 @@ final class AffiliateVolumeTierResource extends Resource
                     Forms\Components\Select::make('program_id')
                         ->label('Program')
                         ->getSearchResultsUsing(fn (string $search): array => app(ProgramReferenceReader::class)->options($search))
-                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : app(ProgramReferenceReader::class)->label($id))
+                        ->getOptionLabelUsing(fn (?string $value): ?string => $value === null ? null : app(ProgramReferenceReader::class)->label($value))
                         ->searchable()
                         ->nullable()
                         ->helperText('Leave empty for a global tier that applies to every program.'),
