@@ -244,7 +244,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 'subtotal_minor' => $subtotalMinor ?? 0,
                 'value_minor' => $portionRevenue,
                 'commission_minor' => $portionCommission,
-                'commission_currency' => mb_strtoupper((string) ($payload['commission_currency'] ?? $affiliate->currency ?? config('affiliates.currency.default', 'MYR'))),
+                'commission_currency' => mb_strtoupper((string) ($payload['commission_currency'] ?? $affiliate->currency)),
                 'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
                 'channel' => $channel,
                 'origin' => $payload['origin'] ?? $attribution?->origin,

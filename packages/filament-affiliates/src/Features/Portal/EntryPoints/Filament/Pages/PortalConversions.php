@@ -62,7 +62,6 @@ class PortalConversions extends PortalPage implements HasTable
             ->query(
                 AffiliateConversion::query()
                     ->whereIn('affiliate_id', $affiliateIds)
-                    ->with(['affiliate'])
             )
             ->columns([
                 TextColumn::make('occurred_at')
@@ -70,7 +69,7 @@ class PortalConversions extends PortalPage implements HasTable
                     ->dateTime()
                     ->sortable(),
 
-                TextColumn::make('affiliate.code')
+                TextColumn::make('affiliate_code')
                     ->label(__('Affiliate'))
                     ->searchable()
                     ->sortable()

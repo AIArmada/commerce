@@ -145,12 +145,12 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
         return $table
             ->query(
                 AffiliateConversion::query()
+                    ->forOwner()
                     ->whereNotNull('performance_bonus_key')
-                    ->with('affiliate')
                     ->latest('occurred_at')
             )
             ->columns([
-                Tables\Columns\TextColumn::make('affiliate.code')
+                Tables\Columns\TextColumn::make('affiliate_code')
                     ->label('Affiliate')
                     ->searchable()
                     ->sortable(),
@@ -177,6 +177,7 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
                 Tables\Filters\SelectFilter::make('bonus_type')
                     ->label('Bonus')
                     ->options(fn (): array => AffiliateConversion::query()
+                        ->forOwner()
                         ->whereNotNull('performance_bonus_key')
                         ->get()
                         ->mapWithKeys(fn (AffiliateConversion $row): array => [
@@ -208,6 +209,7 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
         $bonuses = $this->calculate($from, $to);
 
         $currencies = Affiliate::query()
+            ->forOwner()
             ->whereIn('id', collect($bonuses)->map(fn (array $bonus): string => (string) $bonus['affiliate_id'])->unique()->values()->all())
             ->pluck('currency', 'id');
 
