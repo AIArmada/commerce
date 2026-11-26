@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -119,7 +118,7 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
         return $this->getFirstMedia('creative_asset')?->getFullUrl();
     }
 
-    public function getTrackingUrl(Affiliate $affiliate): ?string
+    public function getTrackingUrl(string $affiliateCode): ?string
     {
         $destination = $this->safeDestinationUrl();
 
@@ -137,7 +136,7 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
         $parameters = array_filter(explode('&', $query ?? ''), static function (string $pair) use ($param): bool {
             return $pair !== '' && urldecode(explode('=', $pair, 2)[0]) !== $param;
         });
-        $parameters[] = rawurlencode($param) . '=' . rawurlencode($affiliate->code);
+        $parameters[] = rawurlencode($param) . '=' . rawurlencode($affiliateCode);
 
         return $base . '?' . implode('&', $parameters) . ($fragment === null ? '' : '#' . $fragment);
     }
@@ -159,9 +158,9 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
         return $url;
     }
 
-    public function getEmbedCode(Affiliate $affiliate): ?string
+    public function getEmbedCode(string $affiliateCode): ?string
     {
-        $trackingUrl = $this->getTrackingUrl($affiliate);
+        $trackingUrl = $this->getTrackingUrl($affiliateCode);
 
         if ($trackingUrl === null) {
             return null;

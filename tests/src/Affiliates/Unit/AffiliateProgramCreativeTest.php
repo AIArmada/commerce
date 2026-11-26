@@ -7,8 +7,6 @@ use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -62,20 +60,13 @@ test('AffiliateProgramCreative has program relationship', function (): void {
 test('AffiliateProgramCreative getTrackingUrl appends affiliate code', function (): void {
     config(['affiliates.links.parameter' => 'ref']);
 
-    $affiliate = Affiliate::create([
-        'code' => 'CREAT001',
-        'name' => 'Creative Test Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
+    $affiliateCode = 'CREAT001';
 
     $creative = new AffiliateProgramCreative([
         'destination_url' => 'https://example.com/landing',
     ]);
 
-    $url = $creative->getTrackingUrl($affiliate);
+    $url = $creative->getTrackingUrl($affiliateCode);
 
     expect($url)->toBe('https://example.com/landing?ref=CREAT001');
 });
@@ -83,20 +74,13 @@ test('AffiliateProgramCreative getTrackingUrl appends affiliate code', function 
 test('AffiliateProgramCreative getTrackingUrl uses ampersand for existing query string', function (): void {
     config(['affiliates.links.parameter' => 'ref']);
 
-    $affiliate = Affiliate::create([
-        'code' => 'CREAT002',
-        'name' => 'Query Test Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
+    $affiliateCode = 'CREAT002';
 
     $creative = new AffiliateProgramCreative([
         'destination_url' => 'https://example.com/landing?source=email',
     ]);
 
-    $url = $creative->getTrackingUrl($affiliate);
+    $url = $creative->getTrackingUrl($affiliateCode);
 
     expect($url)->toBe('https://example.com/landing?source=email&ref=CREAT002');
 });
@@ -104,14 +88,7 @@ test('AffiliateProgramCreative getTrackingUrl uses ampersand for existing query 
 test('AffiliateProgramCreative getEmbedCode for banner type', function (): void {
     config(['affiliates.links.parameter' => 'ref']);
 
-    $affiliate = Affiliate::create([
-        'code' => 'EMBED001',
-        'name' => 'Embed Test Affiliate',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
+    $affiliateCode = 'EMBED001';
 
     $creative = AffiliateProgramCreative::create([
         'tracking_code' => 'EMBED',
@@ -124,7 +101,7 @@ test('AffiliateProgramCreative getEmbedCode for banner type', function (): void 
 
     $media = $creative->addMedia(UploadedFile::fake()->image('banner.png'))->toMediaCollection('creative_asset');
 
-    $embedCode = $creative->getEmbedCode($affiliate);
+    $embedCode = $creative->getEmbedCode($affiliateCode);
 
     expect($embedCode)->toContain($media->getUrl());
     expect($embedCode)->toContain('<a href="');
@@ -136,14 +113,7 @@ test('AffiliateProgramCreative getEmbedCode for banner type', function (): void 
 test('AffiliateProgramCreative getEmbedCode for text link type', function (): void {
     config(['affiliates.links.parameter' => 'ref']);
 
-    $affiliate = Affiliate::create([
-        'code' => 'EMBED002',
-        'name' => 'Text Link Test',
-        'status' => Active::class,
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ]);
+    $affiliateCode = 'EMBED002';
 
     $creative = new AffiliateProgramCreative([
         'type' => 'text_link',
@@ -151,7 +121,7 @@ test('AffiliateProgramCreative getEmbedCode for text link type', function (): vo
         'destination_url' => 'https://example.com/landing',
     ]);
 
-    $embedCode = $creative->getEmbedCode($affiliate);
+    $embedCode = $creative->getEmbedCode($affiliateCode);
 
     expect($embedCode)->toContain('<a href="');
     expect($embedCode)->toContain('Click Here!</a>');
@@ -208,7 +178,7 @@ test('banner embeds require an attached asset', function (): void {
         'destination_url' => 'https://example.com',
     ]);
 
-    expect($creative->getEmbedCode(new Affiliate(['code' => 'REF'])))->toBeNull();
+    expect($creative->getEmbedCode('REF'))->toBeNull();
 });
 
 test('creative media reads and program assignments respect the owner boundary', function (): void {
@@ -272,7 +242,7 @@ test('creative tracking replaces conflicting referral parameters before the frag
         'destination_url' => 'https://example.com/landing?source=email&ref=OLD&%72ef=OTHER#details',
     ]);
 
-    expect($creative->getTrackingUrl(new Affiliate(['code' => 'A+B&test'])))
+    expect($creative->getTrackingUrl('A+B&test'))
         ->toBe('https://example.com/landing?source=email&ref=A%2BB%26test#details');
 });
 
@@ -282,8 +252,8 @@ test('creative links reject non-http destinations', function (string $destinatio
         'destination_url' => $destination,
     ]);
 
-    expect($creative->getTrackingUrl(new Affiliate(['code' => 'REF'])))->toBeNull()
-        ->and($creative->getEmbedCode(new Affiliate(['code' => 'REF'])))->toBeNull();
+    expect($creative->getTrackingUrl('REF'))->toBeNull()
+        ->and($creative->getEmbedCode('REF'))->toBeNull();
 })->with(['javascript:alert(1)', 'data:text/html,hello', 'ftp://example.com/file']);
 
 test('creative administration validates destinations and fixes the program identity', function (): void {

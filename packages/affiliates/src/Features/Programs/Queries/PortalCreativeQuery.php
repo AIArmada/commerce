@@ -5,18 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Programs\Api\PortalCreativeReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 
 final readonly class PortalCreativeQuery implements PortalCreativeReader
 {
+    public function __construct(private AffiliateDirectory $affiliates) {}
+
     public function assets(string $affiliateId): array
     {
-        $affiliate = Affiliate::query()->findOrFail($affiliateId);
+        $affiliate = $this->affiliates->findById($affiliateId);
+
+        if ($affiliate === null) {
+            throw new ModelNotFoundException('Affiliate not found.');
+        }
 
         $generalCreatives = AffiliateProgramCreative::query()
             ->general()
@@ -43,24 +50,24 @@ final readonly class PortalCreativeQuery implements PortalCreativeReader
             ->limit(200)
             ->get();
 
-        return array_values($this->mapAssets(collect($generalCreatives)->concat($programCreatives), $affiliate)->all());
+        return array_values($this->mapAssets(collect($generalCreatives)->concat($programCreatives), $affiliate->code)->all());
     }
 
     /**
      * @param  Collection<int, AffiliateProgramCreative>  $creatives
      * @return Collection<int, array<string, mixed>>
      */
-    private function mapAssets(Collection $creatives, Affiliate $affiliate): Collection
+    private function mapAssets(Collection $creatives, string $affiliateCode): Collection
     {
         return $creatives
-            ->map(fn (AffiliateProgramCreative $creative) => $this->mapAsset($creative, $affiliate))
+            ->map(fn (AffiliateProgramCreative $creative) => $this->mapAsset($creative, $affiliateCode))
             ->values();
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function mapAsset(AffiliateProgramCreative $creative, Affiliate $affiliate): array
+    private function mapAsset(AffiliateProgramCreative $creative, string $affiliateCode): array
     {
         $metadata = $creative->metadata ?? [];
         $media = $creative->getFirstMedia('creative_asset');
@@ -88,7 +95,7 @@ final readonly class PortalCreativeQuery implements PortalCreativeReader
             'status_color' => $metadata['status_color'] ?? 'success',
             'thumbnail' => $media !== null && str_starts_with($media->mime_type ?? '', 'image/') ? $media->getUrl() : null,
             'download_url' => $creative->getAssetUrl(),
-            'affiliate_url' => $creative->getTrackingUrl($affiliate),
+            'affiliate_url' => $creative->getTrackingUrl($affiliateCode),
             'caption' => $metadata['caption'] ?? $creative->description ?? '',
             'downloads' => $metadata['downloads'] ?? 0,
         ];

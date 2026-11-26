@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Queries;
 
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Throwable;
 
 final class AffiliateLookupQuery
@@ -41,7 +42,7 @@ final class AffiliateLookupQuery
 
     public function findById(string $id): ?Affiliate
     {
-        return $this->query()->whereKey($id)->first();
+        return Str::isUuid($id) ? $this->query()->whereKey($id)->first() : null;
     }
 
     public function findActiveAffiliateByCookie(string $cookieValue): ?Affiliate

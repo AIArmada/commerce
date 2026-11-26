@@ -784,5 +784,5 @@ it('creative portal handles documents and text links without image previews', fu
         ->and($assets[$document->getKey()]['thumbnail'])->toBeNull()
         ->and($assets[$link->getKey()]['download_url'])->toBeNull()
         ->and($assets[$link->getKey()]['thumbnail'])->toBeNull()
-        ->and($assets[$link->getKey()]['affiliate_url'])->toBe($link->getTrackingUrl($affiliate));
+        ->and($assets[$link->getKey()]['affiliate_url'])->toBe($link->getTrackingUrl($affiliate->code));
 });
