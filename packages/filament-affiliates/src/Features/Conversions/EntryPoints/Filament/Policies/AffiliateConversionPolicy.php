@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Policies;
 
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 class AffiliateConversionPolicy

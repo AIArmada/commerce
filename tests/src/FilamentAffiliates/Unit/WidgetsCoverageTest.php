@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets\PerformanceOverviewWidget;

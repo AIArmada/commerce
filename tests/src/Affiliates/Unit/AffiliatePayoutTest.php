@@ -8,9 +8,9 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use Carbon\CarbonImmutable;
 
 describe('AffiliatePayout Model', function (): void {

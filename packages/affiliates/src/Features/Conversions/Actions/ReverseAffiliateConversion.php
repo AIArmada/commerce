@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\AffiliateConversionReversed;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use Carbon\CarbonImmutable;
 
 /**

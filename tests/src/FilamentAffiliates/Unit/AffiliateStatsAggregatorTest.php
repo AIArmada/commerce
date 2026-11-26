@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Draft;
-use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\States\Pending;
-use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
 use Illuminate\Support\Facades\Artisan;

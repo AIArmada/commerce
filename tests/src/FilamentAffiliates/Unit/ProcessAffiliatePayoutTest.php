@@ -22,11 +22,11 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use Illuminate\Support\Facades\DB;
 
 class ProcessAffiliatePayoutFakeSuccessProcessor implements PayoutProcessorInterface

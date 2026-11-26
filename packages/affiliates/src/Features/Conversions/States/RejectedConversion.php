@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\States;
+namespace AIArmada\Affiliates\Features\Conversions\States;
 
 final class RejectedConversion extends ConversionStatus
 {

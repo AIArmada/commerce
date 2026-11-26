@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\AffiliateConversionReversed;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 
 /**
  * Settle a conversion as not payable, with correct money movement.

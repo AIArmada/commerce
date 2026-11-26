@@ -9,9 +9,9 @@ use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
 use AIArmada\Affiliates\Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 

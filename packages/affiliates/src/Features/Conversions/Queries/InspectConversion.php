@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspection;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Illuminate\Support\Str;
 use LogicException;
 

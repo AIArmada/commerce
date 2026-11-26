@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Conversions\Models;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;

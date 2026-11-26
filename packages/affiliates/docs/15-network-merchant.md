@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkR
 use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAdministration;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Carbon\CarbonImmutable;
 
 // 1. Capture the ?anl= code in the web group (AppServiceProvider::boot)

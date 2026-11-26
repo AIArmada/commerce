@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

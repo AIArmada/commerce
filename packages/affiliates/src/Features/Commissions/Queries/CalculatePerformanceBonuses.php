@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\Support\BonusConfig;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
@@ -213,7 +213,7 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
                     spl_object_id($affiliate->getConnection()),
                     max($currentWeek, $from),
                     min($weekEnd, $to),
-                    [ApprovedConversion::value()],
+                    [ConversionStatus::Approved->value],
                     $includeGlobal,
                     inclusiveUntil: true,
                 );
@@ -325,7 +325,7 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
             spl_object_id($affiliate->getConnection()),
             $from,
             $to,
-            [ApprovedConversion::value()],
+            [ConversionStatus::Approved->value],
             $includeGlobal,
             inclusiveUntil: true,
         ) as $row) {

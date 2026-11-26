@@ -114,7 +114,7 @@ Attribution identity fields describe the originating commerce subject:
 Records a successful conversion (sale, signup, etc.).
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 ```
 
 **Key Attributes:**

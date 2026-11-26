@@ -6,9 +6,9 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Conversions\Actions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 

@@ -9,17 +9,17 @@ use AIArmada\Affiliates\Features\Payouts\States\PayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Draft;
-use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\QualifiedConversion;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ReversedConversion;
 
 test('AffiliateStatus states have correct labels', function (): void {
     expect(AffiliateStatus::all()->count())->toBe(5);

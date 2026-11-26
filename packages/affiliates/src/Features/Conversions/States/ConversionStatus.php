@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\States;
+namespace AIArmada\Affiliates\Features\Conversions\States;
 
 use AIArmada\Affiliates\Enums\ConversionStatus as ConversionStatusEnum;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Spatie\ModelStates\State;

@@ -7,9 +7,9 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use Carbon\CarbonImmutable;
 use LogicException;
 

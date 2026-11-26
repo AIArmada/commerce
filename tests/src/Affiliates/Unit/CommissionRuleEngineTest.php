@@ -7,9 +7,9 @@ use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\QualifiedConversion;
+use AIArmada\Affiliates\Features\Conversions\States\QualifiedConversion;
 
 // CommissionRuleCalculation Tests
 test('CommissionRuleCalculation calculate returns CommissionCalculationResult', function (): void {

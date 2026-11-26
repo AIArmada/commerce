@@ -201,7 +201,7 @@ AffiliateConversion::count();
 1. Confirm data exists for the underlying model(s):
 
 ```php
-\AIArmada\Affiliates\Models\AffiliateConversion::count();
+\AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion::count();
 \AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout::count();
 \AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal::count();
 ```

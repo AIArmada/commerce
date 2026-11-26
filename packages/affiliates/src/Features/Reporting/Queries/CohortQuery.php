@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Reporting\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -16,7 +16,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection;
-use LogicException;
 use RuntimeException;
 
 /**
@@ -24,7 +23,7 @@ use RuntimeException;
  */
 final class CohortQuery implements CohortApi
 {
-    public function __construct(private readonly AttributionReportingReader $attributions) {}
+    public function __construct(private readonly AttributionReportingReader $attributions, private readonly ConversionStatisticsReader $conversions) {}
 
     /**
      * Analyze cohorts by month of acquisition.
@@ -300,12 +299,8 @@ final class CohortQuery implements CohortApi
         $to = $to ?? CarbonImmutable::now();
 
         $affiliatesTable = (new Affiliate)->getTable();
-        $conversionsTable = (new AffiliateConversion)->getTable();
+        $conversionsTable = $this->conversionTable();
         $connection = (new Affiliate)->getConnection();
-
-        if ($connection !== (new AffiliateConversion)->getConnection()) {
-            throw new LogicException('Cohort reporting requires a shared database connection.');
-        }
 
         $this->attributions->assertSharedConnection(spl_object_id($connection));
         $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
@@ -480,9 +475,9 @@ final class CohortQuery implements CohortApi
             return [];
         }
 
-        $conversionsTable = (new AffiliateConversion)->getTable();
+        $conversionsTable = $this->conversionTable();
 
-        $query = (new AffiliateConversion)->getConnection()->table($conversionsTable)
+        $query = (new Affiliate)->getConnection()->table($conversionsTable)
             ->whereIn('affiliate_id', $affiliateIds)
             ->select('affiliate_id')
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions')
@@ -518,8 +513,8 @@ final class CohortQuery implements CohortApi
             return [];
         }
 
-        $conversionsTable = (new AffiliateConversion)->getTable();
-        $driver = ConnectionDriver::name((new AffiliateConversion)->getConnection());
+        $conversionsTable = $this->conversionTable();
+        $driver = ConnectionDriver::name((new Affiliate)->getConnection());
 
         $monthExpression = match ($driver) {
             'pgsql' => "to_char(occurred_at, 'YYYY-MM')",
@@ -530,7 +525,7 @@ final class CohortQuery implements CohortApi
         $rangeStart = $cohortDate->copy()->startOfMonth();
         $rangeEnd = $cohortDate->copy()->addMonths($maxMonth - 1)->endOfMonth();
 
-        $query = (new AffiliateConversion)->getConnection()->table($conversionsTable)
+        $query = (new Affiliate)->getConnection()->table($conversionsTable)
             ->whereIn('affiliate_id', $affiliateIds)
             ->whereBetween('occurred_at', [$rangeStart, $rangeEnd])
             ->selectRaw("{$monthExpression} as month_key")
@@ -561,6 +556,13 @@ final class CohortQuery implements CohortApi
         }
 
         return $aggregates;
+    }
+
+    private function conversionTable(): string
+    {
+        $this->conversions->assertConnection(spl_object_id((new Affiliate)->getConnection()));
+
+        return (string) config('affiliates.database.tables.conversions', 'affiliate_conversions');
     }
 
     private function applyConversionsOwnerScope(QueryBuilder $query, string $conversionsTable): void

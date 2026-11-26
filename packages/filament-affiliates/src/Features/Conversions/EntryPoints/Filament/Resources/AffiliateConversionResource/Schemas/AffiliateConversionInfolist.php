@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Schemas;
 
-use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;

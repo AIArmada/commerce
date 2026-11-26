@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Conversions\Queries;
 use AIArmada\Affiliates\Data\AffiliateEventReference;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionSignalReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionSignalRecord;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use Illuminate\Support\Str;
 
 final readonly class ConversionSignalQuery implements ConversionSignalReader

@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
+use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Pending;
-use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\States\ReversedConversion;
 
 final readonly class OpenApprovalPolicy implements QualifiesForOpenApproval
 {
@@ -51,7 +50,7 @@ final readonly class OpenApprovalPolicy implements QualifiesForOpenApproval
             return false;
         }
 
-        if (in_array($conversion->status, [RejectedConversion::value(), ReversedConversion::value()], true)) {
+        if (in_array($conversion->status, [ConversionStatus::Rejected->value, ConversionStatus::Reversed->value], true)) {
             return false;
         }
 

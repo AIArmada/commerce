@@ -6,7 +6,7 @@ namespace App\Providers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
