@@ -45,7 +45,7 @@ keywords:
 ## Key surfaces
 - Models: `Affiliate`, `AffiliateAttribution`, `AffiliateBalance`, `AffiliateCommissionPromotion`, `AffiliateCommissionRule`, `AffiliateCommissionTemplate`, `AffiliateConversion`, `AffiliateDailyStat`, `AffiliateFraudSignal`, `AffiliateLink`
 - Actions/Services: `Features/Identity/Api/AffiliateLifecycle`, `Features/Attribution/Api/CartAttribution`, `Features/Attribution/EntryPoints/Middleware/CaptureAffiliateReferralFromPath`, `Features/Identity/Api/AffiliateAdministration`, `Features/Attribution/Api/TrackingLinkAdministration`, `Features/Conversions/Api/CartConversionRecording`, `Features/Conversions/Api/ConversionAdministration`
-- Seams: `Contracts/MerchantLedger`, `Contracts/MerchantIdentity`, `Features/Programs/Api/MerchantCatalog` (network-facing; merchant vocabulary only)
+- Seams: `Contracts/MerchantLedger`, `Contracts/MerchantIdentity`, `Features/Programs/Api/MerchantCatalog` (network-facing; merchant vocabulary only). Identity's `AffiliateReferenceReader::ownerReference()` provides scoped, connection-checked immutable owner coordinates for internal consumers.
 - Config `affiliates.php`: `database`, `currency`, `features`, `owner`, `cart`, `cookies`, `public_pages`, `commissions`, `payouts`, `tracking`, `events`, `webhooks`, `links`, `api`, `merchant`, `tax`, `bonuses`, `fraud`, `upline`, `registration`, `catalog`
 
 ## Docs map

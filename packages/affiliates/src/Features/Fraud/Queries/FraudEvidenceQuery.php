@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionConversionReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspection;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -46,12 +46,12 @@ final readonly class FraudEvidenceQuery
 
     public function conversion(ConversionInspection $conversion): ConversionFraudEvidence
     {
-        $affiliate = Affiliate::query()->forOwner(includeGlobal: true)->find($conversion->affiliateId);
+        $affiliate = app(AffiliateReferenceReader::class)->ownerReference($conversion->affiliateId, $conversion->connectionIdentity, includeGlobal: true);
         $date = CarbonImmutable::today();
         $actor = $conversion->actorUserId;
         $userModel = config('auth.providers.users.model');
-        $ownerType = $affiliate?->owner_type;
-        $ownerId = $affiliate?->owner_id;
+        $ownerType = $affiliate?->ownerType;
+        $ownerId = $affiliate?->ownerId;
         $selfReferral = (bool) config('affiliates.tracking.block_self_referral', false)
             && $ownerId !== null && $actor !== null && (string) $ownerId === (string) $actor
             && is_string($userModel) && is_a($userModel, Model::class, true)
@@ -65,7 +65,7 @@ final readonly class FraudEvidenceQuery
         );
 
         return new ConversionFraudEvidence(
-            $affiliate instanceof Affiliate ? $this->statistics->count([(string) $affiliate->getKey()], spl_object_id($affiliate->getConnection()), $date, $date->addDay()) : 0,
+            $affiliate !== null ? $this->statistics->count([$affiliate->id], $conversion->connectionIdentity, $date, $date->addDay()) : 0,
             max(0, (int) config('affiliates.fraud.velocity.max_conversions_per_day', 50)),
             $date->toDateString(),
             $selfReferral,

@@ -245,7 +245,7 @@ $membership->tier;       // BelongsTo<AffiliateProgramTier>
 
 ### AffiliateBalance
 
-Real-time balance tracking.
+Real-time balance tracking. Use `BalanceReader` for balance snapshots and `AffiliateReferenceReader` for affiliate ownership; there is no cross-feature affiliate relation.
 
 ```php
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
@@ -325,7 +325,7 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 
 ### AffiliateDailyStat
 
-Aggregated daily statistics.
+Aggregated daily statistics. Affiliate identity is referenced by ID and resolved through Identity APIs.
 
 ```php
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
@@ -415,8 +415,8 @@ Revoked rows are preserved as history and continue to seal the affiliate.
 
 ### AffiliateSupportTicket / AffiliateSupportMessage
 
-Support ticket system for affiliate queries.
+Support ticket system for affiliate queries. Tickets and messages reference an affiliate by ID, not an Eloquent relationship.
 
 ### AffiliateTaxDocument
 
-Tax document storage (W-9, 1099).
+Tax document storage (W-9, 1099). Resolve affiliate identity through the Identity feature's public readers.

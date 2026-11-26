@@ -15,13 +15,15 @@ use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\FailedPayout;
 use AIArmada\Affiliates\Features\Payouts\States\PendingPayout;
 use AIArmada\Affiliates\Features\Payouts\States\ProcessingPayout;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use LogicException;
 
@@ -65,6 +67,13 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     public function summarizePayoutIds(array $payoutIds, ?string $startDate = null, ?string $endDate = null, bool $includeGlobal = false): array
     {
         $ids = array_values(array_unique($payoutIds));
+
+        foreach ($ids as $id) {
+            if (! Str::isUuid($id)) {
+                throw new AuthorizationException('One or more payouts are not accessible.');
+            }
+        }
+
         $payouts = AffiliatePayout::query()->forOwner(OwnerContext::CURRENT, $includeGlobal)->whereKey($ids)->get();
 
         if ($payouts->count() !== count($ids)) {
@@ -198,13 +207,13 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     /** @return array<string, array<string, int|string|bool>> */
     public function auditAllAffiliateBalances(string $affiliateId): array
     {
-        $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
+        $identity = $this->assertAuditIdentity($affiliateId);
         $currencies = array_map(static fn ($balance): string => $balance->currency, $this->balances->forAffiliate($affiliateId));
 
         $audits = [];
 
         foreach ($currencies as $currency) {
-            $audits[(string) $currency] = $this->auditBalance($affiliate, (string) $currency);
+            $audits[(string) $currency] = $this->auditBalance($affiliateId, (string) $currency, $identity);
         }
 
         return $audits;
@@ -213,20 +222,30 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     /** @return array<string, int|string|bool> */
     public function auditAffiliateBalance(string $affiliateId, string $currency): array
     {
-        return $this->auditBalance(Affiliate::query()->forOwner()->findOrFail($affiliateId), $currency);
+        return $this->auditBalance($affiliateId, $currency, $this->assertAuditIdentity($affiliateId));
     }
 
-    /** @return array<string, int|string|bool> */
-    private function auditBalance(Affiliate $affiliate, string $currency): array
+    private function assertAuditIdentity(string $affiliateId): int
     {
-        $currency = mb_strtoupper($currency);
-        $connection = $affiliate->getConnection();
+        $connection = (new AffiliatePayout)->getConnection();
+        $identity = spl_object_id($connection);
 
-        if ((new AffiliatePayout)->getConnection() !== $connection || (new AffiliatePayoutOperation)->getConnection() !== $connection) {
+        if ((new AffiliatePayoutOperation)->getConnection() !== $connection) {
             throw new LogicException('Balance reconciliation requires a shared database connection.');
         }
 
-        $audit = $this->statistics->balanceAudit((string) $affiliate->getKey(), $currency, spl_object_id($connection));
+        if (app(AffiliateReferenceReader::class)->ownerReference($affiliateId, $identity) === null) {
+            throw new ModelNotFoundException('Affiliate not found.');
+        }
+
+        return $identity;
+    }
+
+    /** @return array<string, int|string|bool> */
+    private function auditBalance(string $affiliateId, string $currency, int $connectionIdentity): array
+    {
+        $currency = mb_strtoupper($currency);
+        $audit = $this->statistics->balanceAudit($affiliateId, $currency, $connectionIdentity);
         $approvedCommissions = $audit->approvedMinor;
         $directPaidClawbacks = $audit->directPaidClawbacksMinor;
         $completedPayoutConversions = 0;
@@ -244,8 +263,8 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
         }
 
         $reservedOperations = AffiliatePayoutOperation::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->where('currency', $currency)
+            ->where('affiliate_id', $affiliateId)
+            ->whereRaw('UPPER(currency) = ?', [$currency])
             ->whereNotNull('payout_sequence')
             ->whereNull('funds_released_at');
         $paidOut = (int) (clone $reservedOperations)
@@ -255,11 +274,11 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
             ->whereHas('payout', static fn (Builder $query): Builder => $query->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()]))
             ->sum('amount_minor');
         $expectedAvailable = $approvedCommissions + $completedPayoutConversions - $paidOut - $pendingPayouts - $directPaidClawbacks;
-        $actualAvailable = $this->balances->find((string) $affiliate->getKey(), $currency)?->availableMinor ?? 0;
+        $actualAvailable = $this->balances->find($affiliateId, $currency)?->availableMinor ?? 0;
         $discrepancy = $expectedAvailable - $actualAvailable;
 
         return [
-            'affiliate_id' => (string) $affiliate->id,
+            'affiliate_id' => $affiliateId,
             'currency' => $currency,
             'expected_available_minor' => $expectedAvailable,
             'actual_available_minor' => $actualAvailable,

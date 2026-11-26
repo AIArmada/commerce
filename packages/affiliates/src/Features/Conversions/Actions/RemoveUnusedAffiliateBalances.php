@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionHistoryReader;
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
@@ -18,21 +18,23 @@ final readonly class RemoveUnusedAffiliateBalances implements UnusedAffiliateBal
 
     public function remove(string $affiliateId): void
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateBalance)->getConnection();
+        $guard = app(AffiliateAccessGuard::class);
+        $identity = spl_object_id($connection);
+        $guard->assertConnection($identity);
 
-        if ($connection !== (new AffiliateBalance)->getConnection()
-            || $connection !== (new AffiliateConversion)->getConnection()) {
+        if ($connection !== (new AffiliateConversion)->getConnection()) {
             throw new LogicException('Affiliate balance cleanup requires a shared database connection.');
         }
 
-        $connection->transaction(function () use ($affiliateId): void {
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+        $connection->transaction(function () use ($affiliateId, $guard, $identity): void {
+            $guard->lockForWrite($affiliateId, $identity);
 
-            if ($this->history->hasAffiliateHistory($affiliateId, spl_object_id($affiliate->getConnection()))) {
+            if ($this->history->hasAffiliateHistory($affiliateId, $identity)) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with conversion history cannot be deleted.']);
             }
 
-            $balances = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->lockForUpdate()->get();
+            $balances = AffiliateBalance::query()->where('affiliate_id', $affiliateId)->lockForUpdate()->get();
 
             foreach ($balances as $balance) {
                 if ($balance->holding_minor !== 0 || $balance->available_minor !== 0
@@ -41,7 +43,7 @@ final readonly class RemoveUnusedAffiliateBalances implements UnusedAffiliateBal
                 }
             }
 
-            AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->delete();
+            AffiliateBalance::query()->where('affiliate_id', $affiliateId)->delete();
         }, attempts: 3);
     }
 }

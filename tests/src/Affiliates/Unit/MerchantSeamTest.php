@@ -24,11 +24,13 @@ use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Contacting\Data\ContactMethodData;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
@@ -240,6 +242,38 @@ describe('merchant seam', function (): void {
             ->toBeNull()
             ->and($unverifiedMethod->is_verified)
             ->toBeFalse();
+    });
+
+    test('owner references enforce scope, connection and valid identity keys', function (): void {
+        config()->set('affiliates.owner.enabled', true);
+        config()->set('affiliates.owner.include_global', true);
+
+        $owner = User::query()->create([
+            'name' => 'Reference owner',
+            'email' => 'reference-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $other = User::query()->create([
+            'name' => 'Other reference owner',
+            'email' => 'other-reference-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $owned = OwnerContext::withOwner($owner, fn (): Affiliate => createTestAffiliate());
+        $foreign = OwnerContext::withOwner($other, fn (): Affiliate => createTestAffiliate());
+        $global = OwnerContext::withOwner(null, fn (): Affiliate => createTestAffiliate());
+        $reader = app(AffiliateReferenceReader::class);
+        $identity = spl_object_id($owned->getConnection());
+
+        OwnerContext::withOwner($owner, function () use ($reader, $owned, $foreign, $global, $identity, $owner): void {
+            expect($reader->ownerReference($owned->id, $identity)?->ownerId)->toBe((string) $owner->getKey())
+                ->and($reader->ownerReference($foreign->id, $identity, includeGlobal: true))->toBeNull()
+                ->and($reader->ownerReference($global->id, $identity))->toBeNull()
+                ->and($reader->ownerReference($global->id, $identity, includeGlobal: true)?->id)->toBe($global->id)
+                ->and($reader->ownerReference('not-a-uuid', $identity))->toBeNull()
+                ->and(OwnerScopeOverride::withoutIncludeGlobal(fn () => $reader->ownerReference($global->id, $identity, includeGlobal: true)))->toBeNull();
+
+            expect(fn () => $reader->ownerReference($owned->id, -1))->toThrow(LogicException::class);
+        });
     });
 
     test('identity rejects ambiguous verified emails instead of selecting an arbitrary payee', function (): void {

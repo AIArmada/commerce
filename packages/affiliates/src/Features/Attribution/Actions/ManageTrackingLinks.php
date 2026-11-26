@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkData;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
@@ -40,7 +40,7 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
         $this->assertSharedConnection($link);
 
         return $connection->transaction(function () use ($linkId, $link): bool {
-            Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($link->affiliate_id);
+            app(AffiliateAccessGuard::class)->lockForWrite($link->affiliate_id, spl_object_id($link->getConnection()));
             $locked = AffiliateLink::query()->where('affiliate_id', $link->affiliate_id)->lockForUpdate()->findOrFail($linkId);
 
             return $this->remove($locked);
@@ -53,7 +53,7 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
         $this->assertSharedConnection($model);
 
         $model->getConnection()->transaction(function () use ($affiliateId): void {
-            Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+            app(AffiliateAccessGuard::class)->lockForWrite($affiliateId, spl_object_id((new AffiliateLink)->getConnection()));
 
             AffiliateLink::query()->where('affiliate_id', $affiliateId)->lockForUpdate()->chunkById(100, function ($links): void {
                 foreach ($links as $link) {
@@ -88,8 +88,9 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
     {
         $connection = $link->getConnection();
 
-        if ($connection !== (new Affiliate)->getConnection()
-            || (class_exists(Link::class) && app()->providerIsLoaded(LinksServiceProvider::class) && $connection !== (new Link)->getConnection())) {
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
+
+        if (class_exists(Link::class) && app()->providerIsLoaded(LinksServiceProvider::class) && $connection !== (new Link)->getConnection()) {
             throw new LogicException('Tracking link removal requires a shared database connection.');
         }
     }
@@ -101,7 +102,7 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
         $this->assertSharedConnection($reference);
 
         $connection->transaction(function () use ($reference, $linkId, $enabled): void {
-            Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($reference->affiliate_id);
+            app(AffiliateAccessGuard::class)->lockForWrite($reference->affiliate_id, spl_object_id($reference->getConnection()));
             $link = AffiliateLink::query()->where('affiliate_id', $reference->affiliate_id)->lockForUpdate()->findOrFail($linkId);
             if ($link->isEnabled() !== $enabled) {
                 $link->update(['deactivated_at' => $enabled ? null : CarbonImmutable::now()]);

@@ -9,11 +9,13 @@ use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use DateTimeImmutable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use LogicException;
 
@@ -44,7 +46,8 @@ final readonly class ReadLinkConversions implements LinkConversionReader
             return new ProgramLinkVolume(0, []);
         }
 
-        $affiliate = Affiliate::query()->findOrFail($affiliateId);
+        $affiliate = app(AffiliateReferenceReader::class)->ownerReference($affiliateId, $connectionIdentity, includeGlobal: true)
+            ?? throw new ModelNotFoundException('Affiliate not found.');
         $links = $connection->table((string) config('affiliates.database.tables.links', 'affiliate_links'))
             ->where('affiliate_id', $affiliateId)->where('program_id', $programId)->select('id');
         $attributions = $connection->table((string) config('affiliates.database.tables.attributions', 'affiliate_attributions'))
@@ -53,8 +56,8 @@ final readonly class ReadLinkConversions implements LinkConversionReader
         $query = AffiliateConversion::query()->where('affiliate_id', $affiliateId);
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            $attributions->where('owner_type', $affiliate->owner_type)->where('owner_id', $affiliate->owner_id);
-            $query->where('owner_type', $affiliate->owner_type)->where('owner_id', $affiliate->owner_id);
+            $attributions->where('owner_type', $affiliate->ownerType)->where('owner_id', $affiliate->ownerId);
+            $query->where('owner_type', $affiliate->ownerType)->where('owner_id', $affiliate->ownerId);
         }
 
         $query->where(function (Builder $query) use ($links, $attributions): void {
@@ -80,7 +83,9 @@ final readonly class ReadLinkConversions implements LinkConversionReader
     {
         $connection = (new AffiliateConversion)->getConnection();
 
-        if (spl_object_id($connection) !== $connectionIdentity || $connection !== (new Affiliate)->getConnection()) {
+        app(AffiliateAccessGuard::class)->assertConnection($connectionIdentity);
+
+        if (spl_object_id($connection) !== $connectionIdentity) {
             throw new LogicException('Link conversion reads require a shared database connection.');
         }
 

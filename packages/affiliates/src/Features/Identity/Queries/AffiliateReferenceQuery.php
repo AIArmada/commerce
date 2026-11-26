@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccountSnapshot;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\LikeSearch;
@@ -12,6 +13,7 @@ use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LogicException;
 use RuntimeException;
 
 final readonly class AffiliateReferenceQuery implements AffiliateReferenceReader
@@ -33,6 +35,23 @@ final readonly class AffiliateReferenceQuery implements AffiliateReferenceReader
         } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
             return false;
         }
+    }
+
+    public function ownerReference(string $id, int $connectionIdentity, bool $includeGlobal = false): ?AffiliateLifecycleReference
+    {
+        if (spl_object_id((new Affiliate)->getConnection()) !== $connectionIdentity) {
+            throw new LogicException('Affiliate identity reads require a shared database connection.');
+        }
+
+        if (! Str::isUuid($id)) {
+            return null;
+        }
+
+        $affiliate = Affiliate::query()->forOwner(
+            includeGlobal: $includeGlobal && ! OwnerScopeOverride::suppressIncludeGlobal(),
+        )->whereKey($id)->first(['id', 'owner_type', 'owner_id']);
+
+        return $affiliate?->lifecycleReference();
     }
 
     public function forOwner(string $ownerType, string $ownerId): ?AffiliateAccountSnapshot

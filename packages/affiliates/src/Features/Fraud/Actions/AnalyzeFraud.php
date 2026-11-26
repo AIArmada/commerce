@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudRiskProfileQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReferenceReader;
 use AIArmada\Affiliates\Support\IpHasher;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -40,7 +40,9 @@ final readonly class AnalyzeFraud implements FraudApi
             return new FraudAssessment(true, 0, []);
         }
 
-        Affiliate::query()->whereKey($affiliateId)->firstOrFail(['id']);
+        if (! app(AffiliateReferenceReader::class)->exists($affiliateId)) {
+            throw new ModelNotFoundException('Affiliate not found.');
+        }
 
         $signals = [];
         $ip = IpHasher::hash($ipAddress);

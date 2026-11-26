@@ -8,6 +8,8 @@ interface AffiliateReferenceReader
 {
     public function exists(string $id): bool;
 
+    public function ownerReference(string $id, int $connectionIdentity, bool $includeGlobal = false): ?AffiliateLifecycleReference;
+
     /** @return array<string, string> */
     public function options(string $search = '', int $limit = 50): array;
 
