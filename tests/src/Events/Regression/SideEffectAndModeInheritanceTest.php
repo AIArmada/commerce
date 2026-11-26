@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventRegistrationApproved;
@@ -55,26 +57,36 @@ it('does not emit approval events or queue welcome notifications when the transa
     Notification::assertNothingSent();
 });
 
-it('dispatches approval side effects once on a committed approval', function (): void {
-    EventFacade::fake([EventRegistrationApproved::class]);
+it('dispatches approval side effects once in the approving owner context after commit', function (): void {
+    config()->set('events.features.owner.enabled', true);
     Notification::fake();
 
-    $event = Event::factory()->create();
-    $registration = EventRegistration::factory()->create([
-        'event_id' => $event->getKey(),
-        'status' => 'pending',
-    ]);
-    $registration->participants()->create([
-        'event_id' => $event->getKey(),
-        'name' => 'Committed',
-        'is_primary' => true,
-    ])->addContactMethod(ContactMethodData::email('committed@example.com'));
+    $owner = User::factory()->create();
+    $observedOwners = [];
+    EventFacade::listen(EventRegistrationApproved::class, function () use (&$observedOwners): void {
+        $observedOwners[] = OwnerContext::resolve()?->getKey();
+    });
 
-    $service = app(RegistrationServiceInterface::class);
-    $service->approve((string) $registration->getKey());
-    $service->approve((string) $registration->getKey());
+    DB::transaction(function () use ($owner): void {
+        OwnerContext::withOwner($owner, function (): void {
+            $event = Event::factory()->create();
+            $registration = EventRegistration::factory()->create([
+                'event_id' => $event->getKey(),
+                'status' => 'pending',
+            ]);
+            $registration->participants()->create([
+                'event_id' => $event->getKey(),
+                'name' => 'Committed',
+                'is_primary' => true,
+            ])->addContactMethod(ContactMethodData::email('committed@example.com'));
 
-    EventFacade::assertDispatchedTimes(EventRegistrationApproved::class, 1);
+            $service = app(RegistrationServiceInterface::class);
+            $service->approve((string) $registration->getKey());
+            $service->approve((string) $registration->getKey());
+        });
+    });
+
+    expect($observedOwners)->toBe([$owner->getKey()]);
     Notification::assertSentOnDemand(EventWelcomeNotification::class);
 });
 

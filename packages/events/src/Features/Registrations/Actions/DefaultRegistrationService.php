@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Registrations\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Data\EventWelcomeNotificationData;
@@ -220,18 +221,22 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
             $this->persistIfDirty($registration);
 
             $welcome = $this->buildWelcomeNotification($registration);
+            $owner = OwnerContext::resolve();
+            $approved = new EventRegistrationApproved(
+                (string) $registration->getKey(),
+                (string) $registration->event_id,
+                $this->nullableString($registration->getAttribute('registrant_type')),
+                $this->nullableString($registration->getAttribute('registrant_id')),
+            );
 
-            DB::afterCommit(function () use ($registration, $welcome): void {
-                event(new EventRegistrationApproved(
-                    (string) $registration->getKey(),
-                    (string) $registration->event_id,
-                    $this->nullableString($registration->getAttribute('registrant_type')),
-                    $this->nullableString($registration->getAttribute('registrant_id')),
-                ));
+            DB::afterCommit(static function () use ($approved, $owner, $welcome): void {
+                OwnerContext::withOwner($owner, static function () use ($approved, $welcome): void {
+                    event($approved);
 
-                if ($welcome !== null) {
-                    Notification::route('mail', $welcome['recipient'])->notify($welcome['notification']);
-                }
+                    if ($welcome !== null) {
+                        Notification::route('mail', $welcome['recipient'])->notify($welcome['notification']);
+                    }
+                });
             });
         });
     }
