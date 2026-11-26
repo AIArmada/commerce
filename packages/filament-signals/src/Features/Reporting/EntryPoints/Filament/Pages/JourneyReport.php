@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Reporting\Queries\JourneyReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -122,7 +122,7 @@ final class JourneyReport extends ReportPage implements HasTable
         return [
             ...$this->getDateRangeHeaderActions(
                 app(JourneyReportService::class)->getTrackedPropertyOptions(),
-                app(SignalSegmentReportFilter::class)->getSegmentOptions(),
+                app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedJourney')
                 ->label('Saved Journey')

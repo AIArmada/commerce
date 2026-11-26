@@ -7,7 +7,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\ContentPerformanceReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -129,7 +129,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
         return [
             ...$this->getDateRangeHeaderActions(
                 app(ContentPerformanceReportService::class)->getTrackedPropertyOptions(),
-                app(SignalSegmentReportFilter::class)->getSegmentOptions(),
+                app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedContentReport')
                 ->label('Saved Content Report')

@@ -15,7 +15,7 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
-use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -236,7 +236,10 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $service = app(SignalsDashboardService::class);
+    $service = app(DashboardRead::class);
+
+    expect(fn (): array => $service->summary($propertyB->id))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect(fn (): array => $service->trend($propertyB->id))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
 
     $summary = $service->summary(
         null,
@@ -291,7 +294,7 @@ it('requires an owner context or explicit global context for dashboard metrics',
         ]);
     });
 
-    $service = app(SignalsDashboardService::class);
+    $service = app(DashboardRead::class);
 
     expect(fn (): array => $service->summary(
         null,
@@ -364,7 +367,7 @@ it('reads dashboard totals and trends from daily rollups', function (): void {
     DB::enableQueryLog();
 
     try {
-        $service = app(SignalsDashboardService::class);
+        $service = app(DashboardRead::class);
         $summary = $service->summary(
             null,
             CarbonImmutable::parse('2026-03-10 00:00:00'),

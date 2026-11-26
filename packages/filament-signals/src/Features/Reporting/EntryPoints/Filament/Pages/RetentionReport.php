@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Reporting\Queries\RetentionReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -102,7 +102,7 @@ final class RetentionReport extends ReportPage
         return [
             ...$this->getDateRangeHeaderActions(
                 app(RetentionReportService::class)->getTrackedPropertyOptions(),
-                app(SignalSegmentReportFilter::class)->getSegmentOptions(),
+                app(SegmentOptions::class)->getSegmentOptions(),
             ),
             Action::make('savedRetention')
                 ->label('Saved Retention')

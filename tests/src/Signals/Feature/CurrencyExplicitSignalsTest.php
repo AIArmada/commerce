@@ -21,7 +21,7 @@ use AIArmada\Signals\Features\Reporting\Queries\GoalsReportService;
 use AIArmada\Signals\Features\Reporting\Queries\LiveActivityReportService;
 use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
-use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -271,7 +271,7 @@ it('groups dashboard revenue by currency and returns scalar revenue with currenc
     sig02_metric($myr, '2026-10-17', 1000);
     sig02_metric($usd, '2026-10-17', 2000);
 
-    $service = app(SignalsDashboardService::class);
+    $service = app(DashboardRead::class);
     $start = CarbonImmutable::parse('2026-10-17 00:00:00');
     $end = CarbonImmutable::parse('2026-10-17 23:59:59');
 
@@ -280,7 +280,7 @@ it('groups dashboard revenue by currency and returns scalar revenue with currenc
     expect($summary['revenue'])->toBe(['MYR' => 1000, 'USD' => 2000])
         ->and($summary)->not->toHaveKey('revenue_minor');
 
-    $single = $service->summary($myr, $start, $end);
+    $single = $service->summary($myr->id, $start, $end);
 
     expect($single['revenue_minor'])->toBe(1000)
         ->and($single['currency'])->toBe('MYR')
@@ -291,7 +291,7 @@ it('groups dashboard revenue by currency and returns scalar revenue with currenc
     expect($trend[0]['revenue'])->toBe(['MYR' => 1000, 'USD' => 2000])
         ->and($trend[0])->not->toHaveKey('revenue_minor');
 
-    $singleTrend = $service->trend($myr, $start, $end);
+    $singleTrend = $service->trend($myr->id, $start, $end);
 
     expect($singleTrend[0]['revenue_minor'])->toBe(1000)
         ->and($singleTrend[0]['currency'])->toBe('MYR');
@@ -318,7 +318,7 @@ it('keeps currency aggregation isolated per owner', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $summary = app(SignalsDashboardService::class)->summary(
+    $summary = app(DashboardRead::class)->summary(
         null,
         CarbonImmutable::parse('2026-10-17 00:00:00'),
         CarbonImmutable::parse('2026-10-17 23:59:59'),

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\Signals\Features\Reporting\Queries\GoalsReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 
@@ -62,7 +62,7 @@ final class GoalsReport extends ReportPage
     {
         return $this->getDateRangeHeaderActions(
             app(GoalsReportService::class)->getTrackedPropertyOptions(),
-            app(SignalSegmentReportFilter::class)->getSegmentOptions(),
+            app(SegmentOptions::class)->getSegmentOptions(),
         );
     }
 }

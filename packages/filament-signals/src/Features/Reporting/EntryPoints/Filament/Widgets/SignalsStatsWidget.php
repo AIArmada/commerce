@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widge
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\FilamentSignals\Platform\SignalsUiConfig;
-use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -20,7 +20,7 @@ final class SignalsStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $summary = app(SignalsDashboardService::class)->summary();
+        $summary = app(DashboardRead::class)->summary();
         $outcomesLabel = SignalsUiConfig::outcomesLabel();
 
         $stats = [

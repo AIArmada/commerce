@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\Signals\Features\Reporting\Queries\DevicesReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -149,7 +149,7 @@ final class DevicesReport extends ReportPage implements HasTable
     {
         return $this->getDateRangeHeaderActions(
             app(DevicesReportService::class)->getTrackedPropertyOptions(),
-            app(SignalSegmentReportFilter::class)->getSegmentOptions(),
+            app(SegmentOptions::class)->getSegmentOptions(),
         );
     }
 }

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\PageViewReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
@@ -84,11 +84,11 @@ final class PageViewsReport extends ReportPage implements HasTable
                     ->options(app(PageViewReportService::class)->getTrackedPropertyOptions()),
                 SelectFilter::make('signal_segment_id')
                     ->label('Segment')
-                    ->options(app(SignalSegmentReportFilter::class)->getSegmentOptions())
+                    ->options(app(SegmentOptions::class)->getSegmentOptions())
                     ->query(function (Builder $query, array $data): Builder {
                         $segmentId = is_string($data['value'] ?? null) ? $data['value'] : null;
 
-                        return app(SignalSegmentReportFilter::class)->applyToEventQuery($query, $segmentId);
+                        return app(SegmentOptions::class)->applyToEventQuery($query, $segmentId);
                     }),
                 Filter::make('occurred_at')
                     ->label('Date Range')

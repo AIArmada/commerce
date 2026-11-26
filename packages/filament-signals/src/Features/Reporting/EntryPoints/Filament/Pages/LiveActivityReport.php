@@ -6,7 +6,7 @@ namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages
 
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Queries\LiveActivityReportService;
-use AIArmada\Signals\Features\Reporting\Queries\SignalSegmentReportFilter;
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -152,7 +152,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
     {
         return $this->getDateRangeHeaderActions(
             app(LiveActivityReportService::class)->getTrackedPropertyOptions(),
-            app(SignalSegmentReportFilter::class)->getSegmentOptions(),
+            app(SegmentOptions::class)->getSegmentOptions(),
         );
     }
 }

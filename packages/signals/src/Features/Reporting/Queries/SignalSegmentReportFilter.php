@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
+use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use Illuminate\Database\Eloquent\Builder;
 
-final class SignalSegmentReportFilter
+final class SignalSegmentReportFilter implements SegmentOptions
 {
     public function __construct(private readonly SignalEventConditionQueryService $conditionQueryService) {}
 

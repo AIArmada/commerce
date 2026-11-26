@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets;
 
 use AIArmada\FilamentSignals\Platform\SignalsUiConfig;
-use AIArmada\Signals\Features\Reporting\Queries\SignalsDashboardService;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Filament\Widgets\ChartWidget;
 
 final class EventTrendWidget extends ChartWidget
@@ -18,7 +18,7 @@ final class EventTrendWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $trend = app(SignalsDashboardService::class)->trend();
+        $trend = app(DashboardRead::class)->trend();
 
         return [
             'datasets' => [

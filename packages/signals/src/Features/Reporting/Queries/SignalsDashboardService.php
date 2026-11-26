@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
@@ -13,7 +14,7 @@ use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Carbon\CarbonImmutable;
 
-final class SignalsDashboardService
+final class SignalsDashboardService implements DashboardRead
 {
     public function __construct(
         private readonly ReportRegistry $reportRegistry,
@@ -23,9 +24,13 @@ final class SignalsDashboardService
     /**
      * @return array{tracked_properties:int,identities:int,sessions:int,events:int,conversions:int,active_alert_rules:int,unread_alerts:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
      */
-    public function summary(?TrackedProperty $trackedProperty = null, ?CarbonImmutable $startAt = null, ?CarbonImmutable $endAt = null): array
+    public function summary(?string $trackedPropertyId = null, ?CarbonImmutable $startAt = null, ?CarbonImmutable $endAt = null): array
     {
-        return $this->withResolvedOwnerOrExplicitGlobal(function () use ($trackedProperty, $startAt, $endAt): array {
+        return $this->withResolvedOwnerOrExplicitGlobal(function () use ($trackedPropertyId, $startAt, $endAt): array {
+            $trackedProperty = $trackedPropertyId === null
+                ? null
+                : TrackedProperty::query()->forOwner()->whereKey($trackedPropertyId)->firstOrFail(['id', 'currency']);
+
             [$startAt, $endAt] = $this->resolvePeriod($startAt, $endAt);
 
             $trackedProperties = TrackedProperty::query();
@@ -73,9 +78,13 @@ final class SignalsDashboardService
     /**
      * @return list<array{date:string,events:int,conversions:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>
      */
-    public function trend(?TrackedProperty $trackedProperty = null, ?CarbonImmutable $startAt = null, ?CarbonImmutable $endAt = null): array
+    public function trend(?string $trackedPropertyId = null, ?CarbonImmutable $startAt = null, ?CarbonImmutable $endAt = null): array
     {
-        return $this->withResolvedOwnerOrExplicitGlobal(function () use ($trackedProperty, $startAt, $endAt): array {
+        return $this->withResolvedOwnerOrExplicitGlobal(function () use ($trackedPropertyId, $startAt, $endAt): array {
+            $trackedProperty = $trackedPropertyId === null
+                ? null
+                : TrackedProperty::query()->forOwner()->whereKey($trackedPropertyId)->firstOrFail(['id', 'currency']);
+
             [$startAt, $endAt] = $this->resolvePeriod($startAt, $endAt);
 
             $countQuery = SignalDailyMetric::query()
