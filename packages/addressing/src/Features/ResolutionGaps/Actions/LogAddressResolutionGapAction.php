@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class LogAddressResolutionGapAction
 {
@@ -169,7 +170,7 @@ final readonly class LogAddressResolutionGapAction
             ]);
         }
 
-        $gap->increment('hits');
+        $gap->hits++;
         $gap->last_seen_at = $now;
 
         if ($context !== null) {
@@ -183,7 +184,9 @@ final readonly class LogAddressResolutionGapAction
             $gap->matched_at = null;
         }
 
-        $gap->save();
+        if (! $gap->save()) {
+            throw new RuntimeException('The resolution gap could not be updated.');
+        }
 
         return $gap;
     }

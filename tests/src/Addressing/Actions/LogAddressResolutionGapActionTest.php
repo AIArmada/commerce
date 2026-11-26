@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\IgnoreResolutionGapAction;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\ResolutionGap;
 use Illuminate\Support\Str;
@@ -66,7 +66,7 @@ it('reopens a matched gap on recurrence', function (): void {
 
 it('keeps ignored gaps terminal on recurrence', function (): void {
     $gap = $this->log->execute('google-picker', 'MY', 'postal_locality', 'asdf');
-    app(IgnoreResolutionGapAction::class)->execute($gap);
+    app(ResolutionGapCuration::class)->ignore((string) $gap->getKey());
 
     $recurrence = $this->log->execute('google-picker', 'MY', 'postal_locality', 'asdf');
 
@@ -112,17 +112,20 @@ it('rejects values exceeding column lengths', function (): void {
 });
 
 it('ignores open and matched gaps idempotently', function (): void {
-    $ignore = app(IgnoreResolutionGapAction::class);
+    $ignore = app(ResolutionGapCuration::class);
 
     $open = $this->log->execute('google-picker', 'MY', 'postal_locality', 'junk value');
-    expect($ignore->execute($open)->status)->toBe('ignored');
+    $ignore->ignore((string) $open->getKey());
+    expect($open->refresh()->status)->toBe('ignored');
 
     $matched = $this->log->execute('google-picker', 'MY', 'postal_locality', 'other junk');
     $matched->status = 'matched';
     $matched->save();
-    expect($ignore->execute($matched)->status)->toBe('ignored');
+    $ignore->ignore((string) $matched->getKey());
+    expect($matched->refresh()->status)->toBe('ignored');
 
-    $again = $ignore->execute($open->fresh() ?? $open);
+    $ignore->ignore((string) $open->getKey());
+    $again = $open->refresh();
     expect($again->status)->toBe('ignored')
         ->and(ResolutionGap::query()->where('status', 'ignored')->count())->toBe(2);
 });

@@ -4,8 +4,7 @@
   "owns": {
     "table:address_resolution_gaps": [
       "AIArmada\\Addressing\\Features\\ResolutionGaps\\Actions\\LogAddressResolutionGapAction",
-      "AIArmada\\Addressing\\Features\\ResolutionGaps\\Actions\\IgnoreResolutionGapAction",
-      "AIArmada\\Addressing\\Features\\ResolutionGaps\\Actions\\MatchGapToAreaAction"
+      "AIArmada\\Addressing\\Features\\ResolutionGaps\\Actions\\CurateResolutionGapAction"
     ]
   },
   "extensions": {}

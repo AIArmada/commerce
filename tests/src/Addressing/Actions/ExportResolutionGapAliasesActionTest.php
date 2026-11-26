@@ -12,7 +12,7 @@ use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Data\ExportResolutionGapAliasesResultData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
@@ -96,7 +96,7 @@ beforeEach(function (): void {
 function matchGapForExport(string $value, AddressArea $area): void
 {
     $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', $value);
-    app(MatchGapToAreaAction::class)->execute($gap, $area);
+    app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $area->getKey());
 }
 
 it('exports matched aliases grouped and sorted by source id then name', function (): void {

@@ -11,7 +11,7 @@ use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Features\ResolutionGaps\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
@@ -103,7 +103,7 @@ function logGapForScoping(?User $owner, string $value): ResolutionGap
 function matchGapForScoping(?User $owner, ResolutionGap $gap, AddressArea $area): void
 {
     $match = function () use ($gap, $area): void {
-        app(MatchGapToAreaAction::class)->execute($gap, $area, 'scope-test');
+        app(ResolutionGapCuration::class)->match((string) $gap->getKey(), (string) $area->getKey(), 'scope-test');
     };
 
     if ($owner === null) {
