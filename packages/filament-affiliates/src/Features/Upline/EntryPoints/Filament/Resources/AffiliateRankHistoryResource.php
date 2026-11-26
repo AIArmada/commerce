@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource\Pages\ListAffiliateRankHistories;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource\Pages\ViewAffiliateRankHistory;
@@ -69,16 +69,9 @@ final class AffiliateRankHistoryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateRankHistory> $query */
-        $query = parent::getEloquentQuery()->with(['affiliate', 'fromRank', 'toRank']);
+        $query = AffiliateReferenceProjection::apply(parent::getEloquentQuery())->with(['fromRank', 'toRank']);
 
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $query;
-
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $modelQuery;
-        }
-
-        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
+        return $query;
     }
 
     public static function form(Schema $schema): Schema
@@ -90,9 +83,9 @@ final class AffiliateRankHistoryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('affiliate.name')
+                TextColumn::make('affiliate_name')
                     ->label('Affiliate')
-                    ->searchable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search)),
 
                 TextColumn::make('fromRank.name')
                     ->label('From Rank')
@@ -119,7 +112,7 @@ final class AffiliateRankHistoryResource extends Resource
         return $schema->schema([
             Section::make('Rank Change')
                 ->schema([
-                    TextEntry::make('affiliate.name')
+                    TextEntry::make('affiliate_name')
                         ->label('Affiliate'),
                     TextEntry::make('fromRank.name')
                         ->label('From Rank')

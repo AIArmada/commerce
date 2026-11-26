@@ -17,7 +17,7 @@ interface AffiliateReportingReader
     public function names(array $ids): array;
 
     /** @return iterable<string> */
-    public function scopedIds(int $connectionIdentity): iterable;
+    public function scopedIds(int $connectionIdentity, bool $commercialOnly = false): iterable;
 
     /** @return array<string, list<AffiliateCohortMember>> */
     public function cohorts(CarbonImmutable $from, CarbonImmutable $to): array;

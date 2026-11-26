@@ -67,8 +67,8 @@ describe('AffiliateRankHistory Model', function (): void {
             'qualified_at' => now(),
         ]);
 
-        expect($history->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($history->affiliate->id)->toBe($affiliate->id);
+        expect(app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class)->findById($history->affiliate_id)?->id)->toBe($affiliate->id)
+            ->and(method_exists($history, 'affiliate'))->toBeFalse();
     });
 
     it('belongs to from rank and to rank', function (): void {

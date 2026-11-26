@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Upline\Models;
 
 use AIArmada\Affiliates\Enums\RankQualificationReason;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -24,7 +23,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon $qualified_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Affiliate $affiliate
  * @property-read AffiliateRank|null $fromRank
  * @property-read AffiliateRank|null $toRank
  */
@@ -51,14 +49,6 @@ class AffiliateRankHistory extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.rank_histories', 'affiliate_rank_histories');
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 
     /**

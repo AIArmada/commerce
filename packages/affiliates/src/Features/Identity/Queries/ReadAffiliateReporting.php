@@ -30,13 +30,19 @@ final readonly class ReadAffiliateReporting implements AffiliateReportingReader
         return $names;
     }
 
-    public function scopedIds(int $connectionIdentity): iterable
+    public function scopedIds(int $connectionIdentity, bool $commercialOnly = false): iterable
     {
         if (spl_object_id((new Affiliate)->getConnection()) !== $connectionIdentity) {
             throw new LogicException('Affiliate reporting requires a shared database connection.');
         }
 
-        foreach (Affiliate::query()->forOwner(includeGlobal: false)->select('id')->toBase()->lazyById(100) as $row) {
+        $query = Affiliate::query()->forOwner(includeGlobal: false)->select('id');
+
+        if ($commercialOnly) {
+            $query->whereCommercialPurpose();
+        }
+
+        foreach ($query->toBase()->lazyById(100) as $row) {
             yield (string) $row->id;
         }
     }

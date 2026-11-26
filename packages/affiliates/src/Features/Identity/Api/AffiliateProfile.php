@@ -23,5 +23,6 @@ final readonly class AffiliateProfile
         public ?string $parentAffiliateId,
         public string $status,
         public AffiliateData $data,
+        public ?string $rankId,
     ) {}
 }

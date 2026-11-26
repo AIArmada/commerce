@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources;
 
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
+use LogicException;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
@@ -80,6 +82,27 @@ final class AffiliateRankResource extends Resource
     {
         /** @var Builder<AffiliateRank> $query */
         $query = parent::getEloquentQuery();
+        $model = $query->getModel();
+        $connection = $model->getConnection();
+        $reference = app(MerchantIdentity::class)->ownerTable();
+
+        if ($reference->connectionIdentity !== spl_object_id($connection)) {
+            throw new LogicException('Rank counts require a shared database connection.');
+        }
+
+        $counts = $connection->table($reference->table)->selectRaw('COUNT(*)')
+            ->whereColumn('rank_id', $model->qualifyColumn('id'));
+
+        if (config('affiliates.owner.enabled', false)) {
+            foreach (['owner_type', 'owner_id'] as $column) {
+                $left = $reference->table . '.' . $column;
+                $right = $model->qualifyColumn($column);
+                $counts->where(static fn ($nested) => $nested->whereColumn($left, $right)
+                    ->orWhere(static fn ($both) => $both->whereNull($left)->whereNull($right)));
+            }
+        }
+
+        $query->addSelect(['affiliates_count' => $counts]);
 
         if (! (bool) config('affiliates.owner.enabled', false)) {
             /** @var Builder<Model> $unscopedQuery */
@@ -189,7 +212,6 @@ final class AffiliateRankResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('affiliates_count')
-                    ->counts('affiliates')
                     ->label('Affiliates'),
 
                 Tables\Columns\TextColumn::make('created_at')

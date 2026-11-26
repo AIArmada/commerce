@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateRankMaintenance;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -33,9 +33,9 @@ final readonly class AdministerRank implements RankAdministration
     public function delete(string $rankId): bool
     {
         $connection = (new AffiliateRank)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
-        if ($connection !== (new Affiliate)->getConnection()
-            || $connection !== (new AffiliateRankHistory)->getConnection()) {
+        if ($connection !== (new AffiliateRankHistory)->getConnection()) {
             throw new LogicException('Rank removal requires a shared database connection.');
         }
 

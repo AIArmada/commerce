@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
 describe('AffiliateRank Model', function (): void {
@@ -29,7 +28,7 @@ describe('AffiliateRank Model', function (): void {
             ->and($rank->commission_rate_basis_points)->toBe(1500);
     });
 
-    it('has many affiliates', function (): void {
+    it('does not expose an affiliate ORM relationship', function (): void {
         $rank = AffiliateRank::create([
             'name' => 'Silver',
             'slug' => 'silver',
@@ -37,7 +36,7 @@ describe('AffiliateRank Model', function (): void {
             'commission_rate_basis_points' => 1000,
         ]);
 
-        expect($rank->affiliates())->toBeInstanceOf(HasMany::class);
+        expect(method_exists($rank, 'affiliates'))->toBeFalse();
     });
 
     it('relates to affiliates correctly', function (): void {
@@ -59,7 +58,7 @@ describe('AffiliateRank Model', function (): void {
         ]);
 
         $rank->refresh();
-        expect($rank->affiliates)->toHaveCount(1);
+        expect(Affiliate::query()->where('rank_id', $rank->id)->count())->toBe(1);
     });
 
     it('determines if rank is higher than another', function (): void {
@@ -168,16 +167,7 @@ describe('AffiliateRank Model', function (): void {
             'min_active_downlines' => 5,
         ]);
 
-        $affiliate = Affiliate::create([
-            'code' => 'QUAL-TEST-' . uniqid(),
-            'name' => 'Qualification Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-
-        expect($rank->meetsQualification($affiliate, 15000, 60000, 10))->toBeTrue();
+        expect($rank->meetsQualification(15000, 60000, 10))->toBeTrue();
     });
 
     it('checks qualification requirements - fails personal sales', function (): void {
@@ -191,16 +181,7 @@ describe('AffiliateRank Model', function (): void {
             'min_active_downlines' => 5,
         ]);
 
-        $affiliate = Affiliate::create([
-            'code' => 'QUAL-FAIL-' . uniqid(),
-            'name' => 'Qualification Fail Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-
-        expect($rank->meetsQualification($affiliate, 5000, 60000, 10))->toBeFalse();
+        expect($rank->meetsQualification(5000, 60000, 10))->toBeFalse();
     });
 
     it('checks qualification requirements - fails team sales', function (): void {
@@ -214,16 +195,7 @@ describe('AffiliateRank Model', function (): void {
             'min_active_downlines' => 5,
         ]);
 
-        $affiliate = Affiliate::create([
-            'code' => 'QUAL-FAIL-' . uniqid(),
-            'name' => 'Qualification Fail Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-
-        expect($rank->meetsQualification($affiliate, 15000, 30000, 10))->toBeFalse();
+        expect($rank->meetsQualification(15000, 30000, 10))->toBeFalse();
     });
 
     it('checks qualification requirements - fails active downlines', function (): void {
@@ -237,16 +209,7 @@ describe('AffiliateRank Model', function (): void {
             'min_active_downlines' => 5,
         ]);
 
-        $affiliate = Affiliate::create([
-            'code' => 'QUAL-FAIL-' . uniqid(),
-            'name' => 'Qualification Fail Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-
-        expect($rank->meetsQualification($affiliate, 15000, 60000, 3))->toBeFalse();
+        expect($rank->meetsQualification(15000, 60000, 3))->toBeFalse();
     });
 
     it('passes qualification with exact minimum values', function (): void {
@@ -260,16 +223,7 @@ describe('AffiliateRank Model', function (): void {
             'min_active_downlines' => 5,
         ]);
 
-        $affiliate = Affiliate::create([
-            'code' => 'QUAL-EXACT-' . uniqid(),
-            'name' => 'Qualification Exact Test',
-            'status' => Active::class,
-            'commission_type' => CommissionType::Percentage,
-            'commission_rate' => 1000,
-            'currency' => 'USD',
-        ]);
-
-        expect($rank->meetsQualification($affiliate, 10000, 50000, 5))->toBeTrue();
+        expect($rank->meetsQualification(10000, 50000, 5))->toBeTrue();
     });
 
     it('casts numeric fields as integers', function (): void {

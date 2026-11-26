@@ -11,7 +11,12 @@ use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Features\Upline\Queries\RankQualificationQuery;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRankMaintenance;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Connection;
@@ -25,7 +30,7 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
 
     public function evaluate(string $affiliateId): ?QualifiedRank
     {
-        $rank = $this->query->evaluate(Affiliate::query()->findOrFail($affiliateId));
+        $rank = $this->query->evaluate($this->profile($affiliateId));
 
         return $rank?->toQualifiedRank();
     }
@@ -34,11 +39,9 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
     {
         $changed = 0;
 
-        Affiliate::query()->whereCommercialPurpose()->select('id')->chunkById(100, function ($affiliates) use (&$changed, $dryRun): void {
-            foreach ($affiliates as $affiliate) {
-                $changed += (int) $this->process((string) $affiliate->getKey(), $dryRun);
-            }
-        });
+        foreach (app(AffiliateReportingReader::class)->scopedIds(spl_object_id($this->connection()), commercialOnly: true) as $id) {
+            $changed += (int) $this->process($id, $dryRun);
+        }
 
         return $changed;
     }
@@ -63,8 +66,8 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
         }
 
         $this->connection()->transaction(function () use ($affiliateId, $rankId): void {
-            $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
-            if (! $affiliate->isCommercialPurpose()) {
+            $affiliate = $this->profile($affiliateId, lock: true);
+            if (! $affiliate->commercial) {
                 throw new InvalidArgumentException('A non-commercial affiliate cannot receive a rank.');
             }
 
@@ -76,19 +79,19 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
     /** @return array{personal_sales: int, team_sales: int, active_downlines: int, lifetime_value: int} */
     public function calculateMetrics(string $affiliateId, ?CarbonImmutable $from = null, ?string $currency = null): array
     {
-        return $this->query->calculateMetrics(Affiliate::query()->findOrFail($affiliateId), $from, $currency);
+        return $this->query->calculateMetrics($this->profile($affiliateId), $from, $currency);
     }
 
     private function process(string $affiliateId, bool $dryRun): bool
     {
         return $this->connection()->transaction(function () use ($affiliateId, $dryRun): bool {
-            $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
-            if (! $affiliate->isCommercialPurpose()) {
+            $affiliate = $this->profile($affiliateId, lock: true);
+            if (! $affiliate->commercial) {
                 return false;
             }
 
             $rank = $this->query->evaluate($affiliate, lockRanks: ! $dryRun);
-            if ($affiliate->rank_id === $rank?->id) {
+            if ($affiliate->rankId === $rank?->id) {
                 return false;
             }
 
@@ -100,37 +103,46 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
         }, attempts: 3);
     }
 
+    private function profile(string $affiliateId, bool $lock = false): AffiliateProfile
+    {
+        $profiles = app(AffiliateProfileReader::class);
+        $identity = spl_object_id($this->connection());
+
+        return ($lock ? $profiles->lock($affiliateId, $identity) : $profiles->find($affiliateId, $identity))
+            ?? throw new ModelNotFoundException('Affiliate not found.');
+    }
+
     private function connection(): Connection
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateRank)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
-        if ($connection !== (new AffiliateRank)->getConnection()
-            || $connection !== (new AffiliateRankHistory)->getConnection()) {
+        if ($connection !== (new AffiliateRankHistory)->getConnection()) {
             throw new LogicException('Rank assignment requires a shared database connection.');
         }
 
         return $connection;
     }
 
-    private function change(Affiliate $affiliate, ?AffiliateRank $rank, RankQualificationReason $reason): void
+    private function change(AffiliateProfile $affiliate, ?AffiliateRank $rank, RankQualificationReason $reason): void
     {
-        if ($affiliate->rank_id === $rank?->id) {
+        if ($affiliate->rankId === $rank?->id) {
             return;
         }
 
-        $oldRank = $affiliate->rank_id === null ? null : $this->query->ranksFor($affiliate)->sharedLock()->find($affiliate->rank_id);
+        $oldRank = $affiliate->rankId === null ? null : $this->query->ranksFor($affiliate)->sharedLock()->find($affiliate->rankId);
         AffiliateRankHistory::create([
-            'affiliate_id' => $affiliate->id,
-            'from_rank_id' => $affiliate->rank_id,
+            'affiliate_id' => $affiliate->reference->id,
+            'from_rank_id' => $affiliate->rankId,
             'to_rank_id' => $rank?->id,
             'reason' => $reason,
             'qualified_at' => CarbonImmutable::now(),
         ]);
 
-        $affiliate->update(['rank_id' => $rank?->id]);
+        app(AffiliateRankMaintenance::class)->assignRank($affiliate->reference->id, $rank?->id, spl_object_id($this->connection()));
 
         $this->events->dispatch(new AffiliateRankChanged(
-            affiliateId: (string) $affiliate->getKey(),
+            affiliateId: $affiliate->reference->id,
             fromRank: $oldRank?->toQualifiedRank(),
             toRank: $rank?->toQualifiedRank(),
             reason: $reason,

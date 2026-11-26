@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Upline\Models;
 
 use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -36,7 +33,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon|null $updated_at
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property-read Collection<int, Affiliate> $affiliates
  * @property-read Model|null $owner
  */
 class AffiliateRank extends Model implements Auditable
@@ -81,14 +77,6 @@ class AffiliateRank extends Model implements Auditable
         return config('affiliates.database.tables.ranks', 'affiliate_ranks');
     }
 
-    /**
-     * @return HasMany<Affiliate, $this>
-     */
-    public function affiliates(): HasMany
-    {
-        return $this->hasMany(Affiliate::class, 'rank_id');
-    }
-
     public function toQualifiedRank(): QualifiedRank
     {
         return new QualifiedRank((string) $this->getKey(), $this->name, $this->level, $this->currencyCode());
@@ -128,7 +116,7 @@ class AffiliateRank extends Model implements Auditable
     /**
      * Check if an affiliate meets the qualification requirements for this rank.
      */
-    public function meetsQualification(Affiliate $affiliate, int $personalSales, int $teamSales, int $activeDownlines): bool
+    public function meetsQualification(int $personalSales, int $teamSales, int $activeDownlines): bool
     {
         if ($personalSales < $this->min_personal_sales) {
             return false;
