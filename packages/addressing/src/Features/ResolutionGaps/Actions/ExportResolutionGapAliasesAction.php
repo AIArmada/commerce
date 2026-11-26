@@ -226,5 +226,4 @@ final readonly class ExportResolutionGapAliasesAction
 
         return null;
     }
-
 }

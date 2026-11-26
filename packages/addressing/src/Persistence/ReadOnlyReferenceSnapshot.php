@@ -11,7 +11,8 @@ final class ReadOnlyReferenceSnapshot
 {
     /**
      * @template T
-     * @param callable(): T $read
+     *
+     * @param  callable(): T  $read
      * @return T
      */
     public static function run(Connection $connection, callable $read): mixed
