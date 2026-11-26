@@ -6,6 +6,11 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use Illuminate\Validation\ValidationException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
@@ -78,6 +83,33 @@ describe('AffiliateLink Model', function (): void {
                 'tracking_url' => 'https://track.example.com/go/test',
             ]))->toThrow(AuthorizationException::class);
         }
+    });
+
+    it('blocks deletion when conversion history references the link through an attribution', function (): void {
+        $link = AffiliateLink::create([
+            'affiliate_id' => $this->affiliate->id,
+            'destination_url' => 'https://example.com/product',
+            'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
+        ]);
+        $attribution = AffiliateAttribution::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'affiliate_link_id' => $link->id,
+        ]);
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'affiliate_attribution_id' => $attribution->id,
+            'value_minor' => 1000,
+            'commission_minor' => 100,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        expect(app(LinkConversionReader::class)->hasLinkHistory($link->id, spl_object_id($link->getConnection())))->toBeTrue()
+            ->and(fn () => app(TrackingLinkAdministration::class)->delete($link->id))->toThrow(ValidationException::class);
+        expect(AffiliateLink::query()->find($link->id))->not->toBeNull();
     });
 
     it('increments clicks', function (): void {

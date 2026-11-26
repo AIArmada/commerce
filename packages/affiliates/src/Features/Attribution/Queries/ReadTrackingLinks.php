@@ -7,19 +7,16 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 use AIArmada\Affiliates\Features\Attribution\Api\ProgramLinkVolume;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\Support\RevenueVolume;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use DateTimeImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use LogicException;
 
 final readonly class ReadTrackingLinks implements TrackingLinkReader
 {
+    public function __construct(private LinkConversionReader $conversions) {}
+
     public function hasRecords(string $affiliateId): bool
     {
         return Str::isUuid($affiliateId) && AffiliateLink::query()->where('affiliate_id', $affiliateId)->exists();
@@ -50,32 +47,12 @@ final readonly class ReadTrackingLinks implements TrackingLinkReader
             return new ProgramLinkVolume(0, []);
         }
 
-        $connection = (new AffiliateConversion)->getConnection();
-        if ($connection !== (new AffiliateLink)->getConnection()
-            || $connection !== (new AffiliateAttribution)->getConnection()
-            || $connection !== (new Affiliate)->getConnection()) {
+        $connection = (new AffiliateLink)->getConnection();
+
+        if ($connection !== (new AffiliateAttribution)->getConnection()) {
             throw new LogicException('Program link volume requires a shared database connection.');
         }
 
-        $affiliate = Affiliate::query()->findOrFail($affiliateId);
-        $links = AffiliateLink::query()->where('affiliate_id', $affiliateId)->where('program_id', $programId)->select('id');
-        $attributions = AffiliateAttribution::query()->where('affiliate_id', $affiliateId)->whereIn('affiliate_link_id', clone $links)->select('id');
-        $query = $affiliate->conversions()->where(function (Builder $query) use ($links, $attributions): void {
-            $query->whereIn('affiliate_link_id', $links)->orWhereIn('affiliate_attribution_id', $attributions);
-        });
-
-        if ($since !== null) {
-            $query->where('occurred_at', '>=', $since);
-        }
-
-        if ($approvedOnly) {
-            $query->whereIn('status', [ApprovedConversion::value(), PaidConversion::value()]);
-        }
-
-        $rows = $query->toBase()
-            ->selectRaw('commission_currency as currency, COUNT(*) as conversion_count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')->get();
-
-        return new ProgramLinkVolume((int) $rows->sum('conversion_count'), RevenueVolume::foldRows($rows, $fallbackCurrency));
+        return $this->conversions->programVolume($affiliateId, $programId, $fallbackCurrency, spl_object_id($connection), $since, $approvedOnly);
     }
 }

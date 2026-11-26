@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Features\Attribution\Models;
 
 use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -128,14 +127,6 @@ class AffiliateLink extends Model implements Auditable
     public function attributions(): HasMany
     {
         return $this->hasMany(AffiliateAttribution::class, 'affiliate_link_id');
-    }
-
-    /**
-     * @return HasMany<AffiliateConversion, $this>
-     */
-    public function conversions(): HasMany
-    {
-        return $this->hasMany(AffiliateConversion::class, 'affiliate_link_id');
     }
 
     /** @return MorphOne<Link, $this> */

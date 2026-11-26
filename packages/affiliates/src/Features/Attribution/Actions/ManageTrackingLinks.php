@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkData;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Links\Models\Link;
@@ -19,6 +20,7 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
     public function __construct(
         private CreateTrackingLink $creator,
         private UpdateTrackingLink $updater,
+        private LinkConversionReader $conversions,
     ) {}
 
     public function create(string $affiliateId, string $destinationUrl, array $attributes = []): TrackingLinkData
@@ -63,7 +65,7 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
 
     private function remove(AffiliateLink $link): bool
     {
-        if ($link->conversions()->exists()) {
+        if ($this->conversions->hasLinkHistory((string) $link->getKey(), spl_object_id($link->getConnection()))) {
             throw ValidationException::withMessages(['link' => 'A link with recorded conversions cannot be deleted.']);
         }
 

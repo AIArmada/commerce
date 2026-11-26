@@ -1,0 +1,89 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Conversions\Queries;
+
+use AIArmada\Affiliates\Features\Attribution\Api\ProgramLinkVolume;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\Support\RevenueVolume;
+use DateTimeImmutable;
+use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use LogicException;
+
+final readonly class ReadLinkConversions implements LinkConversionReader
+{
+    public function hasLinkHistory(string $linkId, int $connectionIdentity): bool
+    {
+        $connection = $this->connection($connectionIdentity);
+
+        if (! Str::isUuid($linkId)) {
+            return false;
+        }
+
+        $attributions = $connection->table((string) config('affiliates.database.tables.attributions', 'affiliate_attributions'))
+            ->where('affiliate_link_id', $linkId)->select('id');
+
+        return AffiliateConversion::query()->withoutOwnerScope()
+            ->where(function (Builder $query) use ($linkId, $attributions): void {
+                $query->where('affiliate_link_id', $linkId)->orWhereIn('affiliate_attribution_id', $attributions);
+            })->exists();
+    }
+
+    public function programVolume(string $affiliateId, string $programId, string $fallbackCurrency, int $connectionIdentity, ?DateTimeImmutable $since = null, bool $approvedOnly = false): ProgramLinkVolume
+    {
+        $connection = $this->connection($connectionIdentity);
+
+        if (! Str::isUuid($affiliateId) || ! Str::isUuid($programId)) {
+            return new ProgramLinkVolume(0, []);
+        }
+
+        $affiliate = Affiliate::query()->findOrFail($affiliateId);
+        $links = $connection->table((string) config('affiliates.database.tables.links', 'affiliate_links'))
+            ->where('affiliate_id', $affiliateId)->where('program_id', $programId)->select('id');
+        $attributions = $connection->table((string) config('affiliates.database.tables.attributions', 'affiliate_attributions'))
+            ->where('affiliate_id', $affiliateId)->whereIn('affiliate_link_id', clone $links)->select('id');
+
+        $query = AffiliateConversion::query()->where('affiliate_id', $affiliateId);
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $attributions->where('owner_type', $affiliate->owner_type)->where('owner_id', $affiliate->owner_id);
+            $query->where('owner_type', $affiliate->owner_type)->where('owner_id', $affiliate->owner_id);
+        }
+
+        $query->where(function (Builder $query) use ($links, $attributions): void {
+            $query->whereIn('affiliate_link_id', $links)->orWhereIn('affiliate_attribution_id', $attributions);
+        });
+
+        if ($since !== null) {
+            $query->where('occurred_at', '>=', $since);
+        }
+
+        if ($approvedOnly) {
+            $query->whereIn('status', [ApprovedConversion::value(), PaidConversion::value()]);
+        }
+
+        $rows = $query->toBase()
+            ->selectRaw('commission_currency as currency, COUNT(*) as conversion_count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+            ->groupBy('commission_currency')->get();
+
+        return new ProgramLinkVolume((int) $rows->sum('conversion_count'), RevenueVolume::foldRows($rows, $fallbackCurrency));
+    }
+
+    private function connection(int $connectionIdentity): ConnectionInterface
+    {
+        $connection = (new AffiliateConversion)->getConnection();
+
+        if (spl_object_id($connection) !== $connectionIdentity || $connection !== (new Affiliate)->getConnection()) {
+            throw new LogicException('Link conversion reads require a shared database connection.');
+        }
+
+        return $connection;
+    }
+}

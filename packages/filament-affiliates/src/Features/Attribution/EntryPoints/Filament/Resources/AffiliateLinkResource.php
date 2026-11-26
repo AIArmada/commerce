@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
@@ -65,7 +66,7 @@ final class AffiliateLinkResource extends Resource
     {
         return FilamentPermission::hasAbility('affiliate.delete')
             && $record instanceof AffiliateLink
-            && ! $record->conversions()->exists();
+            && ! app(LinkConversionReader::class)->hasLinkHistory((string) $record->getKey(), spl_object_id($record->getConnection()));
     }
 
     public static function shouldRegisterNavigation(): bool
