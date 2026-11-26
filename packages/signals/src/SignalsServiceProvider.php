@@ -7,20 +7,10 @@ namespace AIArmada\Signals;
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
-use AIArmada\Signals\Contracts\AlertTransport;
 use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
-use AIArmada\Signals\Drivers\DefaultAlertTransport;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Contracts\SignalEventIngestor;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
-use AIArmada\Signals\Features\Alerts\Actions\SetAlertReadState;
-use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
-use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
-use AIArmada\Signals\Features\Alerts\Actions\DetachAlertsFromProperty;
-use AIArmada\Signals\Features\Alerts\Api\AlertSummary;
-use AIArmada\Signals\Features\Alerts\Queries\AlertSummaryQuery;
-use AIArmada\Signals\Features\Alerts\Api\AlertEventEvaluation;
-use AIArmada\Signals\Features\Alerts\Actions\EvaluateIngestedEvent;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
@@ -34,6 +24,10 @@ use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Reports\ReportRegistry;
+use AIArmada\Signals\Platform\ExtensionRegistry;
+use AIArmada\Signals\Platform\FeatureCatalog;
+use AIArmada\Signals\Platform\FeatureModule;
+use Illuminate\Contracts\Foundation\Application;
 use AIArmada\Signals\Services\AcquisitionReportService;
 use AIArmada\Signals\Services\CommerceSignalsRecorder;
 use AIArmada\Signals\Services\ContentPerformanceReportService;
@@ -45,8 +39,6 @@ use AIArmada\Signals\Services\JourneyReportService;
 use AIArmada\Signals\Services\LiveActivityReportService;
 use AIArmada\Signals\Services\PageViewReportService;
 use AIArmada\Signals\Services\RetentionReportService;
-use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
-use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use AIArmada\Signals\Services\SignalLocationResolverPipeline;
 use AIArmada\Signals\Services\SignalMetricsAggregator;
 use AIArmada\Signals\Services\SignalsDashboardService;
@@ -84,18 +76,21 @@ final class SignalsServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
         $this->app->bind(SignalEventIngestor::class, IngestSignalEvent::class);
-        $this->app->bind(AlertReadState::class, SetAlertReadState::class);
-        $this->app->bind(DetachPropertyAlerts::class, DetachAlertsFromProperty::class);
-        $this->app->bind(AlertSummary::class, AlertSummaryQuery::class);
-        $this->app->bind(AlertEventEvaluation::class, EvaluateIngestedEvent::class);
-        $this->app->bind(AlertTransport::class, DefaultAlertTransport::class);
         $this->app->singleton(SignalsDashboardService::class);
         $this->app->singleton(SignalMetricsAggregator::class);
         $this->app->singleton(TrackedPropertyResolver::class);
         $this->app->singleton(CommerceSignalsRecorder::class);
-        $this->app->singleton(SignalAlertEvaluator::class);
-        $this->app->singleton(SignalAlertDispatcher::class);
         $this->app->scoped(SignalsBrowserContextManager::class);
         $this->app->bind(SignalsTrackerRenderer::class);
         $this->app->bind(InjectSignalsTrackerIntoHtmlResponse::class);
@@ -117,6 +112,13 @@ final class SignalsServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
         $this->registerIngestionRateLimiter();
         $this->registerMorphMap();
         $this->registerSignalsTrackerDirective();
