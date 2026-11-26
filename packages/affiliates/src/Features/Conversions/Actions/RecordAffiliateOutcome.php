@@ -19,13 +19,12 @@ use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiary;
+use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiaryReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
@@ -89,19 +88,13 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             $affiliateId = $attribution->affiliateId;
         }
 
-        $affiliate = $affiliateId !== null && Str::isUuid($affiliateId)
-            ? Affiliate::query()->forOwner()->find($affiliateId)
-            : null;
+        $affiliate = $affiliateId === null ? null : app(ConversionBeneficiaryReader::class)->find($affiliateId, spl_object_id($connection));
 
-        if (! $affiliate instanceof Affiliate) {
+        if ($affiliate === null) {
             return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
         }
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $affiliate = OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
-        }
-
-        $this->assertSameConnection($affiliate);
+        $this->assertSameConnection();
 
         if ($attribution instanceof AttributionConversionRecord) {
             $this->assertSameOwner($attribution, $affiliate);
@@ -171,12 +164,19 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
             $sharerUserId,
             $actorUserId
         ): array {
+            $locked = app(ConversionBeneficiaryReader::class)->lock([$affiliate->reference->id], spl_object_id($connection));
+            $affiliate = $locked[$affiliate->reference->id];
+
+            if ($attribution !== null) {
+                $this->assertSameOwner($attribution, $affiliate);
+            }
+
             // Fresh instance per attempt: reusing a saved model across
             // outer-transaction retries leaves exists=true after rollback,
             // turning the replayed save into a silent no-op (phantom).
             $conversion = new AffiliateConversion([
                 'idempotency_key' => $idempotencyKey,
-                'affiliate_id' => $affiliate->getKey(),
+                'affiliate_id' => $affiliate->reference->id,
                 'affiliate_attribution_id' => $attribution?->id,
                 'affiliate_program_id' => $programId,
                 'affiliate_code' => $affiliate->code,
@@ -192,7 +192,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
                 'conversion_type' => $conversionType,
                 'subtotal_minor' => (int) Arr::get($payload, 'subtotal_minor', 0),
                 'value_minor' => (int) Arr::get($payload, 'value_minor', 0),
-                'commission_minor' => $affiliate->isCommercialPurpose()
+                'commission_minor' => $affiliate->commercial
                     ? app(CommissionPricing::class)->clamp((int) Arr::get($payload, 'commission_minor', 0))
                     : 0,
                 'commission_currency' => (string) Arr::get($payload, 'commission_currency', config('affiliates.currency.default', 'MYR')),
@@ -206,8 +206,8 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
                 'approved_at' => Arr::get($payload, 'approved_at'),
             ]);
             $conversion->forceFill([
-                'owner_type' => $affiliate->owner_type,
-                'owner_id' => $affiliate->owner_id,
+                'owner_type' => $affiliate->reference->ownerType,
+                'owner_id' => $affiliate->reference->ownerId,
             ]);
 
             $existing = AffiliateConversion::query()
@@ -279,10 +279,10 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         return $result;
     }
 
-    private function assertSameOwner(AttributionConversionRecord $attribution, Affiliate $affiliate): void
+    private function assertSameOwner(AttributionConversionRecord $attribution, ConversionBeneficiary $affiliate): void
     {
-        if ($attribution->ownerType !== $affiliate->owner_type
-            || (string) $attribution->ownerId !== (string) $affiliate->owner_id) {
+        if ($attribution->ownerType !== $affiliate->reference->ownerType
+            || (string) $attribution->ownerId !== (string) $affiliate->reference->ownerId) {
             throw new LogicException('Affiliate outcome recording requires an attribution and affiliate with the same owner.');
         }
     }
@@ -313,7 +313,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
      */
     private function assertAttributionReferences(
         AttributionConversionRecord $attribution,
-        Affiliate $affiliate,
+        ConversionBeneficiary $affiliate,
         array $payload,
         array $provenance = [],
     ): void {
@@ -327,16 +327,16 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         }
 
         if ($attribution->affiliateLinkId !== null
-            && ! app(TrackingLinkReader::class)->belongsTo($attribution->affiliateLinkId, (string) $affiliate->getKey())) {
+            && ! app(TrackingLinkReader::class)->belongsTo($attribution->affiliateLinkId, (string) $affiliate->reference->id)) {
             throw new InvalidArgumentException('The attribution link does not belong to its affiliate.');
         }
 
         if ($attribution->affiliateProgramId !== null
             && ! app(ProgramReferenceReader::class)->existsForOwner(
                 $attribution->affiliateProgramId,
-                $affiliate->owner_type,
-                $affiliate->owner_id,
-                spl_object_id($affiliate->getConnection()),
+                $affiliate->reference->ownerType,
+                $affiliate->reference->ownerId,
+                spl_object_id((new AffiliateConversion)->getConnection()),
                 includeGlobal: true,
             )) {
             throw new InvalidArgumentException('The attribution program is outside the affiliate owner scope.');
@@ -352,34 +352,32 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $provenance
      */
-    private function assertStandaloneReferences(Affiliate $affiliate, array $payload, array $provenance): void
+    private function assertStandaloneReferences(ConversionBeneficiary $affiliate, array $payload, array $provenance): void
     {
         $linkId = $this->mergedValue($provenance, $payload, null, 'affiliate_link_id');
         $programId = $this->mergedValue($provenance, $payload, null, 'affiliate_program_id');
 
-        if ($linkId !== null && (! is_string($linkId) || ! app(TrackingLinkReader::class)->belongsTo($linkId, (string) $affiliate->getKey()))) {
+        if ($linkId !== null && (! is_string($linkId) || ! app(TrackingLinkReader::class)->belongsTo($linkId, (string) $affiliate->reference->id))) {
             throw new InvalidArgumentException('The outcome link does not belong to its affiliate.');
         }
 
         if ($programId !== null && (! is_string($programId) || ! app(ProgramReferenceReader::class)->existsForOwner(
             $programId,
-            $affiliate->owner_type,
-            $affiliate->owner_id,
-            spl_object_id($affiliate->getConnection()),
+            $affiliate->reference->ownerType,
+            $affiliate->reference->ownerId,
+            spl_object_id((new AffiliateConversion)->getConnection()),
             includeGlobal: true,
         ))) {
             throw new InvalidArgumentException('The outcome program is outside the affiliate owner scope.');
         }
     }
 
-    private function assertSameConnection(Affiliate $affiliate): void
+    private function assertSameConnection(): void
     {
         $connection = (new AffiliateConversion)->getConnection();
 
-        foreach ([$affiliate, new AffiliateBalance] as $participant) {
-            if ($participant->getConnection() !== $connection) {
-                throw new LogicException('Affiliate outcome recording requires one shared connection instance for atomicity.');
-            }
+        if ((new AffiliateBalance)->getConnection() !== $connection) {
+            throw new LogicException('Affiliate outcome recording requires one shared connection instance for atomicity.');
         }
 
         app(FraudSignalMaintenance::class)->assertConnection($connection->getName(), spl_object_id($connection));

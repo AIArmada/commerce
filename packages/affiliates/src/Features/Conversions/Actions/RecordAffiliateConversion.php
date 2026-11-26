@@ -21,7 +21,8 @@ use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Conversions\States\RejectedConversion;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiary;
+use AIArmada\Affiliates\Features\Identity\Api\ConversionBeneficiaryReader;
 use AIArmada\Cart\Cart;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -82,13 +83,13 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         AttributionConversionRecord $attribution,
         array $payload = [],
     ): ?AffiliateConversionData {
-        $affiliate = Affiliate::query()->find($attribution->affiliateId);
+        $affiliate = app(ConversionBeneficiaryReader::class)->find($attribution->affiliateId, $this->connectionIdentity());
 
-        if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
+        if ($affiliate === null || ! $affiliate->commercial) {
             throw new InvalidArgumentException('Frozen commission attribution must belong to a commercial-purpose affiliate.');
         }
 
-        if (isset($payload['affiliate_id']) && (string) $payload['affiliate_id'] !== (string) $affiliate->getKey()) {
+        if (isset($payload['affiliate_id']) && (string) $payload['affiliate_id'] !== (string) $affiliate->reference->id) {
             throw new InvalidArgumentException('Frozen commission attribution does not match the requested affiliate.');
         }
 
@@ -129,13 +130,13 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $autoApprove = config('affiliates.commissions.auto_approve', false);
 
         $weights = $frozenAttribution instanceof AttributionConversionRecord
-            ? [$affiliate->getKey() => 1.0]
+            ? [$affiliate->reference->id => 1.0]
             : $this->attributionModel->distribute(
                 $attribution === null ? [] : $this->touchpoints->distributionTouches((string) $attribution->id),
             );
 
         if ($weights === []) {
-            $weights = [$affiliate->getKey() => 1.0];
+            $weights = [$affiliate->reference->id => 1.0];
         }
 
         $conversionType = (string) ($payload['conversion_type'] ?? 'purchase');
@@ -148,17 +149,9 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         // concurrent recording must serialize against the same affiliate rows.
         $connection = (new AffiliateConversion)->getConnection();
 
-        if ($connection !== $affiliate->getConnection()) {
-            throw new LogicException('Conversion recording requires a shared affiliate database connection.');
-        }
-
-        $ids = array_values(array_unique([(string) $affiliate->getKey(), ...array_map('strval', array_keys($weights))]));
-        $locked = Affiliate::query()->forOwner(includeGlobal: true)->whereKey($ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-        $affiliate = $locked->get((string) $affiliate->getKey());
-
-        if (! $affiliate instanceof Affiliate || $locked->count() !== count($ids)) {
-            throw new InvalidArgumentException('A conversion beneficiary is missing or outside the current owner scope.');
-        }
+        $ids = array_values(array_unique([$affiliate->reference->id, ...array_map('strval', array_keys($weights))]));
+        $locked = app(ConversionBeneficiaryReader::class)->lock($ids, spl_object_id($connection), includeGlobal: true);
+        $affiliate = $locked[$affiliate->reference->id];
 
         $explicitIdempotencyKey = $payload['idempotency_key'] ?? null;
 
@@ -172,15 +165,15 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         foreach ($weights as $affiliateId => $weight) {
             $weight = max(0, (float) $weight);
             $portionRevenue = (int) round(($totalMinor ?? 0) * $weight);
-            $beneficiary = $locked->get((string) $affiliateId);
+            $beneficiary = $locked[(string) $affiliateId] ?? null;
 
-            if (! $beneficiary instanceof Affiliate) {
+            if ($beneficiary === null) {
                 throw new LogicException('A locked conversion beneficiary is unavailable.');
             }
 
-            $affiliateId = (string) $beneficiary->getKey();
-            $ownerType = $beneficiary->owner_type;
-            $ownerId = $beneficiary->owner_id;
+            $affiliateId = (string) $beneficiary->reference->id;
+            $ownerType = $beneficiary->reference->ownerType;
+            $ownerId = $beneficiary->reference->ownerId;
 
             $idempotencyKey = is_string($explicitIdempotencyKey)
                 ? hash('sha256', implode('|', [
@@ -222,7 +215,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 $payload,
                 $attribution,
             );
-            $portionCommission = $beneficiary->isCommercialPurpose()
+            $portionCommission = $beneficiary->commercial
                 ? (int) round($commissionMinor * $weight)
                 : 0;
             $conversionMetadata = $this->buildConversionMetadata(
@@ -367,12 +360,12 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
     }
 
     private function resolveCommission(
-        Affiliate $affiliate,
+        ConversionBeneficiary $affiliate,
         int $baseAmount,
         array $payload,
         ?AttributionConversionRecord $attribution,
     ): int {
-        if (! $affiliate->isCommercialPurpose()) {
+        if (! $affiliate->commercial) {
             return 0;
         }
 
@@ -389,14 +382,14 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliateProgramId;
 
         if ($programId) {
-            $result = $this->ruleEngine->calculate((string) $affiliate->getKey(), $baseAmount, [
+            $result = $this->ruleEngine->calculate((string) $affiliate->reference->id, $baseAmount, [
                 'program_id' => $programId,
             ]);
 
             return $result->finalCommissionMinor;
         }
 
-        return $this->commissionPricing->calculateBase($affiliate->commission_type->value, $affiliate->commission_rate, $baseAmount);
+        return $this->commissionPricing->calculateBase($affiliate->commissionType, $affiliate->commissionRate, $baseAmount);
     }
 
     private function calculateVoucherCommission(array $override, int $baseAmount): int
@@ -429,34 +422,33 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         );
     }
 
-    private function resolveAffiliate(array $payload, ?AttributionConversionRecord $attribution): ?Affiliate
+    private function resolveAffiliate(array $payload, ?AttributionConversionRecord $attribution): ?ConversionBeneficiary
     {
+        $reader = app(ConversionBeneficiaryReader::class);
+        $connectionIdentity = $this->connectionIdentity();
+
         if (isset($payload['affiliate_id'])) {
-            $query = Affiliate::query();
-
-            if (config('affiliates.owner.enabled', false)) {
-                $query->forOwner(includeGlobal: true);
+            if (! is_string($payload['affiliate_id'])) {
+                throw new InvalidArgumentException('Invalid conversion affiliate identity.');
             }
 
-            $affiliate = $query->find($payload['affiliate_id']);
-
-            if ($affiliate instanceof Affiliate) {
-                return $affiliate;
-            }
+            return $reader->find($payload['affiliate_id'], $connectionIdentity, includeGlobal: true);
         }
 
         if (isset($payload['affiliate_code'])) {
-            $query = Affiliate::query()
-                ->where('code', $payload['affiliate_code']);
-
-            if (config('affiliates.owner.enabled', false)) {
-                $query->forOwner(includeGlobal: true);
+            if (! is_string($payload['affiliate_code'])) {
+                throw new InvalidArgumentException('Invalid conversion affiliate code.');
             }
 
-            return $query->first();
+            return $reader->findByCode($payload['affiliate_code'], $connectionIdentity);
         }
 
-        return $attribution === null ? null : Affiliate::query()->find($attribution->affiliateId);
+        return $attribution === null ? null : $reader->find($attribution->affiliateId, $connectionIdentity);
+    }
+
+    private function connectionIdentity(): int
+    {
+        return spl_object_id((new AffiliateConversion)->getConnection());
     }
 
     private function resolveMinorAmount(mixed $value, callable $fallback): ?int
