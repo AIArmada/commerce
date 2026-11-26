@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support;
 
-use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
@@ -67,15 +66,6 @@ final class RevenueVolume
         }
 
         return $byCurrency[mb_strtoupper($reference)] ?? 0;
-    }
-
-    public static function referenceFor(?Affiliate $affiliate): string
-    {
-        if ($affiliate !== null && is_string($affiliate->currency) && mb_trim($affiliate->currency) !== '') {
-            return mb_strtoupper(mb_trim($affiliate->currency));
-        }
-
-        return self::default();
     }
 
     public static function default(): string

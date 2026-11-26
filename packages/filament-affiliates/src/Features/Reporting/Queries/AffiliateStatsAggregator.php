@@ -42,8 +42,8 @@ final class AffiliateStatsAggregator
     {
         $owner = $this->resolveOwner();
 
-        $activeStatus = AffiliateStatus::fromString(Active::class)->getValue();
-        $pendingStatus = AffiliateStatus::fromString(Pending::class)->getValue();
+        $activeStatus = AffiliateStatus::normalize(Active::class);
+        $pendingStatus = AffiliateStatus::normalize(Pending::class);
 
         $affiliateRow = $this->affiliateQuery($owner)
             ->toBase()

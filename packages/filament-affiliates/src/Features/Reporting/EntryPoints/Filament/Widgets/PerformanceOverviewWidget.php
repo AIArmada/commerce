@@ -110,7 +110,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
             ->groupBy('commission_currency')
             ->get();
 
-        $activeStatus = AffiliateStatus::fromString(Active::class)->getValue();
+        $activeStatus = AffiliateStatus::normalize(Active::class);
 
         $affiliates = Affiliate::query()
             ->when(

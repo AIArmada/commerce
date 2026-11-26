@@ -71,7 +71,7 @@ test('state classes expose view enums and reject unknown values', function (): v
         ->toThrow(InvalidArgumentException::class);
     expect(fn (): PayoutStatus => PayoutStatus::fromString('corrupt'))
         ->toThrow(InvalidArgumentException::class);
-    expect(fn (): AffiliateStatus => AffiliateStatus::fromString('corrupt'))
+    expect(fn (): string => AffiliateStatus::labelFor('corrupt'))
         ->toThrow(InvalidArgumentException::class);
 
     expect(ProcessingPayout::value())->toBe('processing');

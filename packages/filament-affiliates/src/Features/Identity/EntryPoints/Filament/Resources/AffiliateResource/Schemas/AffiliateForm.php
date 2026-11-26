@@ -79,7 +79,7 @@ final class AffiliateForm
                             ->label('Status')
                             ->required()
                             ->options(AffiliateStatus::options())
-                            ->default(AffiliateStatus::fromString(Draft::class)->getValue()),
+                            ->default(AffiliateStatus::normalize(Draft::class)),
 
                         Select::make('parent_affiliate_id')
                             ->label('Parent Affiliate')

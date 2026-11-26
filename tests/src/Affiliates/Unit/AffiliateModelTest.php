@@ -174,12 +174,12 @@ describe('Affiliate Directory - Unambiguous Lookup', function (): void {
 
 describe('Affiliate Model - Status Methods', function (): void {
     test('isActive returns true for active status', function (): void {
-        $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Active::class)]);
+        $affiliate = new Affiliate(['status' => new Active(new Affiliate)]);
         expect($affiliate->isActive())->toBeTrue();
     });
 
     test('isActive returns false for non-active status', function (): void {
-        $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Pending::class)]);
+        $affiliate = new Affiliate(['status' => new Pending(new Affiliate)]);
         expect($affiliate->isActive())->toBeFalse();
     });
 

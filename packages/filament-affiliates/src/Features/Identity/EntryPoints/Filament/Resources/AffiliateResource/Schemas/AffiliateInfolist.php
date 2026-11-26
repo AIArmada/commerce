@@ -35,8 +35,8 @@ final class AffiliateInfolist
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->color())
-                            ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->label()),
+                            ->color(fn (AffiliateStatus | string $state): string => AffiliateStatus::colorFor($state))
+                            ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::labelFor($state)),
                     ]),
 
                     TextEntry::make('description')

@@ -63,7 +63,7 @@ final class UplineVisualizationWidget extends Widget
                     fn ($query) => $query->forOwner($owner),
                 )
                 ->whereNull('parent_affiliate_id')
-                ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
+                ->where('status', AffiliateStatus::normalize(Active::class))
                 ->addSelect(['rank_name' => RankLabelProjection::query()])
                 ->withCount('children')->addSelect(['conversions_count' => ConversionCountProjection::query()])
                 ->limit(10)
@@ -108,7 +108,7 @@ final class UplineVisualizationWidget extends Widget
                     (bool) config('affiliates.owner.enabled', false),
                     fn ($query) => $query->forOwner($owner),
                 )
-                ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
+                ->where('status', AffiliateStatus::normalize(Active::class))
                 ->count(),
             'max_depth' => $this->calculateMaxDepth(),
             'avg_children' => $this->calculateAverageChildren(),
@@ -121,7 +121,7 @@ final class UplineVisualizationWidget extends Widget
 
         if ($currentDepth < $this->clampedDepth($this->depth)) {
             $children = $affiliate->children()
-                ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
+                ->where('status', AffiliateStatus::normalize(Active::class))
                 ->addSelect(['rank_name' => RankLabelProjection::query()])
                 ->withCount('children')->addSelect(['conversions_count' => ConversionCountProjection::query()])
                 ->limit(self::MAX_BREADTH)
