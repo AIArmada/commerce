@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentCashierChip\Actions\SyncCustomersToChip;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Invoices;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions;
@@ -411,7 +412,7 @@ it('sync action refuses models without CHIP support', function (): void {
 it('sync job links unlinked customers and skips unsupported models', function (): void {
     $user = User::query()->create(['name' => 'A', 'email' => 'repair-r1-6@example.com']);
 
-    (new SyncCustomersToChipJob)->handle();
+    (new SyncCustomersToChipJob)->handle(app(SyncCustomersToChip::class));
 
     expect($user->refresh()->hasChipId())->toBeTrue();
 
@@ -422,7 +423,7 @@ it('sync job links unlinked customers and skips unsupported models', function ()
         $thrown = null;
 
         try {
-            (new SyncCustomersToChipJob)->handle();
+            (new SyncCustomersToChipJob)->handle(app(SyncCustomersToChip::class));
         } catch (Throwable $e) {
             $thrown = $e;
         }

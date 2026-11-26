@@ -8,6 +8,7 @@ use AIArmada\Chip\Models\Webhook;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final readonly class CleanWebhooks
 {
@@ -23,6 +24,10 @@ final readonly class CleanWebhooks
 
     private function buildQuery(CarbonImmutable $cutoffDate, string $status, ?Model $owner): Builder
     {
+        if (! in_array($status, ['processed', 'failed', 'all'], true) || $cutoffDate->greaterThanOrEqualTo(CarbonImmutable::now())) {
+            throw new InvalidArgumentException('A past cutoff date and a valid webhook status are required.');
+        }
+
         $query = Webhook::query()
             ->forOwner($owner, false)
             ->where('created_at', '<', $cutoffDate);
