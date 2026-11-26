@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
@@ -20,7 +21,10 @@ use LogicException;
 
 final readonly class SettlePayoutConversions implements PayoutConversionSettlement
 {
-    public function __construct(private PayoutReservationReader $reservations) {}
+    public function __construct(
+        private PayoutReservationReader $reservations,
+        private PayoutConversionIntegrity $integrity,
+    ) {}
 
     public function complete(string $payoutId): void
     {
@@ -29,6 +33,8 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
         if (! $payout->status->equals(CompletedPayout::class)) {
             throw new LogicException('Conversions can only settle for a completed payout.');
         }
+
+        $this->assertConversionOwners($payout);
 
         $query = AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payoutId);
         $expected = $query->count();
@@ -54,6 +60,8 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
         if (! $payout->status->equals(FailedPayout::class) && ! $payout->status->equals(CancelledPayout::class)) {
             throw new LogicException('Only failed or cancelled payouts can release funds.');
         }
+
+        $this->assertConversionOwners($payout);
 
         $query = AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payoutId);
         $operation = $payout->affiliate_payout_operation_id === null ? null : $this->reservations->locked($payout->affiliate_payout_operation_id);
@@ -107,6 +115,20 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
         }
 
         return $reserved;
+    }
+
+    private function assertConversionOwners(AffiliatePayout $payout): void
+    {
+        $summary = $this->integrity->summary(
+            (string) $payout->getKey(),
+            $payout->owner_type,
+            $payout->owner_id,
+            spl_object_id($payout->getConnection()),
+        );
+
+        if ($summary->foreignOwnerCount !== 0) {
+            throw new PayoutCompletionBlockedException('Payout links conversions outside its owner scope.');
+        }
     }
 
     private function lockedPayout(string $payoutId): AffiliatePayout

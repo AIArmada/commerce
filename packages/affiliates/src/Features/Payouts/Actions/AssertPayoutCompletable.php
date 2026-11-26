@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -27,6 +26,8 @@ use LogicException;
  */
 final readonly class AssertPayoutCompletable
 {
+    public function __construct(private PayoutConversionIntegrity $conversions) {}
+
     /**
      * @return string|null The override reason when this completion rides a creation-time override.
      */
@@ -43,7 +44,22 @@ final readonly class AssertPayoutCompletable
             throw new PayoutCompletionBlockedException($exception->getMessage(), previous: $exception);
         }
 
-        $affiliateId = $payout->conversions()->forOwner($owner)->value('affiliate_id');
+        $summary = $this->conversions->summary(
+            (string) $payout->getKey(),
+            $payout->owner_type,
+            $payout->owner_id,
+            spl_object_id($payout->getConnection()),
+        );
+
+        if ($summary->foreignOwnerCount !== 0) {
+            throw new PayoutCompletionBlockedException('Payout links conversions outside its owner scope.');
+        }
+
+        if (count($summary->affiliateIds) > 1) {
+            throw new PayoutCompletionBlockedException('Payout links conversions across multiple affiliates.');
+        }
+
+        $affiliateId = $summary->affiliateIds[0] ?? null;
 
         if ($affiliateId === null) {
             // Manual-record payouts link no conversions: eligibility
@@ -82,9 +98,7 @@ final readonly class AssertPayoutCompletable
             throw new PayoutCompletionBlockedException('An active payout hold blocks payout completion.');
         }
 
-        $conversions = $payout->conversions()->forOwner($owner)->get();
-
-        if ($conversions->contains(static fn (AffiliateConversion $conversion): bool => ! $conversion->status->equals(ApprovedConversion::class))) {
+        if ($summary->approvedCount !== $summary->count) {
             throw new PayoutCompletionBlockedException('A linked payout conversion has left Approved; reconcile its status before settlement.');
         }
 
@@ -93,14 +107,13 @@ final readonly class AssertPayoutCompletable
         if ($operation?->payout_sequence !== null
             && ($operation->funds_released_at !== null
                 || $operation->amount_minor !== (int) $payout->total_minor
-                || $operation->amount_minor !== (int) $conversions->sum('commission_minor')
-                || $conversions->count() !== (int) $payout->conversion_count
+                || $operation->amount_minor !== $summary->totalMinor
+                || $summary->count !== (int) $payout->conversion_count
                 || mb_strtoupper($operation->currency) !== mb_strtoupper($payout->currency))) {
             throw new PayoutCompletionBlockedException('The payout amount or linked conversions no longer match its balance reservation.');
         }
 
-        $onlyRewardAwards = $conversions->isNotEmpty()
-            && $conversions->every(static fn (AffiliateConversion $conversion): bool => $conversion->conversion_type === 'reward_award');
+        $onlyRewardAwards = $summary->count > 0 && $summary->rewardAwardCount === $summary->count;
 
         if (! $affiliate->isCommercialPurpose()
             && (! $onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {

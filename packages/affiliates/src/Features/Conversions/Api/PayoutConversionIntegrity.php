@@ -11,6 +11,8 @@ interface PayoutConversionIntegrity
     /** @return list<string> */
     public function affiliateIds(string $payoutId, int $connectionIdentity, ?string $exceptConversionId = null): array;
 
+    public function summary(string $payoutId, ?string $ownerType, ?string $ownerId, int $connectionIdentity): PayoutConversionSummary;
+
     /** @return list<string> */
     public function currencies(string $payoutId, int $connectionIdentity): array;
 }

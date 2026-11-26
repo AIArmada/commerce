@@ -637,3 +637,37 @@ test('a hold placed after reservation blocks submission and completion until rel
 
     expect(app(UpdatePayoutStatus::class)->handle($payout, 'completed')->status->equals(CompletedPayout::class))->toBeTrue();
 });
+
+test('payout settlement rejects hidden conversions with a forged matching affiliate', function (string $status): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => false]);
+    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => uniqid() . '@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => uniqid() . '@example.com', 'password' => 'secret']);
+
+    [$affiliate, $conversion, $payout] = OwnerContext::withOwner($ownerA, function (): array {
+        $affiliate = createCompletionGuardAffiliate();
+        $conversion = recordCompletionGuardConversion($affiliate);
+
+        return [$affiliate, $conversion, app(CreatePayout::class)->handle([$conversion->id])];
+    });
+
+    $foreign = OwnerContext::withOwner($ownerB, fn (): AffiliateConversion => recordCompletionGuardConversion(createCompletionGuardAffiliate()));
+
+    AffiliateConversion::query()->withoutOwnerScope()->whereKey($foreign->id)->update([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_payout_id' => $payout->id,
+    ]);
+
+    OwnerContext::withOwner($ownerA, function () use ($payout, $conversion, $status): void {
+        expect(fn () => app(UpdatePayoutStatus::class)->handle($payout, $status))
+            ->toThrow(PayoutCompletionBlockedException::class, 'outside its owner scope');
+
+        expect($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+            ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
+            ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($foreign, $payout): void {
+        expect($foreign->fresh()->affiliate_payout_id)->toBe($payout->id)
+            ->and($foreign->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+    });
+})->with(['completed', 'cancelled']);
