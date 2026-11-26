@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Paused;
 

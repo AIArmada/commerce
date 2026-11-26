@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Attribution\Queries;
 
 use AIArmada\Affiliates\Features\Attribution\Api\ProgramLinkVolume;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use DateTimeImmutable;
 use Illuminate\Support\Str;

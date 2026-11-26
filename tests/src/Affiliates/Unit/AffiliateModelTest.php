@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
@@ -20,7 +22,6 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -183,7 +184,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 500,
             'currency' => 'USD',
         ]);
-        expect(app(\AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader::class)->count((string) $affiliate->getKey()))->toBe(0);
+        expect(app(AttributionReportingReader::class)->count((string) $affiliate->getKey()))->toBe(0);
     });
 
     test('has conversions relationship', function (): void {

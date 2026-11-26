@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
@@ -129,7 +129,6 @@ it('scopes program tiers and creatives by current owner', function (): void {
         ->and(AffiliateProgramTier::query()->first()?->program_id)->toBe($programB->getKey())
         ->and(AffiliateProgramCreative::query()->first()?->program_id)->toBe($programB->getKey());
 });
-
 
 it('permits global program-derived reads without permitting tenant writes or reparenting', function (): void {
     config()->set('affiliates.owner.enabled', true);

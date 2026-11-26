@@ -3,19 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\States\CompletedPayout;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;

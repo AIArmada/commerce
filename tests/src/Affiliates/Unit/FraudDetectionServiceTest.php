@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;

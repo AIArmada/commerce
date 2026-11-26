@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
@@ -14,8 +14,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Collection;
 use LogicException;
 use RuntimeException;
 

@@ -9,8 +9,8 @@ use Carbon\CarbonImmutable;
 final readonly class AttributionConversionRecord
 {
     /**
-     * @param array<string, mixed>|null $commissionOverride
-     * @param list<array<string, mixed>>|null $uplineLevels
+     * @param  array<string, mixed>|null  $commissionOverride
+     * @param  list<array<string, mixed>>|null  $uplineLevels
      */
     public function __construct(
         public string $id,

@@ -5,18 +5,18 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\PendingConversion;
-use Illuminate\Validation\ValidationException;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingConversion;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 describe('AffiliateLink Model', function (): void {
     beforeEach(function (): void {

@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;

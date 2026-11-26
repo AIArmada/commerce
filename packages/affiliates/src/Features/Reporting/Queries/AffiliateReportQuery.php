@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
