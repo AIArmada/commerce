@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Support\Http\Middleware;
+namespace AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware;
 
-use AIArmada\Signals\Support\Browser\SignalsBrowserContextManager;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

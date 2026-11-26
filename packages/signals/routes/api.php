@@ -7,14 +7,14 @@ use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\PageViewController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\IdentifyController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\BrowserEventController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\TrustedOutcomeController;
-use AIArmada\Signals\Actions\ServeSignalsTracker;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\Middleware\VerifyTrustedSignalSignature;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(config('signals.http.middleware', ['api']))
     ->prefix(config('signals.http.prefix', 'api/signals'))
     ->group(function (): void {
-        Route::get('/' . config('signals.http.tracker_script', 'tracker.js'), [ServeSignalsTracker::class, 'asController'])
+        Route::get('/' . config('signals.http.tracker_script', 'tracker.js'), TrackerScriptController::class)
             ->name('signals.tracker.script');
 
         Route::middleware('throttle:signals-collect')->group(function (): void {

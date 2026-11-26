@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Support\Browser;
+namespace AIArmada\Signals\Features\Browser\EntryPoints\Http;
 
 use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
 use Illuminate\Http\Request;

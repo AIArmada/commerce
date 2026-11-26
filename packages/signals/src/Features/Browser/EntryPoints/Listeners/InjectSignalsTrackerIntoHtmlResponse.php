@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Support\Browser;
+namespace AIArmada\Signals\Features\Browser\EntryPoints\Listeners;
 
+use AIArmada\Signals\Features\Browser\Api\TrackerMarkup;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class InjectSignalsTrackerIntoHtmlResponse
 {
-    public function __construct(private readonly SignalsTrackerRenderer $trackerRenderer) {}
+    public function __construct(private readonly TrackerMarkup $trackerRenderer) {}
 
     public function handle(RequestHandled $event): void
     {

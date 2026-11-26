@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Concerns;
 
-use AIArmada\Signals\Support\Browser\SignalsTrackerRenderer;
+use AIArmada\Signals\Features\Browser\Api\TrackerMarkup;
 use Filament\Panel;
 use Filament\View\PanelsRenderHook;
 
@@ -14,7 +14,7 @@ trait TracksSignalsPanel
     {
         return $panel->renderHook(
             PanelsRenderHook::HEAD_END,
-            fn (): string => app(SignalsTrackerRenderer::class)->render([
+            fn (): string => app(TrackerMarkup::class)->render([
                 'properties' => ['surface' => $panelId],
             ]),
         );

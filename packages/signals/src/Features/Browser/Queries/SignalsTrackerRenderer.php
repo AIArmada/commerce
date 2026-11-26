@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Support\Browser;
+namespace AIArmada\Signals\Features\Browser\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Signals\Features\Browser\Api\TrackerMarkup;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Signals\Models\SignalInteractionRule;
 use AIArmada\Signals\Models\TrackedProperty;
@@ -15,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Throwable;
 
-final class SignalsTrackerRenderer
+final class SignalsTrackerRenderer implements TrackerMarkup
 {
     public function __construct(
         private readonly SignalsBrowserContextManager $browserContextManager,

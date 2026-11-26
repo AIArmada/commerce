@@ -6,7 +6,6 @@ namespace AIArmada\Signals;
 
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
-use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
@@ -25,18 +24,9 @@ use AIArmada\Signals\Platform\FeatureModule;
 use Illuminate\Contracts\Foundation\Application;
 use AIArmada\Signals\Services\SignalMetricsAggregator;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
-use AIArmada\Signals\Support\Browser\InjectSignalsTrackerIntoHtmlResponse;
-use AIArmada\Signals\Support\Browser\SignalsBrowserContextManager;
-use AIArmada\Signals\Support\Browser\SignalsBrowserContextResolver;
-use AIArmada\Signals\Support\Browser\SignalsTrackerRenderer;
-use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -69,12 +59,7 @@ final class SignalsServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(SignalMetricsAggregator::class);
         $this->app->singleton(TrackedPropertyResolver::class);
-        $this->app->scoped(SignalsBrowserContextManager::class);
-        $this->app->bind(SignalsTrackerRenderer::class);
-        $this->app->bind(InjectSignalsTrackerIntoHtmlResponse::class);
 
-
-        $this->app->bind(BrowserContextResolverInterface::class, SignalsBrowserContextResolver::class);
     }
 
     public function packageBooted(): void
@@ -88,9 +73,6 @@ final class SignalsServiceProvider extends PackageServiceProvider
 
         $this->registerIngestionRateLimiter();
         $this->registerMorphMap();
-        $this->registerSignalsTrackerDirective();
-        $this->registerBrowserMiddleware();
-        $this->registerBrowserAutoInjection();
     }
 
     private function registerIngestionRateLimiter(): void
@@ -123,51 +105,4 @@ final class SignalsServiceProvider extends PackageServiceProvider
         ]);
     }
 
-    private function registerSignalsTrackerDirective(): void
-    {
-        if (! $this->app->bound('blade.compiler')) {
-            return;
-        }
-
-        Blade::directive('signalsTracker', static function (?string $expression): string {
-            $attributes = $expression !== null && $expression !== '' ? $expression : '[]';
-
-            return sprintf(
-                "<?php \$__signalsTrackerAttributes = %s; echo app('%s')->render(is_array(\$__signalsTrackerAttributes) ? \$__signalsTrackerAttributes : []); ?>",
-                $attributes,
-                addslashes(SignalsTrackerRenderer::class),
-            );
-        });
-    }
-
-    private function registerBrowserMiddleware(): void
-    {
-        if (! $this->app->bound('router')) {
-            return;
-        }
-
-        $this->app['router']->aliasMiddleware('signals.browser', BootstrapSignalsBrowserContext::class);
-
-        if (! (bool) config('signals.integrations.browser.enabled', false)) {
-            return;
-        }
-
-        if (! (bool) config('signals.integrations.browser.auto_register_middleware', true)) {
-            return;
-        }
-
-        /** @var \Illuminate\Foundation\Http\Kernel $kernel */
-        $kernel = $this->app->make(Kernel::class);
-        $kernel->appendMiddlewareToGroup(
-            (string) config('signals.integrations.browser.middleware_group', 'web'),
-            BootstrapSignalsBrowserContext::class,
-        );
-    }
-
-    private function registerBrowserAutoInjection(): void
-    {
-        Event::listen(RequestHandled::class, function (RequestHandled $event): void {
-            app(InjectSignalsTrackerIntoHtmlResponse::class)->handle($event);
-        });
-    }
 }

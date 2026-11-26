@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Support\Browser;
+namespace AIArmada\Signals\Data;
 
 final readonly class SignalsBrowserContext
 {

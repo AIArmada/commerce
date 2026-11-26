@@ -21,7 +21,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Shipping\Cart\ShippingCondition;
-use AIArmada\Signals\Support\Browser\SignalsBrowserContextManager;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;

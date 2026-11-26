@@ -2,17 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Signals\Actions;
+namespace AIArmada\Signals\Features\Browser\EntryPoints\Http;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class ServeSignalsTracker
+final class TrackerScriptController
 {
-    use AsAction;
-
-    public function asController(Request $request): Response
+    public function __invoke(Request $request): Response
     {
         $trackerScriptPattern = preg_quote('/' . mb_ltrim((string) config('signals.http.tracker_script', 'tracker.js'), '/'), '/');
 

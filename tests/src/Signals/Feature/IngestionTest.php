@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Actions\ServeSignalsTracker;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Jobs\ReverseGeocodeSessionJob;
 use AIArmada\Signals\Models\SignalEvent;
@@ -465,7 +465,7 @@ it('serves a lightweight tracker script', function (): void {
 it('uses the configured tracker filename when deriving the pageview endpoint', function (): void {
     config()->set('signals.http.tracker_script', 'pulse.min.js');
 
-    $response = app(ServeSignalsTracker::class)->asController(Request::create('/api/signals/pulse.min.js', 'GET'));
+    $response = app(TrackerScriptController::class)->__invoke(Request::create('/api/signals/pulse.min.js', 'GET'));
 
     expect($response->getContent())->toContain('/pulse\\.min\\.js$')
         ->and($response->getContent())->not()->toContain('/tracker\\.js$')
