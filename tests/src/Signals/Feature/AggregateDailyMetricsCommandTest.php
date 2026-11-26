@@ -180,3 +180,20 @@ it('aggregates daily metrics for each owner when no ambient owner is resolved', 
         ->and($metrics->firstWhere('tracked_property_id', $propertyA->id)?->sessions)->toBe(1)
         ->and($metrics->firstWhere('tracked_property_id', $propertyB->id)?->sessions)->toBe(1);
 });
+
+it('rejects daily aggregation of a property outside the current owner', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Private rollup property',
+        'slug' => 'private-rollup-property',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
+
+    expect(fn () => app(\AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics::class)
+        ->aggregateForDate(\Illuminate\Support\Carbon::parse('2026-03-10'), $property->id))
+        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+});

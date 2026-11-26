@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Reporting\EntryPoints\Console;
 
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -22,14 +20,7 @@ final class AggregateDailyMetricsCommand extends Command
 
     public function handle(AggregateDailyMetrics $aggregator): int
     {
-        $runner = new OwnerBatchRunner(
-            TrackedProperty::class,
-            ['enabled' => 'signals.owner.enabled'],
-        );
-
-        $runner->run(function () use ($aggregator): void {
-            $this->runAggregation($aggregator);
-        });
+        $this->runAggregation($aggregator);
 
         return self::SUCCESS;
     }
@@ -43,14 +34,14 @@ final class AggregateDailyMetricsCommand extends Command
 
         if (is_string($date) && $date !== '') {
             $day = Carbon::parse($date);
-            $count = $aggregator->aggregateRange($day->copy(), $day->copy());
+            $count = $aggregator->aggregateForOwners($day->copy(), $day->copy());
             $this->info("Aggregated {$count} daily metric rows for {$date}.");
 
             return;
         }
 
         if (is_string($from) && is_string($to) && $from !== '' && $to !== '') {
-            $count = $aggregator->aggregateRange(Carbon::parse($from), Carbon::parse($to));
+            $count = $aggregator->aggregateForOwners(Carbon::parse($from), Carbon::parse($to));
             $this->info("Aggregated {$count} daily metric rows from {$from} to {$to}.");
 
             return;
@@ -58,7 +49,7 @@ final class AggregateDailyMetricsCommand extends Command
 
         $end = Carbon::today();
         $start = $end->copy()->subDays(max($days - 1, 0));
-        $count = $aggregator->aggregateRange($start, $end);
+        $count = $aggregator->aggregateForOwners($start, $end);
 
         $this->info("Aggregated {$count} daily metric rows from {$start->toDateString()} to {$end->toDateString()}.");
     }

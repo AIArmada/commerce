@@ -199,7 +199,7 @@ it('stamps daily metrics with the property currency and rejects direct mismatche
         'revenue_minor' => 4000,
     ], trusted: true);
 
-    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::parse('2026-10-17'), $property);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::parse('2026-10-17'), $property->id);
 
     expect($metric->currency)->toBe('MYR')
         ->and($metric->revenue_minor)->toBe(4000);
@@ -245,7 +245,7 @@ it('keeps single and batch rollups equivalent and ignores legacy foreign-currenc
     ]);
 
     $aggregator = app(AggregateDailyMetrics::class);
-    $single = $aggregator->aggregateForDate(Carbon::parse('2026-10-17'), $property);
+    $single = $aggregator->aggregateForDate(Carbon::parse('2026-10-17'), $property->id);
 
     expect($single->revenue_minor)->toBe(15000)
         ->and($single->currency)->toBe('MYR')
