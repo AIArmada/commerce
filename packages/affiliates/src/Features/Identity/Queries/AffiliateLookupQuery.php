@@ -55,11 +55,15 @@ final readonly class AffiliateLookupQuery
     private function findByColumn(Builder $query, string $column, string $value): ?Affiliate
     {
         $normalized = mb_trim($value);
+        if ($normalized === '') {
+            return null;
+        }
+
         /** @var Connection $connection */
         $connection = $query->getConnection();
         $driver = ConnectionDriver::name($connection);
 
-        return $query
+        $matches = $query
             ->when(
                 $driver === 'pgsql',
                 fn (Builder $builder) => $builder->whereRaw(
@@ -68,6 +72,9 @@ final readonly class AffiliateLookupQuery
                 ),
                 fn (Builder $builder) => $builder->whereRaw('LOWER(' . $column . ') = ?', [mb_strtolower($normalized)]),
             )
-            ->first();
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 }

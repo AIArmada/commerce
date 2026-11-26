@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
@@ -136,6 +137,34 @@ describe('Affiliate Model - Owner Scopes', function (): void {
 
         expect($results)->toContain($affiliate1->id);
         expect($results)->toContain($affiliate2->id);
+    });
+});
+
+describe('Affiliate Directory - Unambiguous Lookup', function (): void {
+    test('rejects empty and ambiguous default voucher codes', function (): void {
+        config(['affiliates.owner.enabled' => false]);
+
+        $first = Affiliate::create([
+            'code' => 'LOOKUP-ONE',
+            'name' => 'Lookup One',
+            'status' => Active::class,
+            'default_voucher_code' => 'shared-code',
+        ]);
+
+        $directory = app(AffiliateDirectory::class);
+
+        expect($directory->findByDefaultVoucherCode(' SHARED-CODE ')?->id)->toBe($first->id)
+            ->and($directory->findByCode(' '))->toBeNull()
+            ->and($directory->findByDefaultVoucherCode(' '))->toBeNull();
+
+        Affiliate::create([
+            'code' => 'LOOKUP-TWO',
+            'name' => 'Lookup Two',
+            'status' => Active::class,
+            'default_voucher_code' => 'SHARED-CODE',
+        ]);
+
+        expect($directory->findByDefaultVoucherCode('shared-code'))->toBeNull();
     });
 });
 

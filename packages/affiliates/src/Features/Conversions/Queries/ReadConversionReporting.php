@@ -178,7 +178,7 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             return null;
         }
 
-        $query = AffiliateConversion::query()->with('affiliate')
+        $query = AffiliateConversion::query()->forOwner()->with('affiliate')
             ->whereRaw('LOWER(voucher_code) = ?', [mb_strtolower($voucherCode)])
             ->orderByDesc('occurred_at')->orderByDesc('created_at')->orderByDesc('id');
 
@@ -190,10 +190,21 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             $row = $matches->count() === 1 ? $matches->first() : null;
         }
 
-        return $row === null ? null : new VoucherConversionRecord(
+        if ($row === null) {
+            return null;
+        }
+
+        $affiliate = $row->affiliate;
+        $affiliateName = $affiliate !== null
+            && $affiliate->owner_type === $row->owner_type
+            && (string) $affiliate->owner_id === (string) $row->owner_id
+            ? $affiliate->name
+            : null;
+
+        return new VoucherConversionRecord(
             affiliateId: $row->affiliate_id,
             affiliateCode: $row->affiliate_code,
-            affiliateName: $row->affiliate?->name,
+            affiliateName: $affiliateName,
             attributionId: $row->affiliate_attribution_id,
             ownerType: $row->owner_type,
             ownerId: $row->owner_id,

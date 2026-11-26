@@ -51,7 +51,7 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
     {
         if ($this->hasTableFor(Affiliate::class)) {
             /** @var array<string, string> $options */
-            $options = Affiliate::query()
+            $options = Affiliate::query()->forOwner()
                 ->orderBy('name')
                 ->orderBy('code')
                 ->get(['code', 'name'])
