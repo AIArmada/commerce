@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -17,10 +17,10 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class ExportResolutionGapAliasesAction
+final readonly class ExportResolutionGapAliasesAction
 {
     public function __construct(
-        private readonly Container $container,
+        private Container $container,
     ) {}
 
     /**

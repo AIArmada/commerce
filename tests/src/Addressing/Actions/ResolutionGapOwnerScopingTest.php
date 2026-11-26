@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\MatchGapToAreaAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;

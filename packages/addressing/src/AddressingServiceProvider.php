@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Addressing;
 
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
-use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Actions\GuardAddressAreaDeletionAction;
 use AIArmada\Addressing\Actions\GuardAddressCountryDeletionAction;
-use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Actions\MatchGapToAreaAction;
 use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
 use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Actions\SearchAddressAreasAction;
@@ -28,9 +24,9 @@ use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\Compare
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffGoogleAddressReferenceCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\ExportAddressingReferencesCommand;
-use AIArmada\Addressing\Commands\ExportResolutionGapAliasesCommand;
+use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ExportResolutionGapAliasesCommand;
 use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
-use AIArmada\Addressing\Commands\ReportResolutionGapsCommand;
+use AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands\ReportResolutionGapsCommand;
 use AIArmada\Addressing\Commands\SeedCountryGeographiesCommand;
 use AIArmada\Addressing\Commands\SeedPostalCodesCommand;
 use AIArmada\Addressing\Contracts\GoogleMapsLookup;
@@ -109,10 +105,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(CreateAddressSnapshotAction::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);
         $this->app->singleton(ResolveSingaporePostalCodesAction::class);
-        $this->app->singleton(LogAddressResolutionGapAction::class);
-        $this->app->singleton(MatchGapToAreaAction::class);
-        $this->app->singleton(IgnoreResolutionGapAction::class);
-        $this->app->singleton(ExportResolutionGapAliasesAction::class);
         $this->app->singleton(SaveAddressAreaAction::class);
         $this->app->singleton(GuardAddressAreaDeletionAction::class);
         $this->app->singleton(GuardAddressCountryDeletionAction::class);

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
@@ -12,13 +12,12 @@ use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-final class MatchGapToAreaAction
+final readonly class MatchGapToAreaAction
 {
     public function __construct(
-        private readonly CountryAddressProfileResolver $profiles,
+        private CountryAddressProfileResolver $profiles,
     ) {}
 
     /**
@@ -28,6 +27,10 @@ final class MatchGapToAreaAction
      */
     public function execute(ResolutionGap $gap, AddressArea $area, ?string $matchedBy = null): ResolutionGap
     {
+        if (! $area->is_active) {
+            throw ValidationException::withMessages(['area' => __('The selected area is inactive.')]);
+        }
+
         if ($gap->status !== 'open') {
             throw ValidationException::withMessages([
                 'gap' => __('Only open resolution gaps can be matched.'),
@@ -85,9 +88,9 @@ final class MatchGapToAreaAction
         }
 
         try {
-            return DB::transaction(fn (): ResolutionGap => $this->persistMatch($gap, $area, $matchedBy));
+            return $gap->getConnection()->transaction(fn (): ResolutionGap => $this->persistMatch($gap, $area, $matchedBy));
         } catch (UniqueConstraintViolationException) {
-            return DB::transaction(fn (): ResolutionGap => $this->persistMatch($gap, $area, $matchedBy));
+            return $gap->getConnection()->transaction(fn (): ResolutionGap => $this->persistMatch($gap, $area, $matchedBy));
         }
     }
 

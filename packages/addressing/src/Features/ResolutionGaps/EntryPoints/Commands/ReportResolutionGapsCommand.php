@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Commands;
+namespace AIArmada\Addressing\Features\ResolutionGaps\EntryPoints\Commands;
 
-use AIArmada\Addressing\Actions\ExportResolutionGapAliasesAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\ExportResolutionGapAliasesAction;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;

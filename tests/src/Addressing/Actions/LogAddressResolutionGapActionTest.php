@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\IgnoreResolutionGapAction;
+use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
 use AIArmada\Addressing\Models\ResolutionGap;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;

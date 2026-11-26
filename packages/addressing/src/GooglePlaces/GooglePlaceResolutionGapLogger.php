@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\GooglePlaces;
 
-use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
+
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
@@ -32,7 +33,7 @@ final readonly class GooglePlaceResolutionGapLogger
         }
 
         $resolvedNames = $this->resolvedAreaNames($resolved, $countryCode);
-        $logger = app(LogAddressResolutionGapAction::class);
+        $logger = app(ResolutionGapReporter::class);
         $context = $placeId !== null ? ['place_id' => $placeId] : [];
 
         foreach ($misses as $role => $names) {
@@ -47,7 +48,7 @@ final readonly class GooglePlaceResolutionGapLogger
                 continue;
             }
 
-            $logger->execute(
+            $logger->report(
                 source: 'google-picker',
                 countryCode: $countryCode,
                 role: $role,
@@ -57,7 +58,7 @@ final readonly class GooglePlaceResolutionGapLogger
         }
 
         if ($expectsState && $stateId === null && filled($stateName) && mb_strlen($stateName) <= 255) {
-            $logger->execute(
+            $logger->report(
                 source: 'google-picker',
                 countryCode: $countryCode,
                 role: 'state',

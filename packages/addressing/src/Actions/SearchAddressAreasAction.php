@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Actions;
 
+use AIArmada\Addressing\Contracts\ResolutionGapReporter;
+
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryPostalCodeNormalizer;
 use AIArmada\Addressing\Models\AddressArea;
@@ -134,7 +136,7 @@ final class SearchAddressAreasAction
             return;
         }
 
-        $this->container->make(LogAddressResolutionGapAction::class)->execute(
+        $this->container->make(ResolutionGapReporter::class)->report(
             'search',
             $countryCode,
             $role ?? 'area',

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Tables;
 
-use AIArmada\Addressing\Actions\IgnoreResolutionGapAction;
-use AIArmada\Addressing\Actions\MatchGapToAreaAction;
+use AIArmada\Addressing\Contracts\ResolutionGapCuration;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
@@ -220,7 +219,7 @@ final class ResolutionGapTable
         $areaClass = config('filament-addressing.resources.areas.model', AddressArea::class);
         $area = $areaClass::query()->whereKey(mb_trim($areaId))->firstOrFail();
 
-        app(MatchGapToAreaAction::class)->execute($record, $area, self::actor());
+        app(ResolutionGapCuration::class)->match((string) $record->getKey(), (string) $area->getKey(), self::actor());
 
         Notification::make()
             ->title('Gap matched')
@@ -231,7 +230,7 @@ final class ResolutionGapTable
     public static function runIgnore(ResolutionGap $record): void
     {
         self::assertGapCanMutate($record);
-        app(IgnoreResolutionGapAction::class)->execute($record);
+        app(ResolutionGapCuration::class)->ignore((string) $record->getKey());
 
         Notification::make()
             ->title('Gap ignored')
@@ -259,7 +258,7 @@ final class ResolutionGapTable
         $ignored = 0;
 
         foreach ($gaps as $record) {
-            app(IgnoreResolutionGapAction::class)->execute($record);
+            app(ResolutionGapCuration::class)->ignore((string) $record->getKey());
             $ignored++;
         }
 

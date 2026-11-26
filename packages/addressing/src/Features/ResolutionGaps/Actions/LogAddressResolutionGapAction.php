@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\ResolutionGaps\Actions;
 
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-final class LogAddressResolutionGapAction
+final readonly class LogAddressResolutionGapAction
 {
     /**
      * @param  array<string, mixed>|null  $context
@@ -43,7 +42,7 @@ final class LogAddressResolutionGapAction
             ]);
         }
 
-        if (mb_strlen($countryCode) !== 2) {
+        if (preg_match('/^[A-Z]{2}$/D', $countryCode) !== 1) {
             throw ValidationException::withMessages([
                 'country_code' => __('The gap country code must be a two-letter code.'),
             ]);
@@ -93,7 +92,7 @@ final class LogAddressResolutionGapAction
             ]);
         }
 
-        $attempt = fn (): ResolutionGap => DB::transaction(fn (): ResolutionGap => $this->upsert($source, $countryCode, $role, $value, $reason, $normalized, $context));
+        $attempt = fn (): ResolutionGap => ModelResolver::resolutionGapClass()::query()->getConnection()->transaction(fn (): ResolutionGap => $this->upsert($source, $countryCode, $role, $value, $reason, $normalized, $context));
 
         try {
             return $this->runWithinOwnerContext($attempt);
@@ -149,6 +148,7 @@ final class LogAddressResolutionGapAction
         $gap = $gapClass::query()
             ->forOwner($owner, false)
             ->where('dedupe_hash', $dedupeHash)
+            ->lockForUpdate()
             ->first();
 
         $now = CarbonImmutable::now();
