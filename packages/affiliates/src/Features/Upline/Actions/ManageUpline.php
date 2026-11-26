@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Actions;
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMaintenance;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateNetworkMember;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Models\Affiliate;
 use InvalidArgumentException;
-use LogicException;
 
-final class ManageUpline
+final readonly class ManageUpline
 {
+    public function __construct(private AffiliateNetworkMaintenance $identity) {}
+
     public function add(string $affiliateId, ?string $sponsorId): void
     {
         $this->mutate($affiliateId, $sponsorId, false);
@@ -23,21 +25,16 @@ final class ManageUpline
 
     private function mutate(string $affiliateId, ?string $sponsorId, bool $move): void
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateUpline)->getConnection();
+        $connectionIdentity = spl_object_id($connection);
 
-        if ($connection !== (new AffiliateUpline)->getConnection()) {
-            throw new LogicException('Affiliate upline mutation requires a shared database connection.');
-        }
-
-        $connection->transaction(function () use ($affiliateId, $sponsorId, $move): void {
+        $connection->transaction(function () use ($affiliateId, $sponsorId, $move, $connectionIdentity): void {
             $ids = $sponsorId === null ? [$affiliateId] : [$affiliateId, $sponsorId];
-            $locked = Affiliate::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            $affiliate = $locked->get($affiliateId);
-            $sponsor = $sponsorId === null ? null : $locked->get($sponsorId);
-            if (! $affiliate instanceof Affiliate || ($sponsorId !== null && ! $sponsor instanceof Affiliate)) {
-                throw new InvalidArgumentException('Affiliate or sponsor is not accessible.');
-            }
-            if (! $affiliate->isCommercialPurpose() || ($sponsor !== null && ! $sponsor->isCommercialPurpose())) {
+            $locked = $this->identity->lockMembers($ids, $connectionIdentity);
+            $affiliate = $locked[$affiliateId];
+            $sponsor = $sponsorId === null ? null : $locked[$sponsorId];
+
+            if (! $affiliate->commercial || ($sponsor !== null && ! $sponsor->commercial)) {
                 throw new InvalidArgumentException('Only commercial affiliates can participate in an upline.');
             }
             if (! config('affiliates.upline.enabled', false)) {
@@ -47,7 +44,7 @@ final class ManageUpline
                 throw new InvalidArgumentException('A sponsor cannot be the affiliate or its descendant.');
             }
             if ($sponsor !== null && config('affiliates.owner.enabled', false)
-                && ($affiliate->owner_type !== $sponsor->owner_type || (string) $affiliate->owner_id !== (string) $sponsor->owner_id)) {
+                && ($affiliate->reference->ownerType !== $sponsor->reference->ownerType || $affiliate->reference->ownerId !== $sponsor->reference->ownerId)) {
                 throw new InvalidArgumentException('Affiliate and sponsor must belong to the same owner.');
             }
 
@@ -59,7 +56,7 @@ final class ManageUpline
 
             $this->storePath($affiliate, $affiliateId, 0);
             if ($sponsor !== null) {
-                $this->storePath($sponsor, (string) $sponsor->getKey(), 0);
+                $this->storePath($sponsor, $sponsor->reference->id, 0);
             }
 
             $subtree = AffiliateUpline::query()->where('ancestor_id', $affiliateId)->pluck('depth', 'descendant_id')->all();
@@ -72,10 +69,12 @@ final class ManageUpline
                 AffiliateUpline::query()->whereIn('descendant_id', $subtreeIds)->whereNotIn('ancestor_id', $subtreeIds)->delete();
             }
 
-            $members = Affiliate::query()->whereIn('id', $subtreeIds)->get()->keyBy('id');
+            $members = $this->identity->lockMembers($subtreeIds, $connectionIdentity);
             foreach ($subtree as $descendantId => $depth) {
-                $member = $members->get($descendantId);
-                if (! $member instanceof Affiliate) {
+                $member = $members[$descendantId];
+
+                if (! $member->commercial || (config('affiliates.owner.enabled', false)
+                    && ($member->reference->ownerType !== $affiliate->reference->ownerType || $member->reference->ownerId !== $affiliate->reference->ownerId))) {
                     throw new InvalidArgumentException('An upline member is not accessible.');
                 }
                 foreach ($ancestors as $ancestorId => $ancestorDepth) {
@@ -83,21 +82,18 @@ final class ManageUpline
                 }
             }
 
-            $affiliate->update(['parent_affiliate_id' => $sponsorId]);
-            $this->refreshCounts(array_values(array_unique(array_merge($oldAncestors, array_keys($ancestors), $subtreeIds))));
+            $this->identity->synchronizeParent($affiliateId, $sponsorId, $connectionIdentity);
+            $this->refreshCounts(array_values(array_unique(array_merge($oldAncestors, array_keys($ancestors), $subtreeIds))), $connectionIdentity);
         }, attempts: 3);
     }
 
     public function remove(string $affiliateId): void
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateUpline)->getConnection();
+        $connectionIdentity = spl_object_id($connection);
 
-        if ($connection !== (new AffiliateUpline)->getConnection()) {
-            throw new LogicException('Affiliate upline removal requires a shared database connection.');
-        }
-
-        $connection->transaction(function () use ($affiliateId): void {
-            Affiliate::query()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
+        $connection->transaction(function () use ($affiliateId, $connectionIdentity): void {
+            $this->identity->lockMembers([$affiliateId], $connectionIdentity);
             if (! config('affiliates.upline.enabled', false)) {
                 return;
             }
@@ -107,21 +103,18 @@ final class ManageUpline
                 return;
             }
             AffiliateUpline::query()->whereIn('descendant_id', $descendants)->delete();
-            Affiliate::query()->whereIn('id', $descendants)->update(['parent_affiliate_id' => null, 'direct_downline_count' => 0, 'total_downline_count' => 0, 'network_depth' => 0]);
-            $this->refreshCounts($ancestors);
+            $this->identity->clearNetwork($descendants, $connectionIdentity);
+            $this->refreshCounts($ancestors, $connectionIdentity);
         }, attempts: 3);
     }
 
     public function detachForDeletion(string $affiliateId): void
     {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateUpline)->getConnection();
+        $connectionIdentity = spl_object_id($connection);
 
-        if ($connection !== (new AffiliateUpline)->getConnection()) {
-            throw new LogicException('Affiliate upline removal requires a shared database connection.');
-        }
-
-        $connection->transaction(function () use ($affiliateId): void {
-            Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+        $connection->transaction(function () use ($affiliateId, $connectionIdentity): void {
+            $this->identity->lockMembers([$affiliateId], $connectionIdentity);
 
             $descendants = AffiliateUpline::query()->where('ancestor_id', $affiliateId)
                 ->where('depth', '>', 0)->pluck('descendant_id')->all();
@@ -137,24 +130,24 @@ final class ManageUpline
                 $query->where('ancestor_id', $affiliateId)->orWhere('descendant_id', $affiliateId);
             })->delete();
 
-            $this->refreshCounts(array_values(array_unique(array_merge($ancestors, $descendants))));
+            $this->refreshCounts(array_values(array_unique(array_merge($ancestors, $descendants))), $connectionIdentity);
         }, attempts: 3);
     }
 
-    private function storePath(Affiliate $descendant, string $ancestorId, int $depth): void
+    private function storePath(AffiliateNetworkMember $descendant, string $ancestorId, int $depth): void
     {
-        $path = AffiliateUpline::query()->firstOrNew(['ancestor_id' => $ancestorId, 'descendant_id' => $descendant->getKey()]);
-        $path->forceFill(['depth' => $depth, 'owner_type' => $descendant->owner_type, 'owner_id' => $descendant->owner_id])->save();
+        $path = AffiliateUpline::query()->firstOrNew(['ancestor_id' => $ancestorId, 'descendant_id' => $descendant->reference->id]);
+        $path->forceFill(['depth' => $depth, 'owner_type' => $descendant->reference->ownerType, 'owner_id' => $descendant->reference->ownerId])->save();
     }
 
     /** @param list<string> $ids */
-    private function refreshCounts(array $ids): void
+    private function refreshCounts(array $ids, int $connectionIdentity): void
     {
         if ($ids === []) {
             return;
         }
 
-        $members = Affiliate::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+        $members = $this->identity->lockMembers($ids, $connectionIdentity);
         $counts = AffiliateUpline::query()->whereIn('ancestor_id', $ids)->where('depth', '>', 0)
             ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->toBase()->selectRaw('ancestor_id, COUNT(*) AS total, SUM(CASE WHEN depth = 1 THEN 1 ELSE 0 END) AS direct')
@@ -163,13 +156,17 @@ final class ManageUpline
             ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())
             ->toBase()->selectRaw('descendant_id, MAX(depth) AS maximum')->groupBy('descendant_id')->pluck('maximum', 'descendant_id');
 
-        foreach ($members as $member) {
-            $count = $counts->get($member->getKey());
-            $member->update([
-                'direct_downline_count' => (int) ($count->direct ?? 0),
-                'total_downline_count' => (int) ($count->total ?? 0),
-                'network_depth' => (int) ($depths->get($member->getKey()) ?? 0),
-            ]);
+        $statistics = [];
+
+        foreach ($members as $id => $member) {
+            $count = $counts->get($id);
+            $statistics[$id] = [
+                'direct' => (int) ($count->direct ?? 0),
+                'total' => (int) ($count->total ?? 0),
+                'depth' => (int) ($depths->get($id) ?? 0),
+            ];
         }
+
+        $this->identity->synchronizeCounts($statistics, $connectionIdentity);
     }
 }

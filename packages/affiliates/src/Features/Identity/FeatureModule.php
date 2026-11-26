@@ -31,6 +31,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\AffiliateAdministration::class, Actions\AdministerAffiliate::class);
         $app->bind(Api\AffiliateRemoval::class, Actions\DeleteAffiliate::class);
         $app->bind(Api\AffiliateRankMaintenance::class, Actions\MaintainAffiliateRank::class);
+        $app->bind(Api\AffiliateNetworkMaintenance::class, Actions\MaintainAffiliateNetwork::class);
     }
 
     public function boot(Application $app): void {}

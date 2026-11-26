@@ -549,3 +549,30 @@ test('administrative parent changes keep the closure tree and counts consistent'
         ->and($root->fresh()->total_downline_count)->toBe(0)
         ->and(AffiliateUpline::query()->where('ancestor_id', $root->id)->where('descendant_id', $grandchildId)->exists())->toBeFalse();
 });
+
+
+test('upline mutations reject malformed sponsors before writing closure rows', function (): void {
+    $affiliate = $this->rootAffiliate;
+
+    expect(fn () => $this->service->add((string) $affiliate->getKey(), 'invalid-uuid'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(AffiliateUpline::query()->where('descendant_id', $affiliate->id)->exists())->toBeFalse()
+        ->and($affiliate->fresh()->parent_affiliate_id)->toBeNull();
+});
+
+test('upline mutations reject a parent cycle even when closure rows are missing', function (): void {
+    $root = $this->rootAffiliate;
+    $child = Affiliate::create([
+        'code' => 'MISSING-CLOSURE-CHILD', 'name' => 'Child', 'status' => Active::class,
+        'commission_type' => CommissionType::Percentage, 'commission_rate' => 1000,
+        'currency' => 'USD', 'parent_affiliate_id' => $root->id,
+    ]);
+
+    expect(fn () => $this->service->move((string) $root->getKey(), (string) $child->getKey()))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($root->fresh()->parent_affiliate_id)->toBeNull()
+        ->and($child->fresh()->parent_affiliate_id)->toBe($root->id)
+        ->and(AffiliateUpline::query()->where('descendant_id', $root->id)->exists())->toBeFalse();
+});
