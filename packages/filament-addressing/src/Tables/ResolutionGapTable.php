@@ -14,7 +14,7 @@ use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use Filament\Actions;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;

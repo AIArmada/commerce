@@ -160,6 +160,13 @@ jobs:
           composer --working-dir=packages/filament-authz arch:check
           composer --working-dir=packages/filament-commerce-support arch:check
 
+      - name: Verify Addressing boundaries and write ownership
+        run: composer --working-dir=packages/addressing arch:check
+
+      - name: Verify Filament Addressing boundaries and write ownership
+        if: always() && !cancelled()
+        run: composer --working-dir=packages/filament-addressing arch:check
+
   phpstan:
     name: PHPStan
     needs: changes

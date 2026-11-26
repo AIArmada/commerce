@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAddressing\Support;
+namespace AIArmada\FilamentAddressing\Persistence;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRole;
@@ -152,8 +152,19 @@ final class AddressingFilterOptions
         Cache::forget(self::key('area-roles', AddressAreaRole::class));
     }
 
+    public static function forgetCountryOptions(): void
+    {
+        $countryClass = config('filament-addressing.resources.countries.model', AddressCountry::class);
+
+        Cache::forget(self::key('country-options', $countryClass));
+        Cache::forget(self::key('country-regions', $countryClass));
+    }
+
     private static function key(string $name, string $modelClass): string
     {
-        return 'filament-addressing:filter-options:' . $name . ':' . md5($modelClass);
+        $model = new $modelClass;
+        $connection = $model->getConnection();
+
+        return 'filament-addressing:filter-options:' . $name . ':' . hash('sha256', implode('|', [$modelClass, $connection->getName(), $connection->getDatabaseName(), $model->getTable()]));
     }
 }

@@ -26,7 +26,7 @@ use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\CreatePostalC
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\EditPostalCode;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\ListPostalCodes;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Tables\AddressAreaTable;
 use AIArmada\FilamentAddressing\Tables\AddressCityTable;
 use AIArmada\FilamentAddressing\Tables\AddressCountryTable;

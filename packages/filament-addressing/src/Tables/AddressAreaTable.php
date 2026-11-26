@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAddressing\Tables;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;

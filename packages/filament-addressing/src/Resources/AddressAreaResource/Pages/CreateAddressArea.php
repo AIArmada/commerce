@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages;
 use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateAddressArea extends CreateRecord

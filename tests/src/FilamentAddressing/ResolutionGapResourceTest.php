@@ -13,7 +13,7 @@ use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;

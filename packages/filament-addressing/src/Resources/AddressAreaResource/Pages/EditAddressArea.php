@@ -9,7 +9,7 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Schemas\AddressAreaFormSchema;
-use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use AIArmada\FilamentAddressing\Persistence\AddressingFilterOptions;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
