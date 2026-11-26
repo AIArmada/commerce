@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
+use AIArmada\Affiliates\Features\Conversions\FeatureModule as ConversionsFeatureModule;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
@@ -53,6 +54,7 @@ function fraudSignalReference(AffiliateFraudSignal $signal): FraudSignalReferenc
 beforeEach(function (): void {
     app()->bind(FraudSignalReader::class, FraudSignalQuery::class);
     app()->bind(AffiliateLifecycleReader::class, AffiliateLifecycleQuery::class);
+    (new ConversionsFeatureModule)->register(app());
     (new FeatureModule)->register(app());
     Schema::dropIfExists('affiliate_fraud_signals');
     Schema::dropIfExists('affiliate_program_memberships');

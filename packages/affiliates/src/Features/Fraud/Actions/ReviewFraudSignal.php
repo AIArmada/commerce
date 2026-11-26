@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAdministration;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionInspectionReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewResult;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
@@ -14,6 +16,12 @@ use InvalidArgumentException;
 
 final readonly class ReviewFraudSignal implements FraudReviewApi
 {
+    public function __construct(
+        private ConversionAdministration $conversions,
+        private ConversionInspectionReader $inspection,
+        private AffiliateLifecycleReader $affiliates,
+    ) {}
+
     public function execute(string $signalId, FraudSignalStatus $status, ?string $reviewedBy, ?string $reviewNotes = null, bool $rejectLinkedConversion = false): FraudReviewResult
     {
         if ($status === FraudSignalStatus::Detected) {
@@ -46,9 +54,19 @@ final readonly class ReviewFraudSignal implements FraudReviewApi
             $signal->update($attributes);
             $rejectionError = null;
 
-            if ($rejectLinkedConversion && $signal->conversion !== null) {
+            if ($rejectLinkedConversion && $status === FraudSignalStatus::Confirmed && $signal->conversion_id !== null) {
                 try {
-                    app(ConversionAdministration::class)->voidConversion((string) $signal->conversion->getKey(), sprintf('Fraud review rejected linked conversion (signal %s).', $signalId));
+                    $conversion = $this->inspection->lock($signal->conversion_id, spl_object_id($signal->getConnection()));
+                    $affiliate = $this->affiliates->findById((string) $signal->affiliate_id);
+
+                    if ($conversion === null || $affiliate === null
+                        || $conversion->affiliateId !== (string) $signal->affiliate_id
+                        || $conversion->ownerType !== $affiliate->reference->ownerType
+                        || $conversion->ownerId !== $affiliate->reference->ownerId) {
+                        throw new InvalidArgumentException('The linked conversion does not belong to the reviewed affiliate.');
+                    }
+
+                    $this->conversions->voidConversion($conversion->id, sprintf('Fraud review rejected linked conversion (signal %s).', $signalId));
                 } catch (InvalidArgumentException $exception) {
                     $rejectionError = $exception->getMessage();
                 }

@@ -19,8 +19,6 @@ use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Upline\Api\RankHistoryRemovalGuard;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
@@ -60,10 +58,6 @@ final readonly class DeleteAffiliate implements AffiliateRemoval
 
             $this->rankHistory->assertCanRemove($affiliateId, spl_object_id($affiliate->getConnection()));
             $this->memberships->assertCanRemove($affiliateId, spl_object_id($affiliate->getConnection()));
-
-            if (class_exists(Voucher::class) && app()->providerIsLoaded(VoucherServiceProvider::class) && $affiliate->vouchers()->exists()) {
-                throw ValidationException::withMessages(['affiliate' => 'An affiliate with linked business or historical records cannot be deleted.']);
-            }
 
             foreach (app()->tagged(AffiliateRemovalGuard::class) as $guard) {
                 $guard->assertCanRemove($affiliateId, spl_object_id($affiliate->getConnection()));
