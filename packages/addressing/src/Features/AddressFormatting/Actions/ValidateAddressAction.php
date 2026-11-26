@@ -92,7 +92,7 @@ final readonly class ValidateAddressAction implements AddressValidator
         $countryClass = ModelResolver::countryClass();
         $model = new $countryClass;
 
-        return SchemaTableCache::exists($model->getTable()) && $countryClass::query()->exists();
+        return SchemaTableCache::exists($model) && $countryClass::query()->exists();
     }
 
     private static function filled(?string $value): bool

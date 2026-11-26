@@ -5,7 +5,11 @@ declare(strict_types=1);
 use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Support\AddressAreaHierarchyResolver;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
@@ -372,3 +376,35 @@ it('accepts integral numeric form state without truncating fractional levels', f
 
     expect(AddressArea::query()->findOrFail($id)->level)->toBe(2);
 })->with([2, 2.0, '2', '2.0']);
+
+it('invalidates cached hierarchy and state lookups when a containment edge is removed', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $state = State::query()->create(['country_id' => $country->id, 'name' => 'Selangor']);
+    $parent = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'type' => 'state',
+        'name' => 'Selangor',
+    ]));
+    $child = AddressArea::query()->findOrFail($this->action->handle([
+        'country_id' => $country->id,
+        'parent_id' => $parent->id,
+        'type' => 'district',
+        'name' => 'Petaling',
+        'hierarchy_type' => 'administrative',
+    ]));
+    AddressAreaStateLink::query()->create([
+        'address_area_id' => $parent->id,
+        'state_id' => $state->id,
+    ]);
+
+    $hierarchy = app(AddressAreaHierarchyResolver::class);
+
+    expect($hierarchy->ancestorsOf($child, 'administrative')->modelKeys())->toBe([$parent->id])
+        ->and(AddressAreaStateBridge::stateIdForArea($child))->toBe($state->id);
+
+    $this->action->handle(['hierarchy_type' => null], (string) $child->getKey());
+
+    expect($child->refresh()->parent_id)->toBe($parent->id)
+        ->and($hierarchy->ancestorsOf($child, 'administrative'))->toBeEmpty()
+        ->and(AddressAreaStateBridge::stateIdForArea($child))->toBeNull();
+});

@@ -189,6 +189,8 @@ final class AddressAreaStateBridge
 
     public static function forgetAll(): void
     {
+        RequestCache::forget('hierarchy-ancestors');
+
         if (app()->bound('request')) {
             request()->attributes->remove(self::REQUEST_CACHE_KEY);
         }

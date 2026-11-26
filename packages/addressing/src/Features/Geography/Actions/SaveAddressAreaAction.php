@@ -8,6 +8,7 @@ use AIArmada\Addressing\Contracts\AddressAreaWriter;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
+use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -138,6 +139,7 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
                     $hierarchyType = $this->resolveNullableString($attributes, 'hierarchy_type');
 
                     $ownedLinks()->delete();
+                    AddressAreaStateBridge::forgetAll();
 
                     if ($hierarchyType !== null && $parent instanceof AddressArea) {
                         ModelResolver::areaRelationshipClass()::query()->create([
@@ -157,11 +159,13 @@ final readonly class SaveAddressAreaAction implements AddressAreaWriter
                 // hierarchy types) or drop them on detach.
                 if (! $parent instanceof AddressArea) {
                     $ownedLinks()->delete();
+                    AddressAreaStateBridge::forgetAll();
 
                     return;
                 }
 
                 $ownedLinks()->update(['parent_address_area_id' => $parent->getKey()]);
+                AddressAreaStateBridge::forgetAll();
             });
 
             return (string) $record->getKey();

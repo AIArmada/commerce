@@ -87,6 +87,7 @@ final readonly class NormalizeAddressDataAction implements AddressNormalizer
 
         return RequestCache::remember(
             'reference-lookups',
+            new $countryClass,
             "country|{$name}",
             fn (): ?Model => $this->uniqueByLowerName($countryClass::query(), $name),
         );
@@ -115,6 +116,7 @@ final readonly class NormalizeAddressDataAction implements AddressNormalizer
 
         return RequestCache::remember(
             'reference-lookups',
+            new $stateClass,
             "state|{$countryId}|{$name}",
             fn (): ?Model => $this->uniqueByLowerName(
                 $stateClass::query()->where('country_id', $countryId),
@@ -150,6 +152,7 @@ final readonly class NormalizeAddressDataAction implements AddressNormalizer
 
         return RequestCache::remember(
             'reference-lookups',
+            new $cityClass,
             "city|{$countryId}|{$stateId}|{$name}",
             function () use ($cityClass, $countryId, $stateId, $name): ?Model {
                 $query = $cityClass::query()->where('country_id', $countryId);
@@ -226,6 +229,6 @@ final readonly class NormalizeAddressDataAction implements AddressNormalizer
         /** @var Model $model */
         $model = new $modelClass;
 
-        return SchemaTableCache::exists($model->getTable());
+        return SchemaTableCache::exists($model);
     }
 }

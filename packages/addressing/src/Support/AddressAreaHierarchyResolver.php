@@ -101,6 +101,7 @@ final class AddressAreaHierarchyResolver
         /** @var Collection<int, AddressArea> */
         return RequestCache::remember(
             'hierarchy-ancestors',
+            new (ModelResolver::areaClass()),
             (string) $area->getKey() . ':' . $hierarchyType,
             fn (): Collection => $this->resolveAncestors($area, $hierarchyType),
         );
