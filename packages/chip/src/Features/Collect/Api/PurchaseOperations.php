@@ -33,14 +33,14 @@ interface PurchaseOperations
     public function deleteRecurringToken(string $purchaseId, ?string $idempotencyKey = null): PurchaseData;
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
     public function paymentMethods(array $filters = []): array;
 
     /**
-     * @param array<int, ProductData> $products
-     * @param array<string, mixed> $options
+     * @param  array<int, ProductData>  $products
+     * @param  array<string, mixed>  $options
      */
     public function createCheckoutPurchase(array $products, ClientDetailsData $client, array $options = []): PurchaseData;
 

@@ -13,9 +13,9 @@ use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
 use AIArmada\Chip\Services\Collect\AccountApi;
 use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
 use AIArmada\Chip\Services\Collect\WebhooksApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
