@@ -11,7 +11,7 @@ use AIArmada\Chip\Contracts\ChipSendTransport;
 use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\EntryPoints\Commands\ChipHealthCheckCommand;
-use AIArmada\Chip\EntryPoints\Commands\PruneIdempotencyStubsCommand;
+use AIArmada\Chip\Features\Collect\EntryPoints\Commands\PruneIdempotencyStubsCommand;
 use AIArmada\Chip\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;

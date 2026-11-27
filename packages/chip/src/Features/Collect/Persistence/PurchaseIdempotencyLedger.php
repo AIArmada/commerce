@@ -8,8 +8,10 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 final class PurchaseIdempotencyLedger
@@ -64,6 +66,7 @@ final class PurchaseIdempotencyLedger
         $timestamp = time();
         $ledger = new Purchase;
         $ledger->forceFill([
+            'idempotency_scope_hash' => $this->scopeHash($brandId, $idempotencyKey),
             'type' => 'purchase',
             'created_on' => $timestamp,
             'updated_on' => $timestamp,
@@ -98,9 +101,13 @@ final class PurchaseIdempotencyLedger
             $ledger->assignOwner($owner);
         }
 
-        Purchase::withoutEvents(function () use ($ledger): void {
-            $ledger->save();
-        });
+        try {
+            Purchase::withoutEvents(function () use ($ledger): void {
+                $ledger->save();
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            throw new ChipValidationException('Purchase idempotency key is already reserved and requires reconciliation.', previous: $exception);
+        }
 
         return $ledger;
     }
@@ -131,8 +138,7 @@ final class PurchaseIdempotencyLedger
         $this->assertOwnerContext();
 
         return Purchase::query()->forOwner(OwnerContext::CURRENT, false)
-            ->where('brand_id', $brandId)
-            ->where('metadata->chip_idempotency->idempotency_key', $idempotencyKey)
+            ->where('idempotency_scope_hash', $this->scopeHash($brandId, $idempotencyKey))
             ->first();
     }
 
@@ -147,7 +153,7 @@ final class PurchaseIdempotencyLedger
         return DB::transaction(function () use ($reservationId): bool {
             $stub = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
                 ->whereKey($reservationId)
-                ->whereNotNull('metadata->chip_idempotency->idempotency_key')
+                ->whereNotNull('idempotency_scope_hash')
                 ->whereNull('metadata->chip_idempotency->response')
                 ->lockForUpdate()
                 ->first();
@@ -166,6 +172,10 @@ final class PurchaseIdempotencyLedger
     {
         $this->assertOwnerContext();
 
+        if ($limit <= 0) {
+            return 0;
+        }
+
         $count = 0;
 
         $this->eachExpiredStub(function () use (&$count, $limit): bool {
@@ -183,7 +193,7 @@ final class PurchaseIdempotencyLedger
     private function eachExpiredStub(callable $callback): void
     {
         Purchase::query()->forOwner(OwnerContext::CURRENT, false)
-            ->whereNotNull('metadata->chip_idempotency->idempotency_key')
+            ->whereNotNull('idempotency_scope_hash')
             ->whereNull('metadata->chip_idempotency->response')
             ->chunkById(200, function ($stubs) use ($callback): bool {
                 foreach ($stubs as $stub) {
@@ -263,6 +273,15 @@ final class PurchaseIdempotencyLedger
         throw new ChipValidationException(
             'Idempotency key has already been used for a different purchase payload.'
         );
+    }
+
+    private function scopeHash(string $brandId, string $idempotencyKey): string
+    {
+        $scope = (bool) config('chip.owner.enabled', false)
+            ? OwnerScopeKey::forOwner(OwnerContext::resolve())
+            : OwnerScopeKey::GLOBAL;
+
+        return hash('sha256', json_encode([$scope, $brandId, $idempotencyKey], JSON_THROW_ON_ERROR));
     }
 
     private function assertOwnerContext(): void

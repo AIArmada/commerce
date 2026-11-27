@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\EntryPoints\Commands;
+namespace AIArmada\Chip\Features\Collect\EntryPoints\Commands;
 
 use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
 use AIArmada\Chip\Models\Purchase;

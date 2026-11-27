@@ -95,6 +95,9 @@ class Purchase extends ChipModel
         'metadata',
     ];
 
+    /** @var list<string> */
+    protected $hidden = ['recurring_token', 'idempotency_scope_hash'];
+
     public function amount(): Attribute
     {
         return Attribute::get(function (): ?int {

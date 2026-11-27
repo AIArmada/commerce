@@ -137,11 +137,7 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
         }
 
         if ($this->cache === null) {
-            // AGENTS: no cache = no lock. Concurrent same-key requests can
-            // both miss the ledger and both POST (the ledger has no DB
-            // unique constraint to backstop the race). Production MUST use a
-            // shared lock-capable store (e.g. redis); per-instance
-            // file/array caches do NOT protect across servers/workers.
+            // The unique reservation index also prevents concurrent duplicate sends without a cache lock.
             return $this->createAndRecord($data, $idempotencyKey, $fingerprint);
         }
 
@@ -718,7 +714,7 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
             return $this->fetchPaymentMethods($filters);
         }
 
-        $cacheKey = config('chip.cache.prefix', 'chip:') . 'payment_methods:' . md5((string) json_encode($filters));
+        $cacheKey = config('chip.cache.prefix', 'chip:') . 'payment_methods:' . $this->ownerScopeKey() . ':' . hash('sha256', json_encode($filters, JSON_THROW_ON_ERROR));
         $ttl = config('chip.cache.ttl.payment_methods')
             ?? config('chip.cache.default_ttl', 3600);
 

@@ -117,6 +117,7 @@ return new class extends Migration
 
             // Metadata for additional application-specific data
             $table->{$jsonType}('metadata')->nullable();
+            $table->char('idempotency_scope_hash', 64)->nullable()->unique();
 
             // Owner scoping
             $table->nullableMorphs('owner');
