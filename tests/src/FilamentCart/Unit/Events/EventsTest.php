@@ -21,7 +21,7 @@ it('creates scalar payloads for cart operational events', function (string $even
         'checkout_abandoned_at' => now(),
     ]);
 
-    $event = $eventClass::fromCart($cart);
+    $event = $eventClass::fromSnapshot($cart->toSnapshotData());
 
     expect($event->cartId)->toBe($cart->id)
         ->and($event->cartIdentifier)->toBe('event-cart')

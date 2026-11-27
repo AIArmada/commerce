@@ -53,7 +53,7 @@ describe('RemoveStoredConditions action', function (): void {
 
         // Create Real Cart with Mocked Storage
         $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+        $storageSnapshot = new CartStorageSnapshot(
             id: 'cart-id',
             version: 1,
             conditions: [
@@ -70,7 +70,9 @@ describe('RemoveStoredConditions action', function (): void {
                     'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
-        ));
+        );
+        $storage->shouldReceive('getSnapshot')->andReturn($storageSnapshot);
+        $storage->shouldReceive('getConditions')->andReturn($storageSnapshot->conditions);
         $storage->shouldReceive('getItems')->andReturn([]);
         $storage->shouldReceive('getId')->andReturn('cart-id');
         $storage->shouldReceive('getVersion')->andReturn(1);
@@ -181,7 +183,7 @@ describe('RemoveStoredConditions action', function (): void {
         ]);
 
         $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+        $storageSnapshot = new CartStorageSnapshot(
             id: 'cart-id',
             version: 1,
             conditions: [
@@ -198,7 +200,9 @@ describe('RemoveStoredConditions action', function (): void {
                     'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
-        ));
+        );
+        $storage->shouldReceive('getSnapshot')->andReturn($storageSnapshot);
+        $storage->shouldReceive('getConditions')->andReturn($storageSnapshot->conditions);
         $storage->shouldReceive('getItems')->andReturn([]);
         $storage->shouldReceive('getId')->andReturn('cart-id');
         $storage->shouldReceive('getVersion')->andReturn(1);
@@ -329,7 +333,7 @@ describe('RemoveStoredConditions action', function (): void {
         }
 
         $storageA = Mockery::mock(StorageInterface::class);
-        $storageA->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+        $storageSnapshot = new CartStorageSnapshot(
             id: 'cart-a',
             version: 1,
             conditions: [
@@ -347,7 +351,9 @@ describe('RemoveStoredConditions action', function (): void {
                     'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
-        ));
+        );
+        $storageA->shouldReceive('getSnapshot')->andReturn($storageSnapshot);
+        $storageA->shouldReceive('getConditions')->andReturn($storageSnapshot->conditions);
         $storageA->shouldReceive('getItems')->andReturn([]);
         $storageA->shouldReceive('getId')->andReturn('cart-a');
         $storageA->shouldReceive('getVersion')->andReturn(1);
@@ -356,7 +362,7 @@ describe('RemoveStoredConditions action', function (): void {
         $storageA->shouldReceive('putConditions')->once()->andReturn(CartRevision::of('cart-a', 2));
 
         $storageB = Mockery::mock(StorageInterface::class);
-        $storageB->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+        $storageSnapshot = new CartStorageSnapshot(
             id: 'cart-b',
             version: 1,
             conditions: [
@@ -374,7 +380,9 @@ describe('RemoveStoredConditions action', function (): void {
                     'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
-        ));
+        );
+        $storageB->shouldReceive('getSnapshot')->andReturn($storageSnapshot);
+        $storageB->shouldReceive('getConditions')->andReturn($storageSnapshot->conditions);
         $storageB->shouldReceive('getItems')->andReturn([]);
         $storageB->shouldReceive('getId')->andReturn('cart-b');
         $storageB->shouldReceive('getVersion')->andReturn(1);
@@ -469,7 +477,7 @@ describe('RemoveStoredConditions action', function (): void {
         ]);
 
         $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+        $storageSnapshot = new CartStorageSnapshot(
             id: 'cart-id',
             version: 2,
             conditions: [
@@ -481,7 +489,9 @@ describe('RemoveStoredConditions action', function (): void {
                     'value' => '-20',
                 ],
             ],
-        ));
+        );
+        $storage->shouldReceive('getSnapshot')->andReturn($storageSnapshot);
+        $storage->shouldReceive('getConditions')->andReturn($storageSnapshot->conditions);
         $storage->shouldReceive('getItems')->andReturn([]);
         $storage->shouldReceive('getId')->andReturn('cart-id');
         $storage->shouldReceive('getVersion')->andReturn(2);

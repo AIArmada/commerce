@@ -155,7 +155,7 @@ final readonly class RemoveStoredConditions
         $cart->clearConditions();
 
         foreach ($cart->getItems() as $item) {
-            $cart->clearItemConditions($item->getId());
+            $cart->clearItemConditions($item->id);
         }
 
         $this->syncManager->sync($cart, force: true);
@@ -181,7 +181,7 @@ final readonly class RemoveStoredConditions
         foreach ($cart->getItems() as $item) {
             foreach ($item->getConditions() as $condition) {
                 if ($condition->getType() === $type) {
-                    $cart->removeItemCondition($item->getId(), $condition->getName());
+                    $cart->removeItemCondition($item->id, $condition->getName());
                 }
             }
         }
@@ -213,7 +213,7 @@ final readonly class RemoveStoredConditions
 
         $removed = false;
         foreach ($cart->getItems() as $item) {
-            if ($snapshotCondition->itemId !== null && $item->getId() !== $snapshotCondition->itemId) {
+            if ($snapshotCondition->itemId !== null && $item->id !== $snapshotCondition->itemId) {
                 continue;
             }
 
@@ -223,8 +223,7 @@ final readonly class RemoveStoredConditions
                 continue;
             }
 
-            $cart->removeItemCondition($item->getId(), $conditionName);
-            $removed = true;
+            $removed = $cart->removeItemCondition($item->id, $conditionName) || $removed;
         }
 
         return $removed;
