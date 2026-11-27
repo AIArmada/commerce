@@ -134,9 +134,8 @@ The package defines **6 contracts** in `Contracts/` that you can implement to ex
 
 | Contract | Purpose |
 |----------|---------|
-| `InventoryableInterface` | Make any model inventory-trackable |
+| `InventoryableInterface` | Scalar stock availability contract; use `HasInventory` for ORM relationships and location queries |
 | `CheckoutReservationServiceInterface` | Checkout reservation groups |
-| `CostingMethodInterface` | Built-in costing adapter contract |
 | `ProvidesInventoryCommitContext` | Cart/order context for payment commit listeners |
 | `ExportInterface` | Custom export formats |
 | `ReportInterface` | Custom report types |

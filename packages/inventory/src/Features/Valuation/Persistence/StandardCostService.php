@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class StandardCostService
+final readonly class StandardCostService
 {
     /**
      * Set a new standard cost for a model.
@@ -25,6 +27,10 @@ final class StandardCostService
         ?string $notes = null,
         ?array $metadata = null
     ): InventoryStandardCost {
+        if ($standardCostMinor < 0 || ($effectiveTo !== null && $effectiveTo <= $effectiveFrom)) {
+            throw new InvalidArgumentException('Standard cost must be non-negative and its end must follow its start.');
+        }
+
         return DB::transaction(function () use (
             $model,
             $standardCostMinor,
@@ -34,12 +40,20 @@ final class StandardCostService
             $notes,
             $metadata
         ): InventoryStandardCost {
-            $currentCost = $this->getCurrentStandardCost($model);
-            if ($currentCost !== null && $effectiveFrom <= CarbonImmutable::now()) {
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
+            $currentCost = $this->mutationQuery($model)->effectiveAt($effectiveFrom)->orderByDesc('effective_from')->lockForUpdate()->first();
+            if ($currentCost !== null && $currentCost->effective_from < $effectiveFrom) {
                 $currentCost->update(['effective_to' => $effectiveFrom]);
+            } elseif ($currentCost !== null) {
+                throw new InvalidArgumentException('A standard cost already starts at this date.');
             }
 
-            return InventoryStandardCost::create([
+            $next = $this->mutationQuery($model)->where('effective_from', '>', $effectiveFrom)->orderBy('effective_from')->first();
+            if ($next !== null && ($effectiveTo === null || $effectiveTo > $next->effective_from)) {
+                $effectiveTo = $next->effective_from;
+            }
+
+            $cost = new InventoryStandardCost([
                 'inventoryable_type' => $model->getMorphClass(),
                 'inventoryable_id' => $model->getKey(),
                 'standard_cost_minor' => $standardCostMinor,
@@ -50,7 +64,15 @@ final class StandardCostService
                 'notes' => $notes,
                 'metadata' => $metadata,
             ]);
-        });
+
+            if (InventoryOwnerScope::isEnabled() && ($owner = InventoryOwnerScope::resolveOwner()) !== null) {
+                $cost->assignOwner($owner);
+            }
+
+            $cost->save();
+
+            return $cost;
+        }, 3);
     }
 
     /**
@@ -61,6 +83,8 @@ final class StandardCostService
         return InventoryStandardCost::query()
             ->forModel($model)
             ->current()
+            ->orderByDesc('effective_from')
+            ->orderBy('id')
             ->first();
     }
 
@@ -72,6 +96,8 @@ final class StandardCostService
         return InventoryStandardCost::query()
             ->forModel($model)
             ->effectiveAt($date)
+            ->orderByDesc('effective_from')
+            ->orderBy('id')
             ->first();
     }
 
@@ -172,13 +198,12 @@ final class StandardCostService
      */
     public function expireCurrentCost(Model $model): bool
     {
-        $currentCost = $this->getCurrentStandardCost($model);
+        return DB::transaction(function () use ($model): bool {
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
+            $currentCost = $this->mutationQuery($model)->current()->orderByDesc('effective_from')->lockForUpdate()->first();
 
-        if ($currentCost === null) {
-            return false;
-        }
-
-        return $currentCost->expire();
+            return $currentCost?->expire() ?? false;
+        }, 3);
     }
 
     /**
@@ -206,21 +231,7 @@ final class StandardCostService
             throw new InvalidArgumentException('Scheduled cost changes must be in the future');
         }
 
-        $currentCost = $this->getCurrentStandardCost($model);
-        if ($currentCost !== null) {
-            $currentCost->update(['effective_to' => $effectiveFrom]);
-        }
-
-        return InventoryStandardCost::create([
-            'inventoryable_type' => $model->getMorphClass(),
-            'inventoryable_id' => $model->getKey(),
-            'standard_cost_minor' => $newCostMinor,
-            'currency' => config('inventory.defaults.currency', 'MYR'),
-            'effective_from' => $effectiveFrom,
-            'effective_to' => null,
-            'approved_by' => $approvedBy,
-            'notes' => $notes,
-        ]);
+        return $this->setStandardCost($model, $newCostMinor, $effectiveFrom, approvedBy: $approvedBy, notes: $notes);
     }
 
     /**
@@ -228,10 +239,33 @@ final class StandardCostService
      */
     public function cancelScheduledCost(InventoryStandardCost $scheduledCost): bool
     {
-        if (! $scheduledCost->isFuture()) {
-            throw new InvalidArgumentException('Can only cancel future scheduled costs');
-        }
+        return DB::transaction(function () use ($scheduledCost): bool {
+            $locked = InventoryOwnerScope::forMutation(InventoryStandardCost::query())
+                ->whereKey($scheduledCost->getKey())->lockForUpdate()->firstOrFail();
 
-        return $scheduledCost->delete();
+            if (! $locked->isFuture()) {
+                throw new InvalidArgumentException('Can only cancel future scheduled costs');
+            }
+
+            $predecessor = InventoryOwnerScope::forMutation(InventoryStandardCost::query())
+                ->where('inventoryable_type', $locked->inventoryable_type)
+                ->where('inventoryable_id', $locked->inventoryable_id)
+                ->where('effective_to', $locked->effective_from)
+                ->where('effective_from', '<', $locked->effective_from)
+                ->orderByDesc('effective_from')
+                ->lockForUpdate()->first();
+
+            if ($predecessor !== null) {
+                $predecessor->update(['effective_to' => $locked->effective_to]);
+            }
+
+            return (bool) $locked->delete();
+        }, 3);
+    }
+
+    /** @return Builder<InventoryStandardCost> */
+    private function mutationQuery(Model $model): Builder
+    {
+        return InventoryOwnerScope::forMutation(InventoryStandardCost::query())->forModel($model);
     }
 }

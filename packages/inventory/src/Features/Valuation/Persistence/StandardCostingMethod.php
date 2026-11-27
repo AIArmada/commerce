@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
-use AIArmada\Inventory\Contracts\CostingMethodInterface;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -13,10 +12,10 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use RuntimeException;
 
-final class StandardCostingMethod implements CostingMethodInterface
+final readonly class StandardCostingMethod
 {
     public function __construct(
-        private readonly StandardCostService $service,
+        private StandardCostService $service,
     ) {}
 
     public function supports(): CostingMethod

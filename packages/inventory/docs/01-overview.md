@@ -33,7 +33,7 @@ The `aiarmada/inventory` package owns stock state, warehouse structure, allocati
 
 - **Models** — `InventoryLocation`, `InventoryLevel`, `InventoryMovement`, `InventoryAllocation`, `InventoryBatch`, `InventorySerial`, `InventoryCostLayer`, `InventoryValuationSnapshot`, `InventoryBackorder`, `InventoryDemandHistory`, `InventorySupplierLeadtime`, `InventoryReorderSuggestion`
 - **Actions (16)** — `ReceiveInventory`, `ShipInventory`, `TransferInventory`, `AdjustInventory`, `AllocateStock`, `CommitStock`, `ReleaseStock`, `CreateBatch`, `RecordSerial`, `CreateBackorder`, `ResolveBackorder`, `ProcessExpiredBatches`, `CheckLowInventory`, `ApproveReorderSuggestion`, `RejectReorderSuggestion`, `CreateValuationSnapshot`
-- **Contracts (6)** — `InventoryableInterface`, `CheckoutReservationServiceInterface`, `CostingMethodInterface`, `ProvidesInventoryCommitContext`, `ExportInterface`, `ReportInterface`
+- **Contracts** — `InventoryableInterface`, `CheckoutReservationServiceInterface`, `ProvidesInventoryCommitContext`, `ExportInterface`, `ReportInterface`
 - **Facades** — `Inventory`, `InventoryAllocation`
 - **Services** — reorganized into subdirectories: `Batch/`, `Costing/`, `Serial/`, `Stock/`
 - **Support registries** — `ExportRegistry`, `ReportRegistry`
@@ -109,9 +109,9 @@ The `aiarmada/inventory` package owns stock state, warehouse structure, allocati
 └─────────────────────────────────────────────────────────────────┘
                                 │
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Contracts (6)                                 │
+│                   Contracts                                 │
 │  InventoryableInterface       CheckoutReservationServiceInterface │
-│  CostingMethodInterface       ProvidesInventoryCommitContext    │
+│  ProvidesInventoryCommitContext                                 │
 │  ExportInterface              ReportInterface                   │
 └─────────────────────────────────────────────────────────────────┘
                                 │

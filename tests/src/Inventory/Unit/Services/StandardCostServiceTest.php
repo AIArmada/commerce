@@ -193,3 +193,35 @@ describe('StandardCostService', function (): void {
         $this->service->cancelScheduledCost($activeCost);
     })->throws(InvalidArgumentException::class);
 });
+
+it('rejects negative standard costs and invalid effective periods', function (): void {
+    $service = new StandardCostService;
+    $item = InventoryItem::create(['name' => 'Validation Item']);
+    $start = CarbonImmutable::now()->addDay();
+
+    expect(fn () => $service->setStandardCost($item, -1, $start))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $service->setStandardCost($item, 100, $start, $start))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $service->scheduleCostChange($item, -1, $start))->toThrow(InvalidArgumentException::class);
+});
+
+it('keeps scheduled cost periods contiguous and restores the previous period when canceled', function (): void {
+    $service = new StandardCostService;
+    $item = InventoryItem::create(['name' => 'Scheduled Item']);
+    $start = CarbonImmutable::now()->subDay()->startOfSecond();
+    $firstDate = $start->addMonth();
+    $secondDate = $firstDate->addMonth();
+
+    $current = $service->setStandardCost($item, 100, $start);
+    $second = $service->scheduleCostChange($item, 300, $secondDate);
+    $first = $service->scheduleCostChange($item, 200, $firstDate);
+
+    expect($current->refresh()->effective_to->equalTo($firstDate))->toBeTrue()
+        ->and($first->effective_to->equalTo($secondDate))->toBeTrue()
+        ->and($service->getCostValueAt($item, $firstDate->addDay()))->toBe(200);
+
+    $service->cancelScheduledCost($first);
+
+    expect($current->refresh()->effective_to->equalTo($secondDate))->toBeTrue()
+        ->and($service->getCostValueAt($item, $firstDate->addDay()))->toBe(100)
+        ->and($service->getCostValueAt($item, $secondDate->addDay()))->toBe(300);
+});

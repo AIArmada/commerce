@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
-use AIArmada\Inventory\Contracts\CostingMethodInterface;
 use AIArmada\Inventory\Enums\CostingMethod;
 use Illuminate\Database\Eloquent\Model;
 
-final class FifoCostingMethod implements CostingMethodInterface
+final readonly class FifoCostingMethod
 {
     public function __construct(
-        private readonly FifoCostService $service,
+        private FifoCostService $service,
     ) {}
 
     public function supports(): CostingMethod
