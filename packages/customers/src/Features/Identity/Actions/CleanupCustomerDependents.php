@@ -11,6 +11,7 @@ use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
 use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipCleaner;
 use AIArmada\Customers\Models\Customer;
+use RuntimeException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 final readonly class CleanupCustomerDependents implements CustomerDependentsCleaner
@@ -32,9 +33,21 @@ final readonly class CleanupCustomerDependents implements CustomerDependentsClea
             $this->addresses->detachAll($customer->getMorphClass(), $customerId);
             $customer->notes()->delete();
             $this->memberships->cleanup($customerId);
-            $customer->contactMethods()->eachById(fn (ContactMethod $contactMethod): bool => $contactMethod->delete());
-            $customer->socialProfiles()->eachById(fn (SocialProfile $socialProfile): bool => $socialProfile->delete());
-            $customer->media()->eachById(fn (Media $medium): bool => (bool) $medium->delete());
+            $customer->contactMethods()->eachById(static function (ContactMethod $contactMethod): void {
+                if (! $contactMethod->delete()) {
+                    throw new RuntimeException('Customer dependent deletion was cancelled.');
+                }
+            });
+            $customer->socialProfiles()->eachById(static function (SocialProfile $socialProfile): void {
+                if (! $socialProfile->delete()) {
+                    throw new RuntimeException('Customer dependent deletion was cancelled.');
+                }
+            });
+            $customer->media()->eachById(static function (Media $medium): void {
+                if (! $medium->delete()) {
+                    throw new RuntimeException('Customer dependent deletion was cancelled.');
+                }
+            });
         });
     }
 }

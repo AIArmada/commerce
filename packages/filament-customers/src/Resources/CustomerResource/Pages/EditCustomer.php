@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 
+use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
 use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
@@ -29,7 +30,8 @@ class EditCustomer extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (Customer $record): bool => app(DeleteCustomer::class)->execute($record)),
         ];
     }
 }

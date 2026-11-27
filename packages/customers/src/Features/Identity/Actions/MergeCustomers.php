@@ -15,6 +15,7 @@ use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipTransfer;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class MergeCustomers
 {
@@ -70,7 +71,9 @@ final class MergeCustomers
                     $target->save();
                 }
 
-                $source->delete();
+                if (! $source->delete()) {
+                    throw new RuntimeException('Customer deletion was cancelled.');
+                }
             });
 
             $mergedCustomer = $target->refresh();

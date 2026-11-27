@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
 use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
@@ -835,4 +836,45 @@ it('rejects a customer self-merge without deleting the customer', function (): v
 
         expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue();
     });
+});
+
+it('rolls back customer dependent deletion when the customer deletion is vetoed', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Veto', 'last_name' => 'Delete']);
+    $contact = $customer->addContactMethod(ContactMethodData::email('delete-veto@example.com'));
+
+    Customer::deleting(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+    expect(fn () => app(DeleteCustomer::class)->execute($customer))
+        ->toThrow(RuntimeException::class, 'Customer deletion was cancelled.');
+
+    expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue()
+        ->and(ContactMethod::query()->whereKey($contact->getKey())->exists())->toBeTrue();
+});
+
+it('rolls back customer merges when source deletion is vetoed', function (): void {
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Veto']);
+    $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Veto']);
+    $contact = $source->addContactMethod(ContactMethodData::email('merge-veto@example.com'));
+
+    Customer::deleting(static fn (Customer $record): bool => $record->getKey() !== $source->getKey());
+
+    expect(fn () => app(MergeCustomers::class)->execute($target, $source))
+        ->toThrow(RuntimeException::class, 'Customer deletion was cancelled.');
+
+    expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
+        ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()
+        ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse();
+});
+
+it('rolls back customer deletion when a dependent deletion is vetoed', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Dependent', 'last_name' => 'Veto']);
+    $contact = $customer->addContactMethod(ContactMethodData::email('dependent-veto@example.com'));
+
+    ContactMethod::deleting(static fn (ContactMethod $record): bool => $record->getKey() !== $contact->getKey());
+
+    expect(fn () => app(DeleteCustomer::class)->execute($customer))
+        ->toThrow(RuntimeException::class, 'Customer dependent deletion was cancelled.');
+
+    expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue()
+        ->and(ContactMethod::query()->whereKey($contact->getKey())->exists())->toBeTrue();
 });

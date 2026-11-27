@@ -8,7 +8,9 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
 use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
+use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;
@@ -25,7 +27,9 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
 final class CustomersTable
 {
@@ -117,7 +121,18 @@ final class CustomersTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! $record instanceof Customer || ! CustomerResource::canDelete($record) || ! app(DeleteCustomer::class)->execute($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                     BulkAction::make('opt_in_marketing')
                         ->label('Opt-In Marketing')
                         ->icon('heroicon-o-bell')
