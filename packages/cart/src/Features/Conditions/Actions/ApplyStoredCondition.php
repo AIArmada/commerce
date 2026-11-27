@@ -179,8 +179,20 @@ final class ApplyStoredCondition
 
         $order = $data['order'] ?? 0;
 
-        if (! is_int($order) && ! (is_string($order) && is_numeric($order))) {
+        if (! is_int($order) && ! (is_string($order) && filter_var($order, FILTER_VALIDATE_INT) !== false)) {
             throw new Exception('Custom condition order must be an integer.');
+        }
+
+        $attributes = $data['attributes'] ?? [];
+
+        if (! is_array($attributes)) {
+            throw new Exception('Custom condition attributes must be an array.');
+        }
+
+        foreach (['condition_id', 'is_global', 'definition_hash'] as $reserved) {
+            if (array_key_exists($reserved, $attributes)) {
+                throw new Exception("Custom condition attribute [{$reserved}] is reserved.");
+            }
         }
 
         return [

@@ -54,3 +54,23 @@ it('rejects custom conditions with a non-integer order', function (): void {
         'order' => 'first',
     ]))->toThrow(Exception::class, 'order must be an integer');
 });
+
+it('rejects reserved custom condition identity attributes', function (string $attribute): void {
+    expect(fn (): mixed => $this->action->applyCustom((string) $this->snapshot->getKey(), [
+        'name' => 'Forged Condition',
+        'type' => 'discount',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'value' => '-10%',
+        'attributes' => [$attribute => 'forged'],
+    ]))->toThrow(Exception::class, 'is reserved');
+})->with(['condition_id', 'is_global', 'definition_hash']);
+
+it('rejects fractional custom condition order strings', function (): void {
+    expect(fn (): mixed => $this->action->applyCustom((string) $this->snapshot->getKey(), [
+        'name' => 'Fractional Order',
+        'type' => 'discount',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'value' => '-10%',
+        'order' => '1.5',
+    ]))->toThrow(Exception::class, 'order must be an integer');
+});
