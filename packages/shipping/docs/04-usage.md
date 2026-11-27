@@ -484,12 +484,13 @@ The order reaches Shipped after every shippable line is fulfilled. Repeating a u
 Start a return from the original shipment. Approve the authorization, then submit the inspection for every return item. A missing component blocks receipt of the unit. Inspect damaged or defective items with their actual condition so they stay out of sellable stock.
 
 ```php
-use AIArmada\Shipping\Actions\ApproveReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
 use AIArmada\Shipping\Integrations\PackageReturns;
 
 $returns = app(PackageReturns::class);
 $rma = $returns->request($shipment, $orderItem->id, 1, 'damaged');
-$rma = ApproveReturnAuthorization::run($rma);
+app(ApproveReturn::class)->execute($rma->id);
+$rma->refresh();
 $rma = $returns->receive($rma, $inspectionByReturnItemId, $receivingLocationId);
 $rma = $returns->complete($rma, $settledProviderTransactionId);
 ```

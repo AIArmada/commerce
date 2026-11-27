@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Returns",
+  "owns": {
+    "table:return_authorizations": [
+      "AIArmada\\Shipping\\Features\\Returns\\Actions\\ApproveReturnAuthorization",
+      "AIArmada\\Shipping\\Features\\Returns\\Actions\\RejectReturnAuthorization"
+    ]
+  },
+  "extensions": {}
+}

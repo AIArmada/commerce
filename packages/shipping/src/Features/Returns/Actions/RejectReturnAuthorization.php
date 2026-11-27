@@ -2,26 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Actions;
+namespace AIArmada\Shipping\Features\Returns\Actions;
+
+use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
 
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaRejected;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
 /**
  * Reject a pending return authorization.
  */
-final class RejectReturnAuthorization
+final class RejectReturnAuthorization implements RejectReturn
 {
-    use AsAction;
-
-    public function handle(ReturnAuthorization $rma, string $reason, ?string $actorId = null): ReturnAuthorization
+    public function execute(string $authorizationId, string $reason, ?string $actorId = null): string
     {
-        return DB::transaction(function () use ($rma, $reason, $actorId): ReturnAuthorization {
-            $rma = ReturnAuthorization::query()->lockForUpdate()->findOrFail($rma->getKey());
+        return DB::transaction(function () use ($authorizationId, $reason, $actorId): string {
+            $rma = ReturnAuthorization::query()->lockForUpdate()->findOrFail($authorizationId);
             if (! $rma->isPending()) {
                 throw new RuntimeException("Return authorization {$rma->rma_number} is not pending.");
             }
@@ -42,7 +41,7 @@ final class RejectReturnAuthorization
                 ]),
             ]);
 
-            return $transitioned->refresh();
+            return (string) $transitioned->getKey();
         });
     }
 }

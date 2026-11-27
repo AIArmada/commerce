@@ -14,7 +14,7 @@ use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Shipping\Actions\ApproveReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\ShipmentData;
@@ -169,7 +169,7 @@ it('requires the complete inspected unit and settles its net price and tax exact
     expect(fn () => $refund->execute($order, 1000, 'refund-1', 'Return', $metadata))->toThrow(DomainException::class);
     expect(fn () => $refund->createPending($order, 1000, 'refund-1', 'Return'))->toThrow(DomainException::class, 'authorization');
 
-    ApproveReturnAuthorization::run($rma);
+    app(ApproveReturn::class)->execute($rma->id);
     $lines = $rma->items()->get();
     $inspection = $lines->mapWithKeys(fn ($line): array => [$line->id => [
         'quantity' => $line->quantity_requested,
@@ -279,7 +279,9 @@ it('retries only the unsettled part when a package refund spans multiple payment
     $order->payments()->create(['gateway' => 'manual', 'status' => PaymentStatus::Completed, 'amount' => 1898, 'currency' => 'MYR']);
     $shipment = shipPackageUnit($order, $item, 1);
     $returns = app(PackageReturns::class);
-    $rma = ApproveReturnAuthorization::run($returns->request($shipment, $item->id, 1, 'damaged'));
+    $rma = $returns->request($shipment, $item->id, 1, 'damaged');
+    app(ApproveReturn::class)->execute($rma->id);
+    $rma->refresh();
     $inspection = $rma->items()->get()->mapWithKeys(fn ($line): array => [$line->id => [
         'quantity' => $line->quantity_approved,
         'condition' => 'damaged',
