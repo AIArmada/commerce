@@ -305,3 +305,28 @@ it('fails closed for bulk policy checks when no owner context is resolved', func
         ->and(Gate::forUser($actor)->allows('restoreAny', Variant::class))->toBeFalse()
         ->and(Gate::forUser($actor)->allows('forceDeleteAny', Variant::class))->toBeFalse();
 });
+
+it('denies direct gate access to experiments and variants when the tracked property changes owner', function (): void {
+    $owner = filamentGrowthPolicyUser();
+    $foreignOwner = filamentGrowthPolicyUser();
+    $actor = filamentGrowthPolicyUser();
+    filamentGrowthBindOwner($owner);
+    [$experiment, $variant] = filamentGrowthCreateOwnedExperiment($owner, 'Drifted Property Experiment');
+    $this->actingAs($actor);
+
+    TrackedProperty::query()->withoutOwnerScope()->whereKey($experiment->tracked_property_id)->update([
+        'owner_type' => $foreignOwner->getMorphClass(),
+        'owner_id' => $foreignOwner->getKey(),
+    ]);
+
+    OwnerContext::withOwner($owner, function () use ($actor, $experiment, $variant): void {
+        foreach (['view', 'update', 'delete', 'restore', 'forceDelete'] as $ability) {
+            expect(Gate::forUser($actor)->allows($ability, $experiment))->toBeFalse()
+                ->and(Gate::forUser($actor)->allows($ability, $variant))->toBeFalse();
+        }
+
+        expect(Gate::forUser($actor)->allows('deleteAny', Experiment::class))->toBeFalse()
+            ->and(Gate::forUser($actor)->allows('deleteAny', Variant::class))->toBeFalse()
+            ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeFalse();
+    });
+});

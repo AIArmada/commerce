@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentGrowth\Policies;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -37,34 +38,22 @@ final class VariantPolicy
 
     public function view(Authorizable $user, Variant $variant): bool
     {
-        return OwnerUiScope::canAccessRecord($variant);
+        return ExperimentAccess::canViewVariant($variant);
     }
 
     public function create(Authorizable $user): bool
     {
-        if (Variant::ownerScopeConfig()->enabled && ! OwnerUiScope::canCreate(Variant::class)) {
-            return false;
-        }
-
-        if (! Experiment::ownerScopeConfig()->enabled && ! TrackedProperty::ownerScopeConfig()->enabled) {
-            return true;
-        }
-
-        $experimentQuery = Experiment::ownerScopeConfig()->enabled
-            ? OwnerUiScope::apply(Experiment::query(), includeGlobal: false)
-            : OwnerUiScope::apply(TrackedProperty::query(), includeGlobal: false);
-
-        return $experimentQuery->exists();
+        return ExperimentAccess::canCreateVariant();
     }
 
     public function update(Authorizable $user, Variant $variant): bool
     {
-        return OwnerUiScope::canMutateRecord($variant);
+        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function delete(Authorizable $user, Variant $variant): bool
     {
-        return OwnerUiScope::canMutateRecord($variant);
+        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function deleteAny(Authorizable $user): bool
@@ -74,7 +63,7 @@ final class VariantPolicy
 
     public function restore(Authorizable $user, Variant $variant): bool
     {
-        return OwnerUiScope::canMutateRecord($variant);
+        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function restoreAny(Authorizable $user): bool
@@ -84,7 +73,7 @@ final class VariantPolicy
 
     public function forceDelete(Authorizable $user, Variant $variant): bool
     {
-        return OwnerUiScope::canMutateRecord($variant);
+        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function forceDeleteAny(Authorizable $user): bool
@@ -94,23 +83,7 @@ final class VariantPolicy
 
     private function hasWritableVariants(): bool
     {
-        if (Variant::ownerScopeConfig()->enabled && ! OwnerUiScope::canCreate(Variant::class)) {
-            return false;
-        }
-
-        if (! Experiment::ownerScopeConfig()->enabled && ! TrackedProperty::ownerScopeConfig()->enabled) {
-            return Variant::query()->exists();
-        }
-
-        $experimentQuery = Experiment::ownerScopeConfig()->enabled
-            ? OwnerUiScope::apply(Experiment::query(), includeGlobal: false)
-            : OwnerUiScope::apply(TrackedProperty::query(), includeGlobal: false);
-
-        return Variant::query()
-            ->whereIn(
-                (new Variant)->qualifyColumn('experiment_id'),
-                $experimentQuery->select('id'),
-            )
-            ->exists();
+        return OwnerUiScope::canCreate(Variant::class)
+            && ExperimentAccess::scopeVariants(Variant::query(), writable: true)->exists();
     }
 }

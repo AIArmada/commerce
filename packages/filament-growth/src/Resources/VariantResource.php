@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Resources;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
@@ -39,8 +38,7 @@ final class VariantResource extends Resource
         $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
         $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
 
-        return OwnerUiScope::apply(Variant::query())
-            ->whereIn('experiment_id', ExperimentAccess::scopeExperiments(Experiment::query())->select('id'))
+        return ExperimentAccess::scopeVariants(Variant::query())
             ->with([
                 'experiment:' . implode(',', array_values(array_unique([
                     'id',

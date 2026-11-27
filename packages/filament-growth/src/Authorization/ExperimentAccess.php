@@ -71,6 +71,59 @@ final class ExperimentAccess
         return $query->whereExists($matched);
     }
 
+    /**
+     * @param  Builder<Variant>  $query
+     * @return Builder<Variant>
+     */
+    public static function scopeVariants(Builder $query, bool $writable = false): Builder
+    {
+        $query = OwnerUiScope::apply($query, includeGlobal: $writable ? false : null);
+        $variant = $query->getModel();
+        $experiment = new Experiment;
+        $parents = self::scopeExperiments(Experiment::query(), $writable)
+            ->selectRaw('1')
+            ->whereColumn($experiment->getQualifiedKeyName(), $variant->qualifyColumn('experiment_id'));
+
+        if (Variant::ownerScopeConfig()->enabled) {
+            $variantColumns = OwnerTupleColumns::forModelClass(Variant::class);
+            $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
+            $variantType = $variant->qualifyColumn($variantColumns->ownerTypeColumn);
+            $variantId = $variant->qualifyColumn($variantColumns->ownerIdColumn);
+            $experimentType = $experiment->qualifyColumn($experimentColumns->ownerTypeColumn);
+            $experimentId = $experiment->qualifyColumn($experimentColumns->ownerIdColumn);
+
+            $parents->where(function (Builder $query) use ($variantType, $variantId, $experimentType, $experimentId): void {
+                $query->where(function (Builder $owned) use ($variantType, $variantId, $experimentType, $experimentId): void {
+                    $owned->whereColumn($variantType, $experimentType)
+                        ->whereColumn($variantId, $experimentId);
+                })->orWhere(function (Builder $global) use ($variantType, $variantId, $experimentType, $experimentId): void {
+                    $global->whereNull($variantType)
+                        ->whereNull($variantId)
+                        ->whereNull($experimentType)
+                        ->whereNull($experimentId);
+                });
+            });
+        }
+
+        return $query->whereExists($parents);
+    }
+
+    public static function canViewExperiment(Experiment $experiment): bool
+    {
+        return self::scopeExperiments(Experiment::query())->whereKey($experiment->getKey())->exists();
+    }
+
+    public static function canViewVariant(Variant $variant): bool
+    {
+        return self::scopeVariants(Variant::query())->whereKey($variant->getKey())->exists();
+    }
+
+    public static function canCreateVariant(): bool
+    {
+        return OwnerUiScope::canCreate(Variant::class)
+            && self::scopeExperiments(Experiment::query(), writable: true)->exists();
+    }
+
     public static function canCreateExperiment(): bool
     {
         if (Experiment::ownerScopeConfig()->enabled && ! OwnerUiScope::canCreate(Experiment::class)) {
