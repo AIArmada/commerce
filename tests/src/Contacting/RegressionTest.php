@@ -7,12 +7,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\MoveContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Actions\ReplaceGeneralContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\MoveSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\UpdateSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
@@ -456,4 +458,34 @@ it('preserves global contact methods during an owner-specific replacement', func
 
     expect(ContactMethod::withoutOwnerScope()->whereKey($global->id)->exists())->toBeTrue()
         ->and(ContactMethod::withoutOwnerScope()->whereKey($local->id)->exists())->toBeFalse();
+});
+
+it('keeps owner-specific primaries when moving contacts to a parent with global primaries', function (): void {
+    config(['contacting.features.owner.include_global' => true]);
+
+    $source = RepairCascadeParent::query()->create([]);
+    $target = RepairCascadeParent::query()->create([]);
+    $owner = User::factory()->create();
+
+    [$globalMethod, $globalProfile] = OwnerContext::withOwner(null, fn () => [
+        $target->addContactMethod(new ContactMethodData(type: 'email', value: 'global@example.com', isPrimary: true)),
+        $target->addSocialProfile(new SocialProfileData(platform: 'facebook', handle: 'global-primary', isPrimary: true)),
+    ]);
+
+    [$movedMethod, $movedProfile] = OwnerContext::withOwner($owner, function () use ($source, $target): array {
+        $method = $source->addContactMethod(new ContactMethodData(type: 'email', value: 'local@example.com', isPrimary: true));
+        $profile = $source->addSocialProfile(new SocialProfileData(platform: 'facebook', handle: 'local-primary', isPrimary: true));
+
+        return [
+            app(MoveContactMethodAction::class)->execute($method, $target),
+            app(MoveSocialProfileAction::class)->execute($profile, $target),
+        ];
+    });
+
+    expect($movedMethod->is_primary)->toBeTrue()
+        ->and($movedProfile->is_primary)->toBeTrue()
+        ->and($movedMethod->contactable_id)->toBe($target->id)
+        ->and($movedProfile->socialable_id)->toBe($target->id)
+        ->and(ContactMethod::withoutOwnerScope()->findOrFail($globalMethod->id)->is_primary)->toBeTrue()
+        ->and(SocialProfile::withoutOwnerScope()->findOrFail($globalProfile->id)->is_primary)->toBeTrue();
 });

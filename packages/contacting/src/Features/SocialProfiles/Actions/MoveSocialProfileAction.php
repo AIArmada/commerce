@@ -42,6 +42,8 @@ final readonly class MoveSocialProfileAction
                 ->where('socialable_id', $target->getKey())
                 ->where('platform', $record->platform)
                 ->where('purpose', $record->purpose)
+                ->where('owner_type', $record->owner_type)
+                ->where('owner_id', $record->owner_id)
                 ->whereKeyNot($record->getKey())
                 ->where('is_primary', true)
                 ->exists()) {

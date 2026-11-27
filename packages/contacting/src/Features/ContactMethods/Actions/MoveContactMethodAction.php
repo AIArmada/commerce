@@ -42,6 +42,8 @@ final readonly class MoveContactMethodAction
                 ->where('contactable_id', $target->getKey())
                 ->where('type', $record->type)
                 ->where('purpose', $record->purpose)
+                ->where('owner_type', $record->owner_type)
+                ->where('owner_id', $record->owner_id)
                 ->whereKeyNot($record->getKey())
                 ->where('is_primary', true)
                 ->exists()) {
