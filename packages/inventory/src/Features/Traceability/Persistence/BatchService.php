@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Events\BatchCreated;
 use AIArmada\Inventory\Events\BatchExpired;
@@ -12,6 +13,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -83,14 +85,8 @@ final class BatchService
             throw new InvalidArgumentException('Quantity must be positive');
         }
 
-        if (InventoryOwnerScope::isEnabled()) {
-            $isAllowedLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereKey($locationId)
-                ->exists();
-
-            if (! $isAllowedLocation) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
+        if ($unitCostMinor !== null && $unitCostMinor < 0) {
+            throw new InvalidArgumentException('Unit cost cannot be negative');
         }
 
         return DB::transaction(function () use (
@@ -105,6 +101,8 @@ final class BatchService
             $supplierId,
             $purchaseOrderNumber
         ): InventoryBatch {
+            $this->assertOwnedLocation($locationId);
+
             $batch = InventoryBatch::create([
                 'inventoryable_type' => $model->getMorphClass(),
                 'inventoryable_id' => $model->getKey(),
@@ -202,6 +200,7 @@ final class BatchService
     public function quarantine(InventoryBatch $batch, string $reason): InventoryBatch
     {
         return DB::transaction(function () use ($batch, $reason): InventoryBatch {
+            $batch = $this->lockBatch($batch);
             $batch->quarantine($reason);
 
             // Release any allocations from this batch
@@ -231,6 +230,8 @@ final class BatchService
         }
 
         return DB::transaction(function () use ($batches, $reason): Collection {
+            $batches = $this->lockBatches($batches);
+
             foreach ($batches as $batch) {
                 $batch->recall($reason);
 
@@ -257,11 +258,14 @@ final class BatchService
      */
     public function transferBatch(InventoryBatch $batch, InventoryLocation $newLocation): InventoryBatch
     {
-        if ($batch->quantity_reserved > 0) {
-            throw new InvalidArgumentException('Cannot transfer batch with reserved quantity');
-        }
-
         return DB::transaction(function () use ($batch, $newLocation): InventoryBatch {
+            $batch = $this->lockBatch($batch);
+            $this->assertOwnedLocation($newLocation->id);
+
+            if ($batch->quantity_reserved > 0 || $batch->allocations()->exists()) {
+                throw new InvalidArgumentException('Cannot transfer batch with reserved quantity');
+            }
+
             $batch->update([
                 'location_id' => $newLocation->id,
             ]);
@@ -285,11 +289,13 @@ final class BatchService
      */
     public function splitBatch(InventoryBatch $batch, int $quantityToSplit, string $newBatchNumber): InventoryBatch
     {
-        if ($quantityToSplit <= 0 || $quantityToSplit >= $batch->available) {
-            throw new InvalidArgumentException('Invalid quantity to split');
-        }
-
         return DB::transaction(function () use ($batch, $quantityToSplit, $newBatchNumber): InventoryBatch {
+            $batch = $this->lockBatch($batch);
+
+            if ($quantityToSplit <= 0 || $quantityToSplit >= $batch->available) {
+                throw new InvalidArgumentException('Invalid quantity to split');
+            }
+
             // Create new batch
             $newBatch = InventoryBatch::create([
                 'inventoryable_type' => $batch->inventoryable_type,
@@ -336,25 +342,30 @@ final class BatchService
      */
     public function mergeBatches(Collection $batches, string $newBatchNumber): InventoryBatch
     {
-        if ($batches->count() < 2) {
-            throw new InvalidArgumentException('Need at least 2 batches to merge');
-        }
-
-        // Validate all batches are for the same item
-        $types = $batches->pluck('inventoryable_type')->unique();
-        $ids = $batches->pluck('inventoryable_id')->unique();
-
-        if ($types->count() > 1 || $ids->count() > 1) {
-            throw new InvalidArgumentException('All batches must be for the same item');
-        }
-
-        // Check no reserved quantities
-        if ($batches->sum('quantity_reserved') > 0) {
-            throw new InvalidArgumentException('Cannot merge batches with reserved quantities');
-        }
-
         return DB::transaction(function () use ($batches, $newBatchNumber): InventoryBatch {
-            $firstBatch = $batches->first();
+            $batches = $this->lockBatches($batches);
+
+            if ($batches->count() < 2) {
+                throw new InvalidArgumentException('Need at least 2 batches to merge');
+            }
+
+            if ($batches->pluck('inventoryable_type')->unique()->count() > 1
+                || $batches->pluck('inventoryable_id')->unique()->count() > 1
+                || $batches->pluck('location_id')->unique()->count() > 1) {
+                throw new InvalidArgumentException('All batches must be for the same item and location');
+            }
+
+            foreach ($batches as $batch) {
+                if ($batch->quantity_reserved > 0 || $batch->allocations()->exists()) {
+                    throw new InvalidArgumentException('Cannot merge batches with reserved quantities');
+                }
+
+                if ($batch->status !== BatchStatus::Active->value || $batch->is_expired) {
+                    throw new InvalidArgumentException('Only active, unexpired batches can be merged');
+                }
+            }
+
+            $firstBatch = $batches->firstOrFail();
             $totalQuantity = $batches->sum('quantity_on_hand');
             $earliestExpiry = $batches->whereNotNull('expires_at')->min('expires_at');
 
@@ -407,11 +418,13 @@ final class BatchService
     public function processExpiredBatches(): int
     {
         return DB::transaction(function (): int {
-            $expiredBatches = InventoryOwnerScope::applyToLocationQuery(
-                InventoryBatch::query()
-                    ->where('status', BatchStatus::Active->value)
-                    ->expired()
-            )->get();
+            $expiredBatches = $this->ownedQuery()
+                ->where('status', BatchStatus::Active->value)
+                ->expired()
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->with('inventoryable')
+                ->get();
 
             foreach ($expiredBatches as $batch) {
                 $batch->markExpired();
@@ -423,5 +436,55 @@ final class BatchService
 
             return $expiredBatches->count();
         });
+    }
+
+    /** @return Builder<InventoryBatch> */
+    private function ownedQuery(): Builder
+    {
+        $query = InventoryBatch::query();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $query->forOwner($owner, false);
+        }
+
+        return $query;
+    }
+
+    private function lockBatch(InventoryBatch $batch): InventoryBatch
+    {
+        return $this->ownedQuery()->whereKey($batch->getKey())->lockForUpdate()->firstOrFail();
+    }
+
+    /**
+     * @param  Collection<int, InventoryBatch>  $batches
+     * @return Collection<int, InventoryBatch>
+     */
+    private function lockBatches(Collection $batches): Collection
+    {
+        $ids = $batches->modelKeys();
+        $locked = $this->ownedQuery()->whereKey($ids)->orderBy('id')->lockForUpdate()->get();
+
+        if ($locked->count() !== count($ids)) {
+            throw new InvalidArgumentException('Batches must be distinct and accessible for current owner');
+        }
+
+        return $locked;
+    }
+
+    private function assertOwnedLocation(string $locationId): void
+    {
+        $query = InventoryLocation::query();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $query->forOwner($owner, false);
+        }
+
+        if ($query->whereKey($locationId)->lockForUpdate()->first() === null) {
+            throw new InvalidArgumentException('Invalid location for current owner');
+        }
     }
 }

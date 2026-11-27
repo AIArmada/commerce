@@ -279,6 +279,44 @@ describe('BatchService', function (): void {
         expect(InventoryBatch::find($batch2->id))->toBeNull();
     });
 
+    it('rejects stale splits and transfers after stock is reserved', function (): void {
+        $batch = $this->service->createBatch($this->item, 'STALE-BATCH', $this->location->id, 100);
+        $stale = $batch->fresh();
+        $batch->update(['quantity_reserved' => 80]);
+
+        expect(fn () => $this->service->splitBatch($stale, 30, 'INVALID-SPLIT'))
+            ->toThrow(InvalidArgumentException::class);
+        expect(fn () => $this->service->transferBatch($stale, InventoryLocation::factory()->create()))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect($batch->fresh()->quantity_on_hand)->toBe(100)
+            ->and($batch->fresh()->quantity_reserved)->toBe(80);
+    });
+
+    it('rejects merging stock from different locations or duplicated batches', function (): void {
+        $first = $this->service->createBatch($this->item, 'MERGE-A', $this->location->id, 50);
+        $second = $this->service->createBatch($this->item, 'MERGE-B', InventoryLocation::factory()->create()->id, 30);
+
+        expect(fn () => $this->service->mergeBatches(new Collection([$first, $second]), 'INVALID-MERGE'))
+            ->toThrow(InvalidArgumentException::class);
+        expect(fn () => $this->service->mergeBatches(new Collection([$first, $first]), 'INVALID-DUPLICATE'))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect($first->fresh()->quantity_on_hand)->toBe(50)
+            ->and($second->fresh()->quantity_on_hand)->toBe(30);
+    });
+
+    it('does not convert recalled stock back to active through a merge', function (): void {
+        $first = $this->service->createBatch($this->item, 'RECALLED-A', $this->location->id, 50);
+        $second = $this->service->createBatch($this->item, 'ACTIVE-B', $this->location->id, 30);
+        $first->update(['status' => BatchStatus::Recalled->value]);
+
+        expect(fn () => $this->service->mergeBatches(new Collection([$first, $second]), 'UNSAFE-MERGE'))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect($first->fresh()->status)->toBe(BatchStatus::Recalled->value);
+    });
+
     it('merge batches throws for single batch', function (): void {
         $batch = InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
