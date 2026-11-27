@@ -12,6 +12,7 @@ use AIArmada\Jnt\Features\Orders\Api\ReadWaybillOrder;
 use AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill;
 use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Auth\Access\AuthorizationException;
+use InvalidArgumentException;
 
 final readonly class IssuePrintableWaybill implements PrintableWaybill
 {
@@ -29,17 +30,32 @@ final readonly class IssuePrintableWaybill implements PrintableWaybill
             ? $this->carrier->printOrder($order->orderId, $order->trackingNumber)
             : $this->carrier->printOrder($order->orderId);
 
-        $waybill = PrintWaybillData::fromApiArray($result);
-        $url = $waybill->urlContent;
+        try {
+            $waybill = PrintWaybillData::fromApiArray($result);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
 
-        if ($waybill->hasUrlContent() && is_string($url) && filter_var($url, FILTER_VALIDATE_URL)
-            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
-            return $url;
+        if ($waybill->orderId !== '' && $waybill->orderId !== $order->orderId) {
+            return null;
         }
 
         $content = $waybill->getPdfContent();
 
-        if (! is_string($content) || ! str_starts_with($content, '%PDF-')) {
+        if ($waybill->hasBase64Content()) {
+            if ($content === null || ! str_starts_with($content, '%PDF-')) {
+                return null;
+            }
+        } else {
+            $url = $waybill->getDownloadUrl();
+
+            if ($url !== null && filter_var($url, FILTER_VALIDATE_URL)
+                && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)
+                && parse_url($url, PHP_URL_USER) === null
+                && parse_url($url, PHP_URL_PASS) === null) {
+                return $url;
+            }
+
             return null;
         }
 

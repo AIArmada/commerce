@@ -132,3 +132,22 @@ it('rejects non-http waybill URLs at the domain boundary', function (): void {
 
     expect(app(\AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
 });
+
+it('rejects waybills with mismatched order identities or unsafe carrier payloads', function (array $payload): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-AWB-BOUNDARY',
+        'customer_code' => 'CUST',
+        'tracking_number' => 'TRK-AWB-BOUNDARY',
+    ]);
+
+    $carrier = Mockery::mock(JntExpressService::class);
+    $carrier->shouldReceive('printOrder')->once()->andReturn($payload);
+    app()->instance(JntExpressService::class, $carrier);
+
+    expect(app(\AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
+})->with([
+    'different order' => [['txlogisticId' => 'OTHER-ORDER', 'urlContent' => 'https://example.test/label.pdf']],
+    'malformed URL' => [['urlContent' => ['https://example.test/label.pdf']]],
+    'credentials in URL' => [['urlContent' => 'https://user:password@example.test/label.pdf']],
+    'invalid inline PDF with URL' => [['base64EncodeContent' => 'invalid!', 'urlContent' => 'https://example.test/label.pdf']],
+]);

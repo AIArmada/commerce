@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
+use InvalidArgumentException;
+
 /**
  * Data Transfer Object for waybill printing responses.
  *
@@ -29,11 +31,14 @@ final readonly class PrintWaybillData
      */
     public static function fromApiArray(array $data): self
     {
-        // J&T returns different data for single vs multi-parcel
-        // Single parcel: base64EncodeContent
-        // Multi-parcel: urlContent
-        $hasBase64 = isset($data['base64EncodeContent']) && ! empty($data['base64EncodeContent']);
-        $hasUrl = isset($data['urlContent']) && ! empty($data['urlContent']);
+        foreach (['txlogisticId', 'orderId', 'billCode', 'trackingNumber', 'base64EncodeContent', 'urlContent', 'templateName'] as $field) {
+            if (isset($data[$field]) && ! is_string($data[$field])) {
+                throw new InvalidArgumentException("Invalid {$field}: expected a string.");
+            }
+        }
+
+        $hasBase64 = isset($data['base64EncodeContent']) && $data['base64EncodeContent'] !== '';
+        $hasUrl = isset($data['urlContent']) && $data['urlContent'] !== '';
 
         return new self(
             orderId: $data['txlogisticId'] ?? $data['orderId'] ?? '',

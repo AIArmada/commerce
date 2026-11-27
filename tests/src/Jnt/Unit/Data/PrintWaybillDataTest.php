@@ -363,6 +363,17 @@ describe('PrintWaybillData', function (): void {
             ->and(file_exists($path))->toBeFalse();
     });
 
+    it('rejects malformed carrier response fields', function (string $field, mixed $value): void {
+        expect(fn () => PrintWaybillData::fromApiArray([$field => $value]))
+            ->toThrow(InvalidArgumentException::class);
+    })->with([
+        ['txlogisticId', 123],
+        ['billCode', ['JT123']],
+        ['base64EncodeContent', []],
+        ['urlContent', true],
+        ['templateName', 123],
+    ]);
+
     it('handles empty base64 content', function (): void {
         $data = PrintWaybillData::fromApiArray([
             'orderId' => 'ORDER-123',
