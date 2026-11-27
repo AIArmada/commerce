@@ -18,7 +18,7 @@ use AIArmada\Vouchers\Platform\FeatureCatalog;
 use AIArmada\Vouchers\Platform\FeatureModule;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Services\VoucherValidator;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
@@ -47,7 +47,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->registerFeatures();
 
         $this->app->singleton(VoucherService::class);
-        $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(Services\VoucherDiscountCalculator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
 
@@ -158,7 +157,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
         return [
             VoucherService::class,
             VoucherServiceInterface::class,
-            VoucherValidator::class,
+            VoucherValidation::class,
             StackingPolicyInterface::class,
             Services\VoucherDiscountCalculator::class,
             VoucherRulesFactory::class,

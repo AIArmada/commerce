@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Services;
+namespace AIArmada\Vouchers\Features\CartIntegration\Queries;
+
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionTarget;
@@ -25,7 +27,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Throwable;
 
-class VoucherValidator
+final class VoucherValidator implements VoucherValidation
 {
     use QueriesVouchers;
     use ResolvesVoucherAssignee;

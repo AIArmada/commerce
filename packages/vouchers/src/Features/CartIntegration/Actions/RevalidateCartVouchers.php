@@ -6,12 +6,15 @@ namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 
 final readonly class RevalidateCartVouchers
 {
     use NormalizesVoucherCodes;
+
+    public function __construct(private VoucherValidation $validator) {}
 
     public function handle(Cart $cart): void
     {
@@ -46,7 +49,7 @@ final readonly class RevalidateCartVouchers
         $invalidCodes = [];
 
         foreach ($codes as $code) {
-            $result = ValidateVoucherCode::run((string) $code, $cart);
+            $result = $this->validator->validate((string) $code, $cart);
 
             if (! $result->isValid) {
                 $invalidCodes[$code] = $result->reason ?? 'Voucher is no longer valid';

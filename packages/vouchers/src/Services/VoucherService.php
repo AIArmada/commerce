@@ -7,6 +7,7 @@ namespace AIArmada\Vouchers\Services;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -35,7 +36,7 @@ class VoucherService implements VoucherServiceInterface
     use QueriesVouchers;
 
     public function __construct(
-        protected VoucherValidator $validator,
+        protected VoucherValidation $validator,
         private readonly VoucherLookup $lookupCache,
     ) {}
 
