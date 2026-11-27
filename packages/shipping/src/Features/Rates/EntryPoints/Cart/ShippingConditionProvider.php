@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Cart;
+namespace AIArmada\Shipping\Features\Rates\EntryPoints\Cart;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Runtime\ConditionProviderInterface;
+use AIArmada\Cart\Support\CartMoney;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -64,6 +65,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
             type: self::CONDITION_TYPE,
             value: $rate->rate,
             attributes: [
+                'currency' => $rate->currency,
                 'carrier' => $rate->carrier,
                 'service' => $rate->service,
                 'estimated_days' => $rate->estimatedDays,
@@ -108,10 +110,16 @@ class ShippingConditionProvider implements ConditionProviderInterface
 
         $origin = $this->getOriginAddress();
         $packages = $this->cartToPackages($cart);
+        $options = ['cart_total' => 0, 'item_count' => 0, 'currency' => CartMoney::currency()];
+
+        foreach ($cart->getItems() as $item) {
+            $options['cart_total'] += $item->getRawSubtotal();
+            $options['item_count'] += (int) $item->quantity;
+        }
 
         if ($selectedMethod !== null) {
             // Get specific rate that was selected
-            $allRates = $this->rateEngine->getAllRates($origin, $destination, $packages);
+            $allRates = $this->rateEngine->getAllRates($origin, $destination, $packages, $options);
 
             return $allRates->first(
                 fn (RateQuoteData $rate) => $rate->carrier === $selectedMethod['carrier']
@@ -120,7 +128,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
         }
 
         // Default to best rate based on strategy
-        return $this->rateEngine->getBestRate($origin, $destination, $packages);
+        return $this->rateEngine->getBestRate($origin, $destination, $packages, $options);
     }
 
     /**
@@ -241,6 +249,10 @@ class ShippingConditionProvider implements ConditionProviderInterface
                     $allocatedDeclaredValue = true;
                 }
 
+                continue;
+            }
+
+            if ($item->getAttribute('requires_shipping') === false) {
                 continue;
             }
 

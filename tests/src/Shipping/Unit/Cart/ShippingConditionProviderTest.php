@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Shipping\Cart\ShippingConditionProvider;
+use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
@@ -260,6 +260,8 @@ it('calculates package weight from cart items', function (): void {
     );
 
     $this->rateEngine->shouldReceive('getBestRate')
+        ->once()
+        ->withArgs(fn ($origin, $destination, $packages, $options) => $options['cart_total'] === 10000 && $options['item_count'] === 2 && $options['currency'] === 'MYR')
         ->andReturn($rate);
 
     $provider = new ShippingConditionProvider($this->rateEngine);

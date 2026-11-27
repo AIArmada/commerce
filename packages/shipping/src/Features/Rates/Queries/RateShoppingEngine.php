@@ -84,7 +84,7 @@ class RateShoppingEngine implements ShopRates
         $allRates = $this->getAllRates($origin, $destination, $packages, $options);
 
         if ($allRates->isEmpty()) {
-            return $this->getFallbackRate($destination, $packages);
+            return $this->getFallbackRate($origin, $destination, $packages, $options);
         }
 
         return $this->strategy->select($allRates->values()->all(), $options);
@@ -332,7 +332,7 @@ class RateShoppingEngine implements ShopRates
      *
      * @param  array<PackageData>  $packages
      */
-    protected function getFallbackRate(AddressData $destination, array $packages): ?RateQuoteData
+    protected function getFallbackRate(AddressData $origin, AddressData $destination, array $packages, array $options): ?RateQuoteData
     {
         $fallbackEnabled = $this->config['fallback_to_manual'] ?? true;
 
@@ -348,9 +348,10 @@ class RateShoppingEngine implements ShopRates
             }
 
             return $driver->getRates(
-                new AddressData(name: '', phone: '', line1: '', postcode: ''),
+                $origin,
                 $destination,
                 $packages,
+                $options,
             )[0] ?? null;
         } catch (Throwable $e) {
             report($e);

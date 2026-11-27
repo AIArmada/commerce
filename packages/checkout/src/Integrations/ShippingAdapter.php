@@ -53,10 +53,12 @@ final class ShippingAdapter
             carrier: null,
             options: [
                 'currency' => $session->currency,
+                'cart_total' => $session->subtotal,
+                'item_count' => array_sum(array_map(static fn (array $item): int => max(0, (int) ($item['quantity'] ?? 1)), array_filter($cartSnapshot['items'] ?? [], 'is_array'))),
             ],
         );
 
-        $rates = $this->normalizeRates($rateQuotes);
+        $rates = $this->normalizeRates(array_values(array_filter($rateQuotes, static fn (RateQuoteData $rate): bool => mb_strtoupper($rate->currency) === mb_strtoupper($session->currency) && $rate->rate >= 0 && ($rate->expiresAt === null || $rate->expiresAt > now()))));
 
         if (! $this->hasJnt || ! config('checkout.integrations.shipping.jnt.auto_detect', true)) {
             $rates = array_values(array_filter($rates, fn (array $rate): bool => ($rate['carrier'] ?? '') !== 'jnt'));

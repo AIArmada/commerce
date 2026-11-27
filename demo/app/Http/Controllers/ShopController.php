@@ -21,7 +21,7 @@ use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
-use AIArmada\Shipping\Cart\ShippingCondition;
+use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingCondition;
 use AIArmada\Signals\Support\Http\SignalsBrowserContextManager;
 use AIArmada\Signals\Support\SignalIdentifier;
 use AIArmada\Tax\Services\TaxCalculator;

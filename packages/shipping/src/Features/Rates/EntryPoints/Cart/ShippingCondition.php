@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Cart;
+namespace AIArmada\Shipping\Features\Rates\EntryPoints\Cart;
 
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;

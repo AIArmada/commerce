@@ -11,7 +11,7 @@ use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
-use AIArmada\Shipping\Cart\ShippingConditionProvider;
+use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Api\ShopRates;
 use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
