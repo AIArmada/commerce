@@ -10,6 +10,7 @@ use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Features\Tracking\Actions\ProcessTrackingWebhook;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -66,7 +67,7 @@ describe('ProcessJntWebhook', function (): void {
     it('maps scan types to tracking statuses', function (): void {
         $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
 
-        $processor = new ProcessJntWebhook($webhookCall);
+        $processor = new ProcessTrackingWebhook($webhookCall);
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('mapToStatus');

@@ -1,6 +1,10 @@
 {
   "schema": 1,
   "name": "Tracking",
-  "owns": {},
+  "owns": {
+    "table:jnt_tracking_events": [
+      "AIArmada\\Jnt\\Features\\Tracking\\Actions\\ProcessTrackingWebhook"
+    ]
+  },
   "extensions": {}
 }
