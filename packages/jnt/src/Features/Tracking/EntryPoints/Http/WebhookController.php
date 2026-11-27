@@ -46,6 +46,13 @@ class WebhookController
                 throw new NotFoundHttpException;
             }
 
+            $content = $request->input('bizContent');
+            $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
+
+            if (is_string($content) && strlen($content) > $maxBytes) {
+                throw JntValidationException::fieldTooLong('bizContent', $maxBytes, strlen($content));
+            }
+
             if ($config->signingSecret === '') {
                 $config->signingSecret = (string) config('jnt.private_key', '');
             }

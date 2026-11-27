@@ -63,7 +63,7 @@ class JntServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['webhooks', 'web'])
+            ->hasRoutes(['web'])
             ->hasCommands([
                 HealthCheckCommand::class,
                 OrderCreateCommand::class,
@@ -122,6 +122,7 @@ class JntServiceProvider extends PackageServiceProvider
             }
         }
 
+        $this->loadRoutesFrom(__DIR__ . '/Features/Tracking/EntryPoints/Routes/webhooks.php');
         $this->assertOwnerResolverConfigured();
         $this->registerCartConditionProvider();
         $this->registerShippingDriver();
