@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
-use AIArmada\FilamentProducts\Support\ProductStatsAggregator;
+use AIArmada\FilamentProducts\Queries\ProductStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

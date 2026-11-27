@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\EntryPoints\Listeners;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners;
 
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
-final class ReleaseInventoryOnCartClear
+final readonly class ReleaseInventoryOnCartClear
 {
     public function __construct(
         private InventoryAllocationService $allocationService

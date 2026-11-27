@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\EntryPoints\Listeners;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners;
 
 use AIArmada\Cashier\Events\PaymentSucceeded as CashierPaymentSucceeded;
 use AIArmada\CashierChip\Events\PaymentSucceeded as CashierChipPaymentSucceeded;
 use AIArmada\Inventory\Contracts\ProvidesInventoryCommitContext;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
-final class CommitInventoryOnPayment
+final readonly class CommitInventoryOnPayment
 {
     public function __construct(
         private InventoryAllocationService $allocationService

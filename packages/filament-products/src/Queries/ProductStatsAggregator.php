@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentProducts\Support;
+namespace AIArmada\FilamentProducts\Queries;
 
-use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\FilamentProducts\Persistence\ProductStatsCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Queries\CatalogStatistics;
 
@@ -19,6 +19,6 @@ final readonly class ProductStatsAggregator
             'Product statistics require an owner context or explicit global context.',
         );
 
-        return OwnerCache::remember($owner, ProductStatsCache::KEY, 60, fn (): array => (new CatalogStatistics)->execute());
+        return ProductStatsCache::remember($owner, fn (): array => (new CatalogStatistics)->execute());
     }
 }

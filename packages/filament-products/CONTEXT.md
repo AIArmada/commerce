@@ -44,7 +44,7 @@ keywords:
 - Abstract resource bases: `BaseProductResource`, `BaseCatalogResource`, `BaseAttributeResource`
 - Widgets: `ProductStatsWidget`, `ProductTypeDistributionWidget`, `CategoryDistributionChart`, `TopSellingProductsWidget`
 - Product relation managers: `VariantsRelationManager`, `OptionsRelationManager`, `PricesRelationManager` (pricing installed)
-- Actions/Services: `Support/ProductStatsAggregator`, `Support/ProductStatsCache`
+- Actions/Services: `Queries/ProductStatsAggregator`, `Persistence/ProductStatsCache`
 - Config `filament-products.php` keys: `navigation.group`, `navigation.resources.{products,categories,collections,attributes,attribute_groups,attribute_sets}`, `features.{collections,attributes}`, `import.{max_rows,max_file_kb}`
 
 ## Docs map
