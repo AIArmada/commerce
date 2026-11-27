@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
-use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
+use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;

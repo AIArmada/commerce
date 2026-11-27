@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Webhooks\Handlers;
 
-use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
+use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Events\PaymentRefunded;

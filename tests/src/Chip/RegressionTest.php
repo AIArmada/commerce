@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
+use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
 use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
 use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;

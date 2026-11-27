@@ -4,7 +4,8 @@
   "owns": {
     "table:chip_purchases": [
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload",
-      "AIArmada\\Chip\\Features\\Collect\\Persistence\\PurchaseIdempotencyLedger"
+      "AIArmada\\Chip\\Features\\Collect\\Persistence\\PurchaseIdempotencyLedger",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\SyncPurchaseRefundState"
     ],
     "table:chip_clients": [
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
