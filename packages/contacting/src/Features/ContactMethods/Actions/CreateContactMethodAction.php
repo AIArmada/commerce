@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;

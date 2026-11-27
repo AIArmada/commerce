@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
 use AIArmada\FilamentContacting\Schemas\ContactMethodInfolistSchema;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Exports;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;

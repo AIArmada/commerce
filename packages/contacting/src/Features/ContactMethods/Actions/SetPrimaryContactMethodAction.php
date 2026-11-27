@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Illuminate\Support\Facades\DB;
 
 final class SetPrimaryContactMethodAction

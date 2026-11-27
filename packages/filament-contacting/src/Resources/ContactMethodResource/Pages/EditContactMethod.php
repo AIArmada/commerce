@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources\ContactMethodResource\Pages;
 
-use AIArmada\Contacting\Actions\UpdateContactMethodAction;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\FilamentContacting\Resources\ContactMethodResource;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;

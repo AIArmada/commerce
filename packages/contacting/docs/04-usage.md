@@ -48,7 +48,7 @@ and social profiles use `contacting.defaults.public_by_default`; set
 `is_public` explicitly for directory or publication flows.
 
 ```php
-use AIArmada\Contacting\Actions\CreateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
 
 app(CreateContactMethodAction::class)->execute($institution, [
     'type' => 'email',
@@ -88,7 +88,7 @@ app(CreateContactMethodAction::class)->execute($institution, [
 ## Create Social Profile (Facebook)
 
 ```php
-use AIArmada\Contacting\Actions\CreateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;
 
 app(CreateSocialProfileAction::class)->execute($institution, [
     'platform' => 'facebook',
@@ -122,7 +122,7 @@ app(CreateSocialProfileAction::class)->execute($institution, [
 ## Set Primary Contact
 
 ```php
-use AIArmada\Contacting\Actions\SetPrimaryContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\SetPrimaryContactMethodAction;
 
 $email = $institution->contactMethods()->where('type', 'email')->first();
 app(SetPrimaryContactMethodAction::class)->execute($email);
@@ -131,7 +131,7 @@ app(SetPrimaryContactMethodAction::class)->execute($email);
 ## Build Contact Links
 
 ```php
-use AIArmada\Contacting\Actions\BuildContactLinksAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
 
 $links = app(BuildContactLinksAction::class)->forContactable($institution);
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Imports;
 
 use AIArmada\Contacting\Enums\SocialPlatform;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\FilamentContacting\Imports\Concerns\AuthorizesContactingImports;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;

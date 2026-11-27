@@ -26,7 +26,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Actions\ReplaceGeneralContactMethods;
+use AIArmada\Contacting\Features\ContactMethods\Actions\ReplaceGeneralContactMethods;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use Carbon\CarbonImmutable;

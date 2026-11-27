@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources\SocialProfileResource\Pages;
 
-use AIArmada\Contacting\Actions\UpdateSocialProfileAction;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\UpdateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\FilamentContacting\Resources\SocialProfileResource;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;

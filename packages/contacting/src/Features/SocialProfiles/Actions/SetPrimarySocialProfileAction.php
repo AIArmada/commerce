@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Illuminate\Support\Facades\DB;
 
 final class SetPrimarySocialProfileAction

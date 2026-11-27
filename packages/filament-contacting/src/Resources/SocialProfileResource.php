@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
 use AIArmada\FilamentContacting\Schemas\SocialProfileInfolistSchema;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 

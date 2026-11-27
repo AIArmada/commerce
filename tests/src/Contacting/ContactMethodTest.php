@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;

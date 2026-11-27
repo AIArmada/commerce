@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentContacting\Imports\ContactMethodImporter;
 use Filament\Actions\Imports\Models\Import;

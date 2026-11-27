@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;

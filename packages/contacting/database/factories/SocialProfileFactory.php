@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Database\Factories;
 
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

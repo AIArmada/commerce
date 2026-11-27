@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "ContactMethods",
+  "owns": {
+    "table:contact_methods": [
+      "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\CreateContactMethodAction",
+      "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\DeleteContactMethodsForEntityAction",
+      "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\ReplaceGeneralContactMethods",
+      "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\SetPrimaryContactMethodAction",
+      "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\SynchronizePrimaryContactMethodAction",
+      "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\UpdateContactMethodAction"
+    ]
+  },
+  "extensions": {}
+}

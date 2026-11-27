@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Actions\CreateCustomer;
 use AIArmada\Customers\Actions\MergeCustomers;
 use AIArmada\Customers\Actions\SetDefaultCustomerAddress;

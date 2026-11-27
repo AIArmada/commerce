@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackFormAction;
 use AIArmada\Feedback\Actions\DeleteFeedbackQuestionAction;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
 use AIArmada\Contacting\Enums\SocialPlatform;

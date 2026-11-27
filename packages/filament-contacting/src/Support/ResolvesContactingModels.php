@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Support;
 
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 
 final class ResolvesContactingModels
 {

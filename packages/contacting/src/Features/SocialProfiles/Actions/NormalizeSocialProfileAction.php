@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;

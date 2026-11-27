@@ -14,7 +14,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Actions\CreateCustomer;
 use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Customer;

@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting;
 
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
-use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
-use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
-use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Drivers\PinnedPublicHtmlFetcher;
 use AIArmada\Contacting\Platform\ExtensionRegistry;
 use AIArmada\Contacting\Platform\FeatureCatalog;
@@ -35,9 +31,6 @@ final class ContactingServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->bind(PublicHtmlFetcher::class, PinnedPublicHtmlFetcher::class);
-
-        $this->app->bind(ContactMethodNormalizer::class, NormalizeContactMethodAction::class);
-        $this->app->bind(SocialProfileNormalizer::class, NormalizeSocialProfileAction::class);
 
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));

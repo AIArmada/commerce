@@ -6,7 +6,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Actions\CreateCustomer;
 use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Customer;

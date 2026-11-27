@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Concerns;
 
-use AIArmada\Contacting\Actions\CreateSocialProfileAction;
-use AIArmada\Contacting\Actions\DeleteSocialProfilesForEntityAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\DeleteSocialProfilesForEntityAction;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
-use AIArmada\Contacting\Actions\DiscoverWebsiteSocialProfilesAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\DiscoverWebsiteSocialProfilesAction;
 use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
 use Illuminate\Support\Facades\Http;
 

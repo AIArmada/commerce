@@ -7,7 +7,7 @@ namespace AIArmada\Events\Features\Venues\Models;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
 use AIArmada\Events\Features\Venues\Actions\DeleteVenueDependents;
 use AIArmada\Events\Platform\ModelResolver;

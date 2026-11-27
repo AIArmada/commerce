@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Support\NormalizesEmailAddress;

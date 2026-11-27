@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
-use AIArmada\Contacting\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
-final readonly class SynchronizePrimarySocialProfileAction
+final readonly class SynchronizePrimaryContactMethodAction
 {
     /** @param Closure(): bool $persist */
-    public function execute(SocialProfile $record, Closure $persist): bool
+    public function execute(ContactMethod $record, Closure $persist): bool
     {
         return $record->getConnection()->transaction(function () use ($record, $persist): bool {
             $this->demoteSiblings($record);
@@ -20,24 +20,24 @@ final readonly class SynchronizePrimarySocialProfileAction
         });
     }
 
-    private function demoteSiblings(SocialProfile $record): void
+    private function demoteSiblings(ContactMethod $record): void
     {
         if (! $record->is_primary) {
             return;
         }
 
-        if ($record->socialable_type === null || $record->socialable_id === null) {
+        if ($record->contactable_type === null || $record->contactable_id === null) {
             return;
         }
 
-        $record->socialable()->lockForUpdate()->firstOrFail();
+        $record->contactable()->lockForUpdate()->firstOrFail();
 
         // The surrounding save transaction rolls this demotion back if a
         // later model guard or the database constraint rejects the write.
-        SocialProfile::query()
-            ->where('socialable_type', $record->socialable_type)
-            ->where('socialable_id', $record->socialable_id)
-            ->where('platform', $record->platform)
+        ContactMethod::query()
+            ->where('contactable_type', $record->contactable_type)
+            ->where('contactable_id', $record->contactable_id)
+            ->where('type', $record->type)
             ->where('purpose', $record->purpose)
             ->where('is_primary', true)
             ->when($record->exists, fn (Builder $query): Builder => $query->whereKeyNot($record->getKey()))

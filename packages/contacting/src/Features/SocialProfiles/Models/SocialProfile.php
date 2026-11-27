@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Models;
+namespace AIArmada\Contacting\Features\SocialProfiles\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
-use AIArmada\Contacting\Actions\SynchronizePrimaryContactMethodAction;
-use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\SynchronizePrimarySocialProfileAction;
+use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
+use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
+use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,15 +26,16 @@ use InvalidArgumentException;
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property string|null $contactable_type
- * @property string|null $contactable_id
- * @property string $type
+ * @property string|null $socialable_type
+ * @property string|null $socialable_id
+ * @property string $platform
  * @property string $purpose
  * @property string|null $label
- * @property string $value
- * @property string|null $normalized_value
- * @property string|null $display_value
- * @property string|null $country_code
+ * @property string|null $handle
+ * @property string|null $url
+ * @property string|null $normalized_url
+ * @property string|null $display_name
+ * @property string|null $external_id
  * @property bool $is_primary
  * @property bool $is_public
  * @property bool $is_verified
@@ -43,10 +46,10 @@ use InvalidArgumentException;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model|Eloquent $contactable
+ * @property-read Model|Eloquent $socialable
  * @property-read Model|Eloquent $owner
  */
-final class ContactMethod extends Model
+final class SocialProfile extends Model
 {
     use HasFactory;
     use HasOwner;
@@ -54,15 +57,16 @@ final class ContactMethod extends Model
     use HasUuids;
 
     protected $fillable = [
-        'contactable_type',
-        'contactable_id',
-        'type',
+        'socialable_type',
+        'socialable_id',
+        'platform',
         'purpose',
         'label',
-        'value',
-        'normalized_value',
-        'display_value',
-        'country_code',
+        'handle',
+        'url',
+        'normalized_url',
+        'display_name',
+        'external_id',
         'is_primary',
         'is_public',
         'is_verified',
@@ -73,16 +77,11 @@ final class ContactMethod extends Model
         'metadata',
     ];
 
-    protected $hidden = [
-        'primary_unique_hash',
-        'primary_owner_unique_hash',
-    ];
-
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string
     {
-        return config('contacting.database.tables.contact_methods', 'contact_methods');
+        return config('contacting.database.tables.social_profiles', 'social_profiles');
     }
 
     protected function casts(): array
@@ -98,10 +97,21 @@ final class ContactMethod extends Model
         ];
     }
 
+    public function profileUrl(): ?string
+    {
+        $handle = $this->handle;
+
+        if ($handle === null || $handle === '') {
+            return $this->url;
+        }
+
+        return app(SocialProfileConfig::class)->buildUrl($this->platform, $handle) ?? $this->url;
+    }
+
     /**
      * @return MorphTo<Model, $this>
      */
-    public function contactable(): MorphTo
+    public function socialable(): MorphTo
     {
         return $this->morphTo();
     }
@@ -118,9 +128,9 @@ final class ContactMethod extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeOfType(Builder $query, string $type): Builder
+    public function scopeForPlatform(Builder $query, string $platform): Builder
     {
-        return $query->where('type', $type);
+        return $query->where('platform', $platform);
     }
 
     /**
@@ -161,21 +171,21 @@ final class ContactMethod extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (ContactMethod $contactMethod): void {
-            $contactMethod->applyDefaultFlags();
+        static::creating(function (SocialProfile $profile): void {
+            $profile->applyDefaultFlags();
         });
 
-        static::saving(function (ContactMethod $contactMethod): void {
-            $contactMethod->normalizeForSave();
-            $contactMethod->guardAllowedType();
-            $contactMethod->guardContactableOwner();
-            $contactMethod->syncVerificationState();
+        static::saving(function (SocialProfile $profile): void {
+            $profile->normalizeForSave();
+            $profile->guardAllowedPlatform();
+            $profile->guardSocialableOwner();
+            $profile->syncVerificationState();
         });
     }
 
     /**
-     * Save a primary contact method while serializing primary replacement per
-     * contactable scope. The partial unique is the database-level backstop.
+     * Save a primary social profile while serializing primary replacement per
+     * socialable scope. The partial unique is the database-level backstop.
      *
      * @param  array<string, mixed>  $options
      */
@@ -184,9 +194,9 @@ final class ContactMethod extends Model
         $needsPrimarySync = $this->is_primary
             && (! $this->exists
                 || $this->isDirty('is_primary')
-                || $this->isDirty('contactable_type')
-                || $this->isDirty('contactable_id')
-                || $this->isDirty('type')
+                || $this->isDirty('socialable_type')
+                || $this->isDirty('socialable_id')
+                || $this->isDirty('platform')
                 || $this->isDirty('purpose')
                 || $this->isDirty('owner_type')
                 || $this->isDirty('owner_id'));
@@ -195,20 +205,17 @@ final class ContactMethod extends Model
             return parent::save($options);
         }
 
-        $this->guardAllowedType();
-        $this->guardContactableOwner();
+        $this->guardAllowedPlatform();
+        $this->guardSocialableOwner();
         $this->prepareOwnerForPrimarySync();
 
-        return app(SynchronizePrimaryContactMethodAction::class)->execute($this, fn (): bool => parent::save($options));
+        return app(SynchronizePrimarySocialProfileAction::class)->execute($this, fn (): bool => parent::save($options));
     }
 
     private function applyDefaultFlags(): void
     {
         if ($this->is_public === null) {
-            $this->is_public = match (mb_strtolower((string) $this->type)) {
-                'email', 'phone', 'mobile', 'whatsapp', 'fax' => false,
-                default => (bool) config('contacting.defaults.public_by_default', true),
-            };
+            $this->is_public = (bool) config('contacting.defaults.public_by_default', true);
         }
 
         if ($this->is_verified === null) {
@@ -218,25 +225,26 @@ final class ContactMethod extends Model
 
     private function normalizeForSave(): void
     {
-        $displayValueWasExplicitlyChanged = $this->isDirty('display_value');
-        $contactValueChanged = $this->isDirty(['value', 'country_code']);
+        $handleWasExplicitlyChanged = $this->exists && $this->isDirty('handle');
+        $urlWasExplicitlyChanged = $this->exists && $this->isDirty('url');
 
-        if ($this->country_code !== null) {
-            $this->country_code = mb_strtoupper($this->country_code);
-        }
-
-        $normalized = app(NormalizeContactMethodAction::class)->execute(
-            $this->type,
-            $this->value,
-            $this->country_code,
+        $normalized = app(NormalizeSocialProfileAction::class)->execute(
+            $this->platform,
+            $this->handle,
+            $this->url,
         );
 
-        $this->normalized_value = $normalized['normalized_value'];
-
-        if (! $displayValueWasExplicitlyChanged
-            && (! $this->exists || $contactValueChanged || $this->display_value === null)) {
-            $this->display_value = $normalized['display_value'];
+        if (! $handleWasExplicitlyChanged
+            && (! $this->exists || $this->isDirty('url') || $this->handle === null)) {
+            $this->handle = $normalized['handle'];
         }
+
+        if (! $urlWasExplicitlyChanged
+            && (! $this->exists || $this->isDirty('handle') || $this->url === null)) {
+            $this->url = $normalized['normalized_url'];
+        }
+
+        $this->normalized_url = $normalized['normalized_url'];
     }
 
     private function syncVerificationState(): void
@@ -252,17 +260,14 @@ final class ContactMethod extends Model
         }
     }
 
-    private function guardAllowedType(): void
+    private function guardAllowedPlatform(): void
     {
-        if (! (bool) config('contacting.features.strict_contact_types', false)) {
+        if (! (bool) config('contacting.features.strict_social_platforms', false)) {
             return;
         }
 
-        $allowedTypes = config('contacting.contact_methods.types', []);
-        $allowedValues = array_is_list($allowedTypes) ? $allowedTypes : array_keys($allowedTypes);
-
-        if (! in_array($this->type, $allowedValues, true)) {
-            throw new InvalidArgumentException(sprintf('Unsupported contact method type "%s".', $this->type));
+        if (SocialPlatform::tryFrom($this->platform) === null) {
+            throw new InvalidArgumentException(sprintf('Unsupported social platform "%s".', $this->platform));
         }
     }
 
@@ -279,16 +284,16 @@ final class ContactMethod extends Model
         }
     }
 
-    private function guardContactableOwner(): void
+    private function guardSocialableOwner(): void
     {
         app(ContactingModelReferenceGuard::class)->resolve(
-            $this->contactable_type,
-            $this->contactable_id,
+            $this->socialable_type,
+            $this->socialable_id,
         );
     }
 
-    protected static function newFactory(): ContactMethodFactory
+    protected static function newFactory(): SocialProfileFactory
     {
-        return ContactMethodFactory::new();
+        return SocialProfileFactory::new();
     }
 }

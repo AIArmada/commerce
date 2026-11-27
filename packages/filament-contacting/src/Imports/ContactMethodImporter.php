@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Imports;
 
 use AIArmada\Contacting\Enums\ContactMethodType;
-use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\FilamentContacting\Imports\Concerns\AuthorizesContactingImports;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
