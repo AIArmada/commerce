@@ -77,7 +77,7 @@ final class DispatchManagedNotificationAction
                     recipientId: $notifiable->getKey(),
                     destinationHash: $destinationHash,
                     channel: $channel,
-                    category: $context->category->value,
+                    category: $context->category,
                 );
 
                 if (! $eligibility['eligible']) {

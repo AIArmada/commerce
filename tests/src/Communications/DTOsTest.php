@@ -20,9 +20,9 @@ use Carbon\CarbonImmutable;
 test('CommunicationContextData creates with defaults', function (): void {
     $dto = CommunicationContextData::from([]);
 
-    expect($dto->direction)->toBe(CommunicationDirection::Outbound);
-    expect($dto->category)->toBe(CommunicationCategory::Transactional);
-    expect($dto->priority)->toBe(CommunicationPriority::Normal);
+    expect($dto->direction)->toBe(CommunicationDirection::Outbound->value);
+    expect($dto->category)->toBe(CommunicationCategory::Transactional->value);
+    expect($dto->priority)->toBe(CommunicationPriority::Normal->value);
     expect($dto->purpose)->toBeNull();
     expect($dto->metadata)->toBe([]);
 });
@@ -39,9 +39,9 @@ test('CommunicationContextData creates with overrides', function (): void {
         'metadata' => ['channel' => 'mail'],
     ]);
 
-    expect($dto->direction)->toBe(CommunicationDirection::Inbound);
-    expect($dto->category)->toBe(CommunicationCategory::Marketing);
-    expect($dto->priority)->toBe(CommunicationPriority::High);
+    expect($dto->direction)->toBe(CommunicationDirection::Inbound->value);
+    expect($dto->category)->toBe(CommunicationCategory::Marketing->value);
+    expect($dto->priority)->toBe(CommunicationPriority::High->value);
     expect($dto->purpose)->toBe('campaign');
     expect($dto->locale)->toBe('en');
     expect($dto->timezone)->toBe('UTC');
@@ -165,6 +165,7 @@ test('ConsentDecisionData creates', function (): void {
 
 test('communications value DTOs are immutable and independent of Laravel Data', function (): void {
     foreach ([
+        CommunicationContextData::class,
         CommunicationDefinitionData::class,
         ConsentDecisionData::class,
         PlannedDeliveryData::class,

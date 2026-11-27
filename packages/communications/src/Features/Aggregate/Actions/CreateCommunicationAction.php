@@ -7,6 +7,9 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 use AIArmada\Communications\Contracts\CommunicationCreator;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Enums\CommunicationDirection;
+use AIArmada\Communications\Enums\CommunicationCategory;
+use AIArmada\Communications\Enums\CommunicationPriority;
 use Carbon\CarbonImmutable;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Events\CommunicationCreated;
@@ -24,9 +27,9 @@ final readonly class CreateCommunicationAction implements CommunicationCreator
     public function handle(CommunicationContextData $context, bool $queued = false): string
     {
         $communication = new Communication;
-        $communication->direction = $context->direction;
-        $communication->category = $context->category;
-        $communication->priority = $context->priority;
+        $communication->direction = CommunicationDirection::from($context->direction);
+        $communication->category = CommunicationCategory::from($context->category);
+        $communication->priority = CommunicationPriority::from($context->priority);
         $communication->purpose = $context->purpose;
         $communication->status = $queued ? CommunicationStatus::Queued : CommunicationStatus::Draft;
         $communication->queued_at = $queued ? CarbonImmutable::now() : null;
