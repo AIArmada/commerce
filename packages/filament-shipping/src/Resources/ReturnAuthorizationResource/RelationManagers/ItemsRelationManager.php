@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;

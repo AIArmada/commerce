@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\ReturnAuthorizationItem;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
 use AIArmada\Shipping\Models\ShipmentItem;

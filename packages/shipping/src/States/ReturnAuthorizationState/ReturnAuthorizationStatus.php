@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\States\ReturnAuthorizationState;
 
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;

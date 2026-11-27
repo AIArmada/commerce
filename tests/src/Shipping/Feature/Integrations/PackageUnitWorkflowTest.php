@@ -21,7 +21,7 @@ use AIArmada\Shipping\Data\ShipmentItemData;
 use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
 use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentItem;
 use AIArmada\Shipping\Services\ShipmentService;

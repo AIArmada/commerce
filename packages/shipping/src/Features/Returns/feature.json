@@ -5,10 +5,12 @@
     "table:return_authorizations": [
       "AIArmada\\Shipping\\Features\\Returns\\Actions\\ApproveReturnAuthorization",
       "AIArmada\\Shipping\\Features\\Returns\\Actions\\RejectReturnAuthorization",
-      "AIArmada\\Shipping\\Features\\Returns\\Actions\\PackageReturns"
+      "AIArmada\\Shipping\\Features\\Returns\\Actions\\PackageReturns",
+      "AIArmada\\Shipping\\Features\\Returns\\Models\\ReturnAuthorization"
     ],
     "table:return_authorization_items": [
-      "AIArmada\\Shipping\\Features\\Returns\\Actions\\PackageReturns"
+      "AIArmada\\Shipping\\Features\\Returns\\Actions\\PackageReturns",
+      "AIArmada\\Shipping\\Features\\Returns\\Models\\ReturnAuthorizationItem"
     ]
   },
   "extensions": {}

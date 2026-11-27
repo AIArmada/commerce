@@ -10,7 +10,7 @@ use AIArmada\Orders\Contracts\PackageReturnVerifier;
 use AIArmada\Shipping\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Platform\ExtensionRegistry;

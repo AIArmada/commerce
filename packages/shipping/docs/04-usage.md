@@ -502,7 +502,7 @@ The shipment item and return authorization create migrations define the unit ide
 ### Creating an RMA
 
 ```php
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Enums\ReturnReason;
 
 $rma = ReturnAuthorization::create([

@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Actions;
 
 use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
 use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Spatie\ModelStates\Events\StateChanged;

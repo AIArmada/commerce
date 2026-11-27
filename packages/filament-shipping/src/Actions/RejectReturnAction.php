@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;

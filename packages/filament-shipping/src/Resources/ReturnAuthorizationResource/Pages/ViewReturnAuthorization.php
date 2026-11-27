@@ -7,7 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

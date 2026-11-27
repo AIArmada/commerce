@@ -10,7 +10,7 @@ use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Schemas\ReturnAuthorizationForm;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Tables\ReturnAuthorizationsTable;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
