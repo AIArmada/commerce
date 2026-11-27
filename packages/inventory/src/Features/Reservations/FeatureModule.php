@@ -10,7 +10,7 @@ use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
-use AIArmada\Inventory\Cart\CartManagerWithInventory;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ValidateInventoryOnAdd;

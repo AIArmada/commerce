@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Inventory\Cart\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Carbon\CarbonImmutable;
@@ -19,7 +20,7 @@ final readonly class ReserveCartInventory
 
     public function execute(Cart $cart): void
     {
-        $cartId = (string) $cart->getId();
+        $cartId = CartReservationIdentity::fromCart($cart);
         $ttlMinutes = (int) config('inventory.allocation_ttl_minutes', 30);
         $demand = InventoryDemandResolver::forCart($cart->getItems());
         $reservedAt = CarbonImmutable::now();

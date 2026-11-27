@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\Cart\Events\ItemAdded;
-use AIArmada\Inventory\Cart\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Carbon\CarbonImmutable;
@@ -33,7 +34,7 @@ final readonly class ValidateCartInventory
 
         $item = $event->item;
         $cart = $event->cart;
-        $cartId = (string) $cart->getId();
+        $cartId = CartReservationIdentity::fromCart($cart);
 
         $items = [];
 

@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Cart;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Cart;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Runtime\CartValidatorInterface;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 
 /**
  * Validates cart items against inventory availability.
@@ -101,10 +103,7 @@ final readonly class InventoryValidator implements CartValidatorInterface
         }
 
         $issues = [];
-        $cartId = $cart->getId();
-        $cartIdentifier = $cartId !== null
-            ? (string) $cartId
-            : sprintf('%s_%s', $cart->getIdentifier(), $cart->instance());
+        $cartIdentifier = CartReservationIdentity::fromCart($cart);
 
         foreach (InventoryDemandResolver::forCart($items) as $entry) {
             $availableQuantity = $this->allocationService->getTotalAvailable($entry['model'])

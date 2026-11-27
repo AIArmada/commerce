@@ -6,7 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Cart\CartManagerWithInventory;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;

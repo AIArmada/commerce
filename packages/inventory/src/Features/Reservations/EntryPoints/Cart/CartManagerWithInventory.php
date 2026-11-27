@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Cart;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Cart;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
@@ -11,7 +11,9 @@ use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationServ
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use AIArmada\Inventory\Features\Reservations\Actions\AllocateCartInventory;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
+use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 
 /**
  * CartManager decorator that adds inventory allocation functionality.
@@ -159,27 +161,7 @@ final class CartManagerWithInventory implements CartManagerInterface
      */
     public function allocateAllInventory(int $ttlMinutes = 30): array
     {
-        return DB::transaction(function () use ($ttlMinutes): array {
-            $cart = $this->getCurrentCart();
-            $results = [];
-            $cartIdentifier = $this->getCartIdentifier();
-
-            foreach (InventoryDemandResolver::forCart($cart->getItems()) as $entry) {
-                $allocations = $this->getAllocationService()->allocate(
-                    $entry['model'],
-                    $entry['quantity'],
-                    $cartIdentifier,
-                    $ttlMinutes
-                );
-
-                foreach (array_keys($entry['sources']) as $itemId) {
-                    $existing = $results[$itemId] ?? new Collection;
-                    $results[$itemId] = $existing->merge($allocations);
-                }
-            }
-
-            return $results;
-        });
+        return (new AllocateCartInventory($this->getAllocationService()))->execute($this->getCurrentCart(), $ttlMinutes);
     }
 
     /**
@@ -292,13 +274,6 @@ final class CartManagerWithInventory implements CartManagerInterface
      */
     private function getCartIdentifier(): string
     {
-        $cart = $this->getCurrentCart();
-        $cartId = $cart->getId();
-
-        if ($cartId !== null) {
-            return (string) $cartId;
-        }
-
-        return sprintf('%s_%s', $cart->getIdentifier(), $cart->instance());
+        return CartReservationIdentity::fromCart($this->getCurrentCart());
     }
 }
