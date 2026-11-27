@@ -29,6 +29,10 @@ final class FifoCostService
         ?string $reference = null,
         ?CarbonImmutable $layerDate = null
     ): InventoryCostLayer {
+        if ($quantity <= 0 || $unitCostMinor < 0) {
+            throw new InvalidArgumentException('Cost layer quantity must be positive and unit cost non-negative.');
+        }
+
         if (InventoryOwnerScope::isEnabled()) {
             if ($locationId === null && InventoryOwnerScope::resolveOwner() !== null) {
                 throw new InvalidArgumentException('Location is required when owner scoping is enabled');
@@ -81,6 +85,10 @@ final class FifoCostService
         int $quantity,
         ?string $locationId = null
     ): array {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Consumption quantity must be positive.');
+        }
+
         return DB::transaction(function () use ($model, $quantity, $locationId): array {
             $query = InventoryOwnerScope::applyToLocationQuery(
                 InventoryCostLayer::query()
@@ -112,7 +120,7 @@ final class FifoCostService
                 $query->where('location_id', $locationId);
             }
 
-            $layers = $query->get();
+            $layers = $query->orderBy('id')->lockForUpdate()->get();
 
             $totalConsumed = 0;
             $totalCost = 0;
@@ -180,17 +188,10 @@ final class FifoCostService
             $query->where('location_id', $locationId);
         }
 
-        $layers = $query->get();
-
-        $totalQuantity = 0;
-        $totalValue = 0;
-        $layerCount = 0;
-
-        foreach ($layers as $layer) {
-            $totalQuantity += $layer->remaining_quantity;
-            $totalValue += $layer->remainingValue();
-            $layerCount++;
-        }
+        $totals = $query->selectRaw('COUNT(*) as layer_count, COALESCE(SUM(remaining_quantity), 0) as total_quantity, COALESCE(SUM(remaining_quantity * unit_cost_minor), 0) as total_value')->firstOrFail();
+        $totalQuantity = (int) $totals->getAttribute('total_quantity');
+        $totalValue = (int) $totals->getAttribute('total_value');
+        $layerCount = (int) $totals->getAttribute('layer_count');
 
         return [
             'quantity' => $totalQuantity,

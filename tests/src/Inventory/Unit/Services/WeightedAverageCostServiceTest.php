@@ -15,6 +15,15 @@ describe('WeightedAverageCostService', function (): void {
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
 
+    it('rejects negative costs and non-positive quantities', function (): void {
+        expect(fn () => $this->service->recordPurchase($this->item, 0, 500, $this->location->id))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->recordPurchase($this->item, 1, -1, $this->location->id))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->consume($this->item, -1, $this->location->id))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('record purchase first purchase', function (): void {
         $result = $this->service->recordPurchase(
             $this->item,

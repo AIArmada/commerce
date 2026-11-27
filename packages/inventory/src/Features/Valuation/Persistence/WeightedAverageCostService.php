@@ -30,6 +30,10 @@ final class WeightedAverageCostService
         ?string $reference = null,
         ?CarbonImmutable $layerDate = null
     ): array {
+        if ($quantity <= 0 || $unitCostMinor < 0) {
+            throw new InvalidArgumentException('Purchase quantity must be positive and unit cost non-negative.');
+        }
+
         return DB::transaction(function () use ($model, $quantity, $unitCostMinor, $locationId, $batchId, $reference, $layerDate): array {
             if (InventoryOwnerScope::isEnabled()) {
                 if ($locationId === null && InventoryOwnerScope::resolveOwner() !== null) {
@@ -57,6 +61,7 @@ final class WeightedAverageCostService
                 }
             }
 
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
             $currentValuation = $this->calculateValuation($model, $locationId);
 
             $totalQuantity = $currentValuation['quantity'] + $quantity;
@@ -97,7 +102,12 @@ final class WeightedAverageCostService
         int $quantity,
         ?string $locationId = null
     ): array {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Consumption quantity must be positive.');
+        }
+
         return DB::transaction(function () use ($model, $quantity, $locationId): array {
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
             $valuation = $this->calculateValuation($model, $locationId);
 
             if ($valuation['quantity'] < $quantity) {
@@ -105,7 +115,6 @@ final class WeightedAverageCostService
             }
 
             $unitCost = $valuation['average_cost'];
-            $totalCost = $quantity * $unitCost;
 
             $query = InventoryOwnerScope::applyToLocationQuery(
                 InventoryCostLayer::query()
@@ -137,7 +146,7 @@ final class WeightedAverageCostService
                 $query->where('location_id', $locationId);
             }
 
-            $layers = $query->get();
+            $layers = $query->orderBy('id')->lockForUpdate()->get();
             $remaining = $quantity;
 
             foreach ($layers as $layer) {
@@ -150,8 +159,8 @@ final class WeightedAverageCostService
             }
 
             return [
-                'consumed' => $quantity,
-                'cost' => $totalCost,
+                'consumed' => $quantity - $remaining,
+                'cost' => ($quantity - $remaining) * $unitCost,
                 'unit_cost' => $unitCost,
             ];
         });
@@ -193,10 +202,9 @@ final class WeightedAverageCostService
             $query->where('location_id', $locationId);
         }
 
-        $totalQuantity = (int) $query->sum('remaining_quantity');
-
-        $totalValue = (int) $query->selectRaw('SUM(remaining_quantity * unit_cost_minor) as total')
-            ->value('total');
+        $totals = $query->selectRaw('COALESCE(SUM(remaining_quantity), 0) as total_quantity, COALESCE(SUM(remaining_quantity * unit_cost_minor), 0) as total_value')->firstOrFail();
+        $totalQuantity = (int) $totals->getAttribute('total_quantity');
+        $totalValue = (int) $totals->getAttribute('total_value');
 
         return [
             'quantity' => $totalQuantity,
@@ -220,49 +228,18 @@ final class WeightedAverageCostService
      */
     public function recalculate(Model $model, ?string $locationId = null): int
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryCostLayer::query()
-                ->forModel($model)
-                ->withRemainingQuantity()
-                ->usingMethod(CostingMethod::WeightedAverage)
-        );
+        return DB::transaction(function () use ($model, $locationId): int {
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
+            $valuation = $this->calculateValuation($model, $locationId);
 
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
-
-            if (! $includeNullLocation) {
-                $query->whereNotNull('location_id');
-            }
-        }
-
-        if ($locationId !== null) {
-            if (InventoryOwnerScope::isEnabled()) {
-                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                    ->whereKey($locationId)
-                    ->exists();
-
-                if (! $isAllowed) {
-                    throw new InvalidArgumentException('Invalid location for current owner');
-                }
+            if ($valuation['quantity'] === 0) {
+                return 0;
             }
 
-            $query->where('location_id', $locationId);
-        }
+            $this->updateExistingLayers($model, $valuation['average_cost'], $locationId);
 
-        $layers = $query->get();
-
-        if ($layers->isEmpty()) {
-            return 0;
-        }
-
-        $totalQuantity = $layers->sum('remaining_quantity');
-        $totalValue = $layers->sum(fn ($layer) => $layer->remaining_quantity * $layer->unit_cost_minor);
-
-        $newAverageCost = $totalQuantity > 0 ? (int) round($totalValue / $totalQuantity) : 0;
-
-        $this->updateExistingLayers($model, $newAverageCost, $locationId);
-
-        return $newAverageCost;
+            return $valuation['average_cost'];
+        });
     }
 
     /**

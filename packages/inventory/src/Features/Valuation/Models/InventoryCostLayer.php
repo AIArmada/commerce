@@ -18,6 +18,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Inventory\Database\Factories\InventoryCostLayerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -256,6 +257,11 @@ final class InventoryCostLayer extends Model implements Auditable
         ]);
 
         return $consumed;
+    }
+
+    protected static function newFactory(): InventoryCostLayerFactory
+    {
+        return InventoryCostLayerFactory::new();
     }
 
     protected function casts(): array

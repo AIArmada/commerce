@@ -14,6 +14,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Inventory\Database\Factories\InventoryValuationSnapshotFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -163,6 +164,11 @@ final class InventoryValuationSnapshot extends Model implements Auditable
         }
 
         return $this->breakdown[$type] ?? null;
+    }
+
+    protected static function newFactory(): InventoryValuationSnapshotFactory
+    {
+        return InventoryValuationSnapshotFactory::new();
     }
 
     protected function casts(): array

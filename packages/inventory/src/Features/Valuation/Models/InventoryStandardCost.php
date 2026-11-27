@@ -13,6 +13,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Inventory\Database\Factories\InventoryStandardCostFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -156,6 +157,11 @@ final class InventoryStandardCost extends Model implements Auditable
     public function expire(): bool
     {
         return $this->update(['effective_to' => CarbonImmutable::now()]);
+    }
+
+    protected static function newFactory(): InventoryStandardCostFactory
+    {
+        return InventoryStandardCostFactory::new();
     }
 
     protected function casts(): array

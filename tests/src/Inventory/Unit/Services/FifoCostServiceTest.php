@@ -16,6 +16,15 @@ describe('FifoCostService', function (): void {
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
 
+    it('rejects negative costs and non-positive quantities', function (): void {
+        expect(fn () => $this->service->addLayer($this->item, 0, 500, $this->location->id))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->addLayer($this->item, 1, -1, $this->location->id))
+            ->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->consume($this->item, -1, $this->location->id))
+            ->toThrow(InvalidArgumentException::class);
+    });
+
     it('add layer', function (): void {
         $layer = $this->service->addLayer(
             $this->item,
