@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction;
 use AIArmada\Communications\Features\Delivery\Actions\CancelCommunicationDeliveryAction;
@@ -195,7 +195,7 @@ function actionGuardRun(
         'redact-delivery' => app(RedactCommunicationPayloadAction::class)->handleDelivery($delivery->id),
         'redact-attempt' => app(RedactCommunicationPayloadAction::class)->handleAttempt($attempt->id),
         'redact-event' => app(RedactCommunicationPayloadAction::class)->handleEvent($event->id),
-        'attach-reference' => app(AttachCommunicationReferenceAction::class)->handle(
+        'attach-reference' => app(CommunicationReferenceWriter::class)->handle(
             $communication->id,
             'events',
             'event-123',

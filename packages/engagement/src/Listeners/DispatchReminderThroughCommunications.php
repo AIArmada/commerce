@@ -6,7 +6,7 @@ namespace AIArmada\Engagement\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
-use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Models\Reminder;
@@ -17,7 +17,7 @@ use InvalidArgumentException;
 final class DispatchReminderThroughCommunications
 {
     public function __construct(
-        private readonly DispatchManagedNotificationAction $dispatcher,
+        private readonly CommunicationManager $dispatcher,
         private readonly CommunicationReferenceWriter $references,
     ) {}
 
@@ -49,7 +49,7 @@ final class DispatchReminderThroughCommunications
             throw new InvalidArgumentException('The configured reminder notification must resolve to a Laravel Notification.');
         }
 
-        $communication = $this->dispatcher->handle(
+        $communicationId = $this->dispatcher->notify(
             $recipient,
             $notification,
             new CommunicationContextData(
@@ -67,7 +67,7 @@ final class DispatchReminderThroughCommunications
         );
 
         $this->references->handle(
-            (string) $communication->getKey(),
+            $communicationId,
             $reminder::class,
             (string) $reminder->getKey(),
             'engagement_reminder',

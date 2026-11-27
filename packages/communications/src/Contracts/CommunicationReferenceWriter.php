@@ -10,7 +10,7 @@ interface CommunicationReferenceWriter
     public function handle(
         string $communicationId,
         string $referenceType,
-        string | int | null $referenceId = null,
+        string $referenceId,
         ?string $role = null,
         ?array $metadata = null,
     ): string;

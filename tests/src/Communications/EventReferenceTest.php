@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -57,10 +57,11 @@ test('attaching an event reference is idempotent and merges metadata', function 
     ]);
     $communication->save();
 
-    $action = app(AttachCommunicationReferenceAction::class);
+    $action = app(CommunicationReferenceWriter::class);
     $first = $action->handle(
         communicationId: $communication->id,
-        referenceType: ['event_type' => 'events', 'event_id' => 'event-123'],
+        referenceType: 'events',
+        referenceId: 'event-123',
         role: 'event',
         metadata: ['batch_id' => 'batch-1'],
     );

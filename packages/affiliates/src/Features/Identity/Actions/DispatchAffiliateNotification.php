@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Identity\Actions;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Data\CommunicationContextData;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
@@ -40,18 +40,18 @@ final readonly class DispatchAffiliateNotification
 
         $owner = OwnerContext::fromTypeAndIdOrFail($reference->ownerType, $reference->ownerId);
 
-        OwnerContext::withOwner($owner, static fn () => $dispatcher->handle($affiliate, $notification, $context));
+        OwnerContext::withOwner($owner, static fn () => $dispatcher->notify($affiliate, $notification, $context));
     }
 
-    private function dispatcher(): ?DispatchManagedNotificationAction
+    private function dispatcher(): ?CommunicationManager
     {
-        if (! config('affiliates.notifications.enabled', true) || ! class_exists(DispatchManagedNotificationAction::class)) {
+        if (! config('affiliates.notifications.enabled', true) || ! interface_exists(CommunicationManager::class)) {
             return null;
         }
 
-        $bound = app()->bound(DispatchManagedNotificationAction::class);
+        $bound = app()->bound(CommunicationManager::class);
         $loaded = isset(app()->getLoadedProviders()['AIArmada\Communications\CommunicationsServiceProvider']);
 
-        return $bound || $loaded ? app(DispatchManagedNotificationAction::class) : null;
+        return $bound || $loaded ? app(CommunicationManager::class) : null;
     }
 }

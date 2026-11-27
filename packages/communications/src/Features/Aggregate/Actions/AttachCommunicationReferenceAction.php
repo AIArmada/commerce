@@ -7,11 +7,9 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
-use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
-use Illuminate\Database\Eloquent\Model;
 
 final class AttachCommunicationReferenceAction implements CommunicationReferenceWriter
 {
@@ -22,12 +20,11 @@ final class AttachCommunicationReferenceAction implements CommunicationReference
 
     public function handle(
         string $communicationId,
-        Model | CommunicationContextData | array | string $referenceType,
-        string | int | null $referenceId = null,
+        string $referenceType,
+        string $referenceId,
         ?string $role = null,
         ?array $metadata = null,
     ): string {
-
         if (Communication::ownerScopeConfig()->enabled) {
             OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
         }
