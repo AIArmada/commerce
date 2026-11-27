@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Runtime\SegmentationRelationModels;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -13,7 +15,7 @@ trait HasCustomerSegmentation
     /**
      * Get the customer's segments.
      *
-     * @return BelongsToMany<\AIArmada\Customers\Features\Segmentation\Models\Segment, $this>
+     * @return BelongsToMany<Segment, $this>
      */
     public function segments(): BelongsToMany
     {
@@ -31,7 +33,7 @@ trait HasCustomerSegmentation
     /**
      * Get the customer's group memberships.
      *
-     * @return BelongsToMany<\AIArmada\Customers\Features\Segmentation\Models\CustomerGroup, $this>
+     * @return BelongsToMany<CustomerGroup, $this>
      */
     public function groups(): BelongsToMany
     {

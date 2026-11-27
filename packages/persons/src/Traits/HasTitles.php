@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Traits;
 
+use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Runtime\TitleRelationModel;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 trait HasTitles
 {
     /**
-     * @return MorphMany<\AIArmada\Persons\Features\Titles\Models\TitleAssignment, $this>
+     * @return MorphMany<TitleAssignment, $this>
      */
     public function titleAssignments(): MorphMany
     {

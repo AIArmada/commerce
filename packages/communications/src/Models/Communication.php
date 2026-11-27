@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Models;
 
-use AIArmada\Communications\Runtime\DeliveryRelationModels;
-use AIArmada\Communications\Runtime\AggregateRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\CommunicationCategory;
@@ -13,6 +11,16 @@ use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Runtime\AggregateRelationModels;
+use AIArmada\Communications\Runtime\DeliveryRelationModels;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -53,18 +61,18 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch|null $batch
- * @property-read \AIArmada\Communications\Features\Aggregate\Models\CommunicationThread|null $thread
+ * @property-read CommunicationBatch|null $batch
+ * @property-read CommunicationThread|null $thread
  * @property-read Communication|null $parent
  * @property-read Collection<int, Communication> $children
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $sender
- * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient> $recipients
- * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationContent> $contents
- * @property-read Collection<int, \AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery> $deliveries
- * @property-read Collection<int, \AIArmada\Communications\Features\Delivery\Models\CommunicationEvent> $events
- * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationReference> $references
- * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment> $attachments
+ * @property-read Collection<int, CommunicationRecipient> $recipients
+ * @property-read Collection<int, CommunicationContent> $contents
+ * @property-read Collection<int, CommunicationDelivery> $deliveries
+ * @property-read Collection<int, CommunicationEvent> $events
+ * @property-read Collection<int, CommunicationReference> $references
+ * @property-read Collection<int, CommunicationAttachment> $attachments
  * @property-read Model|Eloquent $owner
  */
 final class Communication extends Model
@@ -123,7 +131,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return BelongsTo<\AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch, $this>
+     * @return BelongsTo<CommunicationBatch, $this>
      */
     public function batch(): BelongsTo
     {
@@ -131,7 +139,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return BelongsTo<\AIArmada\Communications\Features\Aggregate\Models\CommunicationThread, $this>
+     * @return BelongsTo<CommunicationThread, $this>
      */
     public function thread(): BelongsTo
     {
@@ -171,7 +179,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient, $this>
+     * @return HasMany<CommunicationRecipient, $this>
      */
     public function recipients(): HasMany
     {
@@ -179,7 +187,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationContent, $this>
+     * @return HasMany<CommunicationContent, $this>
      */
     public function contents(): HasMany
     {
@@ -187,7 +195,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<\AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery, $this>
+     * @return HasMany<CommunicationDelivery, $this>
      */
     public function deliveries(): HasMany
     {
@@ -195,7 +203,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<\AIArmada\Communications\Features\Delivery\Models\CommunicationEvent, $this>
+     * @return HasMany<CommunicationEvent, $this>
      */
     public function events(): HasMany
     {
@@ -203,7 +211,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationReference, $this>
+     * @return HasMany<CommunicationReference, $this>
      */
     public function references(): HasMany
     {
@@ -211,7 +219,7 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment, $this>
+     * @return HasMany<CommunicationAttachment, $this>
      */
     public function attachments(): HasMany
     {

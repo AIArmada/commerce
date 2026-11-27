@@ -9,8 +9,8 @@ use AIArmada\Persons\Features\Titles\Api\PersonTitlesCleaner;
 use AIArmada\Persons\Features\Titles\Queries\FormatPersonTitleName;
 use AIArmada\Persons\Features\Titles\Queries\TitleRelationModelResolver;
 use AIArmada\Persons\Platform\FeatureModule as FeatureModuleContract;
-use AIArmada\Persons\Runtime\TitleRelationModel;
 use AIArmada\Persons\Runtime\PersonTitleFormatting;
+use AIArmada\Persons\Runtime\TitleRelationModel;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Traits;
 
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use AIArmada\Persons\Runtime\CredentialRelationModel;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 trait HasCredentials
 {
     /**
-     * @return MorphMany<\AIArmada\Persons\Features\Credentials\Models\CredentialAssignment, $this>
+     * @return MorphMany<CredentialAssignment, $this>
      */
     public function credentialAssignments(): MorphMany
     {

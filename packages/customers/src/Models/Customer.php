@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
-use AIArmada\Customers\Runtime\CustomerNoteRelationModel;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -23,6 +22,10 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Runtime\CustomerNoteRelationModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -69,9 +72,9 @@ use Spatie\Tags\HasTags;
  * @property-read Model|null $person
  * @property-read Model|null $owner
  * @property-read Collection<int, Address> $addresses
- * @property-read Collection<int, \AIArmada\Customers\Features\Segmentation\Models\Segment> $segments
- * @property-read Collection<int, \AIArmada\Customers\Features\Identity\Models\CustomerNote> $notes
- * @property-read Collection<int, \AIArmada\Customers\Features\Segmentation\Models\CustomerGroup> $groups
+ * @property-read Collection<int, Segment> $segments
+ * @property-read Collection<int, CustomerNote> $notes
+ * @property-read Collection<int, CustomerGroup> $groups
  */
 class Customer extends Model implements Auditable, HasMedia
 {
@@ -331,7 +334,7 @@ class Customer extends Model implements Auditable, HasMedia
     /**
      * Get the customer's notes.
      *
-     * @return HasMany<\AIArmada\Customers\Features\Identity\Models\CustomerNote, $this>
+     * @return HasMany<CustomerNote, $this>
      */
     public function notes(): HasMany
     {

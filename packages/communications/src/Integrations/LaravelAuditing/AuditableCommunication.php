@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Integrations\LaravelAuditing;
 
-use AIArmada\Communications\Runtime\SuppressionAuditModel;
 use AIArmada\Communications\Runtime\PreferenceAuditModel;
+use AIArmada\Communications\Runtime\SuppressionAuditModel;
 use AIArmada\Communications\Runtime\TemplateRelationModels;
 use OwenIt\Auditing\Auditable;
 

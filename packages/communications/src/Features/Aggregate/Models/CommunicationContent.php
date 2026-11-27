@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Models;
 
-use AIArmada\Communications\Runtime\TemplateRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Runtime\TemplateRelationModels;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -37,8 +39,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Communication $communication
  * @property-read CommunicationRecipient|null $recipient
- * @property-read \AIArmada\Communications\Features\Templates\Models\CommunicationTemplate|null $template
- * @property-read \AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion|null $templateVersion
+ * @property-read CommunicationTemplate|null $template
+ * @property-read CommunicationTemplateVersion|null $templateVersion
  * @property-read Model|Eloquent $owner
  */
 final class CommunicationContent extends Model
@@ -98,7 +100,7 @@ final class CommunicationContent extends Model
     }
 
     /**
-     * @return BelongsTo<\AIArmada\Communications\Features\Templates\Models\CommunicationTemplate, $this>
+     * @return BelongsTo<CommunicationTemplate, $this>
      */
     public function template(): BelongsTo
     {
@@ -106,7 +108,7 @@ final class CommunicationContent extends Model
     }
 
     /**
-     * @return BelongsTo<\AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion, $this>
+     * @return BelongsTo<CommunicationTemplateVersion, $this>
      */
     public function templateVersion(): BelongsTo
     {

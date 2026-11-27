@@ -11,8 +11,8 @@ use AIArmada\Communications\Features\Aggregate\Actions\ManageScheduledCommunicat
 use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
 use AIArmada\Communications\Features\Aggregate\Api\DeliveryReferenceValidator;
 use AIArmada\Communications\Features\Aggregate\Api\ScheduledCommunicationLifecycle;
-use AIArmada\Communications\Features\Aggregate\Queries\ValidateDeliveryReferences;
 use AIArmada\Communications\Features\Aggregate\Queries\AggregateRelationModelsResolver;
+use AIArmada\Communications\Features\Aggregate\Queries\ValidateDeliveryReferences;
 use AIArmada\Communications\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Communications\Runtime\AggregateRelationModels;
 use Illuminate\Contracts\Foundation\Application;
