@@ -13,60 +13,60 @@ use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Features\Interactions\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 
-final class ReadInteractionStateQuery implements ReadsInteractionState
+final readonly class ReadInteractionStateQuery implements ReadsInteractionState
 {
     public function isFollowing(mixed $actor, mixed $subject): bool
     {
-        $actor = EngagementModelGuard::requireModel($actor, 'actor');
-        $subject = EngagementModelGuard::requireModel($subject, 'subject');
+        $actor = EngagementModelGuard::identity(EngagementModelGuard::requireModel($actor, 'actor'), 'actor');
+        $subject = EngagementModelGuard::identity(EngagementModelGuard::requireModel($subject, 'subject'), 'subject');
 
         return Follow::query()
-            ->where('follower_type', $actor->getMorphClass())
-            ->where('follower_id', $actor->getKey())
-            ->where('followable_type', $subject->getMorphClass())
-            ->where('followable_id', $subject->getKey())
+            ->where('follower_type', $actor['type'])
+            ->where('follower_id', $actor['id'])
+            ->where('followable_type', $subject['type'])
+            ->where('followable_id', $subject['id'])
             ->where('status', 'active')
             ->exists();
     }
 
     public function isBookmarked(mixed $actor, mixed $subject): bool
     {
-        $actor = EngagementModelGuard::requireModel($actor, 'actor');
-        $subject = EngagementModelGuard::requireModel($subject, 'subject');
+        $actor = EngagementModelGuard::identity(EngagementModelGuard::requireModel($actor, 'actor'), 'actor');
+        $subject = EngagementModelGuard::identity(EngagementModelGuard::requireModel($subject, 'subject'), 'subject');
 
         return Bookmark::query()
-            ->where('bookmarker_type', $actor->getMorphClass())
-            ->where('bookmarker_id', $actor->getKey())
-            ->where('bookmarkable_type', $subject->getMorphClass())
-            ->where('bookmarkable_id', $subject->getKey())
+            ->where('bookmarker_type', $actor['type'])
+            ->where('bookmarker_id', $actor['id'])
+            ->where('bookmarkable_type', $subject['type'])
+            ->where('bookmarkable_id', $subject['id'])
             ->where('status', 'active')
             ->exists();
     }
 
     public function responseFor(mixed $actor, mixed $subject): ?array
     {
-        $actor = EngagementModelGuard::requireModel($actor, 'actor');
-        $subject = EngagementModelGuard::requireModel($subject, 'subject');
+        $actor = EngagementModelGuard::identity(EngagementModelGuard::requireModel($actor, 'actor'), 'actor');
+        $subject = EngagementModelGuard::identity(EngagementModelGuard::requireModel($subject, 'subject'), 'subject');
 
         return Response::query()
-            ->where('responder_type', $actor->getMorphClass())
-            ->where('responder_id', $actor->getKey())
-            ->where('respondable_type', $subject->getMorphClass())
-            ->where('respondable_id', $subject->getKey())
+            ->where('responder_type', $actor['type'])
+            ->where('responder_id', $actor['id'])
+            ->where('respondable_type', $subject['type'])
+            ->where('respondable_id', $subject['id'])
             ->where('status', 'active')
             ->first()?->toArray();
     }
 
     public function reactionFor(mixed $actor, mixed $subject, ?string $reactionType = null): ?array
     {
-        $actor = EngagementModelGuard::requireModel($actor, 'actor');
-        $subject = EngagementModelGuard::requireModel($subject, 'subject');
+        $actor = EngagementModelGuard::identity(EngagementModelGuard::requireModel($actor, 'actor'), 'actor');
+        $subject = EngagementModelGuard::identity(EngagementModelGuard::requireModel($subject, 'subject'), 'subject');
 
         $query = Reaction::query()
-            ->where('reactor_type', $actor->getMorphClass())
-            ->where('reactor_id', $actor->getKey())
-            ->where('reactable_type', $subject->getMorphClass())
-            ->where('reactable_id', $subject->getKey())
+            ->where('reactor_type', $actor['type'])
+            ->where('reactor_id', $actor['id'])
+            ->where('reactable_type', $subject['type'])
+            ->where('reactable_id', $subject['id'])
             ->where('status', 'active');
 
         if ($reactionType !== null) {
@@ -78,14 +78,14 @@ final class ReadInteractionStateQuery implements ReadsInteractionState
 
     public function shareFor(mixed $actor, mixed $subject): ?array
     {
-        $actor = EngagementModelGuard::requireModel($actor, 'actor');
-        $subject = EngagementModelGuard::requireModel($subject, 'subject');
+        $actor = EngagementModelGuard::identity(EngagementModelGuard::requireModel($actor, 'actor'), 'actor');
+        $subject = EngagementModelGuard::identity(EngagementModelGuard::requireModel($subject, 'subject'), 'subject');
 
         $share = Share::query()
-            ->where('sharer_type', $actor->getMorphClass())
-            ->where('sharer_id', $actor->getKey())
-            ->where('shareable_type', $subject->getMorphClass())
-            ->where('shareable_id', $subject->getKey())
+            ->where('sharer_type', $actor['type'])
+            ->where('sharer_id', $actor['id'])
+            ->where('shareable_type', $subject['type'])
+            ->where('shareable_id', $subject['id'])
             ->whereIn('status', [ShareStatus::Created, ShareStatus::Shared])
             ->orderByDesc('created_at')
             ->orderByDesc('id')

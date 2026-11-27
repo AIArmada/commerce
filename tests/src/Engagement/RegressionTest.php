@@ -625,3 +625,24 @@ it('replaces existing share parameters without rewriting unrelated query values'
 
     expect($url)->toBe('https://example.test/event?tag=a&tag=b&source=a%20b&share=new%2Btoken#details');
 });
+
+it('rejects missing model keys at each engagement state boundary', function (): void {
+    $missing = new EngagementActor;
+    $missing->setAttribute($missing->getKeyName(), null);
+    $interactions = app(ReadsInteractionState::class);
+
+    expect(fn () => $interactions->isFollowing($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->isBookmarked($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->responseFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->reactionFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $interactions->shareFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(ReadsSubscriptionState::class)->subscriptionsFor($missing))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => app(ReadsReminderState::class)->remindersFor($missing, $this->subject))
+        ->toThrow(InvalidArgumentException::class);
+});
