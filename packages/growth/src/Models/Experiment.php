@@ -152,6 +152,9 @@ final class Experiment extends Model implements Auditable
         return $query->where('status', ExperimentStatus::Active->value);
     }
 
+    /**
+     * @throws InvalidArgumentException when a terminal experiment would be reopened.
+     */
     public function transitionTo(ExperimentStatus | Audit $status, bool | string | null $notes = null): static
     {
         if ($status instanceof Audit) {
@@ -160,12 +163,40 @@ final class Experiment extends Model implements Auditable
             return $this;
         }
 
+        if ($this->exists) {
+            if (! $this->status instanceof ExperimentStatus) {
+                throw new InvalidArgumentException('Experiment status must be resolved before transitioning.');
+            }
+
+            if ($this->status === $status) {
+                unset($notes);
+
+                return $this;
+            }
+
+            $allowed = match ($this->status) {
+                ExperimentStatus::Archived => [],
+                ExperimentStatus::Concluded => [ExperimentStatus::Archived],
+                default => [
+                    ExperimentStatus::Draft,
+                    ExperimentStatus::Active,
+                    ExperimentStatus::Paused,
+                    ExperimentStatus::Concluded,
+                    ExperimentStatus::Archived,
+                ],
+            };
+
+            if (! in_array($status, $allowed, true)) {
+                throw new InvalidArgumentException('A concluded or archived experiment cannot be reopened.');
+            }
+        }
+
         $at = CarbonImmutable::now();
 
         $this->status = $status;
 
         match ($status) {
-            ExperimentStatus::Draft => null,
+            ExperimentStatus::Draft => $this->paused_at = null,
             ExperimentStatus::Active => $this->transitionToActive($at),
             ExperimentStatus::Paused => $this->transitionToPaused($at),
             ExperimentStatus::Concluded => $this->transitionToConcluded($at),
@@ -414,6 +445,57 @@ final class Experiment extends Model implements Auditable
             return TrackedProperty::query()
                 ->whereKey($experiment->tracked_property_id)
                 ->exists();
+        }
+
+        if (static::resolveOwnerScopeConfig()->enabled) {
+            $property = TrackedProperty::query()
+                ->withoutGlobalScope(OwnerScope::class)
+                ->whereKey($experiment->tracked_property_id)
+                ->first();
+
+            if (! $property instanceof TrackedProperty) {
+                return false;
+            }
+
+            $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
+            $ownerType = $experiment->getAttribute(static::ownerTypeColumnName());
+            $ownerId = $experiment->getAttribute(static::ownerIdColumnName());
+            $propertyType = $property->getAttribute($propertyColumns->ownerTypeColumn);
+            $propertyId = $property->getAttribute($propertyColumns->ownerIdColumn);
+
+            if (! $experiment->exists && $ownerType === null && $ownerId === null && ($propertyType !== null || $propertyId !== null)) {
+                $experiment->setAttribute(static::ownerTypeColumnName(), $propertyType);
+                $experiment->setAttribute(static::ownerIdColumnName(), $propertyId !== null ? (string) $propertyId : null);
+                $ownerType = $propertyType;
+                $ownerId = $propertyId;
+            }
+
+            if (($ownerType === null) !== ($ownerId === null)) {
+                return false;
+            }
+
+            if (($propertyType === null) !== ($propertyId === null)) {
+                return false;
+            }
+
+            if (($ownerType === null) !== ($propertyType === null)) {
+                return false;
+            }
+
+            if ($ownerType !== null && ((string) $ownerType !== (string) $propertyType
+                || (string) $ownerId !== (string) $propertyId)) {
+                return false;
+            }
+
+            $currentOwner = OwnerContext::resolveConfigured(static::resolveOwnerScopeConfig());
+
+            if ($ownerType === null) {
+                return $currentOwner === null;
+            }
+
+            return $currentOwner instanceof Model
+                && (string) $ownerType === $currentOwner->getMorphClass()
+                && (string) $ownerId === (string) $currentOwner->getKey();
         }
 
         $owner = OwnerContext::resolve();

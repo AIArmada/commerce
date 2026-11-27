@@ -147,10 +147,23 @@ it('returns the same assignment for the same identity and session', function ():
     $action = app(ResolveExperimentAssignment::class);
 
     $first = OwnerContext::withOwner($owner, fn () => $action->handle($experiment, $identity, $session));
-    $second = OwnerContext::withOwner($owner, fn () => $action->handle($experiment, $identity, $session));
+    $baselineTransactionLevel = $first->getConnection()->transactionLevel();
+    $touchTransactionLevel = null;
+
+    Assignment::updating(function (Assignment $assignment) use (&$touchTransactionLevel): void {
+        $touchTransactionLevel = $assignment->getConnection()->transactionLevel();
+    });
+
+    $second = $this->travel(1)->minutes(fn () => OwnerContext::withOwner(
+        $owner,
+        fn () => $action->handle($experiment, $identity, $session),
+    ));
 
     expect($second->getKey())->toBe($first->getKey())
-        ->and($second->variant_id)->toBe($first->variant_id);
+        ->and($second->variant_id)->toBe($first->variant_id)
+        ->and($second->relationLoaded('variant'))->toBeTrue()
+        ->and($second->relationLoaded('experiment'))->toBeTrue()
+        ->and($touchTransactionLevel)->toBe($baselineTransactionLevel + 1);
 });
 
 it('allows resolving assignments without an owner context when growth owner scoping is disabled', function (): void {
@@ -763,4 +776,29 @@ it('uses current variant weights for new assignments even when the resolver inst
         expect($first->variant_id)->toBe((string) $variants['A']->getKey())
             ->and($second->variant_id)->toBe((string) $variants['B']->getKey());
     });
+});
+
+it('returns validated assignment relations without extra refresh queries', function (): void {
+    $owner = growthCreateOwner();
+    $experiment = growthCreateExperiment($owner);
+
+    $assignment = OwnerContext::withOwner(
+        $owner,
+        fn (): Assignment => app(ResolveExperimentAssignment::class)->handle($experiment, anonymousId: 'no-refresh'),
+    );
+
+    expect($assignment->relationLoaded('experiment'))->toBeTrue()
+        ->and($assignment->relationLoaded('variant'))->toBeTrue();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $relatedExperiment = $assignment->experiment;
+    $relatedVariant = $assignment->variant;
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($relatedExperiment)->toBeInstanceOf(Experiment::class)
+        ->and($relatedVariant)->toBeInstanceOf(Variant::class)
+        ->and($queries)->toBe([]);
 });

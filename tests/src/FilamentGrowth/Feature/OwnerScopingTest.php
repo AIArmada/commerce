@@ -21,6 +21,7 @@ use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -450,7 +451,7 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
     [$ownedExperiment] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Experiment', 'O');
     [$globalExperiment] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Experiment', 'G');
     expect(fn () => app(DeleteSelectedExperiments::class)->handle(collect([$ownedExperiment, $globalExperiment])))
-        ->toThrow(RuntimeException::class, 'Global growth experiments can only be deleted from explicit global context.');
+        ->toThrow(AuthorizationException::class);
 
     expect(Experiment::query()->withoutOwnerScope()->whereKey($ownedExperiment->getKey())->exists())->toBeTrue()
         ->and(Experiment::query()->withoutOwnerScope()->whereKey($globalExperiment->getKey())->exists())->toBeTrue();
@@ -474,7 +475,7 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
     [, $ownedVariant] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Variant', 'O');
     [, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Variant', 'G');
     expect(fn () => app(DeleteSelectedVariants::class)->handle(collect([$ownedVariant, $globalVariant])))
-        ->toThrow(RuntimeException::class, 'Global growth variants can only be deleted from explicit global context.');
+        ->toThrow(AuthorizationException::class);
 
     expect(Variant::query()->withoutOwnerScope()->whereKey($ownedVariant->getKey())->exists())->toBeTrue()
         ->and(Variant::query()->withoutOwnerScope()->whereKey($globalVariant->getKey())->exists())->toBeTrue();

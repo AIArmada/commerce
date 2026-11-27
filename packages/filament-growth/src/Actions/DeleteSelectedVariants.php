@@ -7,29 +7,28 @@ namespace AIArmada\FilamentGrowth\Actions;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\Growth\Models\Variant;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
-use RuntimeException;
 
 final readonly class DeleteSelectedVariants
 {
+    public function __construct(private SaveVariant $saveVariant) {}
+
     /** @param Collection<int|string, Variant> $records */
     public function handle(Collection $records): void
     {
-        (new Variant)->getConnection()->transaction(function () use ($records): void {
-            foreach ($records as $record) {
-                if (! $record instanceof Variant || ! ExperimentAccess::canMutateVariant($record)) {
-                    throw new RuntimeException('Global growth variants can only be deleted from explicit global context.');
-                }
+        ExperimentAccess::authorize('deleteAny', Variant::class);
+
+        foreach ($records as $record) {
+            if (! $record instanceof Variant) {
+                throw new AuthorizationException('The growth variant selection contains an invalid record.');
             }
 
-            Gate::authorize('deleteAny', Variant::class);
+            ExperimentAccess::authorize('delete', $record);
+        }
 
-            foreach ($records as $record) {
-                Gate::authorize('delete', $record);
-            }
-
-            app(SaveVariant::class)->deleteMany($records->map(static fn (Variant $record): string => (string) $record->getKey())->values()->all());
-        });
+        $this->saveVariant->deleteMany(
+            $records->map(static fn (Variant $record): string => (string) $record->getKey())->values()->all(),
+        );
     }
 }

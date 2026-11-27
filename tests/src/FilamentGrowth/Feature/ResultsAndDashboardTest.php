@@ -612,6 +612,26 @@ it('resolves readable global experiment tracked properties on the results page f
     });
 });
 
+it('resolves owned tracked properties on the results page when only signals owner scoping is enabled', function (): void {
+    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
+
+    $owner = filamentGrowthOwner();
+    [$experiment] = filamentGrowthExperiment($owner, 'MYR');
+    $page = app(ExperimentResultsPage::class);
+
+    OwnerContext::withOwner($owner, function () use ($experiment, $page): void {
+        $page->experimentId = (string) $experiment->getKey();
+        $page->loadResults();
+
+        $selectedExperiment = $page->selectedExperiment();
+
+        expect($selectedExperiment)->toBeInstanceOf(Experiment::class)
+            ->and($selectedExperiment?->trackedProperty)->toBeInstanceOf(TrackedProperty::class)
+            ->and($selectedExperiment?->trackedProperty?->getKey())->toBe($experiment->tracked_property_id);
+    });
+});
+
 it('does not resolve foreign tracked properties on the results page when growth owner scoping is disabled but signals owner scoping remains enabled', function (): void {
     config()->set('signals.owner.enabled', true);
 
@@ -645,6 +665,44 @@ it('does not show dashboard experiment data for foreign tracked properties when 
     $winnersWidget = app(ExperimentWinnersWidget::class);
 
     OwnerContext::withOwner($ownerB, function () use ($statsMethod, $statsWidget, $winnersWidget): void {
+        /** @var array<int, Stat> $stats */
+        $stats = $statsMethod->invoke($statsWidget);
+
+        expect($stats[0]->getValue())->toBe('0')
+            ->and($stats[1]->getValue())->toBe('0')
+            ->and($stats[2]->getValue())->toBe('0')
+            ->and($winnersWidget->getExperimentSnapshots())->toBe([]);
+    });
+});
+
+it('excludes drifted experiment rows from dashboard stats and winner snapshots', function (): void {
+    config()->set('growth.features.owner.enabled', true);
+    config()->set('signals.owner.enabled', true);
+
+    $ownerA = filamentGrowthOwner();
+    $ownerB = filamentGrowthOwner();
+    [$experiment] = filamentGrowthExperiment($ownerA);
+
+    $foreignProperty = OwnerContext::withOwner($ownerB, fn (): TrackedProperty => TrackedProperty::query()->create([
+        'name' => 'Foreign Dashboard Property ' . Str::random(6),
+        'slug' => 'foreign-dashboard-' . Str::lower(Str::random(8)),
+        'write_key' => Str::random(40),
+        'type' => 'website',
+        'timezone' => 'UTC',
+        'currency' => 'USD',
+        'is_active' => true,
+    ]));
+
+    DB::table($experiment->getTable())
+        ->where('id', $experiment->getKey())
+        ->update(['tracked_property_id' => $foreignProperty->getKey()]);
+
+    $statsWidget = app(GrowthStatsWidget::class);
+    $statsMethod = new ReflectionMethod(GrowthStatsWidget::class, 'getStats');
+    $statsMethod->setAccessible(true);
+    $winnersWidget = app(ExperimentWinnersWidget::class);
+
+    OwnerContext::withOwner($ownerA, function () use ($statsMethod, $statsWidget, $winnersWidget): void {
         /** @var array<int, Stat> $stats */
         $stats = $statsMethod->invoke($statsWidget);
 

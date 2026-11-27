@@ -20,7 +20,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 final class ExperimentResource extends Resource
@@ -78,40 +77,24 @@ final class ExperimentResource extends Resource
 
     public static function canCreate(): bool
     {
-        return parent::canCreate()
-            && ExperimentAccess::canCreateExperiment();
+        return ExperimentAccess::can('create', Experiment::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        if (! $record instanceof Experiment) {
-            return false;
-        }
-
-        if (! parent::canEdit($record)) {
-            return false;
-        }
-
-        return ExperimentAccess::canMutateExperiment($record);
+        return $record instanceof Experiment
+            && ExperimentAccess::can('update', $record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        if (! $record instanceof Experiment) {
-            return false;
-        }
-
-        if (! parent::canDelete($record)) {
-            return false;
-        }
-
-        return ExperimentAccess::canMutateExperiment($record);
+        return $record instanceof Experiment
+            && ExperimentAccess::can('delete', $record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return parent::canDeleteAny()
-            && Gate::allows('deleteAny', static::getModel());
+        return ExperimentAccess::can('deleteAny', Experiment::class);
     }
 
     public static function getPages(): array

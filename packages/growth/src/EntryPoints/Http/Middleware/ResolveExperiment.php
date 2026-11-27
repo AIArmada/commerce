@@ -24,11 +24,12 @@ final class ResolveExperiment
         private readonly ResolveExperimentAssignment $resolveExperimentAssignment,
         private readonly RequestExperimentSubjectResolver $requestExperimentSubjectResolver,
         private readonly ExperimentContextManager $experimentContextManager,
+        private readonly ExperimentMiddlewareEnabled $experimentMiddlewareEnabled,
     ) {}
 
     public function handle(Request $request, Closure $next, ?string $experimentSlug = null): Response
     {
-        if (! app(ExperimentMiddlewareEnabled::class)->handle()) {
+        if (! $this->experimentMiddlewareEnabled->handle()) {
             /** @var Response $response */
             $response = $next($request);
 

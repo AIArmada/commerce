@@ -296,6 +296,25 @@ it('denies bulk mutations when the resolved owner can only read global growth re
     });
 });
 
+it('denies growth policy access cleanly when only Signals ownership is enabled without an owner', function (): void {
+    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
+
+    $actor = filamentGrowthPolicyUser();
+
+    filamentGrowthBindNoOwner();
+    $this->actingAs($actor);
+
+    OwnerContext::flushState();
+
+    expect(Gate::forUser($actor)->allows('viewAny', Experiment::class))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('create', Experiment::class))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('viewAny', Variant::class))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('create', Variant::class))->toBeFalse()
+        ->and(ExperimentResource::canCreate())->toBeFalse()
+        ->and(VariantResource::canCreate())->toBeFalse();
+});
+
 it('fails closed for bulk policy checks when no owner context is resolved', function (): void {
     $actor = filamentGrowthPolicyUser();
 

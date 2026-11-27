@@ -39,6 +39,10 @@ final class OwnerBatchRunner
             return $callback();
         }
 
+        if (OwnerContext::isExplicitGlobal()) {
+            return $callback();
+        }
+
         $owner = OwnerContext::resolve();
         if ($owner !== null) {
             return $callback();
@@ -59,6 +63,10 @@ final class OwnerBatchRunner
     public function forEach(callable $callback): Collection
     {
         if ($this->isOwnerDisabled()) {
+            return collect([$callback()]);
+        }
+
+        if (OwnerContext::isExplicitGlobal()) {
             return collect([$callback()]);
         }
 

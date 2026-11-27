@@ -13,6 +13,7 @@ use AIArmada\FilamentGrowth\Pages\ManageGrowthSettings;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
+use AIArmada\Growth\Actions\UpdateGrowthSettings;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -22,12 +23,14 @@ use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Component as LivewireComponent;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class RoundTwoGrowthSchemaHost extends LivewireComponent implements HasSchemas
 {
@@ -158,8 +161,9 @@ it('denies growth settings access without the settings permission', function ():
     expect(ManageGrowthSettings::canAccess())->toBeFalse();
 });
 
-it('allows growth settings access with the settings permission', function (): void {
+it('allows growth settings access with the settings permission when owner scoping is disabled', function (): void {
     config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', false);
     Gate::define('growth.settings.manage', fn (): bool => true);
 
     test()->actingAs(r2GrowthUser());
@@ -184,6 +188,44 @@ it('does not grant growth settings access through experiment viewing', function 
             ->and(ManageGrowthSettings::canAccess())->toBeFalse();
     });
 });
+
+it('uses the configured settings navigation group for the settings page', function (): void {
+    expect(ManageGrowthSettings::getNavigationGroup())->toBe((string) config('filament-growth.navigation.settings_group'))
+        ->and((string) config('filament-growth.navigation.settings_group'))->not->toBe('');
+});
+
+it('requires explicit global context for growth settings writes when ownership is enabled', function (): void {
+    config()->set('growth.features.owner.enabled', true);
+    config()->set('signals.owner.enabled', true);
+
+    $owner = r2GrowthUser();
+
+    OwnerContext::withOwner($owner, function (): void {
+        expect(fn (): mixed => app(UpdateGrowthSettings::class)->handle(true))
+            ->toThrow(AuthorizationException::class);
+    });
+});
+
+it('requires explicit global context to manage growth settings in Filament', function (bool $growthOwnerEnabled): void {
+    config()->set('growth.features.owner.enabled', $growthOwnerEnabled);
+    config()->set('signals.owner.enabled', true);
+    Gate::define('growth.settings.manage', fn (): bool => true);
+
+    $owner = r2GrowthUser();
+    $this->actingAs($owner);
+
+    expect(ManageGrowthSettings::canAccess())->toBeFalse();
+
+    OwnerContext::withOwner($owner, function (): void {
+        expect(ManageGrowthSettings::canAccess())->toBeFalse()
+            ->and(fn () => (new ManageGrowthSettings)->save())->toThrow(HttpException::class)
+            ->and(fn () => app(UpdateGrowthSettings::class)->handle(true))->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner(null, function (): void {
+        expect(ManageGrowthSettings::canAccess())->toBeTrue();
+    });
+})->with([true, false]);
 
 it('batches winner snapshots through a single aggregation call', function (): void {
     config()->set('growth.features.owner.enabled', false);
@@ -224,6 +266,7 @@ it('batches winner snapshots through a single aggregation call', function (): vo
     };
 
     app()->bind(AggregateExperimentMetrics::class, fn () => $fake);
+    r2GrowthBindOwner($owner);
 
     $snapshots = app(ExperimentWinnersWidget::class)->getExperimentSnapshots();
 
@@ -250,7 +293,10 @@ it('caps experiment search results instead of loading every experiment', functio
     }
 
     $method = new ReflectionMethod(ExperimentResultsPage::class, 'searchExperimentOptions');
-    $results = $method->invoke(app(ExperimentResultsPage::class), 'Cap Test');
+    $results = OwnerContext::withOwner(
+        $owner,
+        fn (): array => $method->invoke(app(ExperimentResultsPage::class), 'Cap Test'),
+    );
 
     expect($results)->toHaveCount(50);
 });

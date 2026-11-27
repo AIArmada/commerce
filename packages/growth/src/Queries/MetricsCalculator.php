@@ -34,8 +34,9 @@ final class MetricsCalculator
         string $checkoutStartedEventName,
         string $purchaseEventName,
         string $refundEventName,
+        ?Collection $groupedEvents = null,
     ): array {
-        $groupedEvents = $this->groupEventsByVariant($events, $experiment);
+        $groupedEvents ??= $this->groupEventsByVariant($events, $experiment);
         $variantMetrics = $variants
             ->map(fn (Variant $variant): array => $this->variantMetrics(
                 $variant,
@@ -80,6 +81,41 @@ final class MetricsCalculator
             'totals' => $totals,
             'variants' => $variantMetrics,
         ];
+    }
+
+    /**
+     * @param  Collection<int, SignalEvent>  $events
+     * @param  list<string>  $experimentIds
+     * @return array<string, Collection<string, Collection<int, array{event: SignalEvent, context: array{experiment_id: string, variant_id: string, assignment_id?: string}}>>>
+     */
+    public function indexEventsByVariantForExperiments(Collection $events, array $experimentIds): array
+    {
+        $allowed = array_fill_keys($experimentIds, true);
+        $indexed = [];
+
+        foreach ($events as $event) {
+            $seen = [];
+
+            foreach ($this->contextsForEvent($event) as $context) {
+                $experimentId = $context['experiment_id'];
+
+                if (! isset($allowed[$experimentId]) || isset($seen[$experimentId])) {
+                    continue;
+                }
+
+                $seen[$experimentId] = true;
+                $indexed[$experimentId][$context['variant_id']][] = [
+                    'event' => $event,
+                    'context' => $context,
+                ];
+            }
+        }
+
+        return array_map(
+            static fn (array $variantGroups): Collection => collect($variantGroups)
+                ->map(static fn (array $payloads): Collection => collect($payloads)->values()),
+            $indexed,
+        );
     }
 
     /**
@@ -174,24 +210,41 @@ final class MetricsCalculator
      */
     private function resolveContextForExperiment(SignalEvent $event, Experiment $experiment): ?array
     {
+        foreach ($this->contextsForEvent($event) as $context) {
+            if ($context['experiment_id'] === (string) $experiment->getKey()) {
+                return $context;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<array{experiment_id: string, variant_id: string, assignment_id?: string}>
+     */
+    private function contextsForEvent(SignalEvent $event): array
+    {
         $properties = is_array($event->properties) ? $event->properties : [];
         $contexts = data_get($properties, 'experiment_contexts');
+        $normalized = [];
 
         if (is_array($contexts)) {
             foreach ($contexts as $context) {
-                $normalized = $this->normalizeContext($context);
+                $candidate = $this->normalizeContext($context);
 
-                if ($normalized !== null && $normalized['experiment_id'] === (string) $experiment->getKey()) {
-                    return $normalized;
+                if ($candidate !== null) {
+                    $normalized[$candidate['experiment_id'] . '|' . $candidate['variant_id'] . '|' . ($candidate['assignment_id'] ?? '')] = $candidate;
                 }
             }
         }
 
         $singleContext = $this->normalizeContext($properties);
 
-        return $singleContext !== null && $singleContext['experiment_id'] === (string) $experiment->getKey()
-            ? $singleContext
-            : null;
+        if ($singleContext !== null) {
+            $normalized[$singleContext['experiment_id'] . '|' . $singleContext['variant_id'] . '|' . ($singleContext['assignment_id'] ?? '')] = $singleContext;
+        }
+
+        return array_values($normalized);
     }
 
     /**

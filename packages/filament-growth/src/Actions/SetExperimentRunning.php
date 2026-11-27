@@ -7,20 +7,15 @@ namespace AIArmada\FilamentGrowth\Actions;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Actions\SaveExperiment;
 use AIArmada\Growth\Models\Experiment;
-use Illuminate\Support\Facades\Gate;
 
 final readonly class SetExperimentRunning
 {
+    public function __construct(private SaveExperiment $saveExperiment) {}
+
     public function handle(Experiment $record, bool $running): bool
     {
-        return $record->getConnection()->transaction(function () use ($record, $running): bool {
-            $current = Experiment::query()->whereKey($record->getKey())->lockForUpdate()->first();
+        ExperimentAccess::authorize('update', $record);
 
-            if (! $current instanceof Experiment || ! ExperimentAccess::canMutateExperiment($current) || Gate::denies('update', $current)) {
-                return false;
-            }
-
-            return app(SaveExperiment::class)->setRunning((string) $current->getKey(), $running);
-        });
+        return $this->saveExperiment->setRunning((string) $record->getKey(), $running);
     }
 }

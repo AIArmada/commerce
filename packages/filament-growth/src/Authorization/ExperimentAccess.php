@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Authorization;
 
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use Filament\Facades\Filament;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 
 final class ExperimentAccess
 {
@@ -24,20 +29,50 @@ final class ExperimentAccess
         return $query->withOwnerMatchedCounts();
     }
 
+    public static function can(string $ability, mixed $arguments = []): bool
+    {
+        $actor = self::actor();
+
+        return $actor !== null && Gate::forUser($actor)->allows($ability, $arguments);
+    }
+
+    public static function authorize(string $ability, mixed $arguments = []): void
+    {
+        $actor = self::actor();
+
+        if (! $actor instanceof Authenticatable) {
+            throw new AuthorizationException('An authenticated Filament user is required for this growth action.');
+        }
+
+        Gate::forUser($actor)->authorize($ability, $arguments);
+    }
+
     public static function canViewExperiment(Experiment $experiment): bool
     {
-        return ExperimentOwnership::scopeExperiments(Experiment::query())->whereKey($experiment->getKey())->exists();
+        try {
+            return ExperimentOwnership::scopeExperiments(Experiment::query())
+                ->whereKey($experiment->getKey())
+                ->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
     }
 
     public static function canViewVariant(Variant $variant): bool
     {
-        return ExperimentOwnership::scopeVariants(Variant::query())->whereKey($variant->getKey())->exists();
+        try {
+            return ExperimentOwnership::scopeVariants(Variant::query())
+                ->whereKey($variant->getKey())
+                ->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
     }
 
     public static function canCreateVariant(): bool
     {
         return OwnerUiScope::canCreate(Variant::class)
-            && ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->exists();
+            && self::hasWritableExperiment();
     }
 
     public static function canCreateExperiment(): bool
@@ -46,16 +81,12 @@ final class ExperimentAccess
             return false;
         }
 
-        if (! TrackedProperty::ownerScopeConfig()->enabled) {
-            return true;
-        }
-
-        return OwnerUiScope::apply(TrackedProperty::query(), includeGlobal: false)->exists();
+        return self::hasWritableTrackedProperty();
     }
 
     public static function canDeleteAnyExperiment(): bool
     {
-        return Gate::allows('deleteAny', Experiment::class);
+        return self::can('deleteAny', Experiment::class);
     }
 
     public static function canMutateExperiment(Experiment $experiment): bool
@@ -84,9 +115,13 @@ final class ExperimentAccess
             }
         }
 
-        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
-            ->whereKey($experiment->getKey())
-            ->exists();
+        try {
+            return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
+                ->whereKey($experiment->getKey())
+                ->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
     }
 
     public static function canMutateVariant(Variant $variant): bool
@@ -110,9 +145,69 @@ final class ExperimentAccess
             }
         }
 
-        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)
-            ->whereKey($variant->getKey())
-            ->exists();
+        try {
+            return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)
+                ->whereKey($variant->getKey())
+                ->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
+    }
+
+    public static function hasWritableTrackedProperty(): bool
+    {
+        try {
+            if (! TrackedProperty::ownerScopeConfig()->enabled) {
+                return true;
+            }
+
+            return ExperimentOwnership::scopeOwner(TrackedProperty::query(), writable: true)->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
+    }
+
+    public static function hasReadableExperiment(): bool
+    {
+        try {
+            return ExperimentOwnership::scopeExperiments(Experiment::query())->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
+    }
+
+    public static function hasWritableExperiment(): bool
+    {
+        try {
+            return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
+    }
+
+    public static function hasReadableVariant(): bool
+    {
+        try {
+            return ExperimentOwnership::scopeVariants(Variant::query())->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
+    }
+
+    public static function hasWritableVariant(): bool
+    {
+        try {
+            return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->exists();
+        } catch (NoCurrentOwnerException | InvalidArgumentException | AuthorizationException) {
+            return false;
+        }
+    }
+
+    private static function actor(): ?Authenticatable
+    {
+        $actor = Filament::auth()->user();
+
+        return $actor instanceof Authenticatable ? $actor : null;
     }
 
     private static function sameOwnerTuple(Experiment | Variant $experiment, TrackedProperty | Experiment $property): bool

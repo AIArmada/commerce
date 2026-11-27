@@ -30,18 +30,20 @@ use InvalidArgumentException;
 
 final class ResolveExperimentAssignment
 {
-    /**
-     * Run-scoped caches keyed by owner scope + experiment id.
-     *
-     * This resolver is never shared across requests or runs (transient
-     * container binding), so instance caches cannot leak between owners.
-     *
-     * @var array<string, Experiment>
-     */
+    /** @var array<string, Experiment> */
     private array $resolvedExperimentCache = [];
 
     /** @var array<string, EloquentCollection<int, Variant>> */
     private array $activeVariantCache = [];
+
+    private ?string $cacheScope = null;
+
+    public function __construct(
+        private readonly ExperimentResolver $experimentResolver,
+        private readonly AssignmentQuery $assignmentQuery,
+        private readonly VariantQuery $variantQuery,
+        private readonly ScopeSignalQueryToOwner $scopeSignalQueryToOwner,
+    ) {}
 
     public function handle(
         Experiment $experiment,
@@ -64,6 +66,7 @@ final class ResolveExperimentAssignment
             throw new InvalidArgumentException('A signal identity, signal session, or anonymous id is required to resolve an assignment.');
         }
 
+        $this->ensureCacheScope();
         unset($this->activeVariantCache[$this->runCacheKey((string) $experiment->getKey())]);
 
         return $experiment->getConnection()->transaction(function () use ($candidateKeys, $experiment, $identity, $session): Assignment {
@@ -122,7 +125,7 @@ final class ResolveExperimentAssignment
         array $candidateKeys,
     ): EloquentCollection {
         /** @var EloquentCollection<int, Assignment> $assignments */
-        $assignments = $this->assignmentQuery($experiment)
+        $assignments = $this->assignmentsForExperiment($experiment)
             ->where(function (Builder $query) use ($candidateKeys, $identity, $session): void {
                 if ($identity instanceof SignalIdentity) {
                     $query->orWhere('signal_identity_id', $identity->getKey());
@@ -136,6 +139,8 @@ final class ResolveExperimentAssignment
                     $query->orWhere('subject_key', $candidateKey);
                 }
             })
+            ->orderBy('assigned_at')
+            ->orderBy('id')
             ->lockForUpdate()
             ->get();
 
@@ -163,21 +168,21 @@ final class ResolveExperimentAssignment
         $earliestFirstExposedAt = $this->earliestTimestamp($matchingAssignments, ['first_exposed_at', 'assigned_at']);
         $latestSeenAt = $this->latestTimestamp($matchingAssignments, ['last_seen_at', 'first_exposed_at', 'assigned_at']) ?? $lastSeenAt;
 
+        $assignment->signal_identity_id ??= $resolvedIdentityId;
+        $assignment->signal_session_id ??= $resolvedSessionId;
+        $assignment->assigned_at = $earliestAssignedAt ?? $assignment->assigned_at ?? $lastSeenAt;
+        $assignment->first_exposed_at = $earliestFirstExposedAt ?? $assignment->first_exposed_at ?? $assignment->assigned_at;
+        $assignment->last_seen_at = $latestSeenAt->greaterThan($lastSeenAt) ? $latestSeenAt : $lastSeenAt;
+
+        if ($duplicateAssignments->isEmpty() && ! $assignment->isDirty(['signal_identity_id', 'signal_session_id'])) {
+            $assignment->save();
+
+            return $assignment->setRelation('experiment', $experiment)->loadMissing('variant');
+        }
+
         try {
-            $assignment->getConnection()->transaction(function () use ($assignment, $duplicateAssignments, $resolvedIdentityId, $resolvedSessionId, $earliestAssignedAt, $earliestFirstExposedAt, $lastSeenAt, $latestSeenAt): void {
+            $assignment->getConnection()->transaction(function () use ($assignment, $duplicateAssignments): void {
                 $duplicateAssignments->each(static fn (Assignment $duplicate): bool => (bool) $duplicate->delete());
-
-                if ($resolvedIdentityId !== null && $assignment->signal_identity_id === null) {
-                    $assignment->signal_identity_id = $resolvedIdentityId;
-                }
-
-                if ($resolvedSessionId !== null && $assignment->signal_session_id === null) {
-                    $assignment->signal_session_id = $resolvedSessionId;
-                }
-
-                $assignment->assigned_at = $earliestAssignedAt ?? $assignment->assigned_at ?? $lastSeenAt;
-                $assignment->first_exposed_at = $earliestFirstExposedAt ?? $assignment->first_exposed_at ?? $assignment->assigned_at;
-                $assignment->last_seen_at = $latestSeenAt->greaterThan($lastSeenAt) ? $latestSeenAt : $lastSeenAt;
                 $assignment->save();
             });
         } catch (UniqueConstraintViolationException $exception) {
@@ -194,7 +199,7 @@ final class ResolveExperimentAssignment
             return $this->touchExistingAssignment($experiment, $reloadedAssignments, $identity, $session, $candidateKeys, false);
         }
 
-        return $assignment->fresh(['variant', 'experiment']) ?? $assignment;
+        return $assignment->setRelation('experiment', $experiment)->loadMissing('variant');
     }
 
     /**
@@ -236,7 +241,10 @@ final class ResolveExperimentAssignment
             return $this->touchExistingAssignment($experiment, $matchingAssignments, $identity, $session, $candidateKeys);
         }
 
-        return $assignment->fresh(['variant', 'experiment']) ?? $assignment;
+        $assignment->setRelation('experiment', $experiment);
+        $assignment->setRelation('variant', $variant);
+
+        return $assignment;
     }
 
     /**
@@ -256,6 +264,7 @@ final class ResolveExperimentAssignment
 
     private function cachedExperimentForCurrentOwner(Experiment $experiment): Experiment
     {
+        $this->ensureCacheScope();
         $cacheKey = $this->runCacheKey((string) $experiment->getKey());
 
         if (! isset($this->resolvedExperimentCache[$cacheKey])) {
@@ -270,10 +279,11 @@ final class ResolveExperimentAssignment
      */
     private function cachedActiveVariants(Experiment $experiment): EloquentCollection
     {
+        $this->ensureCacheScope();
         $cacheKey = $this->runCacheKey((string) $experiment->getKey());
 
         if (! isset($this->activeVariantCache[$cacheKey])) {
-            $this->activeVariantCache[$cacheKey] = $this->variantQuery($experiment)
+            $this->activeVariantCache[$cacheKey] = $this->variantsForExperiment($experiment)
                 ->active()
                 ->where('traffic_percentage', '>', 0)
                 ->orderBy('position')
@@ -285,16 +295,33 @@ final class ResolveExperimentAssignment
         return $this->activeVariantCache[$cacheKey];
     }
 
-    private function runCacheKey(string $experimentId): string
+    private function ensureCacheScope(): void
     {
-        if (OwnerContext::isExplicitGlobal()) {
-            $scope = 'explicit-global';
-        } else {
-            $owner = OwnerContext::resolve();
-            $scope = $owner === null ? 'unresolved' : OwnerScopeKey::forOwner($owner);
+        $scope = $this->currentScopeKey();
+
+        if ($this->cacheScope === $scope) {
+            return;
         }
 
-        return $scope . '|' . $experimentId;
+        $this->cacheScope = $scope;
+        $this->resolvedExperimentCache = [];
+        $this->activeVariantCache = [];
+    }
+
+    private function currentScopeKey(): string
+    {
+        if (OwnerContext::isExplicitGlobal()) {
+            return 'explicit-global';
+        }
+
+        $owner = OwnerContext::resolve();
+
+        return $owner === null ? 'unresolved' : OwnerScopeKey::forOwner($owner);
+    }
+
+    private function runCacheKey(string $experimentId): string
+    {
+        return $this->currentScopeKey() . '|' . $experimentId;
     }
 
     private function pickVariant(Experiment $experiment, string $subjectKey): array
@@ -473,7 +500,7 @@ final class ResolveExperimentAssignment
 
     private function resolveExperimentForCurrentOwner(Experiment $experiment): Experiment
     {
-        return app(ExperimentResolver::class)->resolve(
+        return $this->experimentResolver->resolve(
             (string) $experiment->getKey(),
             message: 'Growth experiment is not accessible in the current owner scope.',
         );
@@ -499,17 +526,17 @@ final class ResolveExperimentAssignment
     /**
      * @return Builder<Assignment>
      */
-    private function assignmentQuery(Experiment $experiment): Builder
+    private function assignmentsForExperiment(Experiment $experiment): Builder
     {
-        return app(AssignmentQuery::class)->forExperiment($experiment);
+        return $this->assignmentQuery->forExperiment($experiment);
     }
 
     /**
      * @return Builder<Variant>
      */
-    private function variantQuery(Experiment $experiment): Builder
+    private function variantsForExperiment(Experiment $experiment): Builder
     {
-        return app(VariantQuery::class)->forExperiment($experiment);
+        return $this->variantQuery->forExperiment($experiment);
     }
 
     private function resolveSignalIdentityForExperiment(Experiment $experiment, string $id, string $message): SignalIdentity
@@ -557,7 +584,7 @@ final class ResolveExperimentAssignment
         $modelOwnerScopingEnabled = $this->modelOwnerScopingEnabled($modelClass);
 
         if (Experiment::ownerScopeConfig()->enabled || $modelOwnerScopingEnabled) {
-            $query = app(ScopeSignalQueryToOwner::class)->handle(
+            $query = $this->scopeSignalQueryToOwner->handle(
                 $query,
                 $this->signalOwnerForExperiment($experiment),
             );

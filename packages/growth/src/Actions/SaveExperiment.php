@@ -12,7 +12,9 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use RuntimeException;
+use ValueError;
 
 final readonly class SaveExperiment
 {
@@ -21,20 +23,31 @@ final readonly class SaveExperiment
     {
         return (new Experiment)->getConnection()->transaction(function () use ($data): Experiment {
             $propertyId = $data['tracked_property_id'] ?? null;
+            $property = is_string($propertyId)
+                ? ExperimentOwnership::scopeOwner(TrackedProperty::query(), writable: true)
+                    ->whereKey($propertyId)
+                    ->lockForUpdate()
+                    ->first()
+                : null;
 
-            if (! is_string($propertyId) || ! (ExperimentOwnership::scopeOwner(TrackedProperty::query(), writable: true)->whereKey($propertyId)->lockForUpdate()->first() instanceof TrackedProperty)) {
+            if (! $property instanceof TrackedProperty) {
                 throw new AuthorizationException('Tracked property is not writable in the current owner scope.');
             }
 
             $record = new Experiment($this->attributes($data));
-            $record->tracked_property_id = $propertyId;
+            $record->tracked_property_id = (string) $property->getKey();
+
+            if (Experiment::ownerScopeConfig()->enabled) {
+                $record->owner_type = $property->owner_type;
+                $record->owner_id = $property->owner_id !== null ? (string) $property->owner_id : null;
+            }
 
             if (! is_string($record->slug) || $record->slug === '') {
                 $record->slug = Str::slug((string) ($data['name'] ?? 'experiment'));
             }
 
             if (isset($data['status'])) {
-                $record->transitionTo(($data['status'] instanceof ExperimentStatus ? $data['status'] : ExperimentStatus::from((string) $data['status'])));
+                $record->transitionTo($this->experimentStatus($data['status']));
             }
 
             $record->saveOrFail();
@@ -57,15 +70,14 @@ final readonly class SaveExperiment
             $record->fill($this->attributes($data));
 
             if (isset($data['status'])) {
-                $status = ($data['status'] instanceof ExperimentStatus ? $data['status'] : ExperimentStatus::from((string) $data['status']));
-
-                if (($record->status === ExperimentStatus::Archived && $status !== ExperimentStatus::Archived)
-                    || ($record->status === ExperimentStatus::Concluded && ! in_array($status, [ExperimentStatus::Concluded, ExperimentStatus::Archived], true))) {
-                    throw ValidationException::withMessages(['status' => 'A concluded or archived experiment cannot be reopened.']);
-                }
+                $status = $this->experimentStatus($data['status']);
 
                 if ($record->status !== $status) {
-                    $record->transitionTo($status);
+                    try {
+                        $record->transitionTo($status);
+                    } catch (InvalidArgumentException $exception) {
+                        throw ValidationException::withMessages(['status' => $exception->getMessage()]);
+                    }
                 }
             }
 
@@ -81,7 +93,11 @@ final readonly class SaveExperiment
             $current = ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
                 ->whereKey($id)->lockForUpdate()->first();
 
-            if (! $current instanceof Experiment || in_array($current->status, [ExperimentStatus::Concluded, ExperimentStatus::Archived], true)) {
+            if (! $current instanceof Experiment) {
+                throw new AuthorizationException('The growth experiment is not writable in the current owner scope.');
+            }
+
+            if (in_array($current->status, [ExperimentStatus::Concluded, ExperimentStatus::Archived], true)) {
                 return false;
             }
 
@@ -115,6 +131,23 @@ final readonly class SaveExperiment
                 }
             }
         });
+    }
+
+    private function experimentStatus(mixed $status): ExperimentStatus
+    {
+        if ($status instanceof ExperimentStatus) {
+            return $status;
+        }
+
+        if (! is_string($status)) {
+            throw ValidationException::withMessages(['status' => 'The experiment status is invalid.']);
+        }
+
+        try {
+            return ExperimentStatus::from($status);
+        } catch (ValueError) {
+            throw ValidationException::withMessages(['status' => 'The experiment status is invalid.']);
+        }
     }
 
     /** @param array<string, mixed> $data

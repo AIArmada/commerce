@@ -20,6 +20,8 @@ use InvalidArgumentException;
 
 final class BuildExperimentSignalProperties
 {
+    public function __construct(private readonly ExperimentResolver $experimentResolver) {}
+
     /**
      * @return array<string, string>
      */
@@ -122,7 +124,7 @@ final class BuildExperimentSignalProperties
             throw new InvalidArgumentException('Assignment experiment context could not be resolved.');
         }
 
-        $accessibleExperiment = app(ExperimentResolver::class)->resolve(
+        $accessibleExperiment = $this->experimentResolver->resolve(
             (string) $experiment->getKey(),
             ResolveStrategy::Readable,
             'Assignment is not accessible in the current owner scope.',
@@ -155,7 +157,7 @@ final class BuildExperimentSignalProperties
             return null;
         }
 
-        return app(ExperimentResolver::class)->resolve(
+        return $this->experimentResolver->resolve(
             (string) $experiment->getKey(),
             ResolveStrategy::Readable,
             'Assignment is not accessible in the current owner scope.',

@@ -18,7 +18,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
 
 class VariantsTable
 {
@@ -71,7 +70,7 @@ class VariantsTable
             ])
             ->actions([
                 EditAction::make()
-                    ->visible(fn (Variant $record): bool => ExperimentAccess::canMutateVariant($record)),
+                    ->visible(fn (Variant $record): bool => ExperimentAccess::can('update', $record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -99,6 +98,6 @@ class VariantsTable
 
     private static function canDeleteAnyVariant(): bool
     {
-        return Gate::allows('deleteAny', Variant::class);
+        return ExperimentAccess::can('deleteAny', Variant::class);
     }
 }

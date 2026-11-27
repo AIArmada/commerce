@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Audit;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -44,7 +45,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 final class Variant extends Model implements Auditable
 {
-    use HasCommerceAudit;
+    use HasCommerceAudit {
+        transitionTo as private transitionToAudit;
+    }
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
@@ -114,6 +117,71 @@ final class Variant extends Model implements Auditable
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', VariantStatus::Active->value);
+    }
+
+    /**
+     * @throws InvalidArgumentException when an archived or retired variant would be reopened.
+     */
+    public function transitionTo(VariantStatus | Audit $status, bool | string | null $notes = null): static
+    {
+        if ($status instanceof Audit) {
+            $this->transitionToAudit($status, is_bool($notes) ? $notes : false);
+
+            return $this;
+        }
+
+        if (! $this->exists) {
+            $this->status = $status;
+            $this->applyLifecycleTimestamp($status);
+
+            return $this;
+        }
+
+        if (! $this->status instanceof VariantStatus) {
+            throw new InvalidArgumentException('Variant status must be resolved before transitioning.');
+        }
+
+        if ($this->status === $status) {
+            return $this;
+        }
+
+        $allowed = match ($this->status) {
+            VariantStatus::Archived => [],
+            VariantStatus::Retired => [VariantStatus::Archived],
+            default => [
+                VariantStatus::Draft,
+                VariantStatus::Active,
+                VariantStatus::Deactivated,
+                VariantStatus::Retired,
+                VariantStatus::Archived,
+            ],
+        };
+
+        if (! in_array($status, $allowed, true)) {
+            throw new InvalidArgumentException('An archived or retired variant cannot be reopened.');
+        }
+
+        $this->status = $status;
+        $this->applyLifecycleTimestamp($status);
+
+        return $this;
+    }
+
+    private function applyLifecycleTimestamp(VariantStatus $status): void
+    {
+        $at = CarbonImmutable::now();
+
+        if ($status !== VariantStatus::Deactivated) {
+            $this->deactivated_at = null;
+        }
+
+        match ($status) {
+            VariantStatus::Draft => null,
+            VariantStatus::Active => $this->activated_at ??= $at,
+            VariantStatus::Deactivated => $this->deactivated_at ??= $at,
+            VariantStatus::Retired => $this->retired_at ??= $at,
+            VariantStatus::Archived => $this->archived_at ??= $at,
+        };
     }
 
     protected static function booted(): void

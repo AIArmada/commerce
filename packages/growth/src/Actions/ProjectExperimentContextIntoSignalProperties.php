@@ -20,6 +20,7 @@ final class ProjectExperimentContextIntoSignalProperties
         private readonly BuildExperimentSignalProperties $buildExperimentSignalProperties,
         private readonly ExperimentAssignmentResolver $assignmentResolver,
         private readonly ExperimentContextMerger $contextMerger,
+        private readonly ScopeSignalQueryToOwner $scopeSignalQueryToOwner,
     ) {}
 
     /**
@@ -69,7 +70,7 @@ final class ProjectExperimentContextIntoSignalProperties
                 'Tracked property is not accessible in the current owner scope.',
             );
 
-            $resolvedTrackedProperty = app(ScopeSignalQueryToOwner::class)
+            $resolvedTrackedProperty = $this->scopeSignalQueryToOwner
                 ->handle(
                     TrackedProperty::query(),
                     $owner,

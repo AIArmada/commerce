@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Growth\Actions;
 
 use AIArmada\Growth\Enums\ExperimentModuleType;
+use AIArmada\Growth\Enums\VariantStatus;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Queries\ExperimentOwnership;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use RuntimeException;
+use ValueError;
 
 final readonly class SaveVariant
 {
@@ -30,6 +33,11 @@ final readonly class SaveVariant
 
             $record = new Variant($this->attributes($data, $experiment));
             $record->experiment_id = (string) $experiment->getKey();
+
+            if (isset($data['status'])) {
+                $record->transitionTo($this->variantStatus($data['status']));
+            }
+
             $record->saveOrFail();
 
             return $record;
@@ -51,6 +59,19 @@ final readonly class SaveVariant
                 ->whereKey($record->experiment_id)->firstOrFail();
 
             $record->fill($this->attributes($data, $experiment));
+
+            if (isset($data['status'])) {
+                $status = $this->variantStatus($data['status']);
+
+                if ($record->status !== $status) {
+                    try {
+                        $record->transitionTo($status);
+                    } catch (InvalidArgumentException $exception) {
+                        throw ValidationException::withMessages(['status' => $exception->getMessage()]);
+                    }
+                }
+            }
+
             $record->saveOrFail();
 
             return $record;
@@ -84,13 +105,30 @@ final readonly class SaveVariant
      */
     private function attributes(array $data, Experiment $experiment): array
     {
-        $data = Arr::only($data, ['code', 'name', 'description', 'traffic_percentage', 'position', 'is_control', 'status', 'settings']);
+        $data = Arr::only($data, ['code', 'name', 'description', 'traffic_percentage', 'position', 'is_control', 'settings']);
 
         if (array_key_exists('settings', $data)) {
             $data['settings'] = $this->normalizeSettings($experiment->module_type, $data['settings']);
         }
 
         return $data;
+    }
+
+    private function variantStatus(mixed $status): VariantStatus
+    {
+        if ($status instanceof VariantStatus) {
+            return $status;
+        }
+
+        if (! is_string($status)) {
+            throw ValidationException::withMessages(['status' => 'The variant status is invalid.']);
+        }
+
+        try {
+            return VariantStatus::from($status);
+        } catch (ValueError) {
+            throw ValidationException::withMessages(['status' => 'The variant status is invalid.']);
+        }
     }
 
     /** @return array<string, mixed>|null */

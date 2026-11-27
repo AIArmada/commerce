@@ -33,7 +33,7 @@ final class ManageGrowthSettings extends Page
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-growth.navigation.group');
+        return config('filament-growth.navigation.settings_group');
     }
 
     public static function getNavigationSort(): int
@@ -52,6 +52,7 @@ final class ManageGrowthSettings extends Page
         $user = Filament::auth()->user();
 
         return $user !== null
+            && UpdateGrowthSettings::canWriteInCurrentContext()
             && parent::canAccess()
             && Gate::forUser($user)->allows('growth.settings.manage');
     }

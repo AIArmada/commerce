@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class ExperimentAssignmentResolver
 {
+    public function __construct(private readonly ScopeSignalQueryToOwner $scopeSignalQueryToOwner) {}
+
     /**
      * @return Collection<int, Assignment>
      */
@@ -192,6 +194,6 @@ final class ExperimentAssignmentResolver
 
         $owner = OwnerContext::fromTypeAndId($trackedProperty->owner_type, $trackedProperty->owner_id);
 
-        return app(ScopeSignalQueryToOwner::class)->handle($query, $owner);
+        return $this->scopeSignalQueryToOwner->handle($query, $owner);
     }
 }

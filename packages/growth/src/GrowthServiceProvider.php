@@ -14,6 +14,7 @@ use AIArmada\Growth\EntryPoints\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\EntryPoints\Http\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Signals\Features\Browser\Api\BrowserPageProperties;
+use AIArmada\Signals\Features\Browser\Queries\BrowserPagePropertyRegistry;
 use AIArmada\Signals\Features\Ingestion\Api\TrackedPropertyDeleting;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -45,7 +46,11 @@ final class GrowthServiceProvider extends PackageServiceProvider
         $this->app->singleton(ResolveExperimentPreset::class);
         $this->app->singleton(ProjectExperimentContextIntoSignalProperties::class);
         $this->app->singleton(ExperimentContextManager::class);
-        $this->app->alias(ExperimentContextManager::class, BrowserPageProperties::class);
+        $this->app->afterResolving(BrowserPageProperties::class, function (mixed $properties): void {
+            if ($properties instanceof BrowserPagePropertyRegistry) {
+                $properties->add($this->app->make(ExperimentContextManager::class));
+            }
+        });
         $this->app->bind(RequestExperimentSubjectResolver::class, function ($app): RequestExperimentSubjectResolver {
             $resolverClass = (string) config('growth.http.experiment_middleware.subject_resolver', '');
 

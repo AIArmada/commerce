@@ -7,7 +7,6 @@ namespace AIArmada\FilamentGrowth\Policies;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
@@ -15,19 +14,16 @@ final class ExperimentPolicy
 {
     public function viewAny(Authorizable $user): bool
     {
-        if (OwnerUiScope::canCreate(Experiment::class)) {
-            if (! TrackedProperty::ownerScopeConfig()->enabled) {
-                return true;
-            }
-
-            return OwnerUiScope::apply(TrackedProperty::query(), includeGlobal: false)->exists();
+        if (! OwnerUiScope::canCreate(Experiment::class)) {
+            return ExperimentAccess::hasReadableExperiment();
         }
 
-        if (Experiment::ownerScopeConfig()->enabled) {
-            return false;
+        if (! TrackedProperty::ownerScopeConfig()->enabled) {
+            return true;
         }
 
-        return Experiment::query()->exists();
+        return ExperimentAccess::hasWritableTrackedProperty()
+            || ExperimentAccess::hasReadableExperiment();
     }
 
     public function view(Authorizable $user, Experiment $experiment): bool
@@ -37,15 +33,7 @@ final class ExperimentPolicy
 
     public function create(Authorizable $user): bool
     {
-        if (Experiment::ownerScopeConfig()->enabled && ! OwnerUiScope::canCreate(Experiment::class)) {
-            return false;
-        }
-
-        if (! TrackedProperty::ownerScopeConfig()->enabled) {
-            return true;
-        }
-
-        return OwnerUiScope::apply(TrackedProperty::query(), includeGlobal: false)->exists();
+        return ExperimentAccess::canCreateExperiment();
     }
 
     public function update(Authorizable $user, Experiment $experiment): bool
@@ -60,7 +48,7 @@ final class ExperimentPolicy
 
     public function deleteAny(Authorizable $user): bool
     {
-        return $this->hasWritableExperiments();
+        return ExperimentAccess::hasWritableExperiment();
     }
 
     public function restore(Authorizable $user, Experiment $experiment): bool
@@ -70,7 +58,7 @@ final class ExperimentPolicy
 
     public function restoreAny(Authorizable $user): bool
     {
-        return $this->hasWritableExperiments();
+        return ExperimentAccess::hasWritableExperiment();
     }
 
     public function forceDelete(Authorizable $user, Experiment $experiment): bool
@@ -80,12 +68,6 @@ final class ExperimentPolicy
 
     public function forceDeleteAny(Authorizable $user): bool
     {
-        return $this->hasWritableExperiments();
-    }
-
-    private function hasWritableExperiments(): bool
-    {
-        return OwnerUiScope::canCreate(Experiment::class)
-            && ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->exists();
+        return ExperimentAccess::hasWritableExperiment();
     }
 }

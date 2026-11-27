@@ -19,6 +19,8 @@ use InvalidArgumentException;
 
 class ExperimentResolver
 {
+    public function __construct(private readonly ScopeSignalQueryToOwner $scopeSignalQueryToOwner) {}
+
     public function resolve(
         string $id,
         ResolveStrategy $strategy = ResolveStrategy::Accessible,
@@ -72,7 +74,7 @@ class ExperimentResolver
         $resolvedExperiment = $query
             ->whereIn(
                 'tracked_property_id',
-                app(ScopeSignalQueryToOwner::class)
+                $this->scopeSignalQueryToOwner
                     ->handle(
                         TrackedProperty::query(),
                         $owner,
@@ -156,7 +158,7 @@ class ExperimentResolver
         $resolvedExperiment = $query
             ->whereIn(
                 'tracked_property_id',
-                app(ScopeSignalQueryToOwner::class)
+                $this->scopeSignalQueryToOwner
                     ->handle(
                         TrackedProperty::query(),
                         $owner,

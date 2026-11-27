@@ -136,11 +136,11 @@ Important notes:
 
 The built-in resolver tries, in order:
 
-1. authenticated user → `SignalIdentity.auth_user_type + auth_user_id`, then `external_id`
+1. authenticated user → `SignalIdentity.auth_user_type + auth_user_id` (no `external_id` fallback)
 2. current Signals browser session id (`sig_sid`) or the configured session identifier source
 3. current Signals browser visitor id (`sig_vid`) or the configured anonymous id source
 
-If `signals.integrations.browser.enabled` is on and its middleware has bootstrapped a browser context, you usually do not need any extra request-header wiring for Growth's built-in resolver.
+If `signals.integrations.browser.enabled` is on and its middleware has bootstrapped a browser context, you usually do not need any extra request-header wiring for Growth's built-in resolver. Only identities stamped with the authenticated user's morph type and identifier are attributed; an unstamped or differently typed `external_id` is ignored.
 
 ## Read the current experiment context
 
@@ -363,7 +363,7 @@ php artisan growth:archive-experiments --older-than=30 --dry-run
 php artisan growth:archive-experiments --older-than=60
 ```
 
-The command runs per owner when owner scoping is enabled and sets the experiment status to `archived` with an `archived_at` timestamp.
+The command runs per owner when Signals owner scoping is enabled, discovering owners from tracked properties so it also works when Growth owner scoping is disabled. It sets the experiment status to `archived` with an `archived_at` timestamp and only archives experiments whose tracked property still matches the experiment's owner tuple.
 
 ### Recompute assignments
 
@@ -385,7 +385,8 @@ php artisan growth:recompute-assignments --dry-run
 
 The command repairs assignments with the canonical deterministic allocator used by
 `ResolveExperimentAssignment::variantForSubject()`. It reports changed, quarantined,
-and unchanged counts; it does not pick a random active variant.
+and unchanged counts; it does not pick a random active variant. Missing or inaccessible parent
+experiments are quarantined in assignment metadata instead of aborting the owner batch.
 
 ## Optional Filament admin UI
 

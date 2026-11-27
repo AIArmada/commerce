@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -101,6 +102,68 @@ final class ExperimentOwnership
         }
 
         return $query->whereExists($parents);
+    }
+
+    /**
+     * @param  Builder<Assignment>  $query
+     * @return Builder<Assignment>
+     */
+    public static function scopeAssignments(Builder $query, bool $writable = false): Builder
+    {
+        $query = self::scopeOwner($query, $writable);
+        $assignment = $query->getModel();
+        $experiment = new Experiment;
+        $parents = self::scopeExperiments(Experiment::query(), $writable)
+            ->selectRaw('1')
+            ->whereColumn($experiment->getQualifiedKeyName(), $assignment->qualifyColumn('experiment_id'));
+
+        if (Assignment::ownerScopeConfig()->enabled) {
+            $assignmentColumns = OwnerTupleColumns::forModelClass(Assignment::class);
+            $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
+            $assignmentType = $assignment->qualifyColumn($assignmentColumns->ownerTypeColumn);
+            $assignmentId = $assignment->qualifyColumn($assignmentColumns->ownerIdColumn);
+            $experimentType = $experiment->qualifyColumn($experimentColumns->ownerTypeColumn);
+            $experimentId = $experiment->qualifyColumn($experimentColumns->ownerIdColumn);
+
+            $parents->where(function (Builder $query) use ($assignmentType, $assignmentId, $experimentType, $experimentId): void {
+                $query->where(function (Builder $owned) use ($assignmentType, $assignmentId, $experimentType, $experimentId): void {
+                    $owned->whereColumn($assignmentType, $experimentType)
+                        ->whereColumn($assignmentId, $experimentId);
+                })->orWhere(function (Builder $global) use ($assignmentType, $assignmentId, $experimentType, $experimentId): void {
+                    $global->whereNull($assignmentType)
+                        ->whereNull($assignmentId)
+                        ->whereNull($experimentType)
+                        ->whereNull($experimentId);
+                });
+            });
+        }
+
+        return $query->whereExists($parents);
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function constrainToOwnerTuple(Builder $query, ?string $ownerType, string | int | null $ownerId): Builder
+    {
+        $model = $query->getModel();
+        $columns = OwnerTupleColumns::forModelClass($model::class);
+        $typeColumn = $model->qualifyColumn($columns->ownerTypeColumn);
+        $idColumn = $model->qualifyColumn($columns->ownerIdColumn);
+        $normalizedOwnerId = $ownerId !== null ? (string) $ownerId : null;
+
+        if (($ownerType === null) !== ($normalizedOwnerId === null)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($ownerType === null) {
+            return $query->whereNull($typeColumn)->whereNull($idColumn);
+        }
+
+        return $query->where($typeColumn, $ownerType)->where($idColumn, $normalizedOwnerId);
     }
 
     /**

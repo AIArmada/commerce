@@ -7,29 +7,28 @@ namespace AIArmada\FilamentGrowth\Actions;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Actions\SaveExperiment;
 use AIArmada\Growth\Models\Experiment;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
-use RuntimeException;
 
 final readonly class DeleteSelectedExperiments
 {
+    public function __construct(private SaveExperiment $saveExperiment) {}
+
     /** @param Collection<int|string, Experiment> $records */
     public function handle(Collection $records): void
     {
-        (new Experiment)->getConnection()->transaction(function () use ($records): void {
-            foreach ($records as $record) {
-                if (! $record instanceof Experiment || ! ExperimentAccess::canMutateExperiment($record)) {
-                    throw new RuntimeException('Global growth experiments can only be deleted from explicit global context.');
-                }
+        ExperimentAccess::authorize('deleteAny', Experiment::class);
+
+        foreach ($records as $record) {
+            if (! $record instanceof Experiment) {
+                throw new AuthorizationException('The growth experiment selection contains an invalid record.');
             }
 
-            Gate::authorize('deleteAny', Experiment::class);
+            ExperimentAccess::authorize('delete', $record);
+        }
 
-            foreach ($records as $record) {
-                Gate::authorize('delete', $record);
-            }
-
-            app(SaveExperiment::class)->deleteMany($records->map(static fn (Experiment $record): string => (string) $record->getKey())->values()->all());
-        });
+        $this->saveExperiment->deleteMany(
+            $records->map(static fn (Experiment $record): string => (string) $record->getKey())->values()->all(),
+        );
     }
 }

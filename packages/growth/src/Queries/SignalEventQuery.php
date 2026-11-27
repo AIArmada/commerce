@@ -10,8 +10,10 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 
-final class SignalEventQuery
+final readonly class SignalEventQuery
 {
+    public function __construct(private ScopeSignalQueryToOwner $scopeSignalQueryToOwner) {}
+
     /**
      * @return Builder<SignalEvent>
      */
@@ -31,7 +33,7 @@ final class SignalEventQuery
 
         $owner = OwnerContext::fromTypeAndId($trackedProperty->owner_type, $trackedProperty->owner_id);
 
-        return app(ScopeSignalQueryToOwner::class)->handle(
+        return $this->scopeSignalQueryToOwner->handle(
             $query,
             $owner,
             includeGlobal: false,

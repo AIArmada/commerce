@@ -22,6 +22,7 @@ final class SignalsTrackerRenderer implements TrackerMarkup
         private readonly SignalsBrowserContextManager $browserContextManager,
         private readonly BrowserPropertyResolver $trackedPropertyResolver,
         private readonly BrowserInteractionRules $browserInteractionRules,
+        private readonly BrowserPageProperties $browserPageProperties,
     ) {}
 
     /**
@@ -102,9 +103,7 @@ final class SignalsTrackerRenderer implements TrackerMarkup
     private function pageProperties(array $overrides): array
     {
         $properties = [];
-        $contextProperties = app()->bound(BrowserPageProperties::class)
-            ? app(BrowserPageProperties::class)->currentPageProperties()
-            : [];
+        $contextProperties = $this->browserPageProperties->currentPageProperties();
 
         if ($contextProperties !== []) {
             $properties = array_merge($properties, $contextProperties);

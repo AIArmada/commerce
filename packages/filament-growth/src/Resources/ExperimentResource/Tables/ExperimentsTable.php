@@ -158,12 +158,14 @@ class ExperimentsTable
 
     private static function findTrackedPropertyForExperiment(Experiment $record): ?TrackedProperty
     {
-        $query = OwnerUiScope::applyForRecordOwner(
-            TrackedProperty::query(),
-            $record,
-            recordConfigKey: 'growth.features.owner',
-            queryConfigKey: 'signals.owner',
-        );
+        $query = Experiment::ownerScopeConfig()->enabled
+            ? OwnerUiScope::applyForRecordOwner(
+                TrackedProperty::query(),
+                $record,
+                recordConfigKey: 'growth.features.owner',
+                queryConfigKey: 'signals.owner',
+            )
+            : OwnerUiScope::apply(TrackedProperty::query());
 
         $trackedProperty = $query
             ->whereKey($record->tracked_property_id)
@@ -209,7 +211,7 @@ class ExperimentsTable
 
     private static function canEditRecord(Experiment $record): bool
     {
-        return ExperimentAccess::canMutateExperiment($record);
+        return ExperimentAccess::can('update', $record);
     }
 
     private static function statusOperationalDescription(ExperimentStatus $status): string

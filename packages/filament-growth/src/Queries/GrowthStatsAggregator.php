@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Queries;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -28,11 +28,11 @@ final class GrowthStatsAggregator
     public static function aggregate(): array
     {
         $statsExperimentLimit = (int) config('filament-growth.tables.stats_experiment_limit', 10);
-        $variantCountQuery = OwnerUiScope::apply(Variant::query(), includeGlobal: false)
+        $variantCountQuery = ExperimentOwnership::scopeVariants(Variant::query())
             ->selectRaw('COUNT(*)');
-        $assignmentCountQuery = OwnerUiScope::apply(Assignment::query(), includeGlobal: false)
+        $assignmentCountQuery = ExperimentOwnership::scopeAssignments(Assignment::query())
             ->selectRaw('COUNT(*)');
-        $experiments = OwnerUiScope::apply(Experiment::query()->with('trackedProperty'), includeGlobal: false)
+        $experiments = ExperimentOwnership::scopeExperiments(Experiment::query()->with('trackedProperty'))
             ->selectRaw('COUNT(*) OVER () as total_experiments')
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) OVER () as active_experiments', [ExperimentStatus::Active->value])
             ->selectSub($variantCountQuery, 'total_variant_count')

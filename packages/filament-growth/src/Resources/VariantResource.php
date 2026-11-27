@@ -19,7 +19,6 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 final class VariantResource extends Resource
@@ -77,39 +76,24 @@ final class VariantResource extends Resource
 
     public static function canCreate(): bool
     {
-        return parent::canCreate();
+        return ExperimentAccess::can('create', Variant::class);
     }
 
     public static function canEdit(Model $record): bool
     {
-        if (! $record instanceof Variant) {
-            return false;
-        }
-
-        if (! parent::canEdit($record)) {
-            return false;
-        }
-
-        return ExperimentAccess::canMutateVariant($record);
+        return $record instanceof Variant
+            && ExperimentAccess::can('update', $record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        if (! $record instanceof Variant) {
-            return false;
-        }
-
-        if (! parent::canDelete($record)) {
-            return false;
-        }
-
-        return ExperimentAccess::canMutateVariant($record);
+        return $record instanceof Variant
+            && ExperimentAccess::can('delete', $record);
     }
 
     public static function canDeleteAny(): bool
     {
-        return parent::canDeleteAny()
-            && Gate::allows('deleteAny', static::getModel());
+        return ExperimentAccess::can('deleteAny', Variant::class);
     }
 
     public static function getPages(): array

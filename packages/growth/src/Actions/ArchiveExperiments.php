@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -15,15 +17,15 @@ final readonly class ArchiveExperiments
 {
     public function handle(CarbonImmutable $threshold, bool $dryRun): int
     {
-        $runner = new OwnerBatchRunner(Experiment::class, [
-            'enabled' => 'growth.features.owner.enabled',
-        ]);
+        $runner = new OwnerBatchRunner(
+            Experiment::ownerScopeConfig()->enabled ? Experiment::class : TrackedProperty::class,
+        );
 
         /** @var Collection<int, array{archived: int}> $results */
         $results = OwnerScopeOverride::withoutIncludeGlobal(fn () => $runner->forEach(function () use ($threshold, $dryRun): array {
             $archived = 0;
 
-            Experiment::query()
+            ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
                 ->where('status', ExperimentStatus::Concluded->value)
                 ->where('updated_at', '<', $threshold)
                 ->chunkById(500, function ($experiments) use (&$archived, $threshold, $dryRun): void {
@@ -35,7 +37,7 @@ final readonly class ArchiveExperiments
                         }
 
                         $changed = $experiment->getConnection()->transaction(function () use ($experiment, $threshold): bool {
-                            $current = Experiment::query()
+                            $current = ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
                                 ->whereKey($experiment->getKey())
                                 ->where('status', ExperimentStatus::Concluded->value)
                                 ->where('updated_at', '<', $threshold)
