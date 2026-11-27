@@ -7,7 +7,7 @@ namespace AIArmada\Customers\Concerns;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -42,7 +42,7 @@ trait HasCustomerProfile
      */
     public function getOrCreateCustomerProfile(): Customer
     {
-        $customer = $this->customerProfile;
+        $customer = $this->customerProfile()->first();
 
         if ($customer instanceof Customer) {
             return $customer;
@@ -88,7 +88,7 @@ trait HasCustomerProfile
         } catch (UniqueConstraintViolationException) {
             $this->unsetRelation('customerProfile');
 
-            $existing = $this->customerProfile;
+            $existing = $this->customerProfile()->first();
 
             if ($existing instanceof Customer) {
                 return $existing;
@@ -113,7 +113,7 @@ trait HasCustomerProfile
      */
     public function acceptsMarketing(): bool
     {
-        $customerProfile = $this->customerProfile;
+        $customerProfile = $this->customerProfile()->first();
 
         if (! $customerProfile instanceof Customer) {
             return false;

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\LinkCustomerToPerson;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

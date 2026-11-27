@@ -181,7 +181,7 @@ existing shared person explicitly; do not create a person as an implicit side
 effect of checkout or import flows:
 
 ```php
-use AIArmada\Customers\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
 
 $customer = app(LinkCustomerToPerson::class)->execute($customer, $person);
 ```

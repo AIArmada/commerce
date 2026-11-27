@@ -8,7 +8,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Services\CustomerResolver;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCustomers\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Customers\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use BackedEnum;

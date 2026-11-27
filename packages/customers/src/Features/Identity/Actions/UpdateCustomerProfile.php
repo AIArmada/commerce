@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Actions;
+namespace AIArmada\Customers\Features\Identity\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,10 @@ final class UpdateCustomerProfile
         ?Model $user,
         ?string $personId = null,
     ): void {
+        if (Customer::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
+        }
+
         $normalizer = app(CustomerProfileNormalizer::class);
 
         DB::transaction(function () use ($billingData, $customer, $normalizer, $personId, $shippingData, $user): void {

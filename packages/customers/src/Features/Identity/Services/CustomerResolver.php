@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Services;
+namespace AIArmada\Customers\Features\Identity\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\MergeCustomers;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
-use AIArmada\Customers\Concerns\NormalizesCustomerPayload;
-use AIArmada\Customers\Concerns\ResolvesCustomerIdentity;
-use AIArmada\Customers\Concerns\SynchronizesCustomerAddresses;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
+use AIArmada\Customers\Features\Identity\Concerns\NormalizesCustomerPayload;
+use AIArmada\Customers\Features\Identity\Concerns\ResolvesCustomerIdentity;
+use AIArmada\Customers\Features\Identity\Concerns\SynchronizesCustomerAddresses;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

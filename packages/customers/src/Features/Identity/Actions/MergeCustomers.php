@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Actions;
+namespace AIArmada\Customers\Features\Identity\Actions;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Events\CustomerUpdated;
@@ -27,6 +28,11 @@ final class MergeCustomers
 
         if (! $this->customersShareOwnerContext($source, $target)) {
             throw new InvalidArgumentException('Cannot merge customers across different owner contexts.');
+        }
+
+        if (Customer::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Customer::class, $source->getKey());
+            OwnerWriteGuard::findOrFailForOwner(Customer::class, $target->getKey());
         }
 
         $owner = $source->owner ?? $target->owner ?? null;

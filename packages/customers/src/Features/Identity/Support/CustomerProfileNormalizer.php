@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Support;
+namespace AIArmada\Customers\Features\Identity\Support;
 
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;

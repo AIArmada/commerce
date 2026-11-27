@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Identity",
+  "owns": {
+    "table:customers": [
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\CreateCustomer",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\UpdateCustomerProfile",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\LinkCustomerToPerson",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers"
+    ]
+  },
+  "extensions": {}
+}

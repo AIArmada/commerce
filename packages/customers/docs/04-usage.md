@@ -9,13 +9,13 @@ title: Usage Guide
 The package provides action classes for common customer workflows:
 
 ```php
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
-use AIArmada\Customers\Actions\LinkCustomerToPerson;
-use AIArmada\Customers\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 
 // Create a new customer
 $customer = app(CreateCustomer::class)->execute(
@@ -58,7 +58,7 @@ $customer = app(MergeCustomers::class)->execute($target, $source);
 `MergeCustomers::execute($target, $source)` requires both customers to share one owner tuple, then moves addresses, contact methods, social profiles, segments, groups, and notes inside a single `DB::transaction()`, deletes the source, and dispatches `CustomerUpdated` for the refreshed target.
 
 ```php
-use AIArmada\Customers\Actions\MergeCustomers;
+use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Events\CustomerUpdated;
 
 $customer = app(MergeCustomers::class)->execute($target, $source);
@@ -159,7 +159,7 @@ When `aiarmada/checkout` and `aiarmada/commerce-support` are installed, this pac
 Use `CustomerResolver` when you need to turn an authenticated user, an existing session customer, and billing/shipping payloads into the best available `Customer` record.
 
 ```php
-use AIArmada\Customers\Services\CustomerResolver;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 
 $customer = app(CustomerResolver::class)->resolve(
     user: auth()->user(),
@@ -312,7 +312,7 @@ $customer->attachAddress(
 ### Set and read defaults
 
 ```php
-use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
+use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
 
 app(SetDefaultCustomerAddress::class)->execute($customer, $address, 'shipping');
 

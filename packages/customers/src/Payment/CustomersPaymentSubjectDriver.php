@@ -14,7 +14,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Services\CustomerResolver;
+use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 
 final class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterface
 {

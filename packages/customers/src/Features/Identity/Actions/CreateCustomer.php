@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Actions;
+namespace AIArmada\Customers\Features\Identity\Actions;
 
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
