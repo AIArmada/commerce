@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Invoice;
 
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
+use AIArmada\CashierChip\Data\InvoiceRenderData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -353,7 +354,24 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
             );
         }
 
-        return $renderer->render($this, $data, [
+        return $renderer->render(new InvoiceRenderData(
+            id: $this->id(),
+            number: $this->number(),
+            date: $this->date(),
+            dueDate: $this->dueDate(),
+            totalMinor: $this->rawTotal(),
+            currency: $this->currency(),
+            customerName: $this->customerName(),
+            customerEmail: $this->customerEmail(),
+            customerPhone: $this->customerPhone(),
+            status: $this->status(),
+            items: $this->invoiceItems()->map(fn (InvoiceLineItem $item): array => [
+                'name' => $item->description(),
+                'description' => $item->description(),
+                'quantity' => $item->quantity(),
+                'unit_price_minor' => $item->unitPrice(),
+            ])->values()->all(),
+        ), $data, [
             'paper' => config('cashier-chip.invoices.paper', 'A4'),
         ]);
     }

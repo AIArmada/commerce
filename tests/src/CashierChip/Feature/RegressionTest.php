@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
+use AIArmada\CashierChip\Data\InvoiceRenderData;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
@@ -423,7 +424,7 @@ describe('RepairRegression security', function (): void {
     it('invoice downloads sanitize attacker-influenced references', function (): void {
         $this->app->instance(InvoiceRenderer::class, new class implements InvoiceRenderer
         {
-            public function render(Invoice $invoice, array $data = [], array $options = []): string
+            public function render(InvoiceRenderData $invoice, array $data = [], array $options = []): string
             {
                 return 'pdf-bytes';
             }

@@ -191,7 +191,7 @@ Explicit global context sees global-only rows on tuple models and all rows on
 billables without an owner tuple. Record actions on the customer view page
 revalidate the record through the same resolver and throw on cross-tenant
 access. Point `cashier-chip.features.owner.customer_resolver` at a custom
-`AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface` implementation
+`AIArmada\CashierChip\Billing\CustomerOwnerResolver` implementation
 when the default mapping does not fit.
 
 This ensures:

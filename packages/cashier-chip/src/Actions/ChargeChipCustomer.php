@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Actions;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Support\IdempotencyKey;
@@ -21,7 +21,7 @@ final class ChargeChipCustomer
     use AsAction;
 
     /**
-     * @param  Model&BillableContract  $billable
+     * @param  Model&BillableModel  $billable
      * @param  array<string, mixed>  $options
      *
      * @throws IncompletePayment
@@ -112,7 +112,7 @@ final class ChargeChipCustomer
     }
 
     /**
-     * @param  Model&BillableContract  $billable
+     * @param  Model&BillableModel  $billable
      * @return array<string, mixed>
      */
     private function billableMetadata(Model $billable, mixed $metadata): array

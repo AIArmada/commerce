@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Invoices;
 
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
-use AIArmada\CashierChip\Invoice\Invoice;
+use AIArmada\CashierChip\Data\InvoiceRenderData;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Services\DocService;
 
@@ -21,24 +21,24 @@ class DocsInvoiceRenderer implements InvoiceRenderer
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $options
      */
-    public function render(Invoice $invoice, array $data = [], array $options = []): string
+    public function render(InvoiceRenderData $invoice, array $data = [], array $options = []): string
     {
         $docData = DocData::from([
-            'doc_number' => $invoice->number(),
+            'doc_number' => $invoice->number,
             'doc_type' => 'invoice',
-            'issue_date' => $invoice->date(),
-            'due_date' => $invoice->dueDate(),
-            'items' => $this->mapLineItems($invoice),
-            'total_minor' => $invoice->rawTotal(),
-            'currency' => $invoice->currency(),
+            'issue_date' => $invoice->date,
+            'due_date' => $invoice->dueDate,
+            'items' => $invoice->items,
+            'total_minor' => $invoice->totalMinor,
+            'currency' => $invoice->currency,
             'customer_data' => [
-                'name' => $invoice->customerName(),
-                'email' => $invoice->customerEmail(),
-                'phone' => $invoice->customerPhone(),
+                'name' => $invoice->customerName,
+                'email' => $invoice->customerEmail,
+                'phone' => $invoice->customerPhone,
             ],
             'metadata' => array_merge($data, [
-                'chip_purchase_id' => $invoice->id(),
-                'payment_status' => $invoice->status(),
+                'chip_purchase_id' => $invoice->id,
+                'payment_status' => $invoice->status,
             ]),
             'generate_pdf' => false,
         ]);
@@ -56,20 +56,4 @@ class DocsInvoiceRenderer implements InvoiceRenderer
         return config('cashier-chip.invoices.paper', 'A4');
     }
 
-    /**
-     * Map invoice line items to docs format.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function mapLineItems(Invoice $invoice): array
-    {
-        return $invoice->invoiceItems()->map(function ($item) {
-            return [
-                'name' => $item->description(),
-                'description' => $item->description(),
-                'quantity' => $item->quantity(),
-                'unit_price_minor' => $item->unitPrice(),
-            ];
-        })->toArray();
-    }
 }

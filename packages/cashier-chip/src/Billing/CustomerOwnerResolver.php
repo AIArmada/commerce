@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Contracts;
+namespace AIArmada\CashierChip\Billing;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * The default implementation is used unless
  * `cashier-chip.features.owner.customer_resolver` points to a custom class.
  */
-interface CustomerOwnerResolverInterface
+interface CustomerOwnerResolver
 {
     /**
      * Constrain a customer list query to the given owner.

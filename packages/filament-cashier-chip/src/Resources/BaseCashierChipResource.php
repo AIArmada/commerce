@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
-use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -94,9 +94,9 @@ abstract class BaseCashierChipResource extends Resource
         );
     }
 
-    public static function customerOwnerResolver(): CustomerOwnerResolverInterface
+    public static function customerOwnerResolver(): CustomerOwnerResolver
     {
-        return app(CustomerOwnerResolverInterface::class);
+        return app(CustomerOwnerResolver::class);
     }
 
     protected static function pollingInterval(): string

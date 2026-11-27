@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Commands\RenewSubscriptionsCommand;
@@ -102,13 +102,13 @@ final class CashierChipServiceProvider extends PackageServiceProvider
 
     private function bindCustomerOwnerResolver(): void
     {
-        $this->app->bind(CustomerOwnerResolverInterface::class, function ($app): CustomerOwnerResolverInterface {
+        $this->app->bind(CustomerOwnerResolver::class, function ($app): CustomerOwnerResolver {
             $configured = config('cashier-chip.features.owner.customer_resolver');
 
             if (is_string($configured) && $configured !== '' && class_exists($configured)) {
                 $resolved = $app->make($configured);
 
-                if ($resolved instanceof CustomerOwnerResolverInterface) {
+                if ($resolved instanceof CustomerOwnerResolver) {
                     return $resolved;
                 }
             }
