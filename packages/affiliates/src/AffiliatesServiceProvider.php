@@ -64,8 +64,8 @@ use AIArmada\Affiliates\Platform\ExtensionRegistry;
 use AIArmada\Affiliates\Platform\FeatureCatalog;
 use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
-use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
@@ -183,7 +183,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         if (
             config('affiliates.features.commission_tracking.enabled', true)
             && class_exists(CommissionAttributionRequired::class)
-            && class_exists(CartManager::class)
+            && interface_exists(CartManagerInterface::class)
             && ! $this->networkCoordinatesAttribution()
         ) {
             $this->app->make(OrderCommissionRegistration::class)->register();

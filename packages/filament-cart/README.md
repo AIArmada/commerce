@@ -41,9 +41,9 @@ The plugin registers three Filament resources under the **E-Commerce** navigatio
 
 | Resource | Model | Purpose |
 |----------|-------|---------|
-| Carts | `AIArmada\\Cart\\Snapshots\\CartSnapshot` | View normalized cart snapshots |
-| Cart Items | `AIArmada\\Cart\\Snapshots\\CartSnapshotItem` | Browse individual line items |
-| Conditions | `AIArmada\\Cart\\Models\\Condition` | Manage reusable condition templates |
+| Carts | `AIArmada\\Cart\\Features\\Snapshots\\Models\\CartSnapshot` | View normalized cart snapshots |
+| Cart Items | `AIArmada\\Cart\\Features\\Snapshots\\Models\\CartSnapshotItem` | Browse individual line items |
+| Conditions | `AIArmada\\Cart\\Features\\Conditions\\Models\\Condition` | Manage reusable condition templates |
 
 ### Cart Resource
 
@@ -125,16 +125,16 @@ The core `aiarmada/cart` package owns snapshot projection and registers its
 event listeners. Filament Cart consumes the resulting read model and provides
 the UI adapter:
 
-- `AIArmada\\Cart\\Snapshots\\SyncCartOnEvent` — Creates/updates normalized records
-- `AIArmada\\Cart\\Listeners\\ApplyGlobalConditions` — Applies global conditions
-- `AIArmada\\Cart\\Snapshots\\CleanupSnapshotOnCartMerged` — Handles merge cleanup
+- `AIArmada\\Cart\\Features\\Snapshots\\EntryPoints\\Listeners\\SyncCartOnEvent` — Creates/updates normalized records
+- `AIArmada\\Cart\\Features\\Conditions\\EntryPoints\\Listeners\\ApplyGlobalConditions` — Applies global conditions
+- `AIArmada\\Cart\\Features\\Snapshots\\EntryPoints\\Listeners\\CleanupSnapshotOnCartMerged` — Handles merge cleanup
 
 ## Dynamic Conditions
 
 Create conditions with rule-based application:
 
 ```php
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 
 Condition::create([
     'name' => 'bulk_discount',

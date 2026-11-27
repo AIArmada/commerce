@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Pages;
 
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -24,20 +25,7 @@ final class CreateCondition extends CreateRecord
 
     protected function handleRecordCreation(array $data): Condition
     {
-        $condition = new Condition;
-        $condition->fill($data);
-
-        if (Condition::ownerScopingEnabled()) {
-            $owner = Condition::resolveCurrentOwner();
-
-            if ($owner !== null) {
-                $condition->assignOwner($owner);
-            }
-        }
-
-        $condition->save();
-
-        return $condition;
+        return app(SaveStoredCondition::class)->create($data);
     }
 
     protected function getRedirectUrl(): string

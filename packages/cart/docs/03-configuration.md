@@ -76,7 +76,7 @@ user-facing values.
 - `dynamic_rules_factory` defaults to `null`, which resolves to
   `AIArmada\Cart\Services\BuiltInRulesFactory`. Set it to a class name to replace
   the factory.
-- `conditions.apply_global` gates the `ApplyGlobalConditions` listener that applies
+- `conditions.apply_global` gates the `AIArmada\Cart\Features\Conditions\EntryPoints\Listeners\ApplyGlobalConditions` listener that applies
   globally applicable conditions on cart create and item changes. See
   [Conditions](05-conditions.md).
 - `snapshots.analytics.high_value_threshold_minor` is an integer minor-unit
