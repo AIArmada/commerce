@@ -45,7 +45,7 @@ final readonly class ManageFollowsAction
                     'Following this subject is not authorized.',
                 );
 
-                $existing = Follow::query()
+                $existing = Follow::query()->forOwner()
                     ->where('follower_type', $actorIdentity['type'])
                     ->where('follower_id', $actorIdentity['id'])
                     ->where('followable_type', $subjectIdentity['type'])
@@ -110,7 +110,7 @@ final readonly class ManageFollowsAction
                 throw $exception;
             }
 
-            $existing = Follow::query()
+            $existing = Follow::query()->forOwner()
                 ->where('follower_type', $actorIdentity['type'])
                 ->where('follower_id', $actorIdentity['id'])
                 ->where('followable_type', $subjectIdentity['type'])
@@ -136,7 +136,7 @@ final readonly class ManageFollowsAction
         (new Follow)->getConnection()->transaction(function () use ($actor, $subject): void {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $follow = Follow::query()
+            $follow = Follow::query()->forOwner()
                 ->where('follower_type', $actorIdentity['type'])
                 ->where('follower_id', $actorIdentity['id'])
                 ->where('followable_type', $subjectIdentity['type'])
@@ -170,7 +170,7 @@ final readonly class ManageFollowsAction
         return (new Follow)->getConnection()->transaction(function () use ($actor, $subject): Follow {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $follow = Follow::query()
+            $follow = Follow::query()->forOwner()
                 ->where('follower_type', $actorIdentity['type'])
                 ->where('follower_id', $actorIdentity['id'])
                 ->where('followable_type', $subjectIdentity['type'])
@@ -201,7 +201,7 @@ final readonly class ManageFollowsAction
         return (new Follow)->getConnection()->transaction(function () use ($actor, $subject): Follow {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $follow = Follow::query()
+            $follow = Follow::query()->forOwner()
                 ->where('follower_type', $actorIdentity['type'])
                 ->where('follower_id', $actorIdentity['id'])
                 ->where('followable_type', $subjectIdentity['type'])

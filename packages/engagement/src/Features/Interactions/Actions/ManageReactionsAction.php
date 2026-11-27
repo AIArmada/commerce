@@ -40,7 +40,7 @@ final readonly class ManageReactionsAction
                     'Reacting to this subject is not authorized.',
                 );
 
-                $existing = Reaction::query()
+                $existing = Reaction::query()->forOwner()
                     ->where('reactor_type', $actorIdentity['type'])
                     ->where('reactor_id', $actorIdentity['id'])
                     ->where('reactable_type', $subjectIdentity['type'])
@@ -103,7 +103,7 @@ final readonly class ManageReactionsAction
                 throw $exception;
             }
 
-            $existing = Reaction::query()
+            $existing = Reaction::query()->forOwner()
                 ->where('reactor_type', $actorIdentity['type'])
                 ->where('reactor_id', $actorIdentity['id'])
                 ->where('reactable_type', $subjectIdentity['type'])
@@ -126,7 +126,7 @@ final readonly class ManageReactionsAction
         (new Reaction)->getConnection()->transaction(function () use ($actor, $subject, $reactionType): void {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $query = Reaction::query()
+            $query = Reaction::query()->forOwner()
                 ->where('reactor_type', $actorIdentity['type'])
                 ->where('reactor_id', $actorIdentity['id'])
                 ->where('reactable_type', $subjectIdentity['type'])

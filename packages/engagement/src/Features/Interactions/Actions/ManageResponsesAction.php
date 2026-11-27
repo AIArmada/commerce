@@ -45,7 +45,7 @@ final readonly class ManageResponsesAction
                     'Responding to this subject is not authorized.',
                 );
 
-                $existing = Response::query()
+                $existing = Response::query()->forOwner()
                     ->where('responder_type', $actorIdentity['type'])
                     ->where('responder_id', $actorIdentity['id'])
                     ->where('respondable_type', $subjectIdentity['type'])
@@ -146,7 +146,7 @@ final readonly class ManageResponsesAction
                 throw $exception;
             }
 
-            $existing = Response::query()
+            $existing = Response::query()->forOwner()
                 ->where('responder_type', $actorIdentity['type'])
                 ->where('responder_id', $actorIdentity['id'])
                 ->where('respondable_type', $subjectIdentity['type'])
@@ -168,7 +168,7 @@ final readonly class ManageResponsesAction
         (new Response)->getConnection()->transaction(function () use ($actor, $subject): void {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $response = Response::query()
+            $response = Response::query()->forOwner()
                 ->where('responder_type', $actorIdentity['type'])
                 ->where('responder_id', $actorIdentity['id'])
                 ->where('respondable_type', $subjectIdentity['type'])

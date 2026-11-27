@@ -41,7 +41,7 @@ final readonly class ManageBookmarksAction
                     'Bookmarking this subject is not authorized.',
                 );
 
-                $existing = Bookmark::query()
+                $existing = Bookmark::query()->forOwner()
                     ->where('bookmarker_type', $actorIdentity['type'])
                     ->where('bookmarker_id', $actorIdentity['id'])
                     ->where('bookmarkable_type', $subjectIdentity['type'])
@@ -102,7 +102,7 @@ final readonly class ManageBookmarksAction
                 throw $exception;
             }
 
-            $existing = Bookmark::query()
+            $existing = Bookmark::query()->forOwner()
                 ->where('bookmarker_type', $actorIdentity['type'])
                 ->where('bookmarker_id', $actorIdentity['id'])
                 ->where('bookmarkable_type', $subjectIdentity['type'])
@@ -124,7 +124,7 @@ final readonly class ManageBookmarksAction
         (new Bookmark)->getConnection()->transaction(function () use ($actor, $subject): void {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $bookmark = Bookmark::query()
+            $bookmark = Bookmark::query()->forOwner()
                 ->where('bookmarker_type', $actorIdentity['type'])
                 ->where('bookmarker_id', $actorIdentity['id'])
                 ->where('bookmarkable_type', $subjectIdentity['type'])
@@ -155,7 +155,7 @@ final readonly class ManageBookmarksAction
         (new Bookmark)->getConnection()->transaction(function () use ($actor, $subject): void {
             $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
             $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-            $bookmark = Bookmark::query()
+            $bookmark = Bookmark::query()->forOwner()
                 ->where('bookmarker_type', $actorIdentity['type'])
                 ->where('bookmarker_id', $actorIdentity['id'])
                 ->where('bookmarkable_type', $subjectIdentity['type'])

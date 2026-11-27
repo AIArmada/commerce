@@ -78,7 +78,7 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 $recipient->newQuery()->whereKey($recipient->getKey())->lockForUpdate()->firstOrFail();
             }
 
-            $existing = Reminder::query()
+            $existing = Reminder::query()->forOwner()
                 ->where('recipient_type', $recipientIdentity['type'])
                 ->where('recipient_id', $recipientIdentity['id'])
                 ->where('remindable_type', $subjectIdentity['type'])
@@ -157,7 +157,7 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
         $remindAt = isset($options['remind_at']) ? $this->toImmutableRemindAt($options['remind_at']) : null;
 
         (new Reminder)->getConnection()->transaction(function () use ($recipientIdentity, $subjectIdentity, $reminderType, $options, $channel, $remindAt): void {
-            Reminder::query()
+            Reminder::query()->forOwner()
                 ->where('recipient_type', $recipientIdentity['type'])
                 ->where('recipient_id', $recipientIdentity['id'])
                 ->where('remindable_type', $subjectIdentity['type'])

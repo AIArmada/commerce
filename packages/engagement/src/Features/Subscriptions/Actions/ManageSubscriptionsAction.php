@@ -265,7 +265,7 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
         ?string $status = null,
         bool $lock = false,
     ): ?Subscription {
-        $query = Subscription::query()
+        $query = Subscription::query()->forOwner()
             ->where('subscriber_type', $this->morphClass($subscriber))
             ->where('subscriber_id', $this->morphKey($subscriber))
             ->where('subscription_type', $subscriptionType)

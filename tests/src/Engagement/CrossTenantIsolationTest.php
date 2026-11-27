@@ -13,6 +13,7 @@ use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
@@ -20,8 +21,13 @@ use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Features\Interactions\Models\Share;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
+use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
+use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 
 it('isolates bookmark collections by owner', function (): void {
@@ -178,3 +184,49 @@ it('does not mass assign engagement owner columns', function (string $modelClass
     Share::class,
     EngagementCounter::class,
 ]);
+
+it('does not reuse or mutate global engagement records through tenant write actions', function (): void {
+    config(['engagement.owner.enabled' => true, 'engagement.owner.include_global' => true]);
+
+    $owner = User::factory()->create();
+    $actor = new EngagementActor;
+    $subject = new EngagementSubject;
+    $interactions = app(ManageInteractionsAction::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
+    $reminders = app(ManageRemindersAction::class);
+    $due = CarbonImmutable::now()->addHour()->startOfSecond();
+
+    $create = fn (): array => [
+        $interactions->follow($actor, $subject),
+        $interactions->bookmark($actor, $subject),
+        $interactions->respond($actor, $subject, 'going'),
+        $interactions->react($actor, $subject, 'like'),
+        $subscriptions->subscribe($actor, $subject),
+        $reminders->setReminder($actor, $subject, 'follow_up', ['remind_at' => $due]),
+    ];
+
+    $global = OwnerContext::withOwner(null, $create);
+    $local = OwnerContext::withOwner($owner, $create);
+
+    foreach ($local as $index => $record) {
+        expect($record->getKey())->not->toBe($global[$index]->getKey())
+            ->and($record->owner_id)->toBe($owner->getKey());
+    }
+
+    OwnerContext::withOwner($owner, function () use ($interactions, $subscriptions, $reminders, $actor, $subject): void {
+        $interactions->unfollow($actor, $subject);
+        $interactions->removeBookmark($actor, $subject);
+        $interactions->cancelResponse($actor, $subject);
+        $interactions->removeReaction($actor, $subject, 'like');
+        $subscriptions->unsubscribe($actor, $subject);
+        $reminders->cancelReminder($actor, $subject, 'follow_up');
+    });
+
+    foreach ($global as $record) {
+        expect($record->newQueryWithoutScopes()->findOrFail($record->getKey())->status)->toBe($record->status);
+    }
+
+    foreach ($local as $record) {
+        expect($record->newQueryWithoutScopes()->findOrFail($record->getKey())->status)->not->toBe($record->status);
+    }
+});
