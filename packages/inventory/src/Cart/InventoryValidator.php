@@ -101,9 +101,14 @@ final readonly class InventoryValidator implements CartValidatorInterface
         }
 
         $issues = [];
+        $cartId = $cart->getId();
+        $cartIdentifier = $cartId !== null
+            ? (string) $cartId
+            : sprintf('%s_%s', $cart->getIdentifier(), $cart->instance());
 
         foreach (InventoryDemandResolver::forCart($items) as $entry) {
-            $availableQuantity = $this->allocationService->getTotalAvailable($entry['model']);
+            $availableQuantity = $this->allocationService->getTotalAvailable($entry['model'])
+                + $this->allocationService->getAllocations($entry['model'], $cartIdentifier)->sum('quantity');
             $requestedQuantity = $entry['quantity'];
 
             if ($availableQuantity >= $requestedQuantity) {

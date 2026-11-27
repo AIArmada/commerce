@@ -278,6 +278,28 @@ describe('composite cart inventory demand', function (): void {
             ->and(InventoryAllocation::query()->count())->toBe(0);
     });
 
+    it('counts only the current cart allocations when validating reserved stock', function (): void {
+        config()->set('inventory.cart.allow_backorder', false);
+        config()->set('inventory.cart.validate_on_add', false);
+
+        $mouse = InventoryItem::create(['name' => 'Reserved Mouse']);
+        $this->inventoryService->receive($mouse, $this->location->id, 5);
+
+        $cart = new Cart(new InMemoryStorage, 'reserved-stock-cart');
+        $cart->add(id: 'mouse', name: 'Mouse', price: 500, quantity: 5, associatedModel: $mouse);
+
+        $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
+        $manager->allocateAllInventory();
+
+        $validator = new InventoryValidator($this->allocationService);
+
+        $otherCart = new Cart(new InMemoryStorage, 'other-stock-cart');
+        $otherCart->add(id: 'mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
+
+        expect($validator->validateCart($cart)->isValid)->toBeTrue()
+            ->and($validator->validateCart($otherCart)->isValid)->toBeFalse();
+    });
+
     it('rejects an empty composite snapshot before writing the cart', function (): void {
         $parent = InventoryItem::create(['name' => 'Empty Bundle']);
         $this->inventoryService->receive($parent, $this->location->id, 10);

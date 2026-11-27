@@ -11,7 +11,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
-use AIArmada\Inventory\EntryPoints\Listeners\ValidateInventoryOnAdd;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ValidateInventoryOnAdd;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredAllocationsCommand;
 use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;

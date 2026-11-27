@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Inventory\Cart\InventoryDemandResolver;
@@ -19,10 +19,10 @@ use Illuminate\Support\Facades\DB;
  * is merged per inventory model across the whole cart, so a standalone line
  * and a component line for the same SKU never allocate twice.
  */
-final class ValidateCartInventory
+final readonly class ValidateCartInventory
 {
     public function __construct(
-        private readonly InventoryAllocationService $allocationService,
+        private InventoryAllocationService $allocationService,
     ) {}
 
     public function execute(ItemAdded $event): void
