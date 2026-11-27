@@ -18,6 +18,7 @@ use AIArmada\Referrals\Actions\FulfillReferralReward;
 use AIArmada\Referrals\Actions\QualifyReferral;
 use AIArmada\Referrals\Actions\ReverseReferralReward;
 use AIArmada\Referrals\Actions\RevokeReferralInvite;
+use AIArmada\Referrals\Actions\TransitionReferralProgramStatus;
 use AIArmada\Referrals\Actions\UpdateReferralProgram;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
@@ -1540,4 +1541,23 @@ it('rejects configured non-default owner columns and status in an update payload
     $created = $normalizer->normalize($attributes(['status' => 'active']));
 
     expect($created['status'])->toBe(ReferralProgramStatus::Active);
+});
+
+it('locks program lifecycle transitions and rejects stale or illegal transitions', function (): void {
+    $owner = $this->newOwner();
+    $program = $this->newProgram($owner);
+    $action = app(TransitionReferralProgramStatus::class);
+
+    OwnerContext::withOwner($owner, function () use ($program, $action): void {
+        $active = $program->fresh();
+        expect($active->status)->toBe(ReferralProgramStatus::Active);
+        $paused = $action->handle($active->id, ReferralProgramStatus::Paused, ReferralProgramStatus::Active);
+        expect($paused->status)->toBe(ReferralProgramStatus::Paused);
+        expect(fn () => $action->handle($active->id, ReferralProgramStatus::Archived, ReferralProgramStatus::Active))
+            ->toThrow(LogicException::class);
+        $archived = $action->handle($paused->id, ReferralProgramStatus::Archived, ReferralProgramStatus::Paused);
+        expect($archived->status)->toBe(ReferralProgramStatus::Archived);
+        expect(fn () => $action->handle($archived->id, ReferralProgramStatus::Active, ReferralProgramStatus::Archived))
+            ->toThrow(LogicException::class);
+    });
 });

@@ -42,7 +42,7 @@ beforeEach(function (): void {
 
     Schema::create('tracked_link_clicks', function (Blueprint $table): void {
         $table->uuid('id')->primary();
-        $table->foreignUuid('link_id');
+        $table->foreignUuid('link_id')->constrained('tracked_links')->cascadeOnDelete();
         $table->nullableUuidMorphs('owner');
         $table->nullableUuidMorphs('subject');
         $table->timestampTz('occurred_at');

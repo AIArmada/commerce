@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Tables;
 
+use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\ReferralRewardResource;
 use AIArmada\Referrals\Actions\FulfillReferralReward;
 use AIArmada\Referrals\Actions\ReverseReferralReward;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -27,6 +28,7 @@ class ReferralRewardActions
                     [ReferralRewardStatus::Pending, ReferralRewardStatus::Failed],
                     true,
                 ))
+                ->authorize(fn (ReferralReward $record): bool => ReferralRewardResource::canEdit($record))
                 ->action(function (ReferralReward $record): void {
                     try {
                         $result = FulfillReferralReward::run((string) $record->getKey());
@@ -66,6 +68,7 @@ class ReferralRewardActions
                         ->maxLength(1000),
                 ])
                 ->visible(fn (ReferralReward $record): bool => $record->status === ReferralRewardStatus::Fulfilled)
+                ->authorize(fn (ReferralReward $record): bool => ReferralRewardResource::canEdit($record))
                 ->action(function (ReferralReward $record, array $data): void {
                     try {
                         ReverseReferralReward::run((string) $record->getKey(), (string) ($data['reason'] ?? ''));
