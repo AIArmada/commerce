@@ -112,7 +112,7 @@ final readonly class UpdateSubscriptionItems
             $subscription->loadMissing('items');
 
             if ($subscription->items->contains('chip_price', $price)) {
-                throw SubscriptionUpdateFailure::duplicatePrice($this, $price);
+                throw SubscriptionUpdateFailure::duplicatePrice($subscription, $price);
             }
 
             $this->createTrustedSubscriptionItem($subscription, [
@@ -140,28 +140,30 @@ final readonly class UpdateSubscriptionItems
 
     public function removePrice(Subscription $subscription, string $price): Subscription
     {
-        if ($subscription->hasSinglePrice()) {
-            throw SubscriptionUpdateFailure::cannotDeleteLastPrice($this);
-        }
-
-        $subscription->items()->where('chip_price', $price)->delete();
-
-        $subscription->unsetRelation('items');
-
-        if ($subscription->items()->count() < 2) {
-            $item = $subscription->items()->first();
-
-            if (! $item instanceof SubscriptionItem) {
-                return $subscription;
+        return $subscription->getConnection()->transaction(function () use ($subscription, $price): Subscription {
+            if ($subscription->hasSinglePrice()) {
+                throw SubscriptionUpdateFailure::cannotDeleteLastPrice($subscription);
             }
 
-            $subscription->fill([
-                'chip_price' => $item->chip_price,
-                'quantity' => $item->quantity,
-            ])->save();
-        }
+            $subscription->items()->where('chip_price', $price)->delete();
 
-        return $subscription;
+            $subscription->unsetRelation('items');
+
+            if ($subscription->items()->count() < 2) {
+                $item = $subscription->items()->first();
+
+                if (! $item instanceof SubscriptionItem) {
+                    return $subscription;
+                }
+
+                $subscription->fill([
+                    'chip_price' => $item->chip_price,
+                    'quantity' => $item->quantity,
+                ])->save();
+            }
+
+            return $subscription;
+        });
     }
 
     private function createTrustedSubscriptionItem(Subscription $subscription, array $attributes): SubscriptionItem
