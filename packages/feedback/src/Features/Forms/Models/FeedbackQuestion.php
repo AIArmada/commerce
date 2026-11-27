@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackQuestionDependentsAction;
 use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -41,7 +40,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read FeedbackForm $form
  * @property-read FeedbackSection|null $section
  * @property-read Collection<int, FeedbackQuestionOption> $options
- * @property-read Collection<int, FeedbackAnswer> $answers
  */
 final class FeedbackQuestion extends Model
 {
@@ -120,10 +118,5 @@ final class FeedbackQuestion extends Model
     public function options(): HasMany
     {
         return $this->hasMany(FeedbackQuestionOption::class, 'feedback_question_id');
-    }
-
-    public function answers(): HasMany
-    {
-        return $this->hasMany(FeedbackAnswer::class, 'feedback_question_id');
     }
 }

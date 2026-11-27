@@ -47,6 +47,11 @@ it('deletes the complete feedback form aggregate', function (): void {
         'quote' => 'Delete me',
         'status' => 'pending',
     ]);
+    FeedbackTestimonial::query()->create([
+        'feedback_answer_id' => $answer->id,
+        'quote' => 'Answer-only testimonial',
+        'status' => 'pending',
+    ]);
     FeedbackInvitation::query()->create([
         'feedback_form_id' => $form->id,
         'token_hash' => hash('sha256', 'delete-invitation'),

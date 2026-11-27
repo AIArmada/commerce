@@ -10,7 +10,6 @@ use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Features\Responses\Api\DeletesResponseDependencies;
-use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
 use Illuminate\Database\Eloquent\Builder;
 
 final readonly class DeleteFeedbackFormDependentsAction
@@ -18,7 +17,6 @@ final readonly class DeleteFeedbackFormDependentsAction
     public function __construct(
         private DeletesFormAnalytics $deleteAnalytics,
         private ManagesInvitationLifecycle $invitations,
-        private ManagesTestimonialDependencies $testimonials,
         private DeletesResponseDependencies $responses,
     ) {}
 
@@ -30,8 +28,6 @@ final readonly class DeleteFeedbackFormDependentsAction
 
         $form->getConnection()->transaction(function () use ($form): void {
             $formId = $form->id;
-
-            $this->testimonials->deleteForForm($formId);
 
             $this->responses->deleteForForm($formId);
             $this->invitations->deleteForForm($formId);

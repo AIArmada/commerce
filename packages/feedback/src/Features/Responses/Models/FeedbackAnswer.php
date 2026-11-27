@@ -8,12 +8,10 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Responses\Actions\DeleteFeedbackAnswerDependentsAction;
-use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
@@ -85,10 +83,5 @@ final class FeedbackAnswer extends Model
     public function question(): BelongsTo
     {
         return $this->belongsTo(FeedbackQuestion::class, 'feedback_question_id');
-    }
-
-    public function testimonials(): HasMany
-    {
-        return $this->hasMany(FeedbackTestimonial::class, 'feedback_answer_id');
     }
 }

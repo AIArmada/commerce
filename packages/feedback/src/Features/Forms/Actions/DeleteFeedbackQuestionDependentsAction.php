@@ -7,12 +7,10 @@ namespace AIArmada\Feedback\Features\Forms\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Responses\Api\DeletesResponseDependencies;
-use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
 
 final readonly class DeleteFeedbackQuestionDependentsAction
 {
     public function __construct(
-        private ManagesTestimonialDependencies $testimonials,
         private DeletesResponseDependencies $responses,
     ) {}
 
@@ -23,8 +21,6 @@ final readonly class DeleteFeedbackQuestionDependentsAction
         }
 
         $question->getConnection()->transaction(function () use ($question): void {
-            $this->testimonials->detachForQuestion($question->id);
-
             $question->options()->delete();
             $this->responses->deleteAnswersForQuestion($question->id);
         });

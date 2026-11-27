@@ -12,7 +12,6 @@ use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Features\Responses\Actions\DeleteFeedbackResponseDependentsAction;
-use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -51,7 +50,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read FeedbackForm $form
  * @property-read FeedbackInvitation|null $invitation
  * @property-read Collection<int, FeedbackAnswer> $answers
- * @property-read Collection<int, FeedbackTestimonial> $testimonials
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $respondent
  */
@@ -123,10 +121,6 @@ final class FeedbackResponse extends Model
         return $this->hasMany(FeedbackAnswer::class, 'feedback_response_id');
     }
 
-    public function testimonials(): HasMany
-    {
-        return $this->hasMany(FeedbackTestimonial::class, 'feedback_response_id');
-    }
 
     public function subject(): MorphTo
     {

@@ -9,14 +9,11 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -43,8 +40,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array|null $metadata
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read FeedbackResponse|null $response
- * @property-read FeedbackAnswer|null $answer
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $respondent
  */
@@ -103,16 +98,6 @@ final class FeedbackTestimonial extends Model
             ->whereNotNull('published_at')
             ->whereNotNull('permission_given_at')
             ->whereNull('hidden_at');
-    }
-
-    public function response(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackResponse::class, 'feedback_response_id');
-    }
-
-    public function answer(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackAnswer::class, 'feedback_answer_id');
     }
 
     public function subject(): MorphTo
