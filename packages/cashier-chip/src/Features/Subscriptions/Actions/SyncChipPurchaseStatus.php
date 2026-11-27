@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;

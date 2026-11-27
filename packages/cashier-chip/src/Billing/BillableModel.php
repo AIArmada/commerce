@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Billing;
 
+use AIArmada\CashierChip\Contracts\BillableIdentity;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
-use AIArmada\CashierChip\Contracts\BillableIdentity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

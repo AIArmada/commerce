@@ -55,5 +55,4 @@ class DocsInvoiceRenderer implements InvoiceRenderer
     {
         return config('cashier-chip.invoices.paper', 'A4');
     }
-
 }

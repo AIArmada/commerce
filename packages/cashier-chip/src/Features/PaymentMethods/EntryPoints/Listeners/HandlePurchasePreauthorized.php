@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\CommerceSupport\Data\RecordReference;

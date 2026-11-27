@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Actions;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Support\IdempotencyKey;

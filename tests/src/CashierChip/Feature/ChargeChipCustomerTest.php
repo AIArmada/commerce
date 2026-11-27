@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;

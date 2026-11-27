@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Payment;
 
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;

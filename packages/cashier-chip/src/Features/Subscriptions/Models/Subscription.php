@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Models;
 
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\Discount;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
-use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;

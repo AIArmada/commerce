@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Billable;
-use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;

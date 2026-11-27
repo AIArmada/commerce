@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
-use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Akaunting\Money\Money;

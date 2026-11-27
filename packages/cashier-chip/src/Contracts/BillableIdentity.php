@@ -31,5 +31,4 @@ interface BillableIdentity
     public function chipAddress(): array;
 
     public function preferredCurrency(): string;
-
 }
