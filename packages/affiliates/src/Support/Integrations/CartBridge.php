@@ -17,7 +17,7 @@ final class CartBridge
 
     public function __construct()
     {
-        $this->available = class_exists('AIArmada\\Cart\\Snapshots\\CartSnapshot') && class_exists('AIArmada\\FilamentCart\\Resources\\CartResource');
+        $this->available = class_exists('AIArmada\\Cart\\Features\\Snapshots\\Models\\CartSnapshot') && class_exists('AIArmada\\FilamentCart\\Resources\\CartResource');
     }
 
     public function warm(): void {}

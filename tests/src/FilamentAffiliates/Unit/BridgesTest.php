@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
-use AIArmada\Cart\Snapshots\CartSnapshot as SnapshotCart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as SnapshotCart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;

@@ -1,0 +1,531 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Cart\EntryPoints\Commands;
+
+use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
+use AIArmada\Cart\Features\Snapshots\Api\AbandonmentSweep;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Console\Command;
+
+final class ClearAbandonedCartsCommand extends Command
+{
+    /**
+     * The name and signature of the console command.
+     */
+    protected $signature = 'cart:clear-abandoned 
+                          {--days=7 : Number of days after which cart is considered abandoned}
+                          {--mark-only : Mark abandoned cart snapshots without deleting live carts}
+                          {--minutes= : Minutes of inactivity before marking a snapshot as abandoned}
+                          {--expired : Only delete carts that have passed their expires_at timestamp}
+                          {--dry-run : Show what would be deleted without actually deleting}
+                          {--delete : Physically delete carts that already have abandoned_at set (skips detection)}
+                          {--all-owners : Process every owner when no owner context is available}
+                          {--confirm-all-owners : Confirm multi-owner snapshot mutation}
+                          {--max-affected=1000 : Maximum snapshots that may be marked in one run}
+                          {--force-threshold : Allow snapshot updates above max-affected threshold}
+                          {--strict-owner-tuples : Abort when encountering malformed owner tuples}
+                          {--batch-size=1000 : Number of records to process in each batch}';
+
+    /**
+     * The console command description.
+     */
+    protected $description = 'Clear abandoned shopping carts older than specified days';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle(): int
+    {
+        if ((bool) $this->option('mark-only')) {
+            return $this->markSnapshotsOnly();
+        }
+
+        $days = (int) $this->option('days');
+
+        if ($days < 0) {
+            $this->error('The abandonment age must not be negative.');
+
+            return self::FAILURE;
+        }
+        $useExpired = $this->option('expired');
+        $dryRun = $this->option('dry-run');
+        $deleteMode = (bool) $this->option('delete');
+        $allOwners = (bool) $this->option('all-owners');
+        $strictOwnerTuples = (bool) $this->option('strict-owner-tuples');
+        $batchSize = max(1, (int) $this->option('batch-size'));
+        $table = config('cart.database.table', 'carts');
+        $now = CarbonImmutable::now();
+
+        if ($deleteMode) {
+            $this->info('Delete mode: Physically deleting carts with abandoned_at set');
+        } elseif ($useExpired) {
+            $this->info('Clearing expired carts (using expires_at column)');
+        } else {
+            $cutoffDate = $now->subDays($days);
+            $this->info("Clearing carts abandoned before: {$cutoffDate->format('Y-m-d H:i:s')}");
+        }
+
+        if ((bool) config('cart.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            if ($owner === null) {
+                if (OwnerContext::isExplicitGlobal()) {
+                    return $this->handleForOwner(
+                        table: $table,
+                        useExpired: $useExpired,
+                        days: $days,
+                        now: $now,
+                        dryRun: (bool) $dryRun,
+                        batchSize: $batchSize,
+                        deleteMode: $deleteMode,
+                        ownerType: null,
+                        ownerId: null,
+                    );
+                }
+
+                if (! $allOwners) {
+                    $this->error('Owner scoping is enabled but no owner context was resolved. Pass --all-owners to process every owner.');
+
+                    return self::FAILURE;
+                }
+
+                return $this->handleAllOwners(
+                    table: $table,
+                    useExpired: $useExpired,
+                    days: $days,
+                    now: $now,
+                    dryRun: (bool) $dryRun,
+                    batchSize: $batchSize,
+                    strictOwnerTuples: $strictOwnerTuples,
+                    deleteMode: $deleteMode,
+                );
+            }
+
+            return $this->handleForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: (bool) $dryRun,
+                batchSize: $batchSize,
+                deleteMode: $deleteMode,
+                ownerType: $owner->getMorphClass(),
+                ownerId: $owner->getKey(),
+            );
+        }
+
+        return $this->handleForOwner(
+            table: $table,
+            useExpired: $useExpired,
+            days: $days,
+            now: $now,
+            dryRun: (bool) $dryRun,
+            batchSize: $batchSize,
+            deleteMode: $deleteMode,
+            ownerType: null,
+            ownerId: null,
+        );
+    }
+
+    private function markSnapshotsOnly(): int
+    {
+        if (! config('cart.snapshots.abandonment_tracking', true)) {
+            $this->warn('Snapshot abandonment tracking is disabled via cart.snapshots.abandonment_tracking.');
+
+            return self::SUCCESS;
+        }
+
+        $minutesOption = $this->option('minutes');
+        $minutes = is_numeric($minutesOption)
+            ? (int) $minutesOption
+            : (int) config('cart.snapshots.abandonment_detection_minutes', 30);
+        $minutes = max(0, $minutes);
+        $dryRun = (bool) $this->option('dry-run');
+        $allOwners = (bool) $this->option('all-owners');
+        $confirmAllOwners = (bool) $this->option('confirm-all-owners');
+        $maxAffected = max(1, (int) $this->option('max-affected'));
+        $forceThreshold = (bool) $this->option('force-threshold');
+        $strictOwnerTuples = (bool) $this->option('strict-owner-tuples');
+
+        if ($dryRun) {
+            $this->warn('DRY RUN MODE - No snapshot rows will be updated');
+        }
+
+        if ($allOwners && ! $dryRun && ! $confirmAllOwners) {
+            $this->error('Multi-owner snapshot mutation requires --confirm-all-owners. Run once with --dry-run first.');
+
+            return self::FAILURE;
+        }
+
+        if (
+            (bool) config('cart.owner.enabled', false)
+            && OwnerContext::resolve() === null
+            && ! OwnerContext::isExplicitGlobal()
+        ) {
+            if (! $allOwners) {
+                $this->error('Owner scoping is enabled but no owner context was resolved. Pass --all-owners to process every owner.');
+
+                return self::FAILURE;
+            }
+
+            return $this->markSnapshotsForAllOwners(
+                minutes: $minutes,
+                dryRun: $dryRun,
+                maxAffected: $maxAffected,
+                forceThreshold: $forceThreshold,
+                strictOwnerTuples: $strictOwnerTuples,
+            );
+        }
+
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
+        $candidateCount = $this->countAbandonedSnapshots($cutoff);
+
+        if (! $dryRun && ! $forceThreshold && $candidateCount > $maxAffected) {
+            $this->error("Refusing to mark {$candidateCount} snapshots: exceeds --max-affected={$maxAffected}. Use --force-threshold to proceed.");
+
+            return self::FAILURE;
+        }
+
+        $marked = $this->processAbandonedSnapshots($cutoff, $dryRun);
+
+        $this->info("Marked {$marked} snapshot(s) as abandoned.");
+
+        return self::SUCCESS;
+    }
+
+    private function markSnapshotsForAllOwners(
+        int $minutes,
+        bool $dryRun,
+        int $maxAffected,
+        bool $forceThreshold,
+        bool $strictOwnerTuples,
+    ): int {
+        $columns = OwnerTupleColumns::forConfigKey('cart.owner');
+        $owners = OwnerContext::withOwner(null, fn (): array => app(AbandonmentSweep::class)->owners());
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
+
+        $ownerBatches = [];
+        $totalCandidates = 0;
+
+        foreach ($owners as $row) {
+            $parsed = OwnerTupleParser::fromRow(
+                row: $row,
+                columns: $columns,
+                allowMalformed: true,
+            );
+
+            if ($parsed->isUnresolved()) {
+                $message = sprintf(
+                    'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
+                    $row[$columns->ownerTypeColumn] ?? 'null',
+                    $row[$columns->ownerIdColumn] === null ? 'null' : (string) $row[$columns->ownerIdColumn],
+                );
+
+                if ($strictOwnerTuples) {
+                    $this->error($message);
+
+                    return self::FAILURE;
+                }
+
+                $this->warn("Skipping {$message}");
+
+                continue;
+            }
+
+            $owner = $parsed->toOwnerModel();
+            $count = (int) OwnerContext::withOwner($owner, fn (): int => $this->countAbandonedSnapshots($cutoff));
+            $ownerBatches[] = ['owner' => $owner, 'count' => $count];
+            $totalCandidates += $count;
+        }
+
+        if ($owners === []) {
+            $count = (int) OwnerContext::withOwner(null, fn (): int => $this->countAbandonedSnapshots($cutoff));
+            $ownerBatches[] = ['owner' => null, 'count' => $count];
+            $totalCandidates += $count;
+        }
+
+        if (! $dryRun && ! $forceThreshold && $totalCandidates > $maxAffected) {
+            $this->error("Refusing to mark {$totalCandidates} snapshots: exceeds --max-affected={$maxAffected}. Use --force-threshold to proceed.");
+
+            return self::FAILURE;
+        }
+
+        $totalMarked = 0;
+
+        foreach ($ownerBatches as $batch) {
+            $totalMarked += (int) OwnerContext::withOwner(
+                $batch['owner'],
+                fn (): int => $this->processAbandonedSnapshots($cutoff, $dryRun),
+            );
+        }
+
+        $this->info("Marked {$totalMarked} snapshot(s) as abandoned across owners.");
+
+        return self::SUCCESS;
+    }
+
+    private function countAbandonedSnapshots(CarbonImmutable $cutoff): int
+    {
+        return app(AbandonmentSweep::class)->count($cutoff);
+    }
+
+    private function processAbandonedSnapshots(CarbonImmutable $cutoff, bool $dryRun): int
+    {
+        if ($dryRun) {
+            return $this->countAbandonedSnapshots($cutoff);
+        }
+
+        return app(AbandonmentSweep::class)->execute($cutoff);
+    }
+
+    private function handleAllOwners(
+        string $table,
+        bool $useExpired,
+        int $days,
+        CarbonInterface $now,
+        bool $dryRun,
+        int $batchSize,
+        bool $strictOwnerTuples,
+        bool $deleteMode = false,
+    ): int {
+        $columns = OwnerTupleColumns::forConfigKey('cart.owner');
+        $owners = OwnerContext::withOwner(null, fn (): array => app(AbandonedCartCleanup::class)->owners($table));
+
+        if ($owners === []) {
+            return OwnerContext::withOwner(null, fn (): int => $this->handleForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: $dryRun,
+                batchSize: $batchSize,
+                deleteMode: $deleteMode,
+                ownerType: null,
+                ownerId: null,
+            ));
+        }
+
+        $ownerBatches = [];
+        $totalCount = 0;
+
+        foreach ($owners as $row) {
+            $parsed = OwnerTupleParser::fromRow(
+                row: $row,
+                columns: $columns,
+                allowMalformed: true,
+            );
+
+            if ($parsed->isUnresolved()) {
+                if ($strictOwnerTuples) {
+                    $this->error(sprintf(
+                        'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
+                        $row[$columns->ownerTypeColumn] ?? 'null',
+                        $row[$columns->ownerIdColumn] === null ? 'null' : (string) $row[$columns->ownerIdColumn],
+                    ));
+
+                    return self::FAILURE;
+                }
+
+                $this->warn(sprintf(
+                    'Skipping malformed owner tuple while clearing abandoned carts (owner_type: %s, owner_id: %s).',
+                    $row[$columns->ownerTypeColumn] ?? 'null',
+                    $row[$columns->ownerIdColumn] === null ? 'null' : (string) $row[$columns->ownerIdColumn],
+                ));
+
+                continue;
+            }
+
+            $owner_type = $parsed->owner_type;
+            $owner_id = $parsed->owner_id;
+            $owner = $parsed->toOwnerModel();
+
+            $count = OwnerContext::withOwner(
+                $owner,
+                fn (): int => $this->countForOwner($table, $useExpired, $days, $now, $owner_type, $owner_id, $deleteMode),
+            );
+            $ownerBatches[] = [
+                'owner' => $owner,
+                'owner_type' => $owner_type,
+                'owner_id' => $owner_id,
+                'count' => $count,
+            ];
+            $totalCount += $count;
+        }
+
+        if ($dryRun) {
+            $this->warn('DRY RUN MODE - No data will be deleted');
+        }
+
+        if ($totalCount === 0) {
+            $this->info('No abandoned carts found.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Found {$totalCount} abandoned carts to clear.");
+
+        if ($dryRun) {
+            $processedCount = 0;
+            foreach ($ownerBatches as $batch) {
+                if ($batch['count'] === 0) {
+                    continue;
+                }
+
+                $processedCount += OwnerContext::withOwner(
+                    $batch['owner'],
+                    fn (): int => $this->processForOwner(
+                        table: $table,
+                        useExpired: $useExpired,
+                        days: $days,
+                        now: $now,
+                        dryRun: true,
+                        batchSize: $batchSize,
+                        deleteMode: $deleteMode,
+                        ownerType: $batch['owner_type'],
+                        ownerId: $batch['owner_id'],
+                    ),
+                );
+            }
+
+            $this->info("Would delete {$processedCount} abandoned carts.");
+
+            return self::SUCCESS;
+        }
+
+        $confirmed = $this->confirm('Are you sure you want to delete these carts?');
+        if (! $confirmed) {
+            $this->info('Operation cancelled.');
+
+            return self::SUCCESS;
+        }
+
+        $processedCount = 0;
+
+        foreach ($ownerBatches as $batch) {
+            if ($batch['count'] === 0) {
+                continue;
+            }
+
+            $processedCount += OwnerContext::withOwner(
+                $batch['owner'],
+                fn (): int => $this->processForOwner(
+                    table: $table,
+                    useExpired: $useExpired,
+                    days: $days,
+                    now: $now,
+                    dryRun: false,
+                    batchSize: $batchSize,
+                    deleteMode: $deleteMode,
+                    ownerType: $batch['owner_type'],
+                    ownerId: $batch['owner_id'],
+                ),
+            );
+        }
+
+        $this->info("Successfully deleted {$processedCount} carts.");
+
+        return self::SUCCESS;
+    }
+
+    private function handleForOwner(
+        string $table,
+        bool $useExpired,
+        int $days,
+        CarbonInterface $now,
+        bool $dryRun,
+        int $batchSize,
+        ?string $ownerType,
+        string | int | null $ownerId,
+        bool $deleteMode = false,
+    ): int {
+        if ($dryRun) {
+            $this->warn('DRY RUN MODE - No data will be deleted');
+        }
+
+        $totalCount = $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
+
+        if ($totalCount === 0) {
+            $this->info('No abandoned carts found.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Found {$totalCount} abandoned carts to clear.");
+
+        if ($dryRun) {
+            $processedCount = $this->processForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: true,
+                batchSize: $batchSize,
+                deleteMode: $deleteMode,
+                ownerType: $ownerType,
+                ownerId: $ownerId,
+            );
+
+            $this->info("Would delete {$processedCount} abandoned carts.");
+
+            return self::SUCCESS;
+        }
+
+        $confirmed = $this->confirm('Are you sure you want to delete these carts?');
+        if (! $confirmed) {
+            $this->info('Operation cancelled.');
+
+            return self::SUCCESS;
+        }
+
+        $processedCount = $this->processForOwner(
+            table: $table,
+            useExpired: $useExpired,
+            days: $days,
+            now: $now,
+            dryRun: false,
+            batchSize: $batchSize,
+            deleteMode: $deleteMode,
+            ownerType: $ownerType,
+            ownerId: $ownerId,
+        );
+
+        $this->info("Successfully deleted {$processedCount} carts.");
+
+        return self::SUCCESS;
+    }
+
+    private function countForOwner(
+        string $table,
+        bool $useExpired,
+        int $days,
+        CarbonInterface $now,
+        ?string $ownerType,
+        string | int | null $ownerId,
+        bool $deleteMode = false,
+    ): int {
+        return app(AbandonedCartCleanup::class)->count($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
+    }
+
+    private function processForOwner(
+        string $table,
+        bool $useExpired,
+        int $days,
+        CarbonInterface $now,
+        bool $dryRun,
+        int $batchSize,
+        bool $deleteMode,
+        ?string $ownerType,
+        string | int | null $ownerId,
+    ): int {
+        if ($dryRun) {
+            return $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
+        }
+
+        return app(AbandonedCartCleanup::class)->execute($table, $useExpired, $days, $now, $batchSize, $ownerType, $ownerId, $deleteMode);
+    }
+}

@@ -9,7 +9,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use Illuminate\Support\Facades\DB;
 
 function createAffiliateTestCart(string $identifier = 'affiliate-test'): Cart

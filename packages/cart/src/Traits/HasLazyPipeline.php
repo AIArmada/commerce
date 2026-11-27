@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Traits;
 
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
-use AIArmada\Cart\Conditions\Pipeline\LazyConditionPipeline;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineResult;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\LazyConditionPipeline;
 
 /**
  * Provides lazy evaluation and memoization for condition pipeline calculations.

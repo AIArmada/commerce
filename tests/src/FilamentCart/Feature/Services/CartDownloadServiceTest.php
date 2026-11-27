@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
-use AIArmada\FilamentCart\Services\CartDownloadService;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -19,7 +19,7 @@ it('streams a cart export with a sanitized unique filename and json payload', fu
         'currency' => 'USD',
     ]);
 
-    $response = app(CartDownloadService::class)->download($cart);
+    $response = app(DownloadCart::class)->download($cart);
 
     expect($response)->toBeInstanceOf(StreamedResponse::class);
 

@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Events\CartAbandoned;
-use AIArmada\Cart\Models\Condition;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Conditions\EntryPoints\Jobs\RemoveConditionFromAllCartsJob;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -14,9 +16,10 @@ use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
+use AIArmada\FilamentCart\Actions\NotifyAbandonedCart;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
-use AIArmada\FilamentCart\Jobs\RemoveConditionFromAllCartsJob;
-use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
+use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
+use AIArmada\FilamentCart\EntryPoints\Listeners\SendCartAbandonedNotification;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use AIArmada\FilamentCart\Pages\CartDashboard;
 use AIArmada\FilamentCart\Pages\LiveDashboardPage;
@@ -25,7 +28,6 @@ use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Resources\CartResource\RelationManagers\ConditionsRelationManager;
 use AIArmada\FilamentCart\Resources\CartResource\Tables\CartsTable;
 use AIArmada\FilamentCart\Resources\ConditionResource;
-use AIArmada\FilamentCart\Services\CartDownloadService;
 use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
@@ -86,7 +88,7 @@ describe('snapshot conditions relation manager', function (): void {
 
 describe('retry URL validation', function (): void {
     it('rejects non-http(s) retry URLs', function (): void {
-        $listener = new SendCartAbandonedNotification;
+        $listener = new NotifyAbandonedCart;
         $method = new ReflectionMethod($listener, 'resolveRetryUrl');
 
         config(['app.url' => 'https://shop.example.com']);
@@ -101,7 +103,7 @@ describe('retry URL validation', function (): void {
     });
 
     it('enforces the allowed retry hosts allowlist when configured', function (): void {
-        $listener = new SendCartAbandonedNotification;
+        $listener = new NotifyAbandonedCart;
         $method = new ReflectionMethod($listener, 'resolveRetryUrl');
 
         config(['app.url' => 'https://shop.example.com']);
@@ -141,6 +143,17 @@ describe('purchaser email validation', function (): void {
         $owner = User::factory()->create();
 
         $event = OwnerContext::withOwner($owner, function (): CartAbandoned {
+            $liveCart = CartModel::query()->create([
+                'identifier' => 'abandoned-bad-email',
+                'instance' => 'default',
+                'items' => [
+                    'offer-1' => ['id' => 'offer-1', 'name' => 'Offer', 'price' => 1000, 'quantity' => 1],
+                ],
+                'conditions' => [],
+                'metadata' => [],
+                'version' => 1,
+            ]);
+
             $cart = Cart::factory()->create([
                 'identifier' => 'abandoned-bad-email',
                 'instance' => 'default',
@@ -154,13 +167,13 @@ describe('purchaser email validation', function (): void {
             ]);
 
             CheckoutSession::create([
-                'cart_id' => $cart->id,
+                'cart_id' => $liveCart->id,
                 'billing_data' => ['email' => 'not-an-email'],
                 'payment_data' => [],
                 'status' => Pending::class,
             ]);
 
-            return CartAbandoned::fromCart($cart);
+            return CartAbandoned::fromSnapshot($cart->toSnapshotData());
         });
 
         OwnerContext::withOwner(null, function () use ($event): void {
@@ -392,7 +405,7 @@ describe('download service', function (): void {
             'instance' => 'default',
         ]);
 
-        expect(fn () => app(CartDownloadService::class)->download($cart))->toThrow(JsonException::class);
+        expect(fn () => app(DownloadCart::class)->download($cart))->toThrow(JsonException::class);
     });
 
     it('refuses cross-owner exports', function (): void {
@@ -411,7 +424,7 @@ describe('download service', function (): void {
             'currency' => 'USD',
         ]));
 
-        expect(fn () => app(CartDownloadService::class)->download($foreign))->toThrow(AuthorizationException::class);
+        expect(fn () => app(DownloadCart::class)->download($foreign))->toThrow(AuthorizationException::class);
     });
 });
 

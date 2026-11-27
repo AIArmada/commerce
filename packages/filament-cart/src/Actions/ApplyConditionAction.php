@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\Cart\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
-use AIArmada\Cart\Models\Condition;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -57,7 +57,7 @@ final class ApplyConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record, $livewire);
                     $action = app(ApplyStoredCondition::class);
-                    $condition = $action->apply($cart, (string) $data['condition_id'], $customName);
+                    $condition = $action->apply((string) $cart->getKey(), (string) $data['condition_id'], $customName);
 
                     Notification::make()
                         ->title('Condition Applied')
@@ -94,7 +94,7 @@ final class ApplyConditionAction extends Action
                     ->label('Condition')
                     ->placeholder('Search conditions...')
                     ->getSearchResultsUsing(fn (string $search): array => self::searchConditionOptions($search, forItems: true))
-                    ->getOptionLabelUsing(fn ($value): ?string => self::resolveConditionLabel($value))
+                    ->getOptionLabelUsing(fn ($value): ?string => self::resolveConditionLabel($value, forItems: true))
                     ->required()
                     ->searchable()
                     ->helperText('Only item-level conditions are shown'),
@@ -110,7 +110,7 @@ final class ApplyConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record->cart ?? null);
                     $action = app(ApplyStoredCondition::class);
-                    $condition = $action->applyToItem($cart, $record->item_id, (string) $data['condition_id'], $customName);
+                    $condition = $action->applyToItem((string) $cart->getKey(), $record->item_id, (string) $data['condition_id'], $customName);
 
                     Notification::make()
                         ->title('Item Condition Applied')
@@ -149,13 +149,13 @@ final class ApplyConditionAction extends Action
             ->all();
     }
 
-    private static function resolveConditionLabel(mixed $value): ?string
+    private static function resolveConditionLabel(mixed $value, bool $forItems = false): ?string
     {
         if (! is_string($value) && ! is_int($value)) {
             return null;
         }
 
-        $condition = self::getScopedConditionQuery(forItems: false)->find($value);
+        $condition = self::getScopedConditionQuery($forItems)->find($value);
 
         if (! $condition instanceof Condition) {
             return null;
@@ -174,7 +174,9 @@ final class ApplyConditionAction extends Action
         $query = Condition::query()->active();
 
         if ($forItems) {
-            $query->forItems();
+            $query
+                ->forItems()
+                ->where('is_dynamic', false);
         }
 
         if (! Condition::ownerScopingEnabled()) {
@@ -299,7 +301,7 @@ final class ApplyConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record, $livewire);
                     $action = app(ApplyStoredCondition::class);
-                    $condition = $action->applyCustom($cart, $data);
+                    $condition = $action->applyCustom((string) $cart->getKey(), $data);
 
                     Notification::make()
                         ->title('Custom Condition Applied')

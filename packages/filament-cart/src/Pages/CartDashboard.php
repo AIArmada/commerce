@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Pages;
 
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\FilamentCart\Support\OwnerScopedCacheContext;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use BackedEnum;
@@ -111,9 +112,16 @@ class CartDashboard extends Page
             return 0;
         }
 
-        return (int) OwnerCache::remember(
-            Cart::resolveCurrentOwner(),
+        $context = OwnerScopedCacheContext::for(
             'filament-cart.dashboard.abandoned-count',
+            Cart::includeGlobalRecords(),
+            Cart::ownerScopingEnabled(),
+            Cart::resolveCurrentOwner(),
+        );
+
+        return (int) OwnerCache::remember(
+            $context->owner,
+            $context->key,
             30,
             fn (): int => Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
                 ->whereNotNull('checkout_abandoned_at')
