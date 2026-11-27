@@ -11,7 +11,7 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Features\Shipments\Events\ShipmentCreated;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
-use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
 use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;

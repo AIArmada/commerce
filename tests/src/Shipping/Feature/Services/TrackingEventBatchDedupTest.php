@@ -12,7 +12,7 @@ use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Mockery;

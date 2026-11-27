@@ -12,7 +12,7 @@ use AIArmada\Shipping\Features\Shipments\Api\ReturnShipment;
 use AIArmada\Shipping\Features\Shipments\Api\ReturnShipmentLine;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
-use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\Features\Shipments\States\Cancelled;
 use DomainException;
 
 final readonly class FindReturnShipment implements ReadReturnShipment

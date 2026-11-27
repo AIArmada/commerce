@@ -7,9 +7,9 @@ namespace AIArmada\FilamentShipping\Widgets;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
-use AIArmada\Shipping\States\ExceptionStatus;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\ExceptionStatus;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

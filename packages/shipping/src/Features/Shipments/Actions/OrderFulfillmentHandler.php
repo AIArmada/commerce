@@ -22,7 +22,7 @@ use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
 use AIArmada\Shipping\Support\ComponentLines;
 use AIArmada\Shipping\Support\DestinationAddressValidator;
 use DateTimeInterface;

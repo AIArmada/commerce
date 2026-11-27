@@ -19,7 +19,7 @@ use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Tables;
 use AIArmada\FilamentShipping\Actions;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;

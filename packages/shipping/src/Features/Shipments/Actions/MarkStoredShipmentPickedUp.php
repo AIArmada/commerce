@@ -7,7 +7,7 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

@@ -8,7 +8,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
-use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\Features\Shipments\States\Cancelled;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;

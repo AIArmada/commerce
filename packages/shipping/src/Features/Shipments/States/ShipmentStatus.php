@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\States;
+namespace AIArmada\Shipping\Features\Shipments\States;
 
 use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;

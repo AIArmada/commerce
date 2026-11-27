@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\TrackingStatus;
-use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
+use AIArmada\Shipping\Features\Shipments\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Features\Shipments\Actions\UpdateShipmentStatus;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\Draft;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 
 describe('UpdateShipmentStatus', function (): void {
     it('can update shipment status to shipped', function (): void {

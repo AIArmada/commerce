@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Exceptions;
+namespace AIArmada\Shipping\Features\Shipments\Exceptions;
 
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Exception;
 
 class InvalidStatusTransitionException extends Exception

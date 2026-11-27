@@ -11,9 +11,9 @@ use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\RecordTrackingEvent;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use Carbon\CarbonImmutable;
 
 describe('RecordTrackingEvent', function (): void {

@@ -85,7 +85,7 @@ $platformZones = ShippingZone::globalOnly()->get();
 ```php
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 
 // Automatically scoped (global scope applied)
 $shipments = Shipment::query()->get();

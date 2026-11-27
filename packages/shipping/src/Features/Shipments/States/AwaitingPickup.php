@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\States;
+namespace AIArmada\Shipping\Features\Shipments\States;
 
 final class AwaitingPickup extends ShipmentStatus
 {

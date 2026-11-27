@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
+use AIArmada\Shipping\Features\Shipments\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\Cancelled;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\Cancelled;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
 
 // ============================================
 // InvalidStatusTransitionException Tests

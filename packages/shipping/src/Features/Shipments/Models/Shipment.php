@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;

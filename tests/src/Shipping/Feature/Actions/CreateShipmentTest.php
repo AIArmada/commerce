@@ -6,7 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
 use Illuminate\Auth\Access\AuthorizationException;
 
 describe('CreateShipment Action', function (): void {

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments\Actions;
 
-use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
+use AIArmada\Shipping\Features\Shipments\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\Delivered;
-use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Delivered;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus as ShipmentStatusState;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;

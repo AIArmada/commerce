@@ -12,7 +12,7 @@ use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\Features\Shipments\States\Cancelled;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

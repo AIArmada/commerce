@@ -204,7 +204,7 @@ echo $shipment->tracking_number; // "JT1234567890"
 
 ```php
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\Features\Shipments\States\Draft;
 use AIArmada\Orders\Models\Order;
 
 $order = Order::find($orderId);
@@ -603,8 +603,8 @@ Draft → Pending → AwaitingPickup → Shipped → InTransit → OutForDeliver
 Check status capabilities:
 
 ```php
-use AIArmada\Shipping\States\Shipped;
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 
 $shipment->status->canTransitionTo(Shipped::class);
 $shipment->status->isCancellable();

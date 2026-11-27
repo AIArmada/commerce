@@ -10,8 +10,8 @@ use AIArmada\Shipping\Features\Shipments\Events\ShipmentStatusChanged;
 use AIArmada\Shipping\Features\Shipments\Events\TrackingUpdated;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
-use AIArmada\Shipping\States\Pending;
-use AIArmada\Shipping\States\Shipped;
+use AIArmada\Shipping\Features\Shipments\States\Pending;
+use AIArmada\Shipping\Features\Shipments\States\Shipped;
 
 // ============================================
 // ShipmentCreated Event Tests

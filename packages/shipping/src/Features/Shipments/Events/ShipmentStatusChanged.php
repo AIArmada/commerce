@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Events;
 
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
