@@ -65,6 +65,7 @@ describe('RemoveStoredConditions action', function (): void {
                         'application' => 'aggregate',
                     ],
                     'value' => '-10',
+                    'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
         ));
@@ -192,6 +193,7 @@ describe('RemoveStoredConditions action', function (): void {
                         'application' => 'aggregate',
                     ],
                     'value' => '-10',
+                    'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
         ));
@@ -340,6 +342,7 @@ describe('RemoveStoredConditions action', function (): void {
                     ],
                     'value' => '-10',
                     'order' => 0,
+                    'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
         ));
@@ -366,6 +369,7 @@ describe('RemoveStoredConditions action', function (): void {
                     ],
                     'value' => '-10',
                     'order' => 0,
+                    'attributes' => ['condition_id' => $storedCondition->id],
                 ],
             ],
         ));
@@ -407,5 +411,37 @@ describe('RemoveStoredConditions action', function (): void {
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(2);
         expect($result['carts_updated'])->toBe(2);
+    });
+
+    it('does not select unrelated conditions that only share a stored condition name', function (): void {
+        $storedCondition = Condition::factory()->create([
+            'name' => 'shared-name',
+            'display_name' => 'Shared Name',
+        ]);
+
+        $snapshot = CartModel::create([
+            'instance' => 'default',
+            'identifier' => 'session-name-collision',
+            'subtotal' => 1000,
+        ]);
+
+        CartConditionModel::create([
+            'cart_id' => $snapshot->id,
+            'name' => 'Shared Name',
+            'type' => 'coupon',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-10',
+        ]);
+
+        $cartManager = Mockery::mock(CartInstanceManager::class);
+        $cartManager->shouldNotReceive('resolveForSnapshot');
+        $syncManager = Mockery::mock(CartSyncManager::class);
+        $syncManager->shouldNotReceive('sync');
+
+        $result = (new RemoveStoredConditions($cartManager, $syncManager))->handle($storedCondition);
+
+        expect($result['success'])->toBeTrue()
+            ->and($result['carts_processed'])->toBe(0)
+            ->and($result['carts_updated'])->toBe(0);
     });
 });
