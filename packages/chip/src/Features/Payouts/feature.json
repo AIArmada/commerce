@@ -9,8 +9,12 @@
     "table:chip_send_instructions": [
       "AIArmada\\Chip\\Features\\Payouts\\Actions\\CreateSendInstruction"
     ],
-    "table:chip_send_limits": [],
-    "table:chip_send_webhooks": []
+    "table:chip_send_limits": [
+      "AIArmada\\Chip\\Features\\Payouts\\Actions\\SyncSendLimit"
+    ],
+    "table:chip_send_webhooks": [
+      "AIArmada\\Chip\\Features\\Payouts\\Actions\\SyncSendWebhook"
+    ]
   },
   "extensions": {}
 }

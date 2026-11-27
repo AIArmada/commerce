@@ -2,7 +2,9 @@
   "schema": 1,
   "name": "Statements",
   "owns": {
-    "table:chip_company_statements": []
+    "table:chip_company_statements": [
+      "AIArmada\\Chip\\Features\\Statements\\Actions\\CancelCompanyStatement"
+    ]
   },
   "extensions": {}
 }
