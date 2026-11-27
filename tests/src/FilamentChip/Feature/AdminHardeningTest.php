@@ -9,7 +9,8 @@ use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\Chip\Features\Collect\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Services\LocalAnalyticsService;
+use AIArmada\Chip\Features\Collect\Api\PurchaseAnalytics;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
@@ -80,7 +81,7 @@ it('clamps tampered analytics periods to the default range', function (): void {
         }
     };
 
-    app()->instance(LocalAnalyticsService::class, $recording);
+    app()->instance(PurchaseAnalytics::class, $recording);
 
     $page = new AnalyticsDashboardPage;
     $page->period = '999999';

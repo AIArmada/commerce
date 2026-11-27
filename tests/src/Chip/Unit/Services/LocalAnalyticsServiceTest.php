@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Services\LocalAnalyticsService;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
@@ -70,11 +70,11 @@ it('calculates revenue metrics', function (): void {
 
     $metrics = $this->service->getRevenueMetrics($now->copy()->subDays(5), $now->copy()->addDay());
 
-    expect($metrics->grossRevenue)->toBe(17000);
+    expect($metrics->grossRevenue)->toBe(22000);
     expect($metrics->refunds)->toBe(7000);
-    expect($metrics->netRevenue)->toBe(10000);
-    expect($metrics->transactionCount)->toBe(2);
-    expect($metrics->averageTransaction)->toBe(8500.0);
+    expect($metrics->netRevenue)->toBe(15000);
+    expect($metrics->transactionCount)->toBe(3);
+    expect($metrics->averageTransaction)->toEqualWithDelta(22000 / 3, 0.01);
 });
 
 it('calculates transaction metrics', function (): void {

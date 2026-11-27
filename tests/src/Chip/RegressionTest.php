@@ -37,7 +37,7 @@ use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Services\LocalAnalyticsService;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -712,6 +712,7 @@ describe('paid handler refreshes denormalized columns', function (): void {
 
         $purchase = regressionPurchase([
             'status' => 'pending_execute',
+            'updated_on' => 1704067200,
             'purchase' => ['total' => 10000, 'currency' => 'MYR'],
         ]);
 

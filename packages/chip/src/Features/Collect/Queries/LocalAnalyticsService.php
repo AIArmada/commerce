@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services;
+namespace AIArmada\Chip\Features\Collect\Queries;
 
 use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
+use AIArmada\Chip\Features\Collect\Api\PurchaseAnalytics;
 use AIArmada\Chip\Models\Purchase;
 use Carbon\CarbonImmutable;
 
@@ -15,13 +16,15 @@ use Carbon\CarbonImmutable;
  *
  * Uses portable query-builder expressions supported by PostgreSQL and SQLite.
  */
-class LocalAnalyticsService
+class LocalAnalyticsService implements PurchaseAnalytics
 {
     /** @var array<int, string> */
     private const SUCCESSFUL_REVENUE_STATUSES = ['paid', 'cleared', 'settled'];
 
     /** @var array<int, string> */
     private const REFUND_STATUSES = ['refunded'];
+
+    private const GROSS_REVENUE_CONDITION = "status = 'refunded'";
 
     private const PARTIAL_REFUND_CONDITION = "(status = 'refunded' AND refundable_amount > 0)";
 
@@ -49,10 +52,10 @@ class LocalAnalyticsService
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
             ->selectRaw('
-                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN total_minor ELSE 0 END) as revenue,
+                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::GROSS_REVENUE_CONDITION . ') THEN total_minor ELSE 0 END) as revenue,
                 SUM(CASE WHEN status IN (?) THEN refund_amount_minor ELSE 0 END) as refunds,
-                COUNT(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN 1 END) as paid_count,
-                AVG(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN total_minor END) as avg_transaction
+                COUNT(CASE WHEN (status IN (?, ?, ?) OR ' . self::GROSS_REVENUE_CONDITION . ') THEN 1 END) as paid_count,
+                AVG(CASE WHEN (status IN (?, ?, ?) OR ' . self::GROSS_REVENUE_CONDITION . ') THEN total_minor END) as avg_transaction
             ', [
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
                 ...self::REFUND_STATUSES,
@@ -71,11 +74,7 @@ class LocalAnalyticsService
             ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$previousStart, $previousEnd])
             ->where(function ($query): void {
-                $query->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
-                    ->orWhere(function ($query): void {
-                        $query->where('status', 'refunded')
-                            ->where('refundable_amount', '>', 0);
-                    });
+                $query->whereIn('status', [...self::SUCCESSFUL_REVENUE_STATUSES, ...self::REFUND_STATUSES]);
             })
             ->sum('total_minor');
 
@@ -146,7 +145,7 @@ class LocalAnalyticsService
                 COALESCE(payment_method, 'unknown') as payment_method,
                 COUNT(*) as total_attempts,
                 SUM(CASE WHEN (status IN (?, ?, ?) OR " . self::PARTIAL_REFUND_CONDITION . ') THEN 1 ELSE 0 END) as successful,
-                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::PARTIAL_REFUND_CONDITION . ') THEN total_minor ELSE 0 END) as revenue
+                SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::GROSS_REVENUE_CONDITION . ') THEN total_minor ELSE 0 END) as revenue
             ', [
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
@@ -215,15 +214,10 @@ class LocalAnalyticsService
             ->withoutIdempotencyStubs()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where(function ($query): void {
-                $query->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
-                    ->orWhere(function ($query): void {
-                        $query->where('status', 'refunded')
-                            ->where('refundable_amount', '>', 0);
-                    });
+                $query->whereIn('status', [...self::SUCCESSFUL_REVENUE_STATUSES, ...self::REFUND_STATUSES]);
             })
-            ->select(['created_at', 'total_minor'])
-            ->orderBy('id')
-            ->chunk(1000, function ($purchases) use (&$buckets, $groupBy): void {
+            ->select(['id', 'created_at', 'total_minor'])
+            ->chunkById(1000, function ($purchases) use (&$buckets, $groupBy): void {
                 foreach ($purchases as $purchase) {
                     $period = $this->formatPeriod($purchase->created_at, $groupBy);
 
