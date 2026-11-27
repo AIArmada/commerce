@@ -145,7 +145,9 @@ class ManifestPage extends Page implements HasTable
                     ->visible(fn (Shipment $record) => ! ($record->metadata['picked_up'] ?? false))
                     ->authorize(fn (Shipment $record): bool => auth()->user()?->can('update', $record) ?? false)
                     ->action(function (Shipment $record): void {
-                        app(MarkShipmentPickedUp::class)->execute((string) $record->getKey());
+                        if (! app(MarkShipmentPickedUp::class)->execute((string) $record->getKey())) {
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Marked as Picked Up')

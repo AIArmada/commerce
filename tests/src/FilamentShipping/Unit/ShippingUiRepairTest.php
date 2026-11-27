@@ -8,6 +8,7 @@ use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Support\MoneyInput;
 use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
+use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;
@@ -170,4 +171,27 @@ describe('Bulk label failures', function (): void {
         expect($bodies)->toContain('label generation failed')
             ->and($bodies)->not->toContain('no-such-driver');
     });
+});
+
+it('marks a shipped record picked up exactly once and rejects unshipped records', function (): void {
+    $shipment = Shipment::query()->create([
+        'reference' => 'PICKUP-IDEMPOTENT',
+        'carrier_code' => 'jnt',
+        'status' => Shipped::class,
+        'origin_address' => ['country' => 'MY'],
+        'destination_address' => ['country' => 'MY'],
+    ]);
+    $pending = Shipment::query()->create([
+        'reference' => 'PICKUP-PENDING',
+        'carrier_code' => 'jnt',
+        'status' => Pending::class,
+        'origin_address' => ['country' => 'MY'],
+        'destination_address' => ['country' => 'MY'],
+    ]);
+    $action = app(MarkShipmentPickedUp::class);
+
+    expect($action->execute($shipment->id))->toBeTrue()
+        ->and($action->execute($shipment->id))->toBeFalse()
+        ->and($action->execute($pending->id))->toBeFalse()
+        ->and($shipment->refresh()->metadata['picked_up'])->toBeTrue();
 });

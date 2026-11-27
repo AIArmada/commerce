@@ -58,27 +58,18 @@ it('uses safely encoded javascript when opening AWB urls', function (): void {
 
     $url = "https://example.test/awb?token=o'hara";
 
-    app()->bind(JntExpressService::class, fn () => new class($url)
-    {
-        public function __construct(private string $url) {}
-
-        /**
-         * @return array<string, string>
-         */
-        public function printOrder(string $orderId, ?string $trackingNumber = null): array
-        {
-            return [
-                'txlogisticId' => $orderId,
-                'billCode' => $trackingNumber ?? 'TRK-AWB-1',
-                'urlContent' => $this->url,
-            ];
-        }
-    });
+    $carrier = Mockery::mock(JntExpressService::class);
+    $carrier->shouldReceive('printOrder')->once()->with('ORD-AWB-1', 'TRK-AWB-1')->andReturn([
+        'txlogisticId' => 'ORD-AWB-1',
+        'billCode' => 'TRK-AWB-1',
+        'urlContent' => $url,
+    ]);
+    app()->instance(JntExpressService::class, $carrier);
 
     /** @var Component&MockInterface $livewire */
     $livewire = Mockery::mock(Component::class);
 
-    $expectedJs = 'window.open(' . json_encode($url) . ', "_blank")';
+    $expectedJs = 'window.open(' . json_encode($url) . ', "_blank", "noopener,noreferrer")';
 
     $livewire->shouldReceive('js')->once()->with($expectedJs);
 
@@ -106,20 +97,13 @@ it('does not open a download when waybill base64 payload is invalid', function (
         'tracking_number' => 'TRK-AWB-INVALID-1',
     ]);
 
-    app()->bind(JntExpressService::class, fn () => new class
-    {
-        /**
-         * @return array<string, string>
-         */
-        public function printOrder(string $orderId, ?string $trackingNumber = null): array
-        {
-            return [
-                'txlogisticId' => $orderId,
-                'billCode' => $trackingNumber ?? 'TRK-AWB-INVALID-1',
-                'base64EncodeContent' => 'this-is-not-valid-base64!!',
-            ];
-        }
-    });
+    $carrier = Mockery::mock(JntExpressService::class);
+    $carrier->shouldReceive('printOrder')->once()->with('ORD-AWB-INVALID-1', 'TRK-AWB-INVALID-1')->andReturn([
+        'txlogisticId' => 'ORD-AWB-INVALID-1',
+        'billCode' => 'TRK-AWB-INVALID-1',
+        'base64EncodeContent' => 'this-is-not-valid-base64!!',
+    ]);
+    app()->instance(JntExpressService::class, $carrier);
 
     /** @var Component&MockInterface $livewire */
     $livewire = Mockery::mock(Component::class);
@@ -131,4 +115,20 @@ it('does not open a download when waybill base64 payload is invalid', function (
 
     $notifications = sent_filament_notifications();
     expect(collect($notifications)->pluck('title'))->toContain('AWB Not Available');
+});
+
+it('rejects non-http waybill URLs at the domain boundary', function (): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-AWB-UNSAFE',
+        'customer_code' => 'CUST',
+        'tracking_number' => 'TRK-AWB-UNSAFE',
+    ]);
+    $carrier = Mockery::mock(JntExpressService::class);
+    $carrier->shouldReceive('printOrder')->once()->andReturn([
+        'txlogisticId' => 'ORD-AWB-UNSAFE',
+        'urlContent' => 'ftp://example.test/label.pdf',
+    ]);
+    app()->instance(JntExpressService::class, $carrier);
+
+    expect(app(\AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
 });

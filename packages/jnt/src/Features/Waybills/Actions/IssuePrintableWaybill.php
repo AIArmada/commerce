@@ -42,7 +42,7 @@ final readonly class IssuePrintableWaybill implements PrintableWaybill
 
         $content = $waybill->getPdfContent();
 
-        if (! is_string($content) || $content === '') {
+        if (! is_string($content) || ! str_starts_with($content, '%PDF-')) {
             return null;
         }
 
