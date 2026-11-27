@@ -6,6 +6,7 @@ use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Facades\Http;
 
@@ -15,6 +16,7 @@ function createTestService(): JntExpressService
     config(['concurrency.default' => 'sync']);
 
     $service = new JntExpressService(
+        transportFactory: app(CarrierTransportFactory::class),
         customerCode: 'TEST123',
         password: 'password',
         config: [
@@ -43,6 +45,7 @@ function createTestService(): JntExpressService
 describe('Batch Create Orders', function (): void {
     it('creates multiple orders successfully', function (): void {
         $service = new JntExpressService(
+            transportFactory: app(CarrierTransportFactory::class),
             customerCode: 'TEST123',
             password: 'password',
             config: [

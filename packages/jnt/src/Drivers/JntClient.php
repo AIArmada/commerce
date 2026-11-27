@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Drivers;
 
+use AIArmada\Jnt\Contracts\CarrierTransport;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use Illuminate\Http\Client\ConnectionException;
@@ -11,7 +12,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class JntClient
+class JntClient implements CarrierTransport
 {
     /**
      * @param  array<string, mixed>  $config

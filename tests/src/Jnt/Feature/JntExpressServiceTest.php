@@ -9,6 +9,7 @@ use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -35,6 +36,7 @@ beforeEach(function (): void {
     ];
 
     $this->service = new JntExpressService(
+        app(CarrierTransportFactory::class),
         $this->config['customer_code'],
         $this->config['password'],
         $this->config

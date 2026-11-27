@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
 use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 
 function makeJntPollingTestService(): JntExpressService
 {
     return new JntExpressService(
+        transportFactory: app(CarrierTransportFactory::class),
         customerCode: 'TESTCUST',
         password: 'test-password',
         config: [

@@ -12,7 +12,8 @@ use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingData;
-use AIArmada\Jnt\Drivers\JntClient;
+use AIArmada\Jnt\Contracts\CarrierTransport;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
@@ -25,12 +26,13 @@ use Throwable;
 
 class JntExpressService
 {
-    protected ?JntClient $client = null;
+    protected ?CarrierTransport $client = null;
 
     /**
      * @param  array<string, mixed>  $config
      */
     public function __construct(
+        protected readonly CarrierTransportFactory $transportFactory,
         protected readonly ?string $customerCode,
         protected readonly ?string $password,
         protected readonly array $config = [],
@@ -570,34 +572,9 @@ class JntExpressService
     /**
      * Lazy load the HTTP client only when needed
      */
-    protected function getClient(): JntClient
+    protected function getClient(): CarrierTransport
     {
-        if (! $this->client instanceof JntClient) {
-            $baseUrl = $this->getBaseUrl();
-            $apiAccount = $this->config['api_account'] ?? throw JntConfigurationException::missingApiAccount();
-            $privateKey = $this->config['private_key'] ?? throw JntConfigurationException::missingPrivateKey();
-
-            $this->client = new JntClient($baseUrl, $apiAccount, $privateKey, $this->config);
-        }
-
-        return $this->client;
-    }
-
-    protected function getBaseUrl(): string
-    {
-        $environment = $this->normalizeEnvironment((string) ($this->config['environment'] ?? 'testing'));
-        $baseUrls = $this->config['base_urls'] ?? [];
-
-        return $baseUrls[$environment] ?? throw JntConfigurationException::invalidEnvironment($environment);
-    }
-
-    protected function normalizeEnvironment(string $environment): string
-    {
-        return match ($environment) {
-            'production' => 'production',
-            'testing', 'local', 'development' => 'testing',
-            default => throw JntConfigurationException::invalidEnvironment($environment),
-        };
+        return $this->client ??= $this->transportFactory->create($this->config);
     }
 
     protected function getCustomerCode(): string

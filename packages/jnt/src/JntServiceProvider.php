@@ -8,8 +8,10 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Contracts\WaybillWriter;
+use AIArmada\Jnt\Drivers\HttpCarrierTransportFactory;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\Drivers\LocalWaybillWriter;
 use AIArmada\Jnt\EntryPoints\Commands\Health\HealthCheckCommand;
@@ -208,10 +210,12 @@ class JntServiceProvider extends PackageServiceProvider
     {
         // Credential-bearing services resolve fresh on every make() so Octane
         // workers and per-owner credential switching never reuse stale config.
+        $this->app->bind(CarrierTransportFactory::class, HttpCarrierTransportFactory::class);
         $this->app->bind(JntExpressService::class, function (Application $app): JntExpressService {
             $config = $app['config']['jnt'];
 
             return new JntExpressService(
+                transportFactory: $app->make(CarrierTransportFactory::class),
                 customerCode: $config['customer_code'] ?? null,
                 password: $config['password'] ?? null,
                 config: $config,

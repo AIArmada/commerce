@@ -28,6 +28,7 @@ use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\JntServiceProvider;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Services\WebhookService;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
@@ -80,6 +81,7 @@ describe('carrier safety guards', function (): void {
         ]);
 
         $service = new JntExpressService(
+            transportFactory: app(CarrierTransportFactory::class),
             customerCode: 'TEST123',
             password: 'password',
             config: [

@@ -4,43 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\EntryPoints\Commands;
 
-use AIArmada\Jnt\Drivers\JntClient;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Container\BindingResolutionException;
 use Throwable;
 
 abstract class JntCommand extends Command
 {
-    private ?JntClient $resolvedClient = null;
-
-    protected function client(): JntClient
-    {
-        if ($this->resolvedClient === null) {
-            try {
-                $client = app(JntClient::class);
-            } catch (BindingResolutionException) {
-                $config = config('jnt');
-                $baseUrl = ($config['environment'] ?? 'production') === 'production'
-                    ? ($config['base_urls']['production'] ?? '')
-                    : ($config['base_urls']['testing'] ?? '');
-
-                $client = new JntClient(
-                    baseUrl: $baseUrl,
-                    apiAccount: $config['api_account'] ?? '',
-                    privateKey: $config['private_key'] ?? '',
-                    config: $config,
-                );
-            }
-
-            $this->resolvedClient = $client;
-        }
-
-        return $this->resolvedClient;
-    }
-
     protected function withErrorHandling(callable $callback): int
     {
         try {
