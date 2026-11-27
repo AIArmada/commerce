@@ -53,8 +53,22 @@ final readonly class ReleaseInventoryOnCartClear
             }
         }
 
-        if (isset($event->cart) && $event->cart instanceof Cart) {
-            return CartReservationIdentity::fromCart($event->cart);
+        $cart = $event->cart ?? null;
+
+        if ($cart instanceof Cart) {
+            return CartReservationIdentity::fromCart($cart);
+        }
+
+        if (is_object($cart)) {
+            $id = method_exists($cart, 'getId') ? $cart->getId() : null;
+
+            if (is_string($id) && $id !== '') {
+                return $id;
+            }
+
+            if (method_exists($cart, 'getIdentifier') && method_exists($cart, 'instance')) {
+                return sprintf('%s_%s', $cart->getIdentifier(), $cart->instance());
+            }
         }
 
         return null;
