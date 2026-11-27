@@ -6,6 +6,8 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Queries\AssertSegmentSlugAvailable;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 final readonly class SaveSegment
 {
@@ -13,8 +15,10 @@ final readonly class SaveSegment
     public function create(array $attributes): Segment
     {
         $segment = new Segment;
+        $segment->fill($attributes);
+        $this->persist($segment);
 
-        return $segment->getConnection()->transaction(fn (): Segment => $segment->newQuery()->create($attributes));
+        return $segment;
     }
 
     /** @param array<string, mixed> $attributes */
@@ -26,9 +30,21 @@ final readonly class SaveSegment
 
         return $segment->getConnection()->transaction(function () use ($segment, $attributes): Segment {
             $locked = Segment::query()->whereKey($segment->getKey())->lockForUpdate()->firstOrFail();
-            $locked->fill($attributes)->save();
+            $locked->fill($attributes);
+            $this->persist($locked);
 
             return $locked;
         });
+    }
+
+    private function persist(Segment $segment): void
+    {
+        try {
+            $segment->getConnection()->transaction(fn (): bool => $segment->save());
+        } catch (UniqueConstraintViolationException $exception) {
+            app(AssertSegmentSlugAvailable::class)->execute($segment);
+
+            throw $exception;
+        }
     }
 }
