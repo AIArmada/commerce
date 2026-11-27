@@ -106,3 +106,44 @@ it('enforces per-customer limits across several promotions with one order scan',
         ->toContain($otherCapped->getKey())
         ->and($orderScans->count())->toBe(1);
 });
+
+it('counts multiple allocations of the same promotion as one customer redemption per order', function (): void {
+    $customer = User::factory()->create();
+    $promotion = Promotion::factory()->automatic()->active()->create([
+        'discount_value' => 10,
+        'per_customer_limit' => 2,
+        'min_purchase_amount' => null,
+        'min_quantity' => null,
+        'usage_limit' => null,
+    ]);
+
+    $allocation = [
+        'provider_key' => 'promotions',
+        'meta' => ['promotion_id' => $promotion->getKey()],
+    ];
+
+    Order::factory()->create([
+        'customer_id' => $customer->getKey(),
+        'metadata' => [
+            'discount_data' => [
+                'allocations' => [
+                    $allocation,
+                    $allocation,
+                    ['provider_key' => 'vouchers', 'meta' => ['promotion_id' => $promotion->getKey()]],
+                    ['provider_key' => 'promotions', 'meta' => ['promotion_id' => ['invalid']]],
+                ],
+            ],
+        ],
+    ]);
+
+    $service = app(PromotionService::class);
+    $context = new TargetingContext(null, $customer);
+
+    expect($service->getApplicablePromotions($context)->pluck('id')->all())
+        ->toContain($promotion->getKey());
+
+    orderWithPromotionAllocation($customer, $promotion);
+
+    expect($service->getApplicablePromotions($context)->pluck('id')->all())
+        ->not->toContain($promotion->getKey());
+});

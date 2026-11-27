@@ -324,17 +324,18 @@ final class PromotionService implements PromotionServiceInterface
         $promotionIds = [];
 
         foreach ($allocations as $allocation) {
-            if (($allocation['provider_key'] ?? null) !== 'promotions') {
+            if (! is_array($allocation) || ($allocation['provider_key'] ?? null) !== 'promotions') {
                 continue;
             }
 
-            $promotionId = (string) ($allocation['meta']['promotion_id'] ?? '');
+            $meta = $allocation['meta'] ?? null;
+            $promotionId = is_array($meta) ? ($meta['promotion_id'] ?? null) : null;
 
-            if ($promotionId !== '') {
-                $promotionIds[] = $promotionId;
+            if (is_string($promotionId) && $promotionId !== '') {
+                $promotionIds[$promotionId] = $promotionId;
             }
         }
 
-        return $promotionIds;
+        return array_values($promotionIds);
     }
 }
