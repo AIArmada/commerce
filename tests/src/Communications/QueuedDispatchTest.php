@@ -13,7 +13,7 @@ use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Events\DeliverySending;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;

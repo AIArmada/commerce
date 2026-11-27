@@ -12,8 +12,8 @@ use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Data\CapturedRecipientContentData;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 
 final readonly class CaptureRecipientContent implements NotificationContentCapture

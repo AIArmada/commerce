@@ -38,7 +38,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use AIArmada\Communications\Policies\CommunicationPolicy;
 use AIArmada\Communications\Services\CommunicationManagerService;

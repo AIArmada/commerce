@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Models;
 
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\CommerceSupport\Traits\HasOwner;

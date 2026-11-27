@@ -7,7 +7,7 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
-use AIArmada\Communications\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 

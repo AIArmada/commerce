@@ -7,7 +7,6 @@ namespace AIArmada\Communications\Features\Aggregate\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationContent;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

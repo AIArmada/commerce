@@ -15,7 +15,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 

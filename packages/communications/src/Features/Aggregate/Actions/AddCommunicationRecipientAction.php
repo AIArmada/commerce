@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 
 final class AddCommunicationRecipientAction
 {

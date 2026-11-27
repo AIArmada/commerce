@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Models;
+namespace AIArmada\Communications\Features\Aggregate\Models;
 
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

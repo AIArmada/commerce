@@ -14,7 +14,7 @@ use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
