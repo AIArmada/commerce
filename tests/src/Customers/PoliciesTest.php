@@ -10,7 +10,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Policies\CustomerPolicy;
-use AIArmada\Customers\Policies\SegmentPolicy;
+use AIArmada\Customers\Features\Segmentation\EntryPoints\Policies\SegmentPolicy;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;

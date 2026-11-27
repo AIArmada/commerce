@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Policies;
+namespace AIArmada\Customers\Features\Identity\EntryPoints\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
-final class CustomerGroupPolicy
+final class CustomerNotePolicy
 {
     use HandlesAuthorization;
 
@@ -51,7 +51,7 @@ final class CustomerGroupPolicy
         return OwnerContext::resolve();
     }
 
-    private function isAccessible(CustomerGroup $group): bool
+    private function isAccessible(CustomerNote $note): bool
     {
         if (! (bool) config('customers.features.owner.enabled', false)) {
             return true;
@@ -61,46 +61,38 @@ final class CustomerGroupPolicy
         $includeGlobal = (bool) config('customers.features.owner.include_global', false);
 
         if ($owner === null) {
-            return $group->owner_type === null && $group->owner_id === null;
+            return $note->owner_type === null && $note->owner_id === null;
         }
 
-        if ($includeGlobal && $group->isGlobal()) {
+        if ($includeGlobal && $note->isGlobal()) {
             return true;
         }
 
-        return $group->belongsToOwner($owner);
+        return $note->belongsToOwner($owner);
     }
 
     public function viewAny(mixed $user): bool
     {
-        return $this->hasPermission($user, 'customers.groups.view');
+        return $this->hasPermission($user, 'customers.notes.view');
     }
 
-    public function view(mixed $user, CustomerGroup $group): bool
+    public function view(mixed $user, CustomerNote $note): bool
     {
-        return $this->hasPermission($user, 'customers.groups.view') && $this->isAccessible($group);
+        return $this->hasPermission($user, 'customers.notes.view') && $this->isAccessible($note);
     }
 
     public function create(mixed $user): bool
     {
-        return $this->hasPermission($user, 'customers.groups.create');
+        return $this->hasPermission($user, 'customers.notes.create');
     }
 
-    public function update(mixed $user, CustomerGroup $group): bool
+    public function update(mixed $user, CustomerNote $note): bool
     {
-        return $this->hasPermission($user, 'customers.groups.update') && $this->isAccessible($group);
+        return $this->hasPermission($user, 'customers.notes.update') && $this->isAccessible($note);
     }
 
-    public function delete(mixed $user, CustomerGroup $group): bool
+    public function delete(mixed $user, CustomerNote $note): bool
     {
-        return $this->hasPermission($user, 'customers.groups.delete') && $this->isAccessible($group);
-    }
-
-    /**
-     * Determine if user can manage members of the group.
-     */
-    public function manageMembers(mixed $user, CustomerGroup $group): bool
-    {
-        return $this->hasPermission($user, 'customers.groups.manage-members') && $this->update($user, $group);
+        return $this->hasPermission($user, 'customers.notes.delete') && $this->isAccessible($note);
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Events\CustomerSegmentChanged;
+use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Events\CustomerSegmentChanged;
+use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;

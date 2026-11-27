@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Events;
+namespace AIArmada\Customers\Features\Segmentation\Events;
 
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
