@@ -162,3 +162,19 @@ test('ConsentDecisionData creates', function (): void {
     expect($dto->consented)->toBeTrue();
     expect($dto->reason)->toBe('registration-form');
 });
+
+test('communications value DTOs are immutable and independent of Laravel Data', function (): void {
+    foreach ([
+        CommunicationDefinitionData::class,
+        ConsentDecisionData::class,
+        PlannedDeliveryData::class,
+        ProviderResultData::class,
+        RecipientSnapshotData::class,
+        RenderedContentData::class,
+        ResolvedDestinationData::class,
+        SuppressionDecisionData::class,
+    ] as $class) {
+        expect((new ReflectionClass($class))->isReadOnly())->toBeTrue()
+            ->and(is_subclass_of($class, \Spatie\LaravelData\Data::class))->toBeFalse();
+    }
+});

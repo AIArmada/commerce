@@ -11,8 +11,8 @@ class NullRecipientSnapshotResolver implements RecipientSnapshotResolver
 {
     public function resolve(mixed $notifiable): RecipientSnapshotData
     {
-        $id = method_exists($notifiable, 'getKey') ? (string) $notifiable->getKey() : spl_object_id($notifiable);
+        $id = method_exists($notifiable, 'getKey') ? (string) $notifiable->getKey() : (string) spl_object_id($notifiable);
 
-        return RecipientSnapshotData::from(['identifier' => $id]);
+        return new RecipientSnapshotData(identifier: $id);
     }
 }

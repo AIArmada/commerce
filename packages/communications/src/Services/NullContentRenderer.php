@@ -15,10 +15,7 @@ class NullContentRenderer implements ContentRenderer
         ?string $locale,
         array $variables,
     ): RenderedContentData {
-        return RenderedContentData::from([
-            'channel' => $channel,
-            'locale' => $locale,
-        ]);
+        return new RenderedContentData(channel: $channel, locale: $locale);
     }
 
     public function renderFromNotification(
@@ -30,13 +27,13 @@ class NullContentRenderer implements ContentRenderer
 
         if (method_exists($notification, 'toMail') && $channel === 'mail') {
             $mail = $notification->toMail($notifiable);
-            $contentHtml = $mail->render();
+            $contentHtml = (string) $mail->render();
         }
 
-        return RenderedContentData::from([
-            'channel' => $channel,
-            'subject' => method_exists($notification, 'toSubject') ? $notification->toSubject() : null,
-            'contentHtml' => $contentHtml,
-        ]);
+        return new RenderedContentData(
+            channel: $channel,
+            subject: method_exists($notification, 'toSubject') ? $notification->toSubject() : null,
+            contentHtml: $contentHtml,
+        );
     }
 }

@@ -20,13 +20,13 @@ final class PermissiveEligibilityResolver implements ConsentResolver, Preference
         string $category,
     ): ConsentDecisionData {
         if ($category === CommunicationCategory::Marketing->value) {
-            return ConsentDecisionData::from([
-                'consented' => false,
-                'reason' => 'Marketing requires explicit consent; no resolver configured.',
-            ]);
+            return new ConsentDecisionData(
+                consented: false,
+                reason: 'Marketing requires explicit consent; no resolver configured.',
+            );
         }
 
-        return ConsentDecisionData::from(['consented' => true]);
+        return new ConsentDecisionData(consented: true);
     }
 
     public function isEnabled(

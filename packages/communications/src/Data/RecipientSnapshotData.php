@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Optional;
-
-final class RecipientSnapshotData extends Data
+final readonly class RecipientSnapshotData
 {
     public function __construct(
-        public readonly string $identifier,
-        public readonly string | null | Optional $displayName = null,
-        public readonly string | null | Optional $email = null,
-        public readonly string | null | Optional $phone = null,
-        public readonly string | null | Optional $locale = null,
-        public readonly string | null | Optional $timezone = null,
-        public readonly array $extra = [],
+        public string $identifier,
+        public string | null $displayName = null,
+        public string | null $email = null,
+        public string | null $phone = null,
+        public string | null $locale = null,
+        public string | null $timezone = null,
+        public array $extra = [],
     ) {}
 }

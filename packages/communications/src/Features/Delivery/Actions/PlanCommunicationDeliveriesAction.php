@@ -18,7 +18,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
-use Spatie\LaravelData\Optional;
 use Throwable;
 
 final class PlanCommunicationDeliveriesAction
@@ -50,7 +49,7 @@ final class PlanCommunicationDeliveriesAction
             ->keyBy('id');
 
         $contentIds = collect($planned)
-            ->map(fn (PlannedDeliveryData $plan): mixed => $plan->contentId instanceof Optional ? null : $plan->contentId)
+            ->map(fn (PlannedDeliveryData $plan): ?string => $plan->contentId)
             ->filter()
             ->unique()
             ->values()
@@ -73,19 +72,19 @@ final class PlanCommunicationDeliveriesAction
                 throw (new ModelNotFoundException)->setModel(CommunicationRecipient::class, [$plan->recipientId]);
             }
 
-            $contentId = $plan->contentId instanceof Optional ? null : $plan->contentId;
+            $contentId = $plan->contentId;
 
             if ($contentId !== null && ! in_array($contentId, $existingContentIds, true)) {
                 throw (new ModelNotFoundException)->setModel(CommunicationContent::class, [$contentId]);
             }
 
-            $maxAttempts = $plan->maxAttempts instanceof Optional ? null : $plan->maxAttempts;
+            $maxAttempts = $plan->maxAttempts;
 
             if ($maxAttempts !== null && $maxAttempts < 0) {
                 throw new InvalidArgumentException('Planned delivery max attempts must not be negative.');
             }
 
-            $scheduledAt = $plan->scheduledAt instanceof Optional ? null : $plan->scheduledAt;
+            $scheduledAt = $plan->scheduledAt;
 
             $rows[] = [
                 'recipient_id' => $recipient->id,
