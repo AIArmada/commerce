@@ -8,6 +8,7 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
 use AIArmada\Shipping\Cart\ShippingConditionProvider;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
@@ -21,6 +22,7 @@ use AIArmada\Shipping\Platform\FeatureCatalog;
 use AIArmada\Shipping\Platform\FeatureModule;
 use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
 use AIArmada\Shipping\Policies\ShipmentPolicy;
+use AIArmada\Shipping\Policies\ShippingRatePolicy;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Services\ShipmentService;
 use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
@@ -152,6 +154,7 @@ final class ShippingServiceProvider extends PackageServiceProvider
     {
         Gate::policy(Shipment::class, ShipmentPolicy::class);
         Gate::policy(ShippingZone::class, ShippingZonePolicy::class);
+        Gate::policy(ShippingRate::class, ShippingRatePolicy::class);
         Gate::policy(ReturnAuthorization::class, ReturnAuthorizationPolicy::class);
     }
 }

@@ -12,7 +12,7 @@ use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -272,7 +272,7 @@ class RatesRelationManager extends RelationManager
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteRateConfigurationBulkAction::make()
                         ->authorize($canManageRates),
                 ]),
             ]);

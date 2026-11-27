@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -109,7 +109,7 @@ final class ShippingRatesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteRateConfigurationBulkAction::make(),
                 ]),
             ])
             ->defaultSort('zone.name');
