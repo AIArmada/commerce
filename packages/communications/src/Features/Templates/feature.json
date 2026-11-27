@@ -6,7 +6,8 @@
       "AIArmada\\Communications\\Features\\Templates\\Actions\\PublishTemplateAction"
     ],
     "table:communication_template_versions": [
-      "AIArmada\\Communications\\Features\\Templates\\Actions\\PublishTemplateAction"
+      "AIArmada\\Communications\\Features\\Templates\\Actions\\PublishTemplateAction",
+      "AIArmada\\Communications\\Features\\Templates\\Actions\\DeleteTemplateVersions"
     ]
   },
   "extensions": {}

@@ -122,3 +122,18 @@ test('passes data and scheduledAt through the action', function (): void {
     expect($inbox->data)->toBe($data);
     expect($inbox->scheduled_at)->not->toBeNull();
 });
+
+test('rolls back the communication when the inbox recipient is not persisted', function (): void {
+    $before = Communication::query()->count();
+
+    expect(fn () => $this->action->handle(
+        recipient: new User,
+        title: 'Invalid recipient',
+        body: 'Must not be persisted',
+        family: NotificationFamily::EventReminder,
+        priority: NotificationPriority::Normal,
+        trigger: NotificationTrigger::EventPublished,
+    ))->toThrow(InvalidArgumentException::class);
+
+    expect(Communication::query()->count())->toBe($before);
+});

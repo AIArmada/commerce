@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Inbox\Actions;
 
-use AIArmada\Communications\Enums\CommunicationCategory;
-use AIArmada\Communications\Enums\CommunicationDirection;
-use AIArmada\Communications\Enums\CommunicationPriority;
-use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Contracts\InboxCommunicationCreator;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
-use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -24,6 +19,7 @@ final class DispatchInboxNotificationAction
 {
     public function __construct(
         private readonly ManageInboxEntries $inboxService,
+        private readonly InboxCommunicationCreator $communicationCreator,
     ) {}
 
     public function handle(
@@ -37,14 +33,7 @@ final class DispatchInboxNotificationAction
         ?CarbonInterface $scheduledAt = null,
     ): NotificationInbox {
         return DB::transaction(function () use ($recipient, $title, $body, $family, $priority, $trigger, $data, $scheduledAt): NotificationInbox {
-            $communication = new Communication;
-            $communication->direction = CommunicationDirection::Internal;
-            $communication->category = CommunicationCategory::Internal;
-            $communication->priority = CommunicationPriority::Normal;
-            $communication->purpose = 'inbox_notification';
-            $communication->status = CommunicationStatus::Completed;
-            $communication->completed_at = CarbonImmutable::now();
-            $communication->save();
+            $communication = Communication::query()->findOrFail($this->communicationCreator->create());
 
             return $this->inboxService->create(
                 recipient: $recipient,

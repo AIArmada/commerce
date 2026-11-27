@@ -7,6 +7,7 @@ namespace AIArmada\Communications\Features\Templates\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\TemplateStatus;
+use AIArmada\Communications\Features\Templates\Actions\DeleteTemplateVersions;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -80,7 +81,7 @@ final class CommunicationTemplate extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationTemplate $template): void {
-            $template->versions()->each(fn (CommunicationTemplateVersion $v) => $v->delete());
+            app(DeleteTemplateVersions::class)->execute($template);
         });
     }
 }
