@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Paid;

@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
@@ -116,12 +116,7 @@ final class DocService implements DocServiceInterface
                 $metadata['pdf'] = array_merge($metadata['pdf'] ?? [], $data->pdfOptions);
             }
 
-            // Determine status
-            $status = $data->status ?? Draft::class;
-
-            if ($status instanceof DocStatus) {
-                $status = $status::class;
-            }
+            $status = DocStatus::resolveStateClassFor($data->status ?? Draft::class);
 
             $statusClass = DocStatus::resolveStateClassFor($status);
 

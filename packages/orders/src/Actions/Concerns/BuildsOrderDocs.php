@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions\Concerns;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -96,7 +95,7 @@ trait BuildsOrderDocs
             docType: $docType->value,
             docableType: $order->getMorphClass(),
             docableId: (string) $order->getKey(),
-            status: DocStatus::fromString(Paid::class),
+            status: Paid::class,
             issueDate: $order->paid_at ?? CarbonImmutable::now(),
             items: $this->buildItems($order),
             subtotalMinor: $linesSubtotalMinor,

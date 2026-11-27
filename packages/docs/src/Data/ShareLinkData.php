@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\DataObjects;
+namespace AIArmada\Docs\Data;
 
 use AIArmada\Docs\Enums\ShareLinkAction;
 use DateTimeInterface;

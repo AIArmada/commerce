@@ -6,7 +6,7 @@ namespace AIArmada\CashierChip\Invoices;
 
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Data\InvoiceRenderData;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Services\DocService;
 
 class DocsInvoiceRenderer implements InvoiceRenderer

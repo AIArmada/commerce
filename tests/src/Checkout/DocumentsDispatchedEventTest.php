@@ -8,7 +8,7 @@ use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\DispatchDocumentGenerationStep;
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Models\Order;

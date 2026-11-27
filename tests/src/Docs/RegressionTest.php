@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Actions\DeliverDocEmail;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\EntryPoints\Http\Controllers\DocPreviewController;
 use AIArmada\Docs\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Enums\DocPaymentStatus;

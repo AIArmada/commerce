@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Pages;
 
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\FilamentDocs\Resources\DocResource;

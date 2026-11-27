@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Enums\ShareLinkAction;

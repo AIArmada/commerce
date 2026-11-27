@@ -7,7 +7,7 @@ namespace AIArmada\Docs\Services;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
-use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
