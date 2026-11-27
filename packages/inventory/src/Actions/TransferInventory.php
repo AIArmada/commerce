@@ -46,22 +46,30 @@ final class TransferInventory
         }
 
         return DB::transaction(function () use ($model, $fromLocationId, $toLocationId, $quantity, $note, $userId, $occurredAt): InventoryMovement {
-            $fromLevelQuery = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLevel::query()
-                    ->where('inventoryable_type', $model->getMorphClass())
-                    ->where('inventoryable_id', $model->getKey())
-                    ->where('location_id', $fromLocationId)
-            );
+            // Create the destination before taking both stock locks, then
+            // acquire the rows in the same order for either transfer direction.
+            $this->levels->getOrCreate($model, $toLocationId);
 
-            $fromLevel = $fromLevelQuery->lockForUpdate()->first();
+            $levels = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->whereIn('location_id', [$fromLocationId, $toLocationId])
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('location_id');
 
+            $fromLevel = $levels->get($fromLocationId);
+            $toLevel = $levels->get($toLocationId);
             $available = $fromLevel?->available ?? 0;
 
-            if ($fromLevel === null || $available < $quantity) {
+            if (! $fromLevel instanceof InventoryLevel || $available < $quantity) {
                 throw InsufficientInventoryException::forLocation($fromLocationId, $quantity, $available);
             }
 
-            $toLevel = $this->levels->getOrCreate($model, $toLocationId);
+            if (! $toLevel instanceof InventoryLevel) {
+                throw new InvalidArgumentException('Destination inventory level is not accessible.');
+            }
 
             $fromLevel->decrementOnHand($quantity);
             $toLevel->incrementOnHand($quantity);

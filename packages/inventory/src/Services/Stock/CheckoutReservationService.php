@@ -34,6 +34,10 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
     /** @param list<ReservationLine> $lines */
     public function reserve(string $reference, array $lines, int $ttlSeconds): ReservationOutcome
     {
+        if ($ttlSeconds <= 0 || mb_trim($reference) === '') {
+            throw new InvalidArgumentException('Reservation reference and TTL must be valid.');
+        }
+
         // Serializes concurrent reserves for the same reference. NULL-owner
         // rows defeat the composite unique key, so the service lock remains
         // the serializer for global references even when a partial unique
@@ -409,40 +413,46 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
     private function resolveInventoryModel(ReservationLine $line): ?Model
     {
-        if ($line->inventoryableType !== null && $line->inventoryableId !== null) {
-            $inventoryableClass = Relation::getMorphedModel($line->inventoryableType) ?? $line->inventoryableType;
-
-            // The line type is caller-influenced: only resolve classes that
-            // are explicitly inventoryable, never arbitrary Eloquent models.
-            if (is_string($inventoryableClass) && $this->isAllowedInventoryableClass($inventoryableClass)) {
-                /** @var class-string<Model> $inventoryableClass */
-                $inventoryable = $inventoryableClass::query()->find($line->inventoryableId);
-
-                if ($inventoryable instanceof Model) {
-                    return $inventoryable;
-                }
+        if ($line->inventoryableType !== null || $line->inventoryableId !== null) {
+            if ($line->inventoryableType === null || $line->inventoryableId === null || $line->inventoryableId === '') {
+                return null;
             }
+
+            $class = Relation::getMorphedModel($line->inventoryableType) ?? $line->inventoryableType;
+
+            if (! is_string($class) || ! $this->isAllowedInventoryableClass($class)) {
+                return null;
+            }
+
+            /** @var class-string<Model> $class */
+            return $class::query()->find($line->inventoryableId);
         }
 
         if ($line->variantId !== null) {
-            $variantClass = config('inventory.models.variant') ?? Variant::class;
+            $class = config('inventory.models.variant') ?? Variant::class;
 
-            if (class_exists($variantClass)) {
-                $variant = $variantClass::query()->find($line->variantId);
-
-                if ($variant !== null) {
-                    return $variant;
-                }
+            if (! is_string($class) || ! $this->isAllowedInventoryableClass($class)) {
+                return null;
             }
+
+            /** @var class-string<Model> $class */
+            $query = $class::query();
+
+            if (is_a($class, Variant::class, true)) {
+                $query->where('product_id', $line->productId);
+            }
+
+            return $query->find($line->variantId);
         }
 
-        $productClass = config('inventory.models.product') ?? Product::class;
+        $class = config('inventory.models.product') ?? Product::class;
 
-        if (! class_exists($productClass)) {
+        if (! is_string($class) || ! $this->isAllowedInventoryableClass($class)) {
             return null;
         }
 
-        return $productClass::query()->find($line->productId);
+        /** @var class-string<Model> $class */
+        return $class::query()->find($line->productId);
     }
 
     private function isAllowedInventoryableClass(string $class): bool

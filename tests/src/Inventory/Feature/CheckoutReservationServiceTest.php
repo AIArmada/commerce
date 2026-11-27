@@ -83,6 +83,29 @@ describe('CheckoutReservationService', function (): void {
             ->and(InventoryAllocation::query()->where('cart_id', 'ref-polymorphic')->sum('quantity'))->toBe(3);
     });
 
+    it('never substitutes product stock for an invalid explicit inventory identity', function (): void {
+        $id = (string) $this->item->getKey();
+
+        foreach ([
+            new ReservationLine(productId: $id, inventoryableType: InventoryItem::class, inventoryableId: '01900000-0000-7000-8000-000000000001'),
+            new ReservationLine(productId: $id, inventoryableType: InventoryItem::class),
+            new ReservationLine(productId: $id, variantId: '01900000-0000-7000-8000-000000000002'),
+        ] as $line) {
+            expect(fn () => $this->reservationService->reserve('invalid-identity', [$line], 900))
+                ->toThrow(ReservationReferenceConflict::class);
+        }
+
+        expect($this->inventoryService->getLevel($this->item, $this->location->id)?->quantity_reserved)->toBe(0)
+            ->and(InventoryReservation::query()->where('reference', 'invalid-identity')->exists())->toBeFalse();
+    });
+
+    it('rejects an empty reference and non-positive reservation TTL', function (): void {
+        $lines = [new ReservationLine(productId: (string) $this->item->getKey())];
+
+        expect(fn () => $this->reservationService->reserve('', $lines, 900))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->reservationService->reserve('invalid-ttl', $lines, 0))->toThrow(InvalidArgumentException::class);
+    });
+
     it('combines product and polymorphic demand for the same stock identity', function (): void {
         $id = (string) $this->item->getKey();
         $lines = [
