@@ -271,23 +271,10 @@ class Customer extends Model implements Auditable, HasMedia
         }
     }
 
-    /**
-     * Match a normalized email sargably: exact match on the stored normalized
-     * value, with a legacy fallback for rows whose normalized value is missing.
-     *
-     * @param  Builder<ContactMethod>  $query
-     */
+    /** @param Builder<ContactMethod> $query */
     private function constrainContactEmailMatch(Builder $query, string $normalizedEmail): void
     {
-        $query->where(function (Builder $query) use ($normalizedEmail): void {
-            $query->where('normalized_value', $normalizedEmail)
-                ->orWhere(function (Builder $query) use ($normalizedEmail): void {
-                    $query->where(function (Builder $query): void {
-                        $query->whereNull('normalized_value')
-                            ->orWhere('normalized_value', '');
-                    })->whereRaw('LOWER(TRIM(COALESCE(value, \'\'))) = ?', [$normalizedEmail]);
-                });
-        });
+        $query->where('normalized_value', $normalizedEmail);
     }
 
     /**

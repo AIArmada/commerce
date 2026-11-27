@@ -6,6 +6,7 @@ namespace AIArmada\Customers\Features\Identity\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToUser;
 use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Features\Identity\Concerns\NormalizesCustomerPayload;
@@ -13,7 +14,6 @@ use AIArmada\Customers\Features\Identity\Concerns\ResolvesCustomerIdentity;
 use AIArmada\Customers\Features\Identity\Concerns\SynchronizesCustomerAddresses;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class CustomerResolver
@@ -87,7 +87,7 @@ final class CustomerResolver
         return $this->runWithinOwnerContext($owner, function () use ($billingData, $sessionCustomer, $shippingData, $user): ?Customer {
             $sessionCustomer = $this->scopedSessionCustomer($sessionCustomer);
 
-            return DB::transaction(function () use ($billingData, $sessionCustomer, $shippingData, $user): ?Customer {
+            return (new Customer)->getConnection()->transaction(function () use ($billingData, $sessionCustomer, $shippingData, $user): ?Customer {
                 $email = $this->resolveEmail($billingData, $shippingData, $user, $sessionCustomer);
 
                 if ($user !== null) {
@@ -107,10 +107,7 @@ final class CustomerResolver
                     }
 
                     if ($sessionCustomer !== null && $sessionCustomer->is_guest) {
-                        $sessionCustomer->forceFill([
-                            'user_id' => $user->getKey(),
-                            'is_guest' => false,
-                        ])->save();
+                        $sessionCustomer = app(LinkCustomerToUser::class)->execute($sessionCustomer, $user);
 
                         $this->updateCustomerProfile->execute($sessionCustomer, $billingData, $shippingData, $user);
                         $this->syncAddressesFromPayload($sessionCustomer, $billingData, $shippingData);
@@ -138,14 +135,7 @@ final class CustomerResolver
                             $this->mergeCustomers($sessionCustomer, $emailCustomer);
                         }
 
-                        $emailCustomer->forceFill([
-                            'user_id' => $user->getKey(),
-                            'is_guest' => false,
-                        ]);
-
-                        if ($emailCustomer->isDirty()) {
-                            $emailCustomer->save();
-                        }
+                        $emailCustomer = app(LinkCustomerToUser::class)->execute($emailCustomer, $user);
 
                         $this->updateCustomerProfile->execute($emailCustomer, $billingData, $shippingData, $user);
                         $this->syncAddressesFromPayload($emailCustomer, $billingData, $shippingData);

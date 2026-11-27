@@ -102,15 +102,7 @@ trait ResolvesCustomerIdentity
             ->forOwner(includeGlobal: (bool) config('customers.features.owner.include_global', false))
             ->whereHas('contactMethods', function (Builder $contactMethods) use ($normalizedEmail): void {
                 $contactMethods->where('type', 'email')
-                    ->where(function (Builder $query) use ($normalizedEmail): void {
-                        $query->where('normalized_value', $normalizedEmail)
-                            ->orWhere(function (Builder $query) use ($normalizedEmail): void {
-                                $query->where(function (Builder $query): void {
-                                    $query->whereNull('normalized_value')
-                                        ->orWhere('normalized_value', '');
-                                })->whereRaw('LOWER(TRIM(COALESCE(value, \'\'))) = ?', [$normalizedEmail]);
-                            });
-                    });
+                    ->where('normalized_value', $normalizedEmail);
             })
             ->first();
     }
@@ -146,7 +138,7 @@ trait ResolvesCustomerIdentity
             ->orderBy('sort_order')
             ->first();
 
-        $email = $this->cleanString($emailContactMethod?->normalized_value ?? $emailContactMethod?->value);
+        $email = $this->cleanString($emailContactMethod?->normalized_value);
 
         return Customer::normalizeEmail($email);
     }

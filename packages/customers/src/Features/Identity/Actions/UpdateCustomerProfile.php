@@ -9,7 +9,6 @@ use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 final class UpdateCustomerProfile
 {
@@ -30,7 +29,9 @@ final class UpdateCustomerProfile
 
         $normalizer = app(CustomerProfileNormalizer::class);
 
-        DB::transaction(function () use ($billingData, $customer, $normalizer, $personId, $shippingData, $user): void {
+        $customer->getConnection()->transaction(function () use ($billingData, $customer, $normalizer, $personId, $shippingData, $user): void {
+            $locked = $customer->newQuery()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
+            $customer->setRawAttributes($locked->getAttributes(), true);
             $updates = [];
 
             $nameParts = $normalizer->resolveNameParts($billingData, $shippingData, $user);
