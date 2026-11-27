@@ -57,6 +57,7 @@ final readonly class ManageBookmarksAction
                     $existing->update([
                         'status' => 'active',
                         'removed_at' => null,
+                        'archived_at' => null,
                         'bookmarked_at' => CarbonImmutable::now(),
                     ]);
                     event(new BookmarkCreated(

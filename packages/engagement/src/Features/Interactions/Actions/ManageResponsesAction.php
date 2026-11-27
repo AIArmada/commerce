@@ -29,7 +29,7 @@ final readonly class ManageResponsesAction
 
         $responseType = EngagementModelGuard::requiredString($responseType, 'response_type');
         $visibility = EngagementModelGuard::boundedString(
-            $options['visibility'] ?? config('engagement.defaults.response_visibility', 'public'),
+            $options['visibility'] ?? null,
             'visibility',
         );
         $source = EngagementModelGuard::boundedString($options['source'] ?? null, 'source');
@@ -58,6 +58,7 @@ final readonly class ManageResponsesAction
                         'response_type' => $responseType,
                         'status' => ResponseStatus::Active,
                         'responded_at' => CarbonImmutable::now(),
+                        'visibility' => $visibility ?? $existing->visibility,
                         'changed_at' => null,
                         'cancelled_at' => null,
                     ]);
@@ -77,6 +78,13 @@ final readonly class ManageResponsesAction
 
                 if ($existing instanceof Response) {
                     if ($existing->response_type === $responseType) {
+                        if ($visibility !== null && $existing->visibility !== $visibility) {
+                            $existing->update([
+                                'visibility' => $visibility,
+                                'changed_at' => CarbonImmutable::now(),
+                            ]);
+                        }
+
                         return $existing;
                     }
 
@@ -84,6 +92,7 @@ final readonly class ManageResponsesAction
                     $existing->update([
                         'response_type' => $responseType,
                         'status' => ResponseStatus::Active,
+                        'visibility' => $visibility ?? $existing->visibility,
                         'changed_at' => CarbonImmutable::now(),
                         'cancelled_at' => null,
                         'metadata' => array_merge(
@@ -113,7 +122,7 @@ final readonly class ManageResponsesAction
                     'respondable_id' => $subjectIdentity['id'],
                     'response_type' => $responseType,
                     'status' => 'active',
-                    'visibility' => $visibility,
+                    'visibility' => $visibility ?? config('engagement.defaults.response_visibility', 'public'),
                     'responded_at' => CarbonImmutable::now(),
                     'source' => $source,
                     'metadata' => $metadata,
@@ -144,7 +153,7 @@ final readonly class ManageResponsesAction
                 ->where('respondable_id', $subjectIdentity['id'])
                 ->first();
 
-            if ($existing instanceof Response && $existing->status === ResponseStatus::Active && $existing->response_type === $responseType) {
+            if ($existing instanceof Response && $existing->status === ResponseStatus::Active && $existing->response_type === $responseType && ($visibility === null || $existing->visibility === $visibility)) {
                 return $existing;
             }
 

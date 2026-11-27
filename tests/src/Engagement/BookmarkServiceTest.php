@@ -26,3 +26,16 @@ it('removes bookmark via status', function (): void {
 
     expect(Bookmark::query()->where('status', 'removed')->count())->toBe(1);
 });
+
+it('clears archive timestamps when restoring a bookmark', function (): void {
+    $bookmark = $this->manager->bookmark($this->actor, $this->subject);
+    $this->manager->archiveBookmark($this->actor, $this->subject);
+
+    expect($bookmark->fresh()->archived_at)->not->toBeNull();
+
+    $restored = $this->manager->bookmark($this->actor, $this->subject);
+
+    expect($restored->is($bookmark))->toBeTrue()
+        ->and($restored->status)->toBe(BookmarkStatus::Active)
+        ->and($restored->archived_at)->toBeNull();
+});
