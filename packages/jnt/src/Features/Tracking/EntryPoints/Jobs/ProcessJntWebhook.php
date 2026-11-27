@@ -68,7 +68,7 @@ class ProcessJntWebhook extends CommerceWebhookProcessor
         $bizContent = $payload['bizContent'] ?? null;
 
         if (is_string($bizContent) && $bizContent !== '') {
-            $sanitized['bizContent_length'] = mb_strlen($bizContent);
+            $sanitized['bizContent_length'] = mb_strlen($bizContent, '8bit');
             $sanitized['bizContent_sha256'] = hash('sha256', $bizContent);
         }
 
@@ -89,7 +89,7 @@ class ProcessJntWebhook extends CommerceWebhookProcessor
 
         $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
 
-        if (mb_strlen($bizContent) > $maxBytes) {
+        if (mb_strlen($bizContent, '8bit') > $maxBytes) {
             return null;
         }
 

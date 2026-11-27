@@ -17,6 +17,12 @@ final class JntSpatieSignatureValidator extends CommerceSignatureValidator
 
     protected function validateSignature(Request $request, string $signature, string $secret): bool
     {
+        $bizContent = $this->getPayloadForSigning($request);
+
+        if (mb_strlen($bizContent, '8bit') > max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576))) {
+            return false;
+        }
+
         if (! config('jnt.webhooks.verify_signature', true)) {
             if (app()->environment('production')) {
                 Log::channel(config('jnt.logging.channel', 'stack'))
@@ -37,8 +43,6 @@ final class JntSpatieSignatureValidator extends CommerceSignatureValidator
         if ($secret === '') {
             return false;
         }
-
-        $bizContent = $this->getPayloadForSigning($request);
 
         if ($bizContent === '' || $bizContent === '0') {
             return false;

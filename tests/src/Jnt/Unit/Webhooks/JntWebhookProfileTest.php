@@ -60,7 +60,7 @@ describe('JntWebhookProfile', function (): void {
 
     it('enforces byte limits for multibyte payloads', function (): void {
         $content = json_encode(['billCode' => 'JNT123', 'details' => [], 'pad' => '收件'], JSON_UNESCAPED_UNICODE);
-        config()->set('jnt.webhooks.max_biz_content_bytes', mb_strlen($content));
+        config()->set('jnt.webhooks.max_biz_content_bytes', mb_strlen($content, 'UTF-8'));
         $request = Request::create('/webhook', 'POST', ['bizContent' => $content]);
 
         expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);

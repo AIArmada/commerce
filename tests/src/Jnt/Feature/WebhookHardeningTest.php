@@ -47,6 +47,29 @@ describe('webhook payload hardening', function (): void {
         expect($method->invoke($processor, ['bizContent' => json_encode(['billCode' => 'JNTBIG', 'details' => [], 'pad' => str_repeat('x', 128)])]))->toBeNull();
     });
 
+    it('enforces the same byte limit at ingress, signature verification and queue processing', function (): void {
+        Queue::fake();
+        $content = json_encode(['billCode' => 'JNTBIG', 'details' => [], 'pad' => str_repeat('收', 32)], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $signature = base64_encode(md5($content . $this->privateKey, true));
+        config(['jnt.webhooks.max_biz_content_bytes' => mb_strlen($content, 'UTF-8')]);
+
+        $this->postJson('/webhooks/jnt/status', ['bizContent' => $content], ['digest' => $signature])
+            ->assertStatus(422)
+            ->assertJson(['code' => '0']);
+        Queue::assertNothingPushed();
+
+        $service = app(WebhookService::class);
+        expect($service->verifySignature($signature, $content))->toBeFalse();
+
+        $processor = new ProcessJntWebhook(Mockery::mock(WebhookCall::class)->makePartial());
+        $method = new ReflectionMethod($processor, 'decodeBizContent');
+        expect($method->invoke($processor, ['bizContent' => $content]))->toBeNull();
+
+        config(['jnt.webhooks.max_biz_content_bytes' => mb_strlen($content, '8bit')]);
+        expect($service->verifySignature($signature, $content))->toBeTrue()
+            ->and($method->invoke($processor, ['bizContent' => $content]))->toBe(json_decode($content, true));
+    });
+
     it('rejects excessive detail counts with 422', function (): void {
         Queue::fake();
         config(['jnt.webhooks.max_details' => 2]);

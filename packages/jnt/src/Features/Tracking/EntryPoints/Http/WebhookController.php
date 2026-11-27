@@ -49,8 +49,8 @@ class WebhookController
             $content = $request->input('bizContent');
             $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
 
-            if (is_string($content) && mb_strlen($content) > $maxBytes) {
-                throw JntValidationException::fieldTooLong('bizContent', $maxBytes, mb_strlen($content));
+            if (is_string($content) && mb_strlen($content, '8bit') > $maxBytes) {
+                throw JntValidationException::fieldTooLong('bizContent', $maxBytes, mb_strlen($content, '8bit'));
             }
 
             if ($config->signingSecret === '') {
