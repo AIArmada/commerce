@@ -10,28 +10,32 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Orders\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Models\Order;
 
-final class CreateOrderInvoiceDoc
+final readonly class CreateOrderInvoiceDoc
 {
     use BuildsOrderDocs;
 
     public function __construct(
-        public DocServiceInterface $docService
+        private DocServiceInterface $docService
     ) {}
 
     public function execute(Order $order, string $transactionId, string $gateway): ?Doc
     {
         return $this->runWithinOrderOwnerScope($order, function () use ($order, $transactionId, $gateway): ?Doc {
-            if ($this->findExistingDoc($order, DocType::Invoice) !== null) {
-                return null;
-            }
+            return $order->getConnection()->transaction(function () use ($order, $transactionId, $gateway): ?Doc {
+                $order = $order->newQuery()->lockForUpdate()->findOrFail($order->getKey());
 
-            return $this->docService->create($this->buildDocData(
-                order: $order,
-                docType: DocType::Invoice,
-                transactionId: $transactionId,
-                gateway: $gateway,
-                generatePdf: (bool) config('orders.integrations.docs.generate_pdf', false),
-            ));
+                if ($this->findExistingDoc($order, DocType::Invoice) !== null) {
+                    return null;
+                }
+
+                return $this->docService->create($this->buildDocData(
+                    order: $order,
+                    docType: DocType::Invoice,
+                    transactionId: $transactionId,
+                    gateway: $gateway,
+                    generatePdf: (bool) config('orders.integrations.docs.generate_pdf', false),
+                ));
+            });
         });
     }
 }

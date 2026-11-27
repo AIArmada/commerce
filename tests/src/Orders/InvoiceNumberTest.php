@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Actions\AssignOrderInvoiceNumber;
 use AIArmada\Orders\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
@@ -57,4 +58,23 @@ it('gives every order its own invoice number', function (): void {
     app(GenerateInvoice::class)->download($second);
 
     expect($first->refresh()->invoice_number)->not->toBe($second->refresh()->invoice_number);
+});
+
+it('reuses the persisted invoice number when the caller holds a stale order', function (): void {
+    $order = Order::create([
+        'order_number' => 'ORD-INV-STALE-' . uniqid(),
+        'status' => Completed::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+
+    $stale = Order::query()->findOrFail($order->getKey());
+    $action = app(AssignOrderInvoiceNumber::class);
+
+    $first = $action->execute($order);
+
+    expect($stale->invoice_number)->toBeNull()
+        ->and($action->execute($stale))->toBe($first)
+        ->and($order->refresh()->invoice_number)->toBe($first);
 });

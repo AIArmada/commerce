@@ -7,8 +7,6 @@ namespace AIArmada\Orders\Actions;
 use AIArmada\Orders\Actions\Concerns\BuildsOrderDocs;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Str;
 use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -60,55 +58,13 @@ final class GenerateInvoice
     }
 
     /**
-     * Generate invoice number.
-     */
-    protected function generateInvoiceNumber(Order $order): string
-    {
-        $prefix = config('orders.invoice.prefix', 'INV');
-        $separator = config('orders.invoice.separator', '-');
-        $dateFormat = config('orders.invoice.date_format', 'Ymd');
-        $randomLength = (int) config('orders.invoice.random_length', 6);
-
-        return $prefix . $separator . CarbonImmutable::now()->format($dateFormat) . $separator . mb_strtoupper(Str::random($randomLength));
-    }
-
-    /**
-     * Resolve the persisted invoice number, minting and storing one on first
-     * use so repeated downloads reuse the same number.
-     */
-    private function resolveInvoiceNumber(Order $order): string
-    {
-        if (is_string($order->invoice_number) && mb_trim($order->invoice_number) !== '') {
-            return $order->invoice_number;
-        }
-
-        for ($attempt = 1; $attempt <= 3; $attempt++) {
-            $order->invoice_number = $this->generateInvoiceNumber($order);
-
-            try {
-                $order->save();
-
-                return $order->invoice_number;
-            } catch (QueryException $e) {
-                $sqlState = (string) $e->getPrevious()?->getCode();
-
-                if ($attempt === 3 || ($sqlState !== '23000' && $sqlState !== '23505')) {
-                    throw $e;
-                }
-            }
-        }
-
-        return $order->refresh()->invoice_number;
-    }
-
-    /**
      * @return array<string, mixed>
      */
     private function documentData(Order $order): array
     {
         return $this->runWithinOrderOwnerScope($order, function () use ($order): array {
             return [
-                'invoiceNumber' => $this->resolveInvoiceNumber($order),
+                'invoiceNumber' => app(AssignOrderInvoiceNumber::class)->execute($order),
                 'invoiceDate' => CarbonImmutable::now(),
                 'documentTitle' => 'Invoice',
                 'documentNumberLabel' => 'Invoice No:',

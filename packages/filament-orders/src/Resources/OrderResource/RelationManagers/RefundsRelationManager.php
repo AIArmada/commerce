@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Enums\RefundStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -50,7 +50,7 @@ final class RefundsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (PaymentStatus $state) => $state->color()),
+                    ->color(fn (RefundStatus $state) => $state->color()),
 
                 Tables\Columns\TextColumn::make('reason')
                     ->label('Reason')

@@ -119,7 +119,7 @@ trait BuildsOrderDocs
     protected function findExistingDoc(Order $order, DocType $docType): ?Doc
     {
         return Doc::query()
-            ->withoutOwnerScope()
+            ->forOwner(OwnerContext::resolve(), false)
             ->where('docable_type', $order->getMorphClass())
             ->where('docable_id', $order->getKey())
             ->where('doc_type', $docType->value)

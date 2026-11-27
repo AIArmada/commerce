@@ -116,9 +116,7 @@ final class DocService implements DocServiceInterface
                 $metadata['pdf'] = array_merge($metadata['pdf'] ?? [], $data->pdfOptions);
             }
 
-            $status = DocStatus::resolveStateClassFor($data->status ?? Draft::class);
-
-            $statusClass = DocStatus::resolveStateClassFor($status);
+            $statusClass = DocStatus::resolveStateClassFor($data->status ?? Draft::class);
 
             // Only set due_date for payable statuses (not for PAID, CANCELLED, REFUNDED)
             $dueDate = $data->dueDate;
