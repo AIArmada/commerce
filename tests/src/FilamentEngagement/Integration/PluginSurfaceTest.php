@@ -15,12 +15,16 @@ use AIArmada\FilamentEngagement\Features\Overview\EntryPoints\Filament\Widgets\E
 use AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Resources\ReminderResource;
 use AIArmada\FilamentEngagement\Features\Subscriptions\EntryPoints\Filament\Resources\SubscriptionResource;
 use AIArmada\FilamentEngagement\FilamentEngagementPlugin;
+use Filament\Panel;
 
 it('exposes the plugin resources and widget', function (): void {
     $plugin = FilamentEngagementPlugin::make();
 
-    $resources = (new ReflectionMethod($plugin, 'getResources'))->invoke($plugin);
-    $widgets = (new ReflectionMethod($plugin, 'getWidgets'))->invoke($plugin);
+    $panel = Panel::make()->id('engagement-test');
+    $plugin->register($panel);
+
+    $resources = $panel->getResources();
+    $widgets = $panel->getWidgets();
 
     expect($plugin->getId())->toBe('filament-engagement')
         ->and($resources)->toContain(
