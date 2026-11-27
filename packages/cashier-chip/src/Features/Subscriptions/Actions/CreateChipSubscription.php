@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
 use Akaunting\Money\Money;
@@ -126,7 +127,7 @@ final class CreateChipSubscription
                 $this->recordCouponUsage($couponId, $couponDiscount, $owner);
             }
 
-            SubscriptionCreated::dispatch($subscription);
+            SubscriptionCreated::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()));
 
             return $subscription;
         });

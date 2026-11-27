@@ -34,7 +34,7 @@ deliveries are deduplicated by `purchase_id`, and webhooks never resurrect cance
 subscriptions. Renewals charge `renewalAmount()` (items minus any in-window coupon discount);
 fully-discounted ($0) renewals auto-complete locally — no charge is attempted, no payment
 method is required, the billing date advances, and `SubscriptionRenewed` is dispatched
-with a `null` payment.
+with a `null` purchase ID.
 
 Renewal claims that expire without an outcome fail closed instead of wedging the
 subscription: the attempt is marked failed with `last_error_code = CLAIM_EXPIRED`, the
@@ -75,7 +75,7 @@ from the subscription's current renewal amount. A price change after a claim the
 does not change the amount that claim authorizes.
 
 Hosts should listen for `AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict`,
-which carries the subscription, the `purchaseId` requiring reconciliation, and the
+which carries the subscription `RecordReference`, the `purchaseId` requiring reconciliation, and the
 `periodKey`. For amount or currency mismatches it additionally carries
 `expectedAmountMinor`, `actualAmountMinor`, `expectedCurrency`, and `actualCurrency`
 (`null` for distinct-purchase collisions). A warning is also logged with the same

@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Events;
 
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-class SubscriptionRenewalFailed
+final class SubscriptionRenewalFailed
 {
     use Dispatchable;
-    use SerializesModels;
 
     /**
      * The subscription instance.
      */
-    public Subscription $subscription;
+    public readonly RecordReference $subscription;
 
     /**
      * The failure reason.
@@ -26,7 +24,7 @@ class SubscriptionRenewalFailed
     /**
      * Create a new event instance.
      */
-    public function __construct(Subscription $subscription, string $reason = '')
+    public function __construct(RecordReference $subscription, string $reason = '')
     {
         $this->subscription = $subscription;
         $this->reason = $reason;

@@ -157,7 +157,7 @@ describe('RenewSubscriptionsCommand', function (): void {
 
         Event::assertDispatched(
             SubscriptionRenewed::class,
-            fn (SubscriptionRenewed $event): bool => $event->payment === null
+            fn (SubscriptionRenewed $event): bool => $event->purchaseId === null
         );
         Event::assertNotDispatched(SubscriptionRenewalFailed::class);
 
@@ -199,7 +199,7 @@ describe('RenewSubscriptionsCommand', function (): void {
 
         Event::assertDispatched(
             SubscriptionRenewed::class,
-            fn (SubscriptionRenewed $event): bool => $event->payment !== null
+            fn (SubscriptionRenewed $event): bool => $event->purchaseId !== null
         );
         Event::assertNotDispatched(SubscriptionRenewalFailed::class);
     });

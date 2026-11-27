@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Payment\Payment;
@@ -352,7 +353,7 @@ final readonly class RenewSubscriptions
         }, attempts: 3);
 
         if ($changed) {
-            SubscriptionRenewed::dispatch($subscription->fresh(), $payment);
+            SubscriptionRenewed::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()), $payment?->id());
         }
     }
 
@@ -410,7 +411,7 @@ final readonly class RenewSubscriptions
         }, attempts: 3);
 
         if ($changed && $subscription instanceof Subscription) {
-            SubscriptionRenewalFailed::dispatch($subscription->fresh(), $code);
+            SubscriptionRenewalFailed::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()), $code);
         }
     }
 }

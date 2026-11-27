@@ -218,7 +218,7 @@ final class SyncChipPurchaseStatus
                     'period_key' => $settledPeriodKey,
                 ]);
 
-                SettledPeriodPurchaseConflict::dispatch($subscription, $purchaseId, $settledPeriodKey);
+                SettledPeriodPurchaseConflict::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()), $purchaseId, $settledPeriodKey);
             });
 
             return;
@@ -245,7 +245,7 @@ final class SyncChipPurchaseStatus
             ]);
 
             SettledPeriodPurchaseConflict::dispatch(
-                $subscription,
+                new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()),
                 $purchaseId,
                 $settledPeriodKey,
                 $outcome['expected_amount'],

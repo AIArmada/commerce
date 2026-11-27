@@ -227,7 +227,7 @@ class HandlePaymentSuccess
 `PaymentSucceeded`, `PaymentFailed`, and `PaymentRefunded` all carry `public Model $billable` and
 `public array $purchase`, plus a `metadata()` helper. Subscription events
 (`SubscriptionCreated`, `SubscriptionCanceled`, `SubscriptionUpdated`, `SubscriptionResumed`) carry a
-single `Subscription`. `SubscriptionRenewed` carries `($subscription, $payment = null)` and
+single immutable `RecordReference` identifying the subscription. `SubscriptionRenewed` carries `($subscription, $purchaseId = null)` and
 `SubscriptionRenewalFailed` carries `($subscription, $reason = '')`.
 
 ## Owner Scoping

@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Carbon\CarbonImmutable;
@@ -22,7 +23,7 @@ final class CancelChipSubscription
             'ends_at' => CarbonImmutable::now(),
         ])->save();
 
-        SubscriptionCanceled::dispatch($subscription);
+        SubscriptionCanceled::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()));
     }
 
     public function markPastDue(Subscription $subscription, string $reason = 'Subscription charge failed'): void
@@ -31,6 +32,6 @@ final class CancelChipSubscription
             'chip_status' => SubscriptionStatus::PastDue,
         ])->save();
 
-        SubscriptionRenewalFailed::dispatch($subscription, $reason);
+        SubscriptionRenewalFailed::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()), $reason);
     }
 }
