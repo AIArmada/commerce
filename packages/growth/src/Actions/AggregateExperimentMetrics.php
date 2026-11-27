@@ -121,7 +121,6 @@ final class AggregateExperimentMetrics
         $cap = $this->maxEventRows();
 
         $rows = $this->signalEventQuery->forExperiment($experiment)
-            ->where('tracked_property_id', $experiment->tracked_property_id)
             ->whereIn('event_name', [$checkoutStartedEventName, $purchaseEventName, $refundEventName])
             ->orderBy('occurred_at')
             ->orderBy('id')

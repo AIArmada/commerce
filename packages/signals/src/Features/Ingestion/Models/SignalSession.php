@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $duration_milliseconds
  * @property string|null $entry_path
  * @property string|null $exit_path
- * @property string|null $country
+ * @property string|null $country_code
  * @property string|null $country_source
  * @property float|null $latitude
  * @property float|null $longitude

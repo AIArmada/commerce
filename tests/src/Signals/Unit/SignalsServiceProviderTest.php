@@ -176,3 +176,18 @@ it('preserves all signal route names, HTTP methods and middleware', function ():
             ->and($route->middleware())->toBe($expectedMiddleware);
     }
 });
+
+it('binds the typed report read contracts for sibling packages', function (): void {
+    foreach ([
+        \AIArmada\Signals\Features\Ingestion\Api\GoalsReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\RetentionReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\ConversionFunnelReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\AcquisitionReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\JourneyReportRead::class,
+        \AIArmada\Signals\Features\Ingestion\Api\LiveActivityReportRead::class,
+    ] as $contract) {
+        expect(app($contract))->toBeInstanceOf($contract);
+    }
+});

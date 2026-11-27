@@ -7,7 +7,6 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -123,8 +122,7 @@ it('returns aggregated page views for the current owner only', function (): void
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $result = app(PageViewReportService::class)
-        ->getTableQuery()
+    $result = SignalEvent::pageViewRows()
         ->first();
 
     expect($result)->not()->toBeNull()
@@ -155,11 +153,36 @@ it('bounds the page view table to the requested day range', function (): void {
         ]);
     }
 
-    $row = app(PageViewReportService::class)
-        ->getTableQuery(from: CarbonImmutable::parse('2026-01-01'), until: CarbonImmutable::parse('2026-01-01'))
+    $row = SignalEvent::pageViewRows(from: CarbonImmutable::parse('2026-01-01'), until: CarbonImmutable::parse('2026-01-01'))
         ->first();
 
     expect($row)->not->toBeNull()
         ->and((int) $row?->views)->toBe(1)
         ->and($row?->last_seen_at)->toContain('2026-01-01');
+});
+
+it('groups missing paths and explicit root paths together and counts anonymous visitors', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Root Page Property',
+        'slug' => 'root-page-property',
+        'write_key' => 'root-page-key',
+    ]);
+
+    foreach ([null, '/'] as $path) {
+        SignalEvent::query()->create([
+            'tracked_property_id' => $property->id,
+            'occurred_at' => CarbonImmutable::now(),
+            'event_name' => 'page_view',
+            'event_category' => 'page_view',
+            'path' => $path,
+        ]);
+    }
+
+    $rows = SignalEvent::pageViewRows(trackedPropertyId: $property->id)->get();
+    $summary = app(\AIArmada\Signals\Features\Reporting\Api\DashboardRead::class)->report('page_view', trackedPropertyId: $property->id);
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows->first()->page_path)->toBe('/')
+        ->and((int) $rows->first()->views)->toBe(2)
+        ->and($summary['total_visitors'])->toBe(2);
 });

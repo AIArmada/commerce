@@ -58,7 +58,7 @@ final class PageViewReportService implements ReportInterface
             )
             ->with('trackedProperty')
             ->groupBy('tracked_property_id')
-            ->groupBy('path');
+            ->groupByRaw("COALESCE(path, '/')");
     }
 
     /**
@@ -70,7 +70,7 @@ final class PageViewReportService implements ReportInterface
 
         return [
             'total_page_views' => (int) (clone $query)->count(),
-            'total_visitors' => (int) (clone $query)->distinct()->count('signal_identity_id'),
+            'total_visitors' => (int) (clone $query)->distinct()->count(DB::raw('COALESCE(signal_identity_id, signal_session_id, id)')),
             'total_pages' => (int) (clone $query)->distinct()->count(DB::raw("COALESCE(path, '/')")),
         ];
     }
