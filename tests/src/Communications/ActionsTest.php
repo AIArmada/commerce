@@ -6,6 +6,7 @@ use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipient
 use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction;
 use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSendingAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
@@ -40,8 +41,7 @@ use Illuminate\Support\Facades\Event;
 test('CreateCommunicationAction creates communication and dispatches event', function (): void {
     Event::fake();
 
-    $recorder = app(CommunicationRecorder::class);
-    $action = new CreateCommunicationAction($recorder);
+    $action = app(CreateCommunicationAction::class);
 
     $context = CommunicationContextData::from([
         'direction' => CommunicationDirection::Outbound,
@@ -50,7 +50,7 @@ test('CreateCommunicationAction creates communication and dispatches event', fun
         'purpose' => 'test-action',
     ]);
 
-    $communication = $action->handle($context);
+    $communication = Communication::query()->findOrFail($action->handle($context));
 
     expect($communication)->toBeInstanceOf(Communication::class);
     expect($communication->purpose)->toBe('test-action');
@@ -370,8 +370,7 @@ test('provider events derive and validate their communication links', function (
         ->and($event->delivery_id)->toBe($delivery->id);
 });
 
-test('CommunicationRecorderService cancels communication', function (): void {
-    $recorder = app(CommunicationRecorder::class);
+test('CancelCommunicationAction cancels communication', function (): void {
     $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
         'category' => CommunicationCategory::Transactional,
@@ -381,7 +380,7 @@ test('CommunicationRecorderService cancels communication', function (): void {
     ]);
     $communication->save();
 
-    $recorder->cancelCommunication($communication->id);
+    app(CancelCommunicationAction::class)->handle($communication->id);
     $fresh = $communication->fresh();
 
     expect($fresh->status->value)->toBe('cancelled');

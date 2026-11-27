@@ -225,7 +225,7 @@ $rendered = app(RenderCommunicationContentAction::class)->handle(
 use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 
-$communication = app(CreateCommunicationAction::class)->handle(
+$communicationId = app(CreateCommunicationAction::class)->handle(
     CommunicationContextData::from([
         'purpose' => 'invoice-paid',
         'category' => 'transactional',

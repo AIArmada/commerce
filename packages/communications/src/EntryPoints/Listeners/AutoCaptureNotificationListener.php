@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\EntryPoints\Listeners;
 
+use AIArmada\Communications\Contracts\CommunicationCreator;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\DestinationResolver;
@@ -26,6 +27,7 @@ final class AutoCaptureNotificationListener
 {
     public function __construct(
         private readonly CommunicationRecorder $recorder,
+        private readonly CommunicationCreator $creator,
         private readonly DestinationResolver $destinationResolver,
         private readonly RecipientSnapshotResolver $recipientResolver,
         private readonly ContentRenderer $contentRenderer,
@@ -177,7 +179,7 @@ final class AutoCaptureNotificationListener
         object $notification,
         string $channel,
     ): void {
-        $communication = $this->recorder->createCommunication(
+        $communicationId = $this->creator->handle(
             CommunicationContextData::from([
                 'direction' => 'outbound',
                 'category' => 'transactional',
@@ -188,7 +190,7 @@ final class AutoCaptureNotificationListener
         $snapshot = $this->recipientResolver->resolve($notifiable);
 
         $recipient = new CommunicationRecipient;
-        $recipient->communication_id = $communication->id;
+        $recipient->communication_id = $communicationId;
         $recipient->recipient_type = is_object($notifiable) ? $notifiable::class : null;
         $recipient->recipient_id = is_object($notifiable) && method_exists($notifiable, 'getKey') ? $notifiable->getKey() : null;
         $recipient->role = RecipientRole::To;
@@ -198,11 +200,11 @@ final class AutoCaptureNotificationListener
         $recipient->snapshot = $this->redactor->redact($snapshot->extra);
         $recipient->save();
 
-        $content = $this->createContent($communication->id, $recipient->id, $notifiable, $notification, $channel);
+        $content = $this->createContent($communicationId, $recipient->id, $notifiable, $notification, $channel);
 
-        $delivery = $this->createDelivery($communication->id, $recipient->id, $content->id, $notifiable, $channel);
+        $delivery = $this->createDelivery($communicationId, $recipient->id, $content->id, $notifiable, $channel);
 
-        $this->state->register($notification, $communication->id, [$channel => $delivery->id]);
+        $this->state->register($notification, $communicationId, [$channel => $delivery->id]);
     }
 
     private function captureAdditionalChannel(

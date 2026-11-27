@@ -6,8 +6,6 @@ namespace AIArmada\Communications\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
-use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
@@ -16,36 +14,6 @@ use Carbon\CarbonImmutable;
 
 class CommunicationRecorderService implements CommunicationRecorder
 {
-    public function __construct(
-        private readonly PayloadRedactor $redactor,
-    ) {}
-
-    public function createCommunication(CommunicationContextData $context): Communication
-    {
-        $communication = new Communication;
-        $communication->direction = $context->direction;
-        $communication->category = $context->category;
-        $communication->priority = $context->priority;
-        $communication->purpose = $context->purpose;
-        $communication->status = CommunicationStatus::Draft;
-        $communication->idempotency_key = $context->idempotencyKey;
-        $communication->locale = $context->locale;
-        $communication->timezone = $context->timezone;
-        $communication->scheduled_at = $context->scheduledAt !== null ? CarbonImmutable::parse($context->scheduledAt) : null;
-        $communication->expires_at = $context->expiresAt !== null ? CarbonImmutable::parse($context->expiresAt) : null;
-        $communication->metadata = $this->redactor->redact($context->metadata);
-        $communication->subject_type = $context->subjectType;
-        $communication->subject_id = $context->subjectId;
-        $communication->sender_type = $context->senderType;
-        $communication->sender_id = $context->senderId;
-        $communication->batch_id = $context->batchId;
-        $communication->thread_id = $context->threadId;
-        $communication->parent_id = $context->parentId;
-        $communication->save();
-
-        return $communication;
-    }
-
     public function markSending(string $communicationId, string $deliveryId): void
     {
         $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
@@ -101,23 +69,6 @@ class CommunicationRecorderService implements CommunicationRecorder
         $delivery->save();
 
         $this->recalculateCommunicationStatus($communicationId);
-    }
-
-    public function cancelCommunication(string $communicationId): void
-    {
-        $communication = Communication::query()->find($communicationId);
-
-        if ($communication === null) {
-            return;
-        }
-
-        if (Communication::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
-        }
-
-        $communication->status = CommunicationStatus::Cancelled;
-        $communication->cancelled_at = CarbonImmutable::now();
-        $communication->save();
     }
 
     private function deliveryForCommunication(string $communicationId, string $deliveryId): ?CommunicationDelivery

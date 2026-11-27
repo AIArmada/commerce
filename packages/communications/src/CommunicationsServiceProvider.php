@@ -6,7 +6,9 @@ namespace AIArmada\Communications;
 
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Contracts\CommunicationCreator;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
+use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Contracts\ConsentResolver;
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Contracts\DeliveryFencing;
@@ -109,6 +111,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(CommunicationManager::class, CommunicationManagerService::class);
         $this->app->singleton(CommunicationRecorder::class, CommunicationRecorderService::class);
+        $this->app->bind(CommunicationCreator::class, CreateCommunicationAction::class);
         $this->app->singleton(DeliveryFencing::class, DeliveryFencingService::class);
         $this->app->singleton(DestinationProtector::class, DestinationProtectorService::class);
         $this->app->singleton(PayloadRedactor::class, PayloadRedactorService::class);

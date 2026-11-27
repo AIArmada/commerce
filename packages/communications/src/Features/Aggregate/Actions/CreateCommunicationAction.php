@@ -4,22 +4,45 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
-use AIArmada\Communications\Contracts\CommunicationRecorder;
+use AIArmada\Communications\Contracts\CommunicationCreator;
+use AIArmada\Communications\Contracts\PayloadRedactor;
+use AIArmada\Communications\Enums\CommunicationStatus;
+use Carbon\CarbonImmutable;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Events\CommunicationCreated;
 use AIArmada\Communications\Events\CommunicationScheduled;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Event;
 
-final class CreateCommunicationAction
+final readonly class CreateCommunicationAction implements CommunicationCreator
 {
     public function __construct(
-        private readonly CommunicationRecorder $recorder,
+        private PayloadRedactor $redactor,
     ) {}
 
-    public function handle(CommunicationContextData $context): Communication
+    public function handle(CommunicationContextData $context): string
     {
-        $communication = $this->recorder->createCommunication($context);
+        $communication = new Communication;
+        $communication->direction = $context->direction;
+        $communication->category = $context->category;
+        $communication->priority = $context->priority;
+        $communication->purpose = $context->purpose;
+        $communication->status = CommunicationStatus::Draft;
+        $communication->idempotency_key = $context->idempotencyKey;
+        $communication->locale = $context->locale;
+        $communication->timezone = $context->timezone;
+        $communication->scheduled_at = $context->scheduledAt !== null ? CarbonImmutable::parse($context->scheduledAt) : null;
+        $communication->expires_at = $context->expiresAt !== null ? CarbonImmutable::parse($context->expiresAt) : null;
+        $communication->metadata = $this->redactor->redact($context->metadata);
+        $communication->subject_type = $context->subjectType;
+        $communication->subject_id = $context->subjectId;
+        $communication->sender_type = $context->senderType;
+        $communication->sender_id = $context->senderId;
+        $communication->batch_id = $context->batchId;
+        $communication->thread_id = $context->threadId;
+        $communication->parent_id = $context->parentId;
+        $communication->save();
+
 
         Event::dispatch(new CommunicationCreated(
             communicationId: $communication->id,
@@ -35,6 +58,6 @@ final class CreateCommunicationAction
             ));
         }
 
-        return $communication;
+        return $communication->id;
     }
 }
