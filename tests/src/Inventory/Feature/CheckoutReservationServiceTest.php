@@ -54,6 +54,16 @@ describe('CheckoutReservationService', function (): void {
             ->and($updated->quantity_reserved)->toBe(4);
     });
 
+    it('rejects invalid commit and extension inputs without changing the reservation', function (): void {
+        $this->reservationService->reserve('ref-invalid-transition', [
+            new ReservationLine(productId: (string) $this->item->getKey(), quantity: 2),
+        ], 900);
+
+        expect(fn () => $this->reservationService->commit('ref-invalid-transition', ''))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->reservationService->extend('ref-invalid-transition', 0))->toThrow(InvalidArgumentException::class)
+            ->and($this->reservationService->find('ref-invalid-transition')->state)->toBe('reserved');
+    });
+
     it('reserve creates group and allocations', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 3)];
         $outcome = $this->reservationService->reserve('ref-1', $lines, 900);

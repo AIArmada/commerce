@@ -101,8 +101,9 @@ final class ReleaseOrderInventory
                 return;
             }
 
-            $this->releaseAllocations($order);
-            $this->restoreShippedInventory($order);
+            $fresh = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $this->releaseAllocations($fresh);
+            $this->restoreShippedInventory($fresh);
 
             $operation->update([
                 'status' => InventoryOperation::STATUS_COMPLETED,
@@ -182,6 +183,7 @@ final class ReleaseOrderInventory
         $movements = InventoryOwnerScope::applyToMovementQuery(InventoryMovement::query())
             ->where('type', MovementType::Shipment->value)
             ->whereIn('reference', [$order->order_number, $order->getKey()])
+            ->with('inventoryable')
             ->get();
 
         if ($movements->isEmpty()) {
@@ -219,9 +221,6 @@ final class ReleaseOrderInventory
     {
         $metadata = $order->metadata ?? [];
 
-        return $metadata['cart_id']
-            ?? $metadata['cartId']
-            ?? $metadata['cart_identifier']
-            ?? null;
+        return $metadata['cart_id'] ?? null;
     }
 }

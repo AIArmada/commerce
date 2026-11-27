@@ -133,6 +133,7 @@ final class DeductOrderInventory
                 return;
             }
 
+            $order = $fresh;
             $reference = $order->metadata['inventory_reservation_reference'] ?? null;
             $cartId = $this->extractCartId($order);
 

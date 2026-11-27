@@ -155,6 +155,8 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
      */
     private function idempotentOutcome(string $reference, InventoryReservation $group, array $lineSnapshot): ReservationOutcome
     {
+        $this->expireIfNeeded($group);
+
         if ($group->status === InventoryReservation::STATE_RESERVED
             && $group->line_snapshot === $lineSnapshot) {
             return $this->outcome($group);
@@ -176,6 +178,7 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             ->where('reference', $reference)
             ->where('owner_type', $owner['type'])
             ->where('owner_id', $owner['id'])
+            ->lockForUpdate()
             ->first();
 
         return $group;
@@ -235,6 +238,10 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
     public function commit(string $reference, string $orderId): ReservationOutcome
     {
+        if (mb_trim($orderId) === '') {
+            throw new InvalidArgumentException('Order ID is required to commit a reservation.');
+        }
+
         return DB::transaction(function () use ($reference, $orderId): ReservationOutcome {
             $group = $this->lockGroup($reference);
 
@@ -265,6 +272,10 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
     public function extend(string $reference, int $ttlSeconds): ReservationOutcome
     {
+        if ($ttlSeconds <= 0) {
+            throw new InvalidArgumentException('Reservation TTL must be positive.');
+        }
+
         return DB::transaction(function () use ($reference, $ttlSeconds): ReservationOutcome {
             $group = $this->lockGroup($reference);
 
@@ -389,19 +400,21 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
     private function lockGroup(string $reference): ?InventoryReservation
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryReservation::query()
-                ->where('reference', $reference)
-                ->lockForUpdate()
-        );
+        if (mb_trim($reference) === '') {
+            throw new InvalidArgumentException('Reservation reference is required.');
+        }
 
-        return $query->first();
+        return $this->findGroupForOwner($reference, $this->resolveOwner());
     }
 
     /** @return array{type: string|null, id: string|int|null} */
     private function resolveOwner(): array
     {
-        $owner = OwnerContext::resolve();
+        $owner = InventoryOwnerScope::resolveOwner();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+        }
 
         if ($owner === null) {
             return ['type' => null, 'id' => null];
