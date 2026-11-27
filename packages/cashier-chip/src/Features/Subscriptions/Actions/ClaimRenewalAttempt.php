@@ -10,7 +10,7 @@ use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -40,11 +40,7 @@ final class ClaimRenewalAttempt
                     return null;
                 }
 
-                if (in_array($subscription->chip_status, [SubscriptionStatus::PastDue, SubscriptionStatus::Canceled, SubscriptionStatus::Incomplete], true)) {
-                    return null;
-                }
-
-                if (! $subscription->next_billing_at || $subscription->next_billing_at->isFuture()) {
+                if (! self::canRenew($subscription)) {
                     return null;
                 }
 
@@ -77,11 +73,7 @@ final class ClaimRenewalAttempt
                     'lease_expires_at' => CarbonImmutable::now()->addMinutes($leaseMinutes),
                 ]);
             }, 3);
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueConstraintViolation($exception)) {
-                throw $exception;
-            }
-
+        } catch (UniqueConstraintViolationException) {
             return null;
         }
     }
@@ -93,8 +85,11 @@ final class ClaimRenewalAttempt
             : $subscription->next_billing_at->toIso8601String();
     }
 
-    private function isUniqueConstraintViolation(QueryException $exception): bool
+    public static function canRenew(Subscription $subscription): bool
     {
-        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
+        return in_array($subscription->chip_status, [SubscriptionStatus::Active, SubscriptionStatus::Trialing], true)
+            && $subscription->next_billing_at !== null
+            && ! $subscription->next_billing_at->isFuture()
+            && ($subscription->ends_at === null || ($subscription->ends_at->isFuture() && $subscription->next_billing_at->lt($subscription->ends_at)));
     }
 }

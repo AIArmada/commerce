@@ -412,3 +412,18 @@ describe('RenewSubscriptionsCommand', function (): void {
             ->and($this->fakeChip->getFakeClient()->getPurchases())->toBe([]);
     });
 });
+
+it('does not claim new renewals for paused, unpaid or canceled subscriptions', function (): void {
+    $user = $this->createUser(['chip_id' => 'cli_ineligible']);
+
+    foreach ([SubscriptionStatus::Paused, SubscriptionStatus::Unpaid, SubscriptionStatus::Canceled, SubscriptionStatus::IncompleteExpired] as $status) {
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
+            'chip_status' => $status,
+            'next_billing_at' => CarbonImmutable::now()->subDay(),
+        ]);
+
+        expect(app(ClaimRenewalAttempt::class)->handle((string) $subscription->id))->toBeNull();
+    }
+
+    expect(RenewalAttempt::query()->count())->toBe(0);
+});

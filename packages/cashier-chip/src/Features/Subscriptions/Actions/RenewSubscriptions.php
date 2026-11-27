@@ -113,6 +113,12 @@ final readonly class RenewSubscriptions
             return 'skipped';
         }
 
+        if ($attempt->purchase_id === null && ! ClaimRenewalAttempt::canRenew($subscription)) {
+            $this->recordUnknown($attempt, null, 'RENEWAL_NOT_ELIGIBLE');
+
+            return 'unknown';
+        }
+
         // Unknown item prices count as zero in renewalAmount(). A zero (or
         // reduced) frozen amount is only billable when every price is known;
         // otherwise the subscription cannot be priced and must go past due
@@ -327,7 +333,9 @@ final readonly class RenewSubscriptions
                 )
                 : null;
             $lockedSubscription->forceFill([
-                'chip_status' => SubscriptionStatus::Active,
+                'chip_status' => in_array($lockedSubscription->chip_status, [SubscriptionStatus::Paused, SubscriptionStatus::Canceled], true) || $lockedSubscription->ended()
+                    ? $lockedSubscription->chip_status
+                    : SubscriptionStatus::Active,
                 'next_billing_at' => $nextBillingAt,
                 'renewed_at' => CarbonImmutable::now(),
                 'past_due_at' => null,
@@ -387,7 +395,11 @@ final readonly class RenewSubscriptions
             ])->save();
 
             if ($subscription instanceof Subscription) {
-                Subscription::query()->whereKey($subscription->id)->update([
+                Subscription::query()->whereKey($subscription->id)
+                    ->whereIn('chip_status', [SubscriptionStatus::Active, SubscriptionStatus::Trialing, SubscriptionStatus::PastDue])
+                    ->where(function ($query): void {
+                        $query->whereNull('ends_at')->orWhere('ends_at', '>', CarbonImmutable::now());
+                    })->update([
                     'chip_status' => SubscriptionStatus::PastDue,
                     'past_due_at' => CarbonImmutable::now(),
                     'updated_at' => CarbonImmutable::now(),

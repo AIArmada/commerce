@@ -776,13 +776,13 @@ describe('directory lookup scopes the ambient owner', function (): void {
 
 it('enforces a unique durable purchase reservation even without a shared cache lock', function (): void {
     $ledger = app(PurchaseIdempotencyLedger::class);
-    $reservation = $ledger->reserve('brand-1', 'unique-reservation-regression', hash('sha256', 'payload'), []);
+    $reservation = $ledger->reserve((string) Str::uuid(), 'unique-reservation-regression', hash('sha256', 'payload'), []);
 
     expect($reservation->getAttribute('idempotency_scope_hash'))->toBeString();
 
     $duplicate = $reservation->replicate();
     $duplicate->setAttribute('id', (string) \Illuminate\Support\Str::uuid());
 
-    expect(fn () => Purchase::withoutEvents(fn () => $duplicate->save()))
+    expect(fn () => \Illuminate\Support\Facades\DB::transaction(fn () => Purchase::withoutEvents(fn () => $duplicate->save())))
         ->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
 });
