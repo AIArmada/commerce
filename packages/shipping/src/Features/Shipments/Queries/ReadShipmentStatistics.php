@@ -62,7 +62,7 @@ final readonly class ReadShipmentStatistics implements ShipmentStatistics
         ];
     }
 
-    /** @return array{pending: int, exceptions: int, pendingReturns: int} */
+    /** @return array{pending: int, exceptions: int} */
     public function pendingActions(): array
     {
         $pending = ShipmentStatus::normalize(Pending::class);

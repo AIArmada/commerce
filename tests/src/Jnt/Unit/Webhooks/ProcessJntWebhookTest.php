@@ -185,6 +185,38 @@ describe('ProcessJntWebhook', function (): void {
             ->and($events->pluck('owner_id')->unique()->all())->toBe([(string) $owner->getKey()]);
     });
 
+    it('rejects a mismatched order reference without updating the shipment', function (): void {
+        config(['jnt.owner.enabled' => false]);
+
+        $shipment = JntOrder::query()->create([
+            'order_id' => 'ORDER-REFERENCE-CHECK',
+            'tracking_number' => 'JNTREFCHECK001',
+            'customer_code' => 'CUST',
+            'status' => 'pending',
+        ]);
+
+        Event::fake([TrackingUpdatedEvent::class]);
+
+        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+        $processor = new ProcessJntWebhook($webhookCall);
+        $method = new ReflectionMethod($processor, 'processEvent');
+
+        $method->invoke($processor, 'POD', [
+            'bizContent' => json_encode([
+                'billCode' => 'JNTREFCHECK001',
+                'txlogisticId' => 'OTHER-ORDER',
+                'details' => [
+                    ['scanTime' => '2024-01-16 12:34:56', 'scanTypeCode' => '602', 'desc' => 'Delivered'],
+                ],
+            ]),
+        ]);
+
+        expect($shipment->refresh()->status)->toBe('pending')
+            ->and($shipment->trackingEvents()->count())->toBe(0);
+
+        Event::assertNotDispatched(TrackingUpdatedEvent::class);
+    });
+
     it('derives a deterministic event id from bizContent payloads', function (): void {
         $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
 

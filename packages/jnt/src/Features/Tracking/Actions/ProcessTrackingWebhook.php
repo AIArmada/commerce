@@ -83,6 +83,14 @@ final class ProcessTrackingWebhook
             return;
         }
 
+        $reference = $this->extractOrderReference($biz);
+
+        if ($reference !== null && $reference !== $shipment->order_id) {
+            $this->markWebhookLogAsFailed('Tracking number and order reference do not match.');
+
+            return;
+        }
+
         $owner = OwnerContext::fromTypeAndId(
             $shipment->owner_type,
             $shipment->owner_id,
