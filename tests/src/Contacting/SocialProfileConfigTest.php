@@ -146,7 +146,7 @@ test('normalize action builds URL when only handle is given', function (): void 
         new NormalizesUrl,
     );
 
-    $r = $action->execute('facebook', 'myPage', null);
+    $r = $action->normalize('facebook', 'myPage', null);
     expect($r['handle'])->toBe('myPage');
     expect($r['normalized_url'])->toBe('https://www.facebook.com/myPage');
 });
@@ -158,7 +158,7 @@ test('normalize action extracts handle when only URL is given', function (): voi
         new NormalizesUrl,
     );
 
-    $r = $action->execute('facebook', null, 'https://www.facebook.com/zuck');
+    $r = $action->normalize('facebook', null, 'https://www.facebook.com/zuck');
     expect($r['handle'])->toBe('zuck');
     expect($r['normalized_url'])->toBe('https://www.facebook.com/zuck');
 });
@@ -170,11 +170,11 @@ test('normalize action does not build URL for no-pattern platforms', function ()
         new NormalizesUrl,
     );
 
-    $r = $action->execute('website', null, 'https://example.com');
+    $r = $action->normalize('website', null, 'https://example.com');
     expect($r['handle'])->toBeNull();
     expect($r['normalized_url'])->toBe('https://example.com');
 
-    $r2 = $action->execute('signal', 'myhandle', null);
+    $r2 = $action->normalize('signal', 'myhandle', null);
     expect($r2['handle'])->toBe('myhandle');
     expect($r2['normalized_url'])->toBeNull();
 });
@@ -186,7 +186,7 @@ test('normalize action handles TikTok URL with @ in prefix', function (): void {
         new NormalizesUrl,
     );
 
-    $r = $action->execute('tiktok', null, 'https://www.tiktok.com/@therock');
+    $r = $action->normalize('tiktok', null, 'https://www.tiktok.com/@therock');
     expect($r['handle'])->toBe('therock');
     expect($r['normalized_url'])->toBe('https://www.tiktok.com/@therock');
 });
@@ -198,7 +198,7 @@ test('normalize action builds TikTok URL with clean handle', function (): void {
         new NormalizesUrl,
     );
 
-    $r = $action->execute('tiktok', '@therock', null);
+    $r = $action->normalize('tiktok', '@therock', null);
     expect($r['handle'])->toBe('therock');
     expect($r['normalized_url'])->toBe('https://www.tiktok.com/@therock');
 });
@@ -210,7 +210,7 @@ test('normalize action handles LinkedIn URL with /in/ path segment', function ()
         new NormalizesUrl,
     );
 
-    $r = $action->execute('linkedin', null, 'https://www.linkedin.com/in/janedoe');
+    $r = $action->normalize('linkedin', null, 'https://www.linkedin.com/in/janedoe');
     expect($r['handle'])->toBe('janedoe');
     expect($r['normalized_url'])->toBe('https://www.linkedin.com/in/janedoe');
 });
@@ -222,7 +222,7 @@ test('normalize action builds LinkedIn URL', function (): void {
         new NormalizesUrl,
     );
 
-    $r = $action->execute('linkedin', 'janedoe', null);
+    $r = $action->normalize('linkedin', 'janedoe', null);
     expect($r['handle'])->toBe('janedoe');
     expect($r['normalized_url'])->toBe('https://www.linkedin.com/in/janedoe');
 });
@@ -234,7 +234,7 @@ test('normalize action extracts handle from medium suffix URL', function (): voi
         new NormalizesUrl,
     );
 
-    $r = $action->execute('medium', null, 'https://username.medium.com');
+    $r = $action->normalize('medium', null, 'https://username.medium.com');
     expect($r['handle'])->toBe('username');
     expect($r['normalized_url'])->toBe('https://username.medium.com');
 });
@@ -246,7 +246,7 @@ test('normalize action builds medium suffix URL from handle', function (): void 
         new NormalizesUrl,
     );
 
-    $r = $action->execute('medium', 'myblog', null);
+    $r = $action->normalize('medium', 'myblog', null);
     expect($r['handle'])->toBe('myblog');
     expect($r['normalized_url'])->toBe('https://myblog.medium.com');
 });
@@ -258,7 +258,7 @@ test('normalize action with both handle and URL keeps both', function (): void {
         new NormalizesUrl,
     );
 
-    $r = $action->execute('facebook', 'myPage', 'https://www.facebook.com/myPage');
+    $r = $action->normalize('facebook', 'myPage', 'https://www.facebook.com/myPage');
     expect($r['handle'])->toBe('myPage');
     expect($r['normalized_url'])->toBe('https://www.facebook.com/myPage');
 });
@@ -270,7 +270,7 @@ test('normalize action handles @ prefix in extracted handle', function (): void 
         new NormalizesUrl,
     );
 
-    $r = $action->execute('pinkary', null, 'https://pinkary.com/@user');
+    $r = $action->normalize('pinkary', null, 'https://pinkary.com/@user');
     expect($r['handle'])->toBe('user');
 });
 

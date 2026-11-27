@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
 use AIArmada\Contacting\Enums\SocialPlatform;
-use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;
@@ -205,7 +205,7 @@ final class SocialProfile extends Model
         $handleWasExplicitlyChanged = $this->exists && $this->isDirty('handle');
         $urlWasExplicitlyChanged = $this->exists && $this->isDirty('url');
 
-        $normalized = app(NormalizeSocialProfileAction::class)->execute(
+        $normalized = app(SocialProfileNormalizer::class)->normalize(
             $this->platform,
             $this->handle,
             $this->url,

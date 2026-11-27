@@ -7,7 +7,7 @@ namespace AIArmada\Contacting\Features\ContactMethods\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
-use AIArmada\Contacting\Features\ContactMethods\Actions\NormalizeContactMethodAction;
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -202,7 +202,7 @@ final class ContactMethod extends Model
             $this->country_code = mb_strtoupper($this->country_code);
         }
 
-        $normalized = app(NormalizeContactMethodAction::class)->execute(
+        $normalized = app(ContactMethodNormalizer::class)->normalize(
             $this->type,
             $this->value,
             $this->country_code,

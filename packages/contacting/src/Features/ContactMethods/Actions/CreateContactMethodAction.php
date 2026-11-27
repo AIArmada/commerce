@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
@@ -16,7 +17,7 @@ use RuntimeException;
 final class CreateContactMethodAction
 {
     public function __construct(
-        private readonly NormalizeContactMethodAction $normalizer,
+        private readonly ContactMethodNormalizer $normalizer,
     ) {}
 
     private static function toImmutable(DateTimeInterface | string | null $value): ?CarbonImmutable
@@ -34,7 +35,7 @@ final class CreateContactMethodAction
 
         $countryCode = $data->countryCode instanceof MissingValue ? null : $data->countryCode;
 
-        $result = $this->normalizer->execute(
+        $result = $this->normalizer->normalize(
             $data->type,
             $data->value,
             $countryCode ?? config('contacting.defaults.country_code'),

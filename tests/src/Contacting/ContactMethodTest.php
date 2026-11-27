@@ -170,8 +170,8 @@ test('NormalizeContactMethodAction normalizes email', function (): void {
         new NormalizesUrl,
     );
 
-    expect($action->execute('email', '  User@Example.COM  ')['normalized_value'])->toBe('user@example.com');
-    expect($action->execute('email', 'valid@email.com')['normalized_value'])->toBe('valid@email.com');
+    expect($action->normalize('email', '  User@Example.COM  ')['normalized_value'])->toBe('user@example.com');
+    expect($action->normalize('email', 'valid@email.com')['normalized_value'])->toBe('valid@email.com');
 });
 
 test('NormalizeContactMethodAction normalizes MY phone', function (): void {
@@ -181,7 +181,7 @@ test('NormalizeContactMethodAction normalizes MY phone', function (): void {
         new NormalizesUrl,
     );
 
-    $result = $action->execute('phone', '+60123456789');
+    $result = $action->normalize('phone', '+60123456789');
     expect($result['normalized_value'])->toBe('+60123456789');
     expect($result['display_value'])->not->toBeNull();
 });
@@ -193,8 +193,8 @@ test('NormalizeContactMethodAction normalizes website', function (): void {
         new NormalizesUrl,
     );
 
-    expect($action->execute('website', 'example.com')['normalized_value'])->toBe('https://example.com');
-    expect($action->execute('website', 'https://example.com')['normalized_value'])->toBe('https://example.com');
+    expect($action->normalize('website', 'example.com')['normalized_value'])->toBe('https://example.com');
+    expect($action->normalize('website', 'https://example.com')['normalized_value'])->toBe('https://example.com');
 });
 
 test('NormalizeContactMethodAction passes through unknown types', function (): void {
@@ -204,6 +204,6 @@ test('NormalizeContactMethodAction passes through unknown types', function (): v
         new NormalizesUrl,
     );
 
-    $result = $action->execute('other', 'some-value');
+    $result = $action->normalize('other', 'some-value');
     expect($result['normalized_value'])->toBe('some-value');
 });

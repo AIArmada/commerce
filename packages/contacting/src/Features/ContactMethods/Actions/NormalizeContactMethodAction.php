@@ -9,23 +9,18 @@ use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
 
-final class NormalizeContactMethodAction implements ContactMethodNormalizer
+final readonly class NormalizeContactMethodAction implements ContactMethodNormalizer
 {
     public function __construct(
-        private readonly NormalizesEmailAddress $emailNormalizer,
-        private readonly NormalizesPhoneNumber $phoneNormalizer,
-        private readonly NormalizesUrl $urlNormalizer,
+        private NormalizesEmailAddress $emailNormalizer,
+        private NormalizesPhoneNumber $phoneNormalizer,
+        private NormalizesUrl $urlNormalizer,
     ) {}
-
-    public function normalize(string $type, string $value, ?string $countryCode = null): array
-    {
-        return $this->execute($type, $value, $countryCode);
-    }
 
     /**
      * @return array{normalized_value: string|null, display_value: string|null}
      */
-    public function execute(string $type, string $value, ?string $countryCode = null): array
+    public function normalize(string $type, string $value, ?string $countryCode = null): array
     {
         return match ($type) {
             'email' => $this->normalizeEmail($value),

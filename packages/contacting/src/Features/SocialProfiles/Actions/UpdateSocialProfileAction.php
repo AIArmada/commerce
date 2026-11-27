@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
+use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Data\SocialProfileData;
@@ -15,7 +16,7 @@ use RuntimeException;
 final class UpdateSocialProfileAction
 {
     public function __construct(
-        private readonly NormalizeSocialProfileAction $normalizer,
+        private readonly SocialProfileNormalizer $normalizer,
     ) {}
 
     private static function toImmutable(DateTimeInterface | string | null $value): ?CarbonImmutable
@@ -38,7 +39,7 @@ final class UpdateSocialProfileAction
 
             $profile = SocialProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
 
-            $result = $this->normalizer->execute(
+            $result = $this->normalizer->normalize(
                 $data->platform,
                 $data->handle instanceof MissingValue ? $profile->handle : $data->handle,
                 $data->url instanceof MissingValue ? $profile->url : $data->url,

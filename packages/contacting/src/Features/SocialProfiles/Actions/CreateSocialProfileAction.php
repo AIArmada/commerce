@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
+use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
@@ -15,7 +16,7 @@ use RuntimeException;
 final class CreateSocialProfileAction
 {
     public function __construct(
-        private readonly NormalizeSocialProfileAction $normalizer,
+        private readonly SocialProfileNormalizer $normalizer,
     ) {}
 
     private static function toImmutable(DateTimeInterface | string | null $value): ?CarbonImmutable
@@ -31,7 +32,7 @@ final class CreateSocialProfileAction
     {
         $data = app(ValidateSocialProfileData::class)->execute($data);
 
-        $result = $this->normalizer->execute(
+        $result = $this->normalizer->normalize(
             $data->platform,
             $data->handle instanceof MissingValue ? null : $data->handle,
             $data->url instanceof MissingValue ? null : $data->url,

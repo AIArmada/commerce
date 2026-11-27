@@ -14,7 +14,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
-use AIArmada\Contacting\Features\ContactMethods\Actions\NormalizeContactMethodAction;
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
@@ -216,7 +216,7 @@ class Customer extends Model implements Auditable, HasMedia
 
         $countryCode = $data->countryCode instanceof MissingValue ? null : $data->countryCode;
 
-        $normalized = app(NormalizeContactMethodAction::class)->execute(
+        $normalized = app(ContactMethodNormalizer::class)->normalize(
             $data->type,
             $data->value,
             $countryCode ?? config('contacting.defaults.country_code'),
