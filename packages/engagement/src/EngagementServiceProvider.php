@@ -23,6 +23,9 @@ use AIArmada\Engagement\Services\DefaultEngagementStateResolver;
 use AIArmada\Engagement\Services\DefaultReminderManager;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
 use AIArmada\Engagement\Services\DefaultSubscriptionManager;
+use AIArmada\Engagement\Platform\ExtensionRegistry;
+use AIArmada\Engagement\Platform\FeatureCatalog;
+use AIArmada\Engagement\Platform\FeatureModule;
 use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\EventsServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -31,6 +34,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class EngagementServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, FeatureModule> */
+    private array $featureModules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -58,6 +64,28 @@ final class EngagementServiceProvider extends PackageServiceProvider
 
         $this->registerEventsIntegration();
         $this->registerReminderDeliveryListener();
+
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+            $module = $this->app->make($class);
+
+            if (! $module instanceof FeatureModule) {
+                throw new \InvalidArgumentException("Invalid engagement feature module [{$class}].");
+            }
+
+            $this->featureModules[$feature] = $module;
+            $module->register($this->app);
+        }
+    }
+
+    public function bootingPackage(): void
+    {
+        foreach ($this->featureModules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     private function registerEventsIntegration(): void
