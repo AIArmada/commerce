@@ -294,7 +294,7 @@ $created = app(CreateTrackingTokenAction::class)->handle(
 // building the tracking URL; it cannot be recovered afterwards.
 $url = 'https://example.com/t/' . $created->plaintextToken;
 
-app(RecordTrackingInteractionAction::class)->handle(
+$eventId = app(RecordTrackingInteractionAction::class)->handle(
     tokenId: $created->trackingTokenId,
     interactionType: TrackingInteractionType::Click,
 );

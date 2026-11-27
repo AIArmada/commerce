@@ -249,10 +249,10 @@ class Person extends Model implements Sortable
     private function primaryNameValues(): array
     {
         if ($this->relationLoaded('names')) {
-            /** @var EloquentCollection<int, PersonName> $names */
+            /** @var EloquentCollection<int, \AIArmada\Persons\Features\Identity\Models\PersonName> $names */
             $names = $this->getRelation('names');
         } else {
-            /** @var EloquentCollection<int, PersonName> $names */
+            /** @var EloquentCollection<int, \AIArmada\Persons\Features\Identity\Models\PersonName> $names */
             $names = $this->names()->where('is_primary', true)->get();
         }
 

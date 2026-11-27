@@ -9,6 +9,7 @@ use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SavePersonName
 {
@@ -46,11 +47,13 @@ final readonly class SavePersonName
         return $person->getConnection()->transaction(function () use ($person, $name): bool {
             $locked = $this->lockPerson($person);
             $record = $this->lockName($locked, $name);
-            $deleted = (bool) $record->delete();
+            if (! $record->delete()) {
+                throw new RuntimeException('Person name deletion was cancelled.');
+            }
             $locked->unsetRelation('names');
             app(PersistPerson::class)->execute($locked);
 
-            return $deleted;
+            return true;
         });
     }
 
@@ -76,7 +79,9 @@ final readonly class SavePersonName
             $siblings->update(['is_primary' => false]);
         }
 
-        $name->save();
+        if (! $name->save()) {
+            throw new RuntimeException('Person name persistence was cancelled.');
+        }
     }
 
     private function lockPerson(Person $person): Person

@@ -12,6 +12,7 @@ use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use RuntimeException;
 use Throwable;
 
 final class CreateTrackingTokenAction
@@ -48,7 +49,9 @@ final class CreateTrackingTokenAction
 
         $trackingToken->expires_at = $expiresAt !== null ? $this->parseExpiresAt($expiresAt) : null;
         $trackingToken->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
-        $trackingToken->save();
+        if (! $trackingToken->save()) {
+            throw new RuntimeException('Tracking token creation was cancelled.');
+        }
 
         return new CreatedTrackingTokenData($trackingToken->id, $token);
     }
