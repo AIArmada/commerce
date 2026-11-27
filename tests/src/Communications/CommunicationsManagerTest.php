@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use Carbon\CarbonImmutable;
 
 final class CreateCommunicationBatchAction

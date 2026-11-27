@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Models;
 
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;

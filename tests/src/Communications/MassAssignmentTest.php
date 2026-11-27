@@ -10,17 +10,17 @@ use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppressio
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
-use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
 use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
-use AIArmada\Communications\Models\CommunicationThread;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 

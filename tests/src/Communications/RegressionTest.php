@@ -39,7 +39,7 @@ use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationThread;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use AIArmada\Communications\Policies\CommunicationPolicy;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;

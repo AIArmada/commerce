@@ -7,7 +7,7 @@ use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 
 beforeEach(function (): void {
     $this->batch = (new CommunicationBatch)->forceFill([

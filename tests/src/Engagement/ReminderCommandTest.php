@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;

@@ -6,7 +6,7 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\ThreadStatus;
-use AIArmada\Communications\Models\CommunicationThread;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 

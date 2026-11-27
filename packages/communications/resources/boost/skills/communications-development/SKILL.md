@@ -15,3 +15,5 @@ description: Develop and integrate Communications with Laravel Dune ownership, s
 - Webhook provider interfaces live in `Contracts/`; concrete provider registration, normalization and owner resolution adapters live in `Drivers/Webhooks/`.
 
 - Default notification, audit, eligibility, encryption and cache implementations are in `Drivers/Notifications/`, `Drivers/Audit/`, `Drivers/Eligibility/`, `Drivers/Security/` and `Drivers/Cache/`. Bind their package contracts rather than reaching into implementation classes.
+
+- `CommunicationBatch`, `CommunicationThread` and `CommunicationReference` live under `Features/Aggregate/Models/`; use the owning Aggregate actions for mutations.

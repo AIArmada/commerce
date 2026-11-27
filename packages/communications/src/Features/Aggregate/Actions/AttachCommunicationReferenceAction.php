@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Model;
 

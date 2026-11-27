@@ -9,7 +9,7 @@ use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

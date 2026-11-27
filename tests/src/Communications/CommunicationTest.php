@@ -10,13 +10,13 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
-use AIArmada\Communications\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Communications\Models\CommunicationThread;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
