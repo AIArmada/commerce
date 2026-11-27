@@ -71,7 +71,7 @@ describe('ProductCollection', function (): void {
     });
 });
 
-describe('DTOs with Spatie attributes', function (): void {
+describe('Explicit immutable DTOs', function (): void {
     it('ProductData can be created via from() with cents', function (): void {
         $product = ProductData::from([
             'name' => 'Test Product',
