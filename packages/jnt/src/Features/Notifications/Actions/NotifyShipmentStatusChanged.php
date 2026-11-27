@@ -7,7 +7,7 @@ namespace AIArmada\Jnt\Features\Notifications\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Contracts\TrackingReader;

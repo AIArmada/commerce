@@ -30,7 +30,7 @@ final class WriteReturnAuthorization implements ManageReturnAuthorization
             $record->forceFill(['owner_id' => $owner?->getKey(), 'owner_type' => $owner?->getMorphClass()]);
         }
 
-        $record->status = RmaPending::class;
+        $record->setAttribute('status', RmaPending::class);
         $record->save();
 
         return (string) $record->getKey();

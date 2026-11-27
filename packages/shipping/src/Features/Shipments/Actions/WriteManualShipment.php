@@ -23,7 +23,7 @@ final class WriteManualShipment implements ManageManualShipment
     {
         return DB::transaction(function () use ($data): string {
             $shipment = new Shipment($this->fields($data));
-            $shipment->status = Pending::class;
+            $shipment->setAttribute('status', Pending::class);
 
             if ((bool) config('shipping.features.owner.enabled', false)) {
                 $owner = OwnerContext::resolve();

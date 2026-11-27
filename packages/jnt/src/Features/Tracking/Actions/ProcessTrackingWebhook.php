@@ -7,7 +7,7 @@ namespace AIArmada\Jnt\Features\Tracking\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\ScanTypeCode;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;

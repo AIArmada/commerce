@@ -105,9 +105,15 @@ class ItemsRelationManager extends RelationManager
                 CreateAction::make()
                     ->authorize($canUpdateReturn)
                     ->using(function (array $data): ReturnAuthorizationItem {
-                        $id = app(ManageReturnAuthorization::class)->createItem((string) $this->getOwnerRecord()->getKey(), $data);
+                        $owner = $this->getOwnerRecord();
 
-                        return $this->getOwnerRecord()->items()->findOrFail($id);
+                        if (! $owner instanceof ReturnAuthorization) {
+                            throw new \LogicException('Return authorization is required.');
+                        }
+
+                        $id = app(ManageReturnAuthorization::class)->createItem((string) $owner->getKey(), $data);
+
+                        return $owner->items()->findOrFail($id);
                     }),
             ])
             ->actions([
