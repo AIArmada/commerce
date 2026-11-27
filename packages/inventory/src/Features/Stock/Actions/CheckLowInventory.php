@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;

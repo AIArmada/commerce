@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
-use AIArmada\Inventory\Actions\AdjustInventory;
-use AIArmada\Inventory\Actions\ReceiveInventory;
-use AIArmada\Inventory\Actions\ShipInventory;
-use AIArmada\Inventory\Actions\TransferInventory;
+use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
+use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Persistence\InventoryLevelStore;
+use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;

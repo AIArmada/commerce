@@ -200,7 +200,7 @@ Every Filament action delegates to an `AIArmada\Inventory\Actions\*` action that
 exposes `run()` through the `AsAction` trait:
 
 ```php
-use AIArmada\Inventory\Actions\ReceiveInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 
 ReceiveInventory::run(
     model: $product,            // the inventoryable record
@@ -234,7 +234,7 @@ returns a configured `Filament\Actions\Action`, so they cannot be extended. Comp
 your own action instead:
 
 ```php
-use AIArmada\Inventory\Actions\ReceiveInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;

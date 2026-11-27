@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services\Stock;
 
-use AIArmada\Inventory\Actions\CheckLowInventory;
+use AIArmada\Inventory\Features\Stock\Actions\CheckLowInventory;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAllocated;

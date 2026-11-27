@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Actions\AdjustInventory;
+use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAdjusted;
 use AIArmada\Inventory\Models\InventoryLevel;

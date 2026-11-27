@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Stock\Actions;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryReceived;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Persistence\InventoryLevelStore;
+use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;

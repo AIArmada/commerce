@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "name": "Stock",
+  "owns": {
+    "table:inventory_locations": [
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\SaveInventoryLocation"
+    ],
+    "table:inventory_levels": [
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\InventoryLevelStore",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\ReceiveInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\ShipInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\TransferInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\UpdateInventoryLevel",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\BootstrapInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\SetDefaultInventoryQuantity"
+    ],
+    "table:inventory_movements": [
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\ReceiveInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\ShipInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\TransferInventory",
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory"
+    ]
+  },
+  "extensions": {}
+}

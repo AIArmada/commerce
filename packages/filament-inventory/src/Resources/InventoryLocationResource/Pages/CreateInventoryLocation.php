@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages;
 
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
-use AIArmada\Inventory\Actions\SaveInventoryLocation;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Filament\Resources\Pages\CreateRecord;
 

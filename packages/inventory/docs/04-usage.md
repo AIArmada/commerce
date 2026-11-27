@@ -11,7 +11,7 @@ The primary API surface is the **Action** classes. Each Action is a self-contain
 ### Receiving Inventory
 
 ```php
-use AIArmada\Inventory\Actions\ReceiveInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 
 // Basic receive
 ReceiveInventory::run($product, $locationId, quantity: 100);
@@ -23,7 +23,7 @@ ReceiveInventory::run($product, $locationId, quantity: 100, reason: 'PO-2024-001
 ### Shipping Inventory
 
 ```php
-use AIArmada\Inventory\Actions\ShipInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 
 ShipInventory::run($product, $locationId, quantity: 10, reference: 'ORD-2024-001');
 ```
@@ -31,7 +31,7 @@ ShipInventory::run($product, $locationId, quantity: 10, reference: 'ORD-2024-001
 ### Transferring Between Locations
 
 ```php
-use AIArmada\Inventory\Actions\TransferInventory;
+use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 
 TransferInventory::run(
     $product,
@@ -45,7 +45,7 @@ TransferInventory::run(
 ### Adjusting Inventory to a Specific Quantity
 
 ```php
-use AIArmada\Inventory\Actions\AdjustInventory;
+use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 
 // Set stock to exact count
 AdjustInventory::run($product, $locationId, newQuantity: 50, reason: 'Stock count reconciliation');
@@ -191,7 +191,7 @@ RejectReorderSuggestion::run($suggestion, reason: 'Not enough budget');
 ### Check Low Inventory
 
 ```php
-use AIArmada\Inventory\Actions\CheckLowInventory;
+use AIArmada\Inventory\Features\Stock\Actions\CheckLowInventory;
 
 // Returns true if stock is below reorder point and dispatches LowInventoryDetected event
 CheckLowInventory::run($product, $level);

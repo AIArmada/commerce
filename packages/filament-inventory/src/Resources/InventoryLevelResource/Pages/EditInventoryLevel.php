@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages;
 
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
-use AIArmada\Inventory\Actions\UpdateInventoryLevel;
+use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Models\InventoryLevel;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;

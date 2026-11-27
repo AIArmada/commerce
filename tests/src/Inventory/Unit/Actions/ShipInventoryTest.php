@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Actions\ShipInventory;
+use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryShipped;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
