@@ -6,8 +6,8 @@ namespace AIArmada\Communications\Features\Aggregate\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Enums\ThreadStatus;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;

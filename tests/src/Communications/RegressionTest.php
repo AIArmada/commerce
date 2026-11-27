@@ -4,17 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipientAction;
-use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
-use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
-use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
-use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
-use AIArmada\Communications\Features\Aggregate\Actions\ReceiveInboundCommunicationAction;
-use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
-use AIArmada\Communications\Features\Aggregate\Actions\ResolveCommunicationThreadAction;
-use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
+use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
+use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
+use AIArmada\Communications\Contracts\DeliveryFencing;
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Data\CreatedTrackingTokenData;
@@ -33,15 +26,25 @@ use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Enums\TrackingInteractionType;
 use AIArmada\Communications\Events\CommunicationExpired;
 use AIArmada\Communications\Events\DeliveryDelivered;
-use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipientAction;
+use AIArmada\Communications\Features\Aggregate\Actions\ReceiveInboundCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\ResolveCommunicationThreadAction;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
-use AIArmada\Communications\Policies\CommunicationPolicy;
-use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
+use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend;
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
+use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
+use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Policies\CommunicationPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -53,6 +56,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
@@ -811,7 +815,7 @@ test('communication recorder cannot mutate a delivery belonging to another commu
 });
 
 test('aggregate reconciliation preserves cancellation and classifies all rejected deliveries as failure', function (): void {
-    $action = app(\AIArmada\Communications\Contracts\CommunicationStatusRecalculator::class);
+    $action = app(CommunicationStatusRecalculator::class);
     $communication = regressionCommunication();
     regressionDelivery($communication, ['status' => DeliveryStatus::Bounced]);
     regressionDelivery($communication, ['status' => DeliveryStatus::Suppressed]);
@@ -859,10 +863,10 @@ test('delivery fencing rejects mismatched aggregate before touching any delivery
     $second = regressionCommunication(['status' => CommunicationStatus::Processing]);
     $delivery = regressionDelivery($second, ['status' => DeliveryStatus::Sending]);
     $attempt = app(StartDeliveryAttemptAction::class)->handle($delivery->id);
-    $fencing = app(\AIArmada\Communications\Contracts\DeliveryFencing::class);
+    $fencing = app(DeliveryFencing::class);
 
-    \Illuminate\Support\Facades\DB::transaction(function () use ($first, $delivery, $attempt, $fencing): void {
-        expect(\AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend::claim($delivery->id, $first->id))->toBeNull()
+    DB::transaction(function () use ($first, $delivery, $attempt, $fencing): void {
+        expect(GuardedDeliverySend::claim($delivery->id, $first->id))->toBeNull()
             ->and($fencing->recordExternalSent($first->id, $delivery->id, $attempt->id))->toBeFalse()
             ->and($fencing->recordExternalFailure($first->id, $delivery->id, $attempt->id, 'wrong aggregate'))->toBeFalse();
     });

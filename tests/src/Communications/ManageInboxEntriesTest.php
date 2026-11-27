@@ -7,9 +7,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
-use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 

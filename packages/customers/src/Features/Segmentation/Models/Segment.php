@@ -300,7 +300,6 @@ class Segment extends Model implements Auditable
         return 'customers';
     }
 
-
     /**
      * Apply segment conditions to a query.
      *

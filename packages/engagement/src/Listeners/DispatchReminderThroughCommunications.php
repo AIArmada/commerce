@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Models\Reminder;

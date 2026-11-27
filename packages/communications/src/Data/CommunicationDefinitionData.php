@@ -12,7 +12,7 @@ final readonly class CommunicationDefinitionData
         public array $channels = [],
         public array $recipientIds = [],
         public array $content = [],
-        public string | null $locale = null,
-        public string | null $timezone = null,
+        public ?string $locale = null,
+        public ?string $timezone = null,
     ) {}
 }

@@ -45,5 +45,4 @@ final readonly class AssertSegmentSlugAvailable
             ]);
         }
     }
-
 }

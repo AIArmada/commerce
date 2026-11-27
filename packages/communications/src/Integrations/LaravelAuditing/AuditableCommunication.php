@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Integrations\LaravelAuditing;
 
-use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
+use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use OwenIt\Auditing\Auditable;

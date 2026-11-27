@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;

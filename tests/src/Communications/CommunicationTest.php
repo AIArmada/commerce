@@ -8,15 +8,15 @@ use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Identity\Actions;
 
-use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Enums\PersonNameType;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;

@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-final readonly class TitleAssignmentData implements \JsonSerializable
+use JsonSerializable;
+
+final readonly class TitleAssignmentData implements JsonSerializable
 {
     public function __construct(
         public string $id,
         public string $title_id,
         public string $status,
-        public string | null $titleable_type,
-        public string | null $titleable_id,
-        public TitleData | null $title,
+        public ?string $titleable_type,
+        public ?string $titleable_id,
+        public ?TitleData $title,
     ) {}
 
     /** @return array<string, mixed> */

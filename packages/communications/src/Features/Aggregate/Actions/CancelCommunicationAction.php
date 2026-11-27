@@ -7,8 +7,8 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Events\CommunicationCancelled;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Api\ScheduledDeliveryLifecycle;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 

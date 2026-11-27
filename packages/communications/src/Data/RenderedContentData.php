@@ -8,13 +8,13 @@ final readonly class RenderedContentData
 {
     public function __construct(
         public string $channel,
-        public string | null $locale = null,
-        public string | null $subject = null,
-        public string | null $contentText = null,
-        public string | null $contentHtml = null,
+        public ?string $locale = null,
+        public ?string $subject = null,
+        public ?string $contentText = null,
+        public ?string $contentHtml = null,
         public array $payload = [],
-        public string | null $checksum = null,
-        public string | null $templateId = null,
-        public string | null $templateVersionId = null,
+        public ?string $checksum = null,
+        public ?string $templateId = null,
+        public ?string $templateVersionId = null,
     ) {}
 }

@@ -11,9 +11,9 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipTransfer;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use InvalidArgumentException;
 use RuntimeException;
 

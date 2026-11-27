@@ -9,8 +9,8 @@ use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 
 final readonly class RecordDeliveryOutcome implements CommunicationRecorder

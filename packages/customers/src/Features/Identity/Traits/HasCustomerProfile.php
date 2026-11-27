@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Features\Identity\Traits;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\UniqueConstraintViolationException;

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-final readonly class PersonNameData implements \JsonSerializable
+use JsonSerializable;
+
+final readonly class PersonNameData implements JsonSerializable
 {
     public function __construct(
         public string $id,

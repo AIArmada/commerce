@@ -8,11 +8,11 @@ final readonly class RecipientSnapshotData
 {
     public function __construct(
         public string $identifier,
-        public string | null $displayName = null,
-        public string | null $email = null,
-        public string | null $phone = null,
-        public string | null $locale = null,
-        public string | null $timezone = null,
+        public ?string $displayName = null,
+        public ?string $email = null,
+        public ?string $phone = null,
+        public ?string $locale = null,
+        public ?string $timezone = null,
         public array $extra = [],
     ) {}
 }

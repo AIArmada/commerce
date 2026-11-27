@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-final readonly class AffiliationData implements \JsonSerializable
+use JsonSerializable;
+
+final readonly class AffiliationData implements JsonSerializable
 {
     public function __construct(
         public string $id,
         public string $affiliation_type,
-        public string | null $institution_id,
+        public ?string $institution_id,
         public bool $is_primary,
         public array $roles,
     ) {}

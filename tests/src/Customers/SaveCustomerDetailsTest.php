@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
+use Illuminate\Validation\ValidationException;
 
 it('persists admin status and consent without permitting ownership or identity changes', function (): void {
     $action = app(SaveCustomerDetails::class);
@@ -42,7 +43,7 @@ it('keeps consent timestamps idempotent and rejects ambiguous input', function (
     expect($customer->marketing_consented_at?->equalTo($consentedAt))->toBeTrue();
 
     expect(fn () => $action->update($customer, ['accepts_marketing' => null]))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect($customer->fresh()->accepts_marketing)->toBeTrue();
 });

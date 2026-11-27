@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Models;
 
-use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
-
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
-
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;

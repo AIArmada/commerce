@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;
@@ -11,9 +10,10 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Events\DeliverySending;
-use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;

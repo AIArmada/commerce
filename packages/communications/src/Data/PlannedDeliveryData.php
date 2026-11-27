@@ -12,8 +12,8 @@ final readonly class PlannedDeliveryData
         public string $destinationHash,
         public string $destinationHint,
         public string $destinationCiphertext,
-        public string | null $contentId = null,
-        public int | null $maxAttempts = null,
-        public string | null $scheduledAt = null,
+        public ?string $contentId = null,
+        public ?int $maxAttempts = null,
+        public ?string $scheduledAt = null,
     ) {}
 }

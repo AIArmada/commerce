@@ -23,7 +23,7 @@ final class EditTitleIssuer extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         if (! $record instanceof TitleIssuer) {
-            throw new \InvalidArgumentException('Invalid TitleIssuer record.');
+            throw new InvalidArgumentException('Invalid TitleIssuer record.');
         }
 
         return app(SaveTitleIssuer::class)->update($record, $data);

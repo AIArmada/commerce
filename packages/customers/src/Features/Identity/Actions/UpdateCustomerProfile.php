@@ -6,8 +6,8 @@ namespace AIArmada\Customers\Features\Identity\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 
 final class UpdateCustomerProfile

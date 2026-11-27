@@ -6,8 +6,8 @@ namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Customers\Features\Identity\Actions\ManageCustomerNote;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
+use AIArmada\Customers\Models\Customer;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;

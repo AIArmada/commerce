@@ -17,5 +17,4 @@ class CreateCustomer extends CreateRecord
     {
         return app(SaveCustomerDetails::class)->create($data);
     }
-
 }

@@ -17,5 +17,4 @@ class CreateSegment extends CreateRecord
     {
         return app(SaveSegment::class)->create($data);
     }
-
 }

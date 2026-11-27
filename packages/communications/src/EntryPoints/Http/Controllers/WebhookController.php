@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\EntryPoints\Http\Controllers;
 
+use AIArmada\Communications\Contracts\ProviderWebhookRegistrar;
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
 use AIArmada\Communications\EntryPoints\Jobs\ProcessWebhookEventJob;
-use AIArmada\Communications\Contracts\ProviderWebhookRegistrar;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;

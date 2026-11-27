@@ -340,5 +340,4 @@ class Person extends Model implements Sortable
             }
         }
     }
-
 }

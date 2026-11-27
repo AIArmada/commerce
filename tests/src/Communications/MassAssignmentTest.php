@@ -6,23 +6,23 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Enums\ThreadStatus;
-use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
-use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
+use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
-use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Models\Communication;
 
 test('communications models do not mass assign owner columns', function (string $modelClass): void {
     $model = new $modelClass([

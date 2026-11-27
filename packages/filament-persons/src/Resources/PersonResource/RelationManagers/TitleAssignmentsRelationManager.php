@@ -6,8 +6,8 @@ namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Models\Person;
 use Filament\Actions\CreateAction;

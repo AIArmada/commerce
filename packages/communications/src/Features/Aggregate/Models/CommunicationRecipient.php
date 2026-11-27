@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Models;
 
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Enums\RecipientRole;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

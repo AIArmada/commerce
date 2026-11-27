@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Inbox\EntryPoints\Http\Livewire;
 
-use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;

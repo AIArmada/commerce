@@ -7,8 +7,8 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\RecipientRole;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Models\Communication;
 
 final class AddCommunicationRecipientAction
 {

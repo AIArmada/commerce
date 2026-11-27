@@ -8,7 +8,7 @@ final readonly class ConsentDecisionData
 {
     public function __construct(
         public bool $consented,
-        public string | null $reason = null,
+        public ?string $reason = null,
         public array $metadata = [],
     ) {}
 }

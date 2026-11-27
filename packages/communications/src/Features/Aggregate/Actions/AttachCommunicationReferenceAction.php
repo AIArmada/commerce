@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
-use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
+use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 
 final class AttachCommunicationReferenceAction implements CommunicationReferenceWriter

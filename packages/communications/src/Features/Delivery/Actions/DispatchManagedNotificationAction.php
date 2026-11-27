@@ -6,13 +6,13 @@ namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\Communications\Contracts\CommunicationContextAware;
 use AIArmada\Communications\Contracts\CommunicationCreator;
-use AIArmada\Communications\Contracts\NotificationContentCapture;
 use AIArmada\Communications\Contracts\DestinationResolver;
+use AIArmada\Communications\Contracts\NotificationContentCapture;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;

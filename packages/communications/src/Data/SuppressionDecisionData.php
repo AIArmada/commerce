@@ -8,8 +8,8 @@ final readonly class SuppressionDecisionData
 {
     public function __construct(
         public bool $suppressed,
-        public string | null $reason = null,
-        public string | null $suppressionId = null,
+        public ?string $reason = null,
+        public ?string $suppressionId = null,
         public array $metadata = [],
     ) {}
 }

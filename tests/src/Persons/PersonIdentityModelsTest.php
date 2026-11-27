@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
@@ -11,18 +10,17 @@ use AIArmada\Persons\Enums\IssuerType;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
+use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
 use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
-use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
-use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
-use AIArmada\Persons\Models\Person;
-use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
 use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
-use AIArmada\Persons\Features\Identity\Models\PersonName;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
+use AIArmada\Persons\Models\Person;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 

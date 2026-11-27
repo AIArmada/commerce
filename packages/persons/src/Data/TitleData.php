@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-final readonly class TitleData implements \JsonSerializable
+use JsonSerializable;
+
+final readonly class TitleData implements JsonSerializable
 {
     public function __construct(
         public string $id,
         public string $category_id,
         public string $name,
-        public string | null $short_form,
+        public ?string $short_form,
         public string $usage_position,
         public int $sort_order,
     ) {}

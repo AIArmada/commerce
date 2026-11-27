@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-final readonly class CredentialAssignmentData implements \JsonSerializable
+use JsonSerializable;
+
+final readonly class CredentialAssignmentData implements JsonSerializable
 {
     public function __construct(
         public string $id,
         public string $credential_id,
         public string $status,
-        public string | null $registration_number,
-        public string | null $date_obtained,
-        public CredentialDefinitionData | null $credential,
+        public ?string $registration_number,
+        public ?string $date_obtained,
+        public ?CredentialDefinitionData $credential,
     ) {}
 
     /** @return array<string, mixed> */

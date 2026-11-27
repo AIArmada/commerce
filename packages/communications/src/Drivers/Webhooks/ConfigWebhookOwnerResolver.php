@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Drivers\Webhooks;
 
-use AIArmada\Communications\Contracts\WebhookOwnerResolver as WebhookOwnerResolverContract;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\Communications\Contracts\WebhookOwnerResolver as WebhookOwnerResolverContract;
 
 final class ConfigWebhookOwnerResolver implements WebhookOwnerResolverContract
 {

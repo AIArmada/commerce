@@ -2,25 +2,26 @@
 
 declare(strict_types=1);
 
-use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
-use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
-use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
-use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
-use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
-use AIArmada\Persons\Features\Identity\Actions\DeletePersonAction;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
+use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
-use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
+use AIArmada\Persons\Features\Identity\Actions\DeletePersonAction;
 use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
+use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
+use AIArmada\Persons\Models\Person;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -273,9 +274,9 @@ it('rejects updates and deletes of another person title assignment', function ()
     $assignment = $action->execute($person, $title->id);
 
     expect(fn () => $action->update($other, $assignment, ['status' => 'revoked']))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
     expect(fn () => $action->delete($other, $assignment))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect($action->update($person, $assignment, ['status' => 'revoked'])->status)->toBe(AssignmentStatus::Revoked);
     expect($action->delete($person, $assignment))->toBeTrue();
@@ -297,9 +298,9 @@ it('rejects invalid credential dates and cross-person assignment writes', functi
 
     $assignment = $action->execute($person, $definition->id);
     expect(fn () => $action->update($other, $assignment, ['status' => 'revoked']))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
     expect(fn () => $action->delete($other, $assignment))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect($action->update($person, $assignment, ['status' => 'revoked'])->status)->toBe(AssignmentStatus::Revoked);
     expect($action->delete($person, $assignment))->toBeTrue();

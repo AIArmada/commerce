@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Traits;
 
-use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasInbox

@@ -6,10 +6,10 @@ namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Tables;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
 use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use Carbon\CarbonImmutable;
@@ -27,8 +27,8 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\LazyCollection;
 use Throwable;
 
 final class CustomersTable

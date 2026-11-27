@@ -153,5 +153,4 @@ class CustomerNote extends Model
     {
         return $query->where('is_pinned', true);
     }
-
 }

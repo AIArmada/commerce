@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Delivery\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Enums\CommunicationStatus;
+use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Features\Delivery\Actions\PersistDeliveryFencingAction;
 use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
-use AIArmada\Communications\Enums\CommunicationStatus;
-use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Models\Communication;
 use Illuminate\Notifications\Notification;
+use InvalidArgumentException;
 
 /**
  * Coordinates atomic delivery claiming, cancellation racing, and external
@@ -123,7 +124,7 @@ final class GuardedDeliverySend
         array $operation = [],
     ): CommunicationAttempt {
         if ($delivery->id !== $deliveryId) {
-            throw new \InvalidArgumentException('Attempt delivery must match the claimed delivery.');
+            throw new InvalidArgumentException('Attempt delivery must match the claimed delivery.');
         }
 
         $frozen = [

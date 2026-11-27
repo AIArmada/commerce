@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Models\Communication;

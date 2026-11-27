@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Contracts\SuppressionResolver;
 use AIArmada\Communications\Enums\SuppressionReason;
-use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
+use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use Carbon\CarbonImmutable;
 
 test('creates suppression record', function (): void {
@@ -105,7 +106,7 @@ test('default suppression resolver honors active category and destination restri
         'expires_at' => CarbonImmutable::now()->addHour(),
     ]);
 
-    $resolver = app(\AIArmada\Communications\Contracts\SuppressionResolver::class);
+    $resolver = app(SuppressionResolver::class);
 
     expect($resolver->resolveSuppression(null, null, $hash, 'mail', 'marketing')->suppressed)->toBeTrue()
         ->and($resolver->resolveSuppression(null, null, $hash, 'mail', 'notification')->suppressed)->toBeFalse()

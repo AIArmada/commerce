@@ -6,9 +6,9 @@ namespace AIArmada\Persons\Features\Titles\Models;
 
 use AIArmada\Persons\Database\Factories\TitleFactory;
 use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
-use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Features\Aggregate\Actions\DeleteCommunicationAggregateAction;
-use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -12,12 +9,15 @@ use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\Communication;
+use AIArmada\Communications\Features\Aggregate\Actions\DeleteCommunicationAggregateAction;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

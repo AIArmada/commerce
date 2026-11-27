@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 use Closure;
 use InvalidArgumentException;

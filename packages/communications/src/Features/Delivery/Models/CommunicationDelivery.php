@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Models;
 
-use AIArmada\Communications\Features\Delivery\Api\DeliveryDependentsCleaner;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
+use AIArmada\Communications\Features\Delivery\Api\DeliveryDependentsCleaner;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Features\Credentials\Actions;
 
-use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use InvalidArgumentException;
 use RuntimeException;
 

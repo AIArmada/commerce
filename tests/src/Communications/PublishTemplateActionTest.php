@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Templates\Actions\PublishTemplateAction;
 use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Events\TemplatePublished;
+use AIArmada\Communications\Features\Templates\Actions\PublishTemplateAction;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

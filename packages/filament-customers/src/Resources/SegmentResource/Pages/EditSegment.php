@@ -10,6 +10,7 @@ use AIArmada\FilamentCustomers\Resources\SegmentResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 class EditSegment extends EditRecord
 {
@@ -18,12 +19,11 @@ class EditSegment extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         if (! $record instanceof Segment) {
-            throw new \InvalidArgumentException('Invalid segment record.');
+            throw new InvalidArgumentException('Invalid segment record.');
         }
 
         return app(SaveSegment::class)->update($record, $data);
     }
-
 
     protected function getHeaderActions(): array
     {

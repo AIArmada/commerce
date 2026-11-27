@@ -11,6 +11,7 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 class EditCustomer extends EditRecord
 {
@@ -19,12 +20,11 @@ class EditCustomer extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         if (! $record instanceof Customer) {
-            throw new \InvalidArgumentException('Invalid customer record.');
+            throw new InvalidArgumentException('Invalid customer record.');
         }
 
         return app(SaveCustomerDetails::class)->update($record, $data);
     }
-
 
     protected function getHeaderActions(): array
     {

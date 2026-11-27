@@ -10,8 +10,8 @@ use AIArmada\Communications\Features\Aggregate\Actions\CreateInboxCommunication;
 use AIArmada\Communications\Features\Aggregate\Actions\ManageScheduledCommunications;
 use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
 use AIArmada\Communications\Features\Aggregate\Api\DeliveryReferenceValidator;
-use AIArmada\Communications\Features\Aggregate\Queries\ValidateDeliveryReferences;
 use AIArmada\Communications\Features\Aggregate\Api\ScheduledCommunicationLifecycle;
+use AIArmada\Communications\Features\Aggregate\Queries\ValidateDeliveryReferences;
 use AIArmada\Communications\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 

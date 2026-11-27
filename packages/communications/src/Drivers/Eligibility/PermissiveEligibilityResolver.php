@@ -71,5 +71,4 @@ final class PermissiveEligibilityResolver implements ConsentResolver, Preference
     ): bool {
         return false;
     }
-
 }

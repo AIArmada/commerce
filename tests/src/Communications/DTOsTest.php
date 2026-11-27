@@ -16,6 +16,7 @@ use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use Carbon\CarbonImmutable;
+use Spatie\LaravelData\Data;
 
 test('CommunicationContextData creates with defaults', function (): void {
     $dto = CommunicationContextData::from([]);
@@ -176,6 +177,6 @@ test('communications value DTOs are immutable and independent of Laravel Data', 
         SuppressionDecisionData::class,
     ] as $class) {
         expect((new ReflectionClass($class))->isReadOnly())->toBeTrue()
-            ->and(is_subclass_of($class, \Spatie\LaravelData\Data::class))->toBeFalse();
+            ->and(is_subclass_of($class, Data::class))->toBeFalse();
     }
 });

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
-use AIArmada\Communications\Contracts\CommunicationManager;
+use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

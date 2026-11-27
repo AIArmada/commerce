@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
-use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
+use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 describe('Customer canonical addresses', function (): void {

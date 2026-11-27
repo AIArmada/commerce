@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Features\Identity\Actions;
 
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
+use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class CreateCustomer
 {
@@ -35,7 +36,7 @@ final class CreateCustomer
         $normalizedEmail = $normalizer->normalizeEmail($email);
 
         if ($user !== null && (! $user->exists || $user->getKey() === null)) {
-            throw new \InvalidArgumentException('Customer creation requires a persisted user.');
+            throw new InvalidArgumentException('Customer creation requires a persisted user.');
         }
 
         $model = new Customer;

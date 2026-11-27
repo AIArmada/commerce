@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 
 /**
  * @param  array<string, mixed>  $attributes
