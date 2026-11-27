@@ -6,6 +6,7 @@ namespace AIArmada\Persons\Features\Titles\Actions;
 
 use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SaveTitleIssuer
 {
@@ -16,7 +17,9 @@ final readonly class SaveTitleIssuer
 
         return $record->getConnection()->transaction(function () use ($record, $attributes): TitleIssuer {
             $record->fill($this->attributes($attributes));
-            $record->save();
+            if (! $record->save()) {
+                throw new RuntimeException('Title issuer persistence was cancelled.');
+            }
 
             return $record;
         });
@@ -28,7 +31,9 @@ final readonly class SaveTitleIssuer
         return $record->getConnection()->transaction(function () use ($record, $attributes): TitleIssuer {
             $locked = $record->newQuery()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
             $locked->fill($this->attributes($attributes));
-            $locked->save();
+            if (! $locked->save()) {
+                throw new RuntimeException('Title issuer persistence was cancelled.');
+            }
 
             return $locked;
         });

@@ -8,6 +8,7 @@ use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SaveAffiliation
 {
@@ -41,7 +42,11 @@ final readonly class SaveAffiliation
     public function delete(Model $subject, Affiliation $affiliation): bool
     {
         return $affiliation->getConnection()->transaction(function () use ($subject, $affiliation): bool {
-            return (bool) $this->lockAffiliation($this->lockSubject($subject), $affiliation)->delete();
+            if (! $this->lockAffiliation($this->lockSubject($subject), $affiliation)->delete()) {
+                throw new RuntimeException('Affiliation deletion was cancelled.');
+            }
+
+            return true;
         });
     }
 
@@ -80,7 +85,9 @@ final readonly class SaveAffiliation
             $siblings->update(['is_primary' => false]);
         }
 
-        $affiliation->save();
+        if (! $affiliation->save()) {
+            throw new RuntimeException('Affiliation persistence was cancelled.');
+        }
     }
 
     /** @param array<string, mixed> $attributes @return array<string, mixed> */

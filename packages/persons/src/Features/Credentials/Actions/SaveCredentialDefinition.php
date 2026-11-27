@@ -6,6 +6,7 @@ namespace AIArmada\Persons\Features\Credentials\Actions;
 
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SaveCredentialDefinition
 {
@@ -16,7 +17,9 @@ final readonly class SaveCredentialDefinition
 
         return $record->getConnection()->transaction(function () use ($record, $attributes): CredentialDefinition {
             $record->fill($this->attributes($attributes));
-            $record->save();
+            if (! $record->save()) {
+                throw new RuntimeException('Credential definition persistence was cancelled.');
+            }
 
             return $record;
         });
@@ -28,7 +31,9 @@ final readonly class SaveCredentialDefinition
         return $record->getConnection()->transaction(function () use ($record, $attributes): CredentialDefinition {
             $locked = $record->newQuery()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
             $locked->fill($this->attributes($attributes));
-            $locked->save();
+            if (! $locked->save()) {
+                throw new RuntimeException('Credential definition persistence was cancelled.');
+            }
 
             return $locked;
         });

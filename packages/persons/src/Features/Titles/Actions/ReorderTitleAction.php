@@ -9,6 +9,7 @@ use AIArmada\Persons\Features\Titles\Models\Title;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use LogicException;
+use RuntimeException;
 
 final class ReorderTitleAction
 {
@@ -28,7 +29,9 @@ final class ReorderTitleAction
             $this->persistOrder($ordered, exclude: $title);
 
             $title->sort_order = $this->positionOf($ordered, $title);
-            $title->save();
+            if (! $title->save()) {
+                throw new RuntimeException('Title persistence was cancelled.');
+            }
 
             return $title;
         });
@@ -79,7 +82,9 @@ final class ReorderTitleAction
             $this->persistOrder($newOrdered, exclude: $title);
 
             $title->sort_order = $this->positionOf($newOrdered, $title);
-            $title->save();
+            if (! $title->save()) {
+                throw new RuntimeException('Title persistence was cancelled.');
+            }
 
             return $title;
         });

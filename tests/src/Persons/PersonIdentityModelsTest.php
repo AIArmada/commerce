@@ -11,11 +11,14 @@ use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
+use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
+use AIArmada\Persons\Features\Credentials\Actions\SaveCredentialDefinition;
 use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\SaveTitleIssuer;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
@@ -534,4 +537,89 @@ it('rejects cross-person affiliation changes and preserves existing primary on i
         ->toThrow(AuthorizationException::class);
     expect(fn () => $action->delete($other, $record))->toThrow(AuthorizationException::class);
     expect($record->fresh()->is_primary)->toBeTrue();
+});
+
+it('preserves the existing primary affiliation when a replacement is vetoed', function (): void {
+    $person = Person::factory()->create();
+    $action = app(SaveAffiliation::class);
+    $first = $action->create($person, ['affiliation_type' => AffiliationType::Member, 'is_primary' => true]);
+
+    Affiliation::saving(static fn (Affiliation $record): bool => $record->affiliation_type !== AffiliationType::Employee);
+
+    expect(fn () => $action->create($person, ['affiliation_type' => AffiliationType::Employee, 'is_primary' => true]))
+        ->toThrow(RuntimeException::class, 'Affiliation persistence was cancelled.');
+
+    expect($first->fresh()->is_primary)->toBeTrue()
+        ->and($person->affiliations()->count())->toBe(1);
+});
+
+it('preserves affiliation roles when deletion is vetoed', function (): void {
+    $person = Person::factory()->create();
+    $action = app(SaveAffiliation::class);
+    $record = $action->create($person, ['affiliation_type' => AffiliationType::Member]);
+    $role = AffiliationRole::create(['affiliation_id' => $record->id, 'role_name' => 'Member', 'is_current' => true]);
+
+    Affiliation::deleting(static fn (Affiliation $item): bool => $item->id !== $record->id);
+
+    expect(fn () => $action->delete($person, $record))
+        ->toThrow(RuntimeException::class, 'Affiliation deletion was cancelled.');
+
+    expect(Affiliation::query()->whereKey($record->id)->exists())->toBeTrue()
+        ->and(AffiliationRole::query()->whereKey($role->id)->exists())->toBeTrue();
+});
+
+it('rolls back title ordering when a title save is vetoed', function (): void {
+    $category = TitleCategory::create(['code' => 'veto-order', 'name' => 'Veto Order']);
+    $action = app(ReorderTitleAction::class);
+    $first = $action->create([
+        'category_id' => $category->id,
+        'name' => 'First',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $second = $action->create([
+        'category_id' => $category->id,
+        'name' => 'Second',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 2,
+    ]);
+
+    Title::saving(static fn (Title $record): bool => $record->name !== 'Veto');
+
+    expect(fn () => $action->create([
+        'category_id' => $category->id,
+        'name' => 'Veto',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]))->toThrow(RuntimeException::class, 'Title persistence was cancelled.');
+
+    expect(fn () => $action->update($second, ['name' => 'Veto', 'sort_order' => 1]))
+        ->toThrow(RuntimeException::class, 'Title persistence was cancelled.');
+
+    expect($first->fresh()->sort_order)->toBe(1)
+        ->and($second->fresh()->sort_order)->toBe(2)
+        ->and($second->fresh()->name)->toBe('Second')
+        ->and($category->titles()->count())->toBe(2);
+});
+
+it('rejects vetoed title issuer and credential definition persistence', function (): void {
+    $issuer = app(SaveTitleIssuer::class);
+    $definition = app(SaveCredentialDefinition::class);
+    $savedIssuer = $issuer->create(['issuer_name' => 'Board', 'issuer_type' => IssuerType::ProfessionalBoard]);
+    $savedDefinition = $definition->create(['name' => 'CPA', 'credential_type' => CredentialType::ProfessionalLicense]);
+
+    TitleIssuer::saving(static fn (TitleIssuer $record): bool => $record->issuer_name !== 'Veto');
+    CredentialDefinition::saving(static fn (CredentialDefinition $record): bool => $record->name !== 'Veto');
+
+    expect(fn () => $issuer->create(['issuer_name' => 'Veto', 'issuer_type' => IssuerType::ProfessionalBoard]))
+        ->toThrow(RuntimeException::class, 'Title issuer persistence was cancelled.');
+    expect(fn () => $issuer->update($savedIssuer, ['issuer_name' => 'Veto']))
+        ->toThrow(RuntimeException::class, 'Title issuer persistence was cancelled.');
+    expect(fn () => $definition->create(['name' => 'Veto', 'credential_type' => CredentialType::ProfessionalLicense]))
+        ->toThrow(RuntimeException::class, 'Credential definition persistence was cancelled.');
+    expect(fn () => $definition->update($savedDefinition, ['name' => 'Veto']))
+        ->toThrow(RuntimeException::class, 'Credential definition persistence was cancelled.');
+
+    expect($savedIssuer->fresh()->issuer_name)->toBe('Board')
+        ->and($savedDefinition->fresh()->name)->toBe('CPA');
 });
