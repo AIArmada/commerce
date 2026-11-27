@@ -4,35 +4,49 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
-final class UpdateProductStatus
+final readonly class UpdateProductStatus
 {
     public function execute(Product $product, ProductStatus $newStatus): Product
     {
-        $oldStatus = $product->status;
+        return DB::transaction(function () use ($product, $newStatus): Product {
+            $query = Product::query();
 
-        if ($oldStatus === $newStatus) {
-            return $product;
-        }
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
 
-        $product->status = $newStatus;
+            $locked = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
 
-        // Transition rules for lifecycle timestamps
-        $now = CarbonImmutable::now();
+            $oldStatus = $locked->status;
 
-        match ($newStatus) {
-            ProductStatus::Active => $this->transitionToActive($product, $now),
-            ProductStatus::Disabled => $this->transitionToDisabled($product, $now),
-            ProductStatus::Archived => $this->transitionToArchived($product, $now),
-            ProductStatus::Draft => $this->transitionToDraft($product),
-        };
+            if ($oldStatus === $newStatus) {
+                return $locked;
+            }
 
-        $product->save();
+            $locked->status = $newStatus;
 
-        return $product->fresh();
+            // Transition rules for lifecycle timestamps
+            $now = CarbonImmutable::now();
+
+            match ($newStatus) {
+                ProductStatus::Active => $this->transitionToActive($locked, $now),
+                ProductStatus::Disabled => $this->transitionToDisabled($locked, $now),
+                ProductStatus::Archived => $this->transitionToArchived($locked, $now),
+                ProductStatus::Draft => $this->transitionToDraft($locked),
+            };
+
+            $locked->save();
+
+            return $locked;
+        }, 3);
     }
 
     public function __invoke(Product $product, ProductStatus $newStatus): Product

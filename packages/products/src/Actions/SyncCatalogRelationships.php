@@ -122,9 +122,9 @@ final readonly class SyncCatalogRelationships
     }
 
     /** @param array<int, mixed> $ids */
-    public function syncProductCategories(Product $record, array $ids): void
+    public function syncProductCategories(Product $record, array $ids, bool $add = false): void
     {
-        DB::transaction(function () use ($record, $ids): void {
+        DB::transaction(function () use ($record, $ids, $add): void {
             $owner = OwnerContext::resolve();
 
             if (config('products.features.owner.enabled', false)) {
@@ -137,7 +137,11 @@ final readonly class SyncCatalogRelationships
             $ids = $this->normalizeIds($ids, 'categories');
             $allowed = Category::query()->forOwner()->whereKey($ids)->pluck('id')->all();
             $this->assertAllowed($ids, $allowed, 'categories');
-            $locked->categories()->sync($ids);
+            if ($add) {
+                $locked->categories()->syncWithoutDetaching($ids);
+            } else {
+                $locked->categories()->sync($ids);
+            }
         }, 3);
     }
 

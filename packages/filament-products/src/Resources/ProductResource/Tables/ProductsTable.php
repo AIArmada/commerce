@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\Tables;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Pricing\Models\Price;
+use AIArmada\Products\Actions\UpdateProductStatus;
+use AIArmada\Products\Actions\UpdateCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -290,9 +291,10 @@ class ProductsTable
                         ->icon('heroicon-o-check-circle')
                         ->requiresConfirmation()
                         ->authorize(fn (): bool => auth()->user()?->can('updateAny', Product::class) ?? false)
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records): void {
                             $records->each(function (Product $record): void {
-                                $record->update(['status' => ProductStatus::Active]);
+                                app(UpdateProductStatus::class)->execute($record, ProductStatus::Active);
                             });
                         }),
                     BulkAction::make('draft')
@@ -300,9 +302,10 @@ class ProductsTable
                         ->icon('heroicon-o-pencil')
                         ->requiresConfirmation()
                         ->authorize(fn (): bool => auth()->user()?->can('updateAny', Product::class) ?? false)
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records): void {
                             $records->each(function (Product $record): void {
-                                $record->update(['status' => ProductStatus::Draft]);
+                                app(UpdateProductStatus::class)->execute($record, ProductStatus::Draft);
                             });
                         }),
 
@@ -341,23 +344,9 @@ class ProductsTable
                                 ->minValue(0)
                                 ->maxValue(fn (Get $get): int | float => in_array($get('price_action'), ['increase_percent', 'decrease_percent'], true) ? 100 : 1000000),
                         ])
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records, array $data): void {
-                            $adjustments = self::priceAdjustments($data['price_action'] ?? '', $data['value'] ?? 0);
-
-                            DB::transaction(static function () use ($records, $adjustments): void {
-                                foreach ($records as $product) {
-                                    $currentMinor = (int) $product->getAttribute('price');
-
-                                    $newMinor = match ($adjustments['mode']) {
-                                        'set' => $adjustments['minor'],
-                                        'percent' => (int) round($currentMinor * $adjustments['factor']),
-                                        'amount' => $currentMinor + $adjustments['minor'],
-                                        default => $currentMinor,
-                                    };
-
-                                    $product->update(['price' => max(0, $newMinor)]);
-                                }
-                            });
+                            app(UpdateCatalogProducts::class)->adjustPrices($records, $data['price_action'] ?? '', $data['value'] ?? null);
 
                             Notification::make()
                                 ->title('Prices updated')
@@ -376,10 +365,9 @@ class ProductsTable
                                 ->options(ProductVisibility::class)
                                 ->required(),
                         ])
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records, array $data): void {
-                            foreach ($records as $product) {
-                                $product->update(['visibility' => $data['visibility']]);
-                            }
+                            app(UpdateCatalogProducts::class)->setVisibility($records, ProductVisibility::from($data['visibility']));
 
                             Notification::make()
                                 ->title('Visibility updated')
@@ -414,17 +402,9 @@ class ProductsTable
                                 ->default('add')
                                 ->required(),
                         ])
+                        ->authorizeIndividualRecords('update')
                         ->action(function (Collection $records, array $data): void {
-                            $categories = $data['categories'] ?? [];
-                            $categories = OwnerScopedIds::ensureAllowed('categories', Category::class, $categories);
-
-                            foreach ($records as $product) {
-                                if ($data['mode'] === 'replace') {
-                                    $product->categories()->sync($categories);
-                                } else {
-                                    $product->categories()->syncWithoutDetaching($categories);
-                                }
-                            }
+                            app(UpdateCatalogProducts::class)->assignCategories($records, $data['categories'] ?? [], $data['mode'] === 'add');
 
                             Notification::make()
                                 ->title('Categories assigned')
@@ -446,24 +426,6 @@ class ProductsTable
         $owner = self::resolveOwner();
 
         return OwnerQuery::applyToEloquentBuilder($query->select(['id', 'name']), $owner, false);
-    }
-
-    /**
-     * @return array{mode: string, minor: int, factor: float}
-     */
-    private static function priceAdjustments(string $action, mixed $value): array
-    {
-        $value = is_numeric($value) ? (float) $value : 0.0;
-        $value = max(0.0, $value);
-
-        return match ($action) {
-            'set' => ['mode' => 'set', 'minor' => (int) round($value * 100), 'factor' => 1.0],
-            'increase_percent' => ['mode' => 'percent', 'minor' => 0, 'factor' => (float) (1 + min($value, 100) / 100)],
-            'decrease_percent' => ['mode' => 'percent', 'minor' => 0, 'factor' => (float) (1 - min($value, 100) / 100)],
-            'increase_amount' => ['mode' => 'amount', 'minor' => (int) round($value * 100), 'factor' => 1.0],
-            'decrease_amount' => ['mode' => 'amount', 'minor' => -1 * (int) round($value * 100), 'factor' => 1.0],
-            default => ['mode' => 'percent', 'minor' => 0, 'factor' => 1.0],
-        };
     }
 
     private static function duplicateProduct(Product $record): Product
