@@ -10,7 +10,7 @@ use AIArmada\Growth\Actions\ProjectExperimentContextIntoSignalProperties;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
-use AIArmada\Growth\Support\ExperimentAssignmentResolver;
+use AIArmada\Growth\Queries\ExperimentAssignmentResolver;
 use AIArmada\Growth\Support\ExperimentContextMerger;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
