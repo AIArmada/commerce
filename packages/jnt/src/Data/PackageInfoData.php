@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use AIArmada\Jnt\Enums\GoodsType;
-use AIArmada\Jnt\Support\TypeTransformer;
 
 /**
  * Package info data for JNT Express shipments.

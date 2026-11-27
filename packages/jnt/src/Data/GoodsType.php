@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Enums;
+namespace AIArmada\Jnt\Data;
 
 enum GoodsType: string
 {

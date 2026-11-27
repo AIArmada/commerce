@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Support;
+namespace AIArmada\Jnt\Data;
 
 use InvalidArgumentException;
 
@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * - Dimensions: CENTIMETERS (2 decimals)
  * - Money: MALAYSIAN RINGGIT (2 decimals)
  */
-class TypeTransformer
+final readonly class TypeTransformer
 {
     /**
      * Convert to integer string (for quantities, counts, etc.)

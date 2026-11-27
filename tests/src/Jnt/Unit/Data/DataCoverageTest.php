@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingDetailData;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 
 describe('PackageInfoData', function (): void {
     it('creates from API array', function (): void {

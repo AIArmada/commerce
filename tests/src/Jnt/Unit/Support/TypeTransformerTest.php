@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Support\TypeTransformer;
+use AIArmada\Jnt\Data\TypeTransformer;
 
 describe('TypeTransformer - Generic Methods', function (): void {
     it('converts integers to integer strings', function (): void {

@@ -18,7 +18,7 @@ use AIArmada\Jnt\Rules\MonetaryValue;
 use AIArmada\Jnt\Rules\PhoneNumber;
 use AIArmada\Jnt\Rules\WeightInGrams;
 use AIArmada\Jnt\Rules\WeightInKilograms;
-use AIArmada\Jnt\Support\TypeTransformer;
+use AIArmada\Jnt\Data\TypeTransformer;
 use Illuminate\Support\Facades\Validator;
 
 class OrderBuilder

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Jnt\Enums\ExpressType;
-use AIArmada\Jnt\Enums\GoodsType;
+use AIArmada\Jnt\Data\GoodsType;
 use AIArmada\Jnt\Enums\PaymentType;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\ServiceType;
