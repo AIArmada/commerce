@@ -7,6 +7,7 @@ use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -565,4 +566,79 @@ it('reports remaining cost-layer value separately for each location', function (
 
     expect($values->get($this->location->id))->toBe(300)
         ->and($values->get($otherLocation->id))->toBe(500);
+});
+
+it('values actionable reorder suggestions using their linked supplier and reporting currency', function (): void {
+    config(['inventory.defaults.currency' => 'MYR']);
+
+    $supplier = InventorySupplierLeadtime::factory()->forModel($this->item)->create([
+        'unit_cost_minor' => 100,
+        'minimum_order_quantity' => 10,
+        'order_multiple' => 5,
+        'currency' => 'MYR',
+    ]);
+
+    InventoryReorderSuggestion::factory()->forModel($this->item)->pending()->create([
+        'location_id' => $this->location->id,
+        'supplier_leadtime_id' => $supplier->id,
+        'suggested_quantity' => 12,
+    ]);
+
+    InventoryReorderSuggestion::factory()->forModel($this->item)->approved()->create([
+        'location_id' => $this->location->id,
+        'supplier_leadtime_id' => $supplier->id,
+        'suggested_quantity' => 4,
+    ]);
+
+    InventoryReorderSuggestion::factory()->forModel($this->item)->pending()->create([
+        'location_id' => $this->location->id,
+        'supplier_leadtime_id' => null,
+    ]);
+
+    InventoryReorderSuggestion::factory()->forModel($this->item)->ordered()->create([
+        'location_id' => $this->location->id,
+        'supplier_leadtime_id' => $supplier->id,
+        'suggested_quantity' => 100,
+    ]);
+
+    $report = $this->report->getReorderStatus();
+
+    expect($report['total_suggested_value'])->toBe(2500)
+        ->and($report['unpriced_suggestions'])->toBe(1);
+});
+
+it('reports dead-stock value only for its exact item and location', function (): void {
+    config(['inventory.defaults.currency' => 'MYR']);
+    $other = InventoryLocation::factory()->create();
+    $uncosted = InventoryItem::create(['name' => 'Uncosted stock']);
+
+    foreach ([$this->item, $uncosted] as $item) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 0,
+            'updated_at' => now()->subDays(120),
+        ]);
+    }
+
+    foreach ([[$this->location, 4], [$other, 9]] as [$location, $remaining]) {
+        InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $location->id,
+            'quantity' => 10,
+            'remaining_quantity' => $remaining,
+            'unit_cost_minor' => 100,
+            'total_cost_minor' => 1000,
+            'costing_method' => CostingMethod::Fifo,
+            'currency' => 'MYR',
+        ]);
+    }
+
+    $report = $this->report->getDeadStock()->keyBy('inventoryable_id');
+
+    expect($report->get($this->item->getKey())['value'])->toBe(400)
+        ->and($report->get($uncosted->getKey())['value'])->toBeNull();
 });

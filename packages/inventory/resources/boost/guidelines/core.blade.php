@@ -25,3 +25,5 @@ Reorder suggestion reporting uses `Features/Replenishment/Api/ReorderSuggestionC
 Dashboard and location stock values represent recorded remaining cost layers in `inventory.defaults.currency`, defaulting to FIFO. Pass `CostingMethod::WeightedAverage` for weighted-average layers. Standard cost is not a layer-based valuation and is not supported by these reports. Uncosted stock is not included in monetary totals.
 
 ABC analysis ranks positive remaining monetary cost-layer values, not physical quantities. It uses the full valued inventory denominator even when the displayed result is limited. A SKU crossing a class threshold remains in the class where its cumulative contribution began.
+
+Stagnant-stock reporting returns recorded cost-layer value for the exact SKU/location and `null` when no matching cost is recorded. Reorder value uses linked supplier order costs in the reporting currency for pending/approved suggestions, with an explicit unpriced count. Ordered suggestions are excluded.

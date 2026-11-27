@@ -57,6 +57,35 @@ final readonly class CostLayerValuesQuery implements CostLayerValues
             ->all();
     }
 
+    public function byItemsAtLocations(CostingMethod $method, string $currency, array $items): array
+    {
+        $values = [];
+
+        foreach (array_chunk($items, 200) as $chunk) {
+            $rows = $this->layers($method, $currency)
+                ->where(function (Builder $query) use ($chunk): void {
+                    foreach ($chunk as $item) {
+                        $query->orWhere(function (Builder $match) use ($item): void {
+                            $match->where('inventoryable_type', $item['inventoryable_type'])
+                                ->where('inventoryable_id', $item['inventoryable_id'])
+                                ->where('location_id', $item['location_id']);
+                        });
+                    }
+                })
+                ->toBase()
+                ->select('inventoryable_type', 'inventoryable_id', 'location_id')
+                ->selectRaw('SUM(remaining_quantity * unit_cost_minor) AS total_value')
+                ->groupBy('inventoryable_type', 'inventoryable_id', 'location_id')
+                ->get();
+
+            foreach ($rows as $row) {
+                $values[$row->inventoryable_type][$row->inventoryable_id][$row->location_id] = (int) $row->total_value;
+            }
+        }
+
+        return $values;
+    }
+
     /** @return Builder<InventoryCostLayer> */
     private function layers(CostingMethod $method, string $currency): Builder
     {

@@ -219,6 +219,7 @@ final class StockLevelReport
      *     pending_suggestions: int,
      *     approved_suggestions: int,
      *     total_suggested_value: int,
+     *     unpriced_suggestions: int,
      *     urgent_reorders: int,
      * }
      */
@@ -232,13 +233,14 @@ final class StockLevelReport
             ->fromSub($belowReorderPointQuery->toBase(), 'reorder_items')
             ->count();
 
-        $counts = app(ReorderSuggestionCounts::class)->counts();
+        $counts = app(ReorderSuggestionCounts::class)->counts((string) config('inventory.defaults.currency', 'MYR'));
 
         return [
             'items_below_reorder_point' => $belowReorderPoint,
             'pending_suggestions' => $counts['pending'],
             'approved_suggestions' => $counts['approved'],
-            'total_suggested_value' => 0,
+            'total_suggested_value' => $counts['suggested_value'],
+            'unpriced_suggestions' => $counts['unpriced'],
             'urgent_reorders' => $counts['urgent'],
         ];
     }
@@ -289,18 +291,18 @@ final class StockLevelReport
     }
 
     /**
-     * Get dead stock report (items with no movement).
+     * Get stagnant stock levels by last update and their recorded cost-layer value.
      *
      * @return Collection<int, array{
      *     inventoryable_type: string,
      *     inventoryable_id: string,
      *     quantity: int,
-     *     value: int,
+     *     value: int|null,
      *     location_id: string,
      *     days_stagnant: int,
      * }>
      */
-    public function getDeadStock(int $daysThreshold = 90, int $limit = 50): Collection
+    public function getDeadStock(int $daysThreshold = 90, int $limit = 50, CostingMethod $method = CostingMethod::Fifo): Collection
     {
         $cutoffDate = CarbonImmutable::now()->subDays($daysThreshold);
         $tableName = config('inventory.database.tables.levels', 'inventory_levels');
@@ -317,16 +319,30 @@ final class StockLevelReport
                 ->where("{$tableName}.quantity_on_hand", '>', 0)
                 ->where("{$tableName}.updated_at", '<', $cutoffDate)
                 ->orderBy("{$tableName}.updated_at")
-                ->limit($limit)
+                ->orderBy("{$tableName}.id")
+                ->limit(max(1, $limit))
         );
 
-        /** @var Collection<int, array{inventoryable_type: string, inventoryable_id: string, quantity: int, value: int, location_id: string, days_stagnant: int}> $deadStock */
-        $deadStock = $query->get()
+        $rows = $query->get();
+        $items = $rows->map(static fn (InventoryLevel $row): array => [
+            'inventoryable_type' => (string) $row->inventoryable_type,
+            'inventoryable_id' => (string) $row->inventoryable_id,
+            'location_id' => (string) $row->location_id,
+        ])->values()->all();
+
+        $values = app(CostLayerValues::class)->byItemsAtLocations(
+            $method,
+            (string) config('inventory.defaults.currency', 'MYR'),
+            $items,
+        );
+
+        /** @var Collection<int, array{inventoryable_type: string, inventoryable_id: string, quantity: int, value: int|null, location_id: string, days_stagnant: int}> $deadStock */
+        $deadStock = $rows
             ->map(fn ($row): array => [
                 'inventoryable_type' => (string) $row->inventoryable_type,
                 'inventoryable_id' => (string) $row->inventoryable_id,
                 'quantity' => (int) $row->quantity,
-                'value' => (int) 0, // Requires cost layer integration
+                'value' => $values[$row->inventoryable_type][$row->inventoryable_id][$row->location_id] ?? null,
                 'location_id' => (string) $row->location_id,
                 'days_stagnant' => (int) CarbonImmutable::parse($row->updated_at)->diffInDays(CarbonImmutable::now()),
             ]);

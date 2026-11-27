@@ -6,6 +6,6 @@ namespace AIArmada\Inventory\Features\Replenishment\Api;
 
 interface ReorderSuggestionCounts
 {
-    /** @return array{pending: int, approved: int, urgent: int} */
-    public function counts(): array;
+    /** @return array{pending: int, approved: int, urgent: int, suggested_value: int, unpriced: int} */
+    public function counts(string $currency): array;
 }
