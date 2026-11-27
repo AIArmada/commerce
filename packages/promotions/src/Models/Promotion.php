@@ -434,24 +434,7 @@ class Promotion extends Model implements Auditable
 
     public function tryIncrementUsage(): bool
     {
-        $query = static::query()
-            ->whereKey($this->getKey())
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('usage_limit')
-                    ->orWhereColumn('usage_count', '<', 'usage_limit');
-            });
-
-        if (config('promotions.features.owner.enabled', false)) {
-            $query->forOwner($this->owner, false);
-        }
-
-        $updated = $query->increment('usage_count');
-
-        if ($updated === 1) {
-            $this->usage_count = (int) $this->usage_count + 1;
-        }
-
-        return $updated === 1;
+        return app(\AIArmada\Promotions\Actions\IncrementPromotionUsage::class)->handle($this);
     }
 
     public function hasRemainingUsage(): bool

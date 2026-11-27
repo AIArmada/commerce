@@ -290,7 +290,7 @@ class Voucher extends Model implements Auditable
     {
         $usageLimit = $this->getAttribute('usage_limit');
 
-        if (! $usageLimit) {
+        if ($usageLimit === null) {
             return true;
         }
 
@@ -317,16 +317,7 @@ class Voucher extends Model implements Auditable
      */
     public function checkIfDepleted(): void
     {
-        $usageLimit = $this->getAttribute('usage_limit');
-
-        if ($usageLimit && $this->getTimesUsedAttribute() >= $usageLimit) {
-            if ($this->status instanceof Depleted) {
-                return;
-            }
-
-            $this->status->transitionTo(Depleted::class);
-            $this->save();
-        }
+        app(\AIArmada\Vouchers\Runtime\VoucherDepletion::class)->handle($this);
     }
 
     /**

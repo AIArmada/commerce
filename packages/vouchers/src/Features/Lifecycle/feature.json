@@ -9,7 +9,8 @@
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\UpdateVoucher",
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher",
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ChangeVoucherAvailability",
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\IssueAffiliateVoucher"
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\IssueAffiliateVoucher",
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DepleteVoucher"
     ],
     "table:voucher_usage": [
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"

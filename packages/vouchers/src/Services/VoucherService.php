@@ -12,6 +12,7 @@ use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherReservations;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -24,11 +25,8 @@ use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\VoucherLookupCache;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
-use Carbon\CarbonImmutable;
-use Closure;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class VoucherService implements VoucherServiceInterface
@@ -239,95 +237,12 @@ class VoucherService implements VoucherServiceInterface
      */
     public function reserve(string $code, string $sessionId): void
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        $cacheKey = $this->reservationCacheKey((string) $voucher->id, $sessionId);
-        $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
-        $ttl = config('vouchers.reservation.ttl', 900); // 15 minutes default
-
-        Cache::put($cacheKey, [
-            'voucher_id' => $voucher->id,
-            'session_id' => $sessionId,
-            'reserved_at' => CarbonImmutable::now()->toIso8601String(),
-        ], $ttl);
-
-        // Guard the shared session index with a lock so concurrent
-        // checkouts cannot lose each other's entries.
-        $this->guardSessionIndex($sessionsKey, static function () use ($sessionsKey, $sessionId, $ttl): void {
-            $sessionIds = Cache::get($sessionsKey, []);
-
-            if (! is_array($sessionIds)) {
-                $sessionIds = [];
-            }
-
-            if (! in_array($sessionId, $sessionIds, true)) {
-                $sessionIds[] = $sessionId;
-            }
-
-            Cache::put($sessionsKey, array_values($sessionIds), $ttl);
-        });
+        app(VoucherReservations::class)->reserve($code, $sessionId);
     }
 
-    /**
-     * Release a voucher reservation.
-     *
-     * @param  string|null  $sessionId  When provided, only releases that session's reservation
-     */
     public function release(string $code, ?string $sessionId = null): void
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        if (! $voucher) {
-            return;
-        }
-
-        $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
-
-        if ($sessionId !== null) {
-            Cache::forget($this->reservationCacheKey((string) $voucher->id, $sessionId));
-
-            $ttl = config('vouchers.reservation.ttl', 900);
-
-            $this->guardSessionIndex($sessionsKey, static function () use ($sessionsKey, $sessionId, $ttl): void {
-                $sessionIds = Cache::get($sessionsKey, []);
-
-                if (! is_array($sessionIds)) {
-                    return;
-                }
-
-                $sessionIds = array_values(array_filter(
-                    $sessionIds,
-                    fn (mixed $sid): bool => ! (is_string($sid) && $sid === $sessionId),
-                ));
-
-                if ($sessionIds === []) {
-                    Cache::forget($sessionsKey);
-                } else {
-                    Cache::put($sessionsKey, $sessionIds, $ttl);
-                }
-            });
-
-            return;
-        }
-
-        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $voucher): void {
-            $sessionIds = Cache::get($sessionsKey, []);
-
-            if (is_array($sessionIds)) {
-                foreach ($sessionIds as $sid) {
-                    if (is_string($sid) && $sid !== '') {
-                        Cache::forget($this->reservationCacheKey((string) $voucher->id, $sid));
-                    }
-                }
-            }
-
-            Cache::forget($sessionsKey);
-        });
+        app(VoucherReservations::class)->release($code, $sessionId);
     }
 
     /**
@@ -435,37 +350,5 @@ class VoucherService implements VoucherServiceInterface
         return Order::query()
             ->select(['id', 'order_number', 'subtotal', 'discount_total', 'grand_total'])
             ->find($orderId);
-    }
-
-    /**
-     * @param  Closure(): void  $callback
-     */
-    private function guardSessionIndex(string $sessionsKey, Closure $callback): void
-    {
-        $lock = Cache::lock($sessionsKey . ':lock', 10);
-
-        if (! $lock->get()) {
-            // The index is advisory and TTL-bound: under lock contention
-            // prefer availability (last-writer-wins) over failing checkout.
-            $callback();
-
-            return;
-        }
-
-        try {
-            $callback();
-        } finally {
-            $lock->release();
-        }
-    }
-
-    private function reservationCacheKey(string $voucherId, string $sessionId): string
-    {
-        return "voucher_reservation:{$voucherId}:{$sessionId}";
-    }
-
-    private function reservationSessionsCacheKey(string $voucherId): string
-    {
-        return "voucher_reservation_sessions:{$voucherId}";
     }
 }

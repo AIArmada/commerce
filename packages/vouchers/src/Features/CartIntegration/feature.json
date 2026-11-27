@@ -1,6 +1,10 @@
 {
   "schema": 1,
   "name": "CartIntegration",
-  "owns": {},
+  "owns": {
+    "store:voucher-reservations": [
+      "AIArmada\\Vouchers\\Features\\CartIntegration\\Actions\\ManageVoucherReservations"
+    ]
+  },
   "extensions": {}
 }

@@ -8,6 +8,8 @@ use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\UpdateVoucher;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
+use AIArmada\Vouchers\Runtime\VoucherDepletion;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\DepleteVoucher;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
@@ -22,6 +24,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(VoucherUsageRecorder::class, RecordVoucherUsage::class);
         $app->bind(VoucherCreator::class, CreateVoucher::class);
+        $app->bind(VoucherDepletion::class, DepleteVoucher::class);
         $app->bind(VoucherUpdater::class, UpdateVoucher::class);
     }
 

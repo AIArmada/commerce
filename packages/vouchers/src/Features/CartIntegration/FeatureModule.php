@@ -6,12 +6,17 @@ namespace AIArmada\Vouchers\Features\CartIntegration;
 
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ManageVoucherReservations;
+use AIArmada\Vouchers\Runtime\VoucherReservations;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract
 {
-    public function register(Application $app): void {}
+    public function register(Application $app): void
+    {
+        $app->bind(VoucherReservations::class, ManageVoucherReservations::class);
+    }
 
     public function boot(Application $app): void
     {
