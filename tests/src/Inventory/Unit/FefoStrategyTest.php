@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Strategies\AllocationContext;
 use AIArmada\Inventory\Strategies\FefoStrategy;
 
 describe('FefoStrategy', function (): void {
@@ -61,5 +62,35 @@ describe('FefoStrategy', function (): void {
 
         expect($order)->toHaveCount(2);
         expect($order->first()->id)->toBe($batch2->id); // Expires sooner
+    });
+
+    it('uses the same expiry and available quantity constraints for allocation and fulfillment', function (): void {
+        $eligible = InventoryBatch::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 10,
+            'quantity_reserved' => 3,
+            'status' => BatchStatus::Active->value,
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        InventoryBatch::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 100,
+            'quantity_reserved' => 0,
+            'status' => BatchStatus::Active->value,
+            'expires_at' => now()->addDays(2),
+        ]);
+
+        $context = new AllocationContext(excludeExpiringSoon: true, allowPartialAllocation: false);
+
+        expect($this->strategy->canFulfill($this->item, 7, $context))->toBeTrue()
+            ->and($this->strategy->canFulfill($this->item, 8, $context))->toBeFalse()
+            ->and($this->strategy->allocate($this->item, 8, $context))->toBeEmpty()
+            ->and($this->strategy->allocate($this->item, 7, $context)[0]['quantity'])->toBe(7)
+            ->and($this->strategy->getRecommendedOrder($this->item, $context)->modelKeys())->toBe([$eligible->id]);
     });
 });

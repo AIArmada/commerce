@@ -171,7 +171,9 @@ describe('NearestLocationStrategy', function (): void {
 
         $allocations = $this->strategy->allocate($this->item, 50, $context);
 
-        expect($allocations)->toHaveCount(2);
+        expect($allocations)->toHaveCount(2)
+            ->and($this->strategy->canFulfill($this->item, 50, $context))->toBeFalse()
+            ->and($this->strategy->canFulfill($this->item, 20, $context))->toBeTrue();
     });
 
     it('checks if can fulfill quantity', function (): void {
@@ -456,5 +458,29 @@ describe('NearestLocationStrategy', function (): void {
         $allocations = $this->strategy->allocate($this->item, 50);
 
         expect($allocations)->toBeEmpty();
+    });
+
+    it('honors explicit location, active status and all-or-nothing allocation', function (): void {
+        $selected = InventoryLocation::factory()->create();
+        $other = InventoryLocation::factory()->create();
+        $inactive = InventoryLocation::factory()->inactive()->create();
+
+        foreach ([$selected, $other, $inactive] as $location) {
+            InventoryLevel::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $location->id,
+                'quantity_on_hand' => 10,
+                'quantity_reserved' => 2,
+            ]);
+        }
+
+        $context = new AllocationContext(locationId: $selected->id, allowPartialAllocation: false);
+
+        expect($this->strategy->canFulfill($this->item, 9, $context))->toBeFalse()
+            ->and($this->strategy->allocate($this->item, 9, $context))->toBeEmpty()
+            ->and($this->strategy->allocate($this->item, 8, $context)[0]['location_id'])->toBe($selected->id)
+            ->and($this->strategy->canFulfill($this->item, 17))->toBeFalse()
+            ->and($this->strategy->getRecommendedOrder($this->item)->modelKeys())->not->toContain($inactive->id);
     });
 });

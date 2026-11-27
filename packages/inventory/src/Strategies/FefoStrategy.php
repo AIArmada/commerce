@@ -8,6 +8,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -39,95 +40,53 @@ final class FefoStrategy implements AllocationStrategyInterface
      */
     public function allocate(Model $model, int $quantity, ?AllocationContext $context = null): array
     {
-        $context = $context ?? new AllocationContext;
+        $context ??= new AllocationContext;
 
-        if (InventoryOwnerScope::isEnabled() && $context->locationId !== null) {
-            $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereKey($context->locationId)
-                ->exists();
-
-            if (! $isAllowed) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
+        if ($quantity <= 0) {
+            return [];
         }
 
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->allocatable()
-                ->fefo()
-        );
+        $batches = $this->eligibleBatches($model, $context)->fefo()->orderBy('id')->get();
+        $allocations = $this->buildAllocations($batches, $quantity);
 
-        if ($context->locationId !== null) {
-            $query->atLocation($context->locationId);
+        if (! $context->allowPartialAllocation && array_sum(array_column($allocations, 'quantity')) < $quantity) {
+            return [];
         }
 
-        if ($context->excludeExpiringSoon) {
-            $minimumExpiryDate = CarbonImmutable::now()->addDays($context->minDaysToExpiry);
-
-            $query->where(function ($expiryQuery) use ($minimumExpiryDate): void {
-                $expiryQuery->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', $minimumExpiryDate);
-            });
-        }
-
-        $batches = $query->get();
-
-        return $this->buildAllocations($batches, $quantity);
+        return $allocations;
     }
 
-    /**
-     * Check if strategy can fulfill the requested quantity.
-     */
     public function canFulfill(Model $model, int $quantity, ?AllocationContext $context = null): bool
     {
-        $context = $context ?? new AllocationContext;
+        $context ??= new AllocationContext;
 
-        if (InventoryOwnerScope::isEnabled() && $context->locationId !== null) {
-            $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereKey($context->locationId)
-                ->exists();
-
-            if (! $isAllowed) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
+        if ($quantity <= 0) {
+            return false;
         }
 
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->allocatable()
-        );
-
-        if ($context->locationId !== null) {
-            $query->atLocation($context->locationId);
-        }
-
-        if ($context->excludeExpiringSoon) {
-            $minimumExpiryDate = CarbonImmutable::now()->addDays($context->minDaysToExpiry);
-
-            $query->where(function ($expiryQuery) use ($minimumExpiryDate): void {
-                $expiryQuery->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', $minimumExpiryDate);
-            });
-        }
-
-        $available = $query->sum('available_quantity');
+        $available = (int) $this->eligibleBatches($model, $context)
+            ->selectRaw('SUM(quantity_on_hand - quantity_reserved) as total')
+            ->value('total');
 
         return $available >= $quantity;
     }
 
     /**
-     * Get recommended allocation order for display.
-     *
      * @return Collection<int, InventoryBatch>
      */
     public function getRecommendedOrder(Model $model, ?AllocationContext $context = null): Collection
     {
-        $context = $context ?? new AllocationContext;
+        return $this->eligibleBatches($model, $context ?? new AllocationContext)
+            ->fefo()
+            ->orderBy('id')
+            ->get();
+    }
 
+    /**
+     * @return Builder<InventoryBatch>
+     */
+    private function eligibleBatches(Model $model, AllocationContext $context): Builder
+    {
         if (InventoryOwnerScope::isEnabled() && $context->locationId !== null) {
             $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
                 ->whereKey($context->locationId)
@@ -143,14 +102,26 @@ final class FefoStrategy implements AllocationStrategyInterface
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->allocatable()
-                ->fefo()
         );
 
         if ($context->locationId !== null) {
             $query->atLocation($context->locationId);
         }
 
-        return $query->get();
+        if ($context->excludeLocationIds !== null) {
+            $query->whereNotIn('location_id', $context->excludeLocationIds);
+        }
+
+        if ($context->excludeExpiringSoon) {
+            $minimumExpiryDate = CarbonImmutable::now()->addDays($context->minDaysToExpiry);
+
+            $query->where(function (Builder $expiryQuery) use ($minimumExpiryDate): void {
+                $expiryQuery->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', $minimumExpiryDate);
+            });
+        }
+
+        return $query;
     }
 
     /**
@@ -167,7 +138,7 @@ final class FefoStrategy implements AllocationStrategyInterface
                 break;
             }
 
-            $available = $batch->available_quantity;
+            $available = $batch->available;
             $allocate = min($available, $remaining);
 
             if ($allocate > 0) {

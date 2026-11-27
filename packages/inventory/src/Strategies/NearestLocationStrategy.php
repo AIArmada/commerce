@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Strategies;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,27 +40,36 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
     {
         $context = $context ?? new AllocationContext;
 
+        if ($quantity <= 0) {
+            return [];
+        }
+
         $levels = $this->getAvailableLevels($model, $context);
         $sortedLevels = $this->sortByDistance($levels, $context);
+        $allocations = $this->buildAllocations($sortedLevels, $quantity, $context);
 
-        return $this->buildAllocations($sortedLevels, $quantity, $context);
+        if (! $context->allowPartialAllocation && array_sum(array_column($allocations, 'quantity')) < $quantity) {
+            return [];
+        }
+
+        return $allocations;
     }
 
     public function canFulfill(Model $model, int $quantity, ?AllocationContext $context = null): bool
     {
         $context = $context ?? new AllocationContext;
 
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-        );
-
-        if ($context->excludeLocationIds !== null) {
-            $query->whereNotIn('location_id', $context->excludeLocationIds);
+        if ($quantity <= 0) {
+            return false;
         }
 
-        $available = (int) $query->selectRaw('SUM(quantity_on_hand - quantity_reserved) as total')->value('total');
+        if ($context->maxLocations !== null) {
+            return array_sum(array_column($this->allocate($model, $quantity, $context), 'quantity')) >= $quantity;
+        }
+
+        $available = (int) $this->eligibleLevels($model, $context)
+            ->selectRaw('SUM(quantity_on_hand - quantity_reserved) as total')
+            ->value('total');
 
         return $available >= $quantity;
     }
@@ -116,17 +126,7 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
      */
     private function getAvailableLevels(Model $model, AllocationContext $context): Collection
     {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->where('inventoryable_type', $model->getMorphClass())
-                ->where('inventoryable_id', $model->getKey())
-                ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
-                ->with('location')
-        );
-
-        if ($context->excludeLocationIds !== null) {
-            $query->whereNotIn('location_id', $context->excludeLocationIds);
-        }
+        $query = $this->eligibleLevels($model, $context)->with('location');
 
         if ($context->preferLocationIds !== null) {
             $preferred = array_values($context->preferLocationIds);
@@ -138,7 +138,7 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
                 $bindings = [];
 
                 foreach ($preferred as $index => $locationId) {
-                    $cases[] = 'WHEN location_id = ? THEN ?';
+                    $cases[] = 'WHEN CAST(location_id AS TEXT) = ? THEN ?';
                     $bindings[] = (string) $locationId;
                     $bindings[] = (int) $index;
                 }
@@ -151,7 +151,31 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
             }
         }
 
-        return $query->get();
+        return $query->orderBy('id')->get();
+    }
+
+    /**
+     * @return Builder<InventoryLevel>
+     */
+    private function eligibleLevels(Model $model, AllocationContext $context): Builder
+    {
+        $query = InventoryOwnerScope::applyToLocationQuery(
+            InventoryLevel::query()
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->whereRaw('(quantity_on_hand - quantity_reserved) > 0')
+                ->whereHas('location', fn (Builder $locationQuery): Builder => InventoryOwnerScope::applyToLocationQuery($locationQuery)->where('is_active', true))
+        );
+
+        if ($context->locationId !== null) {
+            $query->where('location_id', $context->locationId);
+        }
+
+        if ($context->excludeLocationIds !== null) {
+            $query->whereNotIn('location_id', $context->excludeLocationIds);
+        }
+
+        return $query;
     }
 
     /**
