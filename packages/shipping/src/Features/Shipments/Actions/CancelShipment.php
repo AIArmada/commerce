@@ -10,7 +10,7 @@ use AIArmada\Shipping\Events\ShipmentCancelled;
 use AIArmada\Shipping\Events\ShipmentStatusChanged;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Cancelled;
 use Carbon\CarbonImmutable;
@@ -47,7 +47,7 @@ final class CancelShipment
 
             $driver = $this->shippingManager->driver($shipment->carrier_code);
 
-            $operation = ShipmentOperation::recordStart(
+            $operation = app(ShipmentOperationWriter::class)->start(
                 $shipment,
                 'cancel',
                 $shipment->carrier_reference,
@@ -56,9 +56,9 @@ final class CancelShipment
             if ($shipment->tracking_number !== null) {
                 try {
                     $result = $driver->cancelShipment($shipment->tracking_number);
-                    $operation->complete($result);
+                    app(ShipmentOperationWriter::class)->complete($operation, $result);
                 } catch (Throwable $e) {
-                    $operation->complete(
+                    app(ShipmentOperationWriter::class)->complete($operation, 
                         CarrierOperationResult::unknown($e->getMessage()),
                     );
                     Log::warning('Carrier cancellation threw after operation recorded', [
@@ -80,7 +80,7 @@ final class CancelShipment
                     throw new RuntimeException($result->error ?? 'The carrier rejected shipment cancellation.');
                 }
             } else {
-                $operation->complete(CarrierOperationResult::succeeded());
+                app(ShipmentOperationWriter::class)->complete($operation, CarrierOperationResult::succeeded());
             }
 
             return DB::transaction(function () use ($shipment, $reason) {

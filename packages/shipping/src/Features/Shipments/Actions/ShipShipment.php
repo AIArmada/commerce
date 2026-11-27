@@ -16,6 +16,7 @@ use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use AIArmada\Shipping\Services\RetryService;
 use AIArmada\Shipping\ShippingManager;
@@ -75,7 +76,7 @@ final class ShipShipment
             } else {
                 $driver = $this->shippingManager->driver($shipment->carrier_code);
 
-                $operation = ShipmentOperation::recordStart(
+                $operation = app(ShipmentOperationWriter::class)->start(
                     $shipment,
                     'create',
                     $shipment->reference,
@@ -117,12 +118,12 @@ final class ShipShipment
                             context: "ship:{$shipment->id}"
                         );
                 } catch (Throwable $e) {
-                    $operation->complete(CarrierOperationResult::unknown($e->getMessage()));
+                    app(ShipmentOperationWriter::class)->complete($operation, CarrierOperationResult::unknown($e->getMessage()));
 
                     throw $e;
                 }
 
-                $operation->complete($result);
+                app(ShipmentOperationWriter::class)->complete($operation, $result);
             }
 
             if (! $result->success && ! $result->alreadyApplied) {

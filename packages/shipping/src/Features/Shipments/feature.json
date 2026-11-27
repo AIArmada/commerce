@@ -26,10 +26,8 @@
       "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
     ],
     "table:shipment_operations": [
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ReconcileShipmentOperation",
-      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren",
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\ShipmentOperationWriter"
     ],
     "table:shipment_items": [
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CreateShipment",

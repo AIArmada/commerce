@@ -8,6 +8,7 @@ use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use InvalidArgumentException;
 
 function operationTestShipment(): Shipment
@@ -24,8 +25,8 @@ describe('Shipment operation start records', function (): void {
     it('returns the existing pending row instead of duplicating it', function (): void {
         $shipment = operationTestShipment();
 
-        $first = ShipmentOperation::recordStart($shipment, 'ship');
-        $second = ShipmentOperation::recordStart($shipment, 'ship');
+        $first = app(ShipmentOperationWriter::class)->start($shipment, 'ship');
+        $second = app(ShipmentOperationWriter::class)->start($shipment, 'ship');
 
         expect($second->getKey())->toBe($first->getKey())
             ->and(ShipmentOperation::query()->where('shipment_id', $shipment->getKey())->count())->toBe(1);
@@ -34,17 +35,17 @@ describe('Shipment operation start records', function (): void {
     it('allows a fresh pending row after the previous operation completed', function (): void {
         $shipment = operationTestShipment();
 
-        $first = ShipmentOperation::recordStart($shipment, 'ship');
-        $first->complete(CarrierOperationResult::succeeded());
+        $first = app(ShipmentOperationWriter::class)->start($shipment, 'ship');
+        app(ShipmentOperationWriter::class)->complete($first, CarrierOperationResult::succeeded());
 
-        $second = ShipmentOperation::recordStart($shipment, 'ship');
+        $second = app(ShipmentOperationWriter::class)->start($shipment, 'ship');
 
         expect($second->getKey())->not->toBe($first->getKey())
             ->and($second->status())->toBe(ShipmentOperationStatus::Pending);
     });
 
     it('rejects unpersisted shipments', function (): void {
-        expect(fn () => ShipmentOperation::recordStart(new Shipment, 'ship'))
+        expect(fn () => app(ShipmentOperationWriter::class)->start(new Shipment, 'ship'))
             ->toThrow(InvalidArgumentException::class);
     });
 });

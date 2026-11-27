@@ -6,6 +6,7 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\ShippingManager;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -41,7 +42,7 @@ final class ReconcileShipmentOperation
 
             if ($tracking->isDelivered()) {
                 $result = CarrierOperationResult::succeeded($trackingNumber);
-                $operation->complete($result);
+                app(ShipmentOperationWriter::class)->complete($operation, $result);
 
                 return $result;
             }
