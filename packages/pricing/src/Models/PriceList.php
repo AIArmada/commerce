@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Actions\ClearOtherDefaultPriceLists;
 use AIArmada\Pricing\Actions\DeletePriceListChildren;
+use AIArmada\Pricing\Persistence\AtomicPriceListPersistence;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,7 +20,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
@@ -47,6 +47,7 @@ class PriceList extends Model implements Auditable
 
     private const SEGMENT_MODEL = 'AIArmada\\Customers\\Models\\Segment';
 
+    use AtomicPriceListPersistence;
     use FormatsMoney;
     use HasCommerceAudit;
     use HasOwner;
@@ -281,7 +282,7 @@ class PriceList extends Model implements Auditable
             }
 
             if ($priceList->is_default) {
-                (new ClearOtherDefaultPriceLists)->execute($priceList, $owner);
+                (new ClearOtherDefaultPriceLists)->execute($priceList);
             }
         });
 
@@ -300,21 +301,6 @@ class PriceList extends Model implements Auditable
 
             (new DeletePriceListChildren)->execute($priceList);
         });
-    }
-
-    /**
-     * Keep default-list demotion and the model write in one transaction.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
-    {
-        return DB::transaction(fn (): bool => parent::save($options));
-    }
-
-    public function delete(): ?bool
-    {
-        return DB::transaction(fn (): ?bool => parent::delete());
     }
 
     private static function validateOwnerScopedReferences(self $priceList): void
