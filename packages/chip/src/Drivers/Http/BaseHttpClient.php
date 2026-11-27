@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Clients\Http;
+namespace AIArmada\Chip\Drivers\Http;
 
 use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\ChipRateLimitException;
@@ -307,7 +307,7 @@ abstract class BaseHttpClient
             return $data;
         }
 
-        $fields = $this->sensitiveFields();
+        $fields = array_map('mb_strtolower', $this->sensitiveFields());
 
         if ($fields === []) {
             return $data;
@@ -315,13 +315,13 @@ abstract class BaseHttpClient
 
         // Prevent infinite recursion on deeply nested structures
         if ($depth > 10) {
-            return $data;
+            return ['truncated' => '***MASKED***'];
         }
 
         $masked = [];
 
         foreach ($data as $key => $value) {
-            if (in_array($key, $fields, true)) {
+            if (is_string($key) && in_array(mb_strtolower($key), $fields, true)) {
                 $masked[$key] = '***MASKED***';
             } elseif (is_array($value)) {
                 $masked[$key] = $this->maskSensitiveData($value, $depth + 1);

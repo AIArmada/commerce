@@ -2,25 +2,28 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Clients;
+namespace AIArmada\Chip\Drivers;
 
-use AIArmada\Chip\Clients\Http\BaseHttpClient;
+use AIArmada\Chip\Contracts\ChipSendTransport;
+use AIArmada\Chip\Drivers\Http\BaseHttpClient;
 use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\ChipRateLimitException;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use JsonException;
+use InvalidArgumentException;
 
-class ChipCollectClient extends BaseHttpClient
+class ChipSendClient extends BaseHttpClient implements ChipSendTransport
 {
     /**
      * @param  array<string, mixed>  $retryConfig
      */
     public function __construct(
         protected string $apiKey,
-        protected string $brandId,
-        protected string $baseUrl = 'https://gate.chip-in.asia/api/v1/',
+        protected string $apiSecret,
+        protected string $environment = 'sandbox',
+        protected string $baseUrl = '',
         protected int $timeout = 30,
         protected array $retryConfig = []
     ) {
@@ -28,82 +31,72 @@ class ChipCollectClient extends BaseHttpClient
     }
 
     /**
-     * Get data from the API. Returns array for most endpoints, string for public_key/ endpoint.
-     *
-     * @return array<string, mixed>|string
+     * @return array<string, mixed>
      */
-    public function get(string $endpoint): array | string
+    public function get(string $endpoint): array
     {
-        if ($endpoint === 'public_key/' || $endpoint === '/public_key/') {
-            $body = $this->requestRaw('GET', $endpoint);
-
-            try {
-                $publicKey = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
-            } catch (JsonException $exception) {
-                throw new ChipApiException(
-                    'CHIP public key response was not a JSON-encoded string',
-                    0,
-                    [],
-                    $exception,
-                );
-            }
-
-            if (! is_string($publicKey) || $publicKey === '') {
-                throw new ChipApiException(
-                    'CHIP public key response did not contain a PEM string',
-                );
-            }
-
-            return $publicKey;
-        }
-
         return $this->request('GET', $endpoint);
     }
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array<string, string>  $headers
      * @return array<string, mixed>
      */
-    public function post(string $endpoint, array $data = [], array $headers = []): array
+    public function post(string $endpoint, array $data = []): array
     {
-        return $this->request('POST', $endpoint, $data, $headers);
+        return $this->request('POST', $endpoint, $data);
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function put(string $endpoint, array $data = [], array $headers = []): array
+    public function put(string $endpoint, array $data = []): array
     {
-        return $this->request('PUT', $endpoint, $data, $headers);
+        return $this->request('PUT', $endpoint, $data);
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function patch(string $endpoint, array $data = [], array $headers = []): array
+    public function patch(string $endpoint, array $data = []): array
     {
-        return $this->request('PATCH', $endpoint, $data, $headers);
+        return $this->request('PATCH', $endpoint, $data);
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function delete(string $endpoint, array $headers = []): array
+    public function delete(string $endpoint): array
     {
-        return $this->request('DELETE', $endpoint, [], $headers);
+        return $this->request('DELETE', $endpoint);
     }
 
-    public function getBrandId(): string
+    public function getEnvironment(): string
     {
-        return $this->brandId;
+        return $this->environment;
     }
 
     protected function resolveBaseUrl(): string
     {
-        return $this->baseUrl;
+        if (! empty($this->baseUrl)) {
+            return $this->baseUrl;
+        }
+
+        $baseUrls = [
+            'sandbox' => 'https://staging-api.chip-in.asia/api',
+            'production' => 'https://api.chip-in.asia/api',
+        ];
+
+        if (! array_key_exists($this->environment, $baseUrls)) {
+            throw new InvalidArgumentException(sprintf(
+                'CHIP Send environment [%s] must be sandbox or production.',
+                $this->environment,
+            ));
+        }
+
+        return $baseUrls[$this->environment];
     }
 
     /**
@@ -112,8 +105,13 @@ class ChipCollectClient extends BaseHttpClient
      */
     protected function sendRequest(string $method, string $url, array $data, array $headers = []): Response
     {
+        $epoch = time();
+        $checksum = $this->generateChecksum($epoch);
+
         $defaultHeaders = [
             'Authorization' => "Bearer {$this->apiKey}",
+            'epoch' => (string) $epoch,
+            'checksum' => $checksum,
         ];
 
         return Http::withHeaders(array_merge($this->defaultHeaders(), $defaultHeaders, $headers))
@@ -121,6 +119,11 @@ class ChipCollectClient extends BaseHttpClient
             ->send($method, $url, [
                 'json' => $data,
             ]);
+    }
+
+    protected function generateChecksum(int $epoch): string
+    {
+        return hash_hmac('sha512', (string) $epoch . $this->apiKey, $this->apiSecret);
     }
 
     protected function handleFailedResponse(Response $response): never
@@ -147,20 +150,12 @@ class ChipCollectClient extends BaseHttpClient
         $allError = ChipApiException::extractAllError($responseData);
         $message = $responseData['message'] ?? $responseData['error'] ?? $allError['message'] ?? "API request failed with status {$statusCode}";
 
-        if ($allError !== null && $allError['code'] !== null && ! isset($responseData['code'])) {
-            $responseData['code'] = $allError['code'];
+        if ($statusCode === 400) {
+            throw new ChipValidationException($message, $responseData, $statusCode);
         }
 
-        // Demoted duplicate: handleException logs the authoritative error
-        // line (Send relies on it); this keeps the Collect response context
-        // at warning so a failure still emits exactly one error line at
-        // this layer (service-level attempt() logging is separate).
-        if ($this->loggingEnabled()) {
-            Log::channel($this->logChannel())->warning('CHIP API Error Response', [
-                'status' => $statusCode,
-                'message' => $message,
-                'response_data' => $this->maskSensitiveData($responseData),
-            ]);
+        if ($allError !== null && $allError['code'] !== null && ! isset($responseData['code'])) {
+            $responseData['code'] = $allError['code'];
         }
 
         throw new ChipApiException($message, $statusCode, $responseData);
@@ -171,16 +166,20 @@ class ChipCollectClient extends BaseHttpClient
      */
     protected function sensitiveFields(): array
     {
-        return array_merge(parent::sensitiveFields(), ['brand_id']);
+        return array_merge(parent::sensitiveFields(), [
+            'api_secret',
+            'account_number',
+            'bank_account',
+        ]);
     }
 
     protected function requestLogMessage(): string
     {
-        return 'CHIP Collect API Request';
+        return 'CHIP Send API Request';
     }
 
     protected function responseLogMessage(): string
     {
-        return 'CHIP Collect API Response';
+        return 'CHIP Send API Response';
     }
 }

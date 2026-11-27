@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\ChipRateLimitException;
 use Illuminate\Support\Facades\Http;

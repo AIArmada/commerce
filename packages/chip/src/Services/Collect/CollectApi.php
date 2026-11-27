@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services\Collect;
 
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -12,7 +12,7 @@ use Throwable;
 abstract class CollectApi
 {
     public function __construct(
-        protected ChipCollectClient $client
+        protected ChipCollectTransport $client
     ) {}
 
     /**

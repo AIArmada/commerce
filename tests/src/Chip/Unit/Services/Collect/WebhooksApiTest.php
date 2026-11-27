@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Services\Collect\WebhooksApi;
 use Illuminate\Support\Facades\Log;
 

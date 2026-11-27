@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Concerns\PerformsCharges;
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Database\Eloquent\Model;

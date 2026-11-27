@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
-use AIArmada\Chip\Clients\ChipSendClient;
+use AIArmada\Chip\Contracts\ChipSendTransport;
 use AIArmada\Chip\Data\BankAccountData;
 use AIArmada\Chip\Data\SendInstructionData;
 use AIArmada\Chip\Data\SendLimitData;
@@ -14,7 +14,7 @@ use AIArmada\Chip\Exceptions\ChipValidationException;
 class ChipSendService
 {
     public function __construct(
-        private ChipSendClient $client
+        private ChipSendTransport $client
     ) {}
 
     /**

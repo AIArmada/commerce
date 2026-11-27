@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipSendClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\Data\BankAccountData;
 use AIArmada\Chip\Data\SendInstructionData;
 use AIArmada\Chip\Data\SendLimitData;

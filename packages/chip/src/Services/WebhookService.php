@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
 use Closure;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -119,7 +119,7 @@ class WebhookService
                         return $companyKey;
                     }
 
-                    $response = app(ChipCollectClient::class)->get('public_key/');
+                    $response = app(ChipCollectTransport::class)->get('public_key/');
 
                     if (! is_string($response) || $response === '') {
                         throw new WebhookVerificationException('CHIP Collect public_key/ did not return a PEM string.');

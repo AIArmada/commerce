@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Chip;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
-use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Clients\ChipSendClient;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\PruneIdempotencyStubsCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\Commands\SyncChipRecordsFromApiCommand;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
+use AIArmada\Chip\Contracts\ChipSendTransport;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
@@ -160,6 +162,8 @@ final class ChipServiceProvider extends PackageServiceProvider
             ChipCustomerDirectoryInterface::class,
             ChipSendService::class,
             WebhookService::class,
+            ChipCollectTransport::class,
+            ChipSendTransport::class,
             ChipCollectClient::class,
             ChipSendClient::class,
             ChipGateway::class,
@@ -193,7 +197,7 @@ final class ChipServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(ChipCollectService::class, function ($app): ChipCollectService {
             return new ChipCollectService(
-                $app->make(ChipCollectClient::class),
+                $app->make(ChipCollectTransport::class),
                 $app->make(CacheRepository::class)
             );
         });
@@ -208,7 +212,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(ChipSendService::class, function ($app): ChipSendService {
             return new ChipSendService(
-                $app->make(ChipSendClient::class)
+                $app->make(ChipSendTransport::class)
             );
         });
 
@@ -285,6 +289,9 @@ final class ChipServiceProvider extends PackageServiceProvider
                 ])
             );
         });
+
+        $this->app->alias(ChipCollectClient::class, ChipCollectTransport::class);
+        $this->app->alias(ChipSendClient::class, ChipSendTransport::class);
     }
 
     private function resolveSendBaseUrl(string $environment): string

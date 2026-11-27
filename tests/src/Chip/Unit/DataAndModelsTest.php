@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipSendClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\SendInstruction;

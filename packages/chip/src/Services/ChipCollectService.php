@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
@@ -32,7 +32,7 @@ class ChipCollectService
     private ?SubscriptionService $subscriptionService = null;
 
     public function __construct(
-        private ChipCollectClient $client,
+        private ChipCollectTransport $client,
         ?CacheRepository $cache = null,
     ) {
         $this->purchases = new PurchasesApi($cache, $client);

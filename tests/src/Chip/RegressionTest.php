@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
 use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
-use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Clients\ChipSendClient;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PaymentData;

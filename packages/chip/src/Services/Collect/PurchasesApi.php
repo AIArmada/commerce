@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services\Collect;
 
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
@@ -46,7 +46,7 @@ final class PurchasesApi extends CollectApi
 
     public function __construct(
         ?CacheRepository $cache,
-        ChipCollectClient $client,
+        ChipCollectTransport $client,
     ) {
         $this->cache = $cache;
         $this->purchaseIdempotencyLedger = new PurchaseIdempotencyLedger;
