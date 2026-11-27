@@ -8,18 +8,18 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentProducts\Resources\ProductResource;
-use AIArmada\Products\Actions\UpdateProductStatus;
-use AIArmada\Products\Actions\UpdateCatalogProducts;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\ImportCatalogProducts;
+use AIArmada\Products\Actions\UpdateCatalogProducts;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
-use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
 use Carbon\CarbonImmutable;
+use Closure;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -435,7 +435,7 @@ class ProductsTable
         }
     }
 
-    private static function importProducts(array $data, \Closure $authorize): void
+    private static function importProducts(array $data, Closure $authorize): void
     {
         $csvFile = $data['csv_file'] ?? null;
 

@@ -9,13 +9,14 @@ use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Products\Actions\RebuildCollectionMembership;
 use AIArmada\Products\Actions\SaveCollection;
 use AIArmada\Products\Actions\SyncCatalogRelationships;
-use AIArmada\Products\Models\Category;
 use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 describe('Collection Model', function (): void {
     beforeEach(function (): void {
@@ -55,7 +56,7 @@ describe('Collection Model', function (): void {
             expect(fn () => $action->update($collection, [
                 'name' => 'Changed',
                 'conditions' => [['field' => 'category', 'value' => $category->getKey()]],
-            ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+            ]))->toThrow(ValidationException::class);
 
             expect($collection->fresh()->name)->toBe('Local Collection');
         });
@@ -79,7 +80,7 @@ describe('Collection Model', function (): void {
             $action->syncCollectionProducts($collection, [$local->getKey()]);
 
             expect(fn () => $action->syncCollectionProducts($collection, [$foreign->getKey()]))
-                ->toThrow(\Illuminate\Validation\ValidationException::class);
+                ->toThrow(ValidationException::class);
 
             expect($collection->products()->pluck('id')->all())->toBe([$local->getKey()]);
         });

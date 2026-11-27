@@ -146,7 +146,7 @@ final readonly class SyncCatalogRelationships
     }
 
     /**
-     * @param array<int, mixed> $ids
+     * @param  array<int, mixed>  $ids
      * @return list<string>
      */
     private function normalizeIds(array $ids, string $field): array

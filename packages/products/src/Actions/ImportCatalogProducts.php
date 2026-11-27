@@ -18,8 +18,8 @@ use Illuminate\Support\Str;
 final readonly class ImportCatalogProducts
 {
     /**
-     * @param array<int, array<string, mixed>> $rows
-     * @param Closure(?Product): bool $authorize
+     * @param  array<int, array<string, mixed>>  $rows
+     * @param  Closure(?Product): bool  $authorize
      * @return array{int, int, list<string>}
      */
     public function execute(array $rows, bool $updateExisting, bool $skipErrors, Closure $authorize): array

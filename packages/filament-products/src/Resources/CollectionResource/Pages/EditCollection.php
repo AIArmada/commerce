@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 
-use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CollectionResource;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Actions\SaveCollection;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;

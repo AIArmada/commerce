@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\Pages;
 
-use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\FilamentProducts\Support\CompositeComponentsFormData;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Actions\UpdateCompositeProduct;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;

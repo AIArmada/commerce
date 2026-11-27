@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 
-use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Actions\SaveCategory;
 use AIArmada\Products\Models\Category;
 use Filament\Actions;

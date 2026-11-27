@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeResource\Pages;
 
-use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeResource;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Actions\SaveAttribute;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;

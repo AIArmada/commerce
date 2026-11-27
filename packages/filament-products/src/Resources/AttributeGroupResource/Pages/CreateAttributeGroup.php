@@ -7,8 +7,8 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
 use AIArmada\Products\Actions\SaveAttributeGroup;
-use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Models\AttributeGroup;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateAttributeGroup extends CreateRecord

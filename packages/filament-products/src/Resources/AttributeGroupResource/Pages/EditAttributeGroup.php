@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages;
 
-use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Actions\SaveAttributeGroup;
-use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Models\AttributeGroup;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
