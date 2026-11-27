@@ -148,6 +148,18 @@ describe('getRates', function (): void {
         expect($rates[0]->currency)->toBe('MYR');
     });
 
+    it('quotes repeated packages using their combined weight', function (): void {
+        config(['jnt.shipping.base_rate' => 500, 'jnt.shipping.per_kg_rate' => 200]);
+
+        $address = new AddressData(name: 'Test', phone: '123', line1: 'Test', postcode: '50000', country: 'MYS');
+        $repeated = $this->driver->getRates($address, $address, [new PackageData(weight: 1000, quantity: 3)]);
+        $combined = $this->driver->getRates($address, $address, [new PackageData(weight: 3000)]);
+        $single = $this->driver->getRates($address, $address, [new PackageData(weight: 1000)]);
+
+        expect($repeated[0]->rate)->toBe($combined[0]->rate)
+            ->and($repeated[0]->rate)->toBeGreaterThan($single[0]->rate);
+    });
+
     it('applies higher rate for East Malaysia', function (): void {
         $origin = new AddressData(
             name: 'Sender',

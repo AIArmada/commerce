@@ -226,6 +226,21 @@ describe('ShippingRate Model', function (): void {
         expect($calculated)->toBe(1100); // 500 + (200 * 3) for 4kg total (ceil(3.5))
     });
 
+    it('includes package quantity in weight pricing and eligibility', function (): void {
+        $rate = new ShippingRate([
+            'calculation_type' => 'per_kg',
+            'base_rate' => 500,
+            'per_unit_rate' => 200,
+            'conditions' => [['type' => 'min_weight', 'value' => 2000]],
+        ]);
+
+        $packages = [new PackageData(weight: 1000, quantity: 3)];
+
+        expect($rate->calculateRate($packages))->toBe(900)
+            ->and($rate->meetsConditions($packages))->toBeTrue()
+            ->and($rate->meetsConditions([new PackageData(weight: 1000)]))->toBeFalse();
+    });
+
     it('applies free shipping threshold', function (): void {
         $zone = ShippingZone::create([
             'owner_type' => 'TestOwner',

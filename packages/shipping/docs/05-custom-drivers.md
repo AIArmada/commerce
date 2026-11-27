@@ -191,9 +191,8 @@ class JntShippingDriver implements ShippingDriverInterface
         array $packages,
         array $options = []
     ): array {
-        // PackageData::$weight is already an int in grams — sum integers,
-        // never scale a float.
-        $totalWeight = collect($packages)->sum(fn (PackageData $p) => $p->weight);
+        // PackageData::$weight is per package in grams; include quantity.
+        $totalWeight = collect($packages)->sum(fn (PackageData $p) => $p->weight * $p->quantity);
 
         $response = $this->client->post('/rates', [
             'origin' => [

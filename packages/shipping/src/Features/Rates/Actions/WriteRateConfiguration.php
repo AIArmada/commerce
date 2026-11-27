@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Persistence\RateCache;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -27,6 +29,7 @@ final class WriteRateConfiguration implements ManageRateConfiguration
         }
 
         $zone->save();
+        $this->invalidateQuotes();
 
         return (string) $zone->getKey();
     }
@@ -37,6 +40,7 @@ final class WriteRateConfiguration implements ManageRateConfiguration
 
         DB::transaction(function () use ($zoneId, $data): void {
             $this->zone($zoneId)->update($data);
+            $this->invalidateQuotes();
         });
     }
 
@@ -46,7 +50,10 @@ final class WriteRateConfiguration implements ManageRateConfiguration
             $zone = $this->zone($zoneId);
             unset($data['zone_id']);
 
-            return (string) $zone->rates()->create($data)->getKey();
+            $id = (string) $zone->rates()->create($data)->getKey();
+            $this->invalidateQuotes();
+
+            return $id;
         });
     }
 
@@ -64,12 +71,21 @@ final class WriteRateConfiguration implements ManageRateConfiguration
             }
 
             $rate->update($data);
+            $this->invalidateQuotes();
         });
     }
 
     public function deleteRate(string $rateId): bool
     {
-        return DB::transaction(fn (): bool => (bool) $this->rate($rateId)->delete());
+        return DB::transaction(function () use ($rateId): bool {
+            $deleted = (bool) $this->rate($rateId)->delete();
+
+            if ($deleted) {
+                $this->invalidateQuotes();
+            }
+
+            return $deleted;
+        });
     }
 
     public function deleteZone(string $zoneId): bool
@@ -81,8 +97,27 @@ final class WriteRateConfiguration implements ManageRateConfiguration
                 throw new DomainException('Remove the shipping rates before deleting the zone.');
             }
 
-            return (bool) $zone->delete();
+            $deleted = (bool) $zone->delete();
+
+            if ($deleted) {
+                $this->invalidateQuotes();
+            }
+
+            return $deleted;
         });
+    }
+
+    private function invalidateQuotes(): void
+    {
+        app(ShippingZoneResolver::class)->clearCache();
+
+        $invalidate = static fn () => app(RateCache::class)->invalidateConfiguration();
+
+        if (DB::transactionLevel() > 0) {
+            DB::afterCommit($invalidate);
+        } else {
+            $invalidate();
+        }
     }
 
     private function zone(string $id): ShippingZone

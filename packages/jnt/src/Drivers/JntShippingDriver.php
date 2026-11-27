@@ -106,7 +106,7 @@ class JntShippingDriver implements ShippingDriverInterface
         array $packages,
         array $options = []
     ): array {
-        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
+        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight * $p->quantity, $packages));
 
         // Calculate rate based on weight
         $rate = $this->calculateWeightBasedRate($totalWeight, $destination);

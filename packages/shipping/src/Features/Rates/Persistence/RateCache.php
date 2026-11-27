@@ -15,6 +15,8 @@ final class RateCache
 {
     private const int GENERATION_TTL = 86400;
 
+    private const string CONFIG_GENERATION_KEY = 'shipping:rates:configuration-generation';
+
     /**
      * @param  list<string>  $tags
      * @param  Closure(): Collection<int, RateQuoteData>  $load
@@ -23,6 +25,18 @@ final class RateCache
     public function remember(array $tags, string $key, int $ttl, Closure $load): Collection
     {
         $repository = Cache::store();
+        $configuration = $repository->get(self::CONFIG_GENERATION_KEY);
+
+        if (! is_string($configuration)) {
+            $repository->add(self::CONFIG_GENERATION_KEY, (string) Str::uuid(), self::GENERATION_TTL);
+            $configuration = $repository->get(self::CONFIG_GENERATION_KEY);
+        }
+
+        if (! is_string($configuration)) {
+            return $load();
+        }
+
+        $key .= ':' . $configuration;
 
         if ($repository->getStore() instanceof TaggableStore) {
             return $repository->tags($tags)->remember($key, $ttl, $load);
@@ -55,6 +69,11 @@ final class RateCache
         }
 
         $repository->put($this->generationKey($tags), (string) Str::uuid(), self::GENERATION_TTL);
+    }
+
+    public function invalidateConfiguration(): void
+    {
+        Cache::store()->put(self::CONFIG_GENERATION_KEY, (string) Str::uuid(), self::GENERATION_TTL);
     }
 
     /** @param list<string> $tags */

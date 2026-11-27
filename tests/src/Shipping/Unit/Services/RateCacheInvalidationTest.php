@@ -10,6 +10,7 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
+use AIArmada\Shipping\Features\Rates\Persistence\RateCache;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Support\Facades\Cache;
@@ -101,4 +102,24 @@ it('separates rate cache keys by effective global visibility', function (): void
 
         expect($inclusive)->not->toBe($strict);
     });
+});
+
+it('invalidates quotes across all owner partitions when rate configuration changes', function (): void {
+    config(['cache.default' => 'array']);
+
+    $cache = new RateCache;
+    $key = 'quote-' . Str::uuid();
+    $rate = static fn (int $amount) => collect([
+        new RateQuoteData(carrier: 'zone', service: 'standard', rate: $amount, currency: 'MYR', estimatedDays: 3),
+    ]);
+
+    foreach (['owner-a', 'owner-b'] as $owner) {
+        expect($cache->remember([$owner], $key, 300, fn () => $rate(500))->first()->rate)->toBe(500);
+    }
+
+    $cache->invalidateConfiguration();
+
+    foreach (['owner-a', 'owner-b'] as $owner) {
+        expect($cache->remember([$owner], $key, 300, fn () => $rate(700))->first()->rate)->toBe(700);
+    }
 });

@@ -177,7 +177,7 @@ class ShippingRate extends Model implements Auditable
             return true;
         }
 
-        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
+        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight * $p->quantity, $packages));
 
         foreach ($conditions as $condition) {
             $type = $condition['type'] ?? null;
@@ -217,7 +217,7 @@ class ShippingRate extends Model implements Auditable
             return 0;
         }
 
-        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
+        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight * $p->quantity, $packages));
         $totalItems = array_sum(array_map(fn (PackageData $p) => $p->quantity, $packages));
 
         $rate = match ($this->calculation_type) {
