@@ -6,28 +6,27 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\CarbonImmutable;
 
-final class BankAccountData extends ChipData
+final readonly class BankAccountData
 {
     public function __construct(
-        public readonly int $id,
-        public readonly string $status,
-        public readonly string $account_number,
-        public readonly string $bank_code,
-        public readonly ?int $group_id,
-        public readonly string $name,
-        public readonly ?string $reference,
-        public readonly string $created_at,
-        public readonly bool $is_debiting_account,
-        public readonly bool $is_crediting_account,
-        public readonly string $updated_at,
-        public readonly ?string $deleted_at,
-        public readonly ?string $rejection_reason,
+        public int $id,
+        public string $status,
+        public string $account_number,
+        public string $bank_code,
+        public ?int $group_id,
+        public string $name,
+        public ?string $reference,
+        public string $created_at,
+        public bool $is_debiting_account,
+        public bool $is_crediting_account,
+        public string $updated_at,
+        public ?string $deleted_at,
+        public ?string $rejection_reason,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         return new self(
             id: (int) $data['id'],
             status: (string) $data['status'],
