@@ -25,8 +25,7 @@ final class ManageInboxEntries
 {
     public function __construct(
         private readonly PayloadRedactor $redactor,
-    ) {
-    }
+    ) {}
 
     public function create(
         MorphMany | Model $recipient,
@@ -208,17 +207,19 @@ final class ManageInboxEntries
             throw new InvalidArgumentException('Inbox references must be persisted.');
         }
 
-        if (! method_exists($model, 'ownerScopeConfig')) {
+        $modelClass = $model::class;
+
+        if (! method_exists($modelClass, 'ownerScopeConfig')) {
             return;
         }
 
         /** @var OwnerScopeConfig $config */
-        $config = $model::ownerScopeConfig();
+        $config = $modelClass::ownerScopeConfig();
 
         if (! $config->enabled) {
             return;
         }
 
-        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
+        OwnerWriteGuard::findOrFailForOwner($modelClass, $model->getKey());
     }
 }

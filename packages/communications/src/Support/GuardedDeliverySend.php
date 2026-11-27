@@ -51,9 +51,7 @@ final class GuardedDeliverySend
             return null;
         }
 
-        $communication = $communicationId === null
-            ? null
-            : Communication::query()->whereKey($communicationId)->lockForUpdate()->first();
+        $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->first();
 
         if (! $communication instanceof Communication) {
             self::restoreSettledFlip($delivery);

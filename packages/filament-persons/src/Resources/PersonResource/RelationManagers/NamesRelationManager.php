@@ -20,7 +20,6 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 
 final class NamesRelationManager extends RelationManager
@@ -38,15 +37,7 @@ final class NamesRelationManager extends RelationManager
      */
     public static function getLanguageOptions(): array
     {
-        /** @var array<string, string> $options */
-        $options = Cache::remember('filament-persons.languages', 3600, static function (): array {
-            /** @var array<string, string> $languages */
-            $languages = app(ReferenceDataApi::class)->languageOptions();
-
-            return $languages;
-        });
-
-        return $options;
+        return app(ReferenceDataApi::class)->languageOptions();
     }
 
     public function form(Schema $schema): Schema

@@ -18,14 +18,14 @@ final readonly class RecalculateCommunicationStatusAction implements Communicati
 {
     public function handle(string $communicationId): void
     {
-        if (Communication::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
-        }
-
         $model = new Communication;
 
         $model->getConnection()->transaction(function () use ($communicationId, $model): void {
             $communication = $model->newQuery()->whereKey($communicationId)->lockForUpdate()->firstOrFail();
+
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+            }
 
             if ($communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
                 return;

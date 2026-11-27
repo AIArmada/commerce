@@ -603,8 +603,12 @@ describe('owner-safe address attach and merge', function (): void {
             'content' => 'Foreign note',
         ]));
 
-        expect(fn (): Customer => app(MergeCustomers::class)->execute($target, $source))
-            ->toThrow(InvalidArgumentException::class, 'outside the target owner context');
+        OwnerContext::withOwner($ownerA, function () use ($target, $source): void {
+            expect(fn (): Customer => app(MergeCustomers::class)->execute($target, $source))
+                ->toThrow(InvalidArgumentException::class, 'outside the target owner context');
+
+            expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue();
+        });
     });
 });
 

@@ -25,14 +25,14 @@ final class AttachCommunicationReferenceAction implements CommunicationReference
         ?string $role = null,
         ?array $metadata = null,
     ): string {
-        if (Communication::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
-        }
-
         $referenceValues = $this->normalizer->normalize($referenceType, $referenceId);
 
         return (new Communication)->getConnection()->transaction(function () use ($communicationId, $referenceValues, $role, $metadata): string {
             $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->firstOrFail();
+
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+            }
 
             $reference = $communication->references()
                 ->where('reference_type', $referenceValues['type'])
