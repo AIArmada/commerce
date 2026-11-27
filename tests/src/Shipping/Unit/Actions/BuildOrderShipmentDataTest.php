@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Shipping\Cart\CartBridge;
+use AIArmada\Shipping\Features\Shipments\Api\BuildShipmentFromOrder;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
@@ -11,14 +11,14 @@ use AIArmada\Shipping\Data\ShipmentItemData;
 uses(TestCase::class);
 
 // ============================================
-// CartBridge Service Tests
+// Order shipment data tests
 // ============================================
 
 beforeEach(function (): void {
-    $this->bridge = new CartBridge;
+    $this->builder = app(BuildShipmentFromOrder::class);
 });
 
-describe('createShipmentDataFromOrder', function (): void {
+describe('BuildShipmentFromOrder', function (): void {
     it('creates ShipmentData from order array', function (): void {
         $orderData = [
             'id' => 'order-123',
@@ -54,7 +54,7 @@ describe('createShipmentDataFromOrder', function (): void {
             'instructions' => 'Handle with care',
         ];
 
-        $shipmentData = $this->bridge->createShipmentDataFromOrder($orderData);
+        $shipmentData = $this->builder->build($orderData);
 
         expect($shipmentData)->toBeInstanceOf(ShipmentData::class);
         expect($shipmentData->reference)->toBe('ORD-2024-001');
@@ -78,7 +78,7 @@ describe('createShipmentDataFromOrder', function (): void {
             'items' => [],
         ];
 
-        $shipmentData = $this->bridge->createShipmentDataFromOrder($orderData);
+        $shipmentData = $this->builder->build($orderData);
 
         expect($shipmentData->reference)->toBe('order-123');
     });
@@ -100,7 +100,7 @@ describe('createShipmentDataFromOrder', function (): void {
             'items' => [],
         ];
 
-        $shipmentData = $this->bridge->createShipmentDataFromOrder($orderData);
+        $shipmentData = $this->builder->build($orderData);
 
         expect($shipmentData->destination)->toBeInstanceOf(AddressData::class);
         expect($shipmentData->destination->name)->toBe('Jane Doe');
@@ -134,7 +134,7 @@ describe('createShipmentDataFromOrder', function (): void {
             ],
         ];
 
-        $shipmentData = $this->bridge->createShipmentDataFromOrder($orderData);
+        $shipmentData = $this->builder->build($orderData);
 
         expect($shipmentData->items)->toHaveCount(1);
         expect($shipmentData->items[0])->toBeInstanceOf(ShipmentItemData::class);
@@ -170,7 +170,7 @@ describe('createShipmentDataFromOrder', function (): void {
             ],
         ];
 
-        $shipmentData = $this->bridge->createShipmentDataFromOrder($orderData);
+        $shipmentData = $this->builder->build($orderData);
 
         // 2 * 5000 + 1 * 3000 = 13000
         expect($shipmentData->declaredValue)->toBe(13000);
@@ -184,31 +184,15 @@ describe('createShipmentDataFromOrder', function (): void {
             'shipping_address' => [
                 'name' => 'John Doe',
                 'phone' => '+60123456789',
-                'address' => '123 Main Street',
-                'post_code' => '50000',
+                'line1' => '123 Main Street',
+                'postcode' => '50000',
             ],
             'items' => [],
             'cod_amount' => 10000,
         ];
 
-        $shipmentData = $this->bridge->createShipmentDataFromOrder($orderData);
+        $shipmentData = $this->builder->build($orderData);
 
         expect($shipmentData->codAmount)->toBe(10000);
-    });
-});
-
-describe('isCartPackageInstalled', function (): void {
-    it('returns true when cart package is installed', function (): void {
-        // Cart package is installed in test environment
-        expect($this->bridge->isCartPackageInstalled())->toBeTrue();
-    });
-});
-
-describe('getOrderUrl', function (): void {
-    it('returns null when Orders resource does not exist', function (): void {
-        $result = $this->bridge->getOrderUrl('order-123');
-
-        // Since FilamentOrders package may not be installed in test env
-        expect($result)->toBeNull();
     });
 });

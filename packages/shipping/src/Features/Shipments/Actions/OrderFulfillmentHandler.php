@@ -24,7 +24,7 @@ use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use AIArmada\Shipping\Features\Shipments\States\Draft;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ComponentLines;
-use AIArmada\Shipping\Support\DestinationAddressValidator;
+use AIArmada\Shipping\Features\Shipments\Api\ValidateDestination;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -95,7 +95,7 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
             }
 
             $destinationAddress = $this->toShippingAddressData($shippingAddress, includeEmail: true);
-            $violations = app(DestinationAddressValidator::class)->validate($destinationAddress);
+            $violations = app(ValidateDestination::class)->validate($destinationAddress);
 
             if ($violations !== []) {
                 throw new InvalidArgumentException('Destination address is not shippable: ' . implode(' ', $violations));

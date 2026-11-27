@@ -230,9 +230,9 @@ country-required fields fails fast with a `not shippable` error instead
 of silently matching the wrong zone:
 
 ```php
-use AIArmada\Shipping\Support\DestinationAddressValidator;
+use AIArmada\Shipping\Features\Shipments\Api\ValidateDestination;
 
-$violations = app(DestinationAddressValidator::class)->validate($destination);
+$violations = app(ValidateDestination::class)->validate($destination);
 // [] when shippable — or when addressing is not installed (unchecked mode).
 ```
 

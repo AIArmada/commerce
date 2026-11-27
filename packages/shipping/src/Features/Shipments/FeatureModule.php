@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments;
 
+use AIArmada\Shipping\Features\Shipments\Actions\BuildOrderShipmentData;
 use AIArmada\Shipping\Features\Shipments\Actions\IssuePrintableLabel;
+use AIArmada\Shipping\Features\Shipments\Actions\ValidateDestinationAddress;
 use AIArmada\Shipping\Features\Shipments\Actions\OperateShipmentBatch;
 use AIArmada\Shipping\Features\Shipments\Actions\MarkStoredShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Actions\OperateStoredShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\WriteManualShipment;
+use AIArmada\Shipping\Features\Shipments\Api\BuildShipmentFromOrder;
 use AIArmada\Shipping\Features\Shipments\Api\BulkShipmentOperations;
+use AIArmada\Shipping\Features\Shipments\Api\ValidateDestination;
 use AIArmada\Shipping\Features\Shipments\Api\ManageManualShipment;
 use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Api\PrintableLabel;
@@ -28,6 +32,8 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(BuildShipmentFromOrder::class, BuildOrderShipmentData::class);
+        $app->bind(ValidateDestination::class, ValidateDestinationAddress::class);
         $app->bind(ReadReturnShipment::class, FindReturnShipment::class);
         $app->bind(ShipmentStatistics::class, ReadShipmentStatistics::class);
         $app->bind(ShipmentOperations::class, OperateStoredShipment::class);

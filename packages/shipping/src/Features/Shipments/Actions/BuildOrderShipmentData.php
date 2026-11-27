@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Cart;
+namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
-use Throwable;
+use AIArmada\Shipping\Features\Shipments\Api\BuildShipmentFromOrder;
 
-class CartBridge
+final class BuildOrderShipmentData implements BuildShipmentFromOrder
 {
-    public function createShipmentDataFromOrder(array $orderData): ShipmentData
+    /** @param array<string, mixed> $orderData */
+    public function build(array $orderData): ShipmentData
     {
         $originAddress = $this->getDefaultOriginAddress();
         $destinationAddress = $this->parseAddress($orderData['shipping_address']);
@@ -30,34 +31,7 @@ class CartBridge
         );
     }
 
-    public function getOrderUrl(string $orderId): ?string
-    {
-        $resourceClass = 'AIArmada\\FilamentOrders\\Resources\\OrderResource';
-
-        if (! class_exists($resourceClass)) {
-            return null;
-        }
-
-        try {
-            return $resourceClass::getUrl('view', ['record' => $orderId]);
-        } catch (Throwable $e) {
-            return null;
-        }
-    }
-
-    public function getCreateShipmentUrl(string $orderId): string
-    {
-        return route('filament.admin.resources.shipments.create', [
-            'order_id' => $orderId,
-        ]);
-    }
-
-    public function isCartPackageInstalled(): bool
-    {
-        return class_exists('AIArmada\\Cart\\Cart');
-    }
-
-    protected function getDefaultOriginAddress(): AddressData
+    private function getDefaultOriginAddress(): AddressData
     {
         $config = config('shipping.defaults.origin', []);
 
@@ -73,7 +47,8 @@ class CartBridge
         );
     }
 
-    protected function parseAddress(array $address): AddressData
+    /** @param array<string, mixed> $address */
+    private function parseAddress(array $address): AddressData
     {
         return new AddressData(
             name: $address['name'],
@@ -87,7 +62,11 @@ class CartBridge
         );
     }
 
-    protected function parseItems(array $items): array
+    /**
+     * @param list<array<string, mixed>> $items
+     * @return list<ShipmentItemData>
+     */
+    private function parseItems(array $items): array
     {
         return array_map(function ($item) {
             return new ShipmentItemData(
@@ -100,7 +79,8 @@ class CartBridge
         }, $items);
     }
 
-    protected function calculateDeclaredValue(array $items): int
+    /** @param list<ShipmentItemData> $items */
+    private function calculateDeclaredValue(array $items): int
     {
         return array_reduce($items, function (int $total, ShipmentItemData $item) {
             return $total + (($item->declaredValue ?? 0) * $item->quantity);

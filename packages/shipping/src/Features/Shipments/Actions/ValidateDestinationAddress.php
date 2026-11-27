@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Support;
+namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Addressing\Contracts\AddressValidator;
 use AIArmada\Addressing\Data\AddressData as AddressingAddressData;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Features\Shipments\Api\ValidateDestination;
 
 /**
  * Destination shippability check against addressing validation profiles.
@@ -19,7 +20,7 @@ use AIArmada\Shipping\Data\AddressData;
  * This is a soft integration: when aiarmada/addressing is not installed
  * the destination is unchecked and validation returns no violations.
  */
-final class DestinationAddressValidator
+final class ValidateDestinationAddress implements ValidateDestination
 {
     /**
      * @return array<string, string> Field name to violation message; empty when shippable or unchecked.
