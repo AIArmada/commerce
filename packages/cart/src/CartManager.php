@@ -238,18 +238,24 @@ final class CartManager implements CartManagerInterface
         $storage = $this->resolveStorage();
         $key = $this->partitionKey($storage);
 
-        if (isset($this->cartCaches[$key][$uuid])) {
-            return $this->cartCaches[$key][$uuid];
-        }
-
         if (! $storage instanceof CartIdentityLookup) {
             return null;
         }
 
         $snapshot = $storage->findSnapshotById($uuid);
 
-        if (! $snapshot) {
+        if ($snapshot === null) {
+            unset($this->cartCaches[$key][$uuid]);
+
             return null;
+        }
+
+        $cached = $this->cartCaches[$key][$uuid] ?? null;
+
+        if ($cached !== null
+            && $cached->getIdentifier() === $snapshot->identifier
+            && $cached->instance() === $snapshot->instance) {
+            return $cached;
         }
 
         return $this->cartCaches[$key][$uuid] = $this->getCartInstance($snapshot->instance, $snapshot->identifier);

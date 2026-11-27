@@ -39,6 +39,37 @@ describe('Cart getById', function (): void {
             ->and($second)->toBe($first);
     });
 
+    it('does not resolve a deleted UUID to a replacement cart sharing its identifier', function (): void {
+        $manager = app(CartManagerInterface::class);
+        $original = $manager->getCartInstance('default', 'replace-cart');
+        $original->add('old', 'Original', 1000, 1);
+        $id = $original->getId();
+
+        expect($id)->not->toBeNull()
+            ->and($manager->getById($id))->not->toBeNull();
+
+        $original->storage()->forget('replace-cart', 'default');
+        $replacement = $manager->getCartInstance('default', 'replace-cart');
+        $replacement->add('new', 'Replacement', 2000, 1);
+
+        expect($replacement->getId())->not->toBe($id)
+            ->and($manager->getById($id))->toBeNull();
+    });
+
+    it('resolves the new identifier after a swap outside the manager', function (): void {
+        $manager = app(CartManagerInterface::class);
+        $cart = $manager->getCartInstance('default', 'swap-before');
+        $cart->add('item', 'Item', 1000, 1);
+        $id = $cart->getId();
+
+        expect($id)->not->toBeNull()
+            ->and($manager->getById($id)?->getIdentifier())->toBe('swap-before');
+
+        expect($cart->storage()->swapIdentifier('swap-before', 'swap-after', 'default'))->toBeTrue()
+            ->and($manager->getById($id)?->getIdentifier())->toBe('swap-after')
+            ->and($manager->getById($id)?->getId())->toBe($id);
+    });
+
     it('scopes getById to the current owner', function (): void {
         $ownerA = User::query()->create([
             'name' => 'Owner A',
