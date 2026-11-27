@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
+
 use AIArmada\Chip\Contracts\PurchaseStatus;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-
-
 
 final readonly class PurchaseData
 {

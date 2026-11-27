@@ -23,7 +23,8 @@ final readonly class SubscriptionDraft
         public ?DateTimeImmutable $trialEndsAt = null,
         public ?DateTimeImmutable $billingCycleAnchor = null,
         public ?string $couponId = null,
-        #[SensitiveParameter] public ?string $recurringToken = null,
+        #[SensitiveParameter]
+        public ?string $recurringToken = null,
     ) {
         if ($items === []) {
             throw new InvalidArgumentException('At least one price is required when starting subscriptions.');

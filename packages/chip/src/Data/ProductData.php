@@ -7,7 +7,6 @@ namespace AIArmada\Chip\Data;
 use Akaunting\Money\Money;
 use InvalidArgumentException;
 
-
 final readonly class ProductData
 {
     public function __construct(

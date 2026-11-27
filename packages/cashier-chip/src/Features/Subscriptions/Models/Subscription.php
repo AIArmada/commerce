@@ -12,8 +12,8 @@ use AIArmada\CashierChip\Billing\SubscriptionRecord;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
-use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
 use AIArmada\CashierChip\Data\BillingCycle;
+use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
@@ -752,8 +752,6 @@ class Subscription extends Model implements SubscriptionRecord
 
     /**
      * Charge the subscription using the default payment method (recurring token).
-     *
-     * @return Payment
      */
     public function charge(?int $amount = null): Payment
     {

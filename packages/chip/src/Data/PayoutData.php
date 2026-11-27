@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
+
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-
-
 
 /**
  * Value object for CHIP's Payout resource.

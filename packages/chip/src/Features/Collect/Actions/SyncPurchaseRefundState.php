@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Features\Collect\Actions;
 
-use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Contracts\PurchaseStatus;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Features\Collect\Api\RefundStateSynchronizer;
 use AIArmada\Chip\Features\Collect\Models\Payment;

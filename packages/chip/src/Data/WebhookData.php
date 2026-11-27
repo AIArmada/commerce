@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
+
 use Carbon\CarbonImmutable;
 
 /**
