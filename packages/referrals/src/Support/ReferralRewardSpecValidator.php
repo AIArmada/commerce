@@ -123,6 +123,25 @@ final class ReferralRewardSpecValidator
                 throw new InvalidArgumentException('Voucher value must equal the promised amount_minor.');
             }
 
+            if (array_key_exists('owner_type', $voucher) || array_key_exists('owner_id', $voucher)) {
+                throw new InvalidArgumentException('Voucher ownership is determined by the referral program context.');
+            }
+
+            $voucherCurrency = $voucher['currency'] ?? $currency ?? $defaultCurrency ?? config('referrals.defaults.currency', 'MYR');
+
+            if (! is_string($voucherCurrency) || preg_match('/^[A-Z]{3}$/', mb_strtoupper(mb_trim($voucherCurrency))) !== 1) {
+                throw new InvalidArgumentException('Voucher rewards require a valid currency.');
+            }
+
+            $voucherCurrency = mb_strtoupper(mb_trim($voucherCurrency));
+
+            if ($currency !== null && $currency !== $voucherCurrency) {
+                throw new InvalidArgumentException('Voucher currency must equal the promised reward currency.');
+            }
+
+            $currency = $voucherCurrency;
+            $voucher['currency'] = $currency;
+
             // The assignee marker is the adapter's beneficiary binding, not a
             // spec knob; a spec must never name its own recipient.
             if (is_array($voucher['metadata'] ?? null) && array_key_exists('assignee', $voucher['metadata'])) {

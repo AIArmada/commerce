@@ -24,7 +24,9 @@ $link = CreateLink::run([
 $link->cloakedUrl(); // https://your-app.test/go/camera-deal
 ```
 
-Slugs are globally unique, `alpha_dash`, at least 3 characters, and cannot use reserved words. Destinations must be valid URLs, `https` by default, without embedded credentials.
+Slugs are globally unique, `alpha_dash`, at least 3 characters, and cannot use reserved words. The uniqueness check uses the resolved `Link` connection and table, so remapped tables and connections are honoured. Destinations must be valid URLs, `https` by default, without embedded credentials.
+
+`DeleteLink` locks the link in the current owner scope and deletes it and its click rows in one transaction. For direct model deletion, call `$link->deleteOrFail()` to include click cleanup in the transaction. When owner scoping is enabled, `DeleteLinkForSubject` requires a current owner or explicit global context. It treats links outside that scope as absent and refuses a visible link whose subject does not match.
 
 ## Managing links
 
@@ -109,7 +111,7 @@ app()->bind(BotDetectorInterface::class, MyBotDetector::class);
 
 ## Consumer seams
 
-Packages with their own domain objects (offers, campaigns) attach them as the link `subject`; clicks inherit it, and `forSubject($model)` scopes query both tables:
+Packages with their own domain objects (offers, campaigns) attach them as the link `subject`; clicks inherit it, and `forSubject($model)` scopes query both tables. Subject identity is frozen at creation: `UpdateLink` refuses a payload that changes `subject_type` or `subject_id`.
 
 ```php
 CreateLink::run([
@@ -126,11 +128,11 @@ Redirect policy plugs in through `LinkGateInterface`: return a machine-readable 
 
 ```php
 use AIArmada\Links\Contracts\LinkGateInterface;
-use AIArmada\Links\Models\Link;
+use AIArmada\Links\Data\LinkGateContext;
 
 final class OfferLinkGate implements LinkGateInterface
 {
-    public function blockedReason(Link $link): ?string
+    public function blockedReason(LinkGateContext $link): ?string
     {
         // Load the subject, check offer/site/approval state...
         return $blocked ? 'offer_inactive' : null;

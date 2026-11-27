@@ -8,10 +8,13 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Contracts\BotDetectorInterface;
 use AIArmada\Links\Contracts\UserAgentParserInterface;
 use AIArmada\Links\Events\LinkClicked;
+use AIArmada\Links\Exceptions\LinkUnavailableException;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use AIArmada\Links\Support\LinkAttributes;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class RecordLinkClick
@@ -29,27 +32,27 @@ final class RecordLinkClick
     public function handle(Link $link, array $context = []): ?LinkClick
     {
         $userAgent = $this->stringValue($context['user_agent'] ?? null) ?? $this->requestUserAgent();
-        $parsed = $this->userAgentParser->parse($userAgent);
+        $userAgent = $userAgent === null ? null : mb_substr($userAgent, 0, 4096);
+        $trackingEnabled = (bool) config('links.features.tracking.user_agent.enabled', true);
+        $parsed = $trackingEnabled ? $this->userAgentParser->parse($userAgent) : [];
         $isBot = ($parsed['is_bot'] ?? false) || $this->botDetector->isBot($userAgent);
 
-        if ($isBot && ! (bool) config('links.features.tracking.bots.record', true)) {
-            return null;
-        }
+        $record = ! $isBot || (bool) config('links.features.tracking.bots.record', true);
 
         $click = new LinkClick([
-            'link_id' => $link->getKey(),
-            'subject_type' => $link->subject_type,
-            'subject_id' => $link->subject_id,
+            'link_id' => (string) $link->getKey(),
+            'subject_type' => $this->nullableIdentity($link->subject_type),
+            'subject_id' => $this->nullableIdentity($link->subject_id),
             'occurred_at' => CarbonImmutable::now(),
             'ip_address' => $this->resolveIpAddress($context),
-            'user_agent' => (bool) config('links.features.tracking.user_agent.store_raw', true) ? $userAgent : null,
-            'device_type' => $parsed['device_type'] ?? null,
-            'device_brand' => $parsed['device_brand'] ?? null,
-            'device_model' => $parsed['device_model'] ?? null,
-            'browser' => $parsed['browser'] ?? null,
-            'browser_version' => $parsed['browser_version'] ?? null,
-            'os' => $parsed['os'] ?? null,
-            'os_version' => $parsed['os_version'] ?? null,
+            'user_agent' => $trackingEnabled && (bool) config('links.features.tracking.user_agent.store_raw', true) ? $userAgent : null,
+            'device_type' => $this->boundedString($parsed['device_type'] ?? null, 255),
+            'device_brand' => $this->boundedString($parsed['device_brand'] ?? null, 255),
+            'device_model' => $this->boundedString($parsed['device_model'] ?? null, 255),
+            'browser' => $this->boundedString($parsed['browser'] ?? null, 255),
+            'browser_version' => $this->boundedString($parsed['browser_version'] ?? null, 50),
+            'os' => $this->boundedString($parsed['os'] ?? null, 255),
+            'os_version' => $this->boundedString($parsed['os_version'] ?? null, 50),
             'is_bot' => $isBot,
             'referrer' => $this->stringValue($context['referrer'] ?? null) ?? $this->requestReferrer(),
             'utm_source' => $this->utmValue($context, 'utm_source'),
@@ -58,26 +61,81 @@ final class RecordLinkClick
             'utm_content' => $this->utmValue($context, 'utm_content'),
             'utm_term' => $this->utmValue($context, 'utm_term'),
             'properties' => $this->propertiesValue($context),
-            'owner_type' => $link->owner_type,
-            'owner_id' => $link->owner_id,
+            'owner_type' => $this->nullableIdentity($link->owner_type),
+            'owner_id' => $this->nullableIdentity($link->owner_id),
         ]);
 
-        $owner = OwnerContext::fromTypeAndId($link->owner_type, $link->owner_id);
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail($link->owner_type, $link->owner_id);
+        } catch (ModelNotFoundException | InvalidArgumentException) {
+            throw new LinkUnavailableException('owner_unknown');
+        }
 
-        OwnerContext::withOwner($owner, static function () use ($click, $link, $isBot): void {
-            $click->save();
+        OwnerContext::withOwner($owner, function () use ($click, $link, $isBot, $record): void {
+            $link->getConnection()->transaction(function () use ($click, $link, $isBot, $record): void {
+                $locked = $link->newQuery()->withoutOwnerScope()->whereKey($link->getKey())->lockForUpdate()->first();
 
-            $link->increment('total_clicks');
+                if ($locked === null) {
+                    throw new LinkUnavailableException('link_unknown');
+                }
 
-            if (! $isBot || (bool) config('links.features.tracking.bots.count', false)) {
-                $link->increment('human_clicks');
-            }
+                if (! $this->sameIdentity($locked->owner_type, $link->owner_type)
+                    || ! $this->sameIdentity($locked->owner_id, $link->owner_id)) {
+                    throw new LinkUnavailableException('owner_changed');
+                }
 
-            $link->update([
-                'first_clicked_at' => $link->first_clicked_at ?? $click->occurred_at,
-                'last_clicked_at' => $click->occurred_at,
-            ]);
+                if ($locked->slug !== $link->slug
+                    || $locked->slug_prefix !== $link->slug_prefix
+                    || $locked->require_signature !== $link->require_signature
+                    || ! $this->sameIdentity($locked->subject_type, $link->subject_type)
+                    || ! $this->sameIdentity($locked->subject_id, $link->subject_id)) {
+                    throw new LinkUnavailableException('link_changed');
+                }
+
+                $reason = match (true) {
+                    $locked->deactivated_at !== null => 'deactivated',
+                    $locked->isExpired() => 'expired',
+                    $locked->hasReachedClickLimit() => 'limit_reached',
+                    default => null,
+                };
+
+                if ($reason !== null) {
+                    throw new LinkUnavailableException($reason);
+                }
+
+                if (! $record) {
+                    $link->setRawAttributes($locked->getAttributes(), true);
+
+                    return;
+                }
+
+                $click->subject_type = $this->nullableIdentity($locked->subject_type);
+                $click->subject_id = $this->nullableIdentity($locked->subject_id);
+                $click->setConnection($locked->getConnectionName());
+                $click->save();
+
+                $locked->total_clicks++;
+
+                if (! $isBot || (bool) config('links.features.tracking.bots.count', false)) {
+                    $locked->human_clicks++;
+                }
+
+                if ($locked->first_clicked_at === null || $locked->first_clicked_at->greaterThan($click->occurred_at)) {
+                    $locked->first_clicked_at = $click->occurred_at;
+                }
+
+                if ($locked->last_clicked_at === null || $locked->last_clicked_at->lessThan($click->occurred_at)) {
+                    $locked->last_clicked_at = $click->occurred_at;
+                }
+
+                $locked->save();
+                $link->setRawAttributes($locked->getAttributes(), true);
+            });
         });
+
+        if (! $record) {
+            return null;
+        }
 
         event(new LinkClicked($link, $click));
 
@@ -99,7 +157,7 @@ final class RecordLinkClick
             $ip = request()->ip();
         }
 
-        if (! is_string($ip) || $ip === '') {
+        if (! is_string($ip) || filter_var($ip, FILTER_VALIDATE_IP) === false) {
             return null;
         }
 
@@ -137,7 +195,7 @@ final class RecordLinkClick
         $explicit = $this->stringValue($context[$key] ?? null);
 
         if ($explicit !== null) {
-            return $explicit;
+            return mb_substr($explicit, 0, 255);
         }
 
         if (! in_array($key, LinkAttributes::UTM_KEYS, true)) {
@@ -148,7 +206,7 @@ final class RecordLinkClick
             $fromRequest = request()->query($key);
 
             if (is_string($fromRequest) && $fromRequest !== '') {
-                return $fromRequest;
+                return mb_substr($fromRequest, 0, 255);
             }
         }
 
@@ -239,7 +297,7 @@ final class RecordLinkClick
             if (app()->bound('request')) {
                 $fromRequest = request()->query($key);
 
-                if (is_string($fromRequest) && $fromRequest !== '') {
+                if (is_string($fromRequest) && $fromRequest !== '' && mb_strlen($fromRequest) <= 255) {
                     $ids[$key] = $fromRequest;
                 }
             }
@@ -273,7 +331,7 @@ final class RecordLinkClick
 
         if (is_array($map)) {
             foreach ($map as $key => $value) {
-                $value = $this->stringValue($value);
+                $value = $this->clickIdValue($value);
 
                 if (is_string($key) && in_array($key, LinkAttributes::CLICK_ID_KEYS, true) && $value !== null) {
                     $ids[$key] = $value;
@@ -282,7 +340,7 @@ final class RecordLinkClick
         }
 
         foreach (LinkAttributes::CLICK_ID_KEYS as $key) {
-            $explicit = $this->stringValue($context[$key] ?? null);
+            $explicit = $this->clickIdValue($context[$key] ?? null);
 
             if ($explicit !== null) {
                 $ids[$key] = $explicit;
@@ -297,13 +355,37 @@ final class RecordLinkClick
             if (app()->bound('request')) {
                 $fromRequest = request()->query($key);
 
-                if (is_string($fromRequest) && $fromRequest !== '') {
+                if (is_string($fromRequest) && $this->clickIdValue($fromRequest) !== null) {
                     $ids[$key] = $fromRequest;
                 }
             }
         }
 
         return $ids;
+    }
+
+    private function boundedString(mixed $value, int $limit): ?string
+    {
+        $value = $this->stringValue($value);
+
+        return $value === null ? null : mb_substr($value, 0, $limit);
+    }
+
+    private function clickIdValue(mixed $value): ?string
+    {
+        $value = $this->stringValue($value);
+
+        return $value !== null && mb_strlen($value) <= 500 ? $value : null;
+    }
+
+    private function nullableIdentity(mixed $value): ?string
+    {
+        return $value === null ? null : (string) $value;
+    }
+
+    private function sameIdentity(mixed $left, mixed $right): bool
+    {
+        return $this->nullableIdentity($left) === $this->nullableIdentity($right);
     }
 
     private function stringValue(mixed $value): ?string

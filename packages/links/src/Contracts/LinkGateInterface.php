@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Links\Contracts;
 
-use AIArmada\Links\Models\Link;
+use AIArmada\Links\Data\LinkGateContext;
 
 interface LinkGateInterface
 {
@@ -13,5 +13,5 @@ interface LinkGateInterface
      *
      * @return string|null Machine-readable block reason (e.g. 'offer_inactive').
      */
-    public function blockedReason(Link $link): ?string;
+    public function blockedReason(LinkGateContext $link): ?string;
 }

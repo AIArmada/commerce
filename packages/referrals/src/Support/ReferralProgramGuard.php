@@ -79,7 +79,13 @@ final class ReferralProgramGuard
             throw ReferralInviteNotFoundException::invalid();
         }
 
-        return $this->invite((string) $scoped->getKey(), $lock);
+        $resolved = $this->invite((string) $scoped->getKey(), $lock);
+
+        if (! hash_equals((string) $resolved->token_hash, $tokenHash)) {
+            throw ReferralInviteNotFoundException::invalid();
+        }
+
+        return $resolved;
     }
 
     public function inviteFromIdOrToken(string $inviteOrToken): ReferralInvite

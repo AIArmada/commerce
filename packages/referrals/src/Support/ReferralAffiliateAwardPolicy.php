@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Enums\ReferralRewardSide;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
+use AIArmada\Referrals\Persistence\ReferralRewardContextMapper;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -35,11 +36,11 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
             try {
                 $reward = $this->guard->rewardForInviteSide($inviteId, $side, true);
             } catch (Throwable) {
-                return AffiliateAwardDecision::deny('No pending referral reward matches this award.');
+                return AffiliateAwardDecision::deny('No eligible referral reward matches this award.');
             }
 
             if ($reward->getConnection()->getName() !== $recipient->connectionName
-                || $reward->status !== ReferralRewardStatus::Pending
+                || ! in_array($reward->status, [ReferralRewardStatus::Pending, ReferralRewardStatus::Failed], true)
                 || $reward->driver !== 'affiliate_cash'
                 || $reward->amount_minor === null
                 || $reward->currency === null
@@ -56,7 +57,7 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
                 return AffiliateAwardDecision::deny('Referral award reference does not match the qualification business key.');
             }
 
-            $expectedAffiliate = $this->affiliateResolver->resolve($reward);
+            $expectedAffiliate = $this->affiliateResolver->resolve(ReferralRewardContextMapper::map($reward, $invite->qualification_business_key));
 
             if ($expectedAffiliate === null
                 || $expectedAffiliate->id !== $recipient->id

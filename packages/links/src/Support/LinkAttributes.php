@@ -83,10 +83,9 @@ final class LinkAttributes
      */
     private static function slugRules(mixed $ignoreId = null): array
     {
-        $table = (string) config('links.database.tables.links', 'tracked_links');
         $reserved = config('links.features.security.reserved_slugs', []);
 
-        $unique = Rule::unique($table, 'slug');
+        $unique = Rule::unique(Link::class, 'slug');
 
         if (is_string($ignoreId) && $ignoreId !== '') {
             $unique->ignore($ignoreId);
