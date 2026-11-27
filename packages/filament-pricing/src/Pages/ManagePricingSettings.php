@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\FilamentPricing\Support\PricingSettingsAccess;
+use AIArmada\Pricing\Actions\UpdatePricingSettings;
 use AIArmada\Pricing\Settings\PricingSettings;
 use BackedEnum;
-use Error;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -16,10 +16,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
 /**
@@ -68,7 +64,7 @@ final class ManagePricingSettings extends Page
 
     public function mount(): void
     {
-        $settings = $this->resolvePricingSettings();
+        $settings = app(PricingSettings::class);
 
         $this->data = [
             'defaultCurrency' => $settings->defaultCurrency,
@@ -166,39 +162,11 @@ final class ManagePricingSettings extends Page
 
     public function save(): void
     {
-        // Access is enforced over HTTP through canAccess() (Filament checks it
-        // on mount, hydrate, and navigation); save() itself only validates.
+        abort_unless(PricingSettingsAccess::allows(), 403);
         /** @var array<string, mixed> $state */
         $state = $this->data ?? [];
 
-        // Server-side validation mirroring the form rules: raw page state is
-        // enforced here because Livewire calls can bypass form validation.
-        /** @var array<string, mixed> $validated */
-        $validated = Validator::make($state, [
-            'defaultCurrency' => ['required', Rule::in(['MYR', 'USD', 'EUR', 'GBP', 'SGD', 'THB', 'IDR', 'PHP'])],
-            'decimalPlaces' => ['required', 'integer', 'min:0', 'max:4'],
-            'roundingMode' => ['required', Rule::in(['up', 'down', 'half_up', 'half_down'])],
-            'pricesIncludeTax' => ['required', 'boolean'],
-            'minimumOrderValue' => ['required', 'integer', 'min:0'],
-            'maximumOrderValue' => ['required', 'integer', 'min:0'],
-            'promotionalPricingEnabled' => ['required', 'boolean'],
-            'tieredPricingEnabled' => ['required', 'boolean'],
-            'customerGroupPricingEnabled' => ['required', 'boolean'],
-        ])->validate();
-
-        $settings = $this->resolvePricingSettings();
-
-        $settings->defaultCurrency = (string) Arr::get($validated, 'defaultCurrency', 'MYR');
-        $settings->decimalPlaces = (int) Arr::get($validated, 'decimalPlaces', 2);
-        $settings->roundingMode = (string) Arr::get($validated, 'roundingMode', 'half_up');
-        $settings->pricesIncludeTax = (bool) Arr::get($validated, 'pricesIncludeTax', false);
-        $settings->minimumOrderValue = (int) Arr::get($validated, 'minimumOrderValue', 0);
-        $settings->maximumOrderValue = (int) Arr::get($validated, 'maximumOrderValue', 0);
-        $settings->promotionalPricingEnabled = (bool) Arr::get($validated, 'promotionalPricingEnabled', true);
-        $settings->tieredPricingEnabled = (bool) Arr::get($validated, 'tieredPricingEnabled', true);
-        $settings->customerGroupPricingEnabled = (bool) Arr::get($validated, 'customerGroupPricingEnabled', false);
-
-        $settings->save();
+        app(UpdatePricingSettings::class)->execute($state);
 
         Notification::make()
             ->title(__('Saved'))
@@ -214,47 +182,6 @@ final class ManagePricingSettings extends Page
                 ->icon('heroicon-o-check')
                 ->color('primary')
                 ->action('save'),
-        ];
-    }
-
-    private function resolvePricingSettings(): PricingSettings
-    {
-        try {
-            $settings = app(PricingSettings::class);
-
-            try {
-                $defaultCurrency = $settings->defaultCurrency;
-                unset($defaultCurrency);
-            } catch (Error) {
-                return $settings;
-            }
-
-            return $settings;
-        } catch (MissingSettings) {
-            $settings = new PricingSettings($this->defaultSettings());
-            $settings->save();
-
-            app()->forgetInstance(PricingSettings::class);
-
-            return app(PricingSettings::class);
-        }
-    }
-
-    /**
-     * @return array<string, bool|int|string>
-     */
-    private function defaultSettings(): array
-    {
-        return [
-            'defaultCurrency' => 'MYR',
-            'decimalPlaces' => 2,
-            'pricesIncludeTax' => false,
-            'roundingMode' => 'half_up',
-            'minimumOrderValue' => 0,
-            'maximumOrderValue' => 100000_00,
-            'promotionalPricingEnabled' => true,
-            'tieredPricingEnabled' => true,
-            'customerGroupPricingEnabled' => false,
         ];
     }
 }
