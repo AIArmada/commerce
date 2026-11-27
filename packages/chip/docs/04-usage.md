@@ -512,7 +512,7 @@ When owner scoping is enabled, pass `owner:` (or `--owner-type` / `--owner-id` o
 | `chip:retry-webhooks [--limit=] [--dry-run]` | Retry failed webhooks |
 | `chip:clean-webhooks [--days=] [--status=] [--dry-run]` | Clean old webhook records |
 | `chip:sync-from-api` | Sync `chip_clients`, `chip_purchases`, and `chip_payments` from the CHIP API |
-| `chip:prune-idempotency-stubs --dry-run [--limit=]` | Inspect expired unrecorded purchase reservations | 
+| `chip:prune-idempotency-stubs --dry-run [--limit=]` | Inspect expired unrecorded purchase reservations |
 | `chip:prune-idempotency-stubs --reservation-id=ID --confirmed-not-created` | Release one expired reservation after confirming remotely that no purchase was created |
 
 `chip:sync-from-api` accepts repeatable and scope options:
