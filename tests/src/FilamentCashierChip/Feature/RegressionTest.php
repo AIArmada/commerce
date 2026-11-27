@@ -16,7 +16,7 @@ use AIArmada\FilamentCashierChip\Actions\SyncCustomersToChip;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Invoices;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions;
-use AIArmada\FilamentCashierChip\Jobs\SyncCustomersToChipJob;
+use AIArmada\FilamentCashierChip\EntryPoints\Jobs\SyncCustomersToChipJob;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages\ListCustomers;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers\SubscriptionsRelationManager;

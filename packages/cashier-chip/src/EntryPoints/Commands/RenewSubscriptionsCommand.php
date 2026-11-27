@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Console;
+namespace AIArmada\CashierChip\EntryPoints\Commands;
 
 use AIArmada\CashierChip\Actions\RenewSubscriptions;
 use Illuminate\Console\Command;

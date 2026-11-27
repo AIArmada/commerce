@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\EntryPoints\Commands\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
-use AIArmada\CashierChip\Listeners\HandlePurchasePaid;
-use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
-use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
+use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaid;
+use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaymentFailure;
+use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Payment\PaymentMethodStore;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;

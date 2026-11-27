@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Http\Controllers;
+namespace AIArmada\Chip\EntryPoints\Http\Controllers;
 
 use AIArmada\Chip\Events\SendWebhookReceived;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;

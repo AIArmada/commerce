@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Http\Middleware;
+namespace AIArmada\Chip\EntryPoints\Http\Middleware;
 
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
 use AIArmada\Chip\Services\WebhookService;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Commands\CleanWebhooksCommand;
-use AIArmada\Chip\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\EntryPoints\Commands\CleanWebhooksCommand;
+use AIArmada\Chip\EntryPoints\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

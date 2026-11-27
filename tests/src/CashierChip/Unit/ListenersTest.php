@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Events\PaymentSucceeded;
-use AIArmada\CashierChip\Listeners\HandlePurchasePaid;
+use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaid;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;

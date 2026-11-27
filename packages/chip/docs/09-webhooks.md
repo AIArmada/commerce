@@ -10,7 +10,7 @@ Use the built-in CHIP webhook route when you want signature verification, queued
 
 The package registers a POST route at `config('chip.webhooks.route', '/chip/webhooks')`:
 
-- controller: `AIArmada\Chip\Http\Controllers\WebhookController`
+- controller: `AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController`
 - route name: `chip.webhook`
 - processor job: `AIArmada\Chip\Webhooks\ProcessChipWebhook`
 
@@ -293,7 +293,7 @@ The action enriches the payload, resolves owner context from the payload or prov
 
 CHIP Send has a separate webhook API and signature scheme from CHIP Collect. The package registers a second route at `config('chip.webhooks.send.route', '/chip/send/webhooks')`:
 
-- controller: `AIArmada\Chip\Http\Controllers\SendWebhookController`
+- controller: `AIArmada\Chip\EntryPoints\Http\Controllers\SendWebhookController`
 - route name: `chip.send.webhook`
 - event: `AIArmada\Chip\Events\SendWebhookReceived`
 

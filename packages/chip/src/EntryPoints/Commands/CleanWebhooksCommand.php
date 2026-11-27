@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Commands;
+namespace AIArmada\Chip\EntryPoints\Commands;
 
 use AIArmada\Chip\Actions\CleanWebhooks;
 use AIArmada\Chip\Support\WebhookOwnerBatchRunner;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Listeners;
+namespace AIArmada\CashierChip\EntryPoints\Listeners;
 
 use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;

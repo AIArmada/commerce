@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentCashierChip\Jobs;
+namespace AIArmada\FilamentCashierChip\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;

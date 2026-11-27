@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
-use AIArmada\FilamentCashierChip\Jobs\SyncCustomersToChipJob;
+use AIArmada\FilamentCashierChip\EntryPoints\Jobs\SyncCustomersToChipJob;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
