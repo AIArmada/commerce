@@ -52,7 +52,7 @@ final class CreateTrackingTokenAction
         $trackingToken->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
         $trackingToken->save();
 
-        return new CreatedTrackingTokenData($trackingToken, $token);
+        return new CreatedTrackingTokenData($trackingToken->id, $token);
     }
 
     private function validatedTargetUrl(string $targetUrl): string

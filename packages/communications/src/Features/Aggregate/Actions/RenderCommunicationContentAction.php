@@ -20,6 +20,6 @@ final class RenderCommunicationContentAction
         ?string $locale = null,
         array $variables = [],
     ): RenderedContentData {
-        return $this->renderer->render($template, $channel, $locale, $variables);
+        return $this->renderer->render($template->id, $channel, $locale, $variables);
     }
 }

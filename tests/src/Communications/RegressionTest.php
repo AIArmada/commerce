@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipientAction;
 use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
 use AIArmada\Communications\Features\Aggregate\Actions\ReceiveInboundCommunicationAction;
@@ -184,8 +185,8 @@ test('tracking token creation returns the plaintext token', function (): void {
     );
 
     expect($created)->toBeInstanceOf(CreatedTrackingTokenData::class);
-    expect(hash('sha256', $created->plaintextToken))->toBe($created->trackingToken->token_hash);
-    expect($created->trackingToken->target_url_ciphertext)->toBeNull();
+    expect(hash('sha256', $created->plaintextToken))->toBe(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->token_hash);
+    expect(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->target_url_ciphertext)->toBeNull();
     expect(method_exists(CreateTrackingTokenAction::class, 'getToken'))->toBeFalse();
 });
 
@@ -208,10 +209,10 @@ test('tracking target urls are validated and encrypted at rest', function (): vo
 
     $created = $action->handle($delivery->id, 'click', 'https://example.com/welcome?x=1');
 
-    expect($created->trackingToken->toArray())->not->toHaveKeys(['token_hash', 'target_url_ciphertext']);
-    expect($created->trackingToken->target_host)->toBe('example.com');
-    expect($created->trackingToken->target_url_ciphertext)->not->toBe('https://example.com/welcome?x=1');
-    expect(app(DestinationProtector::class)->decrypt($created->trackingToken->target_url_ciphertext))
+    expect(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->toArray())->not->toHaveKeys(['token_hash', 'target_url_ciphertext']);
+    expect(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->target_host)->toBe('example.com');
+    expect(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->target_url_ciphertext)->not->toBe('https://example.com/welcome?x=1');
+    expect(app(DestinationProtector::class)->decrypt(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->target_url_ciphertext))
         ->toBe('https://example.com/welcome?x=1');
 });
 
@@ -227,7 +228,7 @@ test('tracking target hosts can be allowlisted', function (): void {
 
     $created = $action->handle($delivery->id, 'click', 'https://example.com/ok');
 
-    expect($created->trackingToken->target_host)->toBe('example.com');
+    expect(CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->target_host)->toBe('example.com');
 });
 
 test('tampered destination ciphertext fails closed', function (): void {
@@ -464,20 +465,20 @@ test('expired and revoked tokens reject interactions', function (): void {
 
     $created = app(CreateTrackingTokenAction::class)->handle($delivery->id, 'click');
 
-    expect(fn () => $action->handle($created->trackingToken->id, 'teleport'))
+    expect(fn () => $action->handle($created->trackingTokenId, 'teleport'))
         ->toThrow(InvalidArgumentException::class, 'Unknown tracking interaction type');
 
-    $created->trackingToken->update(['expires_at' => CarbonImmutable::now()->subMinute()]);
+    CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->update(['expires_at' => CarbonImmutable::now()->subMinute()]);
 
-    expect(fn () => $action->handle($created->trackingToken->id, TrackingInteractionType::Click))
+    expect(fn () => $action->handle($created->trackingTokenId, TrackingInteractionType::Click))
         ->toThrow(RuntimeException::class, 'has expired');
 
-    $created->trackingToken->update([
+    CommunicationTrackingToken::query()->findOrFail($created->trackingTokenId)->update([
         'expires_at' => null,
         'revoked_at' => CarbonImmutable::now(),
     ]);
 
-    expect(fn () => $action->handle($created->trackingToken->id, 'click'))
+    expect(fn () => $action->handle($created->trackingTokenId, 'click'))
         ->toThrow(RuntimeException::class, 'has been revoked');
 
     expect(CommunicationEvent::query()->count())->toBe(0);

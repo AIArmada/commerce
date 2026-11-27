@@ -295,7 +295,7 @@ $created = app(CreateTrackingTokenAction::class)->handle(
 $url = 'https://example.com/t/' . $created->plaintextToken;
 
 app(RecordTrackingInteractionAction::class)->handle(
-    tokenId: $created->trackingToken->id,
+    tokenId: $created->trackingTokenId,
     interactionType: TrackingInteractionType::Click,
 );
 ```

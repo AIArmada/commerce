@@ -77,7 +77,7 @@ test('null content renderer render method returns RenderedContentData', function
     ]);
     $template->save();
 
-    $result = $resolver->render($template, 'mail', 'en', []);
+    $result = $resolver->render($template->id, 'mail', 'en', []);
 
     expect($result)->toBeInstanceOf(RenderedContentData::class);
 });

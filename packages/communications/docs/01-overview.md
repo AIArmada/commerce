@@ -58,7 +58,7 @@ The domain ships 17 models, 31 actions, and 10 services (see `src/Models/`, `src
 ## Breaking changes
 
 - `CreateTrackingTokenAction::handle()` now returns `CreatedTrackingTokenData`
-  (`trackingToken` + `plaintextToken`) instead of the bare model, and the
+  (`trackingTokenId` + `plaintextToken`) instead of the bare model, and the
   misleading `getToken()` helper was removed. Capture `plaintextToken` at
   creation time — only its SHA-256 hash is persisted.
 - `DestinationProtector` now uses Laravel authenticated encryption. Ciphertext

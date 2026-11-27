@@ -6,12 +6,11 @@ namespace AIArmada\Communications\Services;
 
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Data\RenderedContentData;
-use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 
 class NullContentRenderer implements ContentRenderer
 {
     public function render(
-        CommunicationTemplate $template,
+        string $templateId,
         string $channel,
         ?string $locale,
         array $variables,
