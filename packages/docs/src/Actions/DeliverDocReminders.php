@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Jobs;
+namespace AIArmada\Docs\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
@@ -14,70 +14,34 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-final class SendDocReminderJob implements ShouldQueue
+final readonly class DeliverDocReminders
 {
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
-
-    public int $tries = 3;
-
-    public int $backoff = 60;
-
     public function __construct(
-        public ?string $docId = null,
-        public int $daysBeforeDue = 3,
-        public int $daysAfterOverdue = 1,
-        public ?string $ownerType = null,
-        public string | int | null $ownerId = null,
+        private DocEmailService $emailService,
+        private DueDocReminders $dueDocReminders,
     ) {}
 
-    public function handle(DocEmailService $emailService, ?DueDocReminders $dueDocReminders = null): void
+    public function execute(?string $docId, int $daysBeforeDue, int $daysAfterOverdue, ?string $ownerType, string | int | null $ownerId, bool $ownerBatch): void
     {
-        $dueDocReminders ??= app(DueDocReminders::class);
+        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
 
-        if ($this->shouldFanOutByOwner()) {
-            $this->dispatchPerOwner($dueDocReminders);
-
-            return;
-        }
-
-        $owner = OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
-
-        OwnerContext::withOwner($owner, function () use ($dueDocReminders, $emailService): void {
-            if ($this->docId !== null) {
-                $this->sendReminderForDoc($emailService, $dueDocReminders, $this->docId);
+        OwnerContext::withOwner($owner, function () use ($docId, $daysBeforeDue, $daysAfterOverdue, $ownerBatch): void {
+            if ($docId !== null) {
+                $this->sendReminderForDoc($this->emailService, $this->dueDocReminders, $docId);
 
                 return;
             }
 
-            $this->sendRemindersForUpcomingDue($emailService, $dueDocReminders);
-            $this->sendRemindersForOverdue($emailService, $dueDocReminders);
+            $includeGlobal = ! $ownerBatch && (bool) config('docs.owner.include_global', false);
+            $this->sendRemindersForUpcomingDue($this->emailService, $this->dueDocReminders, $daysBeforeDue, $includeGlobal);
+            $this->sendRemindersForOverdue($this->emailService, $this->dueDocReminders, $daysAfterOverdue, $includeGlobal);
         });
     }
 
-    /**
-     * @return array<int, string>
-     */
-    public function tags(): array
-    {
-        return [
-            'docs',
-            'reminder',
-            $this->docId ? "doc:{$this->docId}" : 'batch',
-        ];
-    }
-
-    protected function sendReminderForDoc(DocEmailService $emailService, DueDocReminders $dueDocReminders, string $docId): void
+    private function sendReminderForDoc(DocEmailService $emailService, DueDocReminders $dueDocReminders, string $docId): void
     {
         $doc = $dueDocReminders->forCurrentOwner()->find($docId);
         $recipientEmail = $this->getRecipientEmail($doc);
@@ -119,9 +83,9 @@ final class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    protected function sendRemindersForUpcomingDue(DocEmailService $emailService, DueDocReminders $dueDocReminders): void
+    private function sendRemindersForUpcomingDue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysBeforeDue, bool $includeGlobal): void
     {
-        $docs = $dueDocReminders->dueSoon($this->daysBeforeDue);
+        $docs = $dueDocReminders->dueSoon($daysBeforeDue, includeGlobal: $includeGlobal);
 
         /** @var array<string, ?DocEmailTemplate> $templates */
         $templates = [];
@@ -130,7 +94,7 @@ final class SendDocReminderJob implements ShouldQueue
             $recipientEmail = $this->getRecipientEmail($doc);
             $recipientName = $this->getRecipientName($doc);
 
-            if (! $recipientEmail) {
+            if (! $recipientEmail || filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
                 continue;
             }
 
@@ -164,9 +128,9 @@ final class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    protected function sendRemindersForOverdue(DocEmailService $emailService, DueDocReminders $dueDocReminders): void
+    private function sendRemindersForOverdue(DocEmailService $emailService, DueDocReminders $dueDocReminders, int $daysAfterOverdue, bool $includeGlobal): void
     {
-        $docs = $dueDocReminders->overdue($this->daysAfterOverdue);
+        $docs = $dueDocReminders->overdue($daysAfterOverdue, includeGlobal: $includeGlobal);
 
         /** @var array<string, ?DocEmailTemplate> $templates */
         $templates = [];
@@ -174,7 +138,7 @@ final class SendDocReminderJob implements ShouldQueue
         foreach ($docs as $doc) {
             $recipientEmail = $this->getRecipientEmail($doc);
 
-            if (! $recipientEmail) {
+            if (! $recipientEmail || filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
                 continue;
             }
 
@@ -199,51 +163,7 @@ final class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    private function shouldFanOutByOwner(): bool
-    {
-        if ($this->docId !== null) {
-            return false;
-        }
-
-        if (! config('docs.owner.enabled', false)) {
-            return false;
-        }
-
-        return $this->ownerType === null && $this->ownerId === null;
-    }
-
-    private function dispatchPerOwner(DueDocReminders $dueDocReminders): void
-    {
-        $owners = $dueDocReminders->ownerTuples();
-
-        if ($owners->isEmpty()) {
-            return;
-        }
-
-        $dispatched = [];
-
-        foreach ($owners as $ownerTuple) {
-            $ownerType = $ownerTuple->owner_type;
-            $ownerId = $ownerTuple->owner_id;
-            $key = ($ownerType ?? 'global') . '|' . ($ownerId ?? 'global');
-
-            if (isset($dispatched[$key])) {
-                continue;
-            }
-
-            $dispatched[$key] = true;
-
-            self::dispatch(
-                docId: null,
-                daysBeforeDue: $this->daysBeforeDue,
-                daysAfterOverdue: $this->daysAfterOverdue,
-                ownerType: $ownerType,
-                ownerId: $ownerId,
-            );
-        }
-    }
-
-    protected function shouldSendReminder(Doc $doc): bool
+    private function shouldSendReminder(Doc $doc): bool
     {
         return $doc->status->equals(Draft::class)
             || $doc->status->equals(Pending::class)
@@ -251,7 +171,7 @@ final class SendDocReminderJob implements ShouldQueue
             || $doc->status->equals(Overdue::class);
     }
 
-    protected function getRecipientEmail(?Doc $doc): ?string
+    private function getRecipientEmail(?Doc $doc): ?string
     {
         if (! $doc) {
             return null;
@@ -262,7 +182,7 @@ final class SendDocReminderJob implements ShouldQueue
         return is_array($customerData) ? ($customerData['email'] ?? null) : null;
     }
 
-    protected function getRecipientName(?Doc $doc): ?string
+    private function getRecipientName(?Doc $doc): ?string
     {
         if (! $doc) {
             return null;

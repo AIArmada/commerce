@@ -2,15 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Jobs\SendDocReminderJob;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Actions\DeliverDocReminders;
+use AIArmada\Docs\EntryPoints\Jobs\SendDocReminderJob;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\Services\DueDocReminders;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Sent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -20,10 +23,8 @@ test('sends reminder for specific doc', function (): void {
         'customer_data' => ['email' => 'test@example.com'],
     ]);
 
-    $service = new DocEmailService;
-
     $job = new SendDocReminderJob($doc->id);
-    $job->handle($service);
+    $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
 
     expect($doc->emails)->toHaveCount(1)
         ->and($doc->emails->first()->recipient_email)->toBe('test@example.com');
@@ -32,10 +33,8 @@ test('sends reminder for specific doc', function (): void {
 test('logs warning if doc not found for specific reminder', function (): void {
     Log::shouldReceive('warning')->once();
 
-    $service = new DocEmailService;
-
     $job = new SendDocReminderJob('invalid-id');
-    $job->handle($service);
+    $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
 });
 
 test('sends reminders for upcoming due docs', function (): void {
@@ -50,10 +49,8 @@ test('sends reminders for upcoming due docs', function (): void {
     Doc::factory()->create(['status' => Paid::class, 'due_date' => $dueDate, 'customer_data' => ['email' => 'paid@example.com']]);
     Doc::factory()->create(['status' => Sent::class, 'due_date' => now()->addDays(4), 'customer_data' => ['email' => 'notyet@example.com']]);
 
-    $service = new DocEmailService;
-
     $job = new SendDocReminderJob(daysBeforeDue: 3);
-    $job->handle($service);
+    $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
 
     expect($doc->emails)->toHaveCount(1)
         ->and($doc->emails->first()->recipient_email)->toBe('upcoming@example.com');
@@ -70,10 +67,8 @@ test('sends reminders for overdue docs', function (): void {
     // Ignored docs
     Doc::factory()->create(['status' => Paid::class, 'due_date' => $overdueDate, 'customer_data' => ['email' => 'paid@example.com']]);
 
-    $service = new DocEmailService;
-
     $job = new SendDocReminderJob(daysAfterOverdue: 1);
-    $job->handle($service);
+    $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
 
     expect($doc->emails)->toHaveCount(1)
         ->and($doc->emails->first()->recipient_email)->toBe('overdue@example.com');
@@ -94,9 +89,30 @@ test('owner fan-out fails fast on malformed owner tuple rows', function (): void
             'owner_id' => null,
         ]);
 
-    $service = new DocEmailService;
     $job = new SendDocReminderJob;
 
-    expect(fn (): mixed => $job->handle($service))
+    expect(fn (): mixed => $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class)))
         ->toThrow(InvalidArgumentException::class, 'Owner type and owner id must both be present or both be null.');
+});
+
+test('global owner batch does not recursively fan out', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.email.queue_enabled', true);
+    Queue::fake();
+
+    $doc = OwnerContext::withOwner(null, fn (): Doc => Doc::factory()->create([
+        'status' => Sent::class,
+        'due_date' => now()->addDay(),
+        'customer_data' => ['email' => 'global@example.test'],
+    ]));
+
+    $job = new SendDocReminderJob;
+    $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
+
+    Queue::assertPushed(SendDocReminderJob::class, 1);
+    $batch = new SendDocReminderJob(ownerBatch: true);
+    $batch->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
+
+    Queue::assertPushed(SendDocReminderJob::class, 1);
+    expect(OwnerContext::withOwner(null, fn (): int => $doc->emails()->count()))->toBe(1);
 });

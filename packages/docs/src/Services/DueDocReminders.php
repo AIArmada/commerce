@@ -25,11 +25,11 @@ final class DueDocReminders
     /**
      * @return EloquentCollection<int, Doc>
      */
-    public function dueSoon(int $daysBeforeDue, int $limit = 500): EloquentCollection
+    public function dueSoon(int $daysBeforeDue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
     {
         $dueDate = CarbonImmutable::now()->addDays($daysBeforeDue);
 
-        return $this->forCurrentOwner()
+        return $this->forCurrentOwner($includeGlobal)
             ->whereIn('status', [Sent::value(), Pending::value()])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $dueDate->toDateString())
@@ -45,11 +45,11 @@ final class DueDocReminders
     /**
      * @return EloquentCollection<int, Doc>
      */
-    public function overdue(int $daysAfterOverdue, int $limit = 500): EloquentCollection
+    public function overdue(int $daysAfterOverdue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
     {
         $overdueDate = CarbonImmutable::now()->subDays($daysAfterOverdue);
 
-        return $this->forCurrentOwner()
+        return $this->forCurrentOwner($includeGlobal)
             ->where('status', Overdue::value())
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $overdueDate->toDateString())
@@ -65,7 +65,7 @@ final class DueDocReminders
     /**
      * @return Builder<Doc>
      */
-    public function forCurrentOwner(): Builder
+    public function forCurrentOwner(?bool $includeGlobal = null): Builder
     {
         $query = Doc::query();
 
@@ -75,7 +75,7 @@ final class DueDocReminders
 
         return $query->forOwner(
             OwnerContext::resolve(),
-            (bool) config('docs.owner.include_global', false),
+            $includeGlobal ?? (bool) config('docs.owner.include_global', false),
         );
     }
 

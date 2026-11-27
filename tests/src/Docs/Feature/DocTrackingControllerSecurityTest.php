@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\EntryPoints\Http\Controllers\DocTrackingController;
 use AIArmada\Docs\Enums\EmailStatus;
-use AIArmada\Docs\Http\Controllers\DocTrackingController;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Services\DocEmailService;
@@ -136,4 +136,22 @@ test('owner scoped tracking writes re-enter the email owner context', function (
 
     expect($response->getStatusCode())->toBe(200)
         ->and(OwnerContext::withOwner($owner, fn (): int => (int) $email->fresh()->open_count))->toBe(1);
+});
+
+test('click tracking rejects backslash-based relative redirects', function (): void {
+    config()->set('app.url', 'https://app.example.test');
+
+    $doc = Doc::factory()->create();
+    $email = DocEmail::query()->create([
+        'doc_id' => $doc->id,
+        'recipient_email' => 'customer@example.test',
+        'subject' => 'Tracked link test',
+        'body' => 'Body',
+        'status' => EmailStatus::Sent,
+    ]);
+
+    $trackedUrl = app(DocEmailService::class)->getTrackedLinkUrl($email, '/\\external.example.test');
+    $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
+
+    expect($response->getTargetUrl())->toBe('https://app.example.test');
 });

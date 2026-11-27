@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Http\Controllers;
+namespace AIArmada\Docs\EntryPoints\Http\Controllers;
 
 use AIArmada\Docs\Services\DocEmailService;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +23,6 @@ final class DocTrackingController extends Controller
     {
         $this->emailService->trackOpen($token);
 
-        // 1x1 transparent GIF
         $gif = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
 
         return response($gif, 200, [
@@ -58,7 +57,7 @@ final class DocTrackingController extends Controller
 
         $candidate = mb_trim($url);
 
-        if ($candidate === '' || str_starts_with($candidate, '//')) {
+        if\x20($candidate\x20===\x20''\x20||\x20str_starts_with($candidate,\x20'//')\x20||\x20str_contains($candidate,\x20'\\')\x20||\x20preg_match('/[\x00-\x20\x7f]/',\x20$candidate)\x20===\x201)\x20{
             return $fallback;
         }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Http\Controllers;
+namespace AIArmada\Docs\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\RenderAudience;
