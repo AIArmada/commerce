@@ -19,7 +19,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 {
     public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string
     {
-        $createActionClass = 'AIArmada\\Vouchers\\Actions\\CreateVoucher';
+        $createActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\CreateVoucher';
         $addToWalletClass = 'AIArmada\\Vouchers\\Features\\Wallet\\Actions\\AddVoucherToWallet';
 
         if (! class_exists($createActionClass) || ! class_exists($addToWalletClass)) {

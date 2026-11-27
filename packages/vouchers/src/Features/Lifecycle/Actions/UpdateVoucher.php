@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\States\VoucherStatus;
 use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
 use AIArmada\Vouchers\Support\VoucherInputValidator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-final class UpdateVoucher
+final class UpdateVoucher implements VoucherUpdater
 {
     use AsAction;
     use NormalizesVoucherCodes;

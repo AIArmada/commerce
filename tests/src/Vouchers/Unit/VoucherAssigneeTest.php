@@ -9,7 +9,7 @@ declare(strict_types=1);
 // unused revocation cannot be followed by a late use.
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
-use AIArmada\Vouchers\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\ExpireVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;

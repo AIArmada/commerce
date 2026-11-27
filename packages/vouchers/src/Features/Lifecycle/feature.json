@@ -4,7 +4,9 @@
   "owns": {
     "table:vouchers": [
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherApplication",
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage",
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\CreateVoucher",
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\UpdateVoucher"
     ],
     "table:voucher_usage": [
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"

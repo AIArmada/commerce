@@ -8,7 +8,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
-use AIArmada\Vouchers\Actions\UpdateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\UpdateVoucher;
 use AIArmada\Vouchers\Models\Voucher;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;

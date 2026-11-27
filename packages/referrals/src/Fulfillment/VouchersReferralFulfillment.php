@@ -14,7 +14,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 {
     public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
     {
-        $createAction = 'AIArmada\\Vouchers\\Actions\\CreateVoucher';
+        $createAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\CreateVoucher';
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
 
         if (! class_exists($createAction) || ! class_exists($voucherClass)) {

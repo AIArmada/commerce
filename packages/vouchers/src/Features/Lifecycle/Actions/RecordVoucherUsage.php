@@ -100,7 +100,9 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
             if ((int) $discountAmount->getAmount() < 0) {
                 throw ValidationException::withMessages(['discount_amount' => 'Voucher discount cannot be negative.']);
             }
-            $currentUses = $lockedVoucher->times_used;
+            $currentUses = $lockedVoucher->usage_limit === null
+                ? 0
+                : VoucherUsage::query()->where('voucher_id', $lockedVoucher->id)->count();
 
             if ($lockedVoucher->usage_limit !== null) {
                 if ($currentUses >= $lockedVoucher->usage_limit) {

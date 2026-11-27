@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Actions\GenerateVoucherBatch;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\GenerateVoucherBatch;
 use AIArmada\Vouchers\Enums\VoucherType;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

@@ -6,10 +6,10 @@ namespace AIArmada\Vouchers\Services;
 
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Runtime\WalletClaim;
-use AIArmada\Vouchers\Actions\CreateVoucher;
+use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
-use AIArmada\Vouchers\Actions\UpdateVoucher;
+use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
@@ -89,7 +89,7 @@ class VoucherService implements VoucherServiceInterface
         // Do NOT duplicate it here to keep a single source of truth.
 
         /** @var VoucherModel $voucher */
-        $voucher = CreateVoucher::run($data);
+        $voucher = app(VoucherCreator::class)->handle($data);
 
         return VoucherData::fromModel($voucher);
     }
@@ -99,7 +99,7 @@ class VoucherService implements VoucherServiceInterface
      */
     public function update(string $code, array $data): VoucherData
     {
-        $voucher = UpdateVoucher::run($this->normalizeCode($code), $data);
+        $voucher = app(VoucherUpdater::class)->handle($this->normalizeCode($code), $data);
 
         return VoucherData::fromModel($voucher);
     }
