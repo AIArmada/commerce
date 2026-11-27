@@ -7,9 +7,9 @@ namespace AIArmada\Checkout\Integrations;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
-use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Data\PackageData;
-use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Features\Rates\Api\RateAddress;
+use AIArmada\Shipping\Features\Rates\Api\RatePackage;
+use AIArmada\Shipping\Features\Rates\Api\RateQuote;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ComponentLines;
 
@@ -45,7 +45,7 @@ final class ShippingAdapter
             return $this->getDefaultRates($session);
         }
 
-        /** @var list<RateQuoteData> $rateQuotes */
+        /** @var list<RateQuote> $rateQuotes */
         $rateQuotes = app(CalculateRates::class)->handle(
             origin: $origin,
             destination: $destination,
@@ -124,7 +124,7 @@ final class ShippingAdapter
     /**
      * @param  array<string, mixed>  $shippingData
      */
-    private function buildDestinationAddress(array $shippingData): ?AddressData
+    private function buildDestinationAddress(array $shippingData): ?RateAddress
     {
         $line1 = $shippingData['line1'] ?? '';
         $postcode = $shippingData['postcode'] ?? '';
@@ -133,23 +133,23 @@ final class ShippingAdapter
             return null;
         }
 
-        return AddressData::from([
-            'name' => $shippingData['name'] ?? 'Customer',
-            'phone' => $shippingData['phone'] ?? '',
-            'line1' => $line1,
-            'line2' => $shippingData['line2'] ?? null,
-            'city' => $shippingData['city'] ?? null,
-            'state' => $shippingData['state'] ?? null,
-            'postcode' => $postcode,
-            'country' => $shippingData['country'] ?? 'MY',
-            'email' => $shippingData['email'] ?? null,
-            'company' => $shippingData['company'] ?? null,
-        ]);
+        return new RateAddress(
+            name: $shippingData['name'] ?? 'Customer',
+            phone: $shippingData['phone'] ?? '',
+            line1: $line1,
+            line2: $shippingData['line2'] ?? null,
+            city: $shippingData['city'] ?? null,
+            state: $shippingData['state'] ?? null,
+            postcode: $postcode,
+            country: $shippingData['country'] ?? 'MY',
+            email: $shippingData['email'] ?? null,
+            company: $shippingData['company'] ?? null,
+        );
     }
 
     /**
      * @param  array<string, mixed>  $cartSnapshot
-     * @return array<PackageData>
+     * @return array<RatePackage>
      */
     private function buildPackages(array $cartSnapshot): array
     {
@@ -187,14 +187,14 @@ final class ShippingAdapter
                         continue;
                     }
 
-                    $packages[] = PackageData::from([
-                        'weight' => $weight,
-                        'length' => $component['dimensions']['length'] ?? null,
-                        'width' => $component['dimensions']['width'] ?? null,
-                        'height' => $component['dimensions']['height'] ?? null,
-                        'declaredValue' => $allocatedDeclaredValue ? null : $declaredValue,
-                        'quantity' => 1,
-                    ]);
+                    $packages[] = new RatePackage(
+                        weight: $weight,
+                        length: $component['dimensions']['length'] ?? null,
+                        width: $component['dimensions']['width'] ?? null,
+                        height: $component['dimensions']['height'] ?? null,
+                        declaredValue: $allocatedDeclaredValue ? null : $declaredValue,
+                        quantity: 1,
+                    );
 
                     $allocatedDeclaredValue = true;
                 }
@@ -224,20 +224,20 @@ final class ShippingAdapter
                 $attributes['dimensions'] ?? null,
             ], $item + $attributes);
 
-            $packages[] = PackageData::from([
-                'weight' => $weight * $quantity,
-                'length' => $dimensions['length'] ?? null,
-                'width' => $dimensions['width'] ?? null,
-                'height' => $dimensions['height'] ?? null,
-                'declaredValue' => $item['price'] ?? null,
-                'quantity' => 1,
-            ]);
+            $packages[] = new RatePackage(
+                weight: $weight * $quantity,
+                length: $dimensions['length'] ?? null,
+                width: $dimensions['width'] ?? null,
+                height: $dimensions['height'] ?? null,
+                declaredValue: $item['price'] ?? null,
+                quantity: 1,
+            );
         }
 
         return $packages;
     }
 
-    private function getOriginAddress(): ?AddressData
+    private function getOriginAddress(): ?RateAddress
     {
         $origin = config('shipping.defaults.origin', []);
 
@@ -248,27 +248,27 @@ final class ShippingAdapter
             return null;
         }
 
-        return AddressData::from([
-            'name' => $origin['name'] ?? config('app.name', 'Store'),
-            'phone' => $origin['phone'] ?? '',
-            'line1' => $line1,
-            'line2' => $origin['line2'] ?? null,
-            'city' => $origin['city'] ?? null,
-            'state' => $origin['state'] ?? null,
-            'postcode' => $postcode,
-            'country' => $origin['country'] ?? $origin['country_code'] ?? 'MY',
-            'company' => $origin['company'] ?? null,
-            'email' => $origin['email'] ?? null,
-        ]);
+        return new RateAddress(
+            name: $origin['name'] ?? config('app.name', 'Store'),
+            phone: $origin['phone'] ?? '',
+            line1: $line1,
+            line2: $origin['line2'] ?? null,
+            city: $origin['city'] ?? null,
+            state: $origin['state'] ?? null,
+            postcode: $postcode,
+            country: $origin['country'] ?? $origin['country_code'] ?? 'MY',
+            company: $origin['company'] ?? null,
+            email: $origin['email'] ?? null,
+        );
     }
 
     /**
-     * @param  list<RateQuoteData>  $rates
+     * @param  list<RateQuote>  $rates
      * @return array<array<string, mixed>>
      */
     private function normalizeRates(array $rates): array
     {
-        return array_map(static function (RateQuoteData $rate): array {
+        return array_map(static function (RateQuote $rate): array {
             return [
                 'method_id' => $rate->carrier . '_' . $rate->service,
                 'carrier' => $rate->carrier,
