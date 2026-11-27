@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Data;
 
 use InvalidArgumentException;
-use Carbon\CarbonImmutable;
-use Throwable;
 
 /**
  * Tracking data from JNT Express API.
@@ -92,23 +90,7 @@ final readonly class TrackingData
 
     public function getLatestDetail(): ?TrackingDetailData
     {
-        $latestDetail = null;
-        $latestTimestamp = PHP_INT_MIN;
-
-        foreach ($this->details as $detail) {
-            try {
-                $timestamp = CarbonImmutable::parse($detail->scanTime)->getTimestamp();
-            } catch (Throwable) {
-                $timestamp = 0;
-            }
-
-            if ($timestamp > $latestTimestamp) {
-                $latestDetail = $detail;
-                $latestTimestamp = $timestamp;
-            }
-        }
-
-        return $latestDetail;
+        return TrackingDetailData::latest($this->details);
     }
 
     public function getLatestStatus(): ?string

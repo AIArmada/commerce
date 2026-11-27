@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntValidationException;
@@ -229,6 +230,25 @@ describe('WebhookData', function (): void {
             expect($latest)->toBeInstanceOf(TrackingDetailData::class)
                 ->and($latest->scanType)->toBe('派件')
                 ->and($latest->scanTime)->toBe('2024-01-16 15:00:00');
+        });
+
+        it('selects the latest valid scan regardless of carrier event order', function (): void {
+            $delivered = new TrackingDetailData('2024-01-16T15:00:00+08:00', 'Delivered', '5', 'Delivery', 'SIGN');
+            $collected = new TrackingDetailData('2024-01-15T10:00:00+08:00', 'Collected', '1', 'Collection', 'PICKUP');
+            $invalid = new TrackingDetailData('not-a-date', 'Invalid', '0', 'Unknown', 'UNKNOWN');
+
+            foreach ([[$delivered, $collected, $invalid], [$invalid, $collected, $delivered]] as $details) {
+                $webhook = new WebhookData('JT001', null, $details);
+                $tracking = TrackingData::make('JT001', $details);
+
+                expect($webhook->getLatestDetail())->toBe($delivered)
+                    ->and($tracking->getLatestDetail())->toBe($delivered)
+                    ->and($webhook->isDelivered())->toBeTrue()
+                    ->and($tracking->isDelivered())->toBeTrue();
+            }
+
+            expect((new WebhookData('JT001', null, [$invalid]))->getLatestDetail())->toBeNull()
+                ->and(TrackingData::make('JT001', [$invalid])->getLatestDetail())->toBeNull();
         });
 
         it('returns null when no details exist', function (): void {

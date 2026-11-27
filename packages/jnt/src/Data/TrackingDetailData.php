@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
+use Carbon\CarbonImmutable;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Tracking detail data from JNT Express API.
@@ -179,6 +181,32 @@ final readonly class TrackingDetailData
         }
 
         return $id;
+    }
+
+    /** @param list<self> $details */
+    public static function latest(array $details): ?self
+    {
+        $latest = null;
+        $latestTime = null;
+
+        foreach ($details as $detail) {
+            if (mb_trim($detail->scanTime) === '') {
+                continue;
+            }
+
+            try {
+                $time = CarbonImmutable::parse($detail->scanTime);
+            } catch (Throwable) {
+                continue;
+            }
+
+            if ($latestTime === null || $time > $latestTime) {
+                $latest = $detail;
+                $latestTime = $time;
+            }
+        }
+
+        return $latest;
     }
 
     public function getLocation(): string

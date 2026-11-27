@@ -104,7 +104,15 @@ describe('TrackingData', function (): void {
         );
 
         $latest = $tracking->getLatestEvent();
-        expect($latest)->toBe($event1); // First event is latest
+        expect($latest)->toBe($event2);
+
+        $reversed = new TrackingData(
+            trackingNumber: 'TRACK123',
+            status: TrackingStatus::InTransit,
+            events: [$event2, $event1]
+        );
+
+        expect($reversed->getLatestEvent())->toBe($event2);
     });
 
     it('returns null for latest event when no events', function (): void {

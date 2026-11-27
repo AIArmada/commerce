@@ -32,11 +32,7 @@ final readonly class WebhookData
      */
     public function getLatestDetail(): ?TrackingDetailData
     {
-        if ($this->details === []) {
-            return null;
-        }
-
-        return $this->details[array_key_last($this->details)];
+        return TrackingDetailData::latest($this->details);
     }
 
     public function getLatestStatus(): ?string

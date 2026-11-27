@@ -38,6 +38,14 @@ final readonly class TrackingData
 
     public function getLatestEvent(): ?TrackingEventData
     {
-        return $this->events[0] ?? null;
+        $latest = null;
+
+        foreach ($this->events as $event) {
+            if ($latest === null || $event->timestamp > $latest->timestamp) {
+                $latest = $event;
+            }
+        }
+
+        return $latest;
     }
 }
