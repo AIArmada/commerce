@@ -7,6 +7,7 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Products\Actions\ReplaceOptionValues;
 use AIArmada\Products\Models\Option;
+use AIArmada\Products\Actions\SaveOption;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -103,7 +104,8 @@ final class OptionsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->using(fn (array $data): Option => app(SaveOption::class)->create($this->catalogProduct(), $data)),
             ])
             ->actions([
                 Action::make('manage_values')
@@ -162,13 +164,22 @@ final class OptionsRelationManager extends RelationManager
                             ->title('Option values updated')
                             ->send();
                     }),
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->using(fn (Option $record, array $data): Option => app(SaveOption::class)->update($this->catalogProduct(), $record, $data)),
+                DeleteAction::make()
+                    ->using(fn (Option $record): bool => app(SaveOption::class)->delete($this->catalogProduct(), $record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+    private function catalogProduct(): Product
+    {
+        $product = $this->getOwnerRecord();
+        abort_unless($product instanceof Product, 404);
+
+        return $product;
     }
 }

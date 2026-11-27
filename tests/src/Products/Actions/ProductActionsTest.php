@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Actions\GenerateVariants;
+use AIArmada\Products\Actions\ReplaceOptionValues;
 use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Enums\ProductStatus;
@@ -267,4 +268,20 @@ describe('ApplyAttributeChanges Action', function (): void {
 
         expect($result->getCustomAttribute('test_invoke'))->toBe('New');
     });
+});
+
+it('rolls back option replacement when a submitted value belongs to another option', function (): void {
+    $product = Product::create(['name' => 'Option replacement', 'supports_variants' => true]);
+    $option = $product->options()->create(['name' => 'Color']);
+    $other = $product->options()->create(['name' => 'Size']);
+    $red = $option->values()->create(['name' => 'Red']);
+    $foreign = $other->values()->create(['name' => 'Large']);
+
+    expect(fn () => app(ReplaceOptionValues::class)->execute($option, [
+        ['id' => $red->id, 'name' => 'Blue'],
+        ['id' => $foreign->id, 'name' => 'Invalid'],
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($red->fresh()->name)->toBe('Red')
+        ->and($foreign->fresh()->name)->toBe('Large');
 });
