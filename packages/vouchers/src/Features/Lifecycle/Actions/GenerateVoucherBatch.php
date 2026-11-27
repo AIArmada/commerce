@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
+use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
@@ -11,7 +12,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-final readonly class GenerateVoucherBatch
+final readonly class GenerateVoucherBatch implements VoucherBatchIssuer
 {
     public function __construct(private CreateVoucher $createVoucher) {}
 

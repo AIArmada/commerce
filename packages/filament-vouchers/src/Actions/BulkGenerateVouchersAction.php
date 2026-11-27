@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Features\Lifecycle\Actions\GenerateVoucherBatch;
+use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
 use AIArmada\Vouchers\Data\VoucherType;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -95,7 +95,7 @@ final class BulkGenerateVouchersAction extends Action
                 ]);
             }
 
-            $created = app(GenerateVoucherBatch::class)->handle(
+            $created = app(VoucherBatchIssuer::class)->handle(
                 count: $count,
                 prefix: (string) ($data['prefix'] ?? ''),
                 name: (string) $data['name'],

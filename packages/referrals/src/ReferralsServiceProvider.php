@@ -43,8 +43,8 @@ final class ReferralsServiceProvider extends PackageServiceProvider
         if (is_array($configuredDrivers['voucher'] ?? null)
             && ($configuredDrivers['voucher']['enabled'] ?? false)
             && $this->symbolsExist([
-                'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\CreateVoucher',
-                'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher',
+                'AIArmada\\Vouchers\\Runtime\\VoucherCreator',
+                'AIArmada\\Vouchers\\Runtime\\VoucherExpiry',
                 'AIArmada\\Vouchers\\Models\\Voucher',
             ])) {
             $this->app->singleton(VouchersReferralFulfillment::class);

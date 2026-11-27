@@ -19,10 +19,10 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
 {
     public function issue(RewardBenefitGrant $grant, RewardBenefitItem $item, CarbonImmutable $decided): string
     {
-        $createActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\CreateVoucher';
-        $addToWalletClass = 'AIArmada\\Vouchers\\Features\\Wallet\\Actions\\AddVoucherToWallet';
+        $createActionClass = 'AIArmada\\Vouchers\\Runtime\\VoucherCreator';
+        $addToWalletClass = 'AIArmada\\Vouchers\\Runtime\\WalletClaim';
 
-        if (! class_exists($createActionClass) || ! class_exists($addToWalletClass)) {
+        if (! interface_exists($createActionClass) || ! interface_exists($addToWalletClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');
         }
 
@@ -132,9 +132,9 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
     {
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
         $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
-        $expireActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher';
+        $expireActionClass = 'AIArmada\\Vouchers\\Runtime\\VoucherExpiry';
 
-        if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! class_exists($expireActionClass)) {
+        if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! interface_exists($expireActionClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');
         }
 

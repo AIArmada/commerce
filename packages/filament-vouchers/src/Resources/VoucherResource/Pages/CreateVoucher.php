@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
-use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher as CreateVoucherAction;
+use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Models\Voucher;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +19,7 @@ final class CreateVoucher extends CreateRecord
 
     protected function handleRecordCreation(array $data): Voucher
     {
-        return app(CreateVoucherAction::class)->handle($data);
+        return app(VoucherCreator::class)->handle($data);
     }
 
     protected function getRedirectUrl(): string

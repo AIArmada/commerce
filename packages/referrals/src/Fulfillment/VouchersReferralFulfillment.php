@@ -14,10 +14,10 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 {
     public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
     {
-        $createAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\CreateVoucher';
+        $createAction = 'AIArmada\\Vouchers\\Runtime\\VoucherCreator';
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
 
-        if (! class_exists($createAction) || ! class_exists($voucherClass)) {
+        if (! interface_exists($createAction) || ! class_exists($voucherClass)) {
             return ReferralFulfillmentResult::failed('The vouchers package public API is unavailable.');
         }
 
@@ -116,11 +116,11 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
     public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
     {
-        $expireAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher';
+        $expireAction = 'AIArmada\\Vouchers\\Runtime\\VoucherExpiry';
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
         $code = $reward->external_reference;
 
-        if (! is_string($code) || $code === '' || ! class_exists($expireAction) || ! class_exists($voucherClass)) {
+        if (! is_string($code) || $code === '' || ! interface_exists($expireAction) || ! class_exists($voucherClass)) {
             return ReferralFulfillmentResult::failed('Voucher reversal requires an issued voucher code and the vouchers package.');
         }
 

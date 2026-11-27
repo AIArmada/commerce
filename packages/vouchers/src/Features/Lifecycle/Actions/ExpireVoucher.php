@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
+use AIArmada\Vouchers\Runtime\VoucherExpiry;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher;
@@ -14,7 +15,7 @@ use AIArmada\Vouchers\States\Expired;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-final class ExpireVoucher
+final class ExpireVoucher implements VoucherExpiry
 {
     use AsAction;
     use QueriesVouchers;

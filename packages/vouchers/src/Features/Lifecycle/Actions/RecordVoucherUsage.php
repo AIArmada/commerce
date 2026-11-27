@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
@@ -57,6 +58,10 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
             if (! $lockedVoucher) {
                 throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
             }
+            if (config('vouchers.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(VoucherModel::class, $lockedVoucher->getKey(), includeGlobal: (bool) config('vouchers.owner.include_global', false));
+            }
+
             $assignee = $this->resolveAssignee($lockedVoucher);
 
             if ($assignee !== null
