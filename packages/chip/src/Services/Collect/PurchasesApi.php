@@ -10,7 +10,7 @@ use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Persistence\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
 use AIArmada\Chip\Support\TaxPercent;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;

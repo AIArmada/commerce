@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Persistence\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 it('fails closed after a crash between reserve and record until reconciliation resolves the ledger', function (): void {

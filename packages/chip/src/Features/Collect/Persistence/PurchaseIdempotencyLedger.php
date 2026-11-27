@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Persistence;
+namespace AIArmada\Chip\Features\Collect\Persistence;
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
@@ -130,7 +130,7 @@ final class PurchaseIdempotencyLedger
     {
         $this->assertOwnerContext();
 
-        return Purchase::query()
+        return Purchase::query()->forOwner(OwnerContext::CURRENT, false)
             ->where('brand_id', $brandId)
             ->where('metadata->chip_idempotency->idempotency_key', $idempotencyKey)
             ->first();
@@ -145,7 +145,7 @@ final class PurchaseIdempotencyLedger
         $this->assertOwnerContext();
 
         return DB::transaction(function () use ($reservationId): bool {
-            $stub = Purchase::query()
+            $stub = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
                 ->whereKey($reservationId)
                 ->whereNotNull('metadata->chip_idempotency->idempotency_key')
                 ->whereNull('metadata->chip_idempotency->response')
@@ -182,7 +182,7 @@ final class PurchaseIdempotencyLedger
      */
     private function eachExpiredStub(callable $callback): void
     {
-        Purchase::query()
+        Purchase::query()->forOwner(OwnerContext::CURRENT, false)
             ->whereNotNull('metadata->chip_idempotency->idempotency_key')
             ->whereNull('metadata->chip_idempotency->response')
             ->chunkById(200, function ($stubs) use ($callback): bool {

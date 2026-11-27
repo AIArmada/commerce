@@ -3,7 +3,8 @@
   "name": "Collect",
   "owns": {
     "table:chip_purchases": [
-      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload",
+      "AIArmada\\Chip\\Features\\Collect\\Persistence\\PurchaseIdempotencyLedger"
     ],
     "table:chip_clients": [
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
