@@ -9,8 +9,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackFormVisibility;
 use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackFormDependentsAction;
-use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -51,8 +49,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read Model|Eloquent $createdBy
  * @property-read Collection<int, FeedbackSection> $sections
  * @property-read Collection<int, FeedbackQuestion> $questions
- * @property-read Collection<int, FeedbackResponse> $responses
- * @property-read Collection<int, FeedbackInvitation> $invitations
  */
 final class FeedbackForm extends Model
 {
@@ -116,16 +112,6 @@ final class FeedbackForm extends Model
     public function questions(): HasMany
     {
         return $this->hasMany(FeedbackQuestion::class, 'feedback_form_id');
-    }
-
-    public function responses(): HasMany
-    {
-        return $this->hasMany(FeedbackResponse::class, 'feedback_form_id');
-    }
-
-    public function invitations(): HasMany
-    {
-        return $this->hasMany(FeedbackInvitation::class, 'feedback_form_id');
     }
 
     public function subject(): MorphTo

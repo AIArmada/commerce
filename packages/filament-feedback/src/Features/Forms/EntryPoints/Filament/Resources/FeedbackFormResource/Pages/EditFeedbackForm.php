@@ -10,11 +10,9 @@ use AIArmada\Feedback\Enums\FeedbackFormVisibility;
 use AIArmada\Feedback\Features\Forms\Actions\UpdateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
-use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\RelationManagers\InvitationsRelationManager;
 use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\RelationManagers\QuestionsRelationManager;
-use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\RelationManagers\ResponsesRelationManager;
 use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\RelationManagers\SectionsRelationManager;
-use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource\RelationManagers\TestimonialsRelationManager;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -58,9 +56,15 @@ final class EditFeedbackForm extends EditRecord
         return [
             SectionsRelationManager::class,
             QuestionsRelationManager::class,
-            ResponsesRelationManager::class,
-            InvitationsRelationManager::class,
-            TestimonialsRelationManager::class,
+        ];
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('responses')->url(fn (): string => static::getResource()::getUrl('responses', ['record' => $this->getRecord()])),
+            Action::make('invitations')->url(fn (): string => static::getResource()::getUrl('invitations', ['record' => $this->getRecord()])),
+            Action::make('testimonials')->url(fn (): string => static::getResource()::getUrl('testimonials', ['record' => $this->getRecord()])),
         ];
     }
 

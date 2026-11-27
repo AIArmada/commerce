@@ -12,6 +12,7 @@ use AIArmada\Feedback\Features\Forms\Actions\ArchiveFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\CloseFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\PublishFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -41,7 +42,11 @@ final class FeedbackFormResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $responses = OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false)
+            ->whereColumn('feedback_form_id', $query->getModel()->qualifyColumn('id'));
+
+        return $query->addSelect(['responses_count' => $responses->selectRaw('count(*)')]);
     }
 
     public static function table(Table $table): Table
@@ -65,7 +70,7 @@ final class FeedbackFormResource extends Resource
                     ->badge(),
                 Tables\Columns\TextColumn::make('responses_count')
                     ->label('Responses')
-                    ->counts('responses'),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('published_at')
                     ->dateTime()
                     ->sortable(),
@@ -121,6 +126,9 @@ final class FeedbackFormResource extends Resource
             'view' => FeedbackFormResource\Pages\ViewFeedbackForm::route('/{record}'),
             'builder' => FeedbackFormResource\Pages\ManageFeedbackFormBuilder::route('/{record}/builder'),
             'analytics' => FeedbackFormResource\Pages\FeedbackFormAnalytics::route('/{record}/analytics'),
+            'responses' => FeedbackFormResource\Pages\FeedbackFormResponses::route('/{record}/responses'),
+            'invitations' => FeedbackFormResource\Pages\FeedbackFormInvitations::route('/{record}/invitations'),
+            'testimonials' => FeedbackFormResource\Pages\FeedbackFormTestimonials::route('/{record}/testimonials'),
         ];
     }
 }

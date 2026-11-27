@@ -42,8 +42,8 @@ it('shares one dashboard computation across widgets within a request', function 
         ->and($queries)->toBeEmpty();
 });
 
-it('leaves response counting to the table column', function (): void {
-    expect(FeedbackFormResource::getEloquentQuery()->toSql())->not->toContain('responses');
+it('projects response counts without loading a cross-feature relation', function (): void {
+    expect(FeedbackFormResource::getEloquentQuery()->toSql())->toContain('responses_count');
 });
 
 it('keeps network identifiers out of the response export', function (): void {
