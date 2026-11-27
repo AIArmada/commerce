@@ -7,10 +7,10 @@ use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelinePhaseContext;
-use AIArmada\Cart\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
-use AIArmada\Cart\Conditions\Pipeline\Resolvers\DefaultScopeResolver;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelinePhaseContext;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\Resolvers\DefaultScopeResolver;
 use Tests\Support\Cart\InMemoryStorage;
 
 describe('DefaultScopeResolver', function (): void {

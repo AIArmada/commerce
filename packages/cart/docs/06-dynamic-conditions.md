@@ -262,6 +262,20 @@ Cart::registerDynamicCondition(
 );
 ```
 
+Item-scoped dynamic conditions must be registered at cart scope with
+`registerDynamicCondition()`. `addItemCondition()` rejects conditions that
+still carry rule closures so a projection can never serialize them. The
+Filament single-item condition picker therefore lists only static item
+conditions, and `ApplyStoredCondition::applyToItem()` rejects dynamic stored
+definitions with a validation error.
+
+## Reserved Attributes
+
+Condition attributes `condition_id`, `condition_name`, `is_global`,
+`definition_hash`, and `__provider` are reserved identity and provider fields.
+Custom and stored condition authoring rejects them; internal producers such as
+global-condition reconciliation and condition providers keep generating them.
+
 ## Persistence & Restoration
 
 Dynamic conditions with factory keys are persisted to metadata:
@@ -293,6 +307,11 @@ $conditions = Cart::getDynamicConditions();
 // Remove specific dynamic condition
 Cart::removeDynamicCondition('Weekend Sale');
 ```
+
+Removing an item-scoped dynamic condition updates all matching items and removes
+the persisted rule in the same revision-checked write.
+Each affected item still emits an `ItemConditionRemoved` event. The snapshot
+listener refreshes the cart once, after the persisted rule has been removed.
 
 ## Error Handling
 

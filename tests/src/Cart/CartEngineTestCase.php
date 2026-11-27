@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Tests;
 
 use AIArmada\Cart\CartServiceProvider;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServiceProvider;

@@ -51,6 +51,9 @@ entry point for admin and cross-tenant tooling.
 
 Concrete cart objects obtained from the manager keep the owner they were created
 with. The ambient manager itself never retains a previous owner selection.
+The container-resolved `CartFactory` uses the current owner for each new cart.
+Global condition reconciliation and validation require the owner context to
+match the cart's storage.
 
 When owner mode is enabled and no owner can be resolved, ambient entry points
 fail closed except inside `OwnerContext::withOwner(null, ...)` (explicit
@@ -64,6 +67,18 @@ it against the ambient owner context. A cart owned by one owner must be mutated
 inside that owner's context; a mismatched combination throws
 `AuthorizationException` instead of silently writing the snapshot under the
 ambient owner. Global source carts require explicit global context.
+
+Snapshot deletion follows the same rule. `deleteByIdentity()` resolves the
+ambient owner by default. When a destroyed event supplies a
+`CartOwnerIdentity`, that tuple is a claim: an owned claim must match the
+ambient owner, and a global claim requires explicit global context. Malformed
+tuples are rejected before any row is deleted.
+
+Snapshot DTOs resolved back into live carts (`CartInstanceManager::resolveForSnapshot()`
+and `CartSnapshot::getCartInstance()`) validate the ambient owner against the
+snapshot owner instead of granting the snapshot's owner context. A global
+snapshot may be read in a tenant context when `include_global` allows it, but it
+is not writable there.
 
 ## Setting the Owner
 
@@ -167,7 +182,7 @@ WHERE identifier = 'user-123'
 The `Condition` model also supports owner scoping:
 
 ```php
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 
 // Get tenant-specific conditions
 $conditions = Condition::forOwner($tenant)->active()->get();
@@ -218,6 +233,16 @@ For jobs, commands, listeners, and other non-request surfaces, use `OwnerContext
   required before any snapshot row is mutated
 - with malformed tuples: command warns and skips by default
 - with `--strict-owner-tuples`: command aborts on malformed tuples
+
+Each run captures one snapshot cutoff before counting and marking, so rows are
+compared against a stable deadline. Live-cart cleanup uses keyset pagination:
+a row that no longer matches the deletion predicate is left untouched while the
+run continues with later batches. Owner enumeration requires explicit global
+context, and each per-owner count or delete runs inside that owner's context.
+
+When `cart.owner.enabled` is `false`, live-cart cleanup applies no owner
+predicate and can clear rows that still carry owner columns from an earlier
+configuration.
 
 This command now uses the shared `commerce-support` owner tuple parser rather than re-implementing tuple validation locally.
 

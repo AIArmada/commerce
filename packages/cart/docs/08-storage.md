@@ -26,7 +26,7 @@ interface StorageInterface
 
     // Revisioned reads and writes
     public function getSnapshot(string $identifier, string $instance): ?CartStorageSnapshot;
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision;
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision;
     public function putConditions(string $identifier, string $instance, array $conditions, CartRevision $expectedRevision): CartRevision;
     public function putBoth(string $identifier, string $instance, array $items, array $conditions, CartRevision $expectedRevision): CartRevision;
     public function forgetIfUnchanged(string $identifier, string $instance, CartRevision $expectedRevision): bool;
@@ -258,18 +258,22 @@ Cart::setMetadata('object', new NonSerializableClass()); // Non-JSON objects
 > Guest-to-user migration is atomic in the actual storage backend. The two-cart
 > boundary lives in `StorageInterface::commitMergeTransfer()`, which validates
 > both source and target revisions and commits target data plus source
-> consumption as one unit. `DatabaseStorage` runs this inside a transaction on
-> the connection that owns the storage writes (not the default facade), and
+> consumption as one unit. `DatabaseStorage` writes the merged target once and
+> consumes the source in the same transaction on the storage connection.
 > `InMemoryStorage` stages both sides and reverts only its own target write
 > when the source consumption loses, preserving a competitor's successful
 > mutation. Decorators and custom backends must implement
 > `commitMergeTransfer()` and `backingKey()`; incompatible backing stores are
 > rejected before any mutation.
 
+Custom storage implementations accept the optional `metadata` argument on
+`putItems()`. When supplied, the complete metadata replacement commits under
+the same revision guard as the items.
+
 Transfer carts between identifiers (e.g., guest to user):
 
 ```php
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 
 $migrationService = app(CartMigrationService::class);
 
@@ -313,7 +317,7 @@ before migration. It is 0 when migration fails or no guest items exist.
 ### Action-Based Migration
 
 ```php
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 
 $action = app(MigrateGuestCartToUserAction::class);
 
@@ -338,7 +342,7 @@ $result = $action->executeForUser(
 ```
 
 ```php
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
 
 $action = app(MigrateCartOnLoginAction::class);
 

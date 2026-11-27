@@ -9,13 +9,13 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\PercentageRate;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\CartCheckoutLineItem;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipeline;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineResult;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\StorageInterface;
@@ -382,15 +382,18 @@ final class Cart implements CheckoutableInterface
      *
      * @param  callable(ConditionPipeline):void|null  $configure  Optional pipeline configuration callback
      */
-    public function evaluateConditionPipeline(?callable $configure = null): ConditionPipelineResult
-    {
+    public function evaluateConditionPipeline(
+        ?callable $configure = null,
+        ?CartConditionCollection $conditions = null,
+        ?int $initialAmount = null,
+    ): ConditionPipelineResult {
         $pipeline = $this->pipelineFactory?->createEager() ?? new ConditionPipeline;
 
         if ($configure !== null) {
             $configure($pipeline);
         }
 
-        return $pipeline->process(ConditionPipelineContext::fromCart($this));
+        return $pipeline->process(new ConditionPipelineContext($this, $conditions, $initialAmount));
     }
 
     /**

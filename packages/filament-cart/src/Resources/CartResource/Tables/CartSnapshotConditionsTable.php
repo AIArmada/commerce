@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Tables;
 
-use AIArmada\Cart\Actions\RemoveStoredConditions;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
 use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use Exception;
@@ -148,7 +148,7 @@ final class CartSnapshotConditionsTable
                                 /** @var CartSnapshotCondition $record */
                                 foreach ($chunk as $record) {
                                     try {
-                                        if (app(RemoveStoredConditions::class)->removeSnapshotCondition($record)) {
+                                        if (app(RemoveStoredConditions::class)->removeSnapshotCondition((string) $record->getKey())) {
                                             $removed++;
                                         } else {
                                             $failed++;

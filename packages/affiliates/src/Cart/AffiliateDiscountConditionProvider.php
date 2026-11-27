@@ -12,7 +12,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Contracts\ConditionProviderInterface;
+use AIArmada\Cart\Runtime\ConditionProviderInterface;
 
 /**
  * Provides affiliate-specific discount conditions for the cart.

@@ -124,6 +124,7 @@ pest()->extend(CompositeCheckoutTestCase::class)->in('src/CompositeCheckout');
 // here or bound below.
 pest()->extend(TestCase::class)->in(
     'src/Cart/Feature/CheckoutableTest.php',
+    'src/Cart/Feature/SnapshotLifecycleActionTest.php',
     'src/Cart/Feature/ConditionOwnerScopingContractTest.php',
     'src/Cart/Feature/OwnerFillableTest.php',
     'src/Cart/Feature/OwnerScopedCartManagerIsolationTest.php',
@@ -133,6 +134,7 @@ pest()->extend(TestCase::class)->in(
     'src/Cart/Feature/Core',
     'src/Cart/Feature/Database',
     'src/Cart/Feature/Events',
+    'src/Cart/Feature/LiveCart',
     'src/Cart/Feature/Metadata',
     'src/Cart/Feature/Migration',
     'src/Cart/Feature/Money',

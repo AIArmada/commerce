@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Snapshots\SyncNormalizedCartJob;
+use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 
 it('coalesces sync jobs per owner cart identity', function (): void {

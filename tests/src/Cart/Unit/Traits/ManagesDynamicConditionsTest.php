@@ -6,8 +6,8 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Support\Facades\DB;
 
 final class RecordingRulesFactory implements RulesFactoryInterface
@@ -57,6 +57,40 @@ beforeEach(function (): void {
 });
 
 describe('dynamic condition lifecycle', function (): void {
+    it('preserves an unrelated applied condition when a stored dynamic rule fails or is removed', function (): void {
+        $cart = new Cart($this->storage, $this->identifier, events: null);
+        $cart->withRulesFactory(new RecordingRulesFactory);
+        $cart->addCondition(new CartCondition(
+            name: 'shared-name',
+            type: 'discount',
+            target: 'cart@cart_subtotal/aggregate',
+            value: '-20%',
+            attributes: ['condition_id' => 'replacement'],
+        ));
+        $cart->registerDynamicCondition(
+            condition: [
+                'name' => 'shared-name',
+                'type' => 'discount',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+                'value' => '-10%',
+                'attributes' => ['condition_id' => 'original', 'is_global' => true],
+            ],
+            rules: 'throws',
+        );
+
+        $cart->evaluateDynamicConditions();
+
+        expect($cart->getStoredConditions()->getCondition('shared-name')?->getAttribute('condition_id'))
+            ->toBe('replacement');
+
+        $cart->removeDynamicCondition('shared-name');
+
+        expect($cart->getStoredConditions()->getCondition('shared-name')?->getAttribute('condition_id'))
+            ->toBe('replacement')
+            ->and($cart->getDynamicConditions()->has('shared-name'))->toBeFalse();
+    });
+
     it('persists metadata context across registrations and restores dynamic conditions', function (): void {
         $factory = new RecordingRulesFactory;
 

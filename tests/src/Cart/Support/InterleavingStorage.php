@@ -102,9 +102,9 @@ final class InterleavingStorage implements StorageInterface
         return $this->inner->getConditions($identifier, $instance);
     }
 
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision
     {
-        $revision = $this->inner->putItems($identifier, $instance, $items, $expectedRevision);
+        $revision = $this->inner->putItems($identifier, $instance, $items, $expectedRevision, $metadata);
         $this->fire('putItems');
 
         return $revision;

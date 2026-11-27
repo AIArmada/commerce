@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
-use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Cart\Features\Snapshots\Actions\ClearLiveCart;
+use AIArmada\Cart\Features\Snapshots\Actions\DestroyLiveCart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
 use AIArmada\FilamentCart\Resources\CartResource;
-use AIArmada\FilamentCart\Services\CartDownloadService;
 use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
@@ -23,35 +23,31 @@ final class ViewCart extends ViewRecord
 
     public function getTitle(): string
     {
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
+        \assert($this->record instanceof Cart);
+
         return 'Cart: ' . $this->record->identifier;
     }
 
     public function getSubheading(): string
     {
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
+        \assert($this->record instanceof Cart);
+
         if ($this->record->isEmpty()) {
             return 'This cart is empty';
         }
 
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $itemCount = $this->record->items_count;
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $totalQty = $this->record->quantity;
 
         $summary = "{$itemCount} " . str('item')->plural($itemCount) .
             " ({$totalQty} " . str('unit')->plural($totalQty) . ')';
 
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $summary .= ' • Subtotal ' . $this->record->formatMoney($this->record->subtotal);
 
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         if ($this->record->savings > 0) {
-            /** @phpstan-ignore-next-line dynamic Cart model accessors */
             $summary .= ' • Savings ' . $this->record->formatMoney($this->record->savings);
         }
 
-        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $summary .= ' • Total ' . $this->record->formatMoney($this->record->total);
 
         return $summary;
@@ -77,24 +73,20 @@ final class ViewCart extends ViewRecord
             ->modalHeading('Clear Cart')
             ->modalDescription('Are you sure you want to clear all items from this cart? This action cannot be undone.')
             ->action(function (): void {
-                /** @var Cart $record */
-                $record = $this->authorizeCart($this->record);
-                app(CartInstanceManager::class)
-                    ->resolveForSnapshot($record)
-                    ->clear();
+                \assert($this->record instanceof Cart);
+                app(ClearLiveCart::class)->execute($this->record);
                 $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
             })
-            ->visible(fn () => ! $this->record->isEmpty());
+            ->visible(fn (): bool => $this->record instanceof Cart && ! $this->record->isEmpty());
 
         $actions[] = Actions\Action::make('export_cart')
             ->label('Export Cart')
             ->icon(Heroicon::OutlinedArrowDownTray)
             ->color('info')
             ->action(function () {
-                /** @var Cart $record */
-                $record = $this->authorizeCart($this->record);
+                \assert($this->record instanceof Cart);
 
-                return app(CartDownloadService::class)->download($record);
+                return app(DownloadCart::class)->download($this->record);
             });
 
         $actions[] = Actions\Action::make('delete_cart')
@@ -105,11 +97,8 @@ final class ViewCart extends ViewRecord
             ->modalHeading('Delete Cart')
             ->modalDescription('This will delete the live cart and its synchronized snapshot.')
             ->action(function (): void {
-                /** @var Cart $record */
-                $record = $this->authorizeCart($this->record);
-                app(CartInstanceManager::class)
-                    ->resolveForSnapshot($record)
-                    ->destroy();
+                \assert($this->record instanceof Cart);
+                app(DestroyLiveCart::class)->execute($this->record);
                 $this->redirect($this->getResource()::getUrl('index'));
             });
 
@@ -142,22 +131,5 @@ final class ViewCart extends ViewRecord
         }
 
         return $widgets;
-    }
-
-    private function authorizeCart(Cart $cart): Cart
-    {
-        if (! Cart::ownerScopingEnabled()) {
-            return $cart;
-        }
-
-        /** @var Cart $validated */
-        $validated = OwnerWriteGuard::findOrFailForOwner(
-            Cart::class,
-            (string) $cart->getKey(),
-            includeGlobal: false,
-            message: 'Cart is not accessible in the current owner scope.',
-        );
-
-        return $validated;
     }
 }
