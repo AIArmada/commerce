@@ -130,3 +130,30 @@ it('nulls question section references when deleting a section', function (bool $
     expect($question->fresh()->feedback_section_id)->toBeNull()
         ->and(FeedbackSection::query()->count())->toBe(0);
 })->with([true, false]);
+
+it('deletes form structure with owner scoping disabled', function (): void {
+    config(['feedback.owner.enabled' => false]);
+
+    $form = app(CreateFeedbackFormAction::class)
+        ->execute(new CreateFeedbackFormData(name: 'Unscoped Deletion'));
+    $section = FeedbackSection::query()->create([
+        'feedback_form_id' => $form->id,
+        'title' => 'Section',
+    ]);
+    $question = FeedbackQuestion::query()->create([
+        'feedback_form_id' => $form->id,
+        'feedback_section_id' => $section->id,
+        'key' => 'comment',
+        'type' => 'short_text',
+        'label' => 'Comment',
+    ]);
+
+    app(DeleteFeedbackSectionAction::class)->execute($section);
+    expect($question->fresh()->feedback_section_id)->toBeNull();
+
+    app(DeleteFeedbackQuestionAction::class)->execute($question);
+    expect(FeedbackQuestion::query()->whereKey($question->id)->exists())->toBeFalse();
+
+    app(DeleteFeedbackFormAction::class)->execute($form);
+    expect(FeedbackForm::query()->whereKey($form->id)->exists())->toBeFalse();
+});

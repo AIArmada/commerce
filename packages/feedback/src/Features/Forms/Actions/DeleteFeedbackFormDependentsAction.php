@@ -12,7 +12,6 @@ use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Features\Responses\Api\DeletesResponseDependencies;
 use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteFeedbackFormDependentsAction
 {
@@ -29,7 +28,7 @@ final readonly class DeleteFeedbackFormDependentsAction
             OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
         }
 
-        DB::transaction(function () use ($form): void {
+        $form->getConnection()->transaction(function () use ($form): void {
             $formId = $form->id;
 
             $this->testimonials->deleteForForm($formId);

@@ -7,7 +7,6 @@ namespace AIArmada\Feedback\Features\Responses\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
-use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteFeedbackAnswerDependentsAction
 {
@@ -19,7 +18,7 @@ final readonly class DeleteFeedbackAnswerDependentsAction
             OwnerWriteGuard::findOrFailForOwner(FeedbackAnswer::class, $answer->id);
         }
 
-        DB::transaction(function () use ($answer): void {
+        $answer->getConnection()->transaction(function () use ($answer): void {
             $this->testimonials->deleteForAnswer($answer->id);
         });
     }

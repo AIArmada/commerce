@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Responses\Api\DeletesResponseDependencies;
 use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
-use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteFeedbackQuestionDependentsAction
 {
@@ -23,7 +22,7 @@ final readonly class DeleteFeedbackQuestionDependentsAction
             OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $question->id);
         }
 
-        DB::transaction(function () use ($question): void {
+        $question->getConnection()->transaction(function () use ($question): void {
             $this->testimonials->detachForQuestion($question->id);
 
             $question->options()->delete();
