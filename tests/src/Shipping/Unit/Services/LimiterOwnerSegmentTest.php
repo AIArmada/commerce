@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Unit\Services;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Shipping\Services\BatchRateLimiter;
+use AIArmada\Shipping\Features\Shipments\Persistence\BatchRateLimiter;
 use Illuminate\Support\Str;
 
 function limiterTestOwner(string $label): User

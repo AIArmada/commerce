@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
+use AIArmada\Shipping\Features\Shipments\Api\BulkShipmentOperations;
 use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Services\BatchRateLimiter;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -80,8 +80,6 @@ class CancelShipmentAction extends Action
                     return;
                 }
 
-                $operations = app(ShipmentOperations::class);
-
                 $cancellableShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
                     && $record->isCancellable()
@@ -98,26 +96,11 @@ class CancelShipmentAction extends Action
                     return;
                 }
 
-                $byCarrier = $cancellableShipments->groupBy('carrier_code');
-                $successCount = 0;
-                $failCount = 0;
-
-                foreach ($byCarrier as $carrierCode => $shipments) {
-                    $results = BatchRateLimiter::forCarrier($carrierCode)
-                        ->execute(
-                            $shipments,
-                            fn (Shipment $shipment) => $operations->cancel((string) $shipment->getKey()),
-                            'cancel'
-                        );
-
-                    foreach ($results as $result) {
-                        if ($result['success']) {
-                            $successCount++;
-                        } else {
-                            $failCount++;
-                        }
-                    }
-                }
+                $result = app(BulkShipmentOperations::class)->cancel(
+                    $cancellableShipments->map(fn (Shipment $shipment): string => (string) $shipment->getKey())->values()->all(),
+                );
+                $successCount = $result->succeeded;
+                $failCount = $result->failed;
 
                 if ($successCount > 0) {
                     Notification::make()

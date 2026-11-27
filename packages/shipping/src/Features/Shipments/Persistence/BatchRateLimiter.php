@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Services;
+namespace AIArmada\Shipping\Features\Shipments\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
@@ -144,6 +144,9 @@ final class BatchRateLimiter
             return OwnerScopeKey::GLOBAL;
         }
 
-        return OwnerScopeKey::forOwner(OwnerContext::resolve());
+        $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner, 'Shipment batch rate limiting requires an owner context.');
+
+        return OwnerScopeKey::forOwner($owner);
     }
 }

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments;
 
 use AIArmada\Shipping\Features\Shipments\Actions\IssuePrintableLabel;
+use AIArmada\Shipping\Features\Shipments\Actions\OperateShipmentBatch;
 use AIArmada\Shipping\Features\Shipments\Actions\MarkStoredShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Actions\OperateStoredShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\WriteManualShipment;
+use AIArmada\Shipping\Features\Shipments\Api\BulkShipmentOperations;
 use AIArmada\Shipping\Features\Shipments\Api\ManageManualShipment;
 use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Api\PrintableLabel;
@@ -29,6 +31,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(ReadReturnShipment::class, FindReturnShipment::class);
         $app->bind(ShipmentStatistics::class, ReadShipmentStatistics::class);
         $app->bind(ShipmentOperations::class, OperateStoredShipment::class);
+        $app->bind(BulkShipmentOperations::class, OperateShipmentBatch::class);
         $app->bind(ManageManualShipment::class, WriteManualShipment::class);
         $app->bind(MarkShipmentPickedUp::class, MarkStoredShipmentPickedUp::class);
         $app->bind(PrintableLabel::class, IssuePrintableLabel::class);

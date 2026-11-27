@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Services\BatchRateLimiter;
+use AIArmada\Shipping\Features\Shipments\Persistence\BatchRateLimiter;
 use Illuminate\Support\Facades\RateLimiter;
 
 // ============================================

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
+use AIArmada\Shipping\Features\Shipments\Api\BulkShipmentOperations;
 use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Services\BatchRateLimiter;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -83,8 +83,6 @@ class ShipAction extends Action
                     return;
                 }
 
-                $operations = app(ShipmentOperations::class);
-
                 $pendingShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
                         && $record->isPending()
@@ -101,26 +99,11 @@ class ShipAction extends Action
                     return;
                 }
 
-                $byCarrier = $pendingShipments->groupBy('carrier_code');
-                $successCount = 0;
-                $failCount = 0;
-
-                foreach ($byCarrier as $carrierCode => $shipments) {
-                    $results = BatchRateLimiter::forCarrier($carrierCode)
-                        ->execute(
-                            $shipments,
-                            fn (Shipment $shipment) => $operations->ship((string) $shipment->getKey()),
-                            'ship'
-                        );
-
-                    foreach ($results as $result) {
-                        if ($result['success']) {
-                            $successCount++;
-                        } else {
-                            $failCount++;
-                        }
-                    }
-                }
+                $result = app(BulkShipmentOperations::class)->ship(
+                    $pendingShipments->map(fn (Shipment $shipment): string => (string) $shipment->getKey())->values()->all(),
+                );
+                $successCount = $result->succeeded;
+                $failCount = $result->failed;
 
                 if ($successCount > 0) {
                     Notification::make()

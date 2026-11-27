@@ -32,6 +32,9 @@
     "table:shipment_items": [
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CreateShipment",
       "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
+    ],
+    "store:shipping-batch-rate-limit": [
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\BatchRateLimiter"
     ]
   },
   "extensions": {}
