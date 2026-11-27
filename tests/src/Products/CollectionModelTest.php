@@ -7,6 +7,8 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Products\Actions\RebuildCollectionMembership;
+use AIArmada\Products\Actions\SaveCollection;
+use AIArmada\Products\Models\Category;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
@@ -32,6 +34,29 @@ describe('Collection Model', function (): void {
             {
                 return null;
             }
+        });
+    });
+
+    it('rejects foreign category rules rather than silently widening a collection', function (): void {
+        config()->set('products.features.owner.enabled', true);
+        config()->set('products.features.owner.auto_assign_on_create', true);
+
+        $ownerA = TestOwner::query()->create(['name' => 'Rule Owner A']);
+        $ownerB = TestOwner::query()->create(['name' => 'Rule Owner B']);
+
+        $category = OwnerContext::withOwner($ownerB, static fn (): Category => Category::query()->create(['name' => 'Foreign Category']));
+
+        OwnerContext::withOwner($ownerA, static function () use ($category): void {
+            $action = app(SaveCollection::class);
+
+            $collection = $action->create(['name' => 'Local Collection', 'type' => 'automatic']);
+
+            expect(fn () => $action->update($collection, [
+                'name' => 'Changed',
+                'conditions' => [['field' => 'category', 'value' => $category->getKey()]],
+            ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+            expect($collection->fresh()->name)->toBe('Local Collection');
         });
     });
 

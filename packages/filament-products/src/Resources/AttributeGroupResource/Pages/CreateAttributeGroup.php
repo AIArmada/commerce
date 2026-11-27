@@ -6,12 +6,19 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
+use AIArmada\Products\Actions\SaveAttributeGroup;
+use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\Attribute;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateAttributeGroup extends CreateRecord
 {
     protected static string $resource = AttributeGroupResource::class;
+
+    protected function handleRecordCreation(array $data): AttributeGroup
+    {
+        return app(SaveAttributeGroup::class)->create($data);
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

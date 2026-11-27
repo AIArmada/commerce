@@ -6,10 +6,13 @@ namespace AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource;
+use AIArmada\Products\Actions\SaveAttributeSet;
+use AIArmada\Products\Models\AttributeSet;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditAttributeSet extends EditRecord
 {
@@ -20,6 +23,13 @@ final class EditAttributeSet extends EditRecord
         return [
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): AttributeSet
+    {
+        abort_unless($record instanceof AttributeSet, 404);
+
+        return app(SaveAttributeSet::class)->update($record, $data);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array

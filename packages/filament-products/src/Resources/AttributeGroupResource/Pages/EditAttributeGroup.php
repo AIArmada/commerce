@@ -6,9 +6,12 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
+use AIArmada\Products\Actions\SaveAttributeGroup;
+use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\Attribute;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditAttributeGroup extends EditRecord
 {
@@ -19,6 +22,13 @@ final class EditAttributeGroup extends EditRecord
         return [
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): AttributeGroup
+    {
+        abort_unless($record instanceof AttributeGroup, 404);
+
+        return app(SaveAttributeGroup::class)->update($record, $data);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
