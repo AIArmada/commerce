@@ -42,7 +42,9 @@ use AIArmada\Communications\Platform\ExtensionRegistry;
 use AIArmada\Communications\Platform\FeatureCatalog;
 use AIArmada\Communications\Platform\FeatureModule;
 use AIArmada\Communications\Features\RecipientRouting\Queries\CommunicationDestinationResolver;
-use AIArmada\Communications\Services\CommunicationManagerService;
+use AIArmada\Communications\Features\Delivery\Actions\CommunicationManagerService;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
+use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordDeliveryOutcome;
 use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
 use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
@@ -116,6 +118,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
     public function registeringPackage(): void
     {
         $this->app->singleton(CommunicationManager::class, CommunicationManagerService::class);
+        $this->app->bind(CommunicationReferenceWriter::class, AttachCommunicationReferenceAction::class);
         $this->app->singleton(CommunicationRecorder::class, RecordDeliveryOutcome::class);
         $this->app->bind(CommunicationCreator::class, CreateCommunicationAction::class);
         $this->app->bind(NotificationContentCapture::class, CaptureRecipientContent::class);

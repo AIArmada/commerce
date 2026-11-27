@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;
@@ -18,7 +18,7 @@ final class DispatchReminderThroughCommunications
 {
     public function __construct(
         private readonly DispatchManagedNotificationAction $dispatcher,
-        private readonly AttachCommunicationReferenceAction $references,
+        private readonly CommunicationReferenceWriter $references,
     ) {}
 
     public function handle(ReminderDue $event): void

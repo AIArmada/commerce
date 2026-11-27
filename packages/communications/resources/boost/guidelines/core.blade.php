@@ -18,3 +18,5 @@
 - Native notification recording uses the registered notification event listeners and `NativeNotificationCapture`; the manager handles managed notification dispatch only.
 
 - Managed notification dispatch (`CommunicationManager::notify()` / `Communications::notify()`) accepts `CommunicationContextData` or null and returns the persisted communication ID as a string. Pass event morph type and ID in the context instead of passing an Eloquent model or an untyped array.
+
+- Use `Contracts\CommunicationReferenceWriter` for cross-feature reference attachment. Reference writes are serialized on the owning communication row and return a scalar reference ID.

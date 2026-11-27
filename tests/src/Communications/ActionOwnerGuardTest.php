@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
 use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction;
 use AIArmada\Communications\Features\Delivery\Actions\CancelCommunicationDeliveryAction;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
@@ -224,7 +225,7 @@ function actionGuardAssertPassed(
         'notification-sent' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sent),
         'notification-failed' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Failed),
         'redact-content', 'redact-delivery', 'redact-attempt', 'redact-event' => expect($result->id)->not->toBeNull(),
-        'attach-reference' => expect($result->communication_id)->toBe($communication->id),
+        'attach-reference' => expect(CommunicationReference::query()->findOrFail($result)->communication_id)->toBe($communication->id),
         'cancel-communication' => expect($communication->fresh()->status)->toBe(CommunicationStatus::Cancelled),
         default => throw new InvalidArgumentException("Unknown guard case [{$case}]."),
     };

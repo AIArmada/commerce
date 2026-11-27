@@ -41,7 +41,7 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
 use AIArmada\Communications\Policies\CommunicationPolicy;
-use AIArmada\Communications\Services\CommunicationManagerService;
+use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -363,7 +363,7 @@ test('provider events derive the delivery owner when none is resolved', function
 });
 
 test('duplicate idempotency keys are rejected atomically', function (): void {
-    $manager = app(CommunicationManagerService::class);
+    $manager = app(CommunicationManager::class);
     $context = CommunicationContextData::from([
         'purpose' => 'repair-idempotent',
         'idempotencyKey' => 'repair-idempotency-1',
@@ -376,7 +376,7 @@ test('duplicate idempotency keys are rejected atomically', function (): void {
 });
 
 test('failed dispatches release the idempotency lock', function (): void {
-    $manager = app(CommunicationManagerService::class);
+    $manager = app(CommunicationManager::class);
     $key = 'repair-idempotency-release-1';
     $context = CommunicationContextData::from([
         'purpose' => 'repair-idempotent-release',

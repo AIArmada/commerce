@@ -10,7 +10,7 @@ use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
-use AIArmada\Communications\Services\CommunicationManagerService;
+use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Support\EventReferenceNormalizer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -72,9 +72,9 @@ test('attaching an event reference is idempotent and merges metadata', function 
         metadata: ['delivery_id' => 'delivery-1'],
     );
 
-    expect($second->id)->toBe($first->id)
+    expect($second)->toBe($first)
         ->and(CommunicationReference::query()->where('communication_id', $communication->id)->count())->toBe(1)
-        ->and($second->fresh()->metadata)->toBe([
+        ->and(CommunicationReference::query()->findOrFail($second)->metadata)->toBe([
             'batch_id' => 'batch-1',
             'delivery_id' => 'delivery-1',
         ]);
@@ -112,7 +112,7 @@ test('manager accepts explicit event identity as context and attaches its refere
         }
     };
 
-    $communicationId = app(CommunicationManagerService::class)->notify(
+    $communicationId = app(CommunicationManager::class)->notify(
         $notifiable,
         $notification,
         new CommunicationContextData(purpose: 'event', subjectType: $event->getMorphClass(), subjectId: (string) $event->getKey()),
@@ -149,7 +149,7 @@ test('manager accepts event context data and attaches its reference', function (
         }
     };
 
-    $communicationId = app(CommunicationManagerService::class)->notify(
+    $communicationId = app(CommunicationManager::class)->notify(
         $notifiable,
         $notification,
         CommunicationContextData::from([

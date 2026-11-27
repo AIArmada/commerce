@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Features\Delivery\Actions;
 
-use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
-use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Data\CommunicationContextData;
@@ -15,12 +14,12 @@ use Illuminate\Notifications\Notification;
 use RuntimeException;
 use Throwable;
 
-class CommunicationManagerService implements CommunicationManager
+final class CommunicationManagerService implements CommunicationManager
 {
     public function __construct(
         private readonly DispatchManagedNotificationAction $dispatcher,
         private readonly IdempotencyLock $idempotencyLock,
-        private readonly AttachCommunicationReferenceAction $referenceAttacher,
+        private readonly CommunicationReferenceWriter $referenceAttacher,
         private readonly EventReferenceNormalizer $referenceNormalizer,
     ) {}
 
