@@ -6,8 +6,8 @@ namespace AIArmada\Orders\Transitions;
 
 use AIArmada\Orders\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Contracts\OrderOutboxWriter;
-use AIArmada\Orders\Events\OrderCancelInitiated;
 use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
+use AIArmada\Orders\Events\OrderCancelInitiated;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Shipping\Integrations\OrderShipmentUnits;
