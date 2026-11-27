@@ -19,7 +19,10 @@ final class CreateFeedbackFormFromTemplateAction implements CreatesFormsFromTemp
 
     public function createForSubject(string $templateSlug, string $subjectType, string $subjectId, array $overrides = []): string
     {
-        $template = FeedbackTemplate::query()->where('slug', $templateSlug)->sole();
+        $template = FeedbackTemplate::query()
+            ->forOwner(includeGlobal: (bool) config('feedback.owner.include_global_templates', false))
+            ->where('slug', $templateSlug)
+            ->sole();
 
         return $this->execute($template, array_merge($overrides, [
             'subject_type' => $subjectType,
