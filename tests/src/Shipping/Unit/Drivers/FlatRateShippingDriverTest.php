@@ -6,8 +6,8 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
 
 // ============================================
 // FlatRateShippingDriver Tests

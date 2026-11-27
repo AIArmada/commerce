@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;

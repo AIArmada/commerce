@@ -15,7 +15,7 @@ use AIArmada\Jnt\EntryPoints\Commands\Webhooks\WebhookTestCommand;
 use AIArmada\Jnt\EntryPoints\Http\Controllers\AwbController;
 use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\EntryPoints\Listeners\SendShipmentNotifications;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;

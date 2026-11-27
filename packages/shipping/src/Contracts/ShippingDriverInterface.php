@@ -12,7 +12,7 @@ use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
-use AIArmada\Shipping\Enums\DriverCapability;
+use AIArmada\Shipping\Data\DriverCapability;
 
 /**
  * Contract for shipping carrier drivers.

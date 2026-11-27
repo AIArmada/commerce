@@ -11,8 +11,8 @@ use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
 
 // ============================================
 // NullShippingDriver Tests

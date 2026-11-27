@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Cancelled;
 use AIArmada\Shipping\States\Delivered;

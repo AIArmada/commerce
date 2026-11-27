@@ -6,7 +6,7 @@ namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;

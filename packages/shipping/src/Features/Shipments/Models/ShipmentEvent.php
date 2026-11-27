@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Models;
 
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

@@ -14,8 +14,8 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 

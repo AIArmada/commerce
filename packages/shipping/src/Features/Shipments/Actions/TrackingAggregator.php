@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Events\ShipmentDelivered;
 use AIArmada\Shipping\Events\ShipmentStatusChanged;
 use AIArmada\Shipping\Events\TrackingUpdated;

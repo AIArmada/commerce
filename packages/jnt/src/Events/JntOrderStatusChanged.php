@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Events;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Database\Eloquent\Model;

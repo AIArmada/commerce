@@ -7,7 +7,7 @@ use AIArmada\Jnt\Enums\GoodsType;
 use AIArmada\Jnt\Enums\PaymentType;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\ServiceType;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 
 describe('ExpressType enum', function (): void {
     it('has expected cases', function (): void {

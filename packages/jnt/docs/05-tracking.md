@@ -98,7 +98,7 @@ foreach ($tracking->details as $detail) {
 The package normalizes J&T scan types to a unified `TrackingStatus` enum:
 
 ```php
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
@@ -365,8 +365,8 @@ Each carrier defines a strategy implementing `StatusMappingStrategyInterface`:
 
 ```php
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
-use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Shipping\Enums\TrackingStatus as NormalizedTrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus as NormalizedTrackingStatus;
 
 class MyCarrierStrategy implements StatusMappingStrategyInterface
 {

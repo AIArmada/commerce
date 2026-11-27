@@ -23,7 +23,7 @@ use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
-use AIArmada\Shipping\Enums\DriverCapability;
+use AIArmada\Shipping\Data\DriverCapability;
 
 interface ShippingDriverInterface
 {
@@ -126,8 +126,8 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\DriverCapability;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Services\RetryService;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -423,7 +423,7 @@ For complex status mapping, implement `StatusMapperInterface`:
 namespace App\Shipping\Mappers;
 
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus;
 
 class JntStatusMapper implements StatusMapperInterface
 {

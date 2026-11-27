@@ -6,9 +6,9 @@ namespace AIArmada\Jnt\Features\Tracking\Support;
 
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
 use AIArmada\Jnt\Enums\ScanTypeCode;
-use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Shipping\Enums\TrackingStatus as NormalizedTrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus as NormalizedTrackingStatus;
 
 /**
  * Maps J&T Express scan type codes to normalized tracking statuses.

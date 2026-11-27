@@ -7,7 +7,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\RecordTrackingEvent;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;

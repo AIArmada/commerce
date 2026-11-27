@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Enums;
+namespace AIArmada\Jnt\Data;
 
 /**
  * Normalized tracking status enum for unified order tracking

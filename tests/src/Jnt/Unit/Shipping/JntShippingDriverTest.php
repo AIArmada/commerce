@@ -14,7 +14,7 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Enums\DriverCapability;
+use AIArmada\Shipping\Data\DriverCapability;
 
 // ============================================
 // JntShippingDriver Tests

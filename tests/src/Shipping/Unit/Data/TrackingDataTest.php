@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus;
 
 describe('TrackingData', function (): void {
     it('can create tracking data with events', function (): void {

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Data\TrackingStatus;
 
 describe('TrackingEventData', function (): void {
     it('can create tracking event data with required fields', function (): void {

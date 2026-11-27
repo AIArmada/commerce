@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Enums;
+namespace AIArmada\Shipping\Data;
 
 /**
  * Normalized tracking statuses across all carriers.
