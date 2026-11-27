@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Products\Actions\ReplaceOptionValues;
+use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -13,6 +15,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -113,6 +116,8 @@ final class OptionsRelationManager extends RelationManager
                         Repeater::make('option_values')
                             ->label('Option Values')
                             ->schema([
+                                Hidden::make('id'),
+
                                 TextInput::make('name')
                                     ->label('Value')
                                     ->required()
@@ -148,37 +153,9 @@ final class OptionsRelationManager extends RelationManager
                             }
                         }
 
-                        // Get existing value IDs
-                        $existingIds = $record->values->pluck('id')->toArray();
-                        $newIds = [];
+                        abort_unless($record instanceof Option && $record->product_id === $this->getOwnerRecord()->getKey(), 404);
 
-                        foreach ($data['option_values'] ?? [] as $index => $valueData) {
-                            if (isset($valueData['id']) && in_array($valueData['id'], $existingIds)) {
-                                // Update existing
-                                $record->values()
-                                    ->where('id', $valueData['id'])
-                                    ->update([
-                                        'name' => $valueData['name'],
-                                        'swatch_color' => $valueData['swatch_color'] ?? null,
-                                        'position' => $valueData['position'] ?? $index,
-                                    ]);
-                                $newIds[] = $valueData['id'];
-                            } else {
-                                // Create new
-                                $newValue = $record->values()->create([
-                                    'name' => $valueData['name'],
-                                    'swatch_color' => $valueData['swatch_color'] ?? null,
-                                    'position' => $valueData['position'] ?? $index,
-                                ]);
-                                $newIds[] = $newValue->id;
-                            }
-                        }
-
-                        // Delete removed values
-                        $toDelete = array_diff($existingIds, $newIds);
-                        if (! empty($toDelete)) {
-                            $record->values()->whereIn('id', $toDelete)->delete();
-                        }
+                        app(ReplaceOptionValues::class)->execute($record, array_values($data['option_values'] ?? []));
 
                         Notification::make()
                             ->success()
