@@ -13,6 +13,7 @@ use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -69,6 +70,11 @@ final class TransferInventory
 
             if (! $toLevel instanceof InventoryLevel) {
                 throw new InvalidArgumentException('Destination inventory level is not accessible.');
+            }
+
+            if (InventoryOwnerScope::isEnabled()
+                && ($fromLevel->owner_type !== $toLevel->owner_type || (string) $fromLevel->owner_id !== (string) $toLevel->owner_id)) {
+                throw new AuthorizationException('Cross-owner inventory movements are not allowed.');
             }
 
             $fromLevel->decrementOnHand($quantity);

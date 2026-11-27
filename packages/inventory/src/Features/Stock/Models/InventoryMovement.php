@@ -267,22 +267,13 @@ final class InventoryMovement extends Model implements Auditable
                 $toOwnerId = $toLocation->owner_id;
             }
 
-            $resolvedOwnerType = null;
-            $resolvedOwnerId = null;
-
-            if ($fromOwnerType !== null || $fromOwnerId !== null) {
-                $resolvedOwnerType = $fromOwnerType;
-                $resolvedOwnerId = $fromOwnerId;
+            if ($movement->from_location_id !== null && $movement->to_location_id !== null
+                && ($fromOwnerType !== $toOwnerType || (string) $fromOwnerId !== (string) $toOwnerId)) {
+                throw new AuthorizationException('Cross-owner inventory movements are not allowed.');
             }
 
-            if ($toOwnerType !== null || $toOwnerId !== null) {
-                if ($resolvedOwnerType === null && $resolvedOwnerId === null) {
-                    $resolvedOwnerType = $toOwnerType;
-                    $resolvedOwnerId = $toOwnerId;
-                } elseif ($resolvedOwnerType !== $toOwnerType || $resolvedOwnerId !== $toOwnerId) {
-                    throw new AuthorizationException('Cross-owner inventory movements are not allowed.');
-                }
-            }
+            $resolvedOwnerType = $movement->from_location_id !== null ? $fromOwnerType : $toOwnerType;
+            $resolvedOwnerId = $movement->from_location_id !== null ? $fromOwnerId : $toOwnerId;
 
             if (($movement->owner_type !== null || $movement->owner_id !== null)
                 && ($movement->owner_type !== $resolvedOwnerType || $movement->owner_id !== $resolvedOwnerId)) {

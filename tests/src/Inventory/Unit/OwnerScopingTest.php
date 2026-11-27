@@ -9,9 +9,11 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -267,4 +269,50 @@ it('treats a null resolved owner as global-only (never owner_type-only corrupt r
             $globalLocation->id => 11,
         ]);
     });
+});
+
+
+it('rejects transfers between global and tenant stock in either direction', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $owner = InventoryItem::create(['name' => 'Transfer owner']);
+    $item = InventoryItem::create(['name' => 'Transfer SKU']);
+
+    setInventoryOwnerResolver($owner);
+    $owned = InventoryLocation::factory()->create(['code' => 'OWNED-TRANSFER']);
+    $ownedLevel = InventoryLevel::factory()
+        ->forInventoryable($item->getMorphClass(), $item->getKey())
+        ->forLocation($owned)
+        ->create(['quantity_on_hand' => 5, 'quantity_reserved' => 0]);
+
+    setInventoryOwnerResolver(null);
+    [$global, $globalLevel] = OwnerContext::withOwner(null, function () use ($item): array {
+        $location = InventoryLocation::factory()->create(['code' => 'GLOBAL-TRANSFER']);
+        $level = InventoryLevel::factory()
+            ->forInventoryable($item->getMorphClass(), $item->getKey())
+            ->forLocation($location)
+            ->create(['quantity_on_hand' => 5, 'quantity_reserved' => 0]);
+
+        return [$location, $level];
+    });
+
+    setInventoryOwnerResolver($owner);
+    $service = app(InventoryService::class);
+
+    foreach ([[$owned, $global], [$global, $owned]] as [$from, $to]) {
+        expect(fn () => $service->transfer($item, $from->id, $to->id, 1))
+            ->toThrow(AuthorizationException::class, 'Cross-owner inventory movements are not allowed.');
+
+        expect(fn () => InventoryMovement::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'from_location_id' => $from->id,
+            'to_location_id' => $to->id,
+            'quantity' => 1,
+        ]))->toThrow(AuthorizationException::class);
+    }
+
+    expect($ownedLevel->fresh()->quantity_on_hand)->toBe(5)
+        ->and($globalLevel->fresh()->quantity_on_hand)->toBe(5);
 });
