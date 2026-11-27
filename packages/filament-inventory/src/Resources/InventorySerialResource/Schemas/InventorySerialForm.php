@@ -37,6 +37,8 @@ final class InventorySerialForm
 
                             Select::make('location_id')
                                 ->label('Location')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->relationship(
                                     name: 'location',
                                     titleAttribute: 'name',
@@ -47,6 +49,8 @@ final class InventorySerialForm
 
                             Select::make('batch_id')
                                 ->label('Batch')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->relationship(
                                     name: 'batch',
                                     titleAttribute: 'batch_number',
@@ -57,12 +61,16 @@ final class InventorySerialForm
 
                             Select::make('status')
                                 ->label('Status')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->options(SerialStatus::options())
                                 ->required()
                                 ->default(Available::getMorphClass()),
 
                             Select::make('condition')
                                 ->label('Condition')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->options(collect(SerialCondition::cases())->mapWithKeys(
                                     fn (SerialCondition $condition) => [$condition->value => $condition->label()]
                                 ))
@@ -78,10 +86,13 @@ final class InventorySerialForm
                             TextInput::make('unit_cost_minor')
                                 ->label('Unit Cost (Minor)')
                                 ->numeric()
+                                ->minValue(0)
                                 ->prefix(config('inventory.defaults.currency', 'MYR')),
 
                             DatePicker::make('warranty_expires_at')
-                                ->label('Warranty Expires'),
+                                ->label('Warranty Expires')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
                         ]),
                 ]),
 
@@ -91,10 +102,14 @@ final class InventorySerialForm
                         ->schema([
                             TextInput::make('order_id')
                                 ->label('Order ID')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->maxLength(36),
 
                             TextInput::make('customer_id')
                                 ->label('Customer ID')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->maxLength(36),
                         ]),
                 ])
@@ -109,7 +124,9 @@ final class InventorySerialForm
                                 ->default(CarbonImmutable::now()),
 
                             DatePicker::make('sold_at')
-                                ->label('Sold Date'),
+                                ->label('Sold Date')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
                         ]),
                 ])
                 ->collapsible(),

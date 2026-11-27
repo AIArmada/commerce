@@ -3,14 +3,16 @@
   "name": "Traceability",
   "owns": {
     "table:inventory_serials": [
-      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService"
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService",
+      "AIArmada\\Inventory\\Features\\Traceability\\Actions\\UpdateTraceabilityDetails"
     ],
     "table:inventory_serial_history": [
       "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService"
     ],
     "table:inventory_batches": [
       "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchService",
-      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchAllocationService"
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchAllocationService",
+      "AIArmada\\Inventory\\Features\\Traceability\\Actions\\UpdateTraceabilityDetails"
     ]
   },
   "extensions": {}

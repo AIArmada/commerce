@@ -40,6 +40,8 @@ final class InventoryBatchForm
 
                             Select::make('location_id')
                                 ->label('Location')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->relationship(
                                     name: 'location',
                                     titleAttribute: 'name',
@@ -50,6 +52,8 @@ final class InventoryBatchForm
 
                             Select::make('status')
                                 ->label('Status')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->options(collect(BatchStatus::cases())->mapWithKeys(
                                     fn (BatchStatus $status) => [$status->value => $status->label()]
                                 ))
@@ -64,18 +68,24 @@ final class InventoryBatchForm
                         ->schema([
                             TextInput::make('quantity_received')
                                 ->label('Quantity Received')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->numeric()
                                 ->required()
                                 ->minValue(0),
 
                             TextInput::make('quantity_on_hand')
                                 ->label('Quantity On Hand')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->numeric()
                                 ->required()
                                 ->minValue(0),
 
                             TextInput::make('quantity_reserved')
                                 ->label('Quantity Reserved')
+                                ->disabledOn('edit')
+                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                                 ->numeric()
                                 ->default(0)
                                 ->minValue(0),
