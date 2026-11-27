@@ -129,21 +129,17 @@ The package registers the `communications.inbox-index` Livewire component for th
 Store channel addresses on notifiables when you need explicit routing (multiple emails, verified phones, or provider external ids):
 
 ```php
-use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
+use AIArmada\Communications\Features\RecipientRouting\Actions\SaveRecipientDestination;
 
-$destination = CommunicationDestination::query()->make([
+$destination = app(SaveRecipientDestination::class)->create($user, [
     'channel' => 'mail',
     'address' => 'billing@example.com',
     'is_primary' => true,
     'verified_at' => now(),
 ]);
-// `recipient_type` is not mass-assignable, so set the morph explicitly.
-$destination->recipient()->associate($user);
-$destination->save();
 ```
 
-New destinations default to `active` status. `status` is not mass-assignable either, so set it
-directly on the model if you need a non-active row.
+New destinations default to `active` status. Pass the explicit `status` argument to the action when changing the status; recipient identity is associated from the persisted model.
 
 Resolution order for the default `CommunicationDestinationResolver`:
 
@@ -161,18 +157,14 @@ breaking storage change is applied.
 Preferences may optionally narrow to a scope:
 
 ```php
-use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
+use AIArmada\Communications\Features\RecipientRouting\Actions\SaveRecipientPreference;
 
-$preference = CommunicationPreference::query()->make([
+$preference = app(SaveRecipientPreference::class)->create($user, [
     'channel' => 'mail',
     'category' => 'marketing',
     'scope_type' => 'event',
     'scope_key' => (string) $event->getKey(),
 ]);
-
-// `recipient_type` is not mass-assignable, so set the morph explicitly.
-$preference->recipient()->associate($user);
-$preference->save();
 ```
 
 Leave `scope_type` and `scope_key` null for recipient-wide channel/category preferences.

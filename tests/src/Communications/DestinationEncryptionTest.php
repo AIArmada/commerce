@@ -26,5 +26,6 @@ test('communication destination address is ciphertext at rest and decrypts throu
     expect(Schema::getColumnType($destination->getTable(), 'address'))->toBe('text')
         ->and($rawAddress)->toBeString()
         ->and($rawAddress)->not->toBe($plaintext)
-        ->and($destination->fresh()->address)->toBe($plaintext);
+        ->and($destination->fresh()->address)->toBe($plaintext)
+        ->and($destination->toArray())->not->toHaveKeys(['address', 'external_id']);
 });

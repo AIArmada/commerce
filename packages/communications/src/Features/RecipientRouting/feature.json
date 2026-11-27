@@ -2,8 +2,12 @@
   "schema": 1,
   "name": "RecipientRouting",
   "owns": {
-    "table:communication_destinations": [],
-    "table:communication_preferences": []
+    "table:communication_destinations": [
+      "AIArmada\\Communications\\Features\\RecipientRouting\\Actions\\SaveRecipientDestination"
+    ],
+    "table:communication_preferences": [
+      "AIArmada\\Communications\\Features\\RecipientRouting\\Actions\\SaveRecipientPreference"
+    ]
   },
   "extensions": {}
 }

@@ -4,3 +4,5 @@
 - Aggregate owns message creation, recipients, references, threads, content and cancellation. Delivery owns attempts, eligibility, provider events and delivery status; use `Features\Delivery\Actions\ApplyProviderEventAction` for provider events.
 - Inbox, Suppressions, Templates and Tracking own their respective mutations. Use `Features\Suppressions\Actions\CreateSuppressionAction` and `LiftSuppressionAction`; use `Features\Tracking\Actions\CreateTrackingTokenAction` for tracked links.
 - HTTP, queue, CLI and listener adapters are under `EntryPoints/` or the owning feature. Verify webhook signatures over timestamp plus raw request body, enforce the replay window and preserve owner context. Never log raw tokens or decrypted destinations.
+
+- RecipientRouting owns stored destinations and preferences. Use `Features\RecipientRouting\Actions\SaveRecipientDestination` and `SaveRecipientPreference` with persisted recipients; the destination model hides addresses and external identifiers during serialization.
