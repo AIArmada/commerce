@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Products\Actions\RebuildCollectionMembership;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
@@ -317,13 +318,13 @@ describe('Collection Model', function (): void {
         });
     });
 
-    describe('rebuildProductList', function (): void {
+    describe('RebuildCollectionMembership', function (): void {
         it('does nothing for manual collections', function (): void {
             $collection = Collection::create(['name' => 'Manual Rebuild', 'type' => 'manual']);
             $product = Product::create(['name' => 'Manual Rebuild Product', 'price' => 1000, 'status' => ProductStatus::Active]);
 
             $collection->products()->attach($product->id);
-            $collection->rebuildProductList();
+            app(RebuildCollectionMembership::class)->execute($collection);
 
             expect($collection->products)->toHaveCount(1);
         });
@@ -339,7 +340,7 @@ describe('Collection Model', function (): void {
 
             Product::create(['name' => 'Featured Rebuild', 'price' => 2000, 'status' => ProductStatus::Active, 'is_featured' => true]);
 
-            $collection->rebuildProductList();
+            app(RebuildCollectionMembership::class)->execute($collection);
 
             expect($collection->products()->count())->toBeGreaterThanOrEqual(1);
         });

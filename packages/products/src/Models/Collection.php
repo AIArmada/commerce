@@ -271,40 +271,6 @@ class Collection extends Model implements Auditable, HasMedia
         return $query;
     }
 
-    /**
-     * Rebuild the product list for an automatic collection.
-     */
-    public function rebuildProductList(): void
-    {
-        if (! $this->isAutomatic()) {
-            return;
-        }
-
-        // Attach matches in id chunks so huge rule results never hydrate at
-        // once (existing pivot positions are preserved).
-        $this->matchingProductsQuery()->select('id')->chunkById(500, function ($products): void {
-            $this->products()->syncWithoutDetaching($products->pluck('id')->all());
-        });
-
-        // Detach pivots that no longer match, one pivot chunk at a time.
-        // Membership is tested against the owner-scoped matching query, so
-        // cross-tenant products can neither attach nor linger.
-        $this->products()->newPivotQuery()->select('product_id')->chunkById(500, function ($rows): void {
-            $pivotIds = $rows->pluck('product_id')->all();
-
-            $stillMatching = $this->matchingProductsQuery()
-                ->whereIn('id', $pivotIds)
-                ->pluck('id')
-                ->all();
-
-            $stale = array_values(array_diff($pivotIds, $stillMatching));
-
-            if ($stale !== []) {
-                $this->products()->detach($stale);
-            }
-        }, 'product_id');
-    }
-
     // =========================================================================
     // SCHEDULING HELPERS
     // =========================================================================

@@ -403,7 +403,7 @@ $collection = Collection::query()->create([
 ]);
 
 $matches = $collection->getMatchingProducts();
-$collection->rebuildProductList();
+app(\AIArmada\Products\Actions\RebuildCollectionMembership::class)->execute($collection);
 ```
 
 ## Use custom attributes

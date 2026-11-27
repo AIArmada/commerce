@@ -166,7 +166,7 @@ Collections can be manual or automatic. Automatic-collection conditions accept t
 - `isAutomatic()`
 - `getMatchingProducts()`
 - `matchingProductsQuery()` — chunk or paginate this for large rule results
-- `rebuildProductList()` — chunked attach/detach, preserves pivot positions
+- `RebuildCollectionMembership::execute($collection)` (Products action) — transactional, owner-checked chunked attach/detach, preserves pivot positions
 - `isPublished()`
 - `isScheduled()`
 
