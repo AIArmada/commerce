@@ -171,10 +171,6 @@ trait HasContactMethods
 
     public function addContactMethod(ContactMethodData | array $data): ContactMethod
     {
-        if (is_array($data)) {
-            $data = ContactMethodData::from($data);
-        }
-
         return app(CreateContactMethodAction::class)->execute($this, $data);
     }
 }

@@ -10,7 +10,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Spatie\LaravelData\Optional;
+use AIArmada\Contacting\Data\MissingValue;
 
 final class CreateSocialProfileAction
 {
@@ -29,35 +29,31 @@ final class CreateSocialProfileAction
 
     public function execute(Model $socialable, SocialProfileData | array $data): SocialProfile
     {
-        if (is_array($data)) {
-            $data = SocialProfileData::from($data);
-        }
-
-        SocialProfileData::validate($data->toArray());
+        $data = app(ValidateSocialProfileData::class)->execute($data);
 
         $result = $this->normalizer->execute(
             $data->platform,
-            $data->handle instanceof Optional ? null : $data->handle,
-            $data->url instanceof Optional ? null : $data->url,
+            $data->handle instanceof MissingValue ? null : $data->handle,
+            $data->url instanceof MissingValue ? null : $data->url,
         );
 
         $profile = new SocialProfile;
         $profile->socialable()->associate($socialable);
         $profile->platform = $data->platform;
-        $profile->purpose = $data->purpose instanceof Optional ? 'general' : $data->purpose;
-        $profile->label = $data->label instanceof Optional ? null : $data->label;
+        $profile->purpose = $data->purpose instanceof MissingValue ? 'general' : $data->purpose;
+        $profile->label = $data->label instanceof MissingValue ? null : $data->label;
         $profile->handle = $result['handle'];
         $profile->url = $result['normalized_url'];
         $profile->normalized_url = $result['normalized_url'];
-        $profile->display_name = $data->displayName instanceof Optional ? null : $data->displayName;
-        $profile->external_id = $data->externalId instanceof Optional ? null : $data->externalId;
-        $profile->is_primary = ! $data->isPrimary instanceof Optional && $data->isPrimary;
+        $profile->display_name = $data->displayName instanceof MissingValue ? null : $data->displayName;
+        $profile->external_id = $data->externalId instanceof MissingValue ? null : $data->externalId;
+        $profile->is_primary = ! $data->isPrimary instanceof MissingValue && $data->isPrimary;
         $profile->is_public = $data->isPublic;
-        $profile->is_verified = ! $data->isVerified instanceof Optional && $data->isVerified;
-        $profile->verified_at = $data->verifiedAt instanceof Optional ? null : $data->verifiedAt;
+        $profile->is_verified = ! $data->isVerified instanceof MissingValue && $data->isVerified;
+        $profile->verified_at = $data->verifiedAt instanceof MissingValue ? null : $data->verifiedAt;
         $profile->valid_from = self::toImmutable($data->validFrom);
         $profile->valid_until = self::toImmutable($data->validUntil);
-        $profile->metadata = $data->metadata instanceof Optional ? [] : $data->metadata;
+        $profile->metadata = $data->metadata instanceof MissingValue ? [] : $data->metadata;
 
         if ($data->sortOrder !== null) {
             $profile->sort_order = $data->sortOrder;

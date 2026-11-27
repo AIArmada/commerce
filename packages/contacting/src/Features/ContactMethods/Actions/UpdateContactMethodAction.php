@@ -11,7 +11,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Spatie\LaravelData\Optional;
+use AIArmada\Contacting\Data\MissingValue;
 
 final class UpdateContactMethodAction
 {
@@ -34,13 +34,9 @@ final class UpdateContactMethodAction
             ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey())
             : ContactMethod::query()->whereKey($contactMethod->getKey())->firstOrFail();
 
-        if (is_array($data)) {
-            $data = ContactMethodData::from($data);
-        }
+        $data = app(ValidateContactMethodData::class)->execute($data);
 
-        ContactMethodData::validate($data->toArray());
-
-        $countryCode = $data->countryCode instanceof Optional
+        $countryCode = $data->countryCode instanceof MissingValue
             ? $contactMethod->country_code
             : $data->countryCode;
 
@@ -59,32 +55,32 @@ final class UpdateContactMethodAction
         DB::transaction(function () use ($contactMethod, $data, $result, $countryCode): void {
             $contactMethod->type = $data->type;
 
-            if (! $data->purpose instanceof Optional) {
+            if (! $data->purpose instanceof MissingValue) {
                 $contactMethod->purpose = $data->purpose;
             }
 
-            $contactMethod->label = $data->label instanceof Optional ? $contactMethod->label : $data->label;
+            $contactMethod->label = $data->label instanceof MissingValue ? $contactMethod->label : $data->label;
             $contactMethod->value = $data->value;
             $contactMethod->country_code = $countryCode;
             $contactMethod->normalized_value = $result['normalized_value'];
 
-            if (! $data->displayValue instanceof Optional && $data->displayValue !== null) {
+            if (! $data->displayValue instanceof MissingValue && $data->displayValue !== null) {
                 $contactMethod->display_value = $data->displayValue;
             } elseif ($contactMethod->isDirty(['value', 'country_code']) || $contactMethod->display_value === null) {
                 $contactMethod->display_value = $result['display_value'];
             }
 
-            if (! $data->isPrimary instanceof Optional) {
+            if (! $data->isPrimary instanceof MissingValue) {
                 $contactMethod->is_primary = $data->isPrimary;
             }
 
             $contactMethod->is_public = $data->isPublic ?? $contactMethod->is_public;
 
-            if (! $data->isVerified instanceof Optional) {
+            if (! $data->isVerified instanceof MissingValue) {
                 $contactMethod->is_verified = $data->isVerified;
             }
 
-            if ($data->verifiedAt !== null && ! $data->verifiedAt instanceof Optional) {
+            if ($data->verifiedAt !== null && ! $data->verifiedAt instanceof MissingValue) {
                 $contactMethod->verified_at = $data->verifiedAt;
             }
 
@@ -100,7 +96,7 @@ final class UpdateContactMethodAction
                 $contactMethod->sort_order = $data->sortOrder;
             }
 
-            if (! $data->metadata instanceof Optional) {
+            if (! $data->metadata instanceof MissingValue) {
                 $contactMethod->metadata = $data->metadata;
             }
 

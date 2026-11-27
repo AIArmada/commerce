@@ -10,7 +10,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
-use Spatie\LaravelData\Optional;
+use AIArmada\Contacting\Data\MissingValue;
 
 final class CreateContactMethodAction
 {
@@ -29,13 +29,9 @@ final class CreateContactMethodAction
 
     public function execute(Model $contactable, ContactMethodData | array $data): ContactMethod
     {
-        if (is_array($data)) {
-            $data = ContactMethodData::from($data);
-        }
+        $data = app(ValidateContactMethodData::class)->execute($data);
 
-        ContactMethodData::validate($data->toArray());
-
-        $countryCode = $data->countryCode instanceof Optional ? null : $data->countryCode;
+        $countryCode = $data->countryCode instanceof MissingValue ? null : $data->countryCode;
 
         $result = $this->normalizer->execute(
             $data->type,
@@ -52,21 +48,21 @@ final class CreateContactMethodAction
         $contactMethod = new ContactMethod;
         $contactMethod->contactable()->associate($contactable);
         $contactMethod->type = $data->type;
-        $contactMethod->purpose = $data->purpose instanceof Optional ? 'general' : $data->purpose;
-        $contactMethod->label = $data->label instanceof Optional ? null : $data->label;
+        $contactMethod->purpose = $data->purpose instanceof MissingValue ? 'general' : $data->purpose;
+        $contactMethod->label = $data->label instanceof MissingValue ? null : $data->label;
         $contactMethod->value = $data->value;
         $contactMethod->normalized_value = $result['normalized_value'];
-        $contactMethod->display_value = ! $data->displayValue instanceof Optional && $data->displayValue !== null
+        $contactMethod->display_value = ! $data->displayValue instanceof MissingValue && $data->displayValue !== null
             ? $data->displayValue
             : $result['display_value'];
         $contactMethod->country_code = $countryCode;
-        $contactMethod->is_primary = ! $data->isPrimary instanceof Optional && $data->isPrimary;
+        $contactMethod->is_primary = ! $data->isPrimary instanceof MissingValue && $data->isPrimary;
         $contactMethod->is_public = $data->isPublic;
-        $contactMethod->is_verified = ! $data->isVerified instanceof Optional && $data->isVerified;
-        $contactMethod->verified_at = $data->verifiedAt instanceof Optional ? null : $data->verifiedAt;
+        $contactMethod->is_verified = ! $data->isVerified instanceof MissingValue && $data->isVerified;
+        $contactMethod->verified_at = $data->verifiedAt instanceof MissingValue ? null : $data->verifiedAt;
         $contactMethod->valid_from = self::toImmutable($data->validFrom);
         $contactMethod->valid_until = self::toImmutable($data->validUntil);
-        $contactMethod->metadata = $data->metadata instanceof Optional ? [] : $data->metadata;
+        $contactMethod->metadata = $data->metadata instanceof MissingValue ? [] : $data->metadata;
 
         if ($data->sortOrder !== null) {
             $contactMethod->sort_order = $data->sortOrder;

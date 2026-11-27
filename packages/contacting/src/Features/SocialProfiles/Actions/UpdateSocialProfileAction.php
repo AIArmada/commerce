@@ -10,7 +10,7 @@ use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
-use Spatie\LaravelData\Optional;
+use AIArmada\Contacting\Data\MissingValue;
 
 final class UpdateSocialProfileAction
 {
@@ -33,43 +33,39 @@ final class UpdateSocialProfileAction
             ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey())
             : SocialProfile::query()->whereKey($profile->getKey())->firstOrFail();
 
-        if (is_array($data)) {
-            $data = SocialProfileData::from($data);
-        }
-
-        SocialProfileData::validate($data->toArray());
+        $data = app(ValidateSocialProfileData::class)->execute($data);
 
         $result = $this->normalizer->execute(
             $data->platform,
-            $data->handle instanceof Optional ? $profile->handle : $data->handle,
-            $data->url instanceof Optional ? $profile->url : $data->url,
+            $data->handle instanceof MissingValue ? $profile->handle : $data->handle,
+            $data->url instanceof MissingValue ? $profile->url : $data->url,
         );
 
         DB::transaction(function () use ($profile, $data, $result): void {
             $profile->platform = $data->platform;
 
-            if (! $data->purpose instanceof Optional) {
+            if (! $data->purpose instanceof MissingValue) {
                 $profile->purpose = $data->purpose;
             }
 
-            $profile->label = $data->label instanceof Optional ? $profile->label : $data->label;
+            $profile->label = $data->label instanceof MissingValue ? $profile->label : $data->label;
             $profile->handle = $result['handle'];
             $profile->url = $result['normalized_url'] ?? $profile->url;
             $profile->normalized_url = $result['normalized_url'];
-            $profile->display_name = $data->displayName instanceof Optional ? $profile->display_name : $data->displayName;
-            $profile->external_id = $data->externalId instanceof Optional ? $profile->external_id : $data->externalId;
+            $profile->display_name = $data->displayName instanceof MissingValue ? $profile->display_name : $data->displayName;
+            $profile->external_id = $data->externalId instanceof MissingValue ? $profile->external_id : $data->externalId;
 
-            if (! $data->isPrimary instanceof Optional) {
+            if (! $data->isPrimary instanceof MissingValue) {
                 $profile->is_primary = $data->isPrimary;
             }
 
             $profile->is_public = $data->isPublic ?? $profile->is_public;
 
-            if (! $data->isVerified instanceof Optional) {
+            if (! $data->isVerified instanceof MissingValue) {
                 $profile->is_verified = $data->isVerified;
             }
 
-            if ($data->verifiedAt !== null && ! $data->verifiedAt instanceof Optional) {
+            if ($data->verifiedAt !== null && ! $data->verifiedAt instanceof MissingValue) {
                 $profile->verified_at = $data->verifiedAt;
             }
 
@@ -85,7 +81,7 @@ final class UpdateSocialProfileAction
                 $profile->sort_order = $data->sortOrder;
             }
 
-            if (! $data->metadata instanceof Optional) {
+            if (! $data->metadata instanceof MissingValue) {
                 $profile->metadata = $data->metadata;
             }
 

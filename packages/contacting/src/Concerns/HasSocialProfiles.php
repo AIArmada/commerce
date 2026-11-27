@@ -69,10 +69,6 @@ trait HasSocialProfiles
 
     public function addSocialProfile(SocialProfileData | array $data): SocialProfile
     {
-        if (is_array($data)) {
-            $data = SocialProfileData::from($data);
-        }
-
         return app(CreateSocialProfileAction::class)
             ->execute($this, $data);
     }
