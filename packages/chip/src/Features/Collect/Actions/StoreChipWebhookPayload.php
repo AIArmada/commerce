@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
-use AIArmada\Chip\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -174,17 +174,8 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
             return;
         }
 
-        $match = [
-            'id' => $clientId,
-        ];
-
-        if ($owner !== null) {
-            $match['owner_type'] = $owner->getMorphClass();
-            $match['owner_id'] = $owner->getKey();
-        }
-
-        $client = Client::query()->forOwner(OwnerContext::CURRENT, false)->updateOrCreate(
-            $match,
+        $client = Client::query()->forOwner(OwnerContext::CURRENT, false)->firstOrNew(['id' => $clientId]);
+        $client->forceFill(
             [
                 'type' => 'client',
                 'created_on' => $payload['created_on'],
@@ -215,8 +206,10 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         );
 
         if ($owner !== null && ! $client->hasOwner()) {
-            $client->assignOwner($owner)->save();
+            $client->assignOwner($owner);
         }
+
+        $client->save();
     }
 
     /**

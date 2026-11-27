@@ -32,7 +32,7 @@ use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
-use AIArmada\Chip\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\ChipSendService;
