@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Suppressions\Actions;
 
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\SuppressionReason;
 use AIArmada\Communications\Events\SuppressionCreated;
-use AIArmada\Communications\Models\CommunicationSuppression;
+use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 

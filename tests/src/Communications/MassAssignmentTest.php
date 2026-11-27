@@ -17,7 +17,7 @@ use AIArmada\Communications\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationPreference;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Communications\Models\CommunicationSuppression;
+use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Models\CommunicationTemplate;
 use AIArmada\Communications\Models\CommunicationTemplateVersion;
 use AIArmada\Communications\Models\CommunicationThread;
