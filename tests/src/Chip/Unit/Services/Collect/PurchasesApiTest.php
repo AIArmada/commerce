@@ -154,6 +154,30 @@ it('rejects an unreconciled stable total contract', function (): void {
     ]))->toThrow(ChipValidationException::class, 'total overrides do not reconcile');
 });
 
+it('rejects out-of-range floating point minor amounts before contacting CHIP', function (float $price): void {
+    $this->client->shouldNotReceive('post');
+
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => ['products' => [['price' => $price]]],
+    ])))->toThrow(ChipValidationException::class, 'integer amount in minor units');
+})->with([
+    'positive overflow' => [(float) PHP_INT_MAX],
+    'negative overflow' => [(float) PHP_INT_MIN * 2],
+]);
+
+it('rejects a purchase subtotal that exceeds the integer range before contacting CHIP', function (): void {
+    $this->client->shouldNotReceive('post');
+
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [
+                ['name' => 'First item', 'price' => PHP_INT_MAX],
+                ['name' => 'Second item', 'price' => 1],
+            ],
+        ],
+    ])))->toThrow(ChipValidationException::class, 'Purchase subtotal exceeds the supported range.');
+});
+
 it('rejects over-cap client address fields', function (string $field, int $max): void {
     expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
         'client' => [$field => str_repeat('x', $max + 1)],
