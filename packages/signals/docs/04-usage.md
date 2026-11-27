@@ -346,7 +346,7 @@ $event->id;
 $event->idempotencyKey;
 ```
 
-The API resolves the property without the ambient owner scope because the property itself carries the owner the event is written under. `trusted: true` records revenue and idempotency fields; `trusted: false` applies the browser allowlist and forces revenue to zero.
+The API resolves the property inside the current owner scope. When owner scoping is enabled, a global property requires an explicit `OwnerContext::withOwner(null, ...)` around the call; a property owned by another owner throws `AuthorizationException`. `trusted: true` records revenue and idempotency fields. `trusted: false` applies the tracked property's property allowlist and forces revenue to zero; it does not run the browser event-name allowlist or reject trusted fields. Callers that accept untrusted input must run `SignalsIngestionRequestValidator::assertUntrustedEvent()` first, as the mobile telemetry action does.
 
 ## Actions
 

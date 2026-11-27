@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Ingestion\Api\SignalIngestion;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 uses(SignalsTestCase::class);
@@ -65,5 +68,33 @@ it('rejects an unknown tracked property', function (): void {
         'event_name' => 'test.public_ingestion',
         'event_category' => 'test',
         'properties' => [],
+    ], true))->toThrow(AuthorizationException::class);
+});
+
+it('rejects a malformed tracked property id', function (): void {
+    expect(fn () => app(SignalIngestion::class)->handle('not-a-uuid', [
+        'event_name' => 'test.public_ingestion',
+        'event_category' => 'test',
+        'properties' => [],
     ], true))->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects a tracked property owned by another owner', function (): void {
+    $otherOwner = User::query()->create([
+        'name' => 'Other Owner',
+        'email' => 'other-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    $property = OwnerContext::withOwner($otherOwner, fn (): TrackedProperty => TrackedProperty::query()->create([
+        'name' => 'Other Property',
+        'slug' => 'other-property',
+        'write_key' => 'other-property-write-key',
+    ]));
+
+    expect(fn () => app(SignalIngestion::class)->handle($property->id, [
+        'event_name' => 'test.public_ingestion',
+        'event_category' => 'test',
+        'properties' => [],
+    ], true))->toThrow(AuthorizationException::class);
 });

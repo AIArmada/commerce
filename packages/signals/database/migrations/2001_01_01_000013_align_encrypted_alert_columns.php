@@ -11,51 +11,67 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $this->alignEncryptedAlertColumns();
+        $rulesTable = (string) config('signals.database.tables.alert_rules', 'signal_alert_rules');
+        $deliveriesTable = (string) config('signals.database.tables.alert_deliveries', 'signal_alert_deliveries');
+
+        $this->assertNoLegacyPlaintext($rulesTable, 'inline_destinations');
+        $this->assertNoLegacyPlaintext($deliveriesTable, 'destination');
+
+        $this->convertJsonColumnToText($rulesTable, 'inline_destinations');
+        $this->convertJsonColumnToText($deliveriesTable, 'destination');
+
         $this->addSignalEventIndexes();
     }
 
-    private function alignEncryptedAlertColumns(): void
-    {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        $this->convertJsonbColumnToText(
-            (string) config('signals.database.tables.alert_rules', 'signal_alert_rules'),
-            'inline_destinations',
-        );
-
-        $this->convertJsonbColumnToText(
-            (string) config('signals.database.tables.alert_deliveries', 'signal_alert_deliveries'),
-            'destination',
-        );
-    }
-
-    private function convertJsonbColumnToText(string $table, string $column): void
+    private function assertNoLegacyPlaintext(string $table, string $column): void
     {
         if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
             return;
         }
 
-        $dataType = DB::table('information_schema.columns')
-            ->whereRaw('table_schema = current_schema()')
-            ->where('table_name', $table)
-            ->where('column_name', $column)
-            ->value('data_type');
+        $value = DB::table($table)->whereNotNull($column)->value($column);
 
-        if ($dataType !== 'jsonb') {
+        if ($value === null) {
+            return;
+        }
+
+        if (is_array($value) || (is_string($value) && json_validate($value))) {
+            throw new RuntimeException(sprintf(
+                'Legacy plaintext values remain in %s.%s. The columns now store encrypted:array payloads, so plaintext JSON cannot be read by the new cast. Clear or re-encrypt the values before running this migration.',
+                $table,
+                $column,
+            ));
+        }
+    }
+
+    private function convertJsonColumnToText(string $table, string $column): void
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return;
+        }
+
+        if (! in_array(Schema::getColumnType($table, $column), ['json', 'jsonb'], true)) {
             return;
         }
 
         $grammar = DB::connection()->getQueryGrammar();
+        $wrappedTable = $grammar->wrapTable($table);
+        $wrappedColumn = $grammar->wrap($column);
 
-        DB::statement(sprintf(
-            'ALTER TABLE %s ALTER COLUMN %s TYPE text USING %s::text',
-            $grammar->wrapTable($table),
-            $grammar->wrap($column),
-            $grammar->wrap($column),
-        ));
+        match (DB::connection()->getDriverName()) {
+            'pgsql' => DB::statement(sprintf(
+                'ALTER TABLE %s ALTER COLUMN %s TYPE text USING %s::text',
+                $wrappedTable,
+                $wrappedColumn,
+                $wrappedColumn,
+            )),
+            'mysql', 'mariadb' => DB::statement(sprintf(
+                'ALTER TABLE %s MODIFY %s LONGTEXT',
+                $wrappedTable,
+                $wrappedColumn,
+            )),
+            default => null,
+        };
     }
 
     private function addSignalEventIndexes(): void

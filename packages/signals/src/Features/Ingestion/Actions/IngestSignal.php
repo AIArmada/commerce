@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Signals\Features\Ingestion\Api\IngestedSignalEvent;
 use AIArmada\Signals\Features\Ingestion\Api\SignalIngestion;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final readonly class IngestSignal implements SignalIngestion
@@ -16,13 +18,7 @@ final readonly class IngestSignal implements SignalIngestion
 
     public function handle(string $trackedPropertyId, array $payload, bool $trusted): IngestedSignalEvent
     {
-        $trackedProperty = TrackedProperty::query()
-            ->withoutOwnerScope()
-            ->find($trackedPropertyId);
-
-        if (! $trackedProperty instanceof TrackedProperty) {
-            throw new InvalidArgumentException(sprintf('Unknown tracked property [%s].', $trackedPropertyId));
-        }
+        $trackedProperty = $this->resolveTrackedProperty($trackedPropertyId);
 
         $event = $this->ingestSignalEvent->handle($trackedProperty, $payload, $trusted);
 
@@ -38,5 +34,35 @@ final readonly class IngestSignal implements SignalIngestion
             revenueMinor: (int) $event->revenue_minor,
             currency: (string) $event->currency,
         );
+    }
+
+    private function resolveTrackedProperty(string $trackedPropertyId): TrackedProperty
+    {
+        if (! Str::isUuid($trackedPropertyId)) {
+            throw new InvalidArgumentException(sprintf('Invalid tracked property id [%s].', $trackedPropertyId));
+        }
+
+        if (! TrackedProperty::ownerScopeConfig()->enabled) {
+            $trackedProperty = TrackedProperty::query()->whereKey($trackedPropertyId)->first();
+
+            if (! $trackedProperty instanceof TrackedProperty) {
+                throw new InvalidArgumentException(sprintf('Unknown tracked property [%s].', $trackedPropertyId));
+            }
+
+            return $trackedProperty;
+        }
+
+        $trackedProperty = OwnerWriteGuard::findOrFailForOwner(
+            modelClass: TrackedProperty::class,
+            id: $trackedPropertyId,
+            includeGlobal: false,
+            message: 'The tracked property is not accessible in the current owner scope.',
+        );
+
+        if (! $trackedProperty instanceof TrackedProperty) {
+            throw new InvalidArgumentException(sprintf('Unknown tracked property [%s].', $trackedPropertyId));
+        }
+
+        return $trackedProperty;
     }
 }
