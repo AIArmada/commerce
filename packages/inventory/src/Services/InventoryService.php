@@ -10,7 +10,7 @@ use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use DateTimeInterface;

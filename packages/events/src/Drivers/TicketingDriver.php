@@ -9,7 +9,7 @@ use AIArmada\Events\Data\EventPassIssuanceData;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Inventory\Features\Stock\Actions\SetDefaultInventoryQuantity;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
 use AIArmada\Ticketing\Actions\IssuePassesAction;

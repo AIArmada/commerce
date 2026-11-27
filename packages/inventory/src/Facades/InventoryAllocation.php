@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static int releaseAllocation(\AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation $allocation)
  * @method static int release(\Illuminate\Database\Eloquent\Model $model, string $cartId)
  * @method static int releaseAllForCart(string $cartId)
- * @method static array<\AIArmada\Inventory\Models\InventoryMovement> commit(string $cartId, ?string $orderId = null)
+ * @method static array<\AIArmada\Inventory\Features\Stock\Models\InventoryMovement> commit(string $cartId, ?string $orderId = null)
  * @method static int extendAllocations(string $cartId, int $minutes)
  * @method static \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation> getAllocationsForCart(string $cartId)
  * @method static \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation> getAllocations(\Illuminate\Database\Eloquent\Model $model, string $cartId)

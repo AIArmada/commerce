@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Traceability\Models;
 
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;

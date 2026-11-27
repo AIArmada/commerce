@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Stock\Models;
+
+use AIArmada\Inventory\Models\InventoryLocation;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 

@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Traits;
 
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

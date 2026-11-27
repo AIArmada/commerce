@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Lorisleiva\Actions\Concerns\AsAction;
 

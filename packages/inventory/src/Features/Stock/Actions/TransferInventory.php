@@ -8,7 +8,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

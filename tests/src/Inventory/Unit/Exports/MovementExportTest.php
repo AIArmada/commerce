@@ -7,7 +7,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Exports\ExportableInterface;
 use AIArmada\Inventory\Exports\MovementExport;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

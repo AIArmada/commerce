@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Cart;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
