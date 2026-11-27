@@ -430,6 +430,7 @@ describe('RemoveStoredConditions action', function (): void {
             'name' => 'Shared Name',
             'type' => 'coupon',
             'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
             'value' => '-10',
         ]);
 
@@ -443,5 +444,60 @@ describe('RemoveStoredConditions action', function (): void {
         expect($result['success'])->toBeTrue()
             ->and($result['carts_processed'])->toBe(0)
             ->and($result['carts_updated'])->toBe(0);
+    });
+
+    it('preserves a replacement condition when the snapshot contains a stale identity', function (): void {
+        $storedCondition = Condition::factory()->create([
+            'name' => 'shared-name',
+            'display_name' => 'Shared Name',
+        ]);
+        $snapshot = CartModel::create([
+            'instance' => 'default',
+            'identifier' => 'session-stale-condition',
+            'subtotal' => 1000,
+        ]);
+        CartConditionModel::create([
+            'cart_id' => $snapshot->id,
+            'name' => 'Shared Name',
+            'type' => 'coupon',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+            'value' => '-10',
+            'attributes' => ['condition_id' => $storedCondition->id],
+        ]);
+
+        $storage = Mockery::mock(StorageInterface::class);
+        $storage->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+            id: 'cart-id',
+            version: 2,
+            conditions: [
+                'Shared Name' => [
+                    'name' => 'Shared Name',
+                    'type' => 'coupon',
+                    'target' => 'cart@cart_subtotal/aggregate',
+                    'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+                    'value' => '-20',
+                ],
+            ],
+        ));
+        $storage->shouldReceive('getItems')->andReturn([]);
+        $storage->shouldReceive('getId')->andReturn('cart-id');
+        $storage->shouldReceive('getVersion')->andReturn(2);
+        $storage->shouldReceive('getCreatedAt')->andReturn(now()->toIso8601String());
+        $storage->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
+        $storage->shouldNotReceive('putConditions');
+
+        $cart = new Cart($storage, 'session-stale-condition');
+        $cartManager = Mockery::mock(CartInstanceManager::class);
+        $cartManager->shouldReceive('resolveForSnapshot')->once()->andReturn($cart);
+        $syncManager = Mockery::mock(CartSyncManager::class);
+        $syncManager->shouldNotReceive('sync');
+
+        $result = (new RemoveStoredConditions($cartManager, $syncManager))->handle($storedCondition);
+
+        expect($result['success'])->toBeTrue()
+            ->and($result['carts_processed'])->toBe(1)
+            ->and($result['carts_updated'])->toBe(0)
+            ->and($result['errors'])->toBeEmpty();
     });
 });
