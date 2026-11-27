@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
@@ -401,7 +402,7 @@ class Customer extends Model implements Auditable, HasMedia
         static::deleting(function (Customer $customer): void {
             app(AddressAttachmentWriter::class)->detachAll($customer->getMorphClass(), (string) $customer->getKey());
             $customer->notes()->delete();
-            $customer->segments()->detach();
+            app(DetachDeletedSegmentMemberships::class)->forCustomer($customer);
             $customer->groups()->detach();
             $customer->contactMethods()->get()->each(fn (ContactMethod $contactMethod): bool => $contactMethod->delete());
             $customer->socialProfiles()->get()->each(fn (SocialProfile $socialProfile): bool => $socialProfile->delete());

@@ -406,10 +406,10 @@ $pinnedNotes = $customer->notes()->pinned()->get();
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 $segment = Segment::where('slug', 'vip')->first();
-$customer->segments()->attach($segment->id);
+app(\AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment::class)->execute($customer, $segment);
 
-// Or use sync to replace all segments
-$customer->segments()->sync([
+// Replace manual memberships without changing automatic memberships.
+app(\AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships::class)->forCustomer($customer, [
     $vipSegment->id,
     $loyaltySegment->id,
 ]);

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Features\Segmentation;
 
+use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
@@ -19,6 +22,9 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(RemoveCustomerFromSegment::class);
         $app->bind(RebuildAllSegments::class);
         $app->bind(EvaluateCustomerSegments::class);
+        $app->bind(SyncManualSegmentMemberships::class);
+        $app->bind(TransferSegmentMemberships::class);
+        $app->bind(DetachDeletedSegmentMemberships::class);
     }
 
     public function boot(Application $app): void {}

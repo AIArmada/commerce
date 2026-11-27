@@ -6,7 +6,10 @@
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\AssignCustomerToSegment",
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\RemoveCustomerFromSegment",
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\RebuildAllSegments",
-      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\EvaluateCustomerSegments"
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\EvaluateCustomerSegments",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SyncManualSegmentMemberships",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\TransferSegmentMemberships",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\DetachDeletedSegmentMemberships"
     ]
   },
   "extensions": {}

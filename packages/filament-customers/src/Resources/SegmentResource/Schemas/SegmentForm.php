@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas;
 
+use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
+use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
@@ -168,25 +170,19 @@ final class SegmentForm
      */
     public static function syncManualCustomers(Segment $record, ?array $state): void
     {
-        $owner = static::ensureRecordOwnerScope($record);
+        static::ensureRecordOwnerScope($record);
 
-        $ids = array_values(array_filter($state ?? []));
-
-        if ($ids === []) {
-            $record->customers()->sync([]);
-
-            return;
+        $ids = [];
+        foreach ($state ?? [] as $id) {
+            abort_unless(is_string($id) && $id !== '', 403);
+            $ids[] = $id;
         }
 
-        $allowedIds = Customer::query()
-            ->forOwner($owner, includeGlobal: false)
-            ->whereKey($ids)
-            ->pluck('id')
-            ->all();
-
-        abort_unless(array_diff($ids, $allowedIds) === [], 403);
-
-        $record->customers()->sync($allowedIds);
+        try {
+            app(SyncManualSegmentMemberships::class)->forSegment($record, array_values(array_unique($ids)));
+        } catch (AuthorizationException) {
+            abort(403);
+        }
     }
 
     protected static function ensureRecordOwnerScope(Segment $record): ?Model

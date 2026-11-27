@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
 use Carbon\CarbonImmutable;
@@ -35,7 +36,7 @@ final class MergeCustomers
                 $this->moveAddresses($source, $target);
                 $this->moveContactMethods($source, $target);
                 $this->moveSocialProfiles($source, $target);
-                $this->mergeSegments($source, $target);
+                app(TransferSegmentMemberships::class)->execute($source, $target);
                 $this->mergeGroups($source, $target);
                 $this->moveNotes($source, $target);
 
@@ -174,18 +175,6 @@ final class MergeCustomers
             ->where('purpose', $socialProfile->purpose)
             ->where('is_primary', true)
             ->exists();
-    }
-
-    private function mergeSegments(Customer $source, Customer $target): void
-    {
-        $segmentsRelation = $source->segments();
-        $segmentIds = $segmentsRelation
-            ->pluck($segmentsRelation->getRelated()->qualifyColumn($segmentsRelation->getRelatedKeyName()))
-            ->all();
-
-        if ($segmentIds !== []) {
-            $target->segments()->syncWithoutDetaching($segmentIds);
-        }
     }
 
     private function mergeGroups(Customer $source, Customer $target): void

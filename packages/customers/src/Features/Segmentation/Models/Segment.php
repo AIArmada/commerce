@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Features\Segmentation\Models;
 
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -307,7 +308,7 @@ class Segment extends Model implements Auditable
         });
 
         static::deleting(function (Segment $segment): void {
-            $segment->customers()->detach();
+            app(DetachDeletedSegmentMemberships::class)->forSegment($segment);
         });
     }
 
