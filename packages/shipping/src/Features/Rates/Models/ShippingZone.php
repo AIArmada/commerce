@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\ZoneCandidateData;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -168,13 +169,24 @@ class ShippingZone extends Model implements Auditable
      */
     public function matchesAddress(AddressData $address): bool
     {
-        return match ($this->type) {
-            'country' => $this->matchesCountry($address),
-            'state' => $this->matchesState($address),
-            'postcode' => $this->matchesPostcode($address),
-            'radius' => $this->matchesRadius($address),
-            default => false,
-        };
+        return $this->toCandidate()->matchesAddress($address);
+    }
+
+    public function toCandidate(): ZoneCandidateData
+    {
+        return new ZoneCandidateData(
+            id: $this->id,
+            type: $this->type,
+            countries: $this->countries,
+            states: $this->states,
+            postcodeRanges: $this->postcode_ranges,
+            centerLat: $this->center_lat,
+            centerLng: $this->center_lng,
+            radiusKm: $this->radius_km,
+            priority: $this->priority,
+            isDefault: $this->is_default,
+            active: $this->active,
+        );
     }
 
     protected function casts(): array
@@ -190,111 +202,6 @@ class ShippingZone extends Model implements Auditable
             'is_default' => 'boolean',
             'active' => 'boolean',
         ];
-    }
-
-    protected function matchesCountry(AddressData $address): bool
-    {
-        if ($this->countries === null || empty($this->countries)) {
-            return false;
-        }
-
-        return in_array(mb_strtoupper($address->country), array_map('strtoupper', $this->countries), true);
-    }
-
-    protected function matchesState(AddressData $address): bool
-    {
-        // First check country
-        if (! $this->matchesCountry($address)) {
-            return false;
-        }
-
-        if ($this->states === null || empty($this->states)) {
-            return true; // If no states specified, match entire country
-        }
-
-        $addressState = mb_strtolower($address->state ?? '');
-
-        foreach ($this->states as $state) {
-            if (str_contains($addressState, mb_strtolower($state))) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function matchesPostcode(AddressData $address): bool
-    {
-        if ($this->postcode_ranges === null || empty($this->postcode_ranges)) {
-            return false;
-        }
-
-        $postcode = $address->postcode;
-
-        if (empty($postcode)) {
-            return false;
-        }
-
-        foreach ($this->postcode_ranges as $range) {
-            $from = (string) ($range['from'] ?? '');
-            $to = (string) ($range['to'] ?? $from);
-
-            if ($this->postcodeInRange($postcode, $from, $to)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function postcodeInRange(string $postcode, string $from, string $to): bool
-    {
-        // All-digit postcodes compare numerically so that '50000' does not match
-        // a '1000'-'9999' range the way lexicographic comparison would allow.
-        if (ctype_digit($postcode) && ctype_digit($from) && ctype_digit($to)) {
-            return (int) $postcode >= (int) $from && (int) $postcode <= (int) $to;
-        }
-
-        return $postcode >= $from && $postcode <= $to;
-    }
-
-    protected function matchesRadius(AddressData $address): bool
-    {
-        if ($this->center_lat === null || $this->center_lng === null || $this->radius_km === null) {
-            return false;
-        }
-
-        if ($address->latitude === null || $address->longitude === null) {
-            return false; // Cannot calculate distance without coordinates
-        }
-
-        $distance = $this->calculateDistance(
-            $this->center_lat,
-            $this->center_lng,
-            $address->latitude,
-            $address->longitude
-        );
-
-        return $distance <= $this->radius_km;
-    }
-
-    /**
-     * Calculate distance in km using Haversine formula.
-     */
-    protected function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        $earthRadius = 6371; // km
-
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-            sin($dLng / 2) * sin($dLng / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c;
     }
 
     protected function getActivityLogName(): string

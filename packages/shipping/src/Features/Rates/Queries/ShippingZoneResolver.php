@@ -191,9 +191,16 @@ class ShippingZoneResolver implements ZoneRateReader
         $candidates = $query->get();
 
         $strategy = $this->resolveStrategy();
-        $matched = $strategy->resolve($address, $candidates);
+        $matched = $strategy->resolve($address, $candidates->map(fn (ShippingZone $zone) => $zone->toCandidate())->values()->all());
+        $byId = $candidates->keyBy('id');
 
-        return $matched->first();
+        foreach ($matched as $id) {
+            if ($byId->has($id)) {
+                return $byId->get($id);
+            }
+        }
+
+        return null;
     }
 
     private function resolveStrategy(): ZoneResolutionStrategyInterface

@@ -6,8 +6,6 @@ namespace AIArmada\Shipping\Strategies;
 
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
-use Illuminate\Support\Collection;
 
 /**
  * Geo-based zone resolution strategy.
@@ -22,14 +20,25 @@ class GeoZoneResolutionStrategy implements ZoneResolutionStrategyInterface
         return 'geo';
     }
 
-    public function resolve(AddressData $address, Collection $candidates): Collection
+    public function resolve(AddressData $address, array $candidates): array
     {
-        $matched = $candidates->filter(fn (ShippingZone $zone) => $zone->matchesAddress($address));
+        $matched = [];
+        $defaults = [];
 
-        if ($matched->isNotEmpty()) {
-            return $matched;
+        foreach ($candidates as $zone) {
+            if (! $zone->active) {
+                continue;
+            }
+
+            if ($zone->matchesAddress($address)) {
+                $matched[] = $zone->id;
+            }
+
+            if ($zone->isDefault) {
+                $defaults[] = $zone->id;
+            }
         }
 
-        return $candidates->filter(fn (ShippingZone $zone) => $zone->is_default);
+        return $matched === [] ? $defaults : $matched;
     }
 }

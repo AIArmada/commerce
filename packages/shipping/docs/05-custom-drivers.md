@@ -527,8 +527,7 @@ namespace App\Shipping\Strategies;
 
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
-use Illuminate\Support\Collection;
+use AIArmada\Shipping\Data\ZoneCandidateData;
 
 class B2BZoneResolutionStrategy implements ZoneResolutionStrategyInterface
 {
@@ -537,16 +536,17 @@ class B2BZoneResolutionStrategy implements ZoneResolutionStrategyInterface
         return 'b2b';
     }
 
-    public function resolve(AddressData $address, Collection $candidates): Collection
+    public function resolve(AddressData $address, array $candidates): array
     {
         // ShippingZone has no `metadata` column. Match on `type`
         // (country|state|postcode|radius) plus the active flag, then let
-        // the model do the address comparison.
-        return $candidates
-            ->filter(fn (ShippingZone $zone) => $zone->active
-                && $zone->type === 'postcode'
-                && $zone->matchesAddress($address))
-            ->sortByDesc(fn (ShippingZone $zone) => $zone->priority);
+        // the candidate data handles address comparison.
+        $matched = array_filter($candidates, fn (ZoneCandidateData $zone) => $zone->active
+            && $zone->type === 'postcode'
+            && $zone->matchesAddress($address));
+        usort($matched, fn (ZoneCandidateData $a, ZoneCandidateData $b) => $b->priority <=> $a->priority);
+
+        return array_map(fn (ZoneCandidateData $zone) => $zone->id, $matched);
     }
 }
 ```
