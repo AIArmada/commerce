@@ -116,7 +116,7 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             ]);
 
             try {
-                $group->save();
+                DB::transaction(static fn (): bool => $group->save());
             } catch (QueryException $exception) {
                 $group = $this->recoverRacedGroup($reference, $owner, $exception);
 
