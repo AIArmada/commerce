@@ -37,7 +37,7 @@ use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
 use AIArmada\Chip\Services\ChipSendService;
-use AIArmada\Chip\Services\Collect\ClientsApi;
+use AIArmada\Chip\Features\Collect\Actions\ClientsApi;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

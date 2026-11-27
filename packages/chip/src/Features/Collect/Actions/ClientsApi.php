@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services\Collect;
+namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Data\ClientData;
+use AIArmada\Chip\Features\Collect\Api\ClientOperations;
+use AIArmada\Chip\Services\Collect\CollectApi;
 
-final class ClientsApi extends CollectApi
+final class ClientsApi extends CollectApi implements ClientOperations
 {
     /**
      * @param  array<string, mixed>  $data

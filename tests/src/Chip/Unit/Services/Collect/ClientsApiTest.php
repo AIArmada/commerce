@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Drivers\ChipCollectClient;
-use AIArmada\Chip\Services\Collect\ClientsApi;
+use AIArmada\Chip\Features\Collect\Actions\ClientsApi;
 
 beforeEach(function (): void {
     $this->client = Mockery::mock(ChipCollectClient::class);
