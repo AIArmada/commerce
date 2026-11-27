@@ -128,7 +128,6 @@ use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\TrackingStatus;
-use AIArmada\Shipping\Services\RetryService;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
@@ -155,10 +154,6 @@ class JntShippingDriver implements ShippingDriverInterface
             DriverCapability::Tracking,
             DriverCapability::AddressValidation,
         ];
-
-        // RetryService takes no constructor arguments — it reads
-        // shipping.http.retries and shipping.http.base_delay_ms.
-        $this->retry = new RetryService();
     }
 
     public function getCarrierCode(): string
@@ -200,27 +195,25 @@ class JntShippingDriver implements ShippingDriverInterface
         // never scale a float.
         $totalWeight = collect($packages)->sum(fn (PackageData $p) => $p->weight);
 
-        $quotes = $this->retry->execute(function () use ($origin, $destination, $totalWeight): array {
-            $response = $this->client->post('/rates', [
-                'origin' => [
-                    'postcode' => $origin->postcode,
-                    'country' => $origin->country,
-                ],
-                'destination' => [
-                    'postcode' => $destination->postcode,
-                    'country' => $destination->country,
-                ],
-                // The carrier returns major units as a decimal string; convert
-                // with string math, not (int) ($x * 100).
-                'weight' => $totalWeight,
-            ]);
+        $response = $this->client->post('/rates', [
+            'origin' => [
+                'postcode' => $origin->postcode,
+                'country' => $origin->country,
+            ],
+            'destination' => [
+                'postcode' => $destination->postcode,
+                'country' => $destination->country,
+            ],
+            // The carrier returns major units as a decimal string; convert
+            // with string math, not (int) ($x * 100).
+            'weight' => $totalWeight,
+        ]);
 
-            if ($response->failed()) {
-                throw new \RuntimeException('Failed to fetch J&T rates');
-            }
+        if ($response->failed()) {
+            throw new \RuntimeException('Failed to fetch J&T rates');
+        }
 
-            return $response->json('rates') ?? [];
-        });
+        $quotes = $response->json('rates') ?? [];
 
         return array_values(array_map(fn (array $rate) => new RateQuoteData(
             carrier: 'jnt',
@@ -234,26 +227,24 @@ class JntShippingDriver implements ShippingDriverInterface
     public function createShipment(ShipmentData $shipment): CarrierOperationResult
     {
         /** @var array<string, mixed> $data */
-        $data = $this->retry->execute(function () use ($shipment): array {
-            $response = $this->client->post('/shipments', [
-                'reference' => $shipment->reference,
-                'sender' => $this->formatAddress($shipment->origin),
-                'receiver' => $this->formatAddress($shipment->destination),
-                'service' => $shipment->serviceCode,
-                // getTotalWeight() is a method, not a property
-                'weight' => $shipment->getTotalWeight(),
-                'items' => collect($shipment->items)->map(fn ($item) => [
-                    'name' => $item->name,
-                    'quantity' => $item->quantity,
-                ])->all(),
-            ]);
+        $response = $this->client->post('/shipments', [
+            'reference' => $shipment->reference,
+            'sender' => $this->formatAddress($shipment->origin),
+            'receiver' => $this->formatAddress($shipment->destination),
+            'service' => $shipment->serviceCode,
+            // getTotalWeight() is a method, not a property
+            'weight' => $shipment->getTotalWeight(),
+            'items' => collect($shipment->items)->map(fn ($item) => [
+                'name' => $item->name,
+                'quantity' => $item->quantity,
+            ])->all(),
+        ]);
 
-            if ($response->failed()) {
-                throw new \RuntimeException('Failed to create J&T shipment: ' . $response->body());
-            }
+        if ($response->failed()) {
+            return CarrierOperationResult::unknown('Carrier creation was not confirmed');
+        }
 
-            return $response->json();
-        });
+        $data = $response->json();
 
         return CarrierOperationResult::succeeded(
             trackingNumber: $data['tracking_number'] ?? null,
@@ -264,19 +255,19 @@ class JntShippingDriver implements ShippingDriverInterface
     public function cancelShipment(string $trackingNumber): CarrierOperationResult
     {
         try {
-            $response = $this->retry->execute(fn () => $this->client->delete("/shipments/{$trackingNumber}"));
+            $response = $this->client->delete("/shipments/{$trackingNumber}");
 
             return $response->successful()
                 ? CarrierOperationResult::succeeded(trackingNumber: $trackingNumber)
                 : CarrierOperationResult::failed('J&T rejected the cancellation');
         } catch (\Throwable $e) {
-            return CarrierOperationResult::failed($e->getMessage(), retryable: true);
+            return CarrierOperationResult::unknown('Carrier cancellation was not confirmed');
         }
     }
 
     public function generateLabel(string $trackingNumber, array $options = []): LabelData
     {
-        $response = $this->retry->execute(fn () => $this->client->get("/labels/{$trackingNumber}"));
+        $response = $this->client->get("/labels/{$trackingNumber}");
 
         return new LabelData(
             format: 'pdf',
@@ -287,7 +278,7 @@ class JntShippingDriver implements ShippingDriverInterface
 
     public function track(string $trackingNumber): TrackingData
     {
-        $response = $this->retry->execute(fn () => $this->client->get("/track/{$trackingNumber}"));
+        $response = $this->client->get("/track/{$trackingNumber}");
 
         if ($response->failed()) {
             // Non-nullable return — report an unknown state rather than null

@@ -18,7 +18,6 @@ use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
-use AIArmada\Shipping\Services\RetryService;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Shipped;
 use Carbon\CarbonImmutable;
@@ -35,7 +34,6 @@ final class ShipShipment
     public function __construct(
         protected readonly ShippingManager $shippingManager,
         protected readonly ?GenerateLabel $generateLabel = null,
-        protected readonly ?RetryService $retryService = null,
     ) {}
 
     public function handle(Shipment $shipment): Shipment
@@ -63,9 +61,11 @@ final class ShipShipment
                 OrderShipmentUnits::assertComplete($shipment, $order);
             }
 
-            $priorOperation = $hasPackageUnits
-                ? ShipmentOperation::query()->where('shipment_id', $shipment->id)->where('operation_type', 'create')->latest('operation_started_at')->first()
-                : null;
+            $priorOperation = ShipmentOperation::query()
+                ->where('shipment_id', $shipment->id)
+                ->where('operation_type', 'create')
+                ->latest('operation_started_at')
+                ->first();
             $priorStatus = $priorOperation?->status();
             if ($priorStatus === ShipmentOperationStatus::Pending || $priorStatus === ShipmentOperationStatus::Unknown) {
                 throw new ShipmentCreationFailedException('Reconcile the existing carrier operation before retrying this shipment.');
@@ -82,41 +82,34 @@ final class ShipShipment
                     $shipment->reference,
                 );
 
-                if ($operation->status() !== ShipmentOperationStatus::Pending) {
+                if (! $operation->wasRecentlyCreated || $operation->status() !== ShipmentOperationStatus::Pending) {
                     throw new ShipmentCreationFailedException('Another shipment operation is already in progress or completed.');
                 }
 
                 try {
-                    $result = $this->retry()
-                        ->attempts($hasPackageUnits ? 1 : 3)
-                        ->delay(200)
-                        ->backoff(2.0)
-                        ->execute(
-                            fn () => $driver->createShipment(
-                                ShipmentData::from([
-                                    'reference' => $shipment->reference,
-                                    'carrierCode' => $shipment->carrier_code,
-                                    'serviceCode' => $shipment->service_code ?? 'standard',
-                                    'origin' => $shipment->origin_address,
-                                    'destination' => $shipment->destination_address,
-                                    'items' => $shipment->items()->get()->map(fn ($item): ShipmentItemData => ShipmentItemData::from([
-                                        'name' => $item->name,
-                                        'quantity' => $item->quantity,
-                                        'sku' => $item->sku,
-                                        'weight' => $item->weight,
-                                        'declaredValue' => $item->declared_value,
-                                    ]))->all(),
-                                    'packages' => array_map(
-                                        fn (array $parcel): PackageData => PackageData::from($parcel),
-                                        $shipment->metadata['packages'] ?? [],
-                                    ),
-                                    'declaredValue' => $shipment->declared_value,
-                                    'currency' => $shipment->currency,
-                                    'codAmount' => $shipment->cod_amount,
-                                ])
+                    $result = $driver->createShipment(
+                        ShipmentData::from([
+                            'reference' => $shipment->reference,
+                            'carrierCode' => $shipment->carrier_code,
+                            'serviceCode' => $shipment->service_code ?? 'standard',
+                            'origin' => $shipment->origin_address,
+                            'destination' => $shipment->destination_address,
+                            'items' => $shipment->items()->get()->map(fn ($item): ShipmentItemData => ShipmentItemData::from([
+                                'name' => $item->name,
+                                'quantity' => $item->quantity,
+                                'sku' => $item->sku,
+                                'weight' => $item->weight,
+                                'declaredValue' => $item->declared_value,
+                            ]))->all(),
+                            'packages' => array_map(
+                                fn (array $parcel): PackageData => PackageData::from($parcel),
+                                $shipment->metadata['packages'] ?? [],
                             ),
-                            context: "ship:{$shipment->id}"
-                        );
+                            'declaredValue' => $shipment->declared_value,
+                            'currency' => $shipment->currency,
+                            'codAmount' => $shipment->cod_amount,
+                        ])
+                    );
                 } catch (Throwable $e) {
                     app(ShipmentOperationWriter::class)->complete($operation, CarrierOperationResult::unknown($e->getMessage()));
 
@@ -154,11 +147,6 @@ final class ShipShipment
                 return $shipment->refresh();
             });
         });
-    }
-
-    protected function retry(): RetryService
-    {
-        return $this->retryService ?? RetryService::make();
     }
 
     protected function labelGenerator(): GenerateLabel

@@ -139,7 +139,5 @@ return [
     */
     'http' => [
         'timeout' => env('SHIPPING_API_TIMEOUT', 30),
-        'retries' => env('SHIPPING_API_RETRIES', 3),
-        'base_delay_ms' => env('SHIPPING_API_BASE_DELAY_MS', 100),
     ],
 ];

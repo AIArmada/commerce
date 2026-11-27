@@ -874,7 +874,6 @@
         "Tests\\src\\Shipping\\Unit\\Services\\FreeShippingEvaluatorTest": 24.8892,
         "Tests\\src\\Shipping\\Unit\\Services\\FreeShippingResultTest": 14.6361,
         "Tests\\src\\Shipping\\Unit\\Services\\RateShoppingEngineTest": 27.4305,
-        "Tests\\src\\Shipping\\Unit\\Services\\RetryServiceTest": 23.6839,
         "Tests\\src\\Shipping\\Unit\\Services\\ShippingZoneResolverTest": 28.5848,
         "Tests\\src\\Shipping\\Unit\\Services\\TrackingAggregatorTest": 16.0504,
         "Tests\\src\\Shipping\\Unit\\ShippingManagerTest": 25.3443,

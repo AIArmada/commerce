@@ -280,7 +280,5 @@ $policy = $registry->get('threshold');
 ```php
 'http' => [
     'timeout' => env('SHIPPING_API_TIMEOUT', 30), // seconds
-    'retries' => env('SHIPPING_API_RETRIES', 3),
-    'base_delay_ms' => env('SHIPPING_API_BASE_DELAY_MS', 100),
 ],
 ```
