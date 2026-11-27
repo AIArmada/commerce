@@ -7,6 +7,8 @@ namespace AIArmada\Chip\Features\Collect\Actions;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Features\Collect\Api\RefundStateSynchronizer;
+use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
@@ -31,7 +33,9 @@ final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
 
         $purchaseId ??= $relatedId;
 
-        if ($purchaseId === null) {
+        $paymentId = $refundPayment->getPaymentId();
+
+        if ($purchaseId === null || $paymentId === null || $paymentId === '') {
             return;
         }
 
@@ -42,11 +46,17 @@ final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
 
         // Lock the row so concurrent refund webhooks cannot both read the
         // same cumulative total and undercount.
-        DB::transaction(function () use ($purchaseId, $refundPayment, $refundAmount): void {
+        DB::transaction(function () use ($purchaseId, $paymentId, $refundPayment, $refundAmount): void {
             $locked = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($purchaseId)->lockForUpdate()->first();
 
             if (! $locked instanceof Purchase) {
                 return;
+            }
+
+            $currency = $locked->currency;
+
+            if ($currency !== null && $currency !== $refundPayment->getCurrency()) {
+                throw new ChipValidationException('Refund currency does not match the purchase currency.');
             }
 
             $purchaseTotal = $this->resolvePurchaseTotal($locked);
@@ -58,11 +68,18 @@ final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
 
             $cumulativeRefundAmount = max($persistedRefundAmount, $existingRefundAmount);
 
-            if (! $this->currentRefundPaymentExists($locked, $refundPayment)) {
+            $payment = Payment::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($paymentId)->first();
+
+            if ($payment instanceof Payment) {
+                if ((string) $payment->purchase_id !== $purchaseId || $payment->payment_type !== 'refund' || (int) $payment->amount !== $refundAmount || $payment->currency !== $refundPayment->getCurrency()) {
+                    throw new ChipValidationException('Refund payment identifier conflicts with an existing payment.');
+                }
+            } else {
+                $this->persistRefund($locked, $refundPayment, $paymentId);
                 $cumulativeRefundAmount += $refundAmount;
             }
 
-            if ($cumulativeRefundAmount <= 0) {
+            if ($cumulativeRefundAmount <= 0 || ($locked->status === PurchaseStatus::REFUNDED->value && $existingRefundAmount === $cumulativeRefundAmount)) {
                 return;
             }
 
@@ -84,14 +101,27 @@ final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
         return is_numeric($total) ? (int) $total : 0;
     }
 
-    private function currentRefundPaymentExists(Purchase $purchase, PaymentData $refundPayment): bool
+    private function persistRefund(Purchase $purchase, PaymentData $refund, string $paymentId): void
     {
-        $paymentId = $refundPayment->getPaymentId();
-
-        if ($paymentId === null || $paymentId === '') {
-            return false;
-        }
-
-        return $purchase->payments()->whereKey($paymentId)->exists();
+        $payment = new Payment;
+        $payment->forceFill([
+            'id' => $paymentId,
+            'purchase_id' => $purchase->getKey(),
+            'payment_type' => 'refund',
+            'is_outgoing' => $refund->is_outgoing,
+            'amount' => $refund->getAmountInCents(),
+            'currency' => $refund->getCurrency(),
+            'net_amount' => $refund->getNetAmountInCents(),
+            'fee_amount' => $refund->getFeeAmountInCents(),
+            'pending_amount' => $refund->getPendingAmountInCents(),
+            'pending_unfreeze_on' => $refund->pending_unfreeze_on,
+            'description' => $refund->description,
+            'paid_on' => $refund->paid_on,
+            'remote_paid_on' => $refund->remote_paid_on,
+            'created_on' => $refund->created_on ?? time(),
+            'updated_on' => $refund->updated_on ?? $refund->created_on ?? time(),
+            'owner_type' => $purchase->owner_type,
+            'owner_id' => $purchase->owner_id,
+        ])->save();
     }
 }

@@ -788,3 +788,27 @@ it('enforces a unique durable purchase reservation even without a shared cache l
     expect(fn () => \Illuminate\Support\Facades\DB::transaction(fn () => Purchase::withoutEvents(fn () => $duplicate->save())))
         ->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
 });
+
+it('persists a refund identity and prevents duplicate increments even without the webhook mirror listener', function (): void {
+    $purchase = regressionPurchase(['purchase' => ['total' => 10000, 'currency' => 'MYR']]);
+    $refundId = (string) Str::uuid();
+    $refund = PaymentData::from([
+        'id' => $refundId,
+        'type' => 'payment',
+        'related_to' => ['type' => 'purchase', 'id' => $purchase->id],
+        'payment' => [
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+            'amount' => 3000,
+            'currency' => 'MYR',
+        ],
+    ]);
+
+    $action = app(SyncPurchaseRefundState::class);
+    $action->handle($refund);
+    $action->handle($refund);
+
+    expect($purchase->refresh()->refund_amount_minor)->toBe(3000)
+        ->and($purchase->refundable_amount)->toBe(7000)
+        ->and($purchase->payments()->whereKey($refundId)->count())->toBe(1);
+});

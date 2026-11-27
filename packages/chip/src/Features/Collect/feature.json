@@ -12,7 +12,8 @@
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
     ],
     "table:chip_payments": [
-      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\SyncPurchaseRefundState"
     ],
     "table:chip_customers": [
       "AIArmada\\Chip\\Features\\Collect\\Persistence\\ChipCustomerDirectory"
