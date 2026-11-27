@@ -16,6 +16,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
 use AIArmada\FilamentCart\Jobs\RemoveConditionFromAllCartsJob;
+use AIArmada\FilamentCart\Actions\NotifyAbandonedCart;
 use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use AIArmada\FilamentCart\Pages\CartDashboard;
@@ -86,7 +87,7 @@ describe('snapshot conditions relation manager', function (): void {
 
 describe('retry URL validation', function (): void {
     it('rejects non-http(s) retry URLs', function (): void {
-        $listener = new SendCartAbandonedNotification;
+        $listener = new NotifyAbandonedCart;
         $method = new ReflectionMethod($listener, 'resolveRetryUrl');
 
         config(['app.url' => 'https://shop.example.com']);
@@ -101,7 +102,7 @@ describe('retry URL validation', function (): void {
     });
 
     it('enforces the allowed retry hosts allowlist when configured', function (): void {
-        $listener = new SendCartAbandonedNotification;
+        $listener = new NotifyAbandonedCart;
         $method = new ReflectionMethod($listener, 'resolveRetryUrl');
 
         config(['app.url' => 'https://shop.example.com']);

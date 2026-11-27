@@ -701,3 +701,24 @@ describe('Edge Cases', function (): void {
         expect(CartSnapshot::where('identifier', 'guest_xyz')->exists())->toBeFalse();
     });
 });
+
+it('does not delete a snapshot when a merge resolves to the same identity', function (): void {
+    $snapshot = CartSnapshot::create([
+        'identifier' => 'same-cart',
+        'instance' => 'default',
+        'currency' => 'MYR',
+    ]);
+    $cart = Cart::getCartInstance('default', 'same-cart');
+
+    (new CleanupSnapshotOnCartMerged)->handle(new CartMerged(
+        targetCart: $cart,
+        sourceCart: $cart,
+        totalItemsMerged: 0,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: false,
+        originalSourceIdentifier: 'same-cart',
+        originalTargetIdentifier: 'same-cart',
+    ));
+
+    expect(CartSnapshot::query()->whereKey($snapshot->getKey())->exists())->toBeTrue();
+});
