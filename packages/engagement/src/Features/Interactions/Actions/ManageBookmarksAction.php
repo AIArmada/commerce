@@ -92,7 +92,7 @@ final readonly class ManageBookmarksAction
                 ->where('bookmarkable_id', $subjectIdentity['id'])
                 ->first();
 
-            if ($existing instanceof Bookmark) {
+            if ($existing instanceof Bookmark && $existing->status === BookmarkStatus::Active) {
                 return $existing;
             }
 

@@ -93,7 +93,7 @@ final readonly class ManageReactionsAction
                 ->where('reaction_type', $reactionType)
                 ->first();
 
-            if ($existing instanceof Reaction) {
+            if ($existing instanceof Reaction && $existing->status === ReactionStatus::Active) {
                 return $existing;
             }
 

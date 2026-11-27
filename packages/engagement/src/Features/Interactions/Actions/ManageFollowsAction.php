@@ -101,7 +101,11 @@ final readonly class ManageFollowsAction
                 ->where('followable_id', $subjectIdentity['id'])
                 ->first();
 
-            if ($existing instanceof Follow) {
+            if ($existing instanceof Follow && $existing->status === FollowStatus::Blocked) {
+                throw new AuthorizationException('This follow is blocked.');
+            }
+
+            if ($existing instanceof Follow && $existing->status === FollowStatus::Active) {
                 return $existing;
             }
 

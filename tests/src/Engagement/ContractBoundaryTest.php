@@ -72,3 +72,18 @@ it('returns detached records from the event engagement integration', function ()
         ->and($share['share_url'])->toBeString()
         ->and($adapter->stateFor($actor, $subject)['is_following'])->toBeTrue();
 });
+
+it('rejects interactions with missing actor or subject identities', function (): void {
+    $manager = app(ManageInteractionsAction::class);
+    $actor = new EngagementActor;
+    $subject = new EngagementSubject;
+    $actor->setAttribute($actor->getKeyName(), null);
+
+    expect(fn () => $manager->follow($actor, $subject))->toThrow(InvalidArgumentException::class);
+
+    $actor = new EngagementActor;
+    $subject->setAttribute($subject->getKeyName(), '');
+
+    expect(fn () => $manager->bookmark($actor, $subject))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => $manager->share($actor, $subject))->toThrow(InvalidArgumentException::class);
+});

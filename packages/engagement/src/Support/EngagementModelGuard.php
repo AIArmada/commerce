@@ -69,9 +69,15 @@ final class EngagementModelGuard
         self::assertModel($value, $argument);
 
         /** @var Model $value */
+        $id = $value->getKey();
+
+        if ((! is_int($id) && ! is_string($id)) || (string) $id === '') {
+            throw new InvalidArgumentException(sprintf('Engagement %s must have a non-empty model key.', $argument));
+        }
+
         return [
             'type' => $value->getMorphClass(),
-            'id' => (string) $value->getKey(),
+            'id' => (string) $id,
         ];
     }
 

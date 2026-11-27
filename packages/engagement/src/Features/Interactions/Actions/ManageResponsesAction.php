@@ -116,7 +116,7 @@ final readonly class ManageResponsesAction
                 ->where('respondable_id', $subjectIdentity['id'])
                 ->first();
 
-            if ($existing instanceof Response) {
+            if ($existing instanceof Response && $existing->status === ResponseStatus::Active && $existing->response_type === $responseType) {
                 return $existing;
             }
 
