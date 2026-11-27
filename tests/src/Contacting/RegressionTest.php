@@ -430,3 +430,11 @@ it('rolls back primary demotion when a saving listener cancels the replacement',
         ContactMethod::clearBootedModels();
     }
 });
+
+it('rejects unsafe website links and credential-bearing URLs', function (): void {
+    $normalizer = new NormalizesUrl;
+
+    expect($normalizer->normalize('javascript:alert(1).example.com'))->toBeNull()
+        ->and($normalizer->normalize('https://example.com@evil.example'))->toBeNull()
+        ->and($normalizer->normalize('https://EXAMPLE.COM/path?A=1'))->toBe('https://example.com/path?A=1');
+});

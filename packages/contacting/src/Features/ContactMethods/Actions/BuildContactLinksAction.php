@@ -123,15 +123,7 @@ final class BuildContactLinksAction
 
     private function buildWebsite(string $url): ?string
     {
-        if ($url === '') {
-            return null;
-        }
-
-        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
-            return 'https://' . $url;
-        }
-
-        return $url;
+        return $this->urlNormalizer->normalize($url);
     }
 
     private function buildTelegram(string $value): ?string
