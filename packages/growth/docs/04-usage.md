@@ -396,3 +396,8 @@ If `aiarmada/filament-growth` is installed, you get:
 - dashboard widgets for tracked revenue and recent winners
 
 Register the plugin on your panel and keep the Growth package as the underlying domain layer. For the Filament-specific workflow, see the [`filament-growth` docs](../../filament-growth/docs/01-overview.md).
+
+
+## Administrative write boundary
+
+Use `AIArmada\Growth\Actions\SaveExperiment` and `AIArmada\Growth\Actions\SaveVariant` for create, update, delete and lifecycle operations. These actions reload writable records in transactions; application entry points authorize the caller. Concluded and archived experiments cannot be reopened through administrative updates.
