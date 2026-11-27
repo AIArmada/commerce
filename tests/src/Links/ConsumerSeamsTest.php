@@ -6,6 +6,7 @@ use AIArmada\Links\Actions\CreateLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\RecordLinkClick;
 use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Events\LinkExpired;
 use AIArmada\Links\Models\Link;
@@ -172,7 +173,7 @@ test('a bound gate can block redirects with a custom reason', function (): void 
 
     app()->instance(LinkGateInterface::class, new class implements LinkGateInterface
     {
-        public function blockedReason(Link $link): ?string
+        public function blockedReason(LinkGateContext $link): ?string
         {
             return $link->slug === 'gated-link' ? 'offer_inactive' : null;
         }

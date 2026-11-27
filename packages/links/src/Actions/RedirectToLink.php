@@ -9,6 +9,7 @@ use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
+use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Support\LinkAttributes;
 use Illuminate\Http\RedirectResponse;
@@ -47,7 +48,7 @@ final class RedirectToLink
             $gate = app(LinkGateInterface::class);
 
             if ($gate instanceof FallbackRedirectGateInterface) {
-                $fallback = $gate->fallbackUrl($link, $reason);
+                $fallback = $gate->fallbackUrl(new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id), $reason);
 
                 if (is_string($fallback) && $fallback !== '') {
                     return redirect()->to($fallback, (int) config('links.defaults.redirect_status', 302));

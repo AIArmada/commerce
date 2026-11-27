@@ -126,11 +126,11 @@ Redirect policy plugs in through `LinkGateInterface`: return a machine-readable 
 
 ```php
 use AIArmada\Links\Contracts\LinkGateInterface;
-use AIArmada\Links\Models\Link;
+use AIArmada\Links\Data\LinkGateContext;
 
 final class OfferLinkGate implements LinkGateInterface
 {
-    public function blockedReason(Link $link): ?string
+    public function blockedReason(LinkGateContext $link): ?string
     {
         // Load the subject, check offer/site/approval state...
         return $blocked ? 'offer_inactive' : null;

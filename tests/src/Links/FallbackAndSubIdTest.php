@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Links\Actions\CreateLink;
 use AIArmada\Links\Contracts\FallbackRedirectGateInterface;
 use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use AIArmada\Links\Support\DefaultLinkGate;
@@ -16,12 +17,12 @@ final class StubBlockingGate implements FallbackRedirectGateInterface, LinkGateI
         private readonly ?string $fallback = null,
     ) {}
 
-    public function blockedReason(Link $link): ?string
+    public function blockedReason(LinkGateContext $link): ?string
     {
         return $this->reason;
     }
 
-    public function fallbackUrl(Link $link, string $reason): ?string
+    public function fallbackUrl(LinkGateContext $link, string $reason): ?string
     {
         return $this->fallback;
     }
@@ -49,12 +50,13 @@ describe('fallback redirect gate', function (): void {
     });
 
     test('the default gate returns null when no gate offers a fallback', function (): void {
-        linksFallbackLink('fallback-none');
+        $link = linksFallbackLink('fallback-none');
+        $context = new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id);
 
         $gate = app(DefaultLinkGate::class);
 
-        expect($gate->blockedReason(Link::query()->where('slug', 'fallback-none')->firstOrFail()))->toBeNull()
-            ->and($gate->fallbackUrl(Link::query()->where('slug', 'fallback-none')->firstOrFail(), 'expired'))->toBeNull();
+        expect($gate->blockedReason($context))->toBeNull()
+            ->and($gate->fallbackUrl($context, 'expired'))->toBeNull();
     });
 
     test('a missing fallback produces a 410 for a blocked link', function (): void {

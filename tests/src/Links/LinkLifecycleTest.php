@@ -8,6 +8,7 @@ use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Actions\RecordLinkClick;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
+use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
@@ -88,4 +89,24 @@ test('prune command deletes only old clicks', function (): void {
     $this->artisan('links:prune-clicks')->assertExitCode(0);
 
     expect(LinkClick::query()->count())->toBe(1);
+});
+
+test('recording clicks from stale link instances preserves counters and first click', function (): void {
+    $link = CreateLink::run([
+        'name' => 'Concurrent clicks',
+        'slug' => 'stale-click-link',
+        'destination_url' => 'https://merchant.example/stale',
+    ]);
+
+    $stale = Link::query()->findOrFail($link->id);
+
+    $first = RecordLinkClick::run($link, ['user_agent' => LINKS_LIFECYCLE_UA]);
+    RecordLinkClick::run($stale, ['user_agent' => LINKS_LIFECYCLE_UA]);
+
+    $link->refresh();
+
+    expect($link->total_clicks)->toBe(2)
+        ->and($link->human_clicks)->toBe(2)
+        ->and($link->first_clicked_at->equalTo($first->occurred_at))->toBeTrue()
+        ->and(LinkClick::query()->where('link_id', $link->id)->count())->toBe(2);
 });
