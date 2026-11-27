@@ -23,7 +23,7 @@ final class ShipInventory
     use AsAction;
 
     public function __construct(
-        private readonly DispatchStockThresholdEvents $thresholds,
+        private readonly CheckLowInventory $thresholds,
     ) {}
 
     public function handle(
@@ -73,10 +73,9 @@ final class ShipInventory
 
             Event::dispatch(new InventoryShipped($model, $level, $movement));
 
-            $this->thresholds->execute($model, $level);
+            $this->thresholds->handle($model, $level);
 
             return $movement;
         });
     }
-
 }

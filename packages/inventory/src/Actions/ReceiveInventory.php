@@ -58,5 +58,4 @@ final class ReceiveInventory
             return $movement;
         });
     }
-
 }

@@ -57,7 +57,7 @@ final class InventoryService
      * @param  DateTimeInterface|null  $occurredAt  When the receipt occurred (defaults to now)
      * @return InventoryMovement The created movement record
      *
-     * @throws InvalidArgumentException If quantity is not positive
+     * @throws \InvalidArgumentException If quantity is not positive
      */
     public function receive(
         Model $model,
@@ -70,6 +70,7 @@ final class InventoryService
     ): InventoryMovement {
         return app(ReceiveInventory::class)->handle($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt);
     }
+
     /**
      * Ship inventory from a location.
      */
@@ -85,6 +86,7 @@ final class InventoryService
     ): InventoryMovement {
         return app(ShipInventory::class)->handle($model, $locationId, $quantity, $reason, $reference, $note, $userId, $occurredAt);
     }
+
     /**
      * Transfer inventory between locations.
      */
@@ -99,6 +101,7 @@ final class InventoryService
     ): InventoryMovement {
         return app(TransferInventory::class)->handle($model, $fromLocationId, $toLocationId, $quantity, $note, $userId, $occurredAt);
     }
+
     /**
      * Adjust inventory to a specific quantity at a location.
      */
@@ -113,6 +116,7 @@ final class InventoryService
     ): InventoryMovement {
         return app(AdjustInventory::class)->handle($model, $locationId, $newQuantity, $reason, $note, $userId, $occurredAt);
     }
+
     /**
      * Get availability across all locations.
      * Availability is read directly from committed inventory levels.
@@ -276,6 +280,7 @@ final class InventoryService
     {
         return app(InventoryLevelStore::class)->getOrCreate($model, $locationId);
     }
+
     /**
      * Get movement history for a model.
      *

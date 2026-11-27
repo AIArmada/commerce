@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services\Stock;
 
+use AIArmada\Inventory\Actions\CheckLowInventory;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
-use AIArmada\Inventory\Events\LowInventoryDetected;
-use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
@@ -350,7 +349,7 @@ final class InventoryAllocationService
                 $movements[] = $movement;
 
                 // Check low inventory
-                $this->checkLowInventory($allocation->inventoryable, $allocation->level);
+                app(CheckLowInventory::class)->handle($allocation->inventoryable, $allocation->level);
 
                 $allocation->delete();
             }
@@ -394,7 +393,7 @@ final class InventoryAllocationService
                 ]);
 
                 $movements[] = $movement;
-                $this->checkLowInventory($allocation->inventoryable, $allocation->level);
+                app(CheckLowInventory::class)->handle($allocation->inventoryable, $allocation->level);
                 $allocation->delete();
             }
 
@@ -666,23 +665,5 @@ final class InventoryAllocationService
                 ->select(config('inventory.database.tables.levels', 'inventory_levels') . '.*')
                 ->get(),
         };
-    }
-
-    /**
-     * Check and dispatch low inventory events.
-     */
-    private function checkLowInventory(Model $model, InventoryLevel $level): void
-    {
-        if (! config('inventory.events.low_inventory', true)) {
-            return;
-        }
-
-        $level->refresh();
-
-        if ($level->available === 0 && config('inventory.events.out_of_inventory', true)) {
-            Event::dispatch(new OutOfInventory($model, $level));
-        } elseif ($level->isLowStock()) {
-            Event::dispatch(new LowInventoryDetected($model, $level));
-        }
     }
 }

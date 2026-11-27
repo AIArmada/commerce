@@ -25,7 +25,7 @@ final class TransferInventory
 
     public function __construct(
         private readonly InventoryLevelStore $levels,
-        private readonly DispatchStockThresholdEvents $thresholds,
+        private readonly CheckLowInventory $thresholds,
     ) {}
 
     public function handle(
@@ -80,10 +80,9 @@ final class TransferInventory
 
             Event::dispatch(new InventoryTransferred($model, $fromLevel, $toLevel, $movement));
 
-            $this->thresholds->execute($model, $fromLevel);
+            $this->thresholds->handle($model, $fromLevel);
 
             return $movement;
         });
     }
-
 }

@@ -24,7 +24,7 @@ final class AdjustInventory
 
     public function __construct(
         private readonly InventoryLevelStore $levels,
-        private readonly DispatchStockThresholdEvents $thresholds,
+        private readonly CheckLowInventory $thresholds,
     ) {}
 
     public function handle(
@@ -78,10 +78,9 @@ final class AdjustInventory
 
             Event::dispatch(new InventoryAdjusted($model, $level, $movement, $oldQuantity, $newQuantity));
 
-            $this->thresholds->execute($model, $level);
+            $this->thresholds->handle($model, $level);
 
             return $movement;
         });
     }
-
 }

@@ -57,5 +57,4 @@ final readonly class InventoryLevelStore
             return $level;
         }
     }
-
 }

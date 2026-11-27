@@ -70,6 +70,22 @@ describe('AdjustInventory', function (): void {
         expect($level->quantity_on_hand)->toBe(5);
     });
 
+    it('rejects adjustments below reserved quantity without recording a movement', function (): void {
+        $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 20,
+            'quantity_reserved' => 10,
+        ]);
+
+        $before = \AIArmada\Inventory\Models\InventoryMovement::query()->count();
+
+        expect(fn () => $this->action->handle($this->item, $this->location->id, 9))->toThrow(InvalidArgumentException::class)
+            ->and($level->fresh()->quantity_on_hand)->toBe(20)
+            ->and(\AIArmada\Inventory\Models\InventoryMovement::query()->count())->toBe($before);
+    });
+
     it('dispatches inventory adjusted event with correct data', function (): void {
         Event::fake();
 

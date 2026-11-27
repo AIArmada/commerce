@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Actions;
 
 use AIArmada\Inventory\Events\LowInventoryDetected;
+use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Models\InventoryLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
@@ -22,10 +23,19 @@ final class CheckLowInventory
      */
     public function handle(Model $model, InventoryLevel $level): bool
     {
-        $reorderPoint = $level->reorder_point ?? config('inventory.default_reorder_point', 10);
-        $available = $level->quantity_available ?? ($level->quantity_on_hand - ($level->quantity_reserved ?? 0));
+        if (! config('inventory.events.low_inventory', true)) {
+            return false;
+        }
 
-        if ($available <= $reorderPoint) {
+        $level->refresh();
+
+        if ($level->available === 0 && config('inventory.events.out_of_inventory', true)) {
+            Event::dispatch(new OutOfInventory($model, $level));
+
+            return true;
+        }
+
+        if ($level->isLowStock()) {
             Event::dispatch(new LowInventoryDetected($model, $level));
 
             return true;
