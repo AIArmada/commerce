@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 beforeEach(function (): void {
     // Owner-disabled on purpose: matchingCustomersQuery() resolves the

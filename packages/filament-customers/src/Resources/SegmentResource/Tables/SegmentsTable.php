@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\SegmentResource\Tables;
 
 use AIArmada\Customers\Enums\SegmentType;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;

@@ -5,7 +5,7 @@ $app = require_once __DIR__.'/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Enums\CustomerStatus;

@@ -8,7 +8,7 @@ use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use Illuminate\Support\Facades\Event;
 

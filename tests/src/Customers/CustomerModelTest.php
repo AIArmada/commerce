@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 /**
  * @param  array<string, mixed>  $attributes

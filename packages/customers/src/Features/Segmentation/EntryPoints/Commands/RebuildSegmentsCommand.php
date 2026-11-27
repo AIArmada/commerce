@@ -7,7 +7,7 @@ namespace AIArmada\Customers\Features\Segmentation\EntryPoints\Commands;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;

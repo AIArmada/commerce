@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Tables;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;

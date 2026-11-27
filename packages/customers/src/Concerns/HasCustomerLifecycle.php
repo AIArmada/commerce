@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Concerns;
 
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 

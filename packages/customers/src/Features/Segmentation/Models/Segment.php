@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Models;
+namespace AIArmada\Customers\Features\Segmentation\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -10,7 +10,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Customers\Database\Factories\SegmentFactory;
 use AIArmada\Customers\Enums\SegmentType;
+use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -107,6 +109,11 @@ class Segment extends Model implements Auditable
         'is_automatic' => true,
         'priority' => 0,
     ];
+
+    protected static function newFactory(): SegmentFactory
+    {
+        return SegmentFactory::new();
+    }
 
     public function getTable(): string
     {

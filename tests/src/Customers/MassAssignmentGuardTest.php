@@ -6,7 +6,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 it('guards id from mass assignment on customer', function (): void {
     $customer = new Customer;

@@ -403,7 +403,7 @@ $pinnedNotes = $customer->notes()->pinned()->get();
 ### Manual Segment Assignment
 
 ```php
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 $segment = Segment::where('slug', 'vip')->first();
 $customer->segments()->attach($segment->id);

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCustomers\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;

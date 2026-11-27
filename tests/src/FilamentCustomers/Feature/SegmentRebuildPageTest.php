@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\FilamentCustomers\FilamentCustomersServiceProvider;
 use AIArmada\FilamentCustomers\Pages\SegmentRebuildPage;
 use Illuminate\Auth\Access\AuthorizationException;

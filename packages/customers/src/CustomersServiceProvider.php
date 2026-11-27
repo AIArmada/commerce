@@ -10,7 +10,7 @@ use AIArmada\Customers\Features\Segmentation\EntryPoints\Commands\RebuildSegment
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Payment\CustomersPaymentSubjectDriver;
 use AIArmada\Customers\Policies\AddressPolicy;
 use AIArmada\Customers\Policies\CustomerGroupPolicy;

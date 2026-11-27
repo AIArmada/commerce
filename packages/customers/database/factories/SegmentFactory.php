@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Database\Factories;
 
 use AIArmada\Customers\Enums\SegmentType;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

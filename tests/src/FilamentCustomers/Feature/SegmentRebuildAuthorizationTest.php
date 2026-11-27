@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Concerns\InteractsWithTable;

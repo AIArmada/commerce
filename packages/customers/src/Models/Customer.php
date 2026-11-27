@@ -21,6 +21,7 @@ use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Concerns\HasCustomerLifecycle;
 use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
 use Carbon\CarbonImmutable;

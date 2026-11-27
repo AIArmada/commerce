@@ -6,7 +6,7 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use InvalidArgumentException;
 
 final class RemoveCustomerFromSegment

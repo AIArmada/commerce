@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\EntryPoints\Commands\RebuildSegmentsCommand;
-use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\EntryPoints\Commands\RebuildSegmentsCommand;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Illuminate\Contracts\Console\Kernel;
 
 describe('RebuildSegmentsCommand', function (): void {
