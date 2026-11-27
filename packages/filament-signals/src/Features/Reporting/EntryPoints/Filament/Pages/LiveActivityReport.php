@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\LiveActivityReportRead;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\LiveActivityReportService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
@@ -45,7 +45,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
      */
     public function getSummary(): array
     {
-        return app(LiveActivityReportService::class)->summary(
+        return app(LiveActivityReportRead::class)->summary(
             $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
             $this->dateFrom,
             $this->dateTo,
@@ -56,7 +56,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(app(LiveActivityReportService::class)->getTableQuery(
+            ->query(SignalEvent::liveActivityRows(
                 $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
                 $this->dateFrom,
                 $this->dateTo,

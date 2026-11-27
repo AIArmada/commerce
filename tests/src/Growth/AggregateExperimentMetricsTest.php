@@ -13,6 +13,7 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -653,9 +654,16 @@ it('ignores mismatched owner rows when aggregating a global experiment that is o
         'updated_at' => $timestamp,
     ]);
 
+    $batch = OwnerContext::withOwner(
+        $owner,
+        fn (): array => app(AggregateExperimentMetrics::class)->handleMany(new EloquentCollection([$experiment])),
+    );
+    $batchMetrics = $batch['results'][(string) $experiment->getKey()];
     $metrics = OwnerContext::withOwner($owner, fn (): array => app(AggregateExperimentMetrics::class)->handle($experiment));
 
-    expect($metrics['totals']['assignments'])->toBe(1)
+    expect($batchMetrics['totals'])->toBe($metrics['totals'])
+        ->and($batchMetrics['variants'])->toBe($metrics['variants'])
+        ->and($metrics['totals']['assignments'])->toBe(1)
         ->and($metrics['totals']['purchases'])->toBe(1)
         ->and($metrics['totals']['revenue_minor'])->toBe(25000)
         ->and($metrics['winner_variant_id'])->toBe((string) $variant->getKey())

@@ -31,7 +31,8 @@ The `aiarmada/signals` package is the analytics foundation for Commerce. It owns
 ## Main models services or surfaces
 
 - **Actions** — `IngestSignalEvent`, `ResolveSession`, `EvaluateAlertRules`, `IdentifySignalIdentity`, `CaptureSignalPageView`, `CaptureSignalGeolocation`, `TrackerScriptController`, and alert-read actions
-- **Contracts** — `BrowserContextResolverInterface`, `ReportInterface`, `ReverseGeocoderContract`, `IngestSignalEvent`, `SignalLocationResolverContract`
+- **Contracts** — `BrowserContextResolverInterface`, `ReportInterface`, `ReverseGeocoderContract`, `SignalLocationResolverContract`
+- **Public ingestion API** — `Features\Ingestion\Api\SignalIngestion` returns an immutable `IngestedSignalEvent` receipt
 - **Ingestion surface** — HTTP actions for identity, page-view, custom-event capture, geolocation capture, and tracker-script delivery
 - **Browser surface** — browser-context cookies, optional automatic tracker injection, and Blade `@signalsTracker` rendering
 - **Models and services** — signals domain models, report services (`PageViewReportService`, `DashboardRead`, funnel/acquisition/journey/retention/content/goals/live/devices), alerting, ingestion helpers, route catalogs, and daily aggregation
@@ -91,7 +92,7 @@ src/
 │   ├── Alerts/            # Alert rules, logs and delivery
 │   └── Browser/           # Context middleware and tracker rendering
 ├── Platform/              # Feature discovery and extension registration
-├── Support/
+├── Support/               # Shared primitives and the HTTP browser context adapter
 └── SignalsServiceProvider.php
 ```
 
