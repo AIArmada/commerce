@@ -9,11 +9,9 @@ use AIArmada\Communications\Data\PlannedDeliveryData;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliveryPlanned;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
+use AIArmada\Communications\Features\Aggregate\Api\DeliveryReferenceValidator;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -22,6 +20,8 @@ use Throwable;
 
 final class PlanCommunicationDeliveriesAction
 {
+    public function __construct(private readonly DeliveryReferenceValidator $references) {}
+
     /**
      * @param  array<PlannedDeliveryData>  $planned
      * @return Collection<int, CommunicationDelivery>
@@ -42,42 +42,16 @@ final class PlanCommunicationDeliveriesAction
             );
         }
 
-        $recipients = CommunicationRecipient::query()
-            ->where('communication_id', $communication->id)
-            ->whereKey(collect($planned)->map(fn (PlannedDeliveryData $plan): string => $plan->recipientId)->all())
-            ->get()
-            ->keyBy('id');
-
-        $contentIds = collect($planned)
-            ->map(fn (PlannedDeliveryData $plan): ?string => $plan->contentId)
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        $existingContentIds = $contentIds === []
-            ? []
-            : CommunicationContent::query()
-                ->where('communication_id', $communication->id)
-                ->whereKey($contentIds)
-                ->pluck('id')
-                ->all();
+        $this->references->validate(
+            $communicationId,
+            array_values(array_unique(array_map(fn (PlannedDeliveryData $plan): string => $plan->recipientId, $planned))),
+            array_values(array_unique(array_filter(array_map(fn (PlannedDeliveryData $plan): ?string => $plan->contentId, $planned), fn (?string $id): bool => $id !== null))),
+        );
 
         $rows = [];
 
         foreach ($planned as $plan) {
-            $recipient = $recipients->get($plan->recipientId);
-
-            if ($recipient === null) {
-                throw (new ModelNotFoundException)->setModel(CommunicationRecipient::class, [$plan->recipientId]);
-            }
-
             $contentId = $plan->contentId;
-
-            if ($contentId !== null && ! in_array($contentId, $existingContentIds, true)) {
-                throw (new ModelNotFoundException)->setModel(CommunicationContent::class, [$contentId]);
-            }
-
             $maxAttempts = $plan->maxAttempts;
 
             if ($maxAttempts !== null && $maxAttempts < 0) {
@@ -87,7 +61,7 @@ final class PlanCommunicationDeliveriesAction
             $scheduledAt = $plan->scheduledAt;
 
             $rows[] = [
-                'recipient_id' => $recipient->id,
+                'recipient_id' => $plan->recipientId,
                 'content_id' => $contentId,
                 'channel' => $plan->channel,
                 'destination_ciphertext' => $plan->destinationCiphertext,

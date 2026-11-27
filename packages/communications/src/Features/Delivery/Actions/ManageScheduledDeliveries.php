@@ -58,6 +58,17 @@ final readonly class ManageScheduledDeliveries implements ScheduledDeliveryLifec
         return $transitioned;
     }
 
+    public function cancel(string $communicationId, DateTimeInterface $now): void
+    {
+        CommunicationDelivery::query()
+            ->where('communication_id', $communicationId)
+            ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending])
+            ->update([
+                'status' => DeliveryStatus::Cancelled,
+                'cancelled_at' => $now,
+            ]);
+    }
+
     public function expire(string $communicationId): void
     {
         $model = new CommunicationDelivery;

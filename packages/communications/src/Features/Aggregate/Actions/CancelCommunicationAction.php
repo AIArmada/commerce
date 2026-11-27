@@ -6,34 +6,34 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\CommunicationStatus;
-use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\CommunicationCancelled;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Api\ScheduledDeliveryLifecycle;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 
 final class CancelCommunicationAction
 {
+    public function __construct(private readonly ScheduledDeliveryLifecycle $deliveries) {}
+
     public function handle(string $communicationId, ?string $reason = null): Communication
     {
-        $communication = Communication::query()->findOrFail($communicationId);
+        $communication = (new Communication)->getConnection()->transaction(function () use ($communicationId): Communication {
+            $communication = Communication::query()->whereKey($communicationId)->lockForUpdate()->firstOrFail();
 
-        if (Communication::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
-        }
+            if (Communication::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+            }
 
-        $communication->status = CommunicationStatus::Cancelled;
-        $communication->cancelled_at = CarbonImmutable::now();
-        $communication->save();
+            $now = CarbonImmutable::now();
+            $communication->status = CommunicationStatus::Cancelled;
+            $communication->cancelled_at = $now;
+            $communication->save();
 
-        CommunicationDelivery::query()
-            ->where('communication_id', $communication->id)
-            ->whereIn('status', ['pending', 'scheduled', 'queued', 'sending'])
-            ->update([
-                'status' => DeliveryStatus::Cancelled,
-                'cancelled_at' => CarbonImmutable::now(),
-            ]);
+            $this->deliveries->cancel($communicationId, $now);
+
+            return $communication;
+        }, attempts: 3);
 
         Event::dispatch(new CommunicationCancelled(
             communicationId: $communication->id,

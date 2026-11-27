@@ -12,5 +12,7 @@ interface ScheduledDeliveryLifecycle
 
     public function startQueued(string $communicationId): int;
 
+    public function cancel(string $communicationId, DateTimeInterface $now): void;
+
     public function expire(string $communicationId): void;
 }

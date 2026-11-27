@@ -9,6 +9,8 @@ use AIArmada\Communications\Features\Aggregate\Actions\CleanupCommunicationDepen
 use AIArmada\Communications\Features\Aggregate\Actions\CreateInboxCommunication;
 use AIArmada\Communications\Features\Aggregate\Actions\ManageScheduledCommunications;
 use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
+use AIArmada\Communications\Features\Aggregate\Api\DeliveryReferenceValidator;
+use AIArmada\Communications\Features\Aggregate\Queries\ValidateDeliveryReferences;
 use AIArmada\Communications\Features\Aggregate\Api\ScheduledCommunicationLifecycle;
 use AIArmada\Communications\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
@@ -17,6 +19,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(DeliveryReferenceValidator::class, ValidateDeliveryReferences::class);
         $app->bind(CommunicationDependentsCleaner::class, CleanupCommunicationDependents::class);
         $app->bind(InboxCommunicationCreator::class, CreateInboxCommunication::class);
         $app->bind(ScheduledCommunicationLifecycle::class, ManageScheduledCommunications::class);
