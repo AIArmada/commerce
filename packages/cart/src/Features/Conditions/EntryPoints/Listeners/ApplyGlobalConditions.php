@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Listeners;
+namespace AIArmada\Cart\Features\Conditions\EntryPoints\Listeners;
 
-use AIArmada\Cart\Actions\ReconcileGlobalConditions;
+use AIArmada\Cart\Features\Conditions\Actions\ReconcileGlobalConditions;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Events\ItemRemoved;

@@ -24,7 +24,6 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
-use AIArmada\Cart\Listeners\ApplyGlobalConditions;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
@@ -37,6 +36,9 @@ use AIArmada\Cart\Snapshots\CartSyncManager;
 use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
 use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
 use AIArmada\Cart\Snapshots\SyncCartOnEvent;
+use AIArmada\Cart\Platform\ExtensionRegistry;
+use AIArmada\Cart\Platform\FeatureCatalog;
+use AIArmada\Cart\Platform\FeatureModule;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -55,6 +57,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 final class CartServiceProvider extends PackageServiceProvider
 {
     use ValidatesConfiguration;
+
+    /** @var list<FeatureModule> */
+    private array $modules = [];
 
     public function configurePackage(Package $package): void
     {
@@ -84,6 +89,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerMigrationService();
         $this->registerActions();
         $this->registerSnapshotServices();
+        $this->registerFeatures();
     }
 
     public function bootingPackage(): void
@@ -94,6 +100,11 @@ final class CartServiceProvider extends PackageServiceProvider
 
         $this->validateOwnerConfiguration();
         $this->registerEventListeners();
+
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
+
         $this->registerOctaneListeners();
 
         $this->app->booted(static function (): void {
@@ -278,13 +289,6 @@ final class CartServiceProvider extends PackageServiceProvider
             return;
         }
 
-        if (config('cart.conditions.apply_global', true)) {
-            $dispatcher->listen(CartCreated::class, [ApplyGlobalConditions::class, 'handleCartCreated']);
-            $dispatcher->listen(ItemAdded::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
-            $dispatcher->listen(ItemUpdated::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
-            $dispatcher->listen(ItemRemoved::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
-        }
-
         $dispatcher->listen([
             CartCreated::class,
             CartCleared::class,
@@ -298,6 +302,23 @@ final class CartServiceProvider extends PackageServiceProvider
             ItemConditionRemoved::class,
         ], SyncCartOnEvent::class);
         $dispatcher->listen(CartMerged::class, CleanupSnapshotOnCartMerged::class);
+    }
+
+    private function registerFeatures(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException('Invalid cart feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     private function registerOctaneListeners(): void

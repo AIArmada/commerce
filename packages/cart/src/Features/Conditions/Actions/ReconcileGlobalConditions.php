@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Actions;
+namespace AIArmada\Cart\Features\Conditions\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
@@ -98,6 +98,8 @@ final readonly class ReconcileGlobalConditions
     /**
      * Remove global conditions that have been deactivated.
      * This ensures time-limited promotions are removed from active carts when they expire.
+     *
+     * @param  list<string>  $activeGlobalNames
      */
     private function removeDeactivatedGlobalConditions(Cart $cart, array $activeGlobalNames): void
     {
