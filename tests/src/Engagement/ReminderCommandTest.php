@@ -160,3 +160,27 @@ it('processes due reminders across owners', function (): void {
         ->and(CommunicationReference::query()->withoutOwnerScope()->where('role', 'engagement_reminder')->count())
         ->toBe(2);
 });
+
+it('cancels the selected reminder rather than another scheduled reminder', function (): void {
+    $first = $this->manager->setReminder($this->recipient, $this->subject, 'custom', [
+        'remind_at' => now()->addHour(),
+    ]);
+    $second = $this->manager->setReminder($this->recipient, $this->subject, 'custom', [
+        'remind_at' => now()->addHours(2),
+    ]);
+
+    $this->manager->cancelRecord($second);
+
+    expect($first->fresh()->status)->toBe(ReminderStatus::Pending)
+        ->and($second->fresh()->status)->toBe(ReminderStatus::Cancelled);
+});
+
+it('evaluates expiration relative to the requested due time', function (): void {
+    $reminder = $this->manager->setReminder($this->recipient, $this->subject, 'custom', [
+        'remind_at' => now()->subHours(2),
+        'expires_at' => now()->subHour(),
+    ]);
+
+    expect(collect($this->manager->dueReminders(now()->subMinutes(90)))->pluck('id')->all())->toContain($reminder->id)
+        ->and(collect($this->manager->dueReminders())->pluck('id')->all())->not->toContain($reminder->id);
+});

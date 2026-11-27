@@ -21,6 +21,7 @@ use Carbon\Exceptions\InvalidFormatException;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Notifications\Notification;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 final readonly class ManageRemindersAction
@@ -43,6 +44,13 @@ final readonly class ManageRemindersAction
         $offsetMinutes = EngagementModelGuard::offsetMinutes($options['offset_minutes'] ?? null);
         $remindAt = $this->resolveRemindAt($subject, $options, $offsetMinutes);
 
+        $scheduledAt = isset($options['scheduled_at']) ? $this->toImmutableRemindAt($options['scheduled_at']) : null;
+        $expiresAt = isset($options['expires_at']) ? $this->toImmutableRemindAt($options['expires_at']) : null;
+
+        if ($expiresAt !== null && $expiresAt->lessThanOrEqualTo($remindAt)) {
+            throw new InvalidArgumentException('Reminder expiration must follow its due time.');
+        }
+
         if (! $this->policy->canSetReminder($recipient, $subject, $reminderType)) {
             throw new AuthorizationException('Setting this reminder is not authorized.');
         }
@@ -51,6 +59,7 @@ final readonly class ManageRemindersAction
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
 
         return (new Reminder)->getConnection()->transaction(function () use (
+            $recipient,
             $recipientIdentity,
             $subjectIdentity,
             $reminderType,
@@ -60,9 +69,14 @@ final readonly class ManageRemindersAction
             $anchorCode,
             $channel,
             $notificationClass,
-            $options,
+            $scheduledAt,
+            $expiresAt,
             $metadata,
         ): Reminder {
+            if ($recipient instanceof Model && $recipient->exists) {
+                $recipient->newQuery()->whereKey($recipient->getKey())->lockForUpdate()->firstOrFail();
+            }
+
             $existing = Reminder::query()
                 ->where('recipient_type', $recipientIdentity['type'])
                 ->where('recipient_id', $recipientIdentity['id'])
@@ -85,14 +99,14 @@ final readonly class ManageRemindersAction
                 'remindable_type' => $subjectIdentity['type'],
                 'remindable_id' => $subjectIdentity['id'],
                 'reminder_type' => $reminderType,
-                'status' => 'pending',
+                'status' => $scheduledAt === null ? ReminderStatus::Pending : ReminderStatus::Scheduled,
                 'remind_at' => $remindAt,
                 'offset_minutes' => $offsetMinutes,
                 'anchor_type' => $anchorType,
                 'anchor_code' => $anchorCode,
                 'channel' => $channel,
-                'scheduled_at' => $options['scheduled_at'] ?? null,
-                'expires_at' => $options['expires_at'] ?? null,
+                'scheduled_at' => $scheduledAt,
+                'expires_at' => $expiresAt,
                 'metadata' => $metadata,
             ]);
 
@@ -119,19 +133,42 @@ final readonly class ManageRemindersAction
 
         $recipientIdentity = EngagementModelGuard::identity($recipient, 'recipient');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
-        $reminder = Reminder::query()
-            ->where('recipient_type', $recipientIdentity['type'])
-            ->where('recipient_id', $recipientIdentity['id'])
-            ->where('remindable_type', $subjectIdentity['type'])
-            ->where('remindable_id', $subjectIdentity['id'])
-            ->where('reminder_type', $reminderType)
-            ->whereIn('status', ['pending', 'scheduled'])
-            ->first();
+        $reminderType = EngagementModelGuard::requiredString($reminderType, 'reminder_type');
+        $channel = EngagementModelGuard::boundedString($options['channel'] ?? null, 'channel');
+        $remindAt = isset($options['remind_at']) ? $this->toImmutableRemindAt($options['remind_at']) : null;
 
-        if ($reminder) {
-            $reminder->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
-            event(new ReminderCancelled($reminder));
+        (new Reminder)->getConnection()->transaction(function () use ($recipientIdentity, $subjectIdentity, $reminderType, $options, $channel, $remindAt): void {
+            Reminder::query()
+                ->where('recipient_type', $recipientIdentity['type'])
+                ->where('recipient_id', $recipientIdentity['id'])
+                ->where('remindable_type', $subjectIdentity['type'])
+                ->where('remindable_id', $subjectIdentity['id'])
+                ->where('reminder_type', $reminderType)
+                ->when(array_key_exists('channel', $options), fn ($query) => $query->where('channel', $channel))
+                ->when($remindAt !== null, fn ($query) => $query->where('remind_at', $remindAt))
+                ->pending()
+                ->chunkById(100, function ($records): void {
+                    foreach ($records as $record) {
+                        $this->cancelRecord($record);
+                    }
+                });
+        });
+    }
+
+    public function cancelRecord(Reminder $reminder): void
+    {
+        if (Reminder::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
         }
+
+        $reminder->getConnection()->transaction(function () use ($reminder): void {
+            $locked = Reminder::query()->pending()->whereKey($reminder->getKey())->lockForUpdate()->first();
+
+            if ($locked instanceof Reminder) {
+                $locked->update(['status' => ReminderStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
+                event(new ReminderCancelled($locked));
+            }
+        });
     }
 
     public function dueReminders(?DateTimeInterface $at = null): iterable
@@ -146,6 +183,7 @@ final readonly class ManageRemindersAction
                     ->orWhere('expires_at', '>', $now);
             })
             ->orderBy('remind_at')
+            ->orderBy('id')
             ->cursor();
     }
 

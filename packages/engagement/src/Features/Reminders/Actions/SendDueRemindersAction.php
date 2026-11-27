@@ -11,7 +11,6 @@ use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -69,12 +68,10 @@ final readonly class SendDueRemindersAction
                         $lastRemindAt = $reminder->getRawOriginal('remind_at');
                         $lastId = $reminder->getKey();
 
-                        if (! $this->sendReminder($reminder)) {
-                            continue;
-                        }
-
                         $remaining--;
-                        $count++;
+                        if ($this->sendReminder($reminder)) {
+                            $count++;
+                        }
 
                         if ($remaining === 0) {
                             break;
@@ -92,7 +89,7 @@ final readonly class SendDueRemindersAction
     private function sendReminder(Reminder $reminder): bool
     {
         try {
-            return DB::transaction(function () use ($reminder): bool {
+            return $reminder->getConnection()->transaction(function () use ($reminder): bool {
                 $now = CarbonImmutable::now();
                 $lockedReminder = Reminder::query()
                     ->pending()
@@ -116,10 +113,11 @@ final readonly class SendDueRemindersAction
         } catch (Throwable $exception) {
             try {
                 $this->reminderManager->markFailed($reminder, Str::limit($exception->getMessage(), 1000) ?: 'Reminder dispatch failed.');
-            } catch (Throwable) {
-                // The reminder left the pending window (or its owner scope)
-                // while failing; there is nothing left to record.
+            } catch (Throwable $failure) {
+                report($failure);
             }
+
+            report($exception);
 
             return false;
         }

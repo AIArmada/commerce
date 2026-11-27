@@ -97,15 +97,12 @@ final class ReminderResource extends Resource
                     ))
                     ->action(function (Reminder $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(ManageRemindersAction::class)->cancelReminder(
-                            $record->recipient,
-                            $record->remindable,
-                            $record->reminder_type,
-                        );
+                        app(ManageRemindersAction::class)->cancelRecord($record);
                     })
                     ->requiresConfirmation(),
                 Action::make('mark sent')
                     ->label('Mark Sent')
+                    ->visible(fn (Reminder $record): bool => in_array($record->status, [ReminderStatus::Pending, ReminderStatus::Scheduled], true))
                     ->action(function (Reminder $record): void {
                         $record = ActionRecordResolver::resolve($record);
                         app(ManageRemindersAction::class)->markSent($record);
