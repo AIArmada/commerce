@@ -20,6 +20,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(\AIArmada\Jnt\Features\Orders\Api\SyncStoredTracking::class, \AIArmada\Jnt\Features\Orders\Actions\SyncStoredOrderTracking::class);
+        $app->bind(\AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder::class, \AIArmada\Jnt\Features\Orders\Queries\FindWebhookOrder::class);
         $app->bind(CancelStoredOrder::class, CancelStoredJntOrder::class);
         $app->bind(DashboardStats::class, JntStatsAggregator::class);
         $app->bind(\AIArmada\Jnt\Features\Orders\Api\ReadNotificationOrder::class, \AIArmada\Jnt\Features\Orders\Queries\FindNotificationOrder::class);

@@ -305,4 +305,22 @@ describe('webhook payload hardening', function (): void {
 
         Mockery::close();
     });
+    it('rejects a webhook snapshot after the stored order identity changes', function (): void {
+        config()->set('jnt.owner.enabled', false);
+
+        $order = JntOrder::query()->create([
+            'order_id' => 'ORDER-IDENTITY',
+            'tracking_number' => 'JNT-IDENTITY',
+            'customer_code' => 'CUST',
+        ]);
+
+        $reader = app(\AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder::class);
+        $snapshot = $reader->findByTrackingNumber('JNT-IDENTITY');
+        expect($snapshot)->not->toBeNull();
+
+        $order->update(['tracking_number' => 'JNT-CHANGED']);
+
+        expect(fn () => \Illuminate\Support\Facades\DB::transaction(fn () => $reader->lockForUpdate($snapshot)))
+            ->toThrow(DomainException::class, 'The tracked order changed');
+    });
 });

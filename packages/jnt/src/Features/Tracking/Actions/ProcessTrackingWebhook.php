@@ -9,7 +9,9 @@ use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder;
+use AIArmada\Jnt\Features\Orders\Api\WebhookOrder;
+use DomainException;
 use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
@@ -64,11 +66,13 @@ final class ProcessTrackingWebhook
             return;
         }
 
-        // Find the shipment
-        $shipment = JntOrder::query()
-            ->withoutOwnerScope()
-            ->where('tracking_number', $billcode)
-            ->first();
+        try {
+            $shipment = app(ReadWebhookOrder::class)->findByTrackingNumber($billcode);
+        } catch (DomainException $exception) {
+            $this->markWebhookLogAsFailed($exception->getMessage());
+
+            return;
+        }
 
         if (! $shipment) {
             Log::channel(config('jnt.logging.channel', 'stack'))
@@ -85,22 +89,34 @@ final class ProcessTrackingWebhook
 
         $reference = $this->extractOrderReference($biz);
 
-        if ($reference !== null && $reference !== $shipment->order_id) {
+        if ($reference !== null && $reference !== $shipment->orderReference) {
             $this->markWebhookLogAsFailed('Tracking number and order reference do not match.');
 
             return;
         }
 
         $owner = OwnerContext::fromTypeAndId(
-            $shipment->owner_type,
-            $shipment->owner_id,
+            $shipment->ownerType,
+            $shipment->ownerId,
         );
+
+        if (($shipment->ownerType !== null || $shipment->ownerId !== null) && $owner === null) {
+            $this->markWebhookLogAsFailed('The shipment owner cannot be resolved.');
+
+            return;
+        }
 
         OwnerContext::withOwner($owner, function () use ($shipment, $billcode, $eventType, $biz): void {
             $latestDetail = $this->latestTrackingDetail($biz);
             $newStatus = $this->resolveStatus($eventType, $latestDetail);
 
-            $this->syncShipmentTrackingFromWebhook($shipment, $billcode, $biz, $newStatus);
+            try {
+                $this->syncShipmentTrackingFromWebhook($shipment, $billcode, $biz, $newStatus);
+            } catch (DomainException $exception) {
+                $this->markWebhookLogAsFailed($exception->getMessage());
+
+                return;
+            }
 
             $this->dispatchTrackingEvent($biz);
             $this->syncWebhookLogMetadata($shipment, $billcode, $biz);
@@ -164,11 +180,11 @@ final class ProcessTrackingWebhook
     /**
      * @param  array<string, mixed>  $biz
      */
-    private function syncWebhookLogMetadata(?JntOrder $shipment, string $billcode, array $biz): void
+    private function syncWebhookLogMetadata(?WebhookOrder $shipment, string $billcode, array $biz): void
     {
         $attributes = [
             'tracking_number' => $billcode,
-            'order_reference' => $shipment?->order_id ?? $this->extractOrderReference($biz),
+            'order_reference' => $shipment?->orderReference ?? $this->extractOrderReference($biz),
             'order_id' => $shipment?->id,
             'digest' => $this->extractDigest(),
             'processing_status' => JntWebhookLog::STATUS_PROCESSED,
@@ -177,8 +193,8 @@ final class ProcessTrackingWebhook
         ];
 
         if ($shipment !== null) {
-            $attributes['owner_type'] = $shipment->owner_type;
-            $attributes['owner_id'] = $shipment->owner_id;
+            $attributes['owner_type'] = $shipment->ownerType;
+            $attributes['owner_id'] = $shipment->ownerId;
         }
 
         app(WebhookLogWriter::class)->update($this->webhookCall->getKey(), $attributes);
@@ -235,7 +251,7 @@ final class ProcessTrackingWebhook
     /**
      * @param  array<string, mixed>  $biz
      */
-    private function syncShipmentTrackingFromWebhook(JntOrder $shipment, string $billcode, array $biz, ?TrackingStatus $status): void
+    private function syncShipmentTrackingFromWebhook(WebhookOrder $shipment, string $billcode, array $biz, ?TrackingStatus $status): void
     {
         DB::transaction(function () use ($shipment, $billcode, $biz, $status): void {
             $locked = $this->lockShipmentForUpdate($shipment);
@@ -278,7 +294,7 @@ final class ProcessTrackingWebhook
     /**
      * @param  list<array<string, mixed>>  $details
      */
-    private function insertMissingTrackingEvents(JntOrder $shipment, string $billcode, array $details): void
+    private function insertMissingTrackingEvents(WebhookOrder $shipment, string $billcode, array $details): void
     {
         if ($details === []) {
             return;
@@ -299,14 +315,14 @@ final class ProcessTrackingWebhook
                     scanTypeCode: $scanTypeCode,
                     scanTime: $scanTime,
                     description: $description,
-                    ownerType: $shipment->owner_type,
-                    ownerId: $shipment->owner_id,
+                    ownerType: $shipment->ownerType,
+                    ownerId: $shipment->ownerId,
                 ),
                 'order_id' => $shipment->id,
                 'tracking_number' => $billcode,
                 'scan_type_code' => $scanTypeCode,
                 'scan_time' => $scanTime?->format('Y-m-d H:i:s'),
-                'order_reference' => $shipment->order_id,
+                'order_reference' => $shipment->orderReference,
                 'scan_type_name' => $this->nullableString($detail['scanTypeName'] ?? null),
                 'scan_type' => $this->nullableString($detail['scanType'] ?? null),
                 'description' => $description,
@@ -340,8 +356,8 @@ final class ProcessTrackingWebhook
                 'sign_url' => $this->nullableString($detail['signUrl'] ?? null),
                 'electronic_signature_pic_url' => $this->nullableString($detail['electronicSignaturePicUrl'] ?? null),
                 'payload' => json_encode($detail, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'owner_type' => $shipment->owner_type,
-                'owner_id' => $shipment->owner_id,
+                'owner_type' => $shipment->ownerType,
+                'owner_id' => $shipment->ownerId,
                 'created_at' => CarbonImmutable::now()->format('Y-m-d H:i:s'),
                 'updated_at' => CarbonImmutable::now()->format('Y-m-d H:i:s'),
             ];
@@ -350,21 +366,15 @@ final class ProcessTrackingWebhook
         app(TrackingEventWriter::class)->insertMissing($rows);
     }
 
-    private function lockShipmentForUpdate(JntOrder $shipment): JntOrder
+    private function lockShipmentForUpdate(WebhookOrder $shipment): WebhookOrder
     {
-        $query = JntOrder::query()->withoutOwnerScope()->whereKey($shipment->id);
-
-        if (DB::connection()->getDriverName() !== 'sqlite') {
-            $query->lockForUpdate();
-        }
-
-        return $query->firstOrFail();
+        return app(ReadWebhookOrder::class)->lockForUpdate($shipment);
     }
 
     /**
      * @param  array<string, mixed>  $biz
      */
-    private function applyShipmentStatusUpdates(JntOrder $shipment, array $biz, ?TrackingStatus $status): void
+    private function applyShipmentStatusUpdates(WebhookOrder $shipment, array $biz, ?TrackingStatus $status): void
     {
         $latestDetail = $this->latestTrackingDetail($biz);
         $updates = [
@@ -388,30 +398,30 @@ final class ProcessTrackingWebhook
             }
 
             if (($latestDetail['problemType'] ?? null) !== null) {
-                if ($shipment->problem_at === null) {
+                if ($shipment->problemAt === null) {
                     $updates['problem_at'] = CarbonImmutable::now();
                 }
             }
 
             if ($status === TrackingStatus::Exception) {
-                if ($shipment->problem_at === null) {
+                if ($shipment->problemAt === null) {
                     $updates['problem_at'] = CarbonImmutable::now();
                 }
-                if ($shipment->exception_at === null) {
+                if ($shipment->exceptionAt === null) {
                     $updates['exception_at'] = CarbonImmutable::now();
                 }
             }
 
-            if ($status === TrackingStatus::Returned && $shipment->returned_at === null) {
+            if ($status === TrackingStatus::Returned && $shipment->returnedAt === null) {
                 $updates['returned_at'] = CarbonImmutable::now();
             }
 
-            if (($latestDetail['problemType'] ?? null) === null && $status !== TrackingStatus::Exception && $shipment->problem_at !== null) {
+            if (($latestDetail['problemType'] ?? null) === null && $status !== TrackingStatus::Exception && $shipment->problemAt !== null) {
                 $updates['resolved_at'] = CarbonImmutable::now();
                 $updates['problem_at'] = null;
             }
 
-            if ($status === TrackingStatus::Delivered && $shipment->delivered_at === null) {
+            if ($status === TrackingStatus::Delivered && $shipment->deliveredAt === null) {
                 $deliveredAt = $this->parseScanTime($latestDetail['scanTime'] ?? null);
 
                 if ($deliveredAt !== null) {
@@ -421,7 +431,7 @@ final class ProcessTrackingWebhook
         }
 
         app(UpdateTrackingSnapshot::class)->handle(
-            (string) $shipment->getKey(),
+            (string) $shipment->id,
             $updates,
             $this->parseScanTime($latestDetail['scanTime'] ?? null),
         );
