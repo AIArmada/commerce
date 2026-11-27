@@ -590,3 +590,24 @@ it('returns interaction snapshots through feature APIs without exposing mutable 
         ->and($state->responseFor(new EngagementActor, $this->subject))->toBeNull()
         ->and(fn () => $state->isFollowing('invalid', $this->subject))->toThrow(InvalidArgumentException::class);
 });
+
+it('prevents another actor from modifying bookmark collection membership', function (): void {
+    $manager = app(ManageInteractionsAction::class);
+    $bookmark = $manager->bookmark($this->actor, $this->subject);
+    $collection = BookmarkCollection::query()->create([
+        'name' => 'Actor isolation',
+        'visibility' => BookmarkCollection::VISIBILITY_PRIVATE,
+        'status' => BookmarkCollectionStatus::Active,
+    ]);
+    $otherActor = new EngagementActor;
+
+    expect(fn () => $manager->addBookmarkToCollection($otherActor, $bookmark, $collection))
+        ->toThrow(AuthorizationException::class)
+        ->and(BookmarkCollectionItem::query()->count())->toBe(0);
+
+    $manager->addBookmarkToCollection($this->actor, $bookmark, $collection);
+
+    expect(fn () => $manager->removeBookmarkFromCollection($otherActor, $bookmark, $collection))
+        ->toThrow(AuthorizationException::class)
+        ->and(BookmarkCollectionItem::query()->whereNull('removed_at')->count())->toBe(1);
+});

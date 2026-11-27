@@ -13,6 +13,7 @@ use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 
 final readonly class ManageBookmarkCollectionItemsAction
@@ -20,18 +21,23 @@ final readonly class ManageBookmarkCollectionItemsAction
     public function addBookmarkToCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
+        $identity = EngagementModelGuard::identity($actor, 'actor');
 
         $notes = EngagementModelGuard::boundedString($options['notes'] ?? null, 'notes', EngagementModelGuard::TEXT_MAX_LENGTH);
         $bookmarkId = $bookmark->getKey();
         $collectionId = $collection->getKey();
 
         try {
-            (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmarkId, $collectionId, $notes): void {
+            (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmarkId, $collectionId, $notes, $identity): void {
                 $bookmark = Bookmark::ownerScopeConfig()->enabled
                     ? OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmarkId)
                     : Bookmark::query()->whereKey($bookmarkId)->firstOrFail();
-                $collection = BookmarkCollection::ownerScopeConfig()->enabled
-                    ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collectionId)
+                $this->assertBookmarker($bookmark, $identity);
+
+                $this->assertBookmarker($bookmark, $identity);
+
+            $collection = BookmarkCollection::ownerScopeConfig()->enabled
+                ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collectionId)
                     : BookmarkCollection::query()->whereKey($collectionId)->firstOrFail();
 
                 $item = BookmarkCollectionItem::query()
@@ -91,14 +97,15 @@ final readonly class ManageBookmarkCollectionItemsAction
     public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
         EngagementModelGuard::assertContract($actor, CanInteract::class, 'actor');
+        $identity = EngagementModelGuard::identity($actor, 'actor');
 
-        (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmark, $collection): void {
+        (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmark, $collection, $identity): void {
             $bookmark = Bookmark::ownerScopeConfig()->enabled
-                    ? OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey())
-                    : Bookmark::query()->whereKey($bookmark->getKey())->firstOrFail();
+                ? OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey())
+                : Bookmark::query()->whereKey($bookmark->getKey())->firstOrFail();
             $collection = BookmarkCollection::ownerScopeConfig()->enabled
                     ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey())
-                    : BookmarkCollection::query()->whereKey($collection->getKey())->firstOrFail();
+                : BookmarkCollection::query()->whereKey($collection->getKey())->firstOrFail();
             $item = BookmarkCollectionItem::query()
                 ->where('bookmark_collection_id', $collection->getKey())
                 ->where('bookmark_id', $bookmark->getKey())
@@ -116,6 +123,14 @@ final readonly class ManageBookmarkCollectionItemsAction
                 ));
             }
         });
+    }
+
+    /** @param array{type: string, id: string} $identity */
+    private function assertBookmarker(Bookmark $bookmark, array $identity): void
+    {
+        if ($bookmark->bookmarker_type !== $identity['type'] || (string) $bookmark->bookmarker_id !== $identity['id']) {
+            throw new AuthorizationException('This bookmark belongs to a different actor.');
+        }
     }
 
     private function isUniqueConstraintViolation(QueryException $exception): bool
