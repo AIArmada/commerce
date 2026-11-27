@@ -39,6 +39,13 @@ final class CreateChipSubscription implements CreateSubscription
         }
 
         $ownerAttributes = $this->ownerAttributes($owner);
+        $totalAmount = $draft->totalAmount();
+        $model = Cashier::$subscriptionModel;
+
+        if (! is_a($model, Subscription::class, true)) {
+            throw new InvalidArgumentException('Configured subscription model must extend the CHIP subscription model.');
+        }
+
         $couponId = $draft->couponId;
         $couponDiscount = 0;
         $couponDuration = null;
@@ -64,13 +71,15 @@ final class CreateChipSubscription implements CreateSubscription
                 throw new InvalidArgumentException('Cannot price a coupon against a subscription with unknown item prices. Provide unit_amount for every item.');
             }
 
-            $couponDiscount = $coupon->calculateDiscount($draft->totalAmount());
+            $couponDiscount = $coupon->calculateDiscount($totalAmount);
             $couponDuration = $coupon->duration();
         }
 
         if (! $owner->hasChipId()) {
             $owner->createOrGetChipCustomer();
         }
+
+        $effectiveRecurringToken = $draft->recurringToken ?? $owner->defaultPaymentMethod()?->id();
 
         $trialEndsAt = $draft->trialEndsAt === null ? null : CarbonImmutable::instance($draft->trialEndsAt);
         $nextBillingAt = $trialEndsAt !== null
@@ -83,13 +92,8 @@ final class CreateChipSubscription implements CreateSubscription
         $firstItem = Arr::first($items);
         $isSinglePrice = count($items) === 1;
 
-        return DB::transaction(function () use ($draft, $owner, $ownerAttributes, $status, $trialEndsAt, $nextBillingAt, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): RecordReference {
-            $model = Cashier::$subscriptionModel;
+        return DB::transaction(function () use ($draft, $owner, $ownerAttributes, $model, $effectiveRecurringToken, $status, $trialEndsAt, $nextBillingAt, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): RecordReference {
             $subscription = new $model;
-
-            if (! $subscription instanceof Subscription) {
-                throw new InvalidArgumentException('Configured subscription model must extend the CHIP subscription model.');
-            }
             $subscription->forceFill([
                 ...$ownerAttributes,
                 'billable_type' => $owner->getMorphClass(),
@@ -109,8 +113,6 @@ final class CreateChipSubscription implements CreateSubscription
                 'coupon_duration' => $couponDuration,
                 'coupon_applied_at' => $couponId ? CarbonImmutable::now() : null,
             ]);
-
-            $effectiveRecurringToken = $draft->recurringToken ?? $owner->defaultPaymentMethod()?->id();
 
             if (is_string($effectiveRecurringToken) && $effectiveRecurringToken !== '') {
                 $subscription->recurring_token = $effectiveRecurringToken;

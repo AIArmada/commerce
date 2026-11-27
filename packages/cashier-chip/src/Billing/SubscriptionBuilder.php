@@ -319,7 +319,12 @@ class SubscriptionBuilder
         );
 
         $reference = app(CreateSubscription::class)->create($draft);
-        $subscription = $this->owner->subscriptions()->whereKey($reference->id)->firstOrFail();
+        $model = Cashier::$subscriptionModel;
+        $subscription = (new $model)->newQuery()
+            ->where('billable_type', $billable->type)
+            ->where('billable_id', $billable->id)
+            ->whereKey($reference->id)
+            ->firstOrFail();
 
         if (! $subscription instanceof SubscriptionRecord || $subscription->getMorphClass() !== $reference->type) {
             throw new InvalidArgumentException('The configured subscription model does not implement the subscription record contract.');

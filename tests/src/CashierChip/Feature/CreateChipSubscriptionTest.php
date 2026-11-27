@@ -8,6 +8,8 @@ use AIArmada\CashierChip\Features\Subscriptions\Api\SubscriptionDraft;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 
 uses(CashierChipTestCase::class);
 
@@ -45,4 +47,26 @@ it('rejects overflowing subscription item totals', function (): void {
     );
 
     expect(fn () => $draft->totalAmount())->toThrow(InvalidArgumentException::class, 'supported range');
+});
+
+it('blocks another billable before making CHIP requests in owner mode', function (): void {
+    $owner = $this->createUser();
+    $other = $this->createUser();
+    config(['cashier-chip.features.owner.enabled' => true]);
+    $clientCount = count($this->fakeChip->getFakeClient()->getClients());
+
+    $draft = new SubscriptionDraft(
+        billable: new RecordReference($other->getMorphClass(), (string) $other->getKey()),
+        type: 'default',
+        items: ['price_test' => ['price' => 'price_test', 'unit_amount' => 1250]],
+        cycle: new BillingCycle,
+    );
+
+    OwnerContext::withOwner($owner, function () use ($draft): void {
+        expect(fn () => app(CreateSubscription::class)->create($draft))
+            ->toThrow(AuthorizationException::class, 'Cross-tenant subscription write blocked');
+    });
+
+    expect($this->fakeChip->getFakeClient()->getClients())->toHaveCount($clientCount)
+        ->and(Subscription::query()->withoutOwnerScope()->count())->toBe(0);
 });
