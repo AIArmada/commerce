@@ -272,3 +272,39 @@ it('enforces unique global interaction identities and unbound subscription ident
             ->toThrow(QueryException::class);
     });
 });
+
+it('never reuses or removes a globally visible collection item from a tenant write', function (): void {
+    config(['engagement.owner.enabled' => true, 'engagement.owner.include_global' => true]);
+    $owner = User::factory()->create();
+    $actor = new EngagementActor;
+    $subject = new EngagementSubject;
+    $manager = app(ManageInteractionsAction::class);
+
+    [$bookmark, $collection] = OwnerContext::withOwner($owner, fn (): array => [
+        $manager->bookmark($actor, $subject),
+        BookmarkCollection::query()->create([
+            'name' => 'Tenant collection',
+            'visibility' => 'private',
+            'status' => 'active',
+        ]),
+    ]);
+
+    $globalItem = OwnerContext::withOwner(null, fn (): BookmarkCollectionItem => BookmarkCollectionItem::query()->create([
+        'bookmark_collection_id' => $collection->id,
+        'bookmark_id' => $bookmark->id,
+        'added_at' => CarbonImmutable::now(),
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($manager, $actor, $bookmark, $collection, $owner): void {
+        $manager->addBookmarkToCollection($actor, $bookmark, $collection);
+
+        $localItem = BookmarkCollectionItem::query()->forOwner()->firstOrFail();
+        expect($localItem->owner_id)->toBe($owner->getKey());
+
+        $manager->removeBookmarkFromCollection($actor, $bookmark, $collection);
+
+        expect($localItem->fresh()->removed_at)->not->toBeNull();
+    });
+
+    expect($globalItem->newQueryWithoutScopes()->findOrFail($globalItem->id)->removed_at)->toBeNull();
+});

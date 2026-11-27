@@ -14,7 +14,6 @@ use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\QueryException;
 
 final readonly class ManageBookmarkCollectionItemsAction
 {
@@ -27,69 +26,48 @@ final readonly class ManageBookmarkCollectionItemsAction
         $bookmarkId = $bookmark->getKey();
         $collectionId = $collection->getKey();
 
-        try {
-            (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmarkId, $collectionId, $notes, $identity): void {
-                $bookmark = Bookmark::ownerScopeConfig()->enabled
-                    ? OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmarkId)
-                    : Bookmark::query()->whereKey($bookmarkId)->firstOrFail();
-                $this->assertBookmarker($bookmark, $identity);
+        (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmarkId, $collectionId, $notes, $identity): void {
+            $collection = $this->lockCollection($collectionId);
+            $bookmark = $this->lockBookmark($bookmarkId, $identity);
 
-                $collection = BookmarkCollection::ownerScopeConfig()->enabled
-                    ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collectionId)
-                    : BookmarkCollection::query()->whereKey($collectionId)->firstOrFail();
-
-                $item = BookmarkCollectionItem::query()
-                    ->where('bookmark_collection_id', $collection->getKey())
-                    ->where('bookmark_id', $bookmark->getKey())
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($item instanceof BookmarkCollectionItem) {
-                    if ($item->removed_at !== null) {
-                        $item->update([
-                            'removed_at' => null,
-                            'added_at' => CarbonImmutable::now(),
-                            'notes' => $notes ?? $item->notes,
-                        ]);
-                        event(new BookmarkAddedToCollection(
-                            $bookmark->id,
-                            $collection->id,
-                            $collection->owner_type,
-                            $collection->owner_id,
-                        ));
-                    }
-
-                    return;
-                }
-
-                BookmarkCollectionItem::query()->create([
-                    'bookmark_collection_id' => $collection->getKey(),
-                    'bookmark_id' => $bookmark->getKey(),
-                    'added_at' => CarbonImmutable::now(),
-                    'notes' => $notes,
-                ]);
-
-                event(new BookmarkAddedToCollection(
-                    $bookmark->id,
-                    $collection->id,
-                    $collection->owner_type,
-                    $collection->owner_id,
-                ));
-            });
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueConstraintViolation($exception)) {
-                throw $exception;
-            }
-
-            $item = BookmarkCollectionItem::query()
-                ->where('bookmark_collection_id', $collectionId)
-                ->where('bookmark_id', $bookmarkId)
+            $item = BookmarkCollectionItem::query()->forOwner()
+                ->where('bookmark_collection_id', $collection->getKey())
+                ->where('bookmark_id', $bookmark->getKey())
+                ->lockForUpdate()
                 ->first();
 
-            if (! $item instanceof BookmarkCollectionItem) {
-                throw $exception;
+            if ($item instanceof BookmarkCollectionItem) {
+                if ($item->removed_at !== null) {
+                    $item->update([
+                        'removed_at' => null,
+                        'added_at' => CarbonImmutable::now(),
+                        'notes' => $notes ?? $item->notes,
+                    ]);
+                    event(new BookmarkAddedToCollection(
+                        $bookmark->id,
+                        $collection->id,
+                        $collection->owner_type,
+                        $collection->owner_id,
+                    ));
+                }
+
+                return;
             }
-        }
+
+            BookmarkCollectionItem::query()->create([
+                'bookmark_collection_id' => $collection->getKey(),
+                'bookmark_id' => $bookmark->getKey(),
+                'added_at' => CarbonImmutable::now(),
+                'notes' => $notes,
+            ]);
+
+            event(new BookmarkAddedToCollection(
+                $bookmark->id,
+                $collection->id,
+                $collection->owner_type,
+                $collection->owner_id,
+            ));
+        });
     }
 
     public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
@@ -98,15 +76,9 @@ final readonly class ManageBookmarkCollectionItemsAction
         $identity = EngagementModelGuard::identity($actor, 'actor');
 
         (new BookmarkCollectionItem)->getConnection()->transaction(function () use ($bookmark, $collection, $identity): void {
-            $bookmark = Bookmark::ownerScopeConfig()->enabled
-                ? OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey())
-                : Bookmark::query()->whereKey($bookmark->getKey())->firstOrFail();
-            $this->assertBookmarker($bookmark, $identity);
-
-            $collection = BookmarkCollection::ownerScopeConfig()->enabled
-                ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey())
-                : BookmarkCollection::query()->whereKey($collection->getKey())->firstOrFail();
-            $item = BookmarkCollectionItem::query()
+            $collection = $this->lockCollection($collection->getKey());
+            $bookmark = $this->lockBookmark($bookmark->getKey(), $identity);
+            $item = BookmarkCollectionItem::query()->forOwner()
                 ->where('bookmark_collection_id', $collection->getKey())
                 ->where('bookmark_id', $bookmark->getKey())
                 ->whereNull('removed_at')
@@ -133,8 +105,25 @@ final readonly class ManageBookmarkCollectionItemsAction
         }
     }
 
-    private function isUniqueConstraintViolation(QueryException $exception): bool
+    private function lockCollection(string $id): BookmarkCollection
     {
-        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
+        if (BookmarkCollection::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $id);
+        }
+
+        return BookmarkCollection::query()->forOwner()->whereKey($id)->lockForUpdate()->firstOrFail();
+    }
+
+    /** @param array{type: string, id: string} $identity */
+    private function lockBookmark(string $id, array $identity): Bookmark
+    {
+        if (Bookmark::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $id);
+        }
+
+        $bookmark = Bookmark::query()->forOwner()->whereKey($id)->lockForUpdate()->firstOrFail();
+        $this->assertBookmarker($bookmark, $identity);
+
+        return $bookmark;
     }
 }
