@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Storage\CartRevision;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -99,4 +99,19 @@ it('fails clearly in login migration when the user has no usable ID', function (
     expect($result['success'])->toBeFalse()
         ->and($result['itemsMerged'])->toBe(0)
         ->and($result['message'])->toBe('Cannot migrate cart: the user has no usable ID.');
+});
+
+it('uses an explicit named merge strategy instead of the configured default', function (): void {
+    config(['cart.events' => false, 'cart.migration.merge_strategy' => 'add_quantities']);
+
+    $storage = new InMemoryStorage;
+    $storage->putItems('guest', 'default', ['item-1' => ['quantity' => 2]], CartRevision::none());
+    $storage->putItems('user', 'default', ['item-1' => ['quantity' => 5]], CartRevision::none());
+
+    $registry = new CartMergeStrategyRegistry;
+    $registry->registerBuiltIns();
+    $action = new MigrateGuestCartToUserAction($registry, $storage);
+
+    expect($action->execute('user', 'default', 'guest', strategyName: 'keep_highest_quantity'))->toBeTrue();
+    expect($storage->getItems('user', 'default')['item-1']['quantity'])->toBe(5);
 });

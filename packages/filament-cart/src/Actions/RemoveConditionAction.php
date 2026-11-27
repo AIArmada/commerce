@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\Cart\Actions\RemoveStoredConditions;
-use AIArmada\Cart\Snapshots\CartSnapshot;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
 use Filament\Actions\Action;
@@ -31,7 +31,7 @@ final class RemoveConditionAction extends Action
             ->modalSubmitActionLabel('Remove Condition')
             ->action(function (CartCondition $record): void {
                 try {
-                    $removed = app(RemoveStoredConditions::class)->removeSnapshotCondition($record);
+                    $removed = app(RemoveStoredConditions::class)->removeSnapshotCondition((string) $record->getKey());
 
                     if (! $removed) {
                         throw new Exception('Condition not found or could not be removed');
@@ -75,7 +75,7 @@ final class RemoveConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record, $livewire);
 
-                    app(RemoveStoredConditions::class)->clearAll($cart);
+                    app(RemoveStoredConditions::class)->clearAll((string) $cart->getKey());
 
                     Notification::make()
                         ->title('All Conditions Cleared')
@@ -124,7 +124,7 @@ final class RemoveConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record, $livewire);
 
-                    app(RemoveStoredConditions::class)->clearByType($cart, (string) $data['type']);
+                    app(RemoveStoredConditions::class)->clearByType((string) $cart->getKey(), (string) $data['type']);
 
                     Notification::make()
                         ->title('Conditions Cleared')

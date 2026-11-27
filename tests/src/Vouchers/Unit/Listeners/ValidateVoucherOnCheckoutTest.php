@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Vouchers\Unit\Listeners;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\Checkout\Models\CheckoutSession;

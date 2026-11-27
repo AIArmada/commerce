@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Actions;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Events\CheckoutCompleted;

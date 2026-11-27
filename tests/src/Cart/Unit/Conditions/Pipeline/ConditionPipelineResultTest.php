@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPhaseResult;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPhaseResult;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineResult;
 
 describe('ConditionPipelineResult', function (): void {
     it('constructs with all parameters', function (): void {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Support;
 
 use AIArmada\Cart\Contracts\BuyablePriceResolver;
-use AIArmada\Cart\Support\BuyablePriceData;
+use AIArmada\Cart\Data\BuyablePriceData;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;

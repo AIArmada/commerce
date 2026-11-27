@@ -7,18 +7,22 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Storage\StorageInterface;
+use Closure;
 use Illuminate\Contracts\Events\Dispatcher;
 
 final class CartFactory
 {
+    /** @param StorageInterface|Closure(): StorageInterface $storage */
     public function __construct(
-        private readonly StorageInterface $storage,
+        private readonly StorageInterface | Closure $storage,
         private readonly CartConditionResolver $conditionResolver,
         private readonly ?ConditionProviderRegistry $conditionProviderRegistry = null,
         private readonly ?ConditionTypeHandlerRegistry $conditionTypeHandlerRegistry = null,
         private readonly ?Dispatcher $events = null,
         private readonly bool $eventsEnabled = true,
+        private readonly ?ConditionPipelineFactory $pipelineFactory = null,
     ) {}
 
     /**
@@ -34,6 +38,7 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,
         );
@@ -46,7 +51,7 @@ final class CartFactory
         ?bool $eventsEnabled = null,
     ): Cart {
         return new Cart(
-            storage: $this->storage,
+            storage: $this->resolveStorage(),
             identifier: $identifier,
             events: $events ?? $this->events,
             instanceName: $instanceName,
@@ -54,13 +59,14 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
         );
     }
 
     public function cloneForIdentifier(Cart $cart, string $newIdentifier): Cart
     {
         return new Cart(
-            storage: $this->storage,
+            storage: $this->resolveStorage(),
             identifier: $newIdentifier,
             events: $cart->getEvents(),
             instanceName: $cart->instance(),
@@ -68,13 +74,14 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
         );
     }
 
     public function cloneForInstance(Cart $cart, string $newInstance): Cart
     {
         return new Cart(
-            storage: $this->storage,
+            storage: $this->resolveStorage(),
             identifier: $cart->getIdentifier(),
             events: $cart->getEvents(),
             instanceName: $newInstance,
@@ -82,6 +89,12 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
         );
+    }
+
+    private function resolveStorage(): StorageInterface
+    {
+        return $this->storage instanceof Closure ? ($this->storage)() : $this->storage;
     }
 }

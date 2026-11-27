@@ -339,7 +339,7 @@ are synced when you read conditions or totals.
 
 ```php
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
-use AIArmada\Cart\Contracts\ConditionProviderInterface;
+use AIArmada\Cart\Runtime\ConditionProviderInterface;
 
 app(ConditionProviderRegistry::class)->register(MyConditionProvider::class);
 ```

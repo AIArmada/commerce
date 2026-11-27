@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CompositeCartRevalidator;

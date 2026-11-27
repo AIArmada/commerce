@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Database\Factories;
 
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
 

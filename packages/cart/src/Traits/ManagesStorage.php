@@ -10,6 +10,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\CartRevision;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -58,6 +59,30 @@ trait ManagesStorage
     protected function getItemsFromStorage(): CartCollection
     {
         return $this->hydrateItems($this->storage->getItems($this->getIdentifier(), $this->instance()));
+    }
+
+    /**
+     * Read the complete cart content together with the revision it was read at.
+     */
+    public function storageSnapshot(): ?CartStorageSnapshot
+    {
+        return $this->storage->getSnapshot($this->getIdentifier(), $this->instance());
+    }
+
+    /**
+     * Hydrate items from one coherent storage snapshot without another live read.
+     */
+    public function itemsFromStorageSnapshot(CartStorageSnapshot $snapshot): CartCollection
+    {
+        return $this->hydrateItems($snapshot->items);
+    }
+
+    /**
+     * Hydrate conditions from one coherent storage snapshot without another live read.
+     */
+    public function conditionsFromStorageSnapshot(CartStorageSnapshot $snapshot): CartConditionCollection
+    {
+        return $this->hydrateConditions($snapshot->conditions);
     }
 
     /**
@@ -127,36 +152,49 @@ trait ManagesStorage
      * precomputed payload.
      *
      * @param  Closure(CartCollection): (CartCollection|null)  $mutate
+     * @param  (Closure(array<string, mixed>): array<string, mixed>)|null  $mutateMetadata
      * @return CartRevision|null The committed revision, or null when the callback skipped the write
      *
      * @throws CartConflictException When every bounded retry lost the race
      */
-    private function mutateItems(Closure $mutate): ?CartRevision
+    private function mutateItems(Closure $mutate, bool $evaluateDynamicConditions = true, ?Closure $mutateMetadata = null): ?CartRevision
     {
-        $this->evaluateDynamicConditionsIfDirty();
+        if ($evaluateDynamicConditions) {
+            $this->evaluateDynamicConditionsIfDirty();
+        }
 
         for ($attempt = 1; ; $attempt++) {
             $snapshot = $this->storage->getSnapshot($this->getIdentifier(), $this->instance());
 
+            $metadata = $snapshot?->metadata ?? [];
+            $updatedMetadata = $mutateMetadata === null ? $metadata : $mutateMetadata($metadata);
             $updated = $mutate($this->hydrateItems($snapshot?->items ?? []));
 
-            if ($updated === null) {
+            if ($updated === null && $updatedMetadata === $metadata) {
                 return null;
             }
 
             try {
+                if ($updatedMetadata !== $metadata) {
+                    return $this->storage->putItems(
+                        $this->getIdentifier(),
+                        $this->instance(),
+                        $updated?->toArray() ?? $snapshot?->items ?? [],
+                        $snapshot?->revision() ?? CartRevision::none(),
+                        $updatedMetadata,
+                    );
+                }
+
                 return $this->storage->putItems(
                     $this->getIdentifier(),
                     $this->instance(),
-                    $updated->toArray(),
+                    $updated?->toArray() ?? [],
                     $snapshot?->revision() ?? CartRevision::none()
                 );
             } catch (CartConflictException $exception) {
                 if ($attempt >= self::MAX_MUTATION_ATTEMPTS) {
                     throw $exception;
                 }
-
-                usleep(25000 * $attempt);
             }
         }
     }
@@ -197,8 +235,6 @@ trait ManagesStorage
                 if ($attempt >= self::MAX_MUTATION_ATTEMPTS) {
                     throw $exception;
                 }
-
-                usleep(25000 * $attempt);
             }
         }
     }

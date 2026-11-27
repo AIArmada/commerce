@@ -7,8 +7,7 @@ namespace AIArmada\Cashier\Support;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\CartManager;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentSucceeded;
 use AIArmada\Inventory\InventoryServiceProvider;
@@ -37,7 +36,7 @@ final class CartIntegrationRegistrar
 
     public function register(): void
     {
-        if (! class_exists(CartManager::class)) {
+        if (! interface_exists(CartManagerInterface::class)) {
             return;
         }
 
@@ -79,15 +78,12 @@ final class CartIntegrationRegistrar
             return;
         }
 
-        $this->app->extend('cart', function (CartManagerInterface $manager, Application $app) {
+        $this->app->extend('cart', function (CartManagerInterface $manager): CartManagerInterface {
             if ($manager instanceof CartManagerWithPayment) {
                 return $manager;
             }
 
             $proxy = CartManagerWithPayment::fromCartManager($manager);
-
-            $app->instance(CartManager::class, $proxy);
-            $app->instance(CartManagerInterface::class, $proxy);
 
             if (class_exists(\AIArmada\Cart\Facades\Cart::class)) {
                 \AIArmada\Cart\Facades\Cart::clearResolvedInstance('cart');
