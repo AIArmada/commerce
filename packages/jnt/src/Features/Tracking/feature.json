@@ -3,7 +3,7 @@
   "name": "Tracking",
   "owns": {
     "table:jnt_tracking_events": [
-      "AIArmada\\Jnt\\Features\\Tracking\\Actions\\ProcessTrackingWebhook"
+      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\TrackingEventWriter"
     ]
   },
   "extensions": {}

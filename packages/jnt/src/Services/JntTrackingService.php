@@ -10,7 +10,7 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -335,20 +335,7 @@ class JntTrackingService
             return;
         }
 
-        $existing = JntTrackingEvent::query()
-            ->withoutOwnerScope()
-            ->whereIn('event_hash', array_column($rows, 'event_hash'))
-            ->pluck('event_hash')
-            ->all();
-
-        $missing = array_values(array_filter(
-            $rows,
-            static fn (array $row): bool => ! in_array($row['event_hash'], $existing, true),
-        ));
-
-        foreach (array_chunk($missing, 500) as $chunk) {
-            JntTrackingEvent::query()->withoutOwnerScope()->insertOrIgnore($chunk);
-        }
+        app(TrackingEventWriter::class)->insertMissing($rows);
     }
 
     private function parseDetailScanTime(TrackingDetailData $detail): ?CarbonImmutable

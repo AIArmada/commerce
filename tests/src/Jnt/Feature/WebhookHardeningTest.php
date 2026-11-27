@@ -59,6 +59,22 @@ describe('webhook payload hardening', function (): void {
         Queue::assertNothingPushed();
     });
 
+    it('rejects a non-string tracking number before querying or dispatching', function (): void {
+        \Illuminate\Support\Facades\Event::fake([\AIArmada\Jnt\Events\TrackingUpdatedEvent::class]);
+
+        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+        $webhookCall->id = 1000;
+
+        $processor = new ProcessJntWebhook($webhookCall);
+        $method = new ReflectionMethod($processor, 'processEvent');
+        $method->invoke($processor, 'POD', [
+            'bizContent' => json_encode(['billCode' => ['invalid'], 'details' => []]),
+        ]);
+
+        expect(JntTrackingEvent::query()->withoutOwnerScope()->count())->toBe(0);
+        \Illuminate\Support\Facades\Event::assertNotDispatched(\AIArmada\Jnt\Events\TrackingUpdatedEvent::class);
+    });
+
     it('tolerates malformed scan times while syncing the rest', function (): void {
         config()->set('jnt.owner.enabled', false);
 

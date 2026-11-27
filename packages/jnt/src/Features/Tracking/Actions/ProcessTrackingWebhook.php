@@ -10,7 +10,7 @@ use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
 use AIArmada\Jnt\Models\JntWebhookLog;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Support\TrackingEventHash;
@@ -345,22 +345,7 @@ final class ProcessTrackingWebhook
             ];
         }
 
-        $hashes = array_column($rows, 'event_hash');
-
-        $existing = JntTrackingEvent::query()
-            ->withoutOwnerScope()
-            ->whereIn('event_hash', $hashes)
-            ->pluck('event_hash')
-            ->all();
-
-        $missing = array_values(array_filter(
-            $rows,
-            static fn (array $row): bool => ! in_array($row['event_hash'], $existing, true),
-        ));
-
-        foreach (array_chunk($missing, 500) as $chunk) {
-            JntTrackingEvent::query()->withoutOwnerScope()->insertOrIgnore($chunk);
-        }
+        app(TrackingEventWriter::class)->insertMissing($rows);
     }
 
     private function lockShipmentForUpdate(JntOrder $shipment): JntOrder
