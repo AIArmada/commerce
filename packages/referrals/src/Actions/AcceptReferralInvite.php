@@ -37,7 +37,8 @@ final class AcceptReferralInvite
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedInvite->status !== ReferralInviteStatus::Pending
+            if (! hash_equals((string) $lockedInvite->token_hash, hash('sha256', $token))
+                || $lockedInvite->status !== ReferralInviteStatus::Pending
                 || $lockedInvite->isExpiredAt(CarbonImmutable::now())
                 || ($lockedInvite->referrer_type === $invitee->getMorphClass()
                     && (string) $lockedInvite->referrer_id === (string) $invitee->getKey())

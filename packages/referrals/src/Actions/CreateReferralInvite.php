@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Referrals\Actions;
 
-use AIArmada\Referrals\Data\ReferralInviteCreationResult;
+use AIArmada\Referrals\Actions\Results\ReferralInviteCreationResult;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Events\ReferralInviteCreated;
 use AIArmada\Referrals\Exceptions\ReferralAlreadyClaimedException;
@@ -96,7 +96,7 @@ final class CreateReferralInvite
                     $token = null;
 
                     if ($existing->status === ReferralInviteStatus::Pending) {
-                        $existing->rotateTokenHash($tokenHash);
+                        $this->rotateTokenHash($existing, $tokenHash);
                         $token = $rawToken;
                     }
 
@@ -152,5 +152,26 @@ final class CreateReferralInvite
         }
 
         return $created['result'];
+    }
+
+    private function rotateTokenHash(ReferralInvite $invite, string $hash): void
+    {
+        if (! $invite->exists
+            || $invite->status !== ReferralInviteStatus::Pending
+            || $invite->getConnection()->transactionLevel() === 0) {
+            throw new LogicException('Only pending referral invites can rotate their token hash inside a transaction.');
+        }
+
+        $updated = $invite->newQuery()
+            ->whereKey($invite->getKey())
+            ->where('status', ReferralInviteStatus::Pending->value)
+            ->update(['token_hash' => $hash]);
+
+        if ($updated !== 1) {
+            throw new LogicException('The pending referral invite could not rotate its token hash.');
+        }
+
+        $invite->setAttribute('token_hash', $hash);
+        $invite->syncOriginalAttribute('token_hash');
     }
 }

@@ -21,7 +21,7 @@ use AIArmada\Referrals\Actions\CreateReferralInvite;
 use AIArmada\Referrals\Actions\FulfillReferralReward;
 use AIArmada\Referrals\Actions\QualifyReferral;
 use AIArmada\Referrals\Actions\RevokeReferralInvite;
-use AIArmada\Referrals\Data\ReferralInviteCreationResult;
+use AIArmada\Referrals\Actions\Results\ReferralInviteCreationResult;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;

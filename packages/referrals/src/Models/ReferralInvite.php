@@ -175,27 +175,6 @@ class ReferralInvite extends Model
             || ($this->expired_at !== null && $this->expired_at->lessThanOrEqualTo($at));
     }
 
-    public function rotateTokenHash(string $hash): void
-    {
-        if (! $this->exists
-            || $this->status !== ReferralInviteStatus::Pending
-            || $this->getConnection()->transactionLevel() === 0) {
-            throw new LogicException('Only pending referral invites can rotate their token hash inside a transaction.');
-        }
-
-        $updated = $this->newQuery()
-            ->whereKey($this->getKey())
-            ->where('status', ReferralInviteStatus::Pending->value)
-            ->update(['token_hash' => $hash]);
-
-        if ($updated !== 1) {
-            throw new LogicException('The pending referral invite could not rotate its token hash.');
-        }
-
-        $this->setAttribute('token_hash', $hash);
-        $this->syncOriginalAttribute('token_hash');
-    }
-
     protected static function newFactory(): ReferralInviteFactory
     {
         return ReferralInviteFactory::new();

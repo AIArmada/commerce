@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Referrals\Data;
+namespace AIArmada\Referrals\Actions\Results;
 
 use AIArmada\Referrals\Models\ReferralInvite;
 
