@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryStandardCost;
-use AIArmada\Inventory\Services\Costing\StandardCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
 use Carbon\CarbonImmutable;
 
 describe('StandardCostService', function (): void {

@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Costing\FifoCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 use Carbon\CarbonImmutable;
 
 describe('FifoCostService', function (): void {

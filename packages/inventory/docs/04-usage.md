@@ -209,7 +209,7 @@ ProcessExpiredBatches::run();
 ### Valuation Snapshots
 
 ```php
-use AIArmada\Inventory\Actions\CreateValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Actions\CreateValuationSnapshot;
 use AIArmada\Inventory\Enums\CostingMethod;
 
 CreateValuationSnapshot::run(method: CostingMethod::Fifo);
@@ -479,7 +479,7 @@ $expiring = $lookup->getExpiringWarranty(daysAhead: 30);
 ### FIFO Costing
 
 ```php
-use AIArmada\Inventory\Services\Costing\FifoCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 
 $fifo = app(FifoCostService::class);
 
@@ -498,7 +498,7 @@ $result = $fifo->consume($product, 20);
 ### Weighted Average Costing
 
 ```php
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService;
 
 $wac = app(WeightedAverageCostService::class);
 
@@ -513,7 +513,7 @@ $avgCost = $wac->getCurrentAverageCost($product);
 ### Standard Costing
 
 ```php
-use AIArmada\Inventory\Services\Costing\StandardCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
 use Carbon\CarbonImmutable;
 
 $stdCost = app(StandardCostService::class);
@@ -534,7 +534,7 @@ $variance = $stdCost->calculateVariance($product, actualCostMinor: 1600);
 ### Valuation Snapshots
 
 ```php
-use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 
 $valuationService = app(ValuationService::class);
 

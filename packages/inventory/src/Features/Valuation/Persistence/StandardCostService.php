@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Costing;
+namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Models\InventoryStandardCost;
 use Carbon\CarbonImmutable;

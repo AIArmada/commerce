@@ -144,7 +144,7 @@ echo "Standard costs: {$stdCostCount}";
 
 // Create cost layers alongside receiving (receive() takes no cost options)
 Inventory::receive($product, 100, $location->id);
-app(\AIArmada\Inventory\Services\Costing\FifoCostService::class)
+app(\AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService::class)
     ->addLayer($product, 100, unitCostMinor: 1500, locationId: $location->id);
 ```
 

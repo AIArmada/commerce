@@ -8,7 +8,7 @@ use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
-use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\EntryPoints\Console;
+namespace AIArmada\Inventory\Features\Valuation\EntryPoints\Console;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 use Carbon\CarbonImmutable;
 use Exception;
 use Illuminate\Console\Command;

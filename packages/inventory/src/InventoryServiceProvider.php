@@ -13,7 +13,7 @@ use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\EntryPoints\Listeners\ValidateInventoryOnAdd;
 use AIArmada\Inventory\EntryPoints\Console\CleanupExpiredAllocationsCommand;
-use AIArmada\Inventory\EntryPoints\Console\CreateValuationSnapshotCommand;
+use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Exports\ExportService;
@@ -27,10 +27,10 @@ use AIArmada\Inventory\Reports\InventoryReconciliationReport;
 use AIArmada\Inventory\Reports\MovementAnalysisReport;
 use AIArmada\Inventory\Reports\StockLevelReport;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
-use AIArmada\Inventory\Services\Costing\FifoCostService;
-use AIArmada\Inventory\Services\Costing\StandardCostService;
-use AIArmada\Inventory\Services\Costing\ValuationService;
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
+use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
@@ -70,7 +70,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->registerCoreServices();
-        $this->registerCostingServices();
         $this->registerAllocationServices();
         $this->registerReplenishmentServices();
         $this->registerReportServices();
@@ -131,17 +130,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(InventoryAllocationService::class);
         $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
-    }
-
-    /**
-     * Register costing and valuation services.
-     */
-    private function registerCostingServices(): void
-    {
-        $this->app->singleton(FifoCostService::class);
-        $this->app->singleton(WeightedAverageCostService::class);
-        $this->app->singleton(StandardCostService::class);
-        $this->app->singleton(ValuationService::class);
     }
 
     /**

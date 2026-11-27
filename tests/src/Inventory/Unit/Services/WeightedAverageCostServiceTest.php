@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
+use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService;
 
 describe('WeightedAverageCostService', function (): void {
     beforeEach(function (): void {
