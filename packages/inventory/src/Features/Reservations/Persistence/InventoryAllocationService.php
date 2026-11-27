@@ -14,6 +14,8 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -206,7 +208,7 @@ final class InventoryAllocationService
             $lockedAllocation->loadMissing(['level', 'inventoryable']);
 
             $quantity = $lockedAllocation->quantity;
-            $this->stock->release($lockedAllocation->level, $quantity);
+            $this->releaseBalance($lockedAllocation);
 
             $inventoryable = $lockedAllocation->inventoryable;
             $cartId = $lockedAllocation->cart_id;
@@ -248,7 +250,7 @@ final class InventoryAllocationService
             $totalReleased = 0;
 
             foreach ($allocations as $allocation) {
-                $this->stock->release($allocation->level, $allocation->quantity);
+                $this->releaseBalance($allocation);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
             }
@@ -286,7 +288,7 @@ final class InventoryAllocationService
             $totalReleased = 0;
 
             foreach ($allocations as $allocation) {
-                $this->stock->release($allocation->level, $allocation->quantity);
+                $this->releaseBalance($allocation);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
             }
@@ -312,7 +314,7 @@ final class InventoryAllocationService
             $totalReleased = 0;
 
             foreach ($allocations as $allocation) {
-                $this->stock->release($allocation->level, $allocation->quantity);
+                $this->releaseBalance($allocation);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
             }
@@ -347,11 +349,13 @@ final class InventoryAllocationService
             $movements = [];
 
             foreach ($allocations as $allocation) {
+                $this->commitBatchBalance($allocation);
                 $movements[] = $this->stock->commit(
                     $allocation->level,
                     $allocation->quantity,
                     $orderId,
                     sprintf('Committed from cart %s', $cartId),
+                    $allocation->batch_id,
                 );
                 $allocation->delete();
             }
@@ -379,11 +383,13 @@ final class InventoryAllocationService
             $movements = [];
 
             foreach ($allocations as $allocation) {
+                $this->commitBatchBalance($allocation);
                 $movements[] = $this->stock->commit(
                     $allocation->level,
                     $allocation->quantity,
                     $orderId,
                     sprintf('Committed from checkout reference %s', $reference),
+                    $allocation->batch_id,
                 );
                 $allocation->delete();
             }
@@ -587,12 +593,53 @@ final class InventoryAllocationService
         $count = 0;
 
         foreach ($allocations as $allocation) {
-            $this->stock->release($allocation->level, $allocation->quantity);
+            $this->releaseBalance($allocation);
             $allocation->delete();
             $count++;
         }
 
         return $count;
+    }
+
+    private function releaseBalance(InventoryAllocation $allocation): void
+    {
+        $batch = $this->resolveAllocationBatch($allocation);
+
+        if ($batch !== null) {
+            app(BatchAllocationService::class)->releaseBatches([['batch' => $batch, 'quantity' => $allocation->quantity]]);
+        }
+
+        $this->stock->release($allocation->level, $allocation->quantity);
+    }
+
+    private function commitBatchBalance(InventoryAllocation $allocation): void
+    {
+        $batch = $this->resolveAllocationBatch($allocation);
+
+        if ($batch !== null) {
+            app(BatchAllocationService::class)->commitBatches([['batch' => $batch, 'quantity' => $allocation->quantity]]);
+        }
+    }
+
+    private function resolveAllocationBatch(InventoryAllocation $allocation): ?InventoryBatch
+    {
+        if ($allocation->batch_id === null) {
+            return null;
+        }
+
+        $query = InventoryBatch::query();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $query->forOwner($owner, false);
+        }
+
+        return $query->whereKey($allocation->batch_id)
+            ->where('inventoryable_type', $allocation->inventoryable_type)
+            ->where('inventoryable_id', $allocation->inventoryable_id)
+            ->where('location_id', $allocation->location_id)
+            ->firstOrFail();
     }
 
     /**

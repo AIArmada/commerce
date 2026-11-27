@@ -42,9 +42,9 @@ final readonly class ReservationStockStore
         });
     }
 
-    public function commit(InventoryLevel $level, int $quantity, ?string $orderId, string $note): InventoryMovement
+    public function commit(InventoryLevel $level, int $quantity, ?string $orderId, string $note, ?string $batchId = null): InventoryMovement
     {
-        return DB::transaction(function () use ($level, $quantity, $orderId, $note): InventoryMovement {
+        return DB::transaction(function () use ($level, $quantity, $orderId, $note, $batchId): InventoryMovement {
             $record = $this->lock($level);
 
             if ($quantity <= 0 || $record->quantity_reserved < $quantity || $record->quantity_on_hand < $quantity) {
@@ -58,6 +58,7 @@ final readonly class ReservationStockStore
                 'inventoryable_type' => $record->inventoryable_type,
                 'inventoryable_id' => $record->inventoryable_id,
                 'from_location_id' => $record->location_id,
+                'batch_id' => $batchId,
                 'quantity' => $quantity,
                 'type' => MovementType::Shipment->value,
                 'reason' => 'sale',

@@ -7,6 +7,9 @@ use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Events\BatchCreated;
 use AIArmada\Inventory\Events\BatchExpired;
 use AIArmada\Inventory\Events\BatchRecalled;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
@@ -190,6 +193,46 @@ describe('BatchService', function (): void {
         expect($batch2->fresh()->status)->toBe(BatchStatus::Recalled->value);
 
         Event::assertDispatched(BatchRecalled::class);
+    });
+
+    it('releases an entire checkout reservation when one allocated batch is quarantined', function (): void {
+        $batch = $this->service->createBatch($this->item, 'QUARANTINE-GROUP', $this->location->id, 20);
+        $batch->update(['quantity_reserved' => 5]);
+        $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => 20,
+        ]);
+        $level->incrementReserved(8);
+
+        $group = InventoryReservation::create([
+            'reference' => 'quarantine-group',
+            'status' => InventoryReservation::STATE_RESERVED,
+            'line_snapshot' => [],
+            'ttl_seconds' => 600,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+        foreach ([['batch_id' => $batch->id, 'quantity' => 5], ['batch_id' => null, 'quantity' => 3]] as $data) {
+            InventoryAllocation::create([
+                ...$data,
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $this->location->id,
+                'level_id' => $level->id,
+                'reservation_group_id' => $group->id,
+                'cart_id' => $group->reference,
+                'expires_at' => $group->expires_at,
+            ]);
+        }
+
+        $this->service->quarantine($batch, 'Quality hold');
+
+        expect($batch->fresh()->status)->toBe(BatchStatus::Quarantined->value)
+            ->and($batch->fresh()->quantity_reserved)->toBe(0)
+            ->and($level->fresh()->quantity_reserved)->toBe(0)
+            ->and($group->fresh()->status)->toBe(InventoryReservation::STATE_RELEASED)
+            ->and($group->allocations()->count())->toBe(0);
     });
 
     it('transfer batch', function (): void {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -124,6 +125,10 @@ final class BatchAllocationService
             foreach ($this->lockAllocations($allocations) as $allocation) {
                 $batch = $allocation['batch'];
                 $quantity = $allocation['quantity'];
+
+                if ($batch->status !== BatchStatus::Active->value || $batch->is_expired) {
+                    throw new InvalidArgumentException('Cannot commit unavailable batch inventory');
+                }
 
                 if ($quantity > $batch->quantity_reserved || $quantity > $batch->quantity_on_hand) {
                     throw new InvalidArgumentException('Cannot commit more than the reserved or on-hand batch quantity');

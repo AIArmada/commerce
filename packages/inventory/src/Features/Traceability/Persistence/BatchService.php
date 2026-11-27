@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Events\BatchCreated;
 use AIArmada\Inventory\Events\BatchExpired;
 use AIArmada\Inventory\Events\BatchRecalled;
+use AIArmada\Inventory\Features\Reservations\Actions\ReleaseStock;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -203,14 +206,10 @@ final class BatchService
             $batch = $this->lockBatch($batch);
             $batch->quarantine($reason);
 
-            // Release any allocations from this batch
-            foreach ($batch->allocations as $allocation) {
-                $allocation->level?->decrementReserved($allocation->quantity);
-                $allocation->delete();
-            }
+            $this->releaseBatchAllocations($batch);
 
             return $batch->refresh();
-        });
+        }, 3);
     }
 
     /**
@@ -235,11 +234,7 @@ final class BatchService
             foreach ($batches as $batch) {
                 $batch->recall($reason);
 
-                // Release allocations
-                foreach ($batch->allocations as $allocation) {
-                    $allocation->level?->decrementReserved($allocation->quantity);
-                    $allocation->delete();
-                }
+                $this->releaseBatchAllocations($batch);
             }
 
             // Get representative inventoryable for event
@@ -250,7 +245,7 @@ final class BatchService
             }
 
             return $batches;
-        });
+        }, 3);
     }
 
     /**
@@ -428,6 +423,7 @@ final class BatchService
 
             foreach ($expiredBatches as $batch) {
                 $batch->markExpired();
+                $this->releaseBatchAllocations($batch);
 
                 if ($batch->inventoryable !== null) {
                     Event::dispatch(new BatchExpired($batch, $batch->inventoryable));
@@ -435,7 +431,40 @@ final class BatchService
             }
 
             return $expiredBatches->count();
-        });
+        }, 3);
+    }
+
+    private function releaseBatchAllocations(InventoryBatch $batch): void
+    {
+        $allocations = $batch->allocations()->orderBy('id')->get();
+        $groups = [];
+
+        foreach ($allocations as $allocation) {
+            if ($allocation->reservation_group_id === null) {
+                app(ReleaseStock::class)->releaseAllocation($allocation);
+
+                continue;
+            }
+
+            $groups[$allocation->reservation_group_id] = true;
+        }
+
+        foreach (array_keys($groups) as $id) {
+            $query = InventoryReservation::query();
+
+            if (InventoryOwnerScope::isEnabled()) {
+                $owner = InventoryOwnerScope::resolveOwner();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $group = $query->whereKey($id)->firstOrFail();
+            $outcome = app(CheckoutReservationServiceInterface::class)->release($group->reference);
+
+            if (! in_array($outcome->state, [InventoryReservation::STATE_RELEASED, InventoryReservation::STATE_EXPIRED], true)) {
+                throw new InvalidArgumentException('Unable to release the affected checkout reservation');
+            }
+        }
     }
 
     /** @return Builder<InventoryBatch> */

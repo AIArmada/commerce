@@ -367,3 +367,22 @@ it('rejects negative quantities and reserved balance underflow', function (): vo
     expect($batch->fresh()->quantity_reserved)->toBe(10)
         ->and($batch->fresh()->quantity_on_hand)->toBe(50);
 });
+
+it('rejects committing recalled stock but permits releasing its reservation', function (): void {
+    $batch = InventoryBatch::factory()->create([
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 50,
+        'quantity_reserved' => 10,
+        'status' => BatchStatus::Recalled,
+        'expires_at' => null,
+    ]);
+    $allocations = [['batch' => $batch, 'quantity' => 10]];
+
+    expect(fn () => $this->service->commitBatches($allocations))
+        ->toThrow(InvalidArgumentException::class, 'Cannot commit unavailable batch inventory');
+
+    $this->service->releaseBatches($allocations);
+
+    expect($batch->fresh()->quantity_on_hand)->toBe(50)
+        ->and($batch->fresh()->quantity_reserved)->toBe(0);
+});
