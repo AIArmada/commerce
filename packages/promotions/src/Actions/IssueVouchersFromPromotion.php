@@ -74,7 +74,7 @@ final class IssueVouchersFromPromotion
 
     private function assertSharedConnection(Promotion $promotion): void
     {
-        $voucherClass = 'AIArmada\\\\Vouchers\\\\Models\\\\Voucher';
+        $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
 
         if (! is_subclass_of($voucherClass, Model::class)) {
             throw new RuntimeException('Voucher issuance requires the vouchers package to be installed.');
