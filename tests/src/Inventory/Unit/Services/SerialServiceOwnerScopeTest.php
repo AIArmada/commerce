@@ -223,3 +223,27 @@ it('allows finding shipped serials by serial number using history scope', functi
 
     expect($found)->not->toBeNull();
 });
+
+it('does not let a tenant register a serial at a visible global location', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    expect(fn () => $fixture['service']->register($fixture['sku'], 'SN-GLOBAL-WRITE', $fixture['locationGlobal']->id))
+        ->toThrow(InvalidArgumentException::class, 'Invalid location for current owner');
+});
+
+it('does not let a tenant mutate a visible global serial', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    $serial = OwnerContext::withOwner(null, fn (): InventorySerial => $fixture['service']->register(
+        $fixture['sku'],
+        'SN-GLOBAL-RESERVE',
+        $fixture['locationGlobal']->id,
+    ));
+
+    expect($fixture['service']->findBySerialNumber('SN-GLOBAL-RESERVE'))->not->toBeNull();
+
+    expect(fn () => $fixture['service']->reserve($serial))
+        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+    expect($serial->fresh()->status)->toBeInstanceOf(Available::class);
+});

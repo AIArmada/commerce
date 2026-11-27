@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialEventType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -20,7 +21,6 @@ use AIArmada\Inventory\States\Shipped;
 use AIArmada\Inventory\States\Sold;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -127,17 +127,9 @@ final class SerialService
      */
     public function findBySerialNumber(string $serialNumber): ?InventorySerial
     {
-        $serial = InventorySerial::where('serial_number', $serialNumber)->first();
-
-        if ($serial === null) {
-            return null;
-        }
-
-        if (! $this->isSerialAllowedForCurrentOwner($serial)) {
-            return null;
-        }
-
-        return $serial;
+        return InventoryOwnerScope::applyToLocationQuery(InventorySerial::query())
+            ->where('serial_number', $serialNumber)
+            ->first();
     }
 
     /**
@@ -189,21 +181,23 @@ final class SerialService
         ?string $userId = null,
         ?string $notes = null
     ): InventorySerial {
-        $this->assertSerialAllowedForCurrentOwner($serial);
-        $this->assertLocationIdAllowedForCurrentOwner($newLocationId);
+        return DB::transaction(function () use ($serial, $newLocationId, $userId, $notes): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
+            $this->assertLocationIdAllowedForCurrentOwner($newLocationId);
 
-        $fromLocationId = $serial->location_id;
+            $fromLocationId = $serial->location_id;
 
-        $serial->update(['location_id' => $newLocationId]);
+            $serial->update(['location_id' => $newLocationId]);
 
-        $this->logEvent($serial, SerialEventType::Transferred, [
-            'from_location_id' => $fromLocationId,
-            'to_location_id' => $newLocationId,
-            'user_id' => $userId,
-            'notes' => $notes,
-        ]);
+            $this->logEvent($serial, SerialEventType::Transferred, [
+                'from_location_id' => $fromLocationId,
+                'to_location_id' => $newLocationId,
+                'user_id' => $userId,
+                'notes' => $notes,
+            ]);
 
-        return $serial->refresh();
+            return $serial->refresh();
+        }, 3);
     }
 
     /**
@@ -214,23 +208,25 @@ final class SerialService
         ?string $orderId = null,
         ?string $userId = null
     ): InventorySerial {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $orderId, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        if (! $serial->canTransitionTo(Reserved::class)) {
-            throw new InvalidArgumentException('Serial cannot be reserved from current status');
-        }
+            if (! $serial->canTransitionTo(Reserved::class)) {
+                throw new InvalidArgumentException('Serial cannot be reserved from current status');
+            }
 
-        $previousStatus = $serial->status->getValue();
-        $serial->transitionStatusTo(Reserved::class);
+            $previousStatus = $serial->status->getValue();
+            $serial->transitionStatusTo(Reserved::class);
 
-        $this->logEvent($serial, SerialEventType::Reserved, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(Reserved::class),
-            'reference' => $orderId,
-            'user_id' => $userId,
-        ]);
+            $this->logEvent($serial, SerialEventType::Reserved, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(Reserved::class),
+                'reference' => $orderId,
+                'user_id' => $userId,
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -238,22 +234,24 @@ final class SerialService
      */
     public function release(InventorySerial $serial, ?string $userId = null): InventorySerial
     {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        if (! $serial->canTransitionTo(Available::class)) {
-            throw new InvalidArgumentException('Serial cannot be released from current status');
-        }
+            if (! $serial->canTransitionTo(Available::class)) {
+                throw new InvalidArgumentException('Serial cannot be released from current status');
+            }
 
-        $previousStatus = $serial->status->getValue();
-        $serial->transitionStatusTo(Available::class);
+            $previousStatus = $serial->status->getValue();
+            $serial->transitionStatusTo(Available::class);
 
-        $this->logEvent($serial, SerialEventType::Released, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(Available::class),
-            'user_id' => $userId,
-        ]);
+            $this->logEvent($serial, SerialEventType::Released, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(Available::class),
+                'user_id' => $userId,
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -265,30 +263,32 @@ final class SerialService
         ?string $customerId = null,
         ?string $userId = null
     ): InventorySerial {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $orderId, $customerId, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        if (! $serial->canTransitionTo(Sold::class)) {
-            throw new InvalidArgumentException('Serial cannot be sold from current status');
-        }
+            if (! $serial->canTransitionTo(Sold::class)) {
+                throw new InvalidArgumentException('Serial cannot be sold from current status');
+            }
 
-        $previousStatus = $serial->status->getValue();
+            $previousStatus = $serial->status->getValue();
 
-        $serial->transitionStatusTo(Sold::class);
+            $serial->transitionStatusTo(Sold::class);
 
-        $serial->update([
-            'order_id' => $orderId,
-            'customer_id' => $customerId,
-            'sold_at' => CarbonImmutable::now(),
-        ]);
+            $serial->update([
+                'order_id' => $orderId,
+                'customer_id' => $customerId,
+                'sold_at' => CarbonImmutable::now(),
+            ]);
 
-        $this->logEvent($serial, SerialEventType::Sold, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(Sold::class),
-            'reference' => $orderId,
-            'user_id' => $userId,
-        ]);
+            $this->logEvent($serial, SerialEventType::Sold, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(Sold::class),
+                'reference' => $orderId,
+                'user_id' => $userId,
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -296,30 +296,32 @@ final class SerialService
      */
     public function ship(InventorySerial $serial, ?string $trackingNumber = null, ?string $userId = null): InventorySerial
     {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $trackingNumber, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        if (! $serial->canTransitionTo(Shipped::class)) {
-            throw new InvalidArgumentException('Serial cannot be shipped from current status');
-        }
+            if (! $serial->canTransitionTo(Shipped::class)) {
+                throw new InvalidArgumentException('Serial cannot be shipped from current status');
+            }
 
-        $previousStatus = $serial->status->getValue();
-        $previousLocation = $serial->location_id;
+            $previousStatus = $serial->status->getValue();
+            $previousLocation = $serial->location_id;
 
-        $serial->transitionStatusTo(Shipped::class);
+            $serial->transitionStatusTo(Shipped::class);
 
-        $serial->update([
-            'location_id' => null,
-        ]);
+            $serial->update([
+                'location_id' => null,
+            ]);
 
-        $this->logEvent($serial, SerialEventType::Shipped, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(Shipped::class),
-            'from_location_id' => $previousLocation,
-            'reference' => $trackingNumber,
-            'user_id' => $userId,
-        ]);
+            $this->logEvent($serial, SerialEventType::Shipped, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(Shipped::class),
+                'from_location_id' => $previousLocation,
+                'reference' => $trackingNumber,
+                'user_id' => $userId,
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -332,36 +334,38 @@ final class SerialService
         ?string $notes = null,
         ?string $userId = null
     ): InventorySerial {
-        $this->assertSerialAllowedForCurrentOwner($serial);
-        $this->assertLocationIdAllowedForCurrentOwner($locationId);
+        return DB::transaction(function () use ($serial, $locationId, $condition, $notes, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
+            $this->assertLocationIdAllowedForCurrentOwner($locationId);
 
-        if (! $serial->canTransitionTo(Returned::class)) {
-            throw new InvalidArgumentException('Serial cannot be returned from current status');
-        }
+            if (! $serial->canTransitionTo(Returned::class)) {
+                throw new InvalidArgumentException('Serial cannot be returned from current status');
+            }
 
-        $previousStatus = $serial->status->getValue();
-        $previousCondition = $serial->condition;
+            $previousStatus = $serial->status->getValue();
+            $previousCondition = $serial->condition;
 
-        $serial->transitionStatusTo(Returned::class);
+            $serial->transitionStatusTo(Returned::class);
 
-        $serial->update([
-            'location_id' => $locationId,
-            'condition' => $condition->value,
-        ]);
+            $serial->update([
+                'location_id' => $locationId,
+                'condition' => $condition->value,
+            ]);
 
-        $this->logEvent($serial, SerialEventType::Returned, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(Returned::class),
-            'to_location_id' => $locationId,
-            'user_id' => $userId,
-            'notes' => $notes,
-            'metadata' => [
-                'previous_condition' => $previousCondition,
-                'new_condition' => $condition->value,
-            ],
-        ]);
+            $this->logEvent($serial, SerialEventType::Returned, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(Returned::class),
+                'to_location_id' => $locationId,
+                'user_id' => $userId,
+                'notes' => $notes,
+                'metadata' => [
+                    'previous_condition' => $previousCondition,
+                    'new_condition' => $condition->value,
+                ],
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -369,23 +373,25 @@ final class SerialService
      */
     public function startRepair(InventorySerial $serial, ?string $repairNotes = null, ?string $userId = null): InventorySerial
     {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $repairNotes, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        if (! $serial->canTransitionTo(InRepair::class)) {
-            throw new InvalidArgumentException('Serial cannot be put in repair from current status');
-        }
+            if (! $serial->canTransitionTo(InRepair::class)) {
+                throw new InvalidArgumentException('Serial cannot be put in repair from current status');
+            }
 
-        $previousStatus = $serial->status->getValue();
-        $serial->transitionStatusTo(InRepair::class);
+            $previousStatus = $serial->status->getValue();
+            $serial->transitionStatusTo(InRepair::class);
 
-        $this->logEvent($serial, SerialEventType::RepairStarted, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(InRepair::class),
-            'user_id' => $userId,
-            'notes' => $repairNotes,
-        ]);
+            $this->logEvent($serial, SerialEventType::RepairStarted, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(InRepair::class),
+                'user_id' => $userId,
+                'notes' => $repairNotes,
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -397,27 +403,33 @@ final class SerialService
         ?string $repairNotes = null,
         ?string $userId = null
     ): InventorySerial {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $newCondition, $repairNotes, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        $previousCondition = $serial->condition;
+            if (! $serial->status instanceof InRepair) {
+                throw new InvalidArgumentException('Serial is not in repair');
+            }
 
-        $serial->update([
-            'status' => SerialStatus::normalize(Available::class),
-            'condition' => $newCondition->value,
-        ]);
+            $previousCondition = $serial->condition;
 
-        $this->logEvent($serial, SerialEventType::RepairCompleted, [
-            'previous_status' => SerialStatus::normalize(InRepair::class),
-            'new_status' => SerialStatus::normalize(Available::class),
-            'user_id' => $userId,
-            'notes' => $repairNotes,
-            'metadata' => [
-                'previous_condition' => $previousCondition,
-                'new_condition' => $newCondition->value,
-            ],
-        ]);
+            $serial->update([
+                'status' => SerialStatus::normalize(Available::class),
+                'condition' => $newCondition->value,
+            ]);
 
-        return $serial;
+            $this->logEvent($serial, SerialEventType::RepairCompleted, [
+                'previous_status' => SerialStatus::normalize(InRepair::class),
+                'new_status' => SerialStatus::normalize(Available::class),
+                'user_id' => $userId,
+                'notes' => $repairNotes,
+                'metadata' => [
+                    'previous_condition' => $previousCondition,
+                    'new_condition' => $newCondition->value,
+                ],
+            ]);
+
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -425,25 +437,31 @@ final class SerialService
      */
     public function dispose(InventorySerial $serial, string $reason, ?string $userId = null): InventorySerial
     {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $reason, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        $previousStatus = $serial->status->getValue();
-        $previousLocation = $serial->location_id;
+            if (! $serial->canTransitionTo(Disposed::class)) {
+                throw new InvalidArgumentException('Serial cannot be disposed from current status');
+            }
 
-        $serial->update([
-            'status' => SerialStatus::normalize(Disposed::class),
-            'location_id' => null,
-        ]);
+            $previousStatus = $serial->status->getValue();
+            $previousLocation = $serial->location_id;
 
-        $this->logEvent($serial, SerialEventType::Disposed, [
-            'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::normalize(Disposed::class),
-            'from_location_id' => $previousLocation,
-            'user_id' => $userId,
-            'notes' => $reason,
-        ]);
+            $serial->update([
+                'status' => SerialStatus::normalize(Disposed::class),
+                'location_id' => null,
+            ]);
 
-        return $serial;
+            $this->logEvent($serial, SerialEventType::Disposed, [
+                'previous_status' => $previousStatus,
+                'new_status' => SerialStatus::normalize(Disposed::class),
+                'from_location_id' => $previousLocation,
+                'user_id' => $userId,
+                'notes' => $reason,
+            ]);
+
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -455,22 +473,24 @@ final class SerialService
         ?string $notes = null,
         ?string $userId = null
     ): InventorySerial {
-        $this->assertSerialAllowedForCurrentOwner($serial);
+        return DB::transaction(function () use ($serial, $newExpiryDate, $notes, $userId): InventorySerial {
+            $serial = $this->lockOwnedSerial($serial);
 
-        $previousExpiry = $serial->warranty_expires_at;
+            $previousExpiry = $serial->warranty_expires_at;
 
-        $serial->update(['warranty_expires_at' => $newExpiryDate]);
+            $serial->update(['warranty_expires_at' => $newExpiryDate]);
 
-        $this->logEvent($serial, SerialEventType::WarrantyUpdated, [
-            'user_id' => $userId,
-            'notes' => $notes,
-            'metadata' => [
-                'previous_warranty_expires_at' => $previousExpiry?->toDateString(),
-                'new_warranty_expires_at' => $newExpiryDate->toDateString(),
-            ],
-        ]);
+            $this->logEvent($serial, SerialEventType::WarrantyUpdated, [
+                'user_id' => $userId,
+                'notes' => $notes,
+                'metadata' => [
+                    'previous_warranty_expires_at' => $previousExpiry?->toDateString(),
+                    'new_warranty_expires_at' => $newExpiryDate->toDateString(),
+                ],
+            ]);
 
-        return $serial;
+            return $serial;
+        }, 3);
     }
 
     /**
@@ -525,38 +545,22 @@ final class SerialService
 
     private function isSerialAllowedForCurrentOwner(InventorySerial $serial): bool
     {
-        if (! InventoryOwnerScope::isEnabled()) {
-            return true;
-        }
-
-        $scopeLocationId = $this->resolveSerialScopeLocationId($serial);
-
-        if ($scopeLocationId === null) {
-            return false;
-        }
-
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-            ->whereKey($scopeLocationId)
+        return InventoryOwnerScope::applyToLocationQuery(InventorySerial::query())
+            ->whereKey($serial->getKey())
             ->exists();
     }
 
-    private function resolveSerialScopeLocationId(InventorySerial $serial): ?string
+    private function lockOwnedSerial(InventorySerial $serial): InventorySerial
     {
-        if ($serial->location_id !== null) {
-            return $serial->location_id;
+        $query = InventorySerial::query();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $query->forOwner($owner, false);
         }
 
-        /** @var InventorySerialHistory|null $history */
-        $history = InventorySerialHistory::query()
-            ->where('serial_id', $serial->id)
-            ->where(function (Builder $query): void {
-                $query->whereNotNull('to_location_id')
-                    ->orWhereNotNull('from_location_id');
-            })
-            ->orderByDesc('occurred_at')
-            ->first();
-
-        return $history?->to_location_id ?? $history?->from_location_id;
+        return $query->whereKey($serial->getKey())->lockForUpdate()->firstOrFail();
     }
 
     private function assertLocationIdAllowedForCurrentOwner(?string $locationId): void
@@ -565,7 +569,10 @@ final class SerialService
             return;
         }
 
-        if ($locationId === null && InventoryOwnerScope::resolveOwner() !== null) {
+        $owner = InventoryOwnerScope::resolveOwner();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        if ($locationId === null && $owner !== null) {
             throw new InvalidArgumentException('Location is required when owner scoping is enabled');
         }
 
@@ -573,7 +580,7 @@ final class SerialService
             return;
         }
 
-        $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+        $isAllowed = InventoryLocation::query()->forOwner($owner, false)
             ->whereKey($locationId)
             ->exists();
 
@@ -592,7 +599,10 @@ final class SerialService
             return;
         }
 
-        $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryBatch::query())
+        $owner = InventoryOwnerScope::resolveOwner();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        $isAllowed = InventoryBatch::query()->forOwner($owner, false)
             ->whereKey($batchId)
             ->exists();
 

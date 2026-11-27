@@ -263,3 +263,18 @@ describe('SerialService', function (): void {
         expect($history)->toHaveCount(2);
     });
 });
+
+it('rejects a second reservation from a stale serial instance', function (): void {
+    $item = InventoryItem::create(['name' => 'Serialized item']);
+    $service = new SerialService;
+    $serial = $service->register($item, 'SN-STALE-RESERVATION');
+    $stale = $serial->fresh();
+
+    $service->reserve($serial, 'order-1');
+
+    expect(fn () => $service->reserve($stale, 'order-2'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($serial->fresh()->status)->toBeInstanceOf(Reserved::class)
+        ->and($serial->history()->count())->toBe(2);
+});
