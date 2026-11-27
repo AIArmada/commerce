@@ -9,6 +9,7 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Handlers\ShippingConditionHandler;
 use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
@@ -92,6 +93,7 @@ final class CartServiceProvider extends PackageServiceProvider
         return [
             'cart',
             Cart::class,
+            CartManagerInterface::class,
             StorageInterface::class,
             CartMigrationService::class,
             CartConditionResolver::class,
@@ -153,7 +155,7 @@ final class CartServiceProvider extends PackageServiceProvider
         });
 
         $this->app->alias('cart', CartManager::class);
-        $this->app->alias('cart', Contracts\CartManagerInterface::class);
+        $this->app->alias('cart', CartManagerInterface::class);
     }
 
     protected function registerConditionTypeHandlers(): void
