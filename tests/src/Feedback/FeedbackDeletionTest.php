@@ -136,12 +136,9 @@ it('deletes form structure with owner scoping disabled', function (): void {
 
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Unscoped Deletion'));
-    $section = FeedbackSection::query()->create([
-        'feedback_form_id' => $form->id,
-        'title' => 'Section',
-    ]);
-    $question = FeedbackQuestion::query()->create([
-        'feedback_form_id' => $form->id,
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $section = $structure->saveSection($form->id, ['title' => 'Section']);
+    $question = $structure->saveQuestion($form->id, [
         'feedback_section_id' => $section->id,
         'key' => 'comment',
         'type' => 'short_text',

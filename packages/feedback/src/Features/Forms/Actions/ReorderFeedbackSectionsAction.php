@@ -8,19 +8,25 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
 
-final class ReorderFeedbackSectionsAction
+final readonly class ReorderFeedbackSectionsAction
 {
     /**
      * @param  array<string, int>  $order  [id => order_column]
      */
     public function execute(string $formId, array $order): void
     {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+        (new FeedbackForm)->getConnection()->transaction(function () use ($formId, $order): void {
+            if (FeedbackForm::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+            }
 
-        foreach ($order as $id => $position) {
-            FeedbackSection::where('feedback_form_id', $formId)
-                ->where('id', $id)
-                ->update(['order_column' => $position]);
-        }
+            FeedbackForm::query()->whereKey($formId)->lockForUpdate()->firstOrFail();
+
+            foreach ($order as $id => $position) {
+                FeedbackSection::where('feedback_form_id', $formId)
+                    ->where('id', $id)
+                    ->update(['order_column' => $position]);
+            }
+        });
     }
 }

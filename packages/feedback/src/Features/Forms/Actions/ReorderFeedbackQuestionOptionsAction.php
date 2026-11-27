@@ -8,19 +8,25 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
 
-final class ReorderFeedbackQuestionOptionsAction
+final readonly class ReorderFeedbackQuestionOptionsAction
 {
     /**
      * @param  array<string, int>  $order  [id => order_column]
      */
     public function execute(string $questionId, array $order): void
     {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $questionId);
+        (new FeedbackQuestion)->getConnection()->transaction(function () use ($questionId, $order): void {
+            if (FeedbackQuestion::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $questionId);
+            }
 
-        foreach ($order as $id => $position) {
-            FeedbackQuestionOption::where('feedback_question_id', $questionId)
-                ->where('id', $id)
-                ->update(['order_column' => $position]);
-        }
+            FeedbackQuestion::query()->whereKey($questionId)->lockForUpdate()->firstOrFail();
+
+            foreach ($order as $id => $position) {
+                FeedbackQuestionOption::where('feedback_question_id', $questionId)
+                    ->where('id', $id)
+                    ->update(['order_column' => $position]);
+            }
+        });
     }
 }

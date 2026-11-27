@@ -10,37 +10,40 @@ use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
 use AIArmada\Feedback\Support\QuestionTypeRegistry;
+use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
-final class SaveFeedbackFormStructureAction
+final readonly class SaveFeedbackFormStructureAction
 {
     /**
      * @param  array<string, mixed>  $data
      */
     public function saveSection(string $formId, array $data, ?FeedbackSection $section = null): FeedbackSection
     {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+        return (new FeedbackForm)->getConnection()->transaction(function () use ($formId, $data, $section): FeedbackSection {
+            $this->findOwned(FeedbackForm::class, $formId, lock: true);
 
-        if ($section !== null) {
-            $section = OwnerWriteGuard::findOrFailForOwner(FeedbackSection::class, $section->id);
+            if ($section !== null) {
+                $section = $this->findOwned(FeedbackSection::class, $section->id);
 
-            if ($section->feedback_form_id !== $formId) {
-                throw new InvalidArgumentException('The feedback section does not belong to the selected form.');
+                if ($section->feedback_form_id !== $formId) {
+                    throw new InvalidArgumentException('The feedback section does not belong to the selected form.');
+                }
             }
-        }
 
-        $section ??= new FeedbackSection;
-        $section->fill([
-            'feedback_form_id' => $formId,
-            'key' => $data['key'] ?? null,
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'order_column' => (int) ($data['order_column'] ?? 0),
-            'settings' => $data['settings'] ?? [],
-            'metadata' => $data['metadata'] ?? [],
-        ])->save();
+            $section ??= new FeedbackSection;
+            $section->fill([
+                'feedback_form_id' => $formId,
+                'key' => $data['key'] ?? null,
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'order_column' => (int) ($data['order_column'] ?? 0),
+                'settings' => $data['settings'] ?? [],
+                'metadata' => $data['metadata'] ?? [],
+            ])->save();
 
-        return $section;
+            return $section;
+        });
     }
 
     /**
@@ -48,71 +51,73 @@ final class SaveFeedbackFormStructureAction
      */
     public function saveQuestion(string $formId, array $data, ?FeedbackQuestion $question = null): FeedbackQuestion
     {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+        return (new FeedbackForm)->getConnection()->transaction(function () use ($formId, $data, $question): FeedbackQuestion {
+            $this->findOwned(FeedbackForm::class, $formId, lock: true);
 
-        if ($question !== null) {
-            $question = OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $question->id);
+            if ($question !== null) {
+                $question = $this->findOwned(FeedbackQuestion::class, $question->id);
 
-            if ($question->feedback_form_id !== $formId) {
-                throw new InvalidArgumentException('The feedback question does not belong to the selected form.');
+                if ($question->feedback_form_id !== $formId) {
+                    throw new InvalidArgumentException('The feedback question does not belong to the selected form.');
+                }
             }
-        }
 
-        $type = (string) ($data['type'] ?? '');
+            $type = (string) ($data['type'] ?? '');
 
-        if (! QuestionTypeRegistry::isTypeAvailable($type)) {
-            throw new InvalidArgumentException("The '{$type}' question type is not available.");
-        }
-
-        $key = (string) ($data['key'] ?? '');
-
-        $keyQuery = FeedbackQuestion::query()
-            ->where('feedback_form_id', $formId)
-            ->where('key', $key);
-
-        if ($question !== null) {
-            $keyQuery->where('id', '!=', $question->id);
-        }
-
-        $duplicateKey = $keyQuery->exists();
-
-        if ($duplicateKey) {
-            throw new InvalidArgumentException("The '{$key}' question key is already used in this form.");
-        }
-
-        $sectionId = array_key_exists('feedback_section_id', $data)
-            ? $data['feedback_section_id']
-            : null;
-
-        if ($sectionId !== null) {
-            $section = OwnerWriteGuard::findOrFailForOwner(FeedbackSection::class, (string) $sectionId);
-
-            if ($section->feedback_form_id !== $formId) {
-                throw new InvalidArgumentException('The feedback section does not belong to the selected form.');
+            if (! QuestionTypeRegistry::isTypeAvailable($type)) {
+                throw new InvalidArgumentException("The '{$type}' question type is not available.");
             }
-        }
 
-        $question ??= new FeedbackQuestion;
-        $question->fill([
-            'feedback_form_id' => $formId,
-            'feedback_section_id' => $sectionId,
-            'key' => $data['key'],
-            'type' => $data['type'],
-            'label' => $data['label'],
-            'description' => $data['description'] ?? null,
-            'help_text' => $data['help_text'] ?? null,
-            'placeholder' => $data['placeholder'] ?? null,
-            'is_required' => (bool) ($data['is_required'] ?? false),
-            'is_scored' => (bool) ($data['is_scored'] ?? false),
-            'order_column' => (int) ($data['order_column'] ?? 0),
-            'validation_rules' => $data['validation_rules'] ?? [],
-            'visibility_rules' => $data['visibility_rules'] ?? [],
-            'scoring_rules' => $data['scoring_rules'] ?? [],
-            'settings' => $data['settings'] ?? [],
-            'metadata' => $data['metadata'] ?? [],
-        ])->save();
+            $key = (string) ($data['key'] ?? '');
 
-        return $question;
+            $keyQuery = FeedbackQuestion::query()
+                ->where('feedback_form_id', $formId)
+                ->where('key', $key);
+
+            if ($question !== null) {
+                $keyQuery->where('id', '!=', $question->id);
+            }
+
+            $duplicateKey = $keyQuery->exists();
+
+            if ($duplicateKey) {
+                throw new InvalidArgumentException("The '{$key}' question key is already used in this form.");
+            }
+
+            $sectionId = array_key_exists('feedback_section_id', $data)
+                ? $data['feedback_section_id']
+                : null;
+
+            if ($sectionId !== null) {
+                $section = $this->findOwned(FeedbackSection::class, (string) $sectionId);
+
+                if ($section->feedback_form_id !== $formId) {
+                    throw new InvalidArgumentException('The feedback section does not belong to the selected form.');
+                }
+            }
+
+            $question ??= new FeedbackQuestion;
+            $question->fill([
+                'feedback_form_id' => $formId,
+                'feedback_section_id' => $sectionId,
+                'key' => $data['key'],
+                'type' => $data['type'],
+                'label' => $data['label'],
+                'description' => $data['description'] ?? null,
+                'help_text' => $data['help_text'] ?? null,
+                'placeholder' => $data['placeholder'] ?? null,
+                'is_required' => (bool) ($data['is_required'] ?? false),
+                'is_scored' => (bool) ($data['is_scored'] ?? false),
+                'order_column' => (int) ($data['order_column'] ?? 0),
+                'validation_rules' => $data['validation_rules'] ?? [],
+                'visibility_rules' => $data['visibility_rules'] ?? [],
+                'scoring_rules' => $data['scoring_rules'] ?? [],
+                'settings' => $data['settings'] ?? [],
+                'metadata' => $data['metadata'] ?? [],
+            ])->save();
+
+            return $question;
+        });
     }
 
     /**
@@ -123,26 +128,48 @@ final class SaveFeedbackFormStructureAction
         array $data,
         ?FeedbackQuestionOption $option = null,
     ): FeedbackQuestionOption {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $questionId);
+        return (new FeedbackQuestion)->getConnection()->transaction(function () use ($questionId, $data, $option): FeedbackQuestionOption {
+            $this->findOwned(FeedbackQuestion::class, $questionId, lock: true);
 
-        if ($option !== null) {
-            $option = OwnerWriteGuard::findOrFailForOwner(FeedbackQuestionOption::class, $option->id);
+            if ($option !== null) {
+                $option = $this->findOwned(FeedbackQuestionOption::class, $option->id);
 
-            if ($option->feedback_question_id !== $questionId) {
-                throw new InvalidArgumentException('The feedback option does not belong to the selected question.');
+                if ($option->feedback_question_id !== $questionId) {
+                    throw new InvalidArgumentException('The feedback option does not belong to the selected question.');
+                }
             }
+
+            $option ??= new FeedbackQuestionOption;
+            $option->fill([
+                'feedback_question_id' => $questionId,
+                'label' => $data['label'],
+                'value' => $data['value'],
+                'score' => $data['score'] ?? null,
+                'order_column' => (int) ($data['order_column'] ?? 0),
+                'metadata' => $data['metadata'] ?? [],
+            ])->save();
+
+            return $option;
+        });
+    }
+
+    /**
+     * @template TModel of FeedbackForm|FeedbackSection|FeedbackQuestion|FeedbackQuestionOption
+     * @param  class-string<TModel>  $modelClass
+     * @return TModel
+     */
+    private function findOwned(string $modelClass, string $id, bool $lock = false): Model
+    {
+        if ($modelClass::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
         }
 
-        $option ??= new FeedbackQuestionOption;
-        $option->fill([
-            'feedback_question_id' => $questionId,
-            'label' => $data['label'],
-            'value' => $data['value'],
-            'score' => $data['score'] ?? null,
-            'order_column' => (int) ($data['order_column'] ?? 0),
-            'metadata' => $data['metadata'] ?? [],
-        ])->save();
+        $query = $modelClass::query()->whereKey($id);
 
-        return $option;
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->firstOrFail();
     }
 }
