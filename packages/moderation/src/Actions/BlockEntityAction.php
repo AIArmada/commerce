@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
@@ -47,7 +48,7 @@ final readonly class BlockEntityAction
         return $connection->transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
             $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->firstOrFail();
 
-            $existing = Block::query()
+            $existing = OwnerScopeOverride::withoutIncludeGlobal(fn (): ?Block => Block::query()
                 ->where('blockable_type', $blockable->getMorphClass())
                 ->where('blockable_id', $blockable->getKey())
                 ->where('status', BlockStatus::Active)
@@ -56,7 +57,7 @@ final readonly class BlockEntityAction
                         ->orWhere('expires_at', '>', CarbonImmutable::now());
                 })
                 ->lockForUpdate()
-                ->first();
+                ->first());
 
             if ($existing instanceof Block) {
                 if ($existing->expires_at !== null && $expiresAt->greaterThan($existing->expires_at)) {
