@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Strategies;
+namespace AIArmada\Inventory\Features\Stock\Queries;
 
 use AIArmada\Inventory\Data\AllocationContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
@@ -16,8 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * Nearest Location allocation strategy.
  * Allocates from locations closest to a specified origin point.
  */
-/** @implements AllocationStrategyInterface<InventoryLocation> */
-final class NearestLocationStrategy implements AllocationStrategyInterface
+final class NearestLocationStrategy
 {
     public function name(): string
     {
@@ -85,16 +84,17 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
         $levels = $this->getAvailableLevels($model, $context);
         $sortedLevels = $this->sortByDistance($levels, $context);
 
-        $locationIds = $sortedLevels->pluck('location_id')->unique()->values();
-        $positionById = array_flip($locationIds->all());
+        $locations = [];
 
-        $locationsQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLocation::query()->whereIn('id', $locationIds)
-        );
+        foreach ($sortedLevels as $level) {
+            $location = $level->location;
 
-        return $locationsQuery->get()
-            ->sortBy(fn (InventoryLocation $location): int => $positionById[$location->id])
-            ->values();
+            if ($location !== null && ! isset($locations[$location->id])) {
+                $locations[$location->id] = $location;
+            }
+        }
+
+        return new Collection(array_values($locations));
     }
 
     /**
@@ -105,7 +105,8 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
     public function getLocationsByDistance(float $originX, float $originY, ?float $originZ = null): Collection
     {
         $locationsQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-            ->where('is_active', true);
+            ->where('is_active', true)
+            ->orderBy('id');
 
         $locations = $locationsQuery->get();
 

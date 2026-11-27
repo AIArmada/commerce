@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Strategies;
+namespace AIArmada\Inventory\Features\Traceability\Queries;
 
 use AIArmada\Inventory\Data\AllocationContext;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Api\LocationVisibility;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -18,9 +18,10 @@ use InvalidArgumentException;
  * FEFO (First Expired, First Out) allocation strategy.
  * Prioritizes batches that expire soonest to minimize waste.
  */
-/** @implements AllocationStrategyInterface<InventoryBatch> */
-final class FefoStrategy implements AllocationStrategyInterface
+final readonly class FefoStrategy
 {
+    public function __construct(private LocationVisibility $locations) {}
+
     public function name(): string
     {
         return 'fefo';
@@ -48,7 +49,7 @@ final class FefoStrategy implements AllocationStrategyInterface
         }
 
         $batches = $this->eligibleBatches($model, $context)->fefo()->orderBy('id')->get();
-        $allocations = $this->buildAllocations($batches, $quantity);
+        $allocations = $this->buildAllocations($batches, $quantity, $context);
 
         if (! $context->allowPartialAllocation && array_sum(array_column($allocations, 'quantity')) < $quantity) {
             return [];
@@ -63,6 +64,10 @@ final class FefoStrategy implements AllocationStrategyInterface
 
         if ($quantity <= 0) {
             return false;
+        }
+
+        if ($context->maxLocations !== null) {
+            return array_sum(array_column($this->allocate($model, $quantity, $context), 'quantity')) >= $quantity;
         }
 
         $available = (int) $this->eligibleBatches($model, $context)
@@ -89,11 +94,7 @@ final class FefoStrategy implements AllocationStrategyInterface
     private function eligibleBatches(Model $model, AllocationContext $context): Builder
     {
         if (InventoryOwnerScope::isEnabled() && $context->locationId !== null) {
-            $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereKey($context->locationId)
-                ->exists();
-
-            if (! $isAllowed) {
+            if (! $this->locations->isVisible($context->locationId)) {
                 throw new InvalidArgumentException('Invalid location for current owner');
             }
         }
@@ -103,6 +104,7 @@ final class FefoStrategy implements AllocationStrategyInterface
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->allocatable()
+                ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query)->where('is_active', true))
         );
 
         if ($context->locationId !== null) {
@@ -129,20 +131,26 @@ final class FefoStrategy implements AllocationStrategyInterface
      * @param  Collection<int, InventoryBatch>  $batches
      * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: CarbonImmutable|null}>
      */
-    private function buildAllocations(Collection $batches, int $quantity): array
+    private function buildAllocations(Collection $batches, int $quantity, AllocationContext $context): array
     {
         $allocations = [];
         $remaining = $quantity;
+        $locations = [];
 
         foreach ($batches as $batch) {
             if ($remaining <= 0) {
                 break;
             }
 
+            if ($context->maxLocations !== null && ! isset($locations[$batch->location_id]) && count($locations) >= $context->maxLocations) {
+                continue;
+            }
+
             $available = $batch->available;
             $allocate = min($available, $remaining);
 
             if ($allocate > 0) {
+                $locations[$batch->location_id] = true;
                 $allocations[] = [
                     'batch_id' => $batch->id,
                     'location_id' => $batch->location_id,

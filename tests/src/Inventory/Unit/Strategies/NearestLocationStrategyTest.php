@@ -6,8 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Data\AllocationContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Strategies\AllocationStrategyInterface;
-use AIArmada\Inventory\Strategies\NearestLocationStrategy;
+use AIArmada\Inventory\Features\Stock\Queries\NearestLocationStrategy;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -15,10 +14,6 @@ beforeEach(function (): void {
 });
 
 describe('NearestLocationStrategy', function (): void {
-    it('implements AllocationStrategyInterface', function (): void {
-        expect($this->strategy)->toBeInstanceOf(AllocationStrategyInterface::class);
-    });
-
     it('allocates from single location', function (): void {
         $location = InventoryLocation::factory()->create([
             'coordinate_x' => 0,
