@@ -377,13 +377,13 @@ it('rejects respondents outside the allowlist', function (): void {
     $user = feedbackRegressionUser('Allowed Respondent');
 
     expect(fn () => app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $otherForm->getMorphClass(),
         respondentId: (string) $otherForm->getKey(),
     ))->toThrow(InvalidArgumentException::class, 'not allowed');
 
     $response = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $user->getMorphClass(),
         respondentId: (string) $user->getKey(),
     );
@@ -438,7 +438,7 @@ it('refuses to start responses on closed forms or invalid invitations', function
     $form = regressionPublishedForm('Start Guard Form');
     app(CloseFeedbackFormAction::class)->execute($form);
 
-    expect(fn () => app(StartFeedbackResponseAction::class)->execute(form: $form, isAnonymous: true))
+    expect(fn () => app(StartFeedbackResponseAction::class)->execute(formId: $form->id, isAnonymous: true))
         ->toThrow(RuntimeException::class, 'not accepting');
 
     $open = regressionPublishedForm('Start Guard Open Form');
@@ -449,7 +449,7 @@ it('refuses to start responses on closed forms or invalid invitations', function
     ]);
 
     expect(fn () => app(StartFeedbackResponseAction::class)->execute(
-        form: $open,
+        formId: $open->id,
         invitationId: $cancelled->id,
         isAnonymous: true,
     ))->toThrow(RuntimeException::class, 'cancelled');

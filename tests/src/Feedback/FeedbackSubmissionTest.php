@@ -130,12 +130,12 @@ it('reuses an open draft when starting twice for a respondent', function (): voi
     $form = publishedFeedbackForm('Draft Reuse Form');
 
     $firstResponse = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
     $secondResponse = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -157,7 +157,7 @@ it('submits an existing open draft', function (): void {
     ]);
     $form = publishedFeedbackForm('Stale Draft Form', isOneResponsePerRespondent: true);
     $startResponse = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -268,8 +268,8 @@ it('isolates anonymous drafts by invitation and never reuses an unbound anonymou
     $form = publishedFeedbackForm('Anonymous Draft Isolation');
     $start = app(StartFeedbackResponseAction::class);
 
-    $first = $start->execute(form: $form, isAnonymous: true);
-    $second = $start->execute(form: $form, isAnonymous: true);
+    $first = $start->execute(formId: $form->id, isAnonymous: true);
+    $second = $start->execute(formId: $form->id, isAnonymous: true);
 
     expect($first->is($second))->toBeFalse();
 
@@ -282,9 +282,9 @@ it('isolates anonymous drafts by invitation and never reuses an unbound anonymou
         ]);
     }
 
-    $draftA = $start->execute(form: $form, invitationId: $invitations[0]->id, isAnonymous: true);
-    $draftB = $start->execute(form: $form, invitationId: $invitations[1]->id, isAnonymous: true);
-    $repeat = $start->execute(form: $form, invitationId: $invitations[0]->id, isAnonymous: true);
+    $draftA = $start->execute(formId: $form->id, invitationId: $invitations[0]->id, isAnonymous: true);
+    $draftB = $start->execute(formId: $form->id, invitationId: $invitations[1]->id, isAnonymous: true);
+    $repeat = $start->execute(formId: $form->id, invitationId: $invitations[0]->id, isAnonymous: true);
 
     expect($draftA->is($draftB))->toBeFalse()
         ->and($draftA->feedback_invitation_id)->toBe($invitations[0]->id)
@@ -474,7 +474,7 @@ it('rejects a targeted invitation used by a different respondent', function (): 
     ]);
 
     expect(fn () => app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $other->getMorphClass(),
         respondentId: (string) $other->getKey(),
         invitationId: $invitation->id,
@@ -505,7 +505,7 @@ it('honors the submitted anonymity choice when reusing a draft and extracting a 
     ]);
 
     $draft = app(StartFeedbackResponseAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
         isAnonymous: $draftAnonymous,

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Responses\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Api\ReadsSubmissionForm;
+use AIArmada\Feedback\Features\Forms\Api\SubmissionFormDefinition;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Api\ExtractsTestimonials;
@@ -18,7 +18,6 @@ use AIArmada\Feedback\Support\FeedbackSubmissionGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\DeadlockException;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
@@ -32,6 +31,7 @@ final class SubmitFeedbackResponseAction
         private readonly CalculateFeedbackResponseScoreAction $calculateResponseScore,
         private readonly ExtractsTestimonials $extractTestimonial,
         private readonly FeedbackSubmissionGuard $submissionGuard,
+        private readonly ReadsSubmissionForm $forms,
         private readonly FeedbackModelReferenceGuard $referenceGuard,
         private readonly ManagesInvitationLifecycle $invitationLifecycle,
     ) {}
@@ -54,14 +54,8 @@ final class SubmitFeedbackResponseAction
 
     private function executeWithinTransaction(SubmitFeedbackResponseData $data): FeedbackResponse
     {
-        return DB::transaction(function () use ($data): FeedbackResponse {
-            $guardedForm = FeedbackForm::ownerScopeConfig()->enabled
-                ? OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $data->formId)
-                : FeedbackForm::query()->whereKey($data->formId)->firstOrFail();
-            $form = FeedbackForm::with('questions.options')
-                ->lockForUpdate()
-                ->whereKey($guardedForm->getKey())
-                ->firstOrFail();
+        return (new FeedbackResponse)->getConnection()->transaction(function () use ($data): FeedbackResponse {
+            $form = $this->forms->requireOwned($data->formId);
 
             $this->submissionGuard->assertFormAcceptingSubmissions(
                 $form,
@@ -83,9 +77,9 @@ final class SubmitFeedbackResponseAction
             }
 
             try {
-                return DB::transaction(function () use ($form, $data): FeedbackResponse {
+                return (new FeedbackResponse)->getConnection()->transaction(function () use ($form, $data): FeedbackResponse {
                     $response = $this->startResponse->execute(
-                        form: $form,
+                        formId: $form->id,
                         respondentType: $data->respondentType,
                         respondentId: $data->respondentId,
                         invitationId: $data->invitationId,
@@ -98,7 +92,7 @@ final class SubmitFeedbackResponseAction
                         $submittedValues[$answer->questionKey] = $answer->value;
                     }
 
-                    $visibleQuestions = $this->validateAnswers->execute($form->questions->map(static fn ($question) => $question->definition())->values()->all(), $submittedValues);
+                    $visibleQuestions = $this->validateAnswers->execute($form->questions, $submittedValues);
 
                     foreach ($visibleQuestions as $question) {
                         $value = $submittedValues[$question->key] ?? null;
@@ -122,7 +116,7 @@ final class SubmitFeedbackResponseAction
                     $response->forceFill([
                         'status' => FeedbackResponseStatus::Submitted,
                         'is_anonymous' => $data->isAnonymous,
-                        'enforce_respondent_uniqueness' => $form->is_one_response_per_respondent,
+                        'enforce_respondent_uniqueness' => $form->isOneResponsePerRespondent,
                         'submitted_at' => CarbonImmutable::now(),
                         'ip_address' => $data->ipAddress !== null
                             ? mb_substr($data->ipAddress, 0, 255)
@@ -162,10 +156,10 @@ final class SubmitFeedbackResponseAction
     }
 
     private function findExistingSubmittedResponse(
-        FeedbackForm $form,
+        SubmissionFormDefinition $form,
         SubmitFeedbackResponseData $data,
     ): ?FeedbackResponse {
-        if (! $form->is_one_response_per_respondent
+        if (! $form->isOneResponsePerRespondent
             || $data->respondentType === null
             || $data->respondentId === null) {
             return null;
@@ -192,15 +186,15 @@ final class SubmitFeedbackResponseAction
     }
 
     private function assertSubmittedQuestionsBelongToForm(
-        FeedbackForm $form,
+        SubmissionFormDefinition $form,
         SubmitFeedbackResponseData $data,
     ): void {
-        $questions = $form->questions->keyBy('id');
+        $questions = array_column($form->questions, null, 'id');
         $seenQuestionIds = [];
         $seenQuestionKeys = [];
 
         foreach ($data->answers as $answer) {
-            $question = $questions->get($answer->questionId);
+            $question = $questions[$answer->questionId] ?? null;
 
             if ($question === null || $question->key !== $answer->questionKey) {
                 throw new RuntimeException('A submitted answer references a question outside the selected form.');

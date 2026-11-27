@@ -8,6 +8,8 @@ use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateActio
 use AIArmada\Feedback\Features\Forms\Api\CreatesFormsFromTemplates;
 use AIArmada\Feedback\Features\Forms\Api\ReadsFormMetrics;
 use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
+use AIArmada\Feedback\Features\Forms\Api\ReadsSubmissionForm;
+use AIArmada\Feedback\Features\Forms\Queries\ReadSubmissionFormQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadOwnedFormIdentityQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadFormMetricsQuery;
 use AIArmada\Feedback\Platform\FeatureModule as FeatureModuleContract;
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(ReadsFormMetrics::class, ReadFormMetricsQuery::class);
         $app->bind(ReadsOwnedFormIdentity::class, ReadOwnedFormIdentityQuery::class);
+        $app->bind(ReadsSubmissionForm::class, ReadSubmissionFormQuery::class);
         $app->bind(CreatesFormsFromTemplates::class, CreateFeedbackFormFromTemplateAction::class);
     }
 
