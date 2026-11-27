@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\Pages;
 
 use AIArmada\FilamentPricing\Resources\PriceListResource;
+use AIArmada\Pricing\Actions\DeletePriceList;
 use AIArmada\Pricing\Actions\UpdatePriceList;
 use AIArmada\Pricing\Models\PriceList;
 use Filament\Actions;
@@ -26,7 +27,8 @@ final class EditPriceList extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (PriceList $record): bool => app(DeletePriceList::class)->execute($record)),
         ];
     }
 }

@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Data;
 
-use Spatie\LaravelData\Data;
-
-final class TierPriceResultData extends Data
+final readonly class TierPriceResultData
 {
     public function __construct(
         public int $price,

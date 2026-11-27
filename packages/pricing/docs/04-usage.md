@@ -135,17 +135,19 @@ class Product extends Model implements Priceable
 The calculator returns a `PriceResultData` DTO with helper methods:
 
 ```php
+use AIArmada\Pricing\Support\PriceResultFormatter;
+
 $result = $calculator->calculate($product, 1);
 
 // Check if there's a discount
 if ($result->hasDiscount()) {
-    echo "You save: " . $result->getFormattedSavings();
+    echo "You save: " . PriceResultFormatter::getFormattedSavings($result);
 }
 
 // Formatted prices (symbol is prefixed with no separating space)
-echo $result->getFormattedOriginalPrice(); // "RM50.00"
-echo $result->getFormattedFinalPrice();    // "RM45.00"
-echo $result->getFormattedSavings();       // "RM5.00"
+echo PriceResultFormatter::getFormattedOriginalPrice($result); // "RM50.00"
+echo PriceResultFormatter::getFormattedFinalPrice($result);    // "RM45.00"
+echo PriceResultFormatter::getFormattedSavings($result);       // "RM5.00"
 ```
 
 ## Working with Price Lists
@@ -347,7 +349,7 @@ Promotions resolve via `PromotionServiceInterface::calculateDiscounts()` through
 ### Ownership checks, currency errors, and deletes
 
 - When `aiarmada/customers` is installed, `customer_id`/`segment_id` on a price list must reference an existing record; otherwise saving throws `AuthorizationException`.
-- `PriceResultData::getMoney()` (and the savings/original variants) throw `AIArmada\Pricing\Exceptions\InvalidCurrencyException` for unknown currency codes.
+- `PriceResultFormatter::getMoney($result)` (and the savings/original variants) throw `AIArmada\Pricing\Exceptions\InvalidCurrencyException` for unknown currency codes.
 - Deleting a price list removes its prices and tiers in one transaction; deletes outside the current owner scope throw.
 - The Filament `PriceSimulator` (`filament-pricing`) requires `aiarmada/products`; without it the plugin does not register the page.
 

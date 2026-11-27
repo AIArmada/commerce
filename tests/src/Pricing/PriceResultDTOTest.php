@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Exceptions\InvalidCurrencyException;
+use AIArmada\Pricing\Support\PriceResultFormatter;
 
 describe('PriceResultData', function (): void {
     describe('hasDiscount', function (): void {
@@ -37,7 +38,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 2000,
             );
 
-            expect($result->getFormattedSavings())->toBe('RM20.00');
+            expect(PriceResultFormatter::getFormattedSavings($result))->toBe('RM20.00');
         });
 
         it('formats zero savings', function (): void {
@@ -47,7 +48,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 0,
             );
 
-            expect($result->getFormattedSavings())->toBe('RM0.00');
+            expect(PriceResultFormatter::getFormattedSavings($result))->toBe('RM0.00');
         });
     });
 
@@ -59,7 +60,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 1500,
             );
 
-            expect($result->getFormattedFinalPrice())->toBe('RM85.00');
+            expect(PriceResultFormatter::getFormattedFinalPrice($result))->toBe('RM85.00');
         });
 
         it('formats large amounts', function (): void {
@@ -69,7 +70,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 1,
             );
 
-            expect($result->getFormattedFinalPrice())->toBe('RM9,999.99');
+            expect(PriceResultFormatter::getFormattedFinalPrice($result))->toBe('RM9,999.99');
         });
     });
 
@@ -81,7 +82,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 3000,
             );
 
-            expect($result->getFormattedOriginalPrice())->toBe('RM150.00');
+            expect(PriceResultFormatter::getFormattedOriginalPrice($result))->toBe('RM150.00');
         });
     });
 
@@ -137,7 +138,13 @@ describe('PriceResultData', function (): void {
         );
 
         foreach (['getMoney', 'getSavingsMoney', 'getOriginalMoney'] as $method) {
-            expect(fn () => $result->{$method}())->toThrow(InvalidCurrencyException::class);
+            expect(fn () => PriceResultFormatter::{$method}($result))->toThrow(InvalidCurrencyException::class);
         }
     });
+});
+
+it('keeps calculation results immutable', function (): void {
+    $result = new PriceResultData(originalPrice: 1000, finalPrice: 900, discountAmount: 100);
+
+    expect(fn () => $result->finalPrice = 1)->toThrow(Error::class);
 });

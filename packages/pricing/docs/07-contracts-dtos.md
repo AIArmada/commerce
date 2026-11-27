@@ -196,9 +196,7 @@ The DTO returned by price calculations:
 ```php
 namespace AIArmada\Pricing\Data;
 
-use Spatie\LaravelData\Data;
-
-final class PriceResultData extends Data
+final readonly class PriceResultData
 {
     public function __construct(
         public int $originalPrice,
@@ -234,15 +232,17 @@ final class PriceResultData extends Data
 #### Methods
 
 ```php
+use AIArmada\Pricing\Support\PriceResultFormatter;
+
 $result = $calculator->calculate($product, 1);
 
 // Check for discount
 $result->hasDiscount(); // bool
 
 // Formatted prices — MoneyFormatter::prefixSymbol() concatenates without a space
-$result->getFormattedOriginalPrice(); // "RM50.00"
-$result->getFormattedFinalPrice();    // "RM45.00"
-$result->getFormattedSavings();       // "RM5.00"
+PriceResultFormatter::getFormattedOriginalPrice($result); // "RM50.00"
+PriceResultFormatter::getFormattedFinalPrice($result);    // "RM45.00"
+PriceResultFormatter::getFormattedSavings($result);       // "RM5.00"
 ```
 
 #### Breakdown Structure
@@ -293,9 +293,7 @@ Returned by `TierResolverInterface::resolve()`:
 ```php
 namespace AIArmada\Pricing\Data;
 
-use Spatie\LaravelData\Data;
-
-final class TierPriceResultData extends Data
+final readonly class TierPriceResultData
 {
     public function __construct(
         public int $price,
