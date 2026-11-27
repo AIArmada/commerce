@@ -6,7 +6,7 @@ namespace AIArmada\Jnt\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
-use AIArmada\Jnt\Http\JntClient;
+use AIArmada\Jnt\Drivers\JntClient;
 use Spatie\Health\Checks\Result;
 use Throwable;
 

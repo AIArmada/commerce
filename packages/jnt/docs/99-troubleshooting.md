@@ -345,7 +345,7 @@ foreach ($logs as $log) {
 ### Signature Verification Test
 
 ```php
-use AIArmada\Jnt\Http\JntClient;
+use AIArmada\Jnt\Drivers\JntClient;
 
 $client = app(JntClient::class);
 

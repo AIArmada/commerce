@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
+use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Shipping\Actions\CalculateShippingRate;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;

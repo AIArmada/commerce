@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Shipping;
+namespace AIArmada\Jnt\Drivers;
 
 use AIArmada\Jnt\Data\AddressData as JntAddressData;
 use AIArmada\Jnt\Data\ItemData;

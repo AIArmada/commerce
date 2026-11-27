@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Http;
+namespace AIArmada\Jnt\Drivers;
 
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
@@ -76,11 +76,10 @@ class JntClient
 
             $data = $response->json();
 
-            if ($data === null) {
-                throw JntApiException::invalidApiResponse($endpoint, 'Failed to decode API response: invalid JSON');
+            if (! is_array($data)) {
+                throw JntApiException::invalidApiResponse($endpoint, 'Failed to decode API response: expected a JSON object or array');
             }
 
-            // Check for API-level errors
             if (isset($data['code']) && (string) $data['code'] !== '1') {
                 throw new JntApiException(
                     message: 'J&T API request failed: ' . ($data['msg'] ?? 'Unknown error'),
@@ -174,7 +173,7 @@ class JntClient
         foreach ($data as $key => $value) {
             $keyString = is_string($key) ? mb_strtolower($key) : '';
 
-            if (in_array($keyString, ['password', 'private_key', 'digest', 'signature'], true)) {
+            if (in_array($keyString, ['password', 'private_key', 'privatekey', 'digest', 'signature'], true)) {
                 $masked[$key] = '***MASKED***';
 
                 continue;
@@ -200,7 +199,7 @@ class JntClient
                 continue;
             }
 
-            if (in_array($keyString, ['address', 'addr', 'postcode', 'post_code', 'postal_code'], true)) {
+            if (in_array($keyString, ['address', 'addr', 'postcode', 'post_code', 'postal_code', 'postalcode', 'name', 'contactname', 'contact_name'], true)) {
                 $masked[$key] = '***MASKED***';
 
                 continue;

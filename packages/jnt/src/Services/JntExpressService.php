@@ -16,7 +16,7 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Http\JntClient;
+use AIArmada\Jnt\Drivers\JntClient;
 use AIArmada\Jnt\Support\FieldNameConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Concurrency;

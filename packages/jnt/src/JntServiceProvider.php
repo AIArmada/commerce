@@ -20,7 +20,7 @@ use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
 use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
+use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\Support\StatusMappingStrategyRegistry;
 use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
 use AIArmada\Jnt\Webhooks\JntWebhookProfile;

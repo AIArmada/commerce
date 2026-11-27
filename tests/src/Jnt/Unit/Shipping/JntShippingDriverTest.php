@@ -10,7 +10,7 @@ use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
-use AIArmada\Jnt\Shipping\JntShippingDriver;
+use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
