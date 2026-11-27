@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Feedback\Actions\MarkFeedbackResponseAsSpamAction;
-use AIArmada\Feedback\Actions\RejectFeedbackResponseAction;
-use AIArmada\Feedback\Actions\ReviewFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\MarkFeedbackResponseAsSpamAction;
+use AIArmada\Feedback\Features\Responses\Actions\RejectFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\ReviewFeedbackResponseAction;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;

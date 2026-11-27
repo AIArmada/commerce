@@ -6,7 +6,7 @@ namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
-use AIArmada\Feedback\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use Carbon\CarbonImmutable;
 use Throwable;
 

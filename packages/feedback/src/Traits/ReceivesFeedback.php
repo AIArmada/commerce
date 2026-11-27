@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Traits;
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

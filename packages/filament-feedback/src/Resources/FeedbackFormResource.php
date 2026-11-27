@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Feedback\Actions\ArchiveFeedbackFormAction;
-use AIArmada\Feedback\Actions\CloseFeedbackFormAction;
-use AIArmada\Feedback\Actions\PublishFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\ArchiveFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CloseFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\PublishFeedbackFormAction;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackFormVisibility;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;

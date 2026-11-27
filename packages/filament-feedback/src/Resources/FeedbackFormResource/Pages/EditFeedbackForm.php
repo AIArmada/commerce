@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\Pages;
 
-use AIArmada\Feedback\Actions\UpdateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\UpdateFeedbackFormAction;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackFormVisibility;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers\InvitationsRelationManager;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers\QuestionsRelationManager;

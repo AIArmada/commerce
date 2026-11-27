@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackTemplateStatus;
-use AIArmada\Feedback\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
@@ -14,8 +14,8 @@ use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
 use AIArmada\Feedback\Features\Analytics\Queries\RatingDistributionCalculator;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Support\Collection;
 
 it('calculates known NPS, CSAT, distribution, and completion values', function (): void {

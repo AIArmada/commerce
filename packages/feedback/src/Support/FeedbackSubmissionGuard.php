@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
 use RuntimeException;
 

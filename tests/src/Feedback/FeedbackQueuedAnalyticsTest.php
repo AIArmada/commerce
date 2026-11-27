@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 use AIArmada\Feedback\Features\Analytics\Actions\RecalculateFeedbackFormAnalyticsAction;
 use AIArmada\Feedback\Features\Analytics\EntryPoints\Jobs\RecalculateFeedbackFormAnalyticsJob;
 use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;

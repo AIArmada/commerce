@@ -10,7 +10,7 @@ use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
 use RuntimeException;
 

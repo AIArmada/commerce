@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\StartFeedbackResponseAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Responses\Actions\StartFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
@@ -14,10 +14,10 @@ use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;

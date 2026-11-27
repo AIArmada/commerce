@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
-use AIArmada\Feedback\Actions\DuplicateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Models\FeedbackTemplate;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Actions\DuplicateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 
 it('saves, updates, creates from templates, and duplicates form structure', function (): void {
     $template = FeedbackTemplate::query()->create([

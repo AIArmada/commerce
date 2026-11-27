@@ -9,7 +9,7 @@ use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Events\FeedbackInvitationSent;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use Carbon\CarbonImmutable;

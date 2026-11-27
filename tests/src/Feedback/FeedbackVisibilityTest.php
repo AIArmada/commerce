@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
-use AIArmada\Feedback\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Support\VisibilityRuleEvaluator;
 use Illuminate\Support\Collection;
 

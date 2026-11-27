@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Invitations\Actions\ExpireFeedbackInvitationAction;
 use AIArmada\Feedback\Features\Invitations\Actions\GenerateFeedbackInvitationUrlAction;
 use AIArmada\Feedback\Features\Invitations\Actions\MarkFeedbackInvitationOpenedAction;

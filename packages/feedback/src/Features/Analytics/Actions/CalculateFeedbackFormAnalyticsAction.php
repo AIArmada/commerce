@@ -6,7 +6,7 @@ namespace AIArmada\Feedback\Features\Analytics\Actions;
 
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 
 final class CalculateFeedbackFormAnalyticsAction
 {

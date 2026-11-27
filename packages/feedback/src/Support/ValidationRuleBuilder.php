@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
-use AIArmada\Feedback\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use Closure;
 use Illuminate\Validation\Rule;
 

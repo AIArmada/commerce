@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Exports;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Feedback\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;

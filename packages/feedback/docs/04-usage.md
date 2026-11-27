@@ -7,7 +7,7 @@ title: Usage
 ## Create a form
 
 ```php
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -24,7 +24,7 @@ $form = OwnerContext::withOwner($tenant, fn () =>
 ## Create from template
 
 ```php
-use AIArmada\Feedback\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
 
 $template = FeedbackTemplate::where('slug', 'post-event-feedback')->first();
 $form = app(CreateFeedbackFormFromTemplateAction::class)->execute($template, [
@@ -52,7 +52,7 @@ $event->createFeedbackFormFromTemplate('post-event-feedback');
 ## Add questions and sections
 
 ```php
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 
 app(SaveFeedbackFormStructureAction::class)->saveQuestion(
     formId: $form->id,
@@ -69,7 +69,7 @@ app(SaveFeedbackFormStructureAction::class)->saveQuestion(
 ## Publish form
 
 ```php
-use AIArmada\Feedback\Actions\PublishFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\PublishFeedbackFormAction;
 
 app(PublishFeedbackFormAction::class)->execute($form);
 ```
@@ -128,7 +128,7 @@ Route::get('/feedback/invitations/{token}', function (string $token) {
 ## Submit response
 
 ```php
-use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
 
@@ -212,7 +212,7 @@ Event::listen(FeedbackResponseSubmitted::class, function ($event) {
 `SaveFeedbackFormStructureAction` is the single owner-guarded structure path (`saveSection` / `saveQuestion` / `saveOption`, each via `OwnerWriteGuard::findOrFailForOwner`). Pass the parent id every time so cross-form attaches fail fast:
 
 ```php
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 
 app(SaveFeedbackFormStructureAction::class)->saveSection(formId: $form->id, data: ['title' => 'Basics']);
 app(SaveFeedbackFormStructureAction::class)->saveOption(questionId: $question->id, data: ['label' => 'Yes', 'value' => 'yes']);

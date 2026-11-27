@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Events;
 
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Foundation\Events\Dispatchable;
 
 final class FeedbackResponseReviewed

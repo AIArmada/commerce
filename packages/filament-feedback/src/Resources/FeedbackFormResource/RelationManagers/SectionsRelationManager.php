@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Feedback\Actions\DeleteFeedbackSectionAction;
-use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Models\FeedbackSection;
+use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackSectionAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;

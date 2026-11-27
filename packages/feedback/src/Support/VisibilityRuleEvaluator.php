@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Support;
 
-use AIArmada\Feedback\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 
 final class VisibilityRuleEvaluator
 {

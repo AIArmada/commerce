@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\Pages;
 
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;

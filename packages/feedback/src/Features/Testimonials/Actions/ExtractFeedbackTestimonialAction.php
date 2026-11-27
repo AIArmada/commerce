@@ -9,8 +9,8 @@ use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Features\Testimonials\Api\ExtractsTestimonials;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Events\FeedbackTestimonialExtracted;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Builder;
 

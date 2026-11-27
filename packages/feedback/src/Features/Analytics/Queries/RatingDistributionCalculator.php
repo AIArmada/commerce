@@ -6,10 +6,10 @@ namespace AIArmada\Feedback\Features\Analytics\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\Feedback\Models\FeedbackAnswer;
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackQuestion;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Database\Eloquent\Builder;
 
 final class RatingDistributionCalculator

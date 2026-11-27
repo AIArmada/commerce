@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Traits;
 
-use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

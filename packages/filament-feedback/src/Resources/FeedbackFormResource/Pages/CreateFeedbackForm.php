@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\Pages;
 
-use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackFormVisibility;
-use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
