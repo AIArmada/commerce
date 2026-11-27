@@ -30,6 +30,20 @@ final readonly class FindReturnShipment implements ReadReturnShipment
         );
     }
 
+    public function linkedShipmentId(string $type, string $id): ?string
+    {
+        $shipment = Shipment::query()->where('shippable_type', $type)->where('shippable_id', $id)->first();
+
+        return $shipment?->id;
+    }
+
+    public function isPackageComponent(?string $type, ?string $id): bool
+    {
+        return $id !== null && $type === (new ShipmentItem)->getMorphClass()
+            && ShipmentItem::query()->whereKey($id)->whereNotNull('package_unit_ordinal')
+                ->whereHas('shipment')->exists();
+    }
+
     public function packageLines(string $shipmentId): array
     {
         return $this->shipment($shipmentId)->items()->whereNotNull('package_unit_ordinal')->get()

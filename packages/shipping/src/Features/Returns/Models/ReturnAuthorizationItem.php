@@ -7,7 +7,7 @@ namespace AIArmada\Shipping\Features\Returns\Models;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonImmutable;
-use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
+use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
 use DomainException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -115,11 +115,7 @@ class ReturnAuthorizationItem extends Model implements Auditable
                 return;
             }
 
-            $shipmentItem = new ShipmentItem;
-            if ($item->original_item_type === $shipmentItem->getMorphClass()
-                && $item->original_item_id !== null
-                && ShipmentItem::query()->whereKey($item->original_item_id)->whereNotNull('package_unit_ordinal')
-                    ->whereHas('shipment')->exists()) {
+            if (app(ReadReturnShipment::class)->isPackageComponent($item->original_item_type, $item->original_item_id)) {
                 throw new DomainException('Package components must be returned as a complete package unit.');
             }
         });

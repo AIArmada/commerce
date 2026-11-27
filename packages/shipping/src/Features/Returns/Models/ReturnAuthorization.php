@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
-use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
 use AIArmada\Shipping\Features\Returns\States\ReturnAuthorizationStatus;
 use AIArmada\Shipping\Features\Returns\States\RmaApproved;
 use AIArmada\Shipping\Features\Returns\States\RmaCancelled;
@@ -24,9 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -54,8 +52,6 @@ use Spatie\ModelStates\HasStates;
  * @property array|null $metadata
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read Shipment|null $originalShipment
- * @property-read Shipment|null $returnShipment
  * @property-read Collection<int, ReturnAuthorizationItem> $items
  */
 class ReturnAuthorization extends Model implements Auditable
@@ -113,22 +109,6 @@ class ReturnAuthorization extends Model implements Auditable
     // ─────────────────────────────────────────────────────────────
     // RELATIONSHIPS
     // ─────────────────────────────────────────────────────────────
-
-    /**
-     * @return BelongsTo<Shipment, ReturnAuthorization>
-     */
-    public function originalShipment(): BelongsTo
-    {
-        return $this->belongsTo(Shipment::class, 'original_shipment_id');
-    }
-
-    /**
-     * @return MorphOne<Shipment, ReturnAuthorization>
-     */
-    public function returnShipment(): MorphOne
-    {
-        return $this->morphOne(Shipment::class, 'shippable');
-    }
 
     /**
      * @return HasMany<ReturnAuthorizationItem, ReturnAuthorization>
@@ -240,7 +220,7 @@ class ReturnAuthorization extends Model implements Auditable
                 throw new DomainException('A received package return cannot be deleted.');
             }
 
-            if ($rma->returnShipment()->exists()) {
+            if (app(ReadReturnShipment::class)->linkedShipmentId($rma->getMorphClass(), (string) $rma->getKey()) !== null) {
                 throw new DomainException('A return authorization with a return shipment cannot be deleted.');
             }
 
