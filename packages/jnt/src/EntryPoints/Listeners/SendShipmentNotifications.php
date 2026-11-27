@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Listeners;
+namespace AIArmada\Jnt\EntryPoints\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;

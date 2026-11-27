@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Webhooks;
+namespace AIArmada\Jnt\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use AIArmada\CommerceSupport\Support\OwnerContext;

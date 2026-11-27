@@ -9,7 +9,7 @@ use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
+use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;

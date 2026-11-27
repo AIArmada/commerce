@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Http\Controllers;
+namespace AIArmada\Jnt\EntryPoints\Http\Controllers;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\Services\WebhookService;

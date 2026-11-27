@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Http\Controllers;
+namespace AIArmada\Jnt\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;

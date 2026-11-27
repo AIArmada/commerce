@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
+use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
 use Illuminate\Support\Facades\Queue;
 use Spatie\WebhookClient\Models\WebhookCall;
 

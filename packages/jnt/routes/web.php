@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Http\Controllers\AwbController;
+use AIArmada\Jnt\EntryPoints\Http\Controllers\AwbController;
 use Illuminate\Support\Facades\Route;
 
 // AWB download is a signed-URL-gated endpoint. The signed URL cryptographically

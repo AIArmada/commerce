@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
+use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Spatie\WebhookClient\Models\WebhookCall;
