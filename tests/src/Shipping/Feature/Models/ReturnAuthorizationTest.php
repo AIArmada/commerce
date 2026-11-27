@@ -6,9 +6,9 @@ use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;
+use AIArmada\Shipping\Features\Returns\States\RmaApproved;
+use AIArmada\Shipping\Features\Returns\States\RmaDraft;
+use AIArmada\Shipping\Features\Returns\States\RmaPending;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 

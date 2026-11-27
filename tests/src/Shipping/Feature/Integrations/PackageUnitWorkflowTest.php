@@ -26,7 +26,7 @@ use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
+use AIArmada\Shipping\Features\Returns\States\RmaCompleted;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function (): void {

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Tables
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Actions\RejectReturnAction;
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
+use AIArmada\Shipping\Features\Returns\States\ReturnAuthorizationStatus;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;

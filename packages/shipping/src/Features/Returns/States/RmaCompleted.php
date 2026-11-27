@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\States\ReturnAuthorizationState;
+namespace AIArmada\Shipping\Features\Returns\States;
 
-final class RmaExpired extends ReturnAuthorizationStatus
+final class RmaCompleted extends ReturnAuthorizationStatus
 {
-    public static string $name = 'expired';
+    public static string $name = 'completed';
 
     public function label(): string
     {
-        return 'Expired';
+        return 'Completed';
     }
 
     public function color(): string
     {
-        return 'info';
+        return 'success';
     }
 
     public function icon(): string
     {
-        return 'heroicon-o-clock';
+        return 'heroicon-o-check-badge';
     }
 
     public function isTerminal(): bool

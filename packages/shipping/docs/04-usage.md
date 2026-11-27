@@ -531,7 +531,7 @@ New RMAs start in `RmaDraft` status.
 ### Submitting for Review
 
 ```php
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;
+use AIArmada\Shipping\Features\Returns\States\RmaPending;
 
 $rma->status->transitionTo(RmaPending::class);
 ```
@@ -539,8 +539,8 @@ $rma->status->transitionTo(RmaPending::class);
 ### Approving or Rejecting
 
 ```php
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaRejected;
+use AIArmada\Shipping\Features\Returns\States\RmaApproved;
+use AIArmada\Shipping\Features\Returns\States\RmaRejected;
 
 // Approve
 $rma->status->transitionTo(RmaApproved::class);
@@ -554,7 +554,7 @@ $rma->update(['rejected_at' => now(), 'rejected_by' => auth()->id()]);
 ### Marking as Received
 
 ```php
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaReceived;
+use AIArmada\Shipping\Features\Returns\States\RmaReceived;
 
 $rma->status->transitionTo(RmaReceived::class);
 $rma->update(['received_at' => now()]);
@@ -563,7 +563,7 @@ $rma->update(['received_at' => now()]);
 ### Completing the Return
 
 ```php
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
+use AIArmada\Shipping\Features\Returns\States\RmaCompleted;
 
 $rma->status->transitionTo(RmaCompleted::class);
 $rma->update(['completed_at' => now()]);

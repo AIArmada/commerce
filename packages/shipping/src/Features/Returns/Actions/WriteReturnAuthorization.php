@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;
+use AIArmada\Shipping\Features\Returns\States\RmaDraft;
+use AIArmada\Shipping\Features\Returns\States\RmaPending;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 

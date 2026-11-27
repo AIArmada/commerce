@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\States\ReturnAuthorizationState;
+namespace AIArmada\Shipping\Features\Returns\States;
 
 final class RmaDraft extends ReturnAuthorizationStatus
 {

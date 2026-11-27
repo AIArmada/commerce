@@ -7,7 +7,7 @@ namespace AIArmada\Shipping\Features\Returns\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaRejected;
+use AIArmada\Shipping\Features\Returns\States\RmaRejected;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
