@@ -27,7 +27,7 @@ final readonly class TrackingData
 
     public function isDelivered(): bool
     {
-        return $this->status->isTerminal() && $this->status === TrackingStatus::Delivered;
+        return $this->status->getCategory() === 'delivered';
     }
 
     public function hasEvents(): bool

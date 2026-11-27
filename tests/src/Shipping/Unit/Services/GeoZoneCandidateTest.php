@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ZoneCandidateData;
-use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\GeoZoneResolutionStrategy;
 
 it('matches immutable zone candidates without exposing models or accepting partial state matches', function (): void {
     $zone = new ZoneCandidateData('state', 'state', ['US'], ['CA'], null, null, null, null, 10, false, true);

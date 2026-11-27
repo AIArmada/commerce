@@ -60,6 +60,20 @@ describe('TrackingData', function (): void {
         expect($inTransit->isDelivered())->toBeFalse();
     });
 
+    it('recognizes all successful delivery statuses without treating loss or return as delivery', function (TrackingStatus $status, bool $expected): void {
+        $tracking = new TrackingData(trackingNumber: 'TRACK123', status: $status, events: []);
+
+        expect($tracking->isDelivered())->toBe($expected);
+    })->with([
+        [TrackingStatus::Delivered, true],
+        [TrackingStatus::DeliveredToNeighbor, true],
+        [TrackingStatus::DeliveredToLocker, true],
+        [TrackingStatus::SignedFor, true],
+        [TrackingStatus::Lost, false],
+        [TrackingStatus::ReturnDelivered, false],
+        [TrackingStatus::InTransit, false],
+    ]);
+
     it('checks if tracking has events', function (): void {
         $withEvents = new TrackingData(
             trackingNumber: 'TRACK123',
