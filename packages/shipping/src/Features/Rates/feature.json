@@ -1,13 +1,6 @@
 {
   "schema": 1,
   "name": "Rates",
-  "owns": {
-    "table:shipping_rates": [
-      "AIArmada\\Shipping\\Features\\Rates\\Models\\ShippingRate"
-    ],
-    "table:shipping_zones": [
-      "AIArmada\\Shipping\\Features\\Rates\\Models\\ShippingZone"
-    ]
-  },
+  "owns": {},
   "extensions": {}
 }
