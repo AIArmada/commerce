@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Vouchers\Actions\RemoveVoucherFromCart;
+use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 

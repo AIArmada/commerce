@@ -7,7 +7,7 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\EntryPoints\Listeners\IncrementVoucherAppliedCount;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\Vouchers\Models\Voucher;
 

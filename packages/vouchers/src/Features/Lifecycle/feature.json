@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Lifecycle",
+  "owns": {
+    "table:vouchers": [
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherApplication"
+    ]
+  },
+  "extensions": {}
+}

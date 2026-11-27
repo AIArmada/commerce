@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\EntryPoints\Listeners;
+namespace AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners;
 
-use AIArmada\Vouchers\Actions\RecordVoucherApplication;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherApplication;
 use AIArmada\Vouchers\Events\VoucherApplied;
 
 final readonly class IncrementVoucherAppliedCount

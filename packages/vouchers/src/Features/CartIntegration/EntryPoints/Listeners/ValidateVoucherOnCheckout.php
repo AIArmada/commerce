@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\EntryPoints\Listeners;
+namespace AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
-use AIArmada\Vouchers\Actions\RevalidateCartVouchers;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\RevalidateCartVouchers;
 
 final readonly class ValidateVoucherOnCheckout
 {
