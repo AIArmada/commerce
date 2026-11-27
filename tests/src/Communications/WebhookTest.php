@@ -14,7 +14,7 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\EntryPoints\Http\Controllers\WebhookController;
 use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Communications\Jobs\ProcessWebhookEventJob;
+use AIArmada\Communications\EntryPoints\Jobs\ProcessWebhookEventJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;

@@ -15,7 +15,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Events\CommunicationCreated;
 use AIArmada\Communications\Events\CommunicationQueued;
-use AIArmada\Communications\Jobs\DispatchManagedNotificationJob;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;

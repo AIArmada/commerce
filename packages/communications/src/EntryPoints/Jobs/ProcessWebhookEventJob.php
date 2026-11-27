@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Jobs;
+namespace AIArmada\Communications\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;

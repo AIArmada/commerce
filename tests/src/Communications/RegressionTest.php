@@ -32,7 +32,7 @@ use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Enums\TrackingInteractionType;
 use AIArmada\Communications\Events\CommunicationExpired;
 use AIArmada\Communications\Events\DeliveryDelivered;
-use AIArmada\Communications\Jobs\ProcessWebhookEventJob;
+use AIArmada\Communications\EntryPoints\Jobs\ProcessWebhookEventJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationAttachment;
 use AIArmada\Communications\Models\CommunicationDelivery;

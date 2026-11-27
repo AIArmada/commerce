@@ -7,7 +7,7 @@ namespace AIArmada\Communications\Console\Commands;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Jobs\DispatchCommunicationDeliveriesJob;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;

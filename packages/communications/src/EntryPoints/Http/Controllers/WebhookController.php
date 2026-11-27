@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Http\Controllers;
 
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
-use AIArmada\Communications\Jobs\ProcessWebhookEventJob;
+use AIArmada\Communications\EntryPoints\Jobs\ProcessWebhookEventJob;
 use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
