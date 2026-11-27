@@ -17,7 +17,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Product;
-use BackedEnum;
+use AIArmada\Products\Queries\CatalogExport;
 use Carbon\CarbonImmutable;
 use Closure;
 use Exception;
@@ -502,41 +502,14 @@ class ProductsTable
 
     private static function exportProducts(array $data): StreamedResponse
     {
-        $fields = array_values(array_filter(
-            (array) ($data['fields'] ?? []),
-            static fn (mixed $field): bool => is_string($field) && $field !== ''
-        ));
-        $statusFilter = $data['status_filter'] ?? 'all';
+        $fields = array_values((array) ($data['fields'] ?? []));
+        $rows = app(CatalogExport::class)->rows($fields, (string) ($data['status_filter'] ?? 'all'));
 
-        return response()->streamDownload(function () use ($fields, $statusFilter): void {
-            $query = Product::query()->forOwner();
-
-            if ($statusFilter !== 'all') {
-                $query->where('status', $statusFilter);
-            }
-
+        return response()->streamDownload(function () use ($fields, $rows): void {
             $csv = Writer::createFromPath('php://output', 'w');
             $csv->insertOne($fields);
 
-            foreach ($query->cursor() as $product) {
-                $row = [];
-                foreach ($fields as $field) {
-                    $value = $product->{$field};
-
-                    if (in_array($field, ['price', 'compare_price', 'cost'], true) && is_numeric($value)) {
-                        $value /= 100;
-                    }
-
-                    if ($value instanceof BackedEnum) {
-                        $value = $value->value;
-                    }
-
-                    if (is_bool($value)) {
-                        $value = $value ? 'true' : 'false';
-                    }
-
-                    $row[] = $value;
-                }
+            foreach ($rows as $row) {
                 $csv->insertOne($row);
             }
         }, 'products-export-' . CarbonImmutable::now()->format('Y-m-d-His') . '.csv', [

@@ -12,6 +12,8 @@ use AIArmada\FilamentProducts\Resources\ProductResource\Tables\ProductsTable;
 use AIArmada\Products\Actions\ImportCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Queries\CatalogExport;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -209,5 +211,21 @@ it('enforces per-row import authorization', function (): void {
         expect($result[0])->toBe(0)
             ->and($result[2])->toHaveCount(1)
             ->and(Product::query()->where('name', 'Denied Product')->exists())->toBeFalse();
+    });
+});
+
+it('rejects unapproved export columns and neutralizes spreadsheet formulas', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create([
+            'name' => '=1+1',
+            'slug' => 'formula-example',
+            'price' => 100,
+        ]);
+
+        $query = app(CatalogExport::class);
+
+        expect(fn () => $query->rows(['owner_id']))->toThrow(ValidationException::class)
+            ->and(fn () => $query->rows(['name'], 'bogus'))->toThrow(ValidationException::class)
+            ->and($query->rows(['name'])->first())->toBe(["'=1+1"]);
     });
 });
