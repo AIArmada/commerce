@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
@@ -282,9 +283,9 @@ test('webhook owner context comes from the configured resolver', function (): vo
             private readonly Model $owner,
         ) {}
 
-        public function resolve(string $provider, array $payload): ?Model
+        public function resolve(string $provider, array $payload): ?RecordReference
         {
-            return $this->owner;
+            return new RecordReference($this->owner->getMorphClass(), (string) $this->owner->getKey());
         }
     });
 

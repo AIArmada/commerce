@@ -263,7 +263,7 @@ Pruning hard-deletes eligible records; communications models use no soft deletes
 
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
 
-Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to resolve a trusted owner model from provider-authenticated payload data. Returning `null` lets provider events derive the delivery's owner scope from the delivery itself.
+Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to return a trusted `AIArmada\CommerceSupport\Data\RecordReference` (owner morph type and ID) from provider-authenticated payload data. Explicit owner references are resolved again in the worker and missing owners fail closed. Returning `null` lets provider events derive the delivery's owner scope from the delivery itself.
 
 ## Restricted attributes
 

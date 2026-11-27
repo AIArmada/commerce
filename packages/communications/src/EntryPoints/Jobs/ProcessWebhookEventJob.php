@@ -54,7 +54,7 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
 
         try {
             OwnerContext::withOwner(
-                OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId),
+                OwnerContext::fromTypeAndIdOrFail($this->ownerType, $this->ownerId),
                 function () use ($normalizer, $applyAction): void {
                     $eventData = $normalizer->normalize($this->provider, $this->payload);
 

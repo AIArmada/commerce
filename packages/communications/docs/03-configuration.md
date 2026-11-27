@@ -208,7 +208,7 @@ Payloads larger than `max_payload_bytes` or nested deeper than
 The default `WebhookOwnerResolver` binding returns `null`. Provider events
 applied without a resolved owner derive the delivery's owner scope from the
 delivery itself; bind a custom resolver when webhooks must resolve ownership
-from provider-specific payload fields.
+from provider-specific payload fields. Return a `RecordReference` containing the trusted owner type and ID; the worker rejects explicit references to deleted owners.
 
 ## Cache
 

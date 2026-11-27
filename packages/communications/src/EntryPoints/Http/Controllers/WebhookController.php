@@ -43,8 +43,8 @@ final class WebhookController extends Controller
         ProcessWebhookEventJob::dispatch(
             provider: $provider,
             payload: $payload,
-            ownerId: $owner !== null ? (string) $owner->getKey() : null,
-            ownerType: $owner?->getMorphClass(),
+            ownerId: $owner?->id,
+            ownerType: $owner?->type,
             signatureValidatedAt: $request->attributes->get('communications.webhook_signature_validated_at'),
         );
 
