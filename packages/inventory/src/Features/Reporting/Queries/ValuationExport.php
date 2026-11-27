@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Contracts\ExportableInterface;
-
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

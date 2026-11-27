@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Actions;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Stock\Actions\ShipInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

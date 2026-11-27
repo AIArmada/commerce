@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

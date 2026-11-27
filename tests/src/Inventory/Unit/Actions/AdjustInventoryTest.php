@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAdjusted;
+use AIArmada\Inventory\Features\Stock\Actions\AdjustInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Models\InventoryMovement;
 use Illuminate\Support\Facades\Event;
 
 describe('AdjustInventory', function (): void {
@@ -79,11 +80,11 @@ describe('AdjustInventory', function (): void {
             'quantity_reserved' => 10,
         ]);
 
-        $before = \AIArmada\Inventory\Models\InventoryMovement::query()->count();
+        $before = InventoryMovement::query()->count();
 
         expect(fn () => $this->action->handle($this->item, $this->location->id, 9))->toThrow(InvalidArgumentException::class)
             ->and($level->fresh()->quantity_on_hand)->toBe(20)
-            ->and(\AIArmada\Inventory\Models\InventoryMovement::query()->count())->toBe($before);
+            ->and(InventoryMovement::query()->count())->toBe($before);
     });
 
     it('dispatches inventory adjusted event with correct data', function (): void {

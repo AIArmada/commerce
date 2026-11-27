@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Models;
 
-
-use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -14,6 +12,7 @@ use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;

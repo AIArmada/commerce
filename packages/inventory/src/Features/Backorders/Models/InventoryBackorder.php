@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Backorders\Models;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Database\Factories\InventoryBackorderFactory;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Database\Factories\InventoryBackorderFactory;
 use AIArmada\Inventory\Enums\BackorderPriority;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\States\BackorderStatus;
 use AIArmada\Inventory\States\Cancelled;
 use AIArmada\Inventory\States\Expired;

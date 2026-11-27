@@ -240,7 +240,7 @@ final class FulfillmentLocationService
      * Calculate a score for how well a location can fulfill requirements.
      *
      * @param  Collection<int, array{model: Model, quantity: int, key: string}>  $requirements
-     * @param  array<string, array<string, int>> $availability
+     * @param  array<string, array<string, int>>  $availability
      * @return array{int, int, int}
      */
     private function calculateFulfillmentScore(InventoryLocation $location, Collection $requirements, array $availability): array
@@ -262,7 +262,7 @@ final class FulfillmentLocationService
      * Check if a location can fulfill all requirements.
      *
      * @param  Collection<int, array{model: Model, quantity: int, key: string}>  $requirements
-     * @param  array<string, array<string, int>> $availability
+     * @param  array<string, array<string, int>>  $availability
      */
     private function locationCanFulfillAll(InventoryLocation $location, Collection $requirements, array $availability): bool
     {
@@ -278,7 +278,7 @@ final class FulfillmentLocationService
     }
 
     /**
-     * @param Collection<int, array{model: Model, quantity: int, key: string}> $requirements
+     * @param  Collection<int, array{model: Model, quantity: int, key: string}>  $requirements
      * @return array<string, array<string, int>>
      */
     private function getAvailabilityByLocation(Collection $requirements): array

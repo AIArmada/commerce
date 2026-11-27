@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Products\Actions\GenerateVariantMatrix;
 use Illuminate\Support\Facades\DB;
 
 /**

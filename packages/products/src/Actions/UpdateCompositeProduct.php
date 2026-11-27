@@ -19,8 +19,8 @@ final readonly class UpdateCompositeProduct
     ) {}
 
     /**
-     * @param array<string, mixed> $data
-     * @param list<array<string, mixed>>|null $components
+     * @param  array<string, mixed>  $data
+     * @param  list<array<string, mixed>>|null  $components
      */
     public function execute(Product $record, array $data, ?array $components): Product
     {

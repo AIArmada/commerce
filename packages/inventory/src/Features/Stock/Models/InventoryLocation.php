@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Models;
 
-use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
-
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-
-use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -19,6 +12,10 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Database\Factories\InventoryLocationFactory;
 use AIArmada\Inventory\Enums\TemperatureZone;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Traits\HasLocationHierarchy;
 use Carbon\CarbonImmutable;

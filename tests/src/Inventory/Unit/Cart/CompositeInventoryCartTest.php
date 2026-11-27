@@ -14,9 +14,9 @@ use AIArmada\Inventory\Cart\InventoryValidator;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockOnCheckout;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Model;
 
 it('recognizes only typed catalog composites under strict Eloquent attribute access', function (): void {

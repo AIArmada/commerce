@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products;
 
+use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\Enums\ProductStatus;
@@ -29,7 +30,6 @@ use AIArmada\Products\Policies\OptionValuePolicy;
 use AIArmada\Products\Policies\ProductPolicy;
 use AIArmada\Products\Policies\VariantPolicy;
 use AIArmada\Products\Services\CompositePackageService;
-use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Support\StockBackedCompositeCapacityResolver;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;

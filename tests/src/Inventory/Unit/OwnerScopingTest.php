@@ -9,9 +9,9 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -271,7 +271,6 @@ it('treats a null resolved owner as global-only (never owner_type-only corrupt r
     });
 });
 
-
 it('rejects transfers between global and tenant stock in either direction', function (): void {
     config()->set('inventory.owner.enabled', true);
     config()->set('inventory.owner.include_global', true);
@@ -316,7 +315,6 @@ it('rejects transfers between global and tenant stock in either direction', func
     expect($ownedLevel->fresh()->quantity_on_hand)->toBe(5)
         ->and($globalLevel->fresh()->quantity_on_hand)->toBe(5);
 });
-
 
 it('rejects direct tenant location writes with a global parent', function (): void {
     config()->set('inventory.owner.enabled', true);

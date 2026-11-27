@@ -27,7 +27,7 @@ final class ExportService
         $filename = $export->getFilename();
         $this->assertSafeExportPath($path, $filename);
 
-        $fullPath = rtrim($path, '/\\') . DIRECTORY_SEPARATOR . $filename . '.csv';
+        $fullPath = mb_rtrim($path, '/\\') . DIRECTORY_SEPARATOR . $filename . '.csv';
         if (file_exists($fullPath) || is_link($fullPath)) {
             throw new RuntimeException('CSV export destination already exists.');
         }
@@ -42,7 +42,7 @@ final class ExportService
 
         try {
             foreach ($this->stream($export) as $chunk) {
-                if (fwrite($output, $chunk) !== strlen($chunk)) {
+                if (fwrite($output, $chunk) !== mb_strlen($chunk)) {
                     throw new RuntimeException('Failed to write complete CSV row.');
                 }
             }
@@ -107,7 +107,7 @@ final class ExportService
     }
 
     /** @param resource $output
-     * @param array<int, mixed> $row
+     * @param  array<int, mixed>  $row
      */
     private function encodeRow($output, array $row): string
     {

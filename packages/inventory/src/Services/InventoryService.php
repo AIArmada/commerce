@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * Core inventory operations service.
@@ -57,7 +58,7 @@ final class InventoryService
      * @param  DateTimeInterface|null  $occurredAt  When the receipt occurred (defaults to now)
      * @return InventoryMovement The created movement record
      *
-     * @throws \InvalidArgumentException If quantity is not positive
+     * @throws InvalidArgumentException If quantity is not positive
      */
     public function receive(
         Model $model,

@@ -7,13 +7,13 @@ use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\Actions\ReplaceOptionValues;
 use AIArmada\Products\Actions\UpdateProductStatus;
+use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
-use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
@@ -21,6 +21,7 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 
 describe('CreateProduct Action', function (): void {
     it('creates a product with given attributes', function (): void {
@@ -280,7 +281,7 @@ it('rolls back option replacement when a submitted value belongs to another opti
     expect(fn () => app(ReplaceOptionValues::class)->execute($option, [
         ['id' => $red->id, 'name' => 'Blue'],
         ['id' => $foreign->id, 'name' => 'Invalid'],
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 
     expect($red->fresh()->name)->toBe('Red')
         ->and($foreign->fresh()->name)->toBe('Large');

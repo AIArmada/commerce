@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryReceived;
+use AIArmada\Inventory\Features\Stock\Actions\ReceiveInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Illuminate\Support\Facades\Event;
 

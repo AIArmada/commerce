@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Products\Actions;
 
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
+use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
-use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;

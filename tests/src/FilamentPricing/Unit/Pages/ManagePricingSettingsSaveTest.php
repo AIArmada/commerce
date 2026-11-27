@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentPricing\Pages\ManagePricingSettings;
 use AIArmada\Pricing\Settings\PricingSettings;
 use Illuminate\Support\Facades\DB;
-use Spatie\LaravelSettings\Exceptions\MissingSettings;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Support\Facades\Gate;
+use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
 
 uses(TestCase::class);

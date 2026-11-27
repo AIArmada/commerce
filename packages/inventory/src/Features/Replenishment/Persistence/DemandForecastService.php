@@ -69,12 +69,12 @@ final class DemandForecastService
             }
 
             $existing = $query
-                    ->where('inventoryable_type', $model->getMorphClass())
-                    ->where('inventoryable_id', $model->getKey())
-                    ->where('location_id', $locationId)
-                    ->where('period_date', $periodDate)
-                    ->where('period_type', $periodType->value)
-                    ->lockForUpdate()->first();
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->where('location_id', $locationId)
+                ->where('period_date', $periodDate)
+                ->where('period_type', $periodType->value)
+                ->lockForUpdate()->first();
 
             if ($existing) {
                 $existing->update([

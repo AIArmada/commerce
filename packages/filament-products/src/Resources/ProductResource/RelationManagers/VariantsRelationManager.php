@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Actions\GenerateVariants;
-use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Actions\SaveVariant;
+use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Filament\Actions\Action;
@@ -255,6 +255,7 @@ final class VariantsRelationManager extends RelationManager
                 ]),
             ]);
     }
+
     private function catalogProduct(): Product
     {
         $product = $this->getOwnerRecord();

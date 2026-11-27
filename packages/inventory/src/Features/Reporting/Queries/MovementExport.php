@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Contracts\ExportableInterface;
-
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;

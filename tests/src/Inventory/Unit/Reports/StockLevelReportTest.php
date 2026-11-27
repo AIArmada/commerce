@@ -5,12 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);

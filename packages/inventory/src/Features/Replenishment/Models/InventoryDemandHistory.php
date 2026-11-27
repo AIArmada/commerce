@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Replenishment\Models;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Database\Factories\InventoryDemandHistoryFactory;
-
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Database\Factories\InventoryDemandHistoryFactory;
 use AIArmada\Inventory\Enums\DemandPeriodType;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;

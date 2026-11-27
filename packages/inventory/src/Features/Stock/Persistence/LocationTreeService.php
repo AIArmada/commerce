@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Stock\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Enums\TemperatureZone;
+use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;

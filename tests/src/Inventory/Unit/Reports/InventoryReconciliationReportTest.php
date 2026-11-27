@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryReconciliationReport;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
-use AIArmada\Inventory\Features\Reporting\Queries\InventoryReconciliationReport;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Carbon\CarbonImmutable;
 
 it('reports operation and reservation bookkeeping drift', function (): void {

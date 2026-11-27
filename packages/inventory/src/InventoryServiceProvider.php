@@ -11,35 +11,35 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
-use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ValidateInventoryOnAdd;
-use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredAllocationsCommand;
-use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
-use AIArmada\Inventory\Features\Reporting\Actions\ExportService;
-use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
+use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
+use AIArmada\Inventory\Features\Reporting\Actions\ExportService;
 use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
 use AIArmada\Inventory\Features\Reporting\Queries\InventoryReconciliationReport;
 use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
 use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredAllocationsCommand;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ValidateInventoryOnAdd;
+use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
+use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
 use AIArmada\Inventory\Features\Valuation\Persistence\ValuationService;
 use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService;
-use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
-use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
-use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
-use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
-use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
-use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
-use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 use AIArmada\Inventory\Platform\ExtensionRegistry;
 use AIArmada\Inventory\Platform\FeatureCatalog;
 use AIArmada\Inventory\Platform\FeatureModule;
+use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -227,5 +227,4 @@ final class InventoryServiceProvider extends PackageServiceProvider
             }
         }
     }
-
 }

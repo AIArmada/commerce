@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Integrations;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Actions\Concerns\AssertsOrderOwnerBoundary;
 use AIArmada\Orders\Contracts\FulfillmentHandler;

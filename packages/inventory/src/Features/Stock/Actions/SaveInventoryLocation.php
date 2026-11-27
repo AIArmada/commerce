@@ -78,7 +78,7 @@ final readonly class SaveInventoryLocation
     }
 
     /** @param Builder<InventoryLocation> $query
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function assertParent(Builder $query, array $attributes): void
     {

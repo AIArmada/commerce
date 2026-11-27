@@ -9,6 +9,7 @@ use AIArmada\FilamentPricing\Support\PricingSettingsAccess;
 use AIArmada\Pricing\Settings\PricingSettings;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 uses(TestCase::class);
 
@@ -86,5 +87,5 @@ it('rejects direct save calls without the configured ability', function (): void
     $page = new ManagePricingSettings;
     $page->data = validPricingSettingsData();
 
-    expect(fn () => $page->save())->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+    expect(fn () => $page->save())->toThrow(HttpException::class);
 });

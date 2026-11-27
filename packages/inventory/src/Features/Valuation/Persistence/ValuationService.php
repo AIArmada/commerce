@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

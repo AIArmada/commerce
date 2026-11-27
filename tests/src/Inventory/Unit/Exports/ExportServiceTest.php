@@ -212,7 +212,6 @@ describe('getRowCount', function (): void {
     });
 });
 
-
 it('neutralizes spreadsheet formulas in every CSV output without altering raw arrays', function (): void {
     $export = new class implements ExportableInterface
     {

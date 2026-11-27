@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
-use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
@@ -87,7 +87,7 @@ final class InventoryAllocationService
             throw new InvalidArgumentException('TTL minutes must be positive');
         }
 
-        if (trim($cartId) === '') {
+        if (mb_trim($cartId) === '') {
             throw new InvalidArgumentException('Allocation reference must not be empty');
         }
 

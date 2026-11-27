@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Models;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventorySerialFactory;
 use AIArmada\Inventory\Enums\SerialCondition;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Reserved;
 use AIArmada\Inventory\States\SerialStatus;

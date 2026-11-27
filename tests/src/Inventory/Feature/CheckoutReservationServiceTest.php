@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Exceptions\ReservationReferenceConflict;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
-use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Services\InventoryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;

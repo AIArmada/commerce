@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\BatchStatus;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

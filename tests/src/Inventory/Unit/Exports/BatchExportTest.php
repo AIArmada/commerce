@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Reporting\Queries\BatchExport;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['name' => 'Warehouse A']);

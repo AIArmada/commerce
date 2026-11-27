@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

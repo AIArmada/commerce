@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CommitStock

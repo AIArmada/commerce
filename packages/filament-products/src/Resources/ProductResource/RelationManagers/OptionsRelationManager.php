@@ -6,8 +6,8 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Products\Actions\ReplaceOptionValues;
-use AIArmada\Products\Models\Option;
 use AIArmada\Products\Actions\SaveOption;
+use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -175,6 +175,7 @@ final class OptionsRelationManager extends RelationManager
                 ]),
             ]);
     }
+
     private function catalogProduct(): Product
     {
         $product = $this->getOwnerRecord();

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Products\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 

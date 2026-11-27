@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Features\Stock\Actions\TransferInventory;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Illuminate\Support\Facades\Event;

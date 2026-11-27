@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reservations\Persistence;
 
-use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
-
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\InventoryableInterface;

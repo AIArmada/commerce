@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Models;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -15,6 +11,9 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Database\Factories\InventoryBatchFactory;
 use AIArmada\Inventory\Enums\BatchStatus;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;

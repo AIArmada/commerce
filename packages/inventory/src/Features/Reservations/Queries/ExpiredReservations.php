@@ -26,22 +26,22 @@ final readonly class ExpiredReservations
         }
 
         return $query->where(function (Builder $query) use ($now, $cutoff): void {
-                $query
-                    ->where(function (Builder $reserved) use ($now): void {
-                        $reserved
-                            ->where('status', InventoryReservation::STATE_RESERVED)
-                            ->whereNotNull('expires_at')
-                            ->where('expires_at', '<=', $now);
-                    })
-                    ->orWhere(function (Builder $terminal) use ($cutoff): void {
-                        $terminal
-                            ->whereIn('status', [
-                                InventoryReservation::STATE_COMMITTED,
-                                InventoryReservation::STATE_RELEASED,
-                                InventoryReservation::STATE_EXPIRED,
-                            ])
-                            ->where('updated_at', '<=', $cutoff);
-                    });
-            });
+            $query
+                ->where(function (Builder $reserved) use ($now): void {
+                    $reserved
+                        ->where('status', InventoryReservation::STATE_RESERVED)
+                        ->whereNotNull('expires_at')
+                        ->where('expires_at', '<=', $now);
+                })
+                ->orWhere(function (Builder $terminal) use ($cutoff): void {
+                    $terminal
+                        ->whereIn('status', [
+                            InventoryReservation::STATE_COMMITTED,
+                            InventoryReservation::STATE_RELEASED,
+                            InventoryReservation::STATE_EXPIRED,
+                        ])
+                        ->where('updated_at', '<=', $cutoff);
+                });
+        });
     }
 }

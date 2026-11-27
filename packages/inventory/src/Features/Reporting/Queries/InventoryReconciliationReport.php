@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Schema;

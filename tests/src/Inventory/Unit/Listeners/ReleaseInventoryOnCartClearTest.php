@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);

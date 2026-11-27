@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Valuation\Models;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Database\Factories\InventoryCostLayerFactory;
 use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use AIArmada\Inventory\Database\Factories\InventoryCostLayerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

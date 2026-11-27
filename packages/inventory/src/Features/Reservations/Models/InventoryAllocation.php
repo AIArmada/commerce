@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reservations\Models;
 
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryAllocationFactory;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
