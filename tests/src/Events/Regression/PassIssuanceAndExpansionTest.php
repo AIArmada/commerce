@@ -12,7 +12,7 @@ use AIArmada\Events\Features\Commerce\Actions\RecordAgentTicketSaleAction;
 use AIArmada\Events\Features\Registrations\Actions\CreateEventComponentRegistrationsAction;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketTypeComponent;
 

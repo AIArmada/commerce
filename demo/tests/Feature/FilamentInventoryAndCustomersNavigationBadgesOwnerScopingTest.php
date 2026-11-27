@@ -8,7 +8,7 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

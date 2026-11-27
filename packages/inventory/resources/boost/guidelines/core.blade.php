@@ -5,3 +5,5 @@ Use Inventory actions for stock writes and the reservation contracts for checkou
 Cart allocations are independent of checkout reservation groups. Use the checkout reservation contract for grouped lifecycle operations, not cart-reference mutations.
 
 Allocation actions (`AllocateStock`, `CommitStock`, `ReleaseStock`) live under `AIArmada\Inventory\Features\Reservations\Actions`.
+
+Stock levels, locations and movement ledger models live under `AIArmada\Inventory\Features\Stock\Models`.

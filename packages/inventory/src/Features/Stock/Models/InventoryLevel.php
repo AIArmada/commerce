@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Models;
 
-use AIArmada\Inventory\Models\InventoryLocation;
 
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;

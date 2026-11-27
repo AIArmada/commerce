@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -170,7 +170,7 @@ describe('InventoryLocation', function (): void {
             'code' => 'FORGED-OWNER',
             'owner_type' => $otherOwner->getMorphClass(),
             'owner_id' => $otherOwner->getKey(),
-        ]))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\Inventory\Models\InventoryLocation.');
+        ]))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\Inventory\Features\Stock\Models\InventoryLocation.');
     });
 
     it('has available capacity', function (): void {

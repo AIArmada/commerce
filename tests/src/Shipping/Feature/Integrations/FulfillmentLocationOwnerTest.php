@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Integrations;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use Illuminate\Support\Str;

@@ -115,7 +115,7 @@ Stock mutations belong to `InventoryService`; cart allocations belong to
 use AIArmada\Inventory\Facades\Inventory;
 
 // Create a location
-$location = \AIArmada\Inventory\Models\InventoryLocation::create([
+$location = \AIArmada\Inventory\Features\Stock\Models\InventoryLocation::create([
     'name' => 'Main Warehouse',
     'code' => 'WH-001',
     'is_active' => true,

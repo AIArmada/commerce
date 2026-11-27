@@ -7,7 +7,7 @@ use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;

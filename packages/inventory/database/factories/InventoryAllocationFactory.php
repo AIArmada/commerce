@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

@@ -8,7 +8,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryShipped;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Illuminate\Support\Facades\Event;
 
 describe('ShipInventory', function (): void {

@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\DemandPeriodType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

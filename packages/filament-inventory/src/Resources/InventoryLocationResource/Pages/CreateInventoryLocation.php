@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages;
 
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
 use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateInventoryLocation extends CreateRecord

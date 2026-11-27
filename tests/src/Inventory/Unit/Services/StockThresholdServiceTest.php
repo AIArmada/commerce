@@ -10,7 +10,7 @@ use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Events\SafetyStockBreached;
 use AIArmada\Inventory\Events\StockRestored;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\Stock\StockThresholdService;
 use Illuminate\Support\Facades\Event;
 

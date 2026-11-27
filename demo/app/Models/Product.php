@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use AIArmada\Inventory\Contracts\InventoryableInterface;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Traits\HasInventory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

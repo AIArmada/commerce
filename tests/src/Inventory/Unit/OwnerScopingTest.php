@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -261,7 +261,7 @@ it('treats a null resolved owner as global-only (never owner_type-only corrupt r
     $service = app(InventoryService::class);
 
     expect(fn () => $service->getTotalAvailable($inventoryable))
-        ->toThrow(NoCurrentOwnerException::class, 'AIArmada\Inventory\Models\InventoryLocation requires an owner context or explicit global context.');
+        ->toThrow(NoCurrentOwnerException::class, 'AIArmada\Inventory\Features\Stock\Models\InventoryLocation requires an owner context or explicit global context.');
 
     OwnerContext::withOwner(null, function () use ($service, $inventoryable, $globalLocation): void {
         expect($service->getTotalAvailable($inventoryable))->toBe(11);

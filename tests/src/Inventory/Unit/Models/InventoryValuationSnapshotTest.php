@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use Carbon\CarbonImmutable;
 

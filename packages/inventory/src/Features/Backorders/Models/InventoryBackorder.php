@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Backorders\Models;
 
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Database\Factories\InventoryBackorderFactory;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;

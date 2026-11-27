@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\Models\Product;
