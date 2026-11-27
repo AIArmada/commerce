@@ -11,6 +11,7 @@ use AIArmada\FilamentGrowth\Resources\ExperimentResource\Pages;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -38,7 +39,7 @@ final class ExperimentResource extends Resource
         $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
 
         return ExperimentAccess::applyOwnerSafeRelationCounts(
-            ExperimentAccess::scopeExperiments(Experiment::query()),
+            ExperimentOwnership::scopeExperiments(Experiment::query()),
         )->with([
             'trackedProperty' => function ($query) use ($propertyColumns) {
                 $builder = $query instanceof Relation ? $query->getQuery() : $query;

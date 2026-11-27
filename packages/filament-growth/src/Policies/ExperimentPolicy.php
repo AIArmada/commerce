@@ -7,6 +7,7 @@ namespace AIArmada\FilamentGrowth\Policies;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
@@ -49,12 +50,12 @@ final class ExperimentPolicy
 
     public function update(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
     }
 
     public function delete(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
     }
 
     public function deleteAny(Authorizable $user): bool
@@ -64,7 +65,7 @@ final class ExperimentPolicy
 
     public function restore(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
     }
 
     public function restoreAny(Authorizable $user): bool
@@ -74,7 +75,7 @@ final class ExperimentPolicy
 
     public function forceDelete(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
     }
 
     public function forceDeleteAny(Authorizable $user): bool
@@ -85,6 +86,6 @@ final class ExperimentPolicy
     private function hasWritableExperiments(): bool
     {
         return OwnerUiScope::canCreate(Experiment::class)
-            && ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)->exists();
+            && ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->exists();
     }
 }

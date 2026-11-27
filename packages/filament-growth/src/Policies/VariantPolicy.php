@@ -7,6 +7,7 @@ namespace AIArmada\FilamentGrowth\Policies;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Auth\Access\Authorizable;
@@ -48,12 +49,12 @@ final class VariantPolicy
 
     public function update(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function delete(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function deleteAny(Authorizable $user): bool
@@ -63,7 +64,7 @@ final class VariantPolicy
 
     public function restore(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function restoreAny(Authorizable $user): bool
@@ -73,7 +74,7 @@ final class VariantPolicy
 
     public function forceDelete(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentAccess::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
     }
 
     public function forceDeleteAny(Authorizable $user): bool
@@ -84,6 +85,6 @@ final class VariantPolicy
     private function hasWritableVariants(): bool
     {
         return OwnerUiScope::canCreate(Variant::class)
-            && ExperimentAccess::scopeVariants(Variant::query(), writable: true)->exists();
+            && ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->exists();
     }
 }

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentGrowth\Authorization;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
@@ -24,104 +24,20 @@ final class ExperimentAccess
         return $query->withOwnerMatchedCounts();
     }
 
-    /**
-     * @param  Builder<Experiment>  $query
-     * @return Builder<Experiment>
-     */
-    public static function scopeExperiments(Builder $query, bool $writable = false): Builder
-    {
-        $query = OwnerUiScope::apply($query, includeGlobal: $writable ? false : null);
-
-        if (! Experiment::ownerScopeConfig()->enabled) {
-            if (! TrackedProperty::ownerScopeConfig()->enabled) {
-                return $query;
-            }
-
-            return $query->whereIn(
-                $query->getModel()->qualifyColumn('tracked_property_id'),
-                OwnerUiScope::apply(TrackedProperty::query(), includeGlobal: $writable ? false : null)->select('id'),
-            );
-        }
-
-        $experiment = $query->getModel();
-        $property = new TrackedProperty;
-        $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
-        $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
-        $propertyType = $property->qualifyColumn($propertyColumns->ownerTypeColumn);
-        $propertyId = $property->qualifyColumn($propertyColumns->ownerIdColumn);
-        $experimentType = $experiment->qualifyColumn($experimentColumns->ownerTypeColumn);
-        $experimentId = $experiment->qualifyColumn($experimentColumns->ownerIdColumn);
-
-        $matched = TrackedProperty::query()
-            ->withoutGlobalScope(OwnerScope::class)
-            ->selectRaw('1')
-            ->whereColumn($property->getQualifiedKeyName(), $experiment->qualifyColumn('tracked_property_id'))
-            ->where(function (Builder $query) use ($propertyType, $propertyId, $experimentType, $experimentId): void {
-                $query->where(function (Builder $owned) use ($propertyType, $propertyId, $experimentType, $experimentId): void {
-                    $owned->whereColumn($propertyType, $experimentType)
-                        ->whereColumn($propertyId, $experimentId);
-                })->orWhere(function (Builder $global) use ($propertyType, $propertyId, $experimentType, $experimentId): void {
-                    $global->whereNull($propertyType)
-                        ->whereNull($propertyId)
-                        ->whereNull($experimentType)
-                        ->whereNull($experimentId);
-                });
-            });
-
-        return $query->whereExists($matched);
-    }
-
-    /**
-     * @param  Builder<Variant>  $query
-     * @return Builder<Variant>
-     */
-    public static function scopeVariants(Builder $query, bool $writable = false): Builder
-    {
-        $query = OwnerUiScope::apply($query, includeGlobal: $writable ? false : null);
-        $variant = $query->getModel();
-        $experiment = new Experiment;
-        $parents = self::scopeExperiments(Experiment::query(), $writable)
-            ->selectRaw('1')
-            ->whereColumn($experiment->getQualifiedKeyName(), $variant->qualifyColumn('experiment_id'));
-
-        if (Variant::ownerScopeConfig()->enabled) {
-            $variantColumns = OwnerTupleColumns::forModelClass(Variant::class);
-            $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
-            $variantType = $variant->qualifyColumn($variantColumns->ownerTypeColumn);
-            $variantId = $variant->qualifyColumn($variantColumns->ownerIdColumn);
-            $experimentType = $experiment->qualifyColumn($experimentColumns->ownerTypeColumn);
-            $experimentId = $experiment->qualifyColumn($experimentColumns->ownerIdColumn);
-
-            $parents->where(function (Builder $query) use ($variantType, $variantId, $experimentType, $experimentId): void {
-                $query->where(function (Builder $owned) use ($variantType, $variantId, $experimentType, $experimentId): void {
-                    $owned->whereColumn($variantType, $experimentType)
-                        ->whereColumn($variantId, $experimentId);
-                })->orWhere(function (Builder $global) use ($variantType, $variantId, $experimentType, $experimentId): void {
-                    $global->whereNull($variantType)
-                        ->whereNull($variantId)
-                        ->whereNull($experimentType)
-                        ->whereNull($experimentId);
-                });
-            });
-        }
-
-        return $query->whereExists($parents);
-    }
-
     public static function canViewExperiment(Experiment $experiment): bool
     {
-        return self::scopeExperiments(Experiment::query())->whereKey($experiment->getKey())->exists();
+        return ExperimentOwnership::scopeExperiments(Experiment::query())->whereKey($experiment->getKey())->exists();
     }
 
     public static function canViewVariant(Variant $variant): bool
     {
-        return self::scopeVariants(Variant::query())->whereKey($variant->getKey())->exists();
+        return ExperimentOwnership::scopeVariants(Variant::query())->whereKey($variant->getKey())->exists();
     }
 
     public static function canCreateVariant(): bool
     {
         return OwnerUiScope::canCreate(Variant::class)
-            && self::scopeExperiments(Experiment::query(), writable: true)->exists();
+            && ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->exists();
     }
 
     public static function canCreateExperiment(): bool
@@ -168,7 +84,7 @@ final class ExperimentAccess
             }
         }
 
-        return self::scopeExperiments(Experiment::query(), writable: true)
+        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
             ->whereKey($experiment->getKey())
             ->exists();
     }
@@ -193,7 +109,7 @@ final class ExperimentAccess
             }
         }
 
-        return self::scopeExperiments(Experiment::query(), writable: true)
+        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
             ->whereKey($variant->experiment_id)
             ->exists();
     }

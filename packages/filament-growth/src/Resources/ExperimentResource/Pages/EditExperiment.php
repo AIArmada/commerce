@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Resources\ExperimentResource\Pages;
 
-use AIArmada\FilamentGrowth\Actions\SaveExperiment;
+use AIArmada\Growth\Actions\SaveExperiment;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 final class EditExperiment extends EditRecord
 {
@@ -15,6 +16,8 @@ final class EditExperiment extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
+        Gate::authorize('update', $record);
+
         return app(SaveExperiment::class)->update((string) $record->getKey(), $data);
     }
 

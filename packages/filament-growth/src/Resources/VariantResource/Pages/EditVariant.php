@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
 
-use AIArmada\FilamentGrowth\Actions\SaveVariant;
+use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 final class EditVariant extends EditRecord
 {
@@ -15,6 +16,8 @@ final class EditVariant extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
+        Gate::authorize('update', $record);
+
         return app(SaveVariant::class)->update((string) $record->getKey(), $data);
     }
 

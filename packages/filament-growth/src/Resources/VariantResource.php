@@ -10,6 +10,7 @@ use AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
@@ -37,7 +38,7 @@ final class VariantResource extends Resource
         $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
         $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
 
-        return ExperimentAccess::scopeVariants(Variant::query())
+        return ExperimentOwnership::scopeVariants(Variant::query())
             ->with([
                 'experiment:' . implode(',', array_values(array_unique([
                     'id',

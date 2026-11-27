@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\FilamentGrowth\Actions\DeleteSelectedExperiments;
 use AIArmada\FilamentGrowth\Actions\DeleteSelectedVariants;
-use AIArmada\FilamentGrowth\Actions\SaveVariant;
+use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;

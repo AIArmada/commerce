@@ -6,10 +6,10 @@ namespace AIArmada\FilamentGrowth\Resources\VariantResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
-use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Enums\VariantStatus;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Models\Variant;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
@@ -174,7 +174,7 @@ class VariantForm
      */
     private static function scopeAccessibleExperiments(Builder $query): Builder
     {
-        return ExperimentAccess::scopeExperiments($query, writable: true);
+        return ExperimentOwnership::scopeExperiments($query, writable: true);
     }
 
     /**

@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentGrowth\Actions;
+namespace AIArmada\Growth\Actions;
 
-use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 final readonly class SaveVariant
@@ -18,8 +17,6 @@ final readonly class SaveVariant
     /** @param array<string, mixed> $data */
     public function create(array $data): Variant
     {
-        Gate::authorize('create', Variant::class);
-
         return (new Variant)->getConnection()->transaction(function () use ($data): Variant {
             $experimentId = $data['experiment_id'] ?? null;
 
@@ -27,7 +24,7 @@ final readonly class SaveVariant
                 throw new AuthorizationException('A writable experiment is required.');
             }
 
-            $experiment = ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)
+            $experiment = ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
                 ->whereKey($experimentId)->lockForUpdate()->firstOrFail();
 
             $record = new Variant($this->attributes($data, $experiment));
@@ -42,16 +39,14 @@ final readonly class SaveVariant
     public function update(string $id, array $data): Variant
     {
         return (new Variant)->getConnection()->transaction(function () use ($id, $data): Variant {
-            $record = ExperimentAccess::scopeVariants(Variant::query(), writable: true)
+            $record = ExperimentOwnership::scopeVariants(Variant::query(), writable: true)
                 ->whereKey($id)->lockForUpdate()->firstOrFail();
-
-            Gate::authorize('update', $record);
 
             if (array_key_exists('experiment_id', $data) && $data['experiment_id'] !== $record->experiment_id) {
                 throw ValidationException::withMessages(['experiment_id' => 'The parent experiment cannot be changed.']);
             }
 
-            $experiment = ExperimentAccess::scopeExperiments(Experiment::query(), writable: true)
+            $experiment = ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
                 ->whereKey($record->experiment_id)->firstOrFail();
 
             $record->fill($this->attributes($data, $experiment));
