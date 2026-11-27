@@ -5,28 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Data;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Order data from JNT Express API.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class OrderData extends Data
+final readonly class OrderData
 {
     /**
      * @param  array<string>|null  $additionalTrackingNumbers
      */
     public function __construct(
-        public readonly string $orderId,
-        public readonly ?string $trackingNumber = null,
-        public readonly ?string $sortingCode = null,
-        public readonly ?string $thirdSortingCode = null,
-        public readonly ?array $additionalTrackingNumbers = null,
-        public readonly ?string $chargeableWeight = null,
+        public string $orderId,
+        public ?string $trackingNumber = null,
+        public ?string $sortingCode = null,
+        public ?string $thirdSortingCode = null,
+        public ?array $additionalTrackingNumbers = null,
+        public ?string $chargeableWeight = null,
     ) {}
 
     /**

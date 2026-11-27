@@ -201,15 +201,15 @@ JNT_CUSTOMER_CODE=your_customer_code
 ```php
 use AIArmada\Jnt\Data\AddressData;
 
-$address = AddressData::from([
-    'name' => 'John Doe',
-    'phone' => '60123456789',
-    'address' => '123 Jalan Example',
-    'post_code' => '50000', // Must be 5 digits
-    'city' => 'Kuala Lumpur',
-    'state' => 'Kuala Lumpur',
-    'country_code' => 'MYS',
-]);
+$address = new AddressData(
+    name: 'John Doe',
+    phone: '60123456789',
+    address: '123 Jalan Example',
+    postCode: '50000', // Must be 5 digits
+    city: 'Kuala Lumpur',
+    state: 'Kuala Lumpur',
+    countryCode: 'MYS',
+);
 ```
 
 ---

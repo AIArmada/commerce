@@ -4,29 +4,23 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Address data for JNT Express shipments.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class AddressData extends Data
+final readonly class AddressData
 {
     public function __construct(
-        public readonly string $name,
-        public readonly string $phone,
-        public readonly string $address,
-        public readonly string $postCode,
-        public readonly string $countryCode = 'MYS',
-        public readonly ?string $state = null,
-        public readonly ?string $city = null,
-        public readonly ?string $area = null,
-        public readonly ?string $email = null,
-        public readonly ?string $idCard = null,
+        public string $name,
+        public string $phone,
+        public string $address,
+        public string $postCode,
+        public string $countryCode = 'MYS',
+        public ?string $state = null,
+        public ?string $city = null,
+        public ?string $area = null,
+        public ?string $email = null,
+        public ?string $idCard = null,
     ) {}
 
     /**
@@ -73,13 +67,13 @@ class AddressData extends Data
 
     public function getFullAddress(): string
     {
-        return collect([
+        return implode(', ', array_filter([
             $this->address,
             $this->area,
             $this->city,
             $this->state,
             $this->postCode,
             $this->countryCode,
-        ])->filter()->implode(', ');
+        ]));
     }
 }

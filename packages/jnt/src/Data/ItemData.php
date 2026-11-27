@@ -5,19 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Data;
 
 use AIArmada\Jnt\Support\TypeTransformer;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Item data for JNT Express shipments.
  *
  * Represents a single item in a shipment.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class ItemData extends Data
+final readonly class ItemData
 {
     /**
      * @param  string  $name  Item name (max 200 chars, required)
@@ -29,13 +23,13 @@ class ItemData extends Data
      * @param  string  $currency  Currency code (default: MYR)
      */
     public function __construct(
-        public readonly string $name,
-        public readonly int | string $quantity,
-        public readonly float | int | string $weight,
-        public readonly int $priceMinor,
-        public readonly ?string $englishName = null,
-        public readonly ?string $description = null,
-        public readonly string $currency = 'MYR',
+        public string $name,
+        public int | string $quantity,
+        public float | int | string $weight,
+        public int $priceMinor,
+        public ?string $englishName = null,
+        public ?string $description = null,
+        public string $currency = 'MYR',
     ) {}
 
     /**

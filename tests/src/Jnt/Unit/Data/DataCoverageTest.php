@@ -133,6 +133,20 @@ describe('PackageInfoData', function (): void {
     });
 });
 
+it('exposes immutable J&T request and order DTOs', function (): void {
+    foreach ([
+        \AIArmada\Jnt\Data\AddressData::class,
+        ItemData::class,
+        PackageInfoData::class,
+        \AIArmada\Jnt\Data\OrderData::class,
+    ] as $class) {
+        $reflection = new ReflectionClass($class);
+
+        expect($reflection->isFinal())->toBeTrue()
+            ->and($reflection->isReadOnly())->toBeTrue();
+    }
+});
+
 describe('ItemData', function (): void {
     it('round-trips API money as integer minor units', function (): void {
         $item = ItemData::fromApiArray([
