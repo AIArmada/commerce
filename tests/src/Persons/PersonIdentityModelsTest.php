@@ -219,6 +219,46 @@ describe('person identity models', function (): void {
             ->and($first->fresh()->sort_order)->toBe(2);
     });
 
+    it('keeps the same title position when editing without reordering', function (): void {
+        $category = TitleCategory::create(['code' => 'stable-order', 'name' => 'Stable Order']);
+        $action = app(ReorderTitleAction::class);
+
+        $first = $action->create([
+            'category_id' => $category->id,
+            'name' => 'First',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ]);
+        $second = $action->create([
+            'category_id' => $category->id,
+            'name' => 'Second',
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 2,
+        ]);
+
+        $action->update($first, ['name' => 'Edited']);
+
+        expect($first->fresh()->name)->toBe('Edited')
+            ->and($first->fresh()->sort_order)->toBe(1)
+            ->and($second->fresh()->sort_order)->toBe(2);
+    });
+
+    it('inserts a new title into an occupied ordering scope', function (): void {
+        $category = TitleCategory::create(['code' => 'insert-order', 'name' => 'Insert Order']);
+        $action = app(ReorderTitleAction::class);
+        $attributes = [
+            'category_id' => $category->id,
+            'usage_position' => TitleUsagePosition::BeforeName,
+            'sort_order' => 1,
+        ];
+
+        $first = $action->create([...$attributes, 'name' => 'First']);
+        $second = $action->create([...$attributes, 'name' => 'Second']);
+
+        expect($first->fresh()->sort_order)->toBe(2)
+            ->and($second->fresh()->sort_order)->toBe(1);
+    });
+
     it('keeps sort orders independent between categories and usage positions', function (): void {
         $firstCategory = TitleCategory::create(['code' => 'first', 'name' => 'First']);
         $secondCategory = TitleCategory::create(['code' => 'second', 'name' => 'Second']);

@@ -25,7 +25,7 @@ final class ReorderTitleAction
             $ordered = $this->insertAt($titles, $title, (int) ($attributes['sort_order'] ?? 1));
 
             $this->moveToTemporaryRange($titles);
-            $this->persistOrder($ordered);
+            $this->persistOrder($ordered, exclude: $title);
 
             $title->sort_order = $this->positionOf($ordered, $title);
             $title->save();
@@ -65,7 +65,9 @@ final class ReorderTitleAction
                 ? $this->insertAt($oldOrdered, $title, (int) ($attributes['sort_order'] ?? $title->sort_order))
                 : $this->insertAt($newTitles, $title, (int) ($attributes['sort_order'] ?? $title->sort_order));
 
-            $this->moveToTemporaryRange($oldTitles);
+            $temporaryOrders = $this->moveToTemporaryRange($oldTitles);
+            $title->sort_order = $temporaryOrders[(string) $title->getKey()];
+            $title->syncOriginalAttribute('sort_order');
             if ($oldScope !== $newScope) {
                 $this->moveToTemporaryRange($newTitles);
             }
@@ -138,17 +140,23 @@ final class ReorderTitleAction
         return $items->values();
     }
 
-    /** @param Collection<int, Title> $titles */
-    private function moveToTemporaryRange(Collection $titles): void
+    /**
+     * @param  Collection<int, Title>  $titles
+     * @return array<string, int>
+     */
+    private function moveToTemporaryRange(Collection $titles): array
     {
         if ($titles->isEmpty()) {
-            return;
+            return [];
         }
 
         $offset = (int) $titles->max('sort_order') + $titles->count() + 1;
-        $this->bulkSetOrder($titles->mapWithKeys(
+        $orders = $titles->mapWithKeys(
             fn (Title $title): array => [(string) $title->getKey() => (int) $title->sort_order + $offset],
-        )->all());
+        )->all();
+        $this->bulkSetOrder($orders);
+
+        return $orders;
     }
 
     /**
@@ -159,7 +167,7 @@ final class ReorderTitleAction
         $orders = [];
 
         foreach ($titles as $index => $title) {
-            if ($exclude?->is($title)) {
+            if ($title === $exclude || $exclude?->is($title)) {
                 continue;
             }
 
