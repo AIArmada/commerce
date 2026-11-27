@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Pages;
 
 use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use Filament\Resources\Pages\CreateRecord;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\Conditions\Actions;
 
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 
 final readonly class DeleteStoredCondition

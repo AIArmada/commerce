@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot;

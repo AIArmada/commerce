@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Events\CartAbandoned;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Pending;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Tables;
 
 use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use Filament\Actions\BulkAction;

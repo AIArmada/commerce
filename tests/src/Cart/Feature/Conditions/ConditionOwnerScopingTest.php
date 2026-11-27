@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -64,7 +64,7 @@ describe('Condition owner scoping', function (): void {
 
     it('fails closed when global-only condition scope is requested without explicit global context', function (): void {
         expect(fn () => Condition::query()->forOwner(null)->pluck('id')->all())
-            ->toThrow(RuntimeException::class, 'AIArmada\\Cart\\Models\\Condition requires an owner context or explicit global context.');
+            ->toThrow(RuntimeException::class, 'AIArmada\\Cart\\Features\\Conditions\\Models\\Condition requires an owner context or explicit global context.');
     });
 
     it('respects cart.owner.include_global for owner-scoped queries', function (): void {
@@ -219,6 +219,6 @@ describe('Condition owner scoping', function (): void {
         $condition->assignOwner($ownerB);
 
         expect(fn () => OwnerContext::withOwner($ownerA, fn () => $condition->save()))
-            ->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Models\\Condition.');
+            ->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Features\\Conditions\\Models\\Condition.');
     });
 });

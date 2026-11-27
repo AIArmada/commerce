@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Cart;
 
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;

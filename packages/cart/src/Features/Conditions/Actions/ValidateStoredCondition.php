@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\Conditions\Actions;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
 

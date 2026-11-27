@@ -43,7 +43,7 @@ The plugin registers three Filament resources under the **E-Commerce** navigatio
 |----------|-------|---------|
 | Carts | `AIArmada\\Cart\\Snapshots\\CartSnapshot` | View normalized cart snapshots |
 | Cart Items | `AIArmada\\Cart\\Snapshots\\CartSnapshotItem` | Browse individual line items |
-| Conditions | `AIArmada\\Cart\\Models\\Condition` | Manage reusable condition templates |
+| Conditions | `AIArmada\\Cart\\Features\\Conditions\\Models\\Condition` | Manage reusable condition templates |
 
 ### Cart Resource
 
@@ -134,7 +134,7 @@ the UI adapter:
 Create conditions with rule-based application:
 
 ```php
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 
 Condition::create([
     'name' => 'bulk_discount',

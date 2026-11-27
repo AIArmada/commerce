@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as CartModel;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartConditionModel;

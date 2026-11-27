@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;

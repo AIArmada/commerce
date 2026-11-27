@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Models\CartModel;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;

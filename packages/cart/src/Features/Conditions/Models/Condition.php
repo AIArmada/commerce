@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Models;
+namespace AIArmada\Cart\Features\Conditions\Models;
 
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;

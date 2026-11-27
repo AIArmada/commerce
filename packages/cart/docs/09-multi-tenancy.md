@@ -167,7 +167,7 @@ WHERE identifier = 'user-123'
 The `Condition` model also supports owner scoping:
 
 ```php
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 
 // Get tenant-specific conditions
 $conditions = Condition::forOwner($tenant)->active()->get();
