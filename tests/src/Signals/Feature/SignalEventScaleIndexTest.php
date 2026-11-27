@@ -5,12 +5,19 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 uses(SignalsTestCase::class);
+
+it('indexes event session and identity relation lookups', function (): void {
+    $tableName = (new SignalEvent)->getTable();
+
+    expect(Schema::hasIndex($tableName, $tableName . '_signal_session_id_id_index'))->toBeTrue()
+        ->and(Schema::hasIndex($tableName, $tableName . '_signal_identity_id_index'))->toBeTrue();
+});
 
 it('uses the event category and occurred at index for a large page view read', function (): void {
     /** @var User $owner */

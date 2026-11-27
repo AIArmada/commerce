@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource\Schemas;
+
+use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentSignals\Platform\SignalFormOptionLists;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use Filament\Forms;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
+
+final class SignalAlertRuleForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('Alert Rule')
+                ->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', $state ? Str::slug($state) : '')),
+
+                    Forms\Components\TextInput::make('slug')
+                        ->required()
+                        ->maxLength(255)
+                        ->alphaDash()
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => OwnerUniqueRule::scopeToOwner($rule, SignalAlertRule::class)),
+
+                    Forms\Components\Select::make('tracked_property_id')
+                        ->label('Tracked Property')
+                        ->getSearchResultsUsing(fn (string $search): array => app(TelemetryRead::class)->searchPropertyOptions($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_scalar($value) ? app(TelemetryRead::class)->propertyLabel((string) $value) : null)
+                        ->searchable()
+                        ->live(),
+
+                    Forms\Components\Select::make('metric_key')
+                        ->options(function (): array {
+                            $options = [
+                                'events' => 'Events',
+                                'event_count' => 'Event Count',
+                                'page_views' => 'Page Views',
+                                'conversions' => 'Conversions',
+                                'conversion_rate' => 'Conversion Rate (%)',
+                                'property_sum:cart_total_minor' => 'Cart Total Sum',
+                                'property_avg:cart_total_minor' => 'Average Cart Total',
+                                'property_max:cart_total_minor' => 'Max Cart Total',
+                            ];
+                            if (config('signals.features.monetary.enabled', true)) {
+                                $options['revenue_minor'] = 'Revenue (Minor)';
+                            }
+
+                            return $options;
+                        })
+                        ->required()
+                        ->live(),
+
+                    Forms\Components\Select::make('event_filters.currency')
+                        ->label('Revenue currency')
+                        ->options(SignalFormOptionLists::currencies())
+                        ->searchable()
+                        ->helperText('Revenue rules not scoped to a tracked property must declare the currency they monitor.')
+                        ->visible(fn (Get $get): bool => self::isGlobalRevenueRule($get))
+                        ->required(fn (Get $get): bool => self::isGlobalRevenueRule($get)),
+
+                    Forms\Components\Select::make('operator')
+                        ->options([
+                            '>' => 'Greater Than',
+                            '>=' => 'Greater Than or Equal',
+                            '<' => 'Less Than',
+                            '<=' => 'Less Than or Equal',
+                            '=' => 'Equals',
+                            '!=' => 'Not Equals',
+                        ])
+                        ->default('>=')
+                        ->required(),
+
+                    Forms\Components\TextInput::make('threshold')
+                        ->numeric()
+                        ->default(0)
+                        ->required(),
+
+                    Forms\Components\TextInput::make('timeframe_minutes')
+                        ->numeric()
+                        ->default(60)
+                        ->required(),
+
+                    Forms\Components\TextInput::make('cooldown_minutes')
+                        ->numeric()
+                        ->default(60)
+                        ->required(),
+
+                    Forms\Components\Select::make('severity')
+                        ->options([
+                            'info' => 'Info',
+                            'warning' => 'Warning',
+                            'critical' => 'Critical',
+                        ])
+                        ->default('warning')
+                        ->required(),
+
+                    Forms\Components\TextInput::make('priority')
+                        ->numeric()
+                        ->default(0),
+
+                    Forms\Components\Toggle::make('is_active')
+                        ->default(true),
+
+                    Forms\Components\Textarea::make('description')
+                        ->rows(3)
+                        ->columnSpanFull(),
+                ])
+                ->columns(2),
+
+            Section::make('Event filters')
+                ->description('Filter by event name, category, and optional event properties. These filters are generic and work for any package that records Signals events.')
+                ->schema([
+                    Forms\Components\TagsInput::make('event_filters.event_names')
+                        ->label('Event names')
+                        ->suggestions(SignalFormOptionLists::eventNames())
+                        ->placeholder('cart.abandoned'),
+
+                    Forms\Components\TagsInput::make('event_filters.event_categories')
+                        ->label('Event categories')
+                        ->suggestions(SignalFormOptionLists::eventCategories())
+                        ->placeholder('cart'),
+
+                    Forms\Components\Repeater::make('event_filters.properties')
+                        ->label('Property conditions')
+                        ->schema([
+                            Forms\Components\TextInput::make('key')
+                                ->required()
+                                ->placeholder('cart_total_minor'),
+                            Forms\Components\Select::make('operator')
+                                ->options([
+                                    'eq' => 'Equals',
+                                    'not_eq' => 'Not equals',
+                                    '>' => 'Greater Than',
+                                    '>=' => 'Greater Than or Equal',
+                                    '<' => 'Less Than',
+                                    '<=' => 'Less Than or Equal',
+                                    'contains' => 'Contains',
+                                ])
+                                ->default('eq')
+                                ->required(),
+                            Forms\Components\TextInput::make('value')
+                                ->required(),
+                        ])
+                        ->columns(3)
+                        ->columnSpanFull(),
+                ])
+                ->columns(2),
+
+            Section::make('Notification channels')
+                ->description('Database logs are always created. Additional channels use named destinations from signals config by default.')
+                ->schema([
+                    Forms\Components\CheckboxList::make('channels')
+                        ->options([
+                            'database' => 'Database',
+                            'email' => 'Email',
+                            'webhook' => 'Webhook',
+                            'slack' => 'Slack',
+                        ])
+                        ->columns(4)
+                        ->default(['database']),
+
+                    Forms\Components\TagsInput::make('destination_keys')
+                        ->label('Destination keys')
+                        ->placeholder('ops'),
+
+                    Forms\Components\Repeater::make('inline_destinations')
+                        ->label('Inline destinations')
+                        ->schema([
+                            Forms\Components\Select::make('channel')
+                                ->options([
+                                    'email' => 'Email',
+                                    'webhook' => 'Webhook',
+                                    'slack' => 'Slack',
+                                ])
+                                ->required(),
+                            Forms\Components\KeyValue::make('destination')
+                                ->label('Destination fields')
+                                ->required(),
+                        ])
+                        ->addActionLabel('Add inline destination')
+                        ->visible(fn (): bool => (bool) config('signals.features.alerts.allow_inline_destinations', false))
+                        ->columnSpanFull(),
+                ])
+                ->columns(2),
+        ]);
+    }
+
+    private static function isGlobalRevenueRule(Get $get): bool
+    {
+        return config('signals.features.monetary.enabled', true)
+            && $get('metric_key') === 'revenue_minor'
+            && blank($get('tracked_property_id'));
+    }
+}

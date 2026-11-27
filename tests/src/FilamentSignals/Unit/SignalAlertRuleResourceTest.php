@@ -5,9 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
-use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertRuleResource;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 
 uses(FilamentSignalsTestCase::class);
 
@@ -54,4 +56,27 @@ it('scopes signal alert rules to the current owner', function (): void {
 
     expect($query->count())->toBe(1)
         ->and($query->first()?->id)->toBe($ruleA->id);
+});
+
+it('projects property names without loading cross-feature relations', function (): void {
+    $owner = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function (): void {
+        $property = TrackedProperty::query()->create([
+            'name' => 'Alert property',
+            'slug' => 'alert-property-name',
+        ]);
+
+        $rule = SignalAlertRule::query()->create([
+            'name' => 'Alert',
+            'slug' => 'alert-property-projection',
+            'tracked_property_id' => $property->id,
+            'metric_key' => 'events',
+            'operator' => 'gte',
+            'threshold' => 1,
+        ]);
+
+        $record = SignalAlertRuleResource::getEloquentQuery()->findOrFail($rule->id);
+        expect($record->getAttribute('tracked_property_name'))->toBe('Alert property');
+    });
 });

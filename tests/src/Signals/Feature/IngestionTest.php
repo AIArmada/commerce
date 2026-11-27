@@ -6,13 +6,18 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Actions\ServeSignalsTracker;
-use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
-use AIArmada\Signals\Jobs\ReverseGeocodeSessionJob;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Contracts\ReverseGeocoderContract;
+use AIArmada\Signals\Contracts\SignalLocationResolverContract;
+use AIArmada\Signals\Data\GeocodingResult;
+use AIArmada\Signals\Data\SessionLocation;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\TrackerScriptController;
+use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
+use AIArmada\Signals\Features\Ingestion\EntryPoints\Jobs\ReverseGeocodeSessionJob;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
 
@@ -465,9 +470,64 @@ it('serves a lightweight tracker script', function (): void {
 it('uses the configured tracker filename when deriving the pageview endpoint', function (): void {
     config()->set('signals.http.tracker_script', 'pulse.min.js');
 
-    $response = app(ServeSignalsTracker::class)->asController(Request::create('/api/signals/pulse.min.js', 'GET'));
+    $response = app(TrackerScriptController::class)->__invoke(Request::create('/api/signals/pulse.min.js', 'GET'));
 
     expect($response->getContent())->toContain('/pulse\\.min\\.js$')
         ->and($response->getContent())->not()->toContain('/tracker\\.js$')
         ->and($response->getContent())->toContain('/collect/pageview');
+});
+
+it('rolls back reverse geocoding when an enrichment resolver fails and allows retry', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Location Retry',
+        'slug' => 'location-retry',
+        'write_key' => 'location-retry-key',
+    ]);
+    $session = SignalSession::query()->create([
+        'tracked_property_id' => $property->id,
+        'session_identifier' => 'location-retry-session',
+        'started_at' => now(),
+        'latitude' => 3.139,
+        'longitude' => 101.6869,
+    ]);
+
+    $pipeline = new SignalLocationResolverPipeline;
+    $pipeline->registerGeocoder(new class implements ReverseGeocoderContract
+    {
+        public function reverseGeocode(float $latitude, float $longitude): ?GeocodingResult
+        {
+            return new GeocodingResult('MY', 'Malaysia', 'Kuala Lumpur', 'Kuala Lumpur', null, null);
+        }
+
+        public function getProviderName(): string
+        {
+            return 'test';
+        }
+    });
+    $resolver = new class implements SignalLocationResolverContract
+    {
+        public int $calls = 0;
+
+        public function resolve(SessionLocation $location): void
+        {
+            $this->calls++;
+
+            if ($this->calls === 1) {
+                throw new RuntimeException('enrichment failed');
+            }
+        }
+    };
+    $pipeline->registerResolver($resolver);
+
+    expect(fn () => $pipeline->run($session))->toThrow(RuntimeException::class, 'enrichment failed')
+        ->and($session->fresh()->reverse_geocoded_at)->toBeNull()
+        ->and($session->fresh()->resolved_country_code)->toBeNull();
+
+    $pipeline->run($session->fresh());
+    expect($session->fresh()->reverse_geocoded_at)->not->toBeNull()
+        ->and($session->fresh()->resolved_country_code)->toBe('MY')
+        ->and($resolver->calls)->toBe(2);
+
+    $pipeline->run($session->fresh());
+    expect($resolver->calls)->toBe(2);
 });

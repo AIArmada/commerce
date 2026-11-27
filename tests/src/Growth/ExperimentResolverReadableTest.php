@@ -10,7 +10,7 @@ use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Enums\ResolveStrategy;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Support\Context\ExperimentResolver;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 use InvalidArgumentException;

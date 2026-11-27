@@ -36,7 +36,7 @@ When enabled, operators can build rules manually or through the scan workflow po
 - preview candidates before creation,
 - rescan a route pattern and replace the preview.
 
-The preview is stored per signed-in operator, so one user’s scan candidates do not overwrite another user’s working set.
+The preview expires after 30 minutes and is scoped to the active owner and authenticated panel operator. Guests cannot store previews. Successful direct creation clears the preview.
 
 ## Navigation Order
 
@@ -60,6 +60,8 @@ The following policies gate resource access:
 | Policy | Model |
 |--------|-------|
 | `SignalAlertRulePolicy` | Signal alert rules |
+| `SignalAlertLogPolicy` | Signal alert logs |
+| `SavedSignalReportPolicy` | Saved signal reports |
 | `SignalGoalPolicy` | Signal goals |
 | `SignalInteractionRulePolicy` | Signal interaction rules |
 | `SignalSegmentPolicy` | Signal segments |

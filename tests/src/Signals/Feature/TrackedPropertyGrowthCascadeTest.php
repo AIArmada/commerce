@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\Schema;
 
 uses(SignalsTestCase::class);

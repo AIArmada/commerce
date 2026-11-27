@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
