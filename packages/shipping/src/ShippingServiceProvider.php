@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping;
 
+use AIArmada\Shipping\Drivers\NullShippingDriver;
+use AIArmada\Shipping\Drivers\ManualShippingDriver;
+use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
+use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
@@ -65,6 +69,11 @@ final class ShippingServiceProvider extends PackageServiceProvider
         });
 
         $this->app->alias(ShippingManager::class, 'shipping');
+
+        $this->app->bind('shipping.driver.null', fn (): NullShippingDriver => new NullShippingDriver);
+        $this->app->bind('shipping.driver.manual', fn (Application $app): ManualShippingDriver => new ManualShippingDriver((array) $app->make('config')->get('shipping.drivers.manual', [])));
+        $this->app->bind('shipping.driver.flat_rate', fn (Application $app): FlatRateShippingDriver => new FlatRateShippingDriver((array) $app->make('config')->get('shipping.drivers.flat_rate', [])));
+        $this->app->bind('shipping.driver.zone', fn (Application $app): ZoneBasedShippingDriver => new ZoneBasedShippingDriver($app->make(ZoneRateReader::class), (array) $app->make('config')->get('shipping.drivers.zone', [])));
 
         // Register free shipping policy registry with default threshold policy
         $this->app->singleton(FreeShippingPolicyRegistry::class, function ($app): FreeShippingPolicyRegistry {

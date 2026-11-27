@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Returns\Models;
 
+use AIArmada\Shipping\Features\Returns\Persistence\DeleteReturnItems;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -26,7 +27,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -244,9 +244,7 @@ class ReturnAuthorization extends Model implements Auditable
                 throw new DomainException('A return authorization with a return shipment cannot be deleted.');
             }
 
-            DB::transaction(function () use ($rma): void {
-                $rma->items()->delete();
-            });
+            app(DeleteReturnItems::class)->handle($rma);
         });
     }
 

@@ -3,7 +3,8 @@
   "name": "Rates",
   "owns": {
     "table:shipping_rates": [
-      "AIArmada\\Shipping\\Features\\Rates\\Actions\\WriteRateConfiguration"
+      "AIArmada\\Shipping\\Features\\Rates\\Actions\\WriteRateConfiguration",
+      "AIArmada\\Shipping\\Features\\Rates\\Persistence\\DeleteZoneRates"
     ],
     "table:shipping_zones": [
       "AIArmada\\Shipping\\Features\\Rates\\Actions\\WriteRateConfiguration"

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments\Models;
 
+use AIArmada\Shipping\Features\Shipments\Persistence\DeleteShipmentChildren;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
@@ -17,7 +18,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -258,20 +258,7 @@ class Shipment extends Model implements Auditable
                 throw new DomainException('A shipped package unit cannot be deleted.');
             }
 
-            DB::transaction(function () use ($shipment): void {
-                foreach ([
-                    ShipmentItem::class,
-                    ShipmentEvent::class,
-                    ShipmentLabel::class,
-                    ShipmentOperation::class,
-                ] as $relatedClass) {
-                    $relatedClass::query()
-                        ->where('shipment_id', $shipment->getKey())
-                        ->chunkById(500, function (Collection $children) use ($relatedClass): void {
-                            $relatedClass::query()->whereKey($children->modelKeys())->delete();
-                        });
-                }
-            });
+            app(DeleteShipmentChildren::class)->handle($shipment);
         });
     }
 

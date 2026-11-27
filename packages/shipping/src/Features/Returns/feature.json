@@ -10,7 +10,8 @@
     ],
     "table:return_authorization_items": [
       "AIArmada\\Shipping\\Features\\Returns\\Actions\\PackageReturns",
-      "AIArmada\\Shipping\\Features\\Returns\\Actions\\WriteReturnAuthorization"
+      "AIArmada\\Shipping\\Features\\Returns\\Actions\\WriteReturnAuthorization",
+      "AIArmada\\Shipping\\Features\\Returns\\Persistence\\DeleteReturnItems"
     ]
   },
   "extensions": {}

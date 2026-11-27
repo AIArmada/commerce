@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Rates\Models;
 
+use AIArmada\Shipping\Features\Rates\Persistence\DeleteZoneRates;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -115,7 +116,7 @@ class ShippingZone extends Model implements Auditable
         });
 
         static::deleting(function (ShippingZone $zone): void {
-            $zone->rates()->delete();
+            app(DeleteZoneRates::class)->handle($zone);
         });
     }
 

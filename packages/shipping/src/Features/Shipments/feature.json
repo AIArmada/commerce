@@ -18,18 +18,22 @@
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\UpdateShipmentStatus",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecordTrackingEvent",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\TrackingAggregator"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\TrackingAggregator",
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
     ],
     "table:shipment_labels": [
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\GenerateLabel"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\GenerateLabel",
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
     ],
     "table:shipment_operations": [
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ReconcileShipmentOperation"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ReconcileShipmentOperation",
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
     ],
     "table:shipment_items": [
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CreateShipment"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CreateShipment",
+      "AIArmada\\Shipping\\Features\\Shipments\\Persistence\\DeleteShipmentChildren"
     ]
   },
   "extensions": {}
