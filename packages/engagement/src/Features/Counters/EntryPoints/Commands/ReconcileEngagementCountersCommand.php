@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\EntryPoints\Commands;
+namespace AIArmada\Engagement\Features\Counters\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\EngagementCounterService;
-use AIArmada\Engagement\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -22,7 +22,7 @@ final class ReconcileEngagementCountersCommand extends Command
     protected $description = 'Reconcile engagement counters from source records';
 
     public function __construct(
-        private readonly EngagementCounterService $counterService,
+        private readonly UpdateEngagementCountersAction $counterService,
     ) {
         parent::__construct();
     }

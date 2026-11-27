@@ -58,7 +58,7 @@ title: Engagement Overview
 | `SubscriptionManager` | `DefaultSubscriptionManager` | Subscribe, unsubscribe, mute, match subscriptions |
 | `ReminderManager` | `DefaultReminderManager` | Set, cancel, due reminders, mark sent/failed |
 | `EngagementStateResolver` | `DefaultEngagementStateResolver` | Query state: isFollowing, isBookmarked, responseFor, reactionFor |
-| `EngagementCounterService` | `DefaultEngagementCounterService` | Count followers, bookmarks, responses, reactions |
+| `UpdateEngagementCountersAction` | `UpdateEngagementCountersAction` | Count followers, bookmarks, responses, reactions |
 | `EngagementPolicyResolver` | `DefaultEngagementPolicyResolver` | Resolve engagement policies per model |
 | `ShareUrlGenerator` | `DefaultShareUrlGenerator` | Generate share URLs for platforms |
 

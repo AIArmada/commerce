@@ -15,7 +15,7 @@ use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementCounterService;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
     $this->manager = app(EngagementManager::class);
-    $this->counters = app(EngagementCounterService::class);
+    $this->counters = app(UpdateEngagementCountersAction::class);
     $this->actor = new EngagementActor;
     $this->subject = new EngagementSubject;
 });

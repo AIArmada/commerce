@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Services;
+namespace AIArmada\Engagement\Features\Counters\Actions;
 
-use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Events\BookmarkArchived;
 use AIArmada\Engagement\Events\BookmarkCreated;
 use AIArmada\Engagement\Events\BookmarkRemoved;
@@ -18,21 +17,38 @@ use AIArmada\Engagement\Events\ResponseCancelled;
 use AIArmada\Engagement\Events\ResponseChanged;
 use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Features\Counters\Api\ReadsEngagementCounters;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
-final class DefaultEngagementCounterService implements EngagementCounterService
+final readonly class UpdateEngagementCountersAction implements ReadsEngagementCounters
 {
+    public function count(string $subjectType, string $subjectId, string $counterType, ?string $counterKey = null): int
+    {
+        return match ($counterType) {
+            'followers' => $this->countFollowersByIdentity($subjectType, $subjectId),
+            'bookmarks' => $this->countBookmarksByIdentity($subjectType, $subjectId),
+            'responses' => $this->countResponsesByIdentity($subjectType, $subjectId, $counterKey),
+            'reactions' => $this->countReactionsByIdentity($subjectType, $subjectId, $counterKey),
+            default => $this->valueByIdentity($subjectType, $subjectId, $counterType, $counterKey ?? ''),
+        };
+    }
+
     public function value(mixed $subject, string $counterType, string $counterKey = ''): int
     {
+        return $this->valueByIdentity($subject->getMorphClass(), (string) $subject->getKey(), $counterType, $counterKey);
+    }
+
+    private function valueByIdentity(string $subjectType, string $subjectId, string $counterType, string $counterKey): int
+    {
         $counter = EngagementCounter::query()
-            ->where('subject_type', $subject->getMorphClass())
-            ->where('subject_id', $subject->getKey())
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
             ->where('counter_type', $counterType)
             ->where('counter_key', $counterKey)
             ->first();

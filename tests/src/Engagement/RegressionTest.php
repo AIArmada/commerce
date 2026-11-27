@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\EngagementCounterService;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
@@ -23,7 +23,7 @@ use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Subscription;
@@ -84,8 +84,8 @@ it('reconciles counters per owner without an ambient owner', function (): void {
 
     expect(Artisan::call('engagement:reconcile-counters'))->toBe(0);
 
-    $countA = OwnerContext::withOwner($ownerA, fn () => app(EngagementCounterService::class)->value($subject, 'followers'));
-    $countB = OwnerContext::withOwner($ownerB, fn () => app(EngagementCounterService::class)->value($subject, 'followers'));
+    $countA = OwnerContext::withOwner($ownerA, fn () => app(UpdateEngagementCountersAction::class)->value($subject, 'followers'));
+    $countB = OwnerContext::withOwner($ownerB, fn () => app(UpdateEngagementCountersAction::class)->value($subject, 'followers'));
 
     expect($countA)->toBe(1)->and($countB)->toBe(1);
 });
@@ -107,7 +107,7 @@ it('reconciles a single subject without an ambient owner', function (): void {
         'subjectId' => $subject->getKey(),
     ]))->toBe(0);
 
-    $count = OwnerContext::withOwner($owner, fn () => app(EngagementCounterService::class)->value($subject, 'followers'));
+    $count = OwnerContext::withOwner($owner, fn () => app(UpdateEngagementCountersAction::class)->value($subject, 'followers'));
 
     expect($count)->toBe(1);
 });
@@ -365,7 +365,7 @@ it('emits response created/changed events with reactivation semantics', function
 
 it('keeps keyed response counters exact across change and cancel', function (): void {
     $manager = app(EngagementManager::class);
-    $counters = app(EngagementCounterService::class);
+    $counters = app(UpdateEngagementCountersAction::class);
 
     $manager->respond($this->actor, $this->subject, 'interested');
 

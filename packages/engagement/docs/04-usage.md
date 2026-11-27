@@ -323,9 +323,9 @@ significant.
 ## Working with engagement counters
 
 ```php
-use AIArmada\Engagement\Contracts\EngagementCounterService;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 
-$counter = app(EngagementCounterService::class);
+$counter = app(UpdateEngagementCountersAction::class);
 
 $counter->countFollowers($event);    // int
 $counter->countBookmarks($event);    // int
