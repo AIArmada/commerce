@@ -4,78 +4,49 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\EntryPoints\Http\Controllers;
 
+use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Cache;
 
-class LabelController extends Controller
+final class LabelController
 {
-    public function show(Request $request, string $trackingNumber): Response
+    public function show(Request $request, string $trackingNumber, SignedDownloadApi $downloads): Response
     {
-        $token = $request->query('token');
+        $data = $downloads->payloadFromToken($request->query(SignedDownloadApi::TOKEN_QUERY_PARAM), 'shipping_label');
 
-        if (! is_string($token) || $token === '') {
+        if ($data === null || ! is_string($data['content'] ?? null) || $data['content'] === '') {
             abort(404, 'Label not found or expired');
         }
 
-        $cacheKey = "shipping_label:{$token}";
-        $labelData = Cache::get($cacheKey);
-
-        if ($labelData === null) {
-            abort(404, 'Label not found or expired');
-        }
-
-        if (($labelData['tracking_number'] ?? null) !== $trackingNumber) {
+        if (! $downloads->isAuthorizedPayload(
+            payload: $data,
+            resourceIdKey: 'tracking_number',
+            expectedResourceId: $trackingNumber,
+            owner: EloquentRecordReference::fromModel(OwnerContext::resolve()),
+            userId: $request->user()?->getAuthIdentifier(),
+        )) {
             abort(403, 'Unauthorized label access');
         }
 
-        $userId = auth()->id();
+        $format = $data['format'] ?? null;
 
-        if ($userId === null || (string) ($labelData['user_id'] ?? '') !== (string) $userId) {
-            abort(403, 'Unauthorized label access');
+        if (! in_array($format, ['pdf', 'png', 'zpl'], true)) {
+            abort(404, 'Unsupported label format');
         }
 
-        $owner = OwnerContext::resolve();
-        $ownerType = isset($labelData['owner_type']) && is_string($labelData['owner_type'])
-            ? $labelData['owner_type']
-            : null;
-        $ownerId = $labelData['owner_id'] ?? null;
+        $base = mb_trim(preg_replace('/[^A-Za-z0-9._-]+/', '_', $trackingNumber) ?? '', '._');
+        $filename = 'label-' . mb_substr($base === '' ? 'shipment' : $base, 0, 100) . '.' . $format;
 
-        if (! $this->matchesOwner($owner, $ownerType, $ownerId)) {
-            abort(403, 'Unauthorized label access');
-        }
-
-        $content = $labelData['content'];
-        $format = $labelData['format'] ?? 'pdf';
-        $filename = "label-{$trackingNumber}.{$format}";
-
-        $mimeType = match ($format) {
-            'pdf' => 'application/pdf',
-            'png' => 'image/png',
-            'zpl' => 'application/zpl',
-            default => 'application/octet-stream',
-        };
-
-        return response($content)
-            ->header('Content-Type', $mimeType)
-            ->header('Content-Disposition', "inline; filename=\"{$filename}\"")
-            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
-    }
-
-    private function matchesOwner(?Model $owner, ?string $expectedOwnerType, string | int | null $expectedOwnerId): bool
-    {
-        if ($expectedOwnerType === null && $expectedOwnerId === null) {
-            return $owner === null;
-        }
-
-        if ($owner === null || $expectedOwnerType === null || $expectedOwnerId === null) {
-            return false;
-        }
-
-        return $owner->getMorphClass() === $expectedOwnerType
-            && (string) $owner->getKey() === (string) $expectedOwnerId;
+        return response($data['content'])
+            ->header('Content-Type', match ($format) {
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                default => 'application/zpl',
+            })
+            ->header('Content-Disposition', 'inline; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            ->header('X-Content-Type-Options', 'nosniff');
     }
 }

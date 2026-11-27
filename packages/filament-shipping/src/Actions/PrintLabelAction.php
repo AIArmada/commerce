@@ -4,19 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\ShippingManager;
-use Carbon\CarbonImmutable;
+use AIArmada\Shipping\Features\Shipments\Api\PrintableLabel;
 use Filament\Actions\Action;
 use Filament\Actions\Action as NotificationAction;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
 
@@ -35,51 +30,10 @@ class PrintLabelAction extends Action
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('printLabel', $record) ?? false)
             ->action(function (Shipment $record, Component $livewire): mixed {
                 try {
-                    $shippingManager = app(ShippingManager::class);
-                    $driver = $shippingManager->driver($record->carrier_code);
-                    $label = $driver->generateLabel($record->tracking_number, [
-                        'order_id' => $record->reference,
-                    ]);
+                    $url = app(PrintableLabel::class)->url((string) $record->getKey(), auth()->id());
 
-                    if ($label->hasUrl()) {
-                        $url = $label->url;
-                        $scheme = parse_url((string) $url, PHP_URL_SCHEME);
-
-                        if (! filter_var($url, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
-                            Notification::make()
-                                ->title('Invalid Label URL')
-                                ->body('The carrier returned an invalid label URL.')
-                                ->warning()
-                                ->send();
-
-                            return null;
-                        }
-
-                        $livewire->js('window.open(' . json_encode((string) $url) . ', \'_blank\')');
-
-                        return null;
-                    }
-
-                    if ($label->hasContent()) {
-                        $owner = OwnerContext::resolve();
-                        $labelToken = (string) Str::ulid();
-                        $cacheKey = "shipping_label:{$labelToken}";
-
-                        Cache::put($cacheKey, [
-                            'content' => $label->getDecodedContent(),
-                            'format' => $label->format,
-                            'tracking_number' => $record->tracking_number,
-                            'owner_type' => $owner?->getMorphClass(),
-                            'owner_id' => $owner?->getKey(),
-                            'user_id' => auth()->id(),
-                        ], CarbonImmutable::now()->addMinutes(30));
-
-                        $url = URL::temporarySignedRoute('shipping.labels.show', CarbonImmutable::now()->addMinutes(30), [
-                            'trackingNumber' => $record->tracking_number,
-                            'token' => $labelToken,
-                        ]);
-
-                        $livewire->js('window.open(' . json_encode((string) $url) . ', \'_blank\')');
+                    if ($url !== null) {
+                        $livewire->js('window.open(' . json_encode($url) . ', "_blank", "noopener,noreferrer")');
 
                         return null;
                     }
@@ -135,8 +89,7 @@ class PrintLabelAction extends Action
                     return;
                 }
 
-                $shippingManager = app(ShippingManager::class);
-                $owner = OwnerContext::resolve();
+                $labelApi = app(PrintableLabel::class);
                 $labels = [];
                 $errors = [];
 
@@ -150,54 +103,13 @@ class PrintLabelAction extends Action
                     }
 
                     try {
-                        $driver = $shippingManager->driver($record->carrier_code);
-                        $label = $driver->generateLabel($record->tracking_number, [
-                            'order_id' => $record->reference,
-                        ]);
+                        $url = $labelApi->url((string) $record->getKey(), $user->getAuthIdentifier());
 
-                        if ($label->hasUrl()) {
-                            $url = $label->url;
-                            $scheme = parse_url((string) $url, PHP_URL_SCHEME);
-
-                            if (! filter_var($url, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
-                                $errors[] = "{$record->tracking_number}: invalid label URL";
-
-                                continue;
-                            }
-
+                        if ($url !== null) {
                             $labels[] = [
                                 'tracking' => $record->tracking_number,
                                 'carrier' => $record->carrier_code,
                                 'url' => $url,
-                                'type' => 'url',
-                            ];
-
-                            continue;
-                        }
-
-                        if ($label->hasContent()) {
-                            $labelToken = (string) Str::ulid();
-                            $cacheKey = "shipping_label:{$labelToken}";
-
-                            Cache::put($cacheKey, [
-                                'content' => $label->getDecodedContent(),
-                                'format' => $label->format,
-                                'tracking_number' => $record->tracking_number,
-                                'owner_type' => $owner?->getMorphClass(),
-                                'owner_id' => $owner?->getKey(),
-                                'user_id' => $user->getAuthIdentifier(),
-                            ], CarbonImmutable::now()->addMinutes(30));
-
-                            $url = URL::temporarySignedRoute('shipping.labels.show', CarbonImmutable::now()->addMinutes(30), [
-                                'trackingNumber' => $record->tracking_number,
-                                'token' => $labelToken,
-                            ]);
-
-                            $labels[] = [
-                                'tracking' => $record->tracking_number,
-                                'carrier' => $record->carrier_code,
-                                'url' => $url,
-                                'type' => 'cached',
                             ];
 
                             continue;
@@ -220,8 +132,8 @@ class PrintLabelAction extends Action
                     return;
                 }
 
-                if (count($labels) === 1) {
-                    $livewire->js('window.open(' . json_encode((string) $labels[0]['url']) . ', \'_blank\')');
+                if (count($labels) === 1 && count($errors) === 0) {
+                    $livewire->js('window.open(' . json_encode((string) $labels[0]['url']) . ', "_blank", "noopener,noreferrer")');
 
                     Notification::make()
                         ->title('Label Ready')
