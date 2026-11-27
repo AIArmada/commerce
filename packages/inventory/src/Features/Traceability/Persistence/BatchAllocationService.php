@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -78,10 +79,17 @@ final class BatchAllocationService
     public function reserveBatches(array $allocations): void
     {
         DB::transaction(function () use ($allocations): void {
-            foreach ($allocations as $allocation) {
-                $allocation['batch']->incrementReserved($allocation['quantity']);
+            foreach ($this->lockAllocations($allocations) as $allocation) {
+                $batch = $allocation['batch'];
+                $quantity = $allocation['quantity'];
+
+                if (! $batch->canAllocate() || $quantity > $batch->available) {
+                    throw new InvalidArgumentException('Insufficient allocatable batch inventory');
+                }
+
+                $batch->incrementReserved($quantity);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -92,10 +100,17 @@ final class BatchAllocationService
     public function releaseBatches(array $allocations): void
     {
         DB::transaction(function () use ($allocations): void {
-            foreach ($allocations as $allocation) {
-                $allocation['batch']->decrementReserved($allocation['quantity']);
+            foreach ($this->lockAllocations($allocations) as $allocation) {
+                $batch = $allocation['batch'];
+                $quantity = $allocation['quantity'];
+
+                if ($quantity > $batch->quantity_reserved) {
+                    throw new InvalidArgumentException('Cannot release more than the reserved batch quantity');
+                }
+
+                $batch->decrementReserved($quantity);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -106,14 +121,18 @@ final class BatchAllocationService
     public function commitBatches(array $allocations): void
     {
         DB::transaction(function () use ($allocations): void {
-            foreach ($allocations as $allocation) {
+            foreach ($this->lockAllocations($allocations) as $allocation) {
                 $batch = $allocation['batch'];
                 $quantity = $allocation['quantity'];
+
+                if ($quantity > $batch->quantity_reserved || $quantity > $batch->quantity_on_hand) {
+                    throw new InvalidArgumentException('Cannot commit more than the reserved or on-hand batch quantity');
+                }
 
                 $batch->decrementReserved($quantity);
                 $batch->decrementOnHand($quantity);
             }
-        });
+        }, 3);
     }
 
     /**
@@ -170,6 +189,52 @@ final class BatchAllocationService
             'requested' => $quantity,
             'allocations' => $allocations,
         ];
+    }
+
+    /**
+     * @param  array<array{batch: InventoryBatch, quantity: int}>  $allocations
+     * @return array<array{batch: InventoryBatch, quantity: int}>
+     */
+    private function lockAllocations(array $allocations): array
+    {
+        $quantities = [];
+
+        foreach ($allocations as $allocation) {
+            $quantity = $allocation['quantity'];
+
+            if ($quantity <= 0) {
+                throw new InvalidArgumentException('Quantity must be positive');
+            }
+
+            $id = $allocation['batch']->id;
+            $quantities[$id] = ($quantities[$id] ?? 0) + $quantity;
+        }
+
+        if ($quantities === []) {
+            return [];
+        }
+
+        $query = InventoryBatch::query();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $query->forOwner($owner, false);
+        }
+
+        $batches = $query->whereKey(array_keys($quantities))->orderBy('id')->lockForUpdate()->get();
+
+        if ($batches->count() !== count($quantities)) {
+            throw new InvalidArgumentException('One or more batches are not accessible for current owner');
+        }
+
+        $locked = [];
+
+        foreach ($batches as $batch) {
+            $locked[] = ['batch' => $batch, 'quantity' => $quantities[$batch->id]];
+        }
+
+        return $locked;
     }
 
     /**

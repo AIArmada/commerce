@@ -312,3 +312,58 @@ describe('getFefoAllocationPlan', function (): void {
         expect($plan['requested'])->toBe(50);
     });
 });
+
+it('rejects stale batch plans that would over-reserve inventory', function (): void {
+    $batch = InventoryBatch::factory()->create([
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 50,
+        'quantity_reserved' => 0,
+        'status' => BatchStatus::Active,
+        'expires_at' => null,
+    ]);
+
+    $this->service->reserveBatches([['batch' => $batch, 'quantity' => 30]]);
+
+    expect(fn () => $this->service->reserveBatches([['batch' => $batch, 'quantity' => 30]]))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($batch->fresh()->quantity_reserved)->toBe(30);
+});
+
+it('aggregates repeated batch entries before validating the reservation', function (): void {
+    $batch = InventoryBatch::factory()->create([
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 50,
+        'quantity_reserved' => 0,
+        'status' => BatchStatus::Active,
+        'expires_at' => null,
+    ]);
+
+    expect(fn () => $this->service->reserveBatches([
+        ['batch' => $batch, 'quantity' => 30],
+        ['batch' => $batch, 'quantity' => 30],
+    ]))->toThrow(InvalidArgumentException::class);
+
+    expect($batch->fresh()->quantity_reserved)->toBe(0);
+});
+
+it('rejects negative quantities and reserved balance underflow', function (): void {
+    $batch = InventoryBatch::factory()->create([
+        'location_id' => $this->location->id,
+        'quantity_on_hand' => 50,
+        'quantity_reserved' => 10,
+    ]);
+
+    foreach (['reserveBatches', 'releaseBatches', 'commitBatches'] as $method) {
+        expect(fn () => $this->service->{$method}([['batch' => $batch, 'quantity' => -1]]))
+            ->toThrow(InvalidArgumentException::class);
+    }
+
+    foreach (['releaseBatches', 'commitBatches'] as $method) {
+        expect(fn () => $this->service->{$method}([['batch' => $batch, 'quantity' => 11]]))
+            ->toThrow(InvalidArgumentException::class);
+    }
+
+    expect($batch->fresh()->quantity_reserved)->toBe(10)
+        ->and($batch->fresh()->quantity_on_hand)->toBe(50);
+});
