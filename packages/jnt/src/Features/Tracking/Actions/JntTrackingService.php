@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Tracking\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
@@ -21,6 +22,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -113,6 +115,10 @@ class JntTrackingService implements TrackingReader
      */
     public function syncOrderTracking(JntOrder $order): JntOrder
     {
+        if (JntOrder::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(JntOrder::class, (string) $order->getKey());
+        }
+
         $owner = OwnerContext::fromTypeAndId($order->owner_type, $order->owner_id);
 
         return OwnerContext::withOwner($owner, function () use ($order): JntOrder {
@@ -124,62 +130,77 @@ class JntTrackingService implements TrackingReader
 
             $trackingData = $this->expressService->trackParcel(trackingNumber: $trackingNumber);
 
-            $this->insertMissingSyncEvents($order, $trackingNumber, $trackingData);
+            return DB::transaction(function () use ($order, $trackingNumber, $trackingData): JntOrder {
+                $locked = JntOrder::query()->withoutOwnerScope()->lockForUpdate()->findOrFail($order->getKey());
 
-            // Update order status
-            $currentStatus = $this->getCurrentStatus($trackingData);
-            $previousStatusCode = $order->last_status_code;
-            $latestDetail = $trackingData->getLatestDetail();
+                if ($locked->owner_type !== $order->owner_type || $locked->owner_id !== $order->owner_id || $locked->tracking_number !== $trackingNumber) {
+                    throw new AuthorizationException('The tracked order changed during synchronization.');
+                }
 
-            if ($latestDetail !== null) {
-                $order->last_status_code = $latestDetail->scanTypeCode;
-                $order->last_status = $latestDetail->description;
-                $order->last_tracked_at = CarbonImmutable::now();
+                $order = $locked;
 
-                // Set lifecycle timestamps based on tracking events
-                if ($latestDetail->problemType !== null) {
-                    if ($order->problem_at === null) {
-                        $order->problem_at = CarbonImmutable::now();
+                $this->insertMissingSyncEvents($order, $trackingNumber, $trackingData);
+
+                // Update order status
+                $currentStatus = $this->getCurrentStatus($trackingData);
+                $previousStatusCode = $order->last_status_code;
+                $latestDetail = $trackingData->getLatestDetail();
+
+                if ($latestDetail !== null) {
+                    $order->status = $currentStatus->value;
+                    $order->last_status_code = $latestDetail->scanTypeCode;
+                    $order->last_status = $latestDetail->description;
+                    $order->last_tracked_at = CarbonImmutable::now();
+
+                    // Set lifecycle timestamps based on tracking events
+                    if ($latestDetail->problemType !== null) {
+                        if ($order->problem_at === null) {
+                            $order->problem_at = CarbonImmutable::now();
+                        }
+                    }
+
+                    if ($currentStatus === TrackingStatus::Exception) {
+                        if ($order->problem_at === null) {
+                            $order->problem_at = CarbonImmutable::now();
+                        }
+                        if ($order->exception_at === null) {
+                            $order->exception_at = CarbonImmutable::now();
+                        }
+                    }
+
+                    if ($currentStatus === TrackingStatus::Returned && $order->returned_at === null) {
+                        $order->returned_at = CarbonImmutable::now();
+                    }
+
+                    if ($latestDetail->problemType === null && $currentStatus !== TrackingStatus::Exception && $order->problem_at !== null) {
+                        $order->resolved_at = CarbonImmutable::now();
+                        $order->problem_at = null;
+                    }
+
+                    // Mark as delivered if appropriate
+                    if ($currentStatus === TrackingStatus::Delivered && $order->delivered_at === null) {
+                        $deliveredAt = $this->parseDetailScanTime($latestDetail);
+
+                        if ($deliveredAt !== null) {
+                            $order->delivered_at = $deliveredAt;
+                        }
                     }
                 }
 
-                if ($currentStatus === TrackingStatus::Exception) {
-                    if ($order->problem_at === null) {
-                        $order->problem_at = CarbonImmutable::now();
-                    }
-                    if ($order->exception_at === null) {
-                        $order->exception_at = CarbonImmutable::now();
-                    }
+                app(UpdateTrackingSnapshot::class)->handle(
+                    (string) $order->getKey(),
+                    $order->getDirty(),
+                    $latestDetail === null ? null : $this->parseDetailScanTime($latestDetail),
+                );
+                $order->refresh();
+
+                // Fire status changed event if status actually changed
+                if ($previousStatusCode !== $order->last_status_code) {
+                    DB::afterCommit(static fn () => event(JntOrderStatusChanged::fromOrder($order, $currentStatus, $previousStatusCode)));
                 }
 
-                if ($currentStatus === TrackingStatus::Returned && $order->returned_at === null) {
-                    $order->returned_at = CarbonImmutable::now();
-                }
-
-                if ($latestDetail->problemType === null && $currentStatus !== TrackingStatus::Exception && $order->problem_at !== null) {
-                    $order->resolved_at = CarbonImmutable::now();
-                    $order->problem_at = null;
-                }
-
-                // Mark as delivered if appropriate
-                if ($currentStatus === TrackingStatus::Delivered && $order->delivered_at === null) {
-                    $deliveredAt = $this->parseDetailScanTime($latestDetail);
-
-                    if ($deliveredAt !== null) {
-                        $order->delivered_at = $deliveredAt;
-                    }
-                }
-            }
-
-            app(UpdateTrackingSnapshot::class)->handle((string) $order->getKey(), $order->getDirty());
-            $order->refresh();
-
-            // Fire status changed event if status actually changed
-            if ($previousStatusCode !== $order->last_status_code) {
-                event(JntOrderStatusChanged::fromOrder($order, $currentStatus, $previousStatusCode));
-            }
-
-            return $order->fresh() ?? $order;
+                return $order->fresh() ?? $order;
+            });
         });
     }
 
@@ -345,6 +366,10 @@ class JntTrackingService implements TrackingReader
 
     private function parseDetailScanTime(TrackingDetailData $detail): ?CarbonImmutable
     {
+        if (mb_trim($detail->scanTime) === '') {
+            return null;
+        }
+
         try {
             return CarbonImmutable::parse($detail->scanTime);
         } catch (Throwable) {

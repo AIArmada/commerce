@@ -71,8 +71,6 @@ final class ProcessTrackingWebhook
             ->first();
 
         if (! $shipment) {
-            $this->syncWebhookLogMetadata(null, (string) $billcode, $biz);
-
             Log::channel(config('jnt.logging.channel', 'stack'))
                 ->info('J&T webhook for unknown shipment', [
                     'billcode' => $billcode,
@@ -80,6 +78,7 @@ final class ProcessTrackingWebhook
                 ]);
 
             $this->dispatchTrackingEvent($biz);
+            $this->syncWebhookLogMetadata(null, $billcode, $biz);
 
             return;
         }
@@ -89,8 +88,6 @@ final class ProcessTrackingWebhook
             $shipment->owner_id,
         );
 
-        $this->syncWebhookLogMetadata($shipment, (string) $billcode, $biz);
-
         OwnerContext::withOwner($owner, function () use ($shipment, $billcode, $eventType, $biz): void {
             $latestDetail = $this->latestTrackingDetail($biz);
             $newStatus = $this->resolveStatus($eventType, $latestDetail);
@@ -98,6 +95,7 @@ final class ProcessTrackingWebhook
             $this->syncShipmentTrackingFromWebhook($shipment, $billcode, $biz, $newStatus);
 
             $this->dispatchTrackingEvent($biz);
+            $this->syncWebhookLogMetadata($shipment, $billcode, $biz);
         });
     }
 
@@ -414,7 +412,11 @@ final class ProcessTrackingWebhook
             }
         }
 
-        app(UpdateTrackingSnapshot::class)->handle((string) $shipment->getKey(), $updates);
+        app(UpdateTrackingSnapshot::class)->handle(
+            (string) $shipment->getKey(),
+            $updates,
+            $this->parseScanTime($latestDetail['scanTime'] ?? null),
+        );
     }
 
     /**
@@ -439,7 +441,11 @@ final class ProcessTrackingWebhook
 
             $timestamp = $this->parseScanTime($detail['scanTime'] ?? null)?->getTimestamp();
 
-            if ($latest === null || ($timestamp ?? 0) >= ($latestTimestamp ?? 0)) {
+            if ($timestamp === null) {
+                continue;
+            }
+
+            if ($latestTimestamp === null || $timestamp > $latestTimestamp) {
                 $latest = $detail;
                 $latestTimestamp = $timestamp;
             }
@@ -450,7 +456,7 @@ final class ProcessTrackingWebhook
 
     private function parseScanTime(mixed $value): ?CarbonImmutable
     {
-        if (! is_string($value) || $value === '') {
+        if (! is_string($value) || mb_trim($value) === '') {
             return null;
         }
 

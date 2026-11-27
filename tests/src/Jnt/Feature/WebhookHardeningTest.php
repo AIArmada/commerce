@@ -137,6 +137,41 @@ describe('webhook payload hardening', function (): void {
         Mockery::close();
     });
 
+    it('stores late events without regressing delivery status', function (): void {
+        config(['jnt.owner.enabled' => false]);
+        $order = JntOrder::query()->create([
+            'order_id' => 'ORDER-LATE',
+            'tracking_number' => 'JNTLATE',
+            'customer_code' => 'CUST',
+            'status' => 'pending',
+        ]);
+
+        foreach ([
+            ['2024-01-16 12:00:00', '602', 'Delivered', 'POD'],
+            ['2024-01-15 09:00:00', '301', 'Collected', 'PICKUP'],
+        ] as $index => [$time, $code, $description, $scanType]) {
+            $call = Mockery::mock(WebhookCall::class)->makePartial();
+            $call->id = 5000 + $index;
+            $processor = new ProcessJntWebhook($call);
+            (new ReflectionMethod($processor, 'processEvent'))->invoke($processor, $scanType, [
+                'bizContent' => json_encode([
+                    'billCode' => 'JNTLATE',
+                    'details' => [[
+                        'scanTime' => $time,
+                        'scanTypeCode' => $code,
+                        'scanTypeName' => $description,
+                        'desc' => $description,
+                        'scanType' => $scanType,
+                    ]],
+                ]),
+            ]);
+        }
+
+        expect($order->refresh()->status)->toBe('delivered')
+            ->and($order->last_status_code)->toBe('602')
+            ->and($order->trackingEvents()->count())->toBe(2);
+    });
+
     it('dedupes replayed webhooks through the canonical event hash', function (): void {
         config()->set('jnt.owner.enabled', false);
 
