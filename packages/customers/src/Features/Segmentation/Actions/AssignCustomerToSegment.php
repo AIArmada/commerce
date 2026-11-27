@@ -27,12 +27,17 @@ final class AssignCustomerToSegment
             OwnerWriteGuard::findOrFailForOwner(Segment::class, $segment->getKey());
         }
 
-        if ($customer->segments()->whereKey($segment->id)->exists()) {
-            return;
-        }
+        $customer->getConnection()->transaction(function () use ($customer, $segment): void {
+            $customer = Customer::query()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
 
-        $customer->segments()->attach($segment->id);
-        event(new CustomerSegmentChanged($customer, $segment, 'added'));
+            if ($customer->segments()->whereKey($segment->id)->exists()) {
+                return;
+            }
+
+            $customer->segments()->attach($segment->id);
+
+            event(new CustomerSegmentChanged($customer, $segment, 'added'));
+        });
     }
 
     private function shareOwner(Customer $customer, Segment $segment): bool

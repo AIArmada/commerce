@@ -27,12 +27,15 @@ final class RemoveCustomerFromSegment
             OwnerWriteGuard::findOrFailForOwner(Segment::class, $segment->getKey());
         }
 
-        if (! $customer->segments()->whereKey($segment->id)->exists()) {
-            return;
-        }
+        $customer->getConnection()->transaction(function () use ($customer, $segment): void {
+            $customer = Customer::query()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
 
-        $customer->segments()->detach($segment->id);
-        event(new CustomerSegmentChanged($customer, $segment, 'removed'));
+            if ($customer->segments()->detach($segment->id) === 0) {
+                return;
+            }
+
+            event(new CustomerSegmentChanged($customer, $segment, 'removed'));
+        });
     }
 
     private function shareOwner(Customer $customer, Segment $segment): bool

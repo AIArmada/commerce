@@ -127,7 +127,10 @@ it('prevents cross-tenant segment membership changes', function (): void {
 
     expect($service->addToSegment($customerB, $segmentA))->toBeFalse();
 
-    $service->evaluateCustomer($customerB);
+    expect(fn () => OwnerContext::withOwner($ownerA, fn () => $service->evaluateCustomer($customerB)))
+        ->toThrow(AuthorizationException::class);
+
+    OwnerContext::withOwner($ownerB, fn () => $service->evaluateCustomer($customerB));
 
     expect($customerB->segments()->whereKey($segmentA->getKey())->exists())->toBeFalse();
 });

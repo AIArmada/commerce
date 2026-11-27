@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Segmentation",
+  "owns": {
+    "table:customer_segment_customer": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\AssignCustomerToSegment",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\RemoveCustomerFromSegment",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\RebuildAllSegments",
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\EvaluateCustomerSegments"
+    ]
+  },
+  "extensions": {}
+}

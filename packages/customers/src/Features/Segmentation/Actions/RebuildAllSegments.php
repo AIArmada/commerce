@@ -78,7 +78,8 @@ final class RebuildAllSegments
     {
         $segmentOwner = OwnerContext::fromTypeAndId($segment->owner_type, $segment->owner_id);
 
-        return OwnerContext::withOwner($segmentOwner, function () use ($segment, $segmentOwner): int {
+        return OwnerContext::withOwner($segmentOwner, fn (): int => $segment->getConnection()->transaction(function () use ($segment, $segmentOwner): int {
+            $segment = Segment::query()->whereKey($segment->getKey())->lockForUpdate()->firstOrFail();
             if (! $segment->is_automatic) {
                 return $segment->customers()->count();
             }
@@ -113,7 +114,7 @@ final class RebuildAllSegments
             $this->dispatchMembershipEvents($segment, $segmentOwner, $removedIds, 'removed');
 
             return count($newCustomerIds);
-        });
+        }));
     }
 
     /**

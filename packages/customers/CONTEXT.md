@@ -44,8 +44,8 @@ keywords:
 - Owner/security: Owner-scoped (all models; customers.features.owner, default on).
 
 ## Key surfaces
-- Models: `Customer`, `CustomerGroup`, `CustomerNote`, `Segment` (address records come from `addressing.Address`)
-- Actions/Services: `Actions/AssignCustomerToSegment`, `Actions/CreateCustomer`, `Actions/LinkCustomerToPerson`, `Actions/MergeCustomers`, `Actions/RebuildAllSegments`, `Actions/RemoveCustomerFromSegment`, `Actions/SetDefaultCustomerAddress`, `Actions/UpdateCustomerProfile`, `Services/CustomerResolver`, `Services/SegmentationService`, `Support/CustomerProfileNormalizer`, `Payment/CustomersPaymentSubjectDriver`
+- Models: `Customer`, `CustomerGroup`, `CustomerNote`, `Features/Segmentation/Models/Segment` (address records come from `addressing.Address`)
+- Actions/Services: `Features/Segmentation/Actions/AssignCustomerToSegment`, `Actions/CreateCustomer`, `Actions/LinkCustomerToPerson`, `Actions/MergeCustomers`, `Features/Segmentation/Actions/RebuildAllSegments`, `Features/Segmentation/Actions/RemoveCustomerFromSegment`, `Actions/SetDefaultCustomerAddress`, `Actions/UpdateCustomerProfile`, `Services/CustomerResolver`, `Features/Segmentation/Services/SegmentationService`, `Support/CustomerProfileNormalizer`, `Payment/CustomersPaymentSubjectDriver`
 - Config `customers.php`: `database` (`table_prefix`, `json_column_type`, and 6 `tables.*` keys: `customers`, `segments`, `segment_customer`, `groups`, `group_members`, `notes`), `features` (`owner.enabled`, `owner.include_global`, `owner.auto_assign_on_create`, `segments.auto_assign`), `integrations.user_model`
 
 ## Docs map
