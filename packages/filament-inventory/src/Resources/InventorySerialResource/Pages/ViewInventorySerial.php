@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages;
 
-use AIArmada\FilamentInventory\Resources\InventorySerialResource;
 use AIArmada\FilamentInventory\Actions\DeleteTraceabilityAction;
+use AIArmada\FilamentInventory\Resources\InventorySerialResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 

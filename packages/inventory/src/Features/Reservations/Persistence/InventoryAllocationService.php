@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Features\Reservations\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
@@ -15,7 +16,6 @@ use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Stock\Persistence\ReservationStockStore;
-use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

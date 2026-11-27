@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Tables;
 
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityBulkAction;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
-use AIArmada\FilamentInventory\Actions\DeleteTraceabilityBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;

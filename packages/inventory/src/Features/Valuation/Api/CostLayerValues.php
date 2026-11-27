@@ -14,7 +14,7 @@ interface CostLayerValues
     public function rankedItems(CostingMethod $method, string $currency, int $limit): array;
 
     /**
-     * @param list<array{inventoryable_type: string, inventoryable_id: string, location_id: string}> $items
+     * @param  list<array{inventoryable_type: string, inventoryable_id: string, location_id: string}>  $items
      * @return array<string, array<string, array<string, int>>>
      */
     public function byItemsAtLocations(CostingMethod $method, string $currency, array $items): array;

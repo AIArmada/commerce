@@ -15,6 +15,8 @@ use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * @return array{
@@ -243,7 +245,7 @@ it('does not let a tenant mutate a visible global serial', function (): void {
     expect($fixture['service']->findBySerialNumber('SN-GLOBAL-RESERVE'))->not->toBeNull();
 
     expect(fn () => $fixture['service']->reserve($serial))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
 
     expect($serial->fresh()->status)->toBeInstanceOf(Available::class);
 });
@@ -255,7 +257,7 @@ it('enforces serial uniqueness for explicit global records on the fresh schema',
         $fixture['service']->register($fixture['sku'], 'SN-UNIQUE-GLOBAL', $fixture['locationGlobal']->id);
 
         expect(fn () => $fixture['service']->register($fixture['sku'], 'SN-UNIQUE-GLOBAL', $fixture['locationGlobal']->id))
-            ->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+            ->toThrow(UniqueConstraintViolationException::class);
     });
 });
 

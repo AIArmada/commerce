@@ -7,8 +7,8 @@ namespace AIArmada\Products\Data;
 final readonly class CompositeCapacityRequest
 {
     /**
-     * @param array<string, mixed> $metadata
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $metadata
+     * @param  array<string, mixed>  $context
      */
     public function __construct(
         public string $parentProductId,

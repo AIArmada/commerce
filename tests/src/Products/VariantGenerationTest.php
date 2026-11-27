@@ -175,7 +175,7 @@ it('rejects variant identifiers returned by a custom generator for another produ
 
         $variant = app(GenerateVariantMatrix::class)->generateSynchronously($second)->firstOrFail();
 
-        app()->instance(VariantGeneratorInterface::class, new class ((string) $variant->getKey()) implements VariantGeneratorInterface
+        app()->instance(VariantGeneratorInterface::class, new class((string) $variant->getKey()) implements VariantGeneratorInterface
         {
             public function __construct(private string $variantId) {}
 

@@ -14,6 +14,7 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 describe('InventoryOwnerScope retention', function (): void {
@@ -106,7 +107,7 @@ it('does not allow tenants to mutate visible global stock', function (): void {
         expect(fn () => app(InventoryService::class)->receive($sku, $location->id, 5))
             ->toThrow(InvalidArgumentException::class);
         expect(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 99]))
-            ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+            ->toThrow(ModelNotFoundException::class);
 
         $default = InventoryLocation::getOrCreateDefault();
         expect($default->id)->not->toBe($location->id);

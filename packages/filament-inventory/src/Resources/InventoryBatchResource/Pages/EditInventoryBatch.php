@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages;
 
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityAction;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
 use AIArmada\Inventory\Features\Traceability\Actions\UpdateTraceabilityDetails;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\FilamentInventory\Actions\DeleteTraceabilityAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 

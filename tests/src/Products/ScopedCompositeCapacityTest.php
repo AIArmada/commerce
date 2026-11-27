@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityDemand;
 use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Data\CompositeCapacityDemand;
 use Illuminate\Support\Str;
 
 final class ScopedTestCapacityResolver implements CompositeCapacityDemandResolverInterface
