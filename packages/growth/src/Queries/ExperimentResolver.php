@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Support\Context;
+namespace AIArmada\Growth\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Growth\Actions\ScopeSignalQueryToOwner;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Enums\ResolveStrategy;
 use AIArmada\Growth\Models\Experiment;

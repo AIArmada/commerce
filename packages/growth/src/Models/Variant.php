@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Growth\Actions\DeleteVariantAssignments;
 use AIArmada\Growth\Enums\VariantStatus;
-use AIArmada\Growth\Support\Context\ExperimentResolver;
+use AIArmada\Growth\Queries\ExperimentResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

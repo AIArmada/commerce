@@ -6,6 +6,7 @@ namespace AIArmada\Growth\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ScopeSignalQueryToOwner;
 use AIArmada\Growth\Support\ExperimentAssignmentResolver;
 use AIArmada\Growth\Support\ExperimentContextMerger;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;

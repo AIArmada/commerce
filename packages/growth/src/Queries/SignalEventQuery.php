@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Growth\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Growth\Actions\ScopeSignalQueryToOwner;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
