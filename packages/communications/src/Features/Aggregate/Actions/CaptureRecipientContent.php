@@ -24,11 +24,11 @@ final readonly class CaptureRecipientContent implements NotificationContentCaptu
         private PayloadRedactor $redactor,
     ) {}
 
-    public function capture(string $communicationId, mixed $notifiable, object $notification, string $channel): CapturedRecipientContentData
+    public function recipient(string $communicationId, mixed $notifiable): string
     {
         $model = new Communication;
 
-        return $model->getConnection()->transaction(function () use ($model, $communicationId, $notifiable, $notification, $channel): CapturedRecipientContentData {
+        return $model->getConnection()->transaction(function () use ($model, $communicationId, $notifiable): string {
             if (Communication::ownerScopeConfig()->enabled) {
                 OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
             }
@@ -60,10 +60,20 @@ final readonly class CaptureRecipientContent implements NotificationContentCaptu
                 $recipient->save();
             }
 
+            return $recipient->id;
+        });
+    }
+
+    public function capture(string $communicationId, mixed $notifiable, object $notification, string $channel): CapturedRecipientContentData
+    {
+        $model = new Communication;
+
+        return $model->getConnection()->transaction(function () use ($communicationId, $notifiable, $notification, $channel): CapturedRecipientContentData {
+            $recipientId = $this->recipient($communicationId, $notifiable);
             $rendered = $this->renderer->renderFromNotification($notifiable, $notification, $channel);
             $content = new CommunicationContent;
-            $content->communication_id = $communication->id;
-            $content->recipient_id = $recipient->id;
+            $content->communication_id = $communicationId;
+            $content->recipient_id = $recipientId;
             $content->channel = $channel;
             $content->locale = $rendered->locale;
             $content->subject = $this->redactor->redactText($rendered->subject);
@@ -74,7 +84,7 @@ final readonly class CaptureRecipientContent implements NotificationContentCaptu
             $content->rendered_at = CarbonImmutable::now();
             $content->save();
 
-            return new CapturedRecipientContentData($recipient->id, $content->id);
+            return new CapturedRecipientContentData($recipientId, $content->id);
         });
     }
 }

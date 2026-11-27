@@ -10,6 +10,7 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use Carbon\CarbonImmutable;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Events\CommunicationCreated;
+use AIArmada\Communications\Events\CommunicationQueued;
 use AIArmada\Communications\Events\CommunicationScheduled;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Event;
@@ -20,14 +21,15 @@ final readonly class CreateCommunicationAction implements CommunicationCreator
         private PayloadRedactor $redactor,
     ) {}
 
-    public function handle(CommunicationContextData $context): string
+    public function handle(CommunicationContextData $context, bool $queued = false): string
     {
         $communication = new Communication;
         $communication->direction = $context->direction;
         $communication->category = $context->category;
         $communication->priority = $context->priority;
         $communication->purpose = $context->purpose;
-        $communication->status = CommunicationStatus::Draft;
+        $communication->status = $queued ? CommunicationStatus::Queued : CommunicationStatus::Draft;
+        $communication->queued_at = $queued ? CarbonImmutable::now() : null;
         $communication->idempotency_key = $context->idempotencyKey;
         $communication->locale = $context->locale;
         $communication->timezone = $context->timezone;
@@ -43,7 +45,6 @@ final readonly class CreateCommunicationAction implements CommunicationCreator
         $communication->parent_id = $context->parentId;
         $communication->save();
 
-
         Event::dispatch(new CommunicationCreated(
             communicationId: $communication->id,
             category: $communication->category->value,
@@ -56,6 +57,10 @@ final readonly class CreateCommunicationAction implements CommunicationCreator
                 communicationId: $communication->id,
                 scheduledAt: $communication->scheduled_at->toIso8601String(),
             ));
+        }
+
+        if ($queued) {
+            Event::dispatch(new CommunicationQueued(communicationId: $communication->id));
         }
 
         return $communication->id;

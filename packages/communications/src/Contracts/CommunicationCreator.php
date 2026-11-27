@@ -8,5 +8,5 @@ use AIArmada\Communications\Data\CommunicationContextData;
 
 interface CommunicationCreator
 {
-    public function handle(CommunicationContextData $context): string;
+    public function handle(CommunicationContextData $context, bool $queued = false): string;
 }
