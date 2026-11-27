@@ -33,7 +33,7 @@ use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
-use AIArmada\Chip\Services\ChipCustomerDirectory;
+use AIArmada\Chip\Features\Collect\Persistence\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 use AIArmada\Chip\Services\Collect\PurchasesApi;

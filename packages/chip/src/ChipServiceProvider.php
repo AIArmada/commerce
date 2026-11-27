@@ -25,7 +25,7 @@ use AIArmada\Chip\Platform\ExtensionRegistry;
 use AIArmada\Chip\Platform\FeatureCatalog;
 use AIArmada\Chip\Platform\FeatureModule;
 use AIArmada\Chip\Services\ChipCollectService;
-use AIArmada\Chip\Services\ChipCustomerDirectory;
+use AIArmada\Chip\Features\Collect\Persistence\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;

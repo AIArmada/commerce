@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services;
+namespace AIArmada\Chip\Features\Collect\Persistence;
 
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;

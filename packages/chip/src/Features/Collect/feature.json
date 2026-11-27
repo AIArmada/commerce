@@ -12,6 +12,9 @@
     ],
     "table:chip_payments": [
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+    ],
+    "table:chip_customers": [
+      "AIArmada\\Chip\\Features\\Collect\\Persistence\\ChipCustomerDirectory"
     ]
   },
   "extensions": {}
