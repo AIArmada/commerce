@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentInventory\Support\TraceabilityLevelSelect;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
@@ -27,6 +28,7 @@ final class InventorySerialForm
         return $schema->components([
             Section::make('Serial Information')
                 ->schema([
+                    TraceabilityLevelSelect::make(),
                     Grid::make(2)
                         ->schema([
                             TextInput::make('serial_number')
@@ -37,8 +39,9 @@ final class InventorySerialForm
 
                             Select::make('location_id')
                                 ->label('Location')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->relationship(
                                     name: 'location',
                                     titleAttribute: 'name',
@@ -61,8 +64,8 @@ final class InventorySerialForm
 
                             Select::make('status')
                                 ->label('Status')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->options(SerialStatus::options())
                                 ->required()
                                 ->default(Available::getMorphClass()),
@@ -102,14 +105,16 @@ final class InventorySerialForm
                         ->schema([
                             TextInput::make('order_id')
                                 ->label('Order ID')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->maxLength(36),
 
                             TextInput::make('customer_id')
                                 ->label('Customer ID')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->maxLength(36),
                         ]),
                 ])
@@ -125,8 +130,9 @@ final class InventorySerialForm
 
                             DatePicker::make('sold_at')
                                 ->label('Sold Date')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false),
                         ]),
                 ])
                 ->collapsible(),

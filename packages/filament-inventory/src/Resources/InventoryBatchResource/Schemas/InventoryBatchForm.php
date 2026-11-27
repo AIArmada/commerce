@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentInventory\Support\TraceabilityLevelSelect;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -26,6 +27,7 @@ final class InventoryBatchForm
         return $schema->components([
             Section::make('Batch Information')
                 ->schema([
+                    TraceabilityLevelSelect::make(),
                     Grid::make(2)
                         ->schema([
                             TextInput::make('batch_number')
@@ -40,8 +42,9 @@ final class InventoryBatchForm
 
                             Select::make('location_id')
                                 ->label('Location')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->relationship(
                                     name: 'location',
                                     titleAttribute: 'name',
@@ -52,8 +55,8 @@ final class InventoryBatchForm
 
                             Select::make('status')
                                 ->label('Status')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->options(collect(BatchStatus::cases())->mapWithKeys(
                                     fn (BatchStatus $status) => [$status->value => $status->label()]
                                 ))
@@ -70,22 +73,24 @@ final class InventoryBatchForm
                                 ->label('Quantity Received')
                                 ->disabledOn('edit')
                                 ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
-                                ->numeric()
+                                ->integer()
                                 ->required()
-                                ->minValue(0),
+                                ->minValue(1),
 
                             TextInput::make('quantity_on_hand')
                                 ->label('Quantity On Hand')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->numeric()
                                 ->required()
                                 ->minValue(0),
 
                             TextInput::make('quantity_reserved')
                                 ->label('Quantity Reserved')
-                                ->disabledOn('edit')
-                                ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
+                                ->visibleOn('edit')
+                                ->disabled()
+                                ->dehydrated(false)
                                 ->numeric()
                                 ->default(0)
                                 ->minValue(0),
