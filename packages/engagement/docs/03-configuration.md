@@ -90,19 +90,3 @@ Override the notification class used for reminder delivery. Your custom class mu
 ```
 
 Bounds how many rows `subscriptionsFor()` and `remindersFor()` return. Both methods execute eagerly and return collections; raise the limit if a single actor legitimately holds more active subscriptions or pending reminders.
-
-### Model class overrides
-
-```php
-'models' => [
-    'follow' => Follow::class,
-    'bookmark' => Bookmark::class,
-    'response' => Response::class,
-    'reaction' => Reaction::class,
-    'subscription' => Subscription::class,
-    'reminder' => Reminder::class,
-    'share' => Share::class,
-]
-```
-
-These service-created models are configurable, allowing you to extend and replace them with your own subclasses.

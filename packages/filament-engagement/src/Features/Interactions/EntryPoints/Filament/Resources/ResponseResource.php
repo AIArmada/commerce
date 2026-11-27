@@ -23,12 +23,7 @@ use UnitEnum;
 
 final class ResponseResource extends Resource
 {
-    protected static ?string $model = null;
-
-    public static function getModel(): string
-    {
-        return config('engagement.models.response', Response::class);
-    }
+    protected static ?string $model = Response::class;
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

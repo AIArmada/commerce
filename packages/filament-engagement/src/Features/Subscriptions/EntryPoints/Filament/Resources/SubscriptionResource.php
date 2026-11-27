@@ -23,12 +23,7 @@ use UnitEnum;
 
 final class SubscriptionResource extends Resource
 {
-    protected static ?string $model = null;
-
-    public static function getModel(): string
-    {
-        return config('engagement.models.subscription', Subscription::class);
-    }
+    protected static ?string $model = Subscription::class;
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {

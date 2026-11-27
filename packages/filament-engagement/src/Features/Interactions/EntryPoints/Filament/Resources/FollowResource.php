@@ -24,12 +24,7 @@ use UnitEnum;
 
 final class FollowResource extends Resource
 {
-    protected static ?string $model = null;
-
-    public static function getModel(): string
-    {
-        return config('engagement.models.follow', Follow::class);
-    }
+    protected static ?string $model = Follow::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-heart';
 

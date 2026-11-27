@@ -24,12 +24,7 @@ use UnitEnum;
 
 final class BookmarkResource extends Resource
 {
-    protected static ?string $model = null;
-
-    public static function getModel(): string
-    {
-        return config('engagement.models.bookmark', Bookmark::class);
-    }
+    protected static ?string $model = Bookmark::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bookmark';
 
