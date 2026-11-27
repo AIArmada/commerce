@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Actions;
+namespace AIArmada\Contacting\Features\Snapshots\Actions;
 
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Exceptions\ContactSnapshotsDisabledException;
+use AIArmada\Contacting\Features\Snapshots\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Illuminate\Auth\Access\AuthorizationException;

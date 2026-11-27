@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\FilamentContacting\Schemas\ContactSnapshotInfolistSchema;
 use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
 use BackedEnum;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Exceptions\ContactSnapshotsDisabledException;
-use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\Snapshots\Exceptions\ContactSnapshotsDisabledException;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Customers\Models\Customer;
 
 test('CreateContactSnapshotAction persists snapshots with the source owner', function (): void {

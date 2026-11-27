@@ -46,7 +46,7 @@ keywords:
 
 ## Key surfaces
 - Models: `ContactMethod`, `ContactSnapshot`, `SocialProfile`
-- Actions/Services: `Actions/BuildContactLinksAction`, `Actions/CreateContactMethodAction`, `Actions/CreateContactSnapshotAction`, `Actions/CreateSocialProfileAction`, `Actions/NormalizeContactMethodAction`, `Actions/NormalizeSocialProfileAction`, `Actions/SetPrimaryContactMethodAction`, `Actions/SetPrimarySocialProfileAction`, `Actions/UpdateContactMethodAction`, `Actions/UpdateSocialProfileAction`
+- Actions/Services: `Actions/BuildContactLinksAction`, `Actions/CreateContactMethodAction`, `Features/Snapshots/Actions/CreateContactSnapshotAction`, `Actions/CreateSocialProfileAction`, `Actions/NormalizeContactMethodAction`, `Actions/NormalizeSocialProfileAction`, `Actions/SetPrimaryContactMethodAction`, `Actions/SetPrimarySocialProfileAction`, `Actions/UpdateContactMethodAction`, `Actions/UpdateSocialProfileAction`
 - Config `contacting.php`: `database` (`table_prefix`, `json_column_type`, `tables.contact_methods`, `tables.social_profiles`, `tables.contact_snapshots`), `defaults` (`country_code`, `public_by_default`, `verified_by_default`), `features` (`owner.enabled`, `owner.include_global`, `owner.auto_assign_on_create`, `contact_snapshots`, `strict_social_platforms`, `strict_contact_types`), `contact_methods` (`types`, `purposes`), `social_profiles.platforms`
 
 ## Docs map

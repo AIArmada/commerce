@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Contacting\Actions\BuildContactLinksAction;
 use AIArmada\Contacting\Data\ContactLinksData;
 use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
 
 test('BuildContactLinksAction builds mailto link', function (): void {

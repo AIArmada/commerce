@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Enums\ContactPurpose;
 use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentContacting\FilamentContactingPlugin;

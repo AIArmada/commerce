@@ -201,7 +201,7 @@ $institution->primarySocialProfile('facebook');
 ## Create Event Contact Snapshot
 
 ```php
-use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 
 // When event is published, snapshot the organizer's public contacts
 app(CreateContactSnapshotAction::class)->fromBundle(

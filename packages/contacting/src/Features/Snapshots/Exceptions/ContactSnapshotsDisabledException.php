@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Exceptions;
+namespace AIArmada\Contacting\Features\Snapshots\Exceptions;
 
 use LogicException;
 

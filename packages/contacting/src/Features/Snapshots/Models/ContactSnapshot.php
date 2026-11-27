@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Models;
+namespace AIArmada\Contacting\Features\Snapshots\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
