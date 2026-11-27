@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
+use AIArmada\Signals\Features\Ingestion\Api\SignalIngestion;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use Illuminate\Support\Str;
+
+uses(SignalsTestCase::class);
+
+function publicIngestionProperty(): TrackedProperty
+{
+    return TrackedProperty::query()->create([
+        'name' => 'Public Ingestion',
+        'slug' => 'public-ingestion',
+        'write_key' => 'public-ingestion-write-key',
+    ]);
+}
+
+it('ingests a trusted event through the public api and returns an immutable receipt', function (): void {
+    $property = publicIngestionProperty();
+
+    $event = app(SignalIngestion::class)->handle($property->id, [
+        'event_name' => 'test.public_ingestion',
+        'event_category' => 'test',
+        'occurred_at' => '2026-05-10T08:00:00Z',
+        'idempotency_key' => 'test:public-ingestion',
+        'properties' => ['source' => 'api'],
+    ], true);
+
+    expect($event->id)->not->toBe('')
+        ->and($event->trackedPropertyId)->toBe($property->id)
+        ->and($event->eventName)->toBe('test.public_ingestion')
+        ->and($event->eventCategory)->toBe('test')
+        ->and($event->occurredAt->toIso8601String())->toBe('2026-05-10T08:00:00+00:00')
+        ->and($event->idempotencyKey)->toBe('test:public-ingestion')
+        ->and($event->properties)->toBe(['source' => 'api'])
+        ->and($event->revenueMinor)->toBe(0)
+        ->and($event->currency)->toBeString();
+
+    expect(SignalEvent::query()->whereKey($event->id)->exists())->toBeTrue();
+});
+
+it('returns the same receipt when the same idempotency key is ingested twice', function (): void {
+    $property = publicIngestionProperty();
+
+    $payload = [
+        'event_name' => 'test.public_ingestion',
+        'event_category' => 'test',
+        'idempotency_key' => 'test:replay',
+        'properties' => [],
+    ];
+
+    $first = app(SignalIngestion::class)->handle($property->id, $payload, true);
+    $second = app(SignalIngestion::class)->handle($property->id, $payload, true);
+
+    expect($second->id)->toBe($first->id)
+        ->and(SignalEvent::query()->count())->toBe(1);
+});
+
+it('rejects an unknown tracked property', function (): void {
+    expect(fn () => app(SignalIngestion::class)->handle((string) Str::uuid(), [
+        'event_name' => 'test.public_ingestion',
+        'event_category' => 'test',
+        'properties' => [],
+    ], true))->toThrow(InvalidArgumentException::class);
+});
