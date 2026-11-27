@@ -10,6 +10,8 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentPricing\Support\CatalogReference;
+use AIArmada\Pricing\Actions\SavePriceTier;
+use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Filament\Actions;
@@ -279,12 +281,15 @@ final class TiersRelationManager extends RelationManager
             ])
             ->headerActions([
                 Actions\CreateAction::make()
-                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'tierable_type', 'tierable_id')),
+                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'tierable_type', 'tierable_id'))
+                    ->using(fn (array $data): PriceTier => app(SavePriceTier::class)->create([...$data, 'price_list_id' => $this->getOwnerRecord()->getKey()])),
             ])
             ->actions([
                 Actions\EditAction::make()
-                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'tierable_type', 'tierable_id')),
-                Actions\DeleteAction::make(),
+                    ->mutateFormDataUsing(fn (array $data): array => CatalogReference::validateFormData($data, 'tierable_type', 'tierable_id'))
+                    ->using(fn (PriceTier $record, array $data): PriceTier => app(SavePriceTier::class)->update($record, [...$data, 'price_list_id' => $this->getOwnerRecord()->getKey()])),
+                Actions\DeleteAction::make()
+                    ->using(fn (PriceTier $record): bool => app(SavePriceTier::class)->delete($record)),
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([

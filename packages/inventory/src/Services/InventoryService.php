@@ -239,6 +239,15 @@ final class InventoryService
 
         return DB::transaction(function () use ($model, $locationId, $newQuantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
             $level = $this->getOrCreateLevel($model, $locationId);
+            $level = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+                ->whereKey($level->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($newQuantity < $level->quantity_reserved) {
+                throw new InvalidArgumentException('On-hand quantity cannot be less than reserved stock.');
+            }
+
             $oldQuantity = $level->quantity_on_hand;
             $difference = $newQuantity - $oldQuantity;
 

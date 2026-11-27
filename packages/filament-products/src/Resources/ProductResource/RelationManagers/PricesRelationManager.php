@@ -7,6 +7,7 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Pricing\Actions\SavePrice;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use Filament\Actions\BulkActionGroup;
@@ -97,10 +98,12 @@ final class PricesRelationManager extends RelationManager
             ->recordTitleAttribute('price_list.name')
             ->modifyQueryUsing(
                 fn (Builder $query) => $query
-                    ->join('price_lists', 'prices.price_list_id', '=', 'price_lists.id')
-                    ->select('prices.*')
-                    ->orderBy('price_lists.priority', 'asc')
-                    ->orderBy('prices.id', 'asc')
+                    ->with('priceList')
+                    ->whereHas('priceList')
+                    ->orderBy(PriceList::query()
+                        ->select('priority')
+                        ->whereColumn((new PriceList)->qualifyColumn('id'), (new Price)->qualifyColumn('price_list_id')))
+                    ->orderBy((new Price)->qualifyColumn('id'))
             )
             ->columns([
                 Tables\Columns\TextColumn::make('priceList.name')
@@ -191,7 +194,8 @@ final class PricesRelationManager extends RelationManager
                         $data['priceable_id'] = $this->getOwnerRecord()->getKey();
 
                         return $data;
-                    }),
+                    })
+                    ->using(fn (array $data): Price => app(SavePrice::class)->create($data)),
             ])
             ->actions([
                 ViewAction::make(),
@@ -201,9 +205,14 @@ final class PricesRelationManager extends RelationManager
                             $data['price_list_id'] = OwnerScopedIds::ensureAllowed('price_list_id', PriceList::class, [$data['price_list_id']])[0];
                         }
 
+                        $data['priceable_type'] = $this->getOwnerRecord()->getMorphClass();
+                        $data['priceable_id'] = $this->getOwnerRecord()->getKey();
+
                         return $data;
-                    }),
-                DeleteAction::make(),
+                    })
+                    ->using(fn (Price $record, array $data): Price => app(SavePrice::class)->update($record, $data)),
+                DeleteAction::make()
+                    ->using(fn (Price $record): bool => app(SavePrice::class)->delete($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
