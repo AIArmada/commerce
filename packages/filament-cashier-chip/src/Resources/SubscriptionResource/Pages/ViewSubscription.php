@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
+use LogicException;
 use Override;
 
 final class ViewSubscription extends ViewRecord
@@ -32,6 +34,29 @@ final class ViewSubscription extends ViewRecord
     public function getHeadingIcon(): Heroicon
     {
         return Heroicon::OutlinedCreditCard;
+    }
+
+    private function ownedSubscription(): Subscription
+    {
+        /** @var Subscription $record */
+        $record = $this->getRecord();
+
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
+            return $record;
+        }
+
+        $guarded = OwnerWriteGuard::findOrFailForOwner(
+            Subscription::class,
+            (string) $record->getKey(),
+            includeGlobal: (bool) config('cashier-chip.features.owner.include_global', false),
+            message: 'Subscription is not accessible in the current owner scope.',
+        );
+
+        if (! $guarded instanceof Subscription) {
+            throw new LogicException('Guarded subscription must be a CHIP subscription.');
+        }
+
+        return $guarded;
     }
 
     #[Override]
@@ -54,7 +79,12 @@ final class ViewSubscription extends ViewRecord
                     })
                     ->action(function (): void {
                         /** @var Subscription $subscription */
-                        $subscription = $this->getRecord();
+                        $subscription = $this->ownedSubscription();
+
+                        if ($subscription->canceled()) {
+                            return;
+                        }
+
                         $subscription->cancel();
 
                         Notification::make()
@@ -81,7 +111,12 @@ final class ViewSubscription extends ViewRecord
                     })
                     ->action(function (): void {
                         /** @var Subscription $subscription */
-                        $subscription = $this->getRecord();
+                        $subscription = $this->ownedSubscription();
+
+                        if ($subscription->ended()) {
+                            return;
+                        }
+
                         $subscription->cancelNow();
 
                         Notification::make()
@@ -108,7 +143,12 @@ final class ViewSubscription extends ViewRecord
                     })
                     ->action(function (): void {
                         /** @var Subscription $subscription */
-                        $subscription = $this->getRecord();
+                        $subscription = $this->ownedSubscription();
+
+                        if (! $subscription->onGracePeriod()) {
+                            return;
+                        }
+
                         $subscription->resume();
 
                         Notification::make()
@@ -133,7 +173,12 @@ final class ViewSubscription extends ViewRecord
                     })
                     ->action(function (): void {
                         /** @var Subscription $subscription */
-                        $subscription = $this->getRecord();
+                        $subscription = $this->ownedSubscription();
+
+                        if ($subscription->paused() || ! $subscription->active()) {
+                            return;
+                        }
+
                         $subscription->pause();
 
                         Notification::make()
@@ -158,7 +203,12 @@ final class ViewSubscription extends ViewRecord
                     })
                     ->action(function (): void {
                         /** @var Subscription $subscription */
-                        $subscription = $this->getRecord();
+                        $subscription = $this->ownedSubscription();
+
+                        if (! $subscription->paused()) {
+                            return;
+                        }
+
                         $subscription->unpause();
 
                         Notification::make()
@@ -190,7 +240,7 @@ final class ViewSubscription extends ViewRecord
                 })
                 ->action(function (array $data): void {
                     /** @var Subscription $subscription */
-                    $subscription = $this->getRecord();
+                    $subscription = $this->ownedSubscription();
                     $subscription->extendTrial(CarbonImmutable::parse($data['trial_ends_at']));
 
                     Notification::make()
@@ -217,7 +267,7 @@ final class ViewSubscription extends ViewRecord
                 })
                 ->action(function (): void {
                     /** @var Subscription $subscription */
-                    $subscription = $this->getRecord();
+                    $subscription = $this->ownedSubscription();
                     $subscription->endTrial();
 
                     Notification::make()
@@ -248,7 +298,12 @@ final class ViewSubscription extends ViewRecord
                 })
                 ->action(function (array $data): void {
                     /** @var Subscription $subscription */
-                    $subscription = $this->getRecord();
+                    $subscription = $this->ownedSubscription();
+
+                    if (! $subscription->active() && ! $subscription->onTrial()) {
+                        return;
+                    }
+
                     $subscription->swap($data['price']);
 
                     Notification::make()
@@ -279,7 +334,12 @@ final class ViewSubscription extends ViewRecord
                 })
                 ->action(function (array $data): void {
                     /** @var Subscription $subscription */
-                    $subscription = $this->getRecord();
+                    $subscription = $this->ownedSubscription();
+
+                    if (! $subscription->hasSinglePrice()) {
+                        return;
+                    }
+
                     $subscription->updateQuantity((int) $data['quantity']);
 
                     Notification::make()
@@ -296,7 +356,7 @@ final class ViewSubscription extends ViewRecord
                 ->icon('heroicon-o-arrow-path')
                 ->action(function (): void {
                     /** @var Subscription $subscription */
-                    $subscription = $this->getRecord();
+                    $subscription = $this->ownedSubscription();
                     $subscription->syncChipStatus();
 
                     Notification::make()

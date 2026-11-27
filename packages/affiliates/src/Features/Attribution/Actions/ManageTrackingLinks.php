@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkData;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Links\Actions\DeleteLink;
 use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
@@ -71,7 +72,7 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
 
         if (class_exists(Link::class) && app()->providerIsLoaded(LinksServiceProvider::class)) {
             foreach ($link->trackedLink()->get() as $tracked) {
-                if (! $tracked->delete()) {
+                if (! app(DeleteLink::class)->handle($tracked)) {
                     throw new LogicException('The associated public link could not be deleted.');
                 }
             }

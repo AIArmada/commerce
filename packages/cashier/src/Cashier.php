@@ -93,8 +93,8 @@ class Cashier
         if (class_exists(\Laravel\Cashier\Cashier::class)) {
             \Laravel\Cashier\Cashier::$deactivatePastDue = $deactivate;
         }
-        if (class_exists(\AIArmada\CashierChip\Cashier::class)) {
-            \AIArmada\CashierChip\Cashier::$deactivatePastDue = $deactivate;
+        if (class_exists(\AIArmada\CashierChip\Billing\Cashier::class)) {
+            \AIArmada\CashierChip\Billing\Cashier::$deactivatePastDue = $deactivate;
         }
         // @codeCoverageIgnoreEnd
     }
@@ -111,8 +111,8 @@ class Cashier
         if (class_exists(\Laravel\Cashier\Cashier::class)) {
             \Laravel\Cashier\Cashier::$deactivateIncomplete = $deactivate;
         }
-        if (class_exists(\AIArmada\CashierChip\Cashier::class)) {
-            \AIArmada\CashierChip\Cashier::$deactivateIncomplete = $deactivate;
+        if (class_exists(\AIArmada\CashierChip\Billing\Cashier::class)) {
+            \AIArmada\CashierChip\Billing\Cashier::$deactivateIncomplete = $deactivate;
         }
         // @codeCoverageIgnoreEnd
     }

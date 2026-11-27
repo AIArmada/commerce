@@ -26,6 +26,15 @@ These keys control the package-wide billing defaults:
 | `currency` | Shared fallback currency |
 | `locale` | Shared locale for presentation helpers |
 
+## Billing limits
+
+| Key | Purpose |
+| --- | --- |
+| `billing.max_amount_minor` | Upper bound for a single charge or refund in minor units (default 100,000,000) |
+
+`RefundPayment` and the built-in gateways reject refund amounts above this bound before calling
+the provider.
+
 ## Credentials and gateways
 
 The `gateways` section keeps the gateway aliases and the credentials the wrapper layer needs to

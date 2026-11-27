@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Links\Contracts\SlugGeneratorInterface;
 use AIArmada\Links\Models\Concerns\HasSubject;
+use AIArmada\Links\Persistence\DeleteLockedLink;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -148,8 +149,8 @@ final class Link extends Model
             }
         });
 
-        static::deleting(function (Link $link): void {
-            $link->clicks()->delete();
+        static::deleted(function (Link $link): void {
+            app(DeleteLockedLink::class)->deleteDependents($link);
         });
     }
 

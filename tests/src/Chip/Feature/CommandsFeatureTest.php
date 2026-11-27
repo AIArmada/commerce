@@ -2,15 +2,23 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Commands\CleanWebhooksCommand;
-use AIArmada\Chip\Commands\RetryWebhooksCommand;
-use AIArmada\Chip\Models\Webhook;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\CleanWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 describe('CleanWebhooksCommand', function (): void {
+    it('rejects nonpositive retention periods and unknown statuses', function (): void {
+        $this->artisan(CleanWebhooksCommand::class, ['--days' => -1])
+            ->assertFailed();
+
+        $this->artisan(CleanWebhooksCommand::class, ['--status' => 'unexpected'])
+            ->assertFailed();
+    });
+
     it('shows message when no webhooks found', function (): void {
         $this->artisan(CleanWebhooksCommand::class)
             ->expectsOutput('No webhooks found matching the criteria.')
@@ -199,6 +207,34 @@ describe('RetryWebhooksCommand', function (): void {
         $this->artisan(RetryWebhooksCommand::class, ['--limit' => 2, '--dry-run' => true])
             ->expectsOutputToContain('Found 2 webhook(s) eligible for retry')
             ->assertSuccessful();
+    });
+
+    it('does not switch tenant context when asked to retry another owner delivery', function (): void {
+        config()->set('chip.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Retry Caller',
+            'email' => 'retry-caller@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Retry Target',
+            'email' => 'retry-target@example.com',
+            'password' => 'secret',
+        ]);
+
+        $webhook = OwnerContext::withOwner($ownerB, fn () => Webhook::forceCreate([
+            'event_type' => 'purchase.paid',
+            'payload' => ['id' => 'retry-target'],
+            'status' => 'failed',
+            'retry_count' => 0,
+        ]));
+
+        $result = OwnerContext::withOwner($ownerA, fn () => app(WebhookRetryManager::class)->retry($webhook));
+
+        expect($result->isSkipped())->toBeTrue()
+            ->and(OwnerContext::withOwner($ownerB, fn () => $webhook->fresh()->retry_count))->toBe(0);
     });
 
     it('treats limit as a global cap across owners', function (): void {

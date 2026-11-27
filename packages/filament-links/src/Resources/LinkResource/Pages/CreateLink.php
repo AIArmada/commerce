@@ -15,6 +15,8 @@ final class CreateLink extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
+        unset($data['subject_type'], $data['subject_id'], $data['owner_type'], $data['owner_id']);
+
         return CreateLinkAction::run($data);
     }
 }

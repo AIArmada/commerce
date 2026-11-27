@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Services\Collect\WebhooksApi;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhooksApi;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function (): void {

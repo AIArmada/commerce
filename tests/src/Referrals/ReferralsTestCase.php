@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Referrals\Actions\AcceptReferralInvite;
 use AIArmada\Referrals\Actions\CreateReferralInvite;
 use AIArmada\Referrals\Actions\CreateReferralProgram;
-use AIArmada\Referrals\Data\ReferralInviteCreationResult;
+use AIArmada\Referrals\Actions\Results\ReferralInviteCreationResult;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\ReferralsServiceProvider;

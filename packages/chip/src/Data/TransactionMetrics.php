@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Spatie\LaravelData\Data;
-
 /**
  * Transaction metrics from local data.
  */
-final class TransactionMetrics extends Data
+final readonly class TransactionMetrics
 {
     public function __construct(
-        public readonly int $total,
-        public readonly int $successful,
-        public readonly int $failed,
-        public readonly int $pending,
-        public readonly int $refunded,
-        public readonly float $successRate,
+        public int $total,
+        public int $successful,
+        public int $failed,
+        public int $pending,
+        public int $refunded,
+        public float $successRate,
     ) {}
 
     /**
@@ -36,5 +34,18 @@ final class TransactionMetrics extends Data
         return $this->total > 0
             ? round($this->failed / $this->total * 100, 2)
             : 0.0;
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            'total' => $this->total,
+            'successful' => $this->successful,
+            'failed' => $this->failed,
+            'pending' => $this->pending,
+            'refunded' => $this->refunded,
+            'successRate' => $this->successRate,
+        ];
     }
 }

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentLinks\Resources\LinkResource\Tables;
 use AIArmada\FilamentLinks\Resources\LinkResource;
 use AIArmada\FilamentLinks\Resources\LinkResource\Schemas\LinkForm;
 use AIArmada\Links\Actions\DeactivateLink;
+use AIArmada\Links\Actions\DeleteLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Models\Link;
@@ -107,6 +108,7 @@ final class LinksTable
                     ->requiresConfirmation()
                     ->visible(fn (Link $record): bool => $record->deactivated_at === null
                         && ! LinkForm::isProtectedSubject($record))
+                    ->authorize(fn (Link $record): bool => LinkResource::canEdit($record) && ! LinkForm::isProtectedSubject($record))
                     ->action(function (Link $record): void {
                         DeactivateLink::run($record);
 
@@ -119,6 +121,7 @@ final class LinksTable
                     ->color('success')
                     ->visible(fn (Link $record): bool => $record->deactivated_at !== null
                         && ! LinkForm::isProtectedSubject($record))
+                    ->authorize(fn (Link $record): bool => LinkResource::canEdit($record) && ! LinkForm::isProtectedSubject($record))
                     ->action(function (Link $record): void {
                         ReactivateLink::run($record);
 
@@ -128,7 +131,8 @@ final class LinksTable
                 EditAction::make(),
                 DeleteAction::make()
                     ->authorize(fn (Link $record): bool => LinkResource::canDelete($record))
-                    ->visible(fn (Link $record): bool => LinkResource::canDelete($record)),
+                    ->visible(fn (Link $record): bool => LinkResource::canDelete($record))
+                    ->using(fn (Link $record): bool => app(DeleteLink::class)->handle($record)),
             ]);
     }
 }

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Links\Actions\CreateLink;
-use AIArmada\Links\Actions\RedirectToLink;
+use AIArmada\Links\EntryPoints\Http\RedirectToLinkController;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Http\Request;
@@ -118,7 +118,7 @@ test('redirect ignores malformed UTM keys and values', function (array $query): 
     ]);
     $request = Request::create('/go/malformed-campaign', 'GET', $query);
 
-    $response = app(RedirectToLink::class)->asController($request, $link->slug);
+    $response = app(RedirectToLinkController::class)->redirect($request, $link->slug);
     expect($response->getTargetUrl())->toBe('https://merchant.example/offer?utm_creative=destination');
 })->with([
     'empty key' => [['' => 'value']],
@@ -166,4 +166,14 @@ test('UTM forwarding preserves defaults destination incoming and baked precedenc
         'gclid' => 'incoming', 'merchant' => 'keep', 'utm_medium' => 'default',
         'utm_content' => 'incoming', 'utm_creative' => 'baked', 'fbclid' => 'baked-click',
     ])->and(parse_url($url, PHP_URL_FRAGMENT))->toBe('details');
+});
+
+test('disabled user agent tracking does not store the raw header or device information', function (): void {
+    config()->set('links.features.tracking.user_agent.enabled', false);
+    CreateLink::run(['name' => 'Private', 'slug' => 'private-agent', 'destination_url' => 'https://merchant.example/private']);
+
+    $this->withHeaders(['User-Agent' => LINKS_CHROME_UA])->get('/go/private-agent')->assertRedirect();
+
+    $click = LinkClick::query()->sole();
+    expect($click->user_agent)->toBeNull()->and($click->browser)->toBeNull()->and($click->device_type)->toBeNull();
 });

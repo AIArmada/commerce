@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 final class FakeDispatchAction extends DispatchChipWebhookAction
 {
@@ -204,6 +205,25 @@ describe('WebhookRetryManager', function (): void {
         });
     });
 
+    it('does not dispatch the same failed delivery twice before the backoff elapses', function (): void {
+        $webhook = Webhook::forceCreate([
+            'title' => 'Retry test',
+            'event_type' => 'purchase.paid',
+            'events' => ['purchase.paid'],
+            'payload' => ['id' => 'retry-once'],
+            'status' => 'failed',
+            'retry_count' => 0,
+            'created_on' => time(),
+            'updated_on' => time(),
+            'callback' => 'https://example.com/webhook',
+        ]);
+
+        $this->dispatchAction->result = WebhookResult::failed('Retry later');
+        expect($this->manager->retry($webhook)->isFailed())->toBeTrue();
+        expect($this->manager->retry($webhook)->isSkipped())->toBeTrue();
+        expect($webhook->refresh()->retry_count)->toBe(1);
+    });
+
     describe('setBackoffSchedule', function (): void {
         it('allows setting custom backoff schedule', function (): void {
             $customSchedule = [
@@ -283,6 +303,45 @@ describe('WebhookRetryManager', function (): void {
             $retryable = $this->manager->getRetryableWebhooks();
 
             expect($retryable->pluck('id')->all())->toBe([$eligibleWebhook->id]);
+        });
+
+        it('reclaims a stale processing claim left by a dead retry worker', function (): void {
+            $now = CarbonImmutable::now();
+
+            $stale = Webhook::forceCreate([
+                'title' => 'Stale processing webhook',
+                'event_type' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-stale-processing', 'type' => 'purchase'],
+                'status' => 'processing',
+                'retry_count' => 0,
+                'created_on' => $now->subHour()->timestamp,
+                'updated_on' => $now->subHour()->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            DB::table($stale->getTable())
+                ->where('id', $stale->getKey())
+                ->update(['updated_at' => $now->subMinutes(31)]);
+
+            $fresh = Webhook::forceCreate([
+                'title' => 'Fresh processing webhook',
+                'event_type' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-fresh-processing', 'type' => 'purchase'],
+                'status' => 'processing',
+                'retry_count' => 0,
+                'created_on' => $now->timestamp,
+                'updated_on' => $now->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            $retryable = $this->manager->getRetryableWebhooks();
+
+            expect($this->manager->shouldRetry($stale->refresh()))->toBeTrue()
+                ->and($this->manager->shouldRetry($fresh->refresh()))->toBeFalse()
+                ->and($retryable->pluck('id')->all())->toContain($stale->id)
+                ->and($retryable->pluck('id')->all())->not->toContain($fresh->id);
         });
     });
 });

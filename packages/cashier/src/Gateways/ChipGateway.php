@@ -29,9 +29,11 @@ use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipApiException;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -161,6 +163,20 @@ class ChipGateway extends AbstractGateway
     {
         if ($amount !== null && $amount <= 0) {
             throw new InvalidArgumentException('Refund amount must be a positive integer in minor units.');
+        }
+
+        $maximum = max(1, (int) config('cashier.billing.max_amount_minor', 100_000_000));
+
+        if ($amount !== null && $amount > $maximum) {
+            throw new InvalidArgumentException(sprintf('Refund amount must not exceed %d minor units.', $maximum));
+        }
+
+        if ((bool) config('chip.owner.enabled', false)
+            && ! Purchase::query()
+                ->forOwner(OwnerContext::CURRENT, false)
+                ->whereKey($paymentId)
+                ->exists()) {
+            throw new AuthorizationException('Purchase is not accessible in the current owner scope.');
         }
 
         $purchase = PaymentOperationLimiter::run(

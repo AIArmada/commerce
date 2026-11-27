@@ -4,87 +4,80 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Data\Casts\MoneyCast;
-use AIArmada\Chip\Data\Transformers\MoneyTransformer;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Attributes\WithTransformer;
 
-final class PurchaseData extends ChipData
+final readonly class PurchaseData
 {
     public function __construct(
-        public readonly string $id, // UUID as string
-        public readonly string $type,
-        public readonly int $created_on, // Unix timestamp from API
-        public readonly int $updated_on, // Unix timestamp from API
-        public readonly ClientDetailsData $client,
-        public readonly PurchaseDetailsData $purchase,
-        public readonly string $brand_id, // UUID as string
-        public readonly ?PaymentData $payment,
-        public readonly IssuerDetailsData $issuer_details,
-        public readonly TransactionData $transaction_data,
-        public readonly string $status,
+        public string $id, // UUID as string
+        public string $type,
+        public int $created_on, // Unix timestamp from API
+        public int $updated_on, // Unix timestamp from API
+        public ClientDetailsData $client,
+        public PurchaseDetailsData $purchase,
+        public string $brand_id, // UUID as string
+        public ?PaymentData $payment,
+        public IssuerDetailsData $issuer_details,
+        public TransactionData $transaction_data,
+        public string $status,
         /** @var array<string, mixed> */
-        public readonly array $status_history,
-        public readonly ?int $viewed_on, // Unix timestamp or null
-        public readonly ?string $company_id, // UUID as string or null
-        public readonly bool $is_test,
-        public readonly ?string $user_id, // UUID as string or null
-        public readonly ?string $billing_template_id, // UUID as string or null
-        public readonly ?string $client_id, // UUID as string or null
-        public readonly bool $send_receipt,
-        public readonly bool $is_recurring_token,
-        public readonly ?string $recurring_token, // UUID as string or null
-        public readonly bool $skip_capture,
-        public readonly bool $force_recurring,
-        public readonly string $reference_generated,
-        public readonly ?string $reference,
-        public readonly ?string $notes,
-        public readonly ?string $issued, // ISO 8601 date string
-        public readonly ?int $due, // Unix timestamp or null
-        public readonly string $refund_availability,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $refundable_amount,
-        public readonly ?CurrencyConversionData $currency_conversion,
+        public array $status_history,
+        public ?int $viewed_on, // Unix timestamp or null
+        public ?string $company_id, // UUID as string or null
+        public bool $is_test,
+        public ?string $user_id, // UUID as string or null
+        public ?string $billing_template_id, // UUID as string or null
+        public ?string $client_id, // UUID as string or null
+        public bool $send_receipt,
+        public bool $is_recurring_token,
+        public ?string $recurring_token, // UUID as string or null
+        public bool $skip_capture,
+        public bool $force_recurring,
+        public string $reference_generated,
+        public ?string $reference,
+        public ?string $notes,
+        public ?string $issued, // ISO 8601 date string
+        public ?int $due, // Unix timestamp or null
+        public string $refund_availability,
+        public Money $refundable_amount,
+        public ?CurrencyConversionData $currency_conversion,
         /** @var array<string, mixed> */
-        public readonly array $payment_method_whitelist,
-        public readonly ?string $success_redirect,
-        public readonly ?string $failure_redirect,
-        public readonly ?string $cancel_redirect,
-        public readonly ?string $success_callback,
-        public readonly ?string $creator_agent,
-        public readonly string $platform,
-        public readonly string $product,
-        public readonly ?string $created_from_ip,
-        public readonly ?string $invoice_url,
-        public readonly ?string $checkout_url,
-        public readonly ?string $direct_post_url,
-        public readonly bool $marked_as_paid,
-        public readonly ?string $order_id,
+        public array $payment_method_whitelist,
+        public ?string $success_redirect,
+        public ?string $failure_redirect,
+        public ?string $cancel_redirect,
+        public ?string $success_callback,
+        public ?string $creator_agent,
+        public string $platform,
+        public string $product,
+        public ?string $created_from_ip,
+        public ?string $invoice_url,
+        public ?string $checkout_url,
+        public ?string $direct_post_url,
+        public bool $marked_as_paid,
+        public ?string $order_id,
         /** @var array<int, mixed> */
-        public readonly array $upsell_campaigns,
-        public readonly ?string $referral_campaign_id,
-        public readonly ?string $referral_code,
-        public readonly mixed $referral_code_details, // Can be null or object
-        public readonly ?string $referral_code_generated,
-        public readonly mixed $retain_level_details, // Can be null or object
-        public readonly bool $can_retrieve,
-        public readonly bool $can_chargeback,
-        public readonly bool $can_reverse_chargeback,
+        public array $upsell_campaigns,
+        public ?string $referral_campaign_id,
+        public ?string $referral_code,
+        public mixed $referral_code_details, // Can be null or object
+        public ?string $referral_code_generated,
+        public mixed $retain_level_details, // Can be null or object
+        public bool $can_retrieve,
+        public bool $can_chargeback,
+        public bool $can_reverse_chargeback,
         /** @var array<int, string> */
-        public readonly array $tags,
+        public array $tags,
     ) {}
 
     /**
-     * @param  array<string, mixed>|self  ...$payloads
+     * @param  array<string, mixed>  $data
      */
-    public static function from(mixed ...$payloads): static
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
 
         // Sanitize UUID fields - PostgreSQL UUID columns cannot accept empty strings
         $data = self::sanitizeUuidFields($data);

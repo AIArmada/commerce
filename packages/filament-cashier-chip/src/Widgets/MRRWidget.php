@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
@@ -50,7 +50,7 @@ final class MRRWidget extends BaseWidget
         return $this->rememberWidgetValue('mrr.current', fn (): int => $this->subscriptionQuery()
             ->whereActive()
             ->select($this->mrrColumns())
-            ->withSum('items', 'unit_amount')
+            ->with('items:id,subscription_id,unit_amount,quantity')
             ->get()
             ->sum(fn (Subscription $subscription): int => $this->monthlyNetAmount($subscription)));
     }
@@ -61,7 +61,7 @@ final class MRRWidget extends BaseWidget
             ->where('chip_status', SubscriptionStatus::Active->value)
             ->where('created_at', '<', CarbonImmutable::now()->subMonth())
             ->select($this->mrrColumns())
-            ->withSum('items', 'unit_amount')
+            ->with('items:id,subscription_id,unit_amount,quantity')
             ->get()
             ->sum(fn (Subscription $subscription): int => $this->monthlyNetAmount($subscription)));
     }
@@ -72,7 +72,7 @@ final class MRRWidget extends BaseWidget
         $count = $subscription->billing_interval_count ?? 1;
 
         $monthlyAmount = $this->normalizeToMonthly(
-            (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
+            $subscription->items->sum(fn ($item): int => $item->totalAmount()),
             $interval,
             $count,
         );
@@ -97,7 +97,7 @@ final class MRRWidget extends BaseWidget
             'id',
             'billing_interval',
             'billing_interval_count',
-            'quantity',
+            'chip_status',
             'coupon_id',
             'coupon_discount',
             'created_at',
@@ -150,22 +150,27 @@ final class MRRWidget extends BaseWidget
     {
         return $this->rememberWidgetValue('mrr.chart', function (): array {
             $chart = [];
+            $firstMonth = CarbonImmutable::now()->subMonths(5)->startOfMonth();
+
+            $subscriptions = $this->subscriptionQuery()
+                ->where('chip_status', SubscriptionStatus::Active->value)
+                ->where('created_at', '<=', CarbonImmutable::now()->endOfMonth())
+                ->where(function ($query) use ($firstMonth): void {
+                    $query->whereNull('ends_at')
+                        ->orWhere('ends_at', '>=', $firstMonth);
+                })
+                ->select($this->mrrColumns())
+                ->with('items:id,subscription_id,unit_amount,quantity')
+                ->get();
 
             for ($i = 5; $i >= 0; $i--) {
                 $date = CarbonImmutable::now()->subMonths($i);
                 $startOfMonth = $date->copy()->startOfMonth();
                 $endOfMonth = $date->copy()->endOfMonth();
 
-                $monthMrr = $this->subscriptionQuery()
-                    ->where('chip_status', SubscriptionStatus::Active->value)
-                    ->where('created_at', '<=', $endOfMonth)
-                    ->where(function ($query) use ($startOfMonth): void {
-                        $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>=', $startOfMonth);
-                    })
-                    ->select($this->mrrColumns())
-                    ->withSum('items', 'unit_amount')
-                    ->get()
+                $monthMrr = $subscriptions
+                    ->filter(fn (Subscription $subscription): bool => $subscription->created_at <= $endOfMonth
+                        && ($subscription->ends_at === null || $subscription->ends_at >= $startOfMonth))
                     ->sum(fn (Subscription $subscription): int => $this->monthlyNetAmount($subscription));
 
                 $chart[] = (int) ($monthMrr / 100);

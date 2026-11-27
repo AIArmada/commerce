@@ -9,10 +9,10 @@ use AIArmada\Referrals\Events\ReferralInviteAccepted;
 use AIArmada\Referrals\Exceptions\ReferralInviteNotFoundException;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Support\ReferralContactNormalizer;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -27,7 +27,7 @@ final class AcceptReferralInvite
         }
 
         $contactHash = app(ReferralContactNormalizer::class)->hash($inviteeContact);
-        $invite = DB::transaction(function () use ($token, $invitee, $contactHash): ReferralInvite {
+        $invite = ReferralDatabase::connection()->transaction(function () use ($token, $invitee, $contactHash): ReferralInvite {
             $guard = app(ReferralProgramGuard::class);
             $scopedInvite = $guard->inviteByToken($token);
             $guard->program((string) $scopedInvite->program_id, true);
@@ -37,7 +37,8 @@ final class AcceptReferralInvite
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedInvite->status !== ReferralInviteStatus::Pending
+            if (! hash_equals((string) $lockedInvite->token_hash, hash('sha256', $token))
+                || $lockedInvite->status !== ReferralInviteStatus::Pending
                 || $lockedInvite->isExpiredAt(CarbonImmutable::now())
                 || ($lockedInvite->referrer_type === $invitee->getMorphClass()
                     && (string) $lockedInvite->referrer_id === (string) $invitee->getKey())

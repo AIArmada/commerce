@@ -6,15 +6,16 @@ namespace AIArmada\FilamentReferrals\Resources\ReferralProgramResource\Tables;
 
 use AIArmada\FilamentReferrals\Resources\ReferralProgramResource\ReferralProgramResource;
 use AIArmada\FilamentReferrals\Support\ReferralAdminPresenter;
+use AIArmada\Referrals\Actions\TransitionReferralProgramStatus;
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
 use AIArmada\Referrals\Models\ReferralProgram;
-use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use LogicException;
 
 class ReferralProgramsTable
 {
@@ -82,10 +83,11 @@ class ReferralProgramsTable
         return Action::make($name)
             ->requiresConfirmation()
             ->visible(fn (ReferralProgram $record): bool => in_array($record->status, $from, true))
-            ->action(function (ReferralProgram $record) use ($to, $from): void {
-                $program = app(ReferralProgramGuard::class)->program($record);
-
-                if (! in_array($program->status, $from, true)) {
+            ->authorize(fn (ReferralProgram $record): bool => ReferralProgramResource::canEdit($record))
+            ->action(function (ReferralProgram $record) use ($to): void {
+                try {
+                    app(TransitionReferralProgramStatus::class)->handle((string) $record->getKey(), $to, $record->status);
+                } catch (LogicException) {
                     Notification::make()
                         ->title('Referral program status could not be updated')
                         ->body('The program status changed. Refresh before trying again.')
@@ -94,9 +96,6 @@ class ReferralProgramsTable
 
                     return;
                 }
-
-                $program->status = $to;
-                $program->save();
 
                 Notification::make()
                     ->title('Referral program status updated')

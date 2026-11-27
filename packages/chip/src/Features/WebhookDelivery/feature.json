@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "WebhookDelivery",
+  "owns": {
+    "table:webhook_calls": [
+      "AIArmada\\Chip\\Features\\WebhookDelivery\\Actions\\CleanWebhooks",
+      "AIArmada\\Chip\\Features\\WebhookDelivery\\Actions\\WebhookRetryManager",
+      "AIArmada\\Chip\\Features\\WebhookDelivery\\Persistence\\WebhookDeliveryStore"
+    ],
+    "store:chip.webhook_public_keys": [
+      "AIArmada\\Chip\\Features\\WebhookDelivery\\Persistence\\CachePublicKey"
+    ]
+  },
+  "extensions": {}
+}

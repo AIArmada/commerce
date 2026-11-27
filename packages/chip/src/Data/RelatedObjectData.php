@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class RelatedObjectData extends ChipData
+final readonly class RelatedObjectData
 {
     public function __construct(
-        public readonly ?string $type,
-        public readonly ?string $id,
+        public ?string $type,
+        public ?string $id,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         return new self(
             type: $data['type'] ?? null,
             id: $data['id'] ?? null,

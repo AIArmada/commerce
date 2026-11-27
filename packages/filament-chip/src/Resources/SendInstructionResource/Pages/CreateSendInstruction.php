@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Pages;
 
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Services\ChipSendService;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Chip\Features\Payouts\Actions\CreateSendInstruction as CreateSendInstructionAction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Exceptions\Halt;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 use Throwable;
 
@@ -29,69 +29,28 @@ final class CreateSendInstruction extends CreateRecord
         return 'Send a payout to a verified bank account via CHIP Send.';
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
+    /** @param array<string, mixed> $data */
     #[Override]
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        $service = app(ChipSendService::class);
-
-        $bankAccount = BankAccount::query()
-            ->forOwner()
-            ->whereKey($data['bank_account_id'] ?? null)
-            ->where('status', 'verified')
-            ->first();
-
-        if ($bankAccount === null) {
-            Notification::make()
-                ->title('Invalid bank account')
-                ->body('Selected bank account must be verified for the current owner.')
-                ->danger()
-                ->send();
-
-            $this->halt();
-
-            return $data;
-        }
-
         try {
-            $currency = (string) config('chip.defaults.currency', 'MYR');
-            $scale = 10 ** MoneyFormatter::precisionFor($currency);
-
-            // The form receives CHIP's major-unit decimal amount; convert it
-            // once at the boundary with explicit half-up rounding.
-            $amountInCents = (int) round((float) $data['amount'] * $scale, 0, PHP_ROUND_HALF_UP);
-
-            $instruction = $service->createSendInstruction(
-                amountInCents: $amountInCents,
-                recipientBankAccountId: (int) $data['bank_account_id'],
-                description: $data['description'],
-                reference: $data['reference'],
-                email: $data['email'],
+            return app(CreateSendInstructionAction::class)->handle(
+                amount: (string) $data['amount'],
+                bankAccountId: (int) $data['bank_account_id'],
+                description: (string) $data['description'],
+                reference: (string) $data['reference'],
+                email: (string) $data['email'],
             );
+        } catch (Throwable $exception) {
+            report($exception);
 
-            Notification::make()
-                ->title('Payout created successfully')
-                ->body(sprintf('Instruction ID: %s', $instruction->id))
-                ->success()
-                ->send();
-
-            return array_merge($data, [
-                'id' => $instruction->id,
-                'state' => $instruction->state,
-            ]);
-        } catch (Throwable $e) {
             Notification::make()
                 ->title('Failed to create payout')
-                ->body($e->getMessage())
+                ->body('The request could not be completed. Check its status before retrying.')
                 ->danger()
                 ->send();
 
-            $this->halt();
-
-            return $data;
+            throw new Halt;
         }
     }
 

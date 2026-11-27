@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Listeners\StoreWebhookData;
 
 describe('StoreWebhookData listener', function (): void {
     it('returns early when config disabled', function (): void {
         config(['chip.webhooks.store_webhooks' => false]);
 
-        $listener = new StoreWebhookData;
+        $listener = app(StoreWebhookData::class);
         $event = new WebhookReceived(
             eventType: 'purchase.paid',
             payload: ['type' => 'purchase', 'id' => 'purch_123'],
@@ -23,7 +23,7 @@ describe('StoreWebhookData listener', function (): void {
     it('returns early for non-purchase type', function (): void {
         config(['chip.webhooks.store_webhooks' => true]);
 
-        $listener = new StoreWebhookData;
+        $listener = app(StoreWebhookData::class);
         $event = new WebhookReceived(
             eventType: 'payout.success',
             payload: ['type' => 'payout', 'id' => 'payout_123'],
@@ -37,7 +37,7 @@ describe('StoreWebhookData listener', function (): void {
     it('returns early when no purchase ID', function (): void {
         config(['chip.webhooks.store_webhooks' => true]);
 
-        $listener = new StoreWebhookData;
+        $listener = app(StoreWebhookData::class);
         $event = new WebhookReceived(
             eventType: 'purchase.paid',
             payload: ['type' => 'purchase'],

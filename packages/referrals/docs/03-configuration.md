@@ -15,6 +15,8 @@ The complete file is `config/referrals.php`. Every setting below is read by the 
 | `referrals.database.tables.invites` | `referral_invites` | Configurable invite table. |
 | `referrals.database.tables.rewards` | `referral_rewards` | Configurable reward-intent table. |
 
+Programs, invites, and rewards must resolve to the same database connection. Referral actions fail closed before writing when they do not, and the optional voucher, affiliates, and rewards rails also require their local records on that connection so the outer referral transaction remains atomic.
+
 ## Defaults
 
 | Key | Default | Purpose |
@@ -48,9 +50,8 @@ to an allowed outcome.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `referrals.fulfillment.default_driver` | `manual` | Fallback driver if a reward row has no driver. Unknown, disabled, or unavailable drivers fail closed. |
+| `referrals.fulfillment.default_driver` | `manual` | Default when validating a new reward specification. Frozen reward rows use their explicit driver; unknown, disabled, or unavailable drivers fail closed. |
 | `referrals.fulfillment.drivers.manual.enabled` | `true` | Registers the manual adapter. |
-| `referrals.fulfillment.drivers.manual.reference_metadata_key` | `external_reference` | Reward metadata key containing the host's fulfilment reference. |
 | `referrals.fulfillment.drivers.voucher.enabled` | `true` | Enables voucher adapter registration when `aiarmada/vouchers` is available. |
 | `referrals.fulfillment.drivers.affiliate_cash.enabled` | `true` | Enables affiliate cash adapter registration when `aiarmada/affiliates` is available. |
 | `referrals.fulfillment.drivers.reward_points.enabled` | `true` | Enables rewards points adapter registration when `aiarmada/rewards` is available. |

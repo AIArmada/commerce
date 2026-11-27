@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Support;
 
-use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * Anything else fails closed with no rows. Models without an owner tuple
  * return all rows under explicit global context.
  */
-final class DefaultCustomerOwnerResolver implements CustomerOwnerResolverInterface
+final class DefaultCustomerOwnerResolver implements CustomerOwnerResolver
 {
     /**
      * @param  Builder<Model>  $query

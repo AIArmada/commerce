@@ -4,58 +4,39 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Data\Casts\MoneyCast;
-use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
-use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Attributes\WithTransformer;
 
-final class PurchaseDetailsData extends ChipData
+final readonly class PurchaseDetailsData
 {
     public function __construct(
-        public readonly string $currency,
+        public string $currency,
         /** @var array<int, ProductData> */
-        #[DataCollectionOf(ProductData::class)]
-        public readonly array $products,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $total,
-        public readonly string $language,
-        public readonly ?string $notes,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $debt,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly ?Money $subtotal_override,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly ?Money $total_tax_override,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly ?Money $total_discount_override,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly ?Money $total_override,
+        public array $products,
+        public Money $total,
+        public string $language,
+        public ?string $notes,
+        public Money $debt,
+        public ?Money $subtotal_override,
+        public ?Money $total_tax_override,
+        public ?Money $total_discount_override,
+        public ?Money $total_override,
         /** @var array<string, mixed> */
-        public readonly array $request_client_details,
-        public readonly string $timezone,
-        public readonly bool $due_strict,
-        public readonly ?string $email_message,
+        public array $request_client_details,
+        public string $timezone,
+        public bool $due_strict,
+        public ?string $email_message,
         /** @var array<string, mixed>|null */
-        public readonly ?array $metadata,
+        public ?array $metadata,
     ) {}
 
     /**
      * Create PurchaseDetails from array data (typically from CHIP API response).
      * Amounts in the array are expected to be in cents (minor units).
      *
-     * @param  array<string, mixed>|self  ...$payloads
+     * @param  array<string, mixed>  $data
      */
-    public static function from(mixed ...$payloads): static
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
         $currency = $data['currency'] ?? 'MYR';
 
         return new self(

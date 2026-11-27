@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cashier\Gateways\ChipGateway;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\Tenant;
 use AIArmada\CommerceSupport\Support\OwnerContext;

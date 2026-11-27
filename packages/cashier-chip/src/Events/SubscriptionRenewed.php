@@ -4,31 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Events;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-class SubscriptionRenewed
+final class SubscriptionRenewed
 {
     use Dispatchable;
-    use SerializesModels;
 
     /**
      * The subscription instance.
      */
-    public Subscription $subscription;
+    public readonly RecordReference $subscription;
 
     /**
-     * The payment from the renewal.
+     * The gateway purchase identifier, null for zero-amount renewals.
      */
-    public mixed $payment;
+    public readonly ?string $purchaseId;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Subscription $subscription, mixed $payment = null)
+    public function __construct(RecordReference $subscription, ?string $purchaseId = null)
     {
         $this->subscription = $subscription;
-        $this->payment = $payment;
+        $this->purchaseId = $purchaseId;
     }
 }

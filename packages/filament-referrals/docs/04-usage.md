@@ -30,7 +30,9 @@ The reward list shows the program, shortened invite ID, side, beneficiary label,
 
 ## Owner scoping
 
-ReferralProgram carries the core OwnerScope. Invite and reward tables, relation managers, program filters, and all four widget counts constrain their queries to IDs returned by ReferralFilamentScope::scopedProgramIds(). Filament filtering is presentation only; mutation handlers revalidate the program boundary through core Actions or ReferralProgramGuard.
+ReferralProgram carries the core OwnerScope. Invite and reward tables, relation managers, program filters, and all four widget counts constrain their queries to program IDs in the current owner scope. Filament filtering is presentation only; mutation handlers revalidate the program boundary through core Actions or ReferralProgramGuard.
+
+Invite and reward actions are authorized through the resource's Filament update check. Register a `ReferralInvitePolicy`/`ReferralRewardPolicy` (or equivalent Gate) when the host needs record-level update authorization; the adapter does not replace that policy check.
 
 ## Statistics
 
