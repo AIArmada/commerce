@@ -5,15 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
-use AIArmada\Communications\Enums\CommunicationStatus;
-use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use Carbon\CarbonImmutable;
+use AIArmada\Communications\Features\Aggregate\Api\ScheduledCommunicationLifecycle;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -59,15 +52,8 @@ final class DispatchDueCommunicationsCommand extends Command
 
     private function process(): int
     {
-        $query = Communication::query()
-            ->where('status', CommunicationStatus::Scheduled->value)
-            ->where('scheduled_at', '<=', CarbonImmutable::now())
-            ->where(function (Builder $query): void {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', CarbonImmutable::now());
-            });
-
-        $count = $query->count();
+        $lifecycle = app(ScheduledCommunicationLifecycle::class);
+        $count = $lifecycle->countDue();
 
         if ($count === 0) {
             $this->info('No due communications found.');
@@ -81,50 +67,21 @@ final class DispatchDueCommunicationsCommand extends Command
             return self::SUCCESS;
         }
 
+        $dispatched = 0;
         $bar = $this->output->createProgressBar($count);
         $bar->start();
 
-        $batchSize = max(1, (int) $this->option('batch'));
-
-        $query->chunkById($batchSize, function (Collection $communications) use ($bar): void {
-            $now = CarbonImmutable::now();
-            $communicationIds = [];
-
-            foreach ($communications as $communication) {
-                $communication->status = CommunicationStatus::Queued;
-                $communication->queued_at = $now;
-                $communication->save();
-
-                $communicationIds[] = $communication->id;
+        foreach ($lifecycle->dueIds(max(1, (int) $this->option('batch'))) as $id) {
+            if ($lifecycle->dispatch($id)) {
+                $dispatched++;
             }
 
-            CommunicationDelivery::query()
-                ->whereIn('communication_id', $communicationIds)
-                ->whereIn('status', [DeliveryStatus::Pending, DeliveryStatus::Scheduled])
-                ->where(function (Builder $query) use ($now): void {
-                    $query->whereNull('scheduled_at')
-                        ->orWhere('scheduled_at', '<=', $now);
-                })
-                ->update([
-                    'status' => DeliveryStatus::Queued->value,
-                    'queued_at' => $now,
-                ]);
-
-            foreach ($communications as $communication) {
-                DispatchCommunicationDeliveriesJob::dispatch(
-                    communicationId: $communication->id,
-                    ownerType: $communication->owner_type,
-                    ownerId: $communication->owner_id,
-                    ownerIsGlobal: $communication->owner_type === null && $communication->owner_id === null,
-                )->afterCommit();
-
-                $bar->advance();
-            }
-        });
+            $bar->advance();
+        }
 
         $bar->finish();
         $this->newLine();
-        $this->info("Dispatched {$count} communications.");
+        $this->info("Dispatched {$dispatched} communications.");
 
         return self::SUCCESS;
     }

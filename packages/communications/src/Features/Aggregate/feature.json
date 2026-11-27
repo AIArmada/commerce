@@ -9,7 +9,8 @@
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ReceiveInboundCommunicationAction",
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationAggregateAction",
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RedactCommunicationPayloadAction",
-      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateInboxCommunication"
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateInboxCommunication",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ManageScheduledCommunications"
     ],
     "table:communication_recipients": [
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AddCommunicationRecipientAction",

@@ -5,17 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
-use AIArmada\Communications\Enums\CommunicationStatus;
-use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Events\CommunicationExpired;
-use AIArmada\Communications\Models\Communication;
-use Carbon\CarbonImmutable;
+use AIArmada\Communications\Features\Aggregate\Api\ScheduledCommunicationLifecycle;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 
 final class ExpireCommunicationsCommand extends Command
@@ -59,17 +51,8 @@ final class ExpireCommunicationsCommand extends Command
 
     private function process(): int
     {
-        $query = Communication::query()
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', CarbonImmutable::now())
-            ->whereNotIn('status', [
-                CommunicationStatus::Completed->value,
-                CommunicationStatus::Failed->value,
-                CommunicationStatus::Cancelled->value,
-                CommunicationStatus::Expired->value,
-            ]);
-
-        $count = $query->count();
+        $lifecycle = app(ScheduledCommunicationLifecycle::class);
+        $count = $lifecycle->countExpired();
 
         if ($count === 0) {
             $this->info('No expired communications found.');
@@ -83,45 +66,15 @@ final class ExpireCommunicationsCommand extends Command
             return self::SUCCESS;
         }
 
-        $query->chunkById(100, function (Collection $communications): void {
-            foreach ($communications as $communication) {
-                DB::transaction(function () use ($communication): void {
-                    $communication->status = CommunicationStatus::Expired;
-                    $communication->save();
+        $expired = 0;
 
-                    Event::dispatch(new CommunicationExpired(
-                        communicationId: $communication->id,
-                    ));
-
-                    $communication->deliveries()
-                        ->whereNotIn('status', [
-                            DeliveryStatus::Delivered,
-                            DeliveryStatus::Opened,
-                            DeliveryStatus::Read,
-                            DeliveryStatus::Clicked,
-                            DeliveryStatus::Replied,
-                            DeliveryStatus::Bounced,
-                            DeliveryStatus::Complained,
-                            DeliveryStatus::Failed,
-                            DeliveryStatus::Cancelled,
-                            DeliveryStatus::Expired,
-                            DeliveryStatus::Suppressed,
-                            DeliveryStatus::Unsubscribed,
-                        ])
-                        ->chunkById(100, function (Collection $deliveries): void {
-                            foreach ($deliveries as $delivery) {
-                                app(TransitionDeliveryAction::class)->handle(
-                                    $delivery,
-                                    DeliveryStatus::Expired,
-                                    force: true,
-                                );
-                            }
-                        });
-                });
+        foreach ($lifecycle->expiredIds() as $id) {
+            if ($lifecycle->expire($id)) {
+                $expired++;
             }
-        });
+        }
 
-        $this->info("Expired {$count} communications.");
+        $this->info("Expired {$expired} communications.");
 
         return self::SUCCESS;
     }
