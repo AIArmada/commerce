@@ -34,7 +34,8 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 ## Main models services or surfaces
 
 - **Models** — `Link`, `LinkClick`
-- **Actions** — `CreateLink`, `UpdateLink`, `DeactivateLink`, `ReactivateLink`, `ResolveLink`, `RecordLinkClick`, `RedirectToLink`
+- **Actions** — `CreateLink`, `CreatePublicLink`, `UpdateLink`, `DeactivateLink`, `ReactivateLink`, `ResolveLink`, `RecordLinkClick`, `BuildLinkDestination`, `GenerateLinkUrl`, `DeleteLink`, `DeleteLinkForSubject`, `PruneLinkClicks`
+- **HTTP entry point** — `RedirectToLinkController` serves the public redirect routes and is not a domain action
 - **Events** — `LinkCreated`, `LinkUpdated`, `LinkDeactivated`, `LinkReactivated`, `LinkClicked`, `LinkExpired`, `LinkClickLimitReached`, `LinkBlocked`
 - **Contracts** — `SlugGeneratorInterface`, `BotDetectorInterface`, `UserAgentParserInterface`, `LinkGateInterface`, each with a swappable default
 - **HTTP surface** — `GET /go/{slug}` redirect route (prefix, domain, and middleware are configurable); per-link signed URLs via `GenerateLinkUrl`
@@ -55,6 +56,8 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 - Expiry dates, maximum click counts, and activate/deactivate lifecycle
 - Per-link UTM defaults merged into the destination on redirect
 - Tracking failures never break the redirect; they are reported and the visitor still lands
+- Deleting a link removes its click rows through the package persistence boundary (no database cascade)
+- A link's subject identity is fixed at creation and cannot be rewritten by `UpdateLink`
 
 ## Requirements
 

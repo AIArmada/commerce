@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Widgets;
 
-use AIArmada\FilamentReferrals\Support\ReferralFilamentScope;
+use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Models\ReferralInvite;

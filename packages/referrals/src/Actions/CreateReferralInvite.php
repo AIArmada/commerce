@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Referrals\Actions;
 
-use AIArmada\Referrals\Data\ReferralInviteCreationResult;
+use AIArmada\Referrals\Actions\Results\ReferralInviteCreationResult;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Events\ReferralInviteCreated;
 use AIArmada\Referrals\Exceptions\ReferralAlreadyClaimedException;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Support\ReferralContactNormalizer;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -54,7 +54,7 @@ final class CreateReferralInvite
         $guard = app(ReferralProgramGuard::class);
 
         /** @var array{result: ReferralInviteCreationResult, created: bool} $created */
-        $created = DB::transaction(function () use (
+        $created = ReferralDatabase::connection()->transaction(function () use (
             $program,
             $referrer,
             $normalizedContact,
@@ -85,7 +85,9 @@ final class CreateReferralInvite
                 ->lockForUpdate()
                 ->first();
 
-            if ($existing instanceof ReferralInvite && $existing->isExpiredAt($now)) {
+            if ($existing instanceof ReferralInvite
+                && in_array($existing->status, [ReferralInviteStatus::Pending, ReferralInviteStatus::Accepted], true)
+                && $existing->isExpiredAt($now)) {
                 $existing->status = ReferralInviteStatus::Expired;
                 $existing->save();
                 $existing = null;
@@ -96,7 +98,7 @@ final class CreateReferralInvite
                     $token = null;
 
                     if ($existing->status === ReferralInviteStatus::Pending) {
-                        $existing->rotateTokenHash($tokenHash);
+                        $this->rotateTokenHash($existing, $tokenHash);
                         $token = $rawToken;
                     }
 
@@ -152,5 +154,26 @@ final class CreateReferralInvite
         }
 
         return $created['result'];
+    }
+
+    private function rotateTokenHash(ReferralInvite $invite, string $hash): void
+    {
+        if (! $invite->exists
+            || $invite->status !== ReferralInviteStatus::Pending
+            || $invite->getConnection()->transactionLevel() === 0) {
+            throw new LogicException('Only pending referral invites can rotate their token hash inside a transaction.');
+        }
+
+        $updated = $invite->newQuery()
+            ->whereKey($invite->getKey())
+            ->where('status', ReferralInviteStatus::Pending->value)
+            ->update(['token_hash' => $hash]);
+
+        if ($updated !== 1) {
+            throw new LogicException('The pending referral invite could not rotate its token hash.');
+        }
+
+        $invite->setAttribute('token_hash', $hash);
+        $invite->syncOriginalAttribute('token_hash');
     }
 }

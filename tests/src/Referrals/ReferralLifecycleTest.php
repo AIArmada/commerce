@@ -16,13 +16,15 @@ use AIArmada\Referrals\Actions\CreateReferralInvite;
 use AIArmada\Referrals\Actions\CreateReferralProgram;
 use AIArmada\Referrals\Actions\FulfillReferralReward;
 use AIArmada\Referrals\Actions\QualifyReferral;
+use AIArmada\Referrals\Actions\Results\ReferralInviteCreationResult;
 use AIArmada\Referrals\Actions\ReverseReferralReward;
 use AIArmada\Referrals\Actions\RevokeReferralInvite;
+use AIArmada\Referrals\Actions\TransitionReferralProgramStatus;
 use AIArmada\Referrals\Actions\UpdateReferralProgram;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
-use AIArmada\Referrals\Data\ReferralInviteCreationResult;
+use AIArmada\Referrals\Data\ReferralRewardContext;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -61,6 +63,7 @@ use AIArmada\Vouchers\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -93,9 +96,7 @@ it('completes a two-sided referral lifecycle and rewards the invite', function (
     expect($qualified->rewards)->toHaveCount(2);
 
     foreach ($qualified->rewards as $index => $reward) {
-        $reward->metadata = ['external_reference' => 'receipt-' . $index];
-        $reward->save();
-        OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($reward));
+        OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($reward, 'receipt-' . $index));
     }
 
     expect($accepted->fresh()->status)->toBe(ReferralInviteStatus::Rewarded)
@@ -334,9 +335,8 @@ it('requires a manual reference, fulfils only once, and returns a rewarded invit
     expect($failed->status)->toBe(ReferralRewardStatus::Failed)
         ->and($failed->metadata['fulfillment_failure'])->toContain('external_reference');
 
-    $failed->metadata = ['external_reference' => 'manual-receipt'];
-    $failed->save();
-    $firstFulfilment = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($failed));
+    $firstFulfilment = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($failed, 'manual-receipt'));
+    expect(fn () => OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($failed, 'different-receipt')))->toThrow(LogicException::class);
     $fulfilledAt = $firstFulfilment->fulfilled_at;
     $replay = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($firstFulfilment));
 
@@ -428,7 +428,7 @@ it('fulfils each referral side against its own role, recipient, and family', fun
     $failed = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($referrerReward));
 
     expect($failed->status)->toBe(ReferralRewardStatus::Failed)
-        ->and($failed->metadata['fulfillment_failure'])->toContain('without creating')
+        ->and($failed->metadata['fulfillment_failure'])->toBe('The rewards points rail could not settle this side.')
         ->and(RewardAward::query()->count())->toBe(0);
 
     OwnerContext::withOwner($owner, function () use ($rewardsProgram, $version, $referrer, $invitee, $recipientType, $start): void {
@@ -498,7 +498,7 @@ it('fulfils each referral side against its own role, recipient, and family', fun
     $mismatched = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($refereeReward));
 
     expect($mismatched->status)->toBe(ReferralRewardStatus::Failed)
-        ->and($mismatched->metadata['fulfillment_failure'])->toContain('does not match the frozen referral points spec')
+        ->and($mismatched->metadata['fulfillment_failure'])->toBe('The rewards points rail could not settle this side.')
         ->and(RewardAward::query()->where('source_business_key', $refereeBusinessKey)->count())->toBe(0);
 
     // The host approves and fulfils the referral side's rewards award, so
@@ -805,7 +805,7 @@ it('keeps a global rewards program outside tenant referral fulfilment by default
     expect($globalProgram->owner_type)->toBeNull()
         ->and($globalProgram->owner_id)->toBeNull()
         ->and($failed->status)->toBe(ReferralRewardStatus::Failed)
-        ->and($failed->metadata['fulfillment_failure'])->toContain('without creating')
+        ->and($failed->metadata['fulfillment_failure'])->toBe('The rewards points rail could not settle this side.')
         ->and(RewardAward::query()->where('source_business_key', $businessKey)->count())->toBe(0);
 });
 
@@ -958,7 +958,7 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
     {
         public function __construct(private readonly AwardRecipient $affiliate) {}
 
-        public function resolve(ReferralReward $reward): ?AwardRecipient
+        public function resolve(ReferralRewardContext $reward): ?AwardRecipient
         {
             return $this->affiliate;
         }
@@ -1004,18 +1004,18 @@ it('delegates fulfilment and reversal to the bound rail only once', function ():
 
         public int $reverseCalls = 0;
 
-        public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
+        public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
         {
             $this->fulfilCalls++;
 
             return ReferralFulfillmentResult::fulfilled('fake-rail-reference');
         }
 
-        public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
+        public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
         {
             $this->reverseCalls++;
 
-            return ReferralFulfillmentResult::fulfilled($reward->external_reference);
+            return ReferralFulfillmentResult::fulfilled($reward->externalReference);
         }
     };
     app()->instance(ReferralRewardFulfillment::class, $rail);
@@ -1134,14 +1134,7 @@ it('refuses tenant writes on global programs while global reads stay visible', f
     expect($reward->fresh()->status)->toBe(ReferralRewardStatus::Pending)
         ->and($revocable->fresh()->status)->toBe(ReferralInviteStatus::Accepted);
 
-    // Explicit-global context still mutates global rows. The manual driver
-    // requires a stored reference before it can fulfil.
-    OwnerContext::withOwner(null, static function () use ($reward): void {
-        $reward->metadata = ['external_reference' => 'global-receipt-1'];
-        $reward->save();
-    });
-
-    OwnerContext::withOwner(null, fn () => FulfillReferralReward::run($reward));
+    OwnerContext::withOwner(null, fn () => FulfillReferralReward::run($reward, 'global-receipt-1'));
     OwnerContext::withOwner(null, fn () => RevokeReferralInvite::run($revocable));
 
     expect($reward->fresh()->status)->toBe(ReferralRewardStatus::Fulfilled)
@@ -1495,7 +1488,7 @@ it('does not rewrite qualified reward specs when a program reward is edited', fu
     ]));
 
     expect($updated->referrer_reward['amount_minor'])->toBe(1500)
-        ->and($reward->fresh()->spec)->toBe($frozenSpec)
+        ->and($reward->fresh()->spec)->toEqual($frozenSpec)
         ->and($reward->fresh()->spec['amount_minor'])->toBe(500);
 });
 
@@ -1539,4 +1532,168 @@ it('rejects configured non-default owner columns and status in an update payload
     $created = $normalizer->normalize($attributes(['status' => 'active']));
 
     expect($created['status'])->toBe(ReferralProgramStatus::Active);
+});
+
+it('locks program lifecycle transitions and rejects stale or illegal transitions', function (): void {
+    $owner = $this->newOwner();
+    $program = $this->newProgram($owner);
+    $action = app(TransitionReferralProgramStatus::class);
+
+    OwnerContext::withOwner($owner, function () use ($program, $action): void {
+        $active = $program->fresh();
+        expect($active->status)->toBe(ReferralProgramStatus::Active);
+        $paused = $action->handle($active->id, ReferralProgramStatus::Paused, ReferralProgramStatus::Active);
+        expect($paused->status)->toBe(ReferralProgramStatus::Paused);
+        expect(fn () => $action->handle($active->id, ReferralProgramStatus::Archived, ReferralProgramStatus::Active))
+            ->toThrow(LogicException::class);
+        $archived = $action->handle($paused->id, ReferralProgramStatus::Archived, ReferralProgramStatus::Paused);
+        expect($archived->status)->toBe(ReferralProgramStatus::Archived);
+        expect(fn () => $action->handle($archived->id, ReferralProgramStatus::Active, ReferralProgramStatus::Archived))
+            ->toThrow(LogicException::class);
+    });
+});
+
+it('does not expire an already qualified invite when its original claim deadline passes', function (): void {
+    $start = CarbonImmutable::parse('2026-02-01 12:00:00 UTC');
+    CarbonImmutable::setTestNow($start);
+    $owner = $this->newOwner();
+    $referrer = User::factory()->create();
+    $invitee = User::factory()->create(['email' => 'qualified-before-expiry@example.com']);
+    $program = $this->newProgram($owner, ['invite_expiry_days' => 1]);
+    $created = $this->newInvite($owner, $program, $referrer, $invitee->email);
+    $accepted = $this->acceptInvite($owner, (string) $created->token, $invitee, $invitee->email);
+    $qualified = OwnerContext::withOwner($owner, fn () => QualifyReferral::run($accepted, 'registration:qualified-before-expiry'));
+
+    CarbonImmutable::setTestNow($start->addDays(2));
+
+    $reissued = $this->newInvite($owner, $program, $referrer, $invitee->email);
+    expect($reissued->invite->id)->toBe($qualified->invite->id)
+        ->and($reissued->invite->status)->toBe(ReferralInviteStatus::Qualified)
+        ->and($reissued->token)->toBeNull();
+});
+
+it('rejects voucher ownership overrides and freezes the voucher currency', function (): void {
+    $validator = app(ReferralRewardSpecValidator::class);
+    $spec = ['driver' => 'voucher', 'voucher' => ['type' => 'fixed', 'value' => 500]];
+    expect($validator->validate($spec, 'MYR')['currency'])->toBe('MYR');
+
+    $forged = $spec;
+    $forged['voucher']['owner_id'] = 'another-owner';
+    expect(fn () => $validator->validate($forged, 'MYR'))->toThrow(InvalidArgumentException::class);
+
+    $mismatch = $spec;
+    $mismatch['currency'] = 'MYR';
+    $mismatch['voucher']['currency'] = 'USD';
+    expect(fn () => $validator->validate($mismatch, 'MYR'))->toThrow(InvalidArgumentException::class);
+});
+
+it('deletes program and invite dependents without database cascades', function (): void {
+    $owner = $this->newOwner();
+    $program = $this->newProgram($owner, ['referee_reward' => null]);
+    $invite = ReferralInvite::factory()->create(['program_id' => $program->getKey()]);
+    $reward = ReferralReward::factory()->create([
+        'invite_id' => $invite->getKey(),
+        'program_id' => $program->getKey(),
+        'idempotency_key' => hash('sha256', 'delete-cascade-' . $invite->getKey()),
+    ]);
+
+    OwnerContext::withOwner($owner, fn () => $program->delete());
+
+    expect(ReferralInvite::query()->whereKey($invite->getKey())->exists())->toBeFalse()
+        ->and(ReferralReward::query()->whereKey($reward->getKey())->exists())->toBeFalse();
+
+    $secondProgram = $this->newProgram($owner, ['referee_reward' => null]);
+    $secondInvite = ReferralInvite::factory()->create(['program_id' => $secondProgram->getKey()]);
+    $secondReward = ReferralReward::factory()->create([
+        'invite_id' => $secondInvite->getKey(),
+        'program_id' => $secondProgram->getKey(),
+        'idempotency_key' => hash('sha256', 'delete-invite-' . $secondInvite->getKey()),
+    ]);
+
+    $secondInvite->delete();
+
+    expect(ReferralReward::query()->whereKey($secondReward->getKey())->exists())->toBeFalse();
+});
+
+it('rejects a reward whose invite belongs to another program', function (): void {
+    $owner = $this->newOwner();
+    $program = $this->newProgram($owner);
+    $otherProgram = $this->newProgram($owner);
+    $invite = ReferralInvite::factory()->create(['program_id' => $program->getKey()]);
+
+    expect(fn (): ReferralReward => ReferralReward::factory()->create([
+        'invite_id' => $invite->getKey(),
+        'program_id' => $otherProgram->getKey(),
+        'idempotency_key' => hash('sha256', 'mismatched-program-' . $invite->getKey()),
+    ]))->toThrow(LogicException::class, 'invite program');
+});
+
+it('skips stale owners while expiring invites', function (): void {
+    $start = CarbonImmutable::parse('2026-07-01 12:00:00 UTC');
+    CarbonImmutable::setTestNow($start);
+    $owner = $this->newOwner();
+    $referrer = User::factory()->create();
+    $program = $this->newProgram($owner, ['invite_expiry_days' => 1]);
+    $invite = $this->newInvite($owner, $program, $referrer, 'stale-owner@example.com')->invite;
+    $owner->delete();
+
+    CarbonImmutable::setTestNow($start->addDays(2));
+
+    expect(Artisan::call('referrals:expire-invites'))->toBe(0)
+        ->and($invite->fresh()->status)->toBe(ReferralInviteStatus::Pending);
+});
+
+it('keeps voucher replay and reversal inside the reward owner when include-global is enabled', function (): void {
+    config(['vouchers.owner.enabled' => true, 'vouchers.owner.include_global' => true]);
+
+    $owner = $this->newOwner();
+    $referrer = User::factory()->create();
+    $invitee = User::factory()->create(['email' => 'voucher-owner-bound@example.com']);
+    $program = $this->newProgram($owner, [
+        'referrer_reward' => [
+            'driver' => 'voucher',
+            'amount_minor' => 2500,
+            'currency' => 'MYR',
+            'voucher' => ['type' => 'fixed'],
+        ],
+        'referee_reward' => null,
+    ]);
+    $created = $this->newInvite($owner, $program, $referrer, $invitee->email);
+    $accepted = $this->acceptInvite($owner, (string) $created->token, $invitee, $invitee->email);
+    $qualified = OwnerContext::withOwner($owner, fn () => QualifyReferral::run($accepted, 'registration:voucher-owner-bound'));
+    $reward = $qualified->rewards[0];
+    $code = 'REF' . mb_strtoupper(mb_substr(hash('sha256', $reward->idempotency_key), 0, 24));
+    $marker = 'referrals_reward_idempotency_key';
+
+    $globalVoucher = OwnerContext::withOwner(null, fn () => Voucher::create([
+        'code' => $code,
+        'name' => 'Global collision',
+        'type' => 'fixed',
+        'value' => 2500,
+        'currency' => 'MYR',
+        'usage_limit' => 1,
+        'usage_limit_per_user' => 1,
+        'status' => Active::class,
+        'metadata' => [
+            $marker => $reward->idempotency_key,
+            'assignee' => ['type' => $referrer->getMorphClass(), 'id' => (string) $referrer->getKey()],
+        ],
+    ]));
+
+    $fulfilled = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($reward));
+
+    expect($fulfilled->status)->toBe(ReferralRewardStatus::Fulfilled)
+        ->and($fulfilled->external_reference)->toBe($code)
+        ->and(Voucher::query()->withoutOwnerScope()->where('code', $code)->count())->toBe(2);
+
+    $ownerVoucher = Voucher::query()->withoutOwnerScope()
+        ->where('code', $code)
+        ->where('owner_id', $owner->getKey())
+        ->firstOrFail();
+
+    $reversed = OwnerContext::withOwner($owner, fn () => ReverseReferralReward::run($fulfilled, 'owner-bound reversal'));
+
+    expect($reversed->status)->toBe(ReferralRewardStatus::Reversed)
+        ->and($ownerVoucher->fresh()->isActive())->toBeFalse()
+        ->and($globalVoucher->fresh()->isActive())->toBeTrue();
 });
