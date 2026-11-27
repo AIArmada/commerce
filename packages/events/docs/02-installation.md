@@ -61,19 +61,6 @@ boot.
 > the nullable `venue_id` change out of band; no upgrade migration or
 > backfill is provided and there is no legacy path.
 
-> **warning**
->
-> The owning create migrations now define the nullable
-> `issue_passes_for_free` inheritance columns, the registration composite
-> lookup indexes, and the search-document identity unique index. Fresh
-> installs receive them on `migrate`. Existing installs must apply the same
-> column/index changes out of band; this package does not ship standalone
-> upgrade migrations or data backfills. The search identity index requires
-> duplicate `(searchable_type, searchable_id, document_type)` rows to be
-> resolved before it is added. PostgreSQL installations can retain the
-> existing `*_facets_gin_default_idx` and remove the redundant
-> `*_facets_gin_idx` after checking host-specific query plans.
-
 ## Verify installation
 
 Resolve the configured event model through the platform resolver — never

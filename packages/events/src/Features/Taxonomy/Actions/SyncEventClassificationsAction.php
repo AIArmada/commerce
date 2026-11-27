@@ -9,7 +9,6 @@ use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Features\Taxonomy\Models\EventClassification;
 use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
 use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
-use AIArmada\Events\Features\Taxonomy\Queries\EventTaxonomyHierarchyService;
 use AIArmada\Events\Platform\EventScopeResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -102,7 +101,6 @@ final class SyncEventClassificationsAction
             return $synced;
         });
 
-        EventTaxonomyHierarchyService::flushRequestCache();
         $this->indexer->index($scope);
 
         return $synced;

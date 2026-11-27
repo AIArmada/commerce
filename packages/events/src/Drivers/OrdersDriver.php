@@ -7,7 +7,6 @@ namespace AIArmada\Events\Drivers;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Contracts\ProviderAwarePaymentProcessorInterface;
-use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -33,8 +32,8 @@ use RuntimeException;
 final class OrdersDriver implements EventOrderDriver
 {
     public function __construct(
-        private readonly ?OrderServiceInterface $orders = null,
-        private readonly ?PaymentGatewayResolverInterface $gateways = null,
+        private readonly ?OrderServiceInterface $orders,
+        private readonly ?PaymentGatewayResolverInterface $gateways,
     ) {}
 
     public function isPaidOrder(string $orderId): bool
@@ -268,7 +267,7 @@ final class OrdersDriver implements EventOrderDriver
             }
 
             if ($refunds->count() > 1) {
-                return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false);
+                return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false, ownerType: null, ownerId: null);
             }
         }
 
@@ -289,7 +288,7 @@ final class OrdersDriver implements EventOrderDriver
             }
 
             if ($refunds->count() > 1) {
-                return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false);
+                return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false, ownerType: null, ownerId: null);
             }
         }
 
@@ -307,10 +306,10 @@ final class OrdersDriver implements EventOrderDriver
                 return $this->matchedRefund($refunds->first());
             }
 
-            return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false);
+            return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false, ownerType: null, ownerId: null);
         }
 
-        return new EventRefundMatchData(refundId: null, matchedCount: 0, pending: false);
+        return new EventRefundMatchData(refundId: null, matchedCount: 0, pending: false, ownerType: null, ownerId: null);
     }
 
     public function correlateRefundProviderReference(
@@ -396,53 +395,19 @@ final class OrdersDriver implements EventOrderDriver
         );
     }
 
-    private function ownerOf(Model $model): ?Model
+    private function ownerOf(Order | OrderRefund $model): ?Model
     {
-        $typeColumn = 'owner_type';
-        $idColumn = 'owner_id';
+        $config = $model::ownerScopeConfig();
 
-        if (method_exists($model, 'ownerScopeConfig')) {
-            $config = call_user_func([$model, 'ownerScopeConfig']);
-
-            if ($config instanceof OwnerScopeConfig) {
-                $typeColumn = $config->ownerTypeColumn;
-                $idColumn = $config->ownerIdColumn;
-            }
-        }
-
-        $type = $model->getAttribute($typeColumn);
-        $id = $model->getAttribute($idColumn);
-
-        if (! is_string($type) || $type === '' || (! is_string($id) && ! is_int($id))) {
-            if ($model instanceof OrderRefund) {
-                $order = $model->getRelationValue('order');
-
-                if ($order instanceof Order) {
-                    return $this->ownerOf($order);
-                }
-            }
-
-            return null;
-        }
-
-        return OwnerContext::fromTypeAndId($type, $id);
+        return OwnerContext::fromTypeAndId(
+            $model->getAttribute($config->ownerTypeColumn),
+            $model->getAttribute($config->ownerIdColumn),
+        );
     }
 
     private function orderService(): OrderServiceInterface
     {
-        if ($this->orders instanceof OrderServiceInterface) {
-            return $this->orders;
-        }
-
-        if (app()->bound(OrderServiceInterface::class)) {
-            $resolved = app(OrderServiceInterface::class);
-
-            if ($resolved instanceof OrderServiceInterface) {
-                return $resolved;
-            }
-        }
-
-        throw new RuntimeException('The AIArmada orders integration is unavailable.');
+        return $this->orders ?? throw new RuntimeException('The AIArmada orders integration is unavailable.');
     }
 
     private function completedPayment(Order $order): OrderPayment
@@ -486,15 +451,8 @@ final class OrdersDriver implements EventOrderDriver
     private function resolveProcessor(OrderPayment $payment): PaymentProcessorInterface
     {
         $identifier = mb_trim((string) $payment->gateway);
-        $gateways = $this->gateways;
-
-        if ($gateways === null && app()->bound(PaymentGatewayResolverInterface::class)) {
-            $resolved = app(PaymentGatewayResolverInterface::class);
-            $gateways = $resolved instanceof PaymentGatewayResolverInterface ? $resolved : null;
-        }
-
-        if ($gateways !== null && $identifier !== '' && $gateways->hasGateway($identifier)) {
-            return $gateways->resolve($identifier);
+        if ($identifier !== '' && $this->gateways?->hasGateway($identifier)) {
+            return $this->gateways->resolve($identifier);
         }
 
         throw new RuntimeException(sprintf('The payment processor [%s] is no longer available.', $identifier));

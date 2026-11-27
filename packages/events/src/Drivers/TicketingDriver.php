@@ -162,25 +162,6 @@ final class TicketingDriver implements EventTicketingDriver
         $this->inventory->shipFromDefault($ticketType, $quantity, $reason, $reference);
     }
 
-    public function restoreRefundedInventory(
-        string $orderId,
-        ?string $orderNumber,
-        string $ticketTypeId,
-        int $quantity,
-        string $reason,
-    ): void {
-        $this->restoreRefundedTicketInventory(
-            orderId: $orderId,
-            orderNumber: $orderNumber,
-            ticketTypeId: $ticketTypeId,
-            quantity: $quantity,
-            reason: $reason,
-            note: sprintf('Restored refunded event ticket inventory for order %s', $orderId),
-            warning: 'Could not restore all ticket inventory for the refunded order.',
-            warningContext: [],
-        );
-    }
-
     public function restoreRefundedRegistrationItemInventory(
         string $orderId,
         ?string $orderNumber,
@@ -192,34 +173,8 @@ final class TicketingDriver implements EventTicketingDriver
             return;
         }
 
-        $this->restoreRefundedTicketInventory(
-            orderId: $orderId,
-            orderNumber: $orderNumber,
-            ticketTypeId: $ticketTypeId,
-            quantity: $quantity,
-            reason: 'event_registration_item_refunded:' . $registrationItemId,
-            note: sprintf('Restored from refunded event registration item %s', $registrationItemId),
-            warning: 'Could not restore all ticket inventory for the refunded registration item.',
-            warningContext: ['registration_item_id' => $registrationItemId],
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $warningContext
-     */
-    private function restoreRefundedTicketInventory(
-        string $orderId,
-        ?string $orderNumber,
-        string $ticketTypeId,
-        int $quantity,
-        string $reason,
-        string $note,
-        string $warning,
-        array $warningContext,
-    ): void {
-        if ($quantity < 1) {
-            return;
-        }
+        $reason = 'event_registration_item_refunded:' . $registrationItemId;
+        $note = sprintf('Restored from refunded event registration item %s', $registrationItemId);
 
         $ticketType = TicketType::query()->findOrFail($ticketTypeId);
         $morphType = $ticketType->getMorphClass();
@@ -287,11 +242,11 @@ final class TicketingDriver implements EventTicketingDriver
         }
 
         if ($remaining > 0) {
-            Log::warning($warning, [
+            Log::warning('Could not restore all ticket inventory for the refunded registration item.', [
                 'order_id' => $orderId,
                 'ticket_type_id' => $ticketTypeId,
                 'quantity_remaining' => $remaining,
-                ...$warningContext,
+                'registration_item_id' => $registrationItemId,
             ]);
         }
     }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Search\Actions;
 
-use AIArmada\Events\Contracts\EventSearchDocumentBuilder as EventSearchDocumentBuilderContract;
 use AIArmada\Events\Contracts\EventSearchRelationProvider;
 use AIArmada\Events\Features\Search\Queries\EventSearchDocumentBuilder;
 use AIArmada\Events\Platform\ModelResolver;
@@ -13,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 final class UpsertEventSearchDocumentAction
 {
     public function __construct(
-        private readonly EventSearchDocumentBuilderContract $builder,
+        private readonly EventSearchDocumentBuilder $builder,
         private readonly EventSearchRelationProvider $relations,
     ) {}
 
@@ -48,7 +47,7 @@ final class UpsertEventSearchDocumentAction
             return;
         }
 
-        $payload = $this->payloadFor($target, $targetType, (string) $target->getKey());
+        $payload = $this->builder->buildForTarget($target, $documentType);
 
         if ($payload === []) {
             return;
@@ -87,27 +86,6 @@ final class UpsertEventSearchDocumentAction
 
         if (is_a($targetType, ModelResolver::sessionClass(), true)) {
             return ['event_session_id' => $targetId, 'document_type' => 'session'];
-        }
-
-        return [];
-    }
-
-    private function payloadFor(Model $target, string $targetType, string $targetId): array
-    {
-        if ($this->builder instanceof EventSearchDocumentBuilder) {
-            return $this->builder->buildForTarget($target, (string) $this->documentType($targetType));
-        }
-
-        if (is_a($targetType, ModelResolver::eventClass(), true)) {
-            return $this->builder->buildForEvent($targetId);
-        }
-
-        if (is_a($targetType, ModelResolver::occurrenceClass(), true)) {
-            return $this->builder->buildForOccurrence($targetId);
-        }
-
-        if (is_a($targetType, ModelResolver::sessionClass(), true)) {
-            return $this->builder->buildForSession($targetId);
         }
 
         return [];

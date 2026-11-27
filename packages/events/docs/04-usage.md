@@ -521,8 +521,9 @@ only when the registration was genuinely `refund_pending`.
 
 Asynchronous provider confirmations match against the provider and refund
 identifiers before entering the matched order refund's owner context.
-Custom order drivers should populate `EventRefundMatchData::ownerType` and
-`ownerId` for tenant-owned matches.
+Custom order drivers supply the matched refund's owner tuple in
+`EventRefundMatchData::ownerType` and `ownerId`. Both fields are null for
+global refunds or when no single refund matched.
 
 ```php
 use AIArmada\Events\Features\Commerce\Actions\ProcessEventRegistrationRefundAction;
@@ -1072,6 +1073,10 @@ The generated payload includes the target content and relation-backed facets
 for audiences and classifications when those sync flags are enabled. Opaque
 metadata is included only as diagnostic context and is never used as a source
 for promoted fields.
+
+To customize indexed data, use the `EventSearchPayloadResolver` or
+`EventSearchRelationProvider` contracts. The built-in indexer passes its
+loaded target directly to the package document builder.
 
 Set `events.search.queue_indexing=true` to queue rebuilds instead of writing
 them synchronously (the `BuildEventSearchDocumentJob` carries owner context
