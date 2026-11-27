@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Actions\CalculateShippingRate;
+use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 describe('CalculateShippingRate Action', function (): void {
     it('can calculate rates for a specific carrier', function (): void {
-        $action = app(CalculateShippingRate::class);
+        $action = app(CalculateRates::class);
 
         $origin = new AddressData(
             name: 'Test Origin',
@@ -81,7 +81,7 @@ describe('CalculateShippingRate Action', function (): void {
             ],
         ]);
 
-        $action = app(CalculateShippingRate::class);
+        $action = app(CalculateRates::class);
 
         $origin = new AddressData(
             name: 'Test Origin',
@@ -114,7 +114,7 @@ describe('CalculateShippingRate Action', function (): void {
     });
 
     it('handles multiple packages correctly', function (): void {
-        $action = app(CalculateShippingRate::class);
+        $action = app(CalculateRates::class);
 
         $origin = new AddressData(
             name: 'Test Origin',
@@ -149,7 +149,7 @@ describe('CalculateShippingRate Action', function (): void {
     });
 
     it('passes options to the driver', function (): void {
-        $action = app(CalculateShippingRate::class);
+        $action = app(CalculateRates::class);
 
         $origin = new AddressData(
             name: 'Test Origin',
@@ -192,7 +192,7 @@ describe('CalculateShippingRate Action', function (): void {
             'failing_carrier' => [], // No creator method exists -> driver() throws
         ]]);
 
-        $action = app(CalculateShippingRate::class);
+        $action = app(CalculateRates::class);
 
         $origin = new AddressData(
             name: 'Test Origin',

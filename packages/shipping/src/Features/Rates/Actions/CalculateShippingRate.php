@@ -2,23 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Actions;
+namespace AIArmada\Shipping\Features\Rates\Actions;
 
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Support\Collection;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
 /**
  * Calculate shipping rate for a package.
  */
-final class CalculateShippingRate
+final class CalculateShippingRate implements CalculateRates
 {
-    use AsAction;
-
     public function __construct(
         private readonly ShippingManager $shippingManager,
     ) {}

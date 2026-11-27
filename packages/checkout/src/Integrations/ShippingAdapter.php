@@ -6,7 +6,7 @@ namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
-use AIArmada\Shipping\Actions\CalculateShippingRate;
+use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -31,7 +31,7 @@ final class ShippingAdapter
      */
     public function getRates(CheckoutSession $session): array
     {
-        if (! class_exists(ShippingManager::class) || ! class_exists(CalculateShippingRate::class)) {
+        if (! class_exists(ShippingManager::class) || ! interface_exists(CalculateRates::class)) {
             return $this->getDefaultRates($session);
         }
 
@@ -47,7 +47,7 @@ final class ShippingAdapter
         }
 
         /** @var Collection<int, RateQuoteData> $rateQuotes */
-        $rateQuotes = app(CalculateShippingRate::class)->handle(
+        $rateQuotes = app(CalculateRates::class)->handle(
             origin: $origin,
             destination: $destination,
             packages: $packages,
