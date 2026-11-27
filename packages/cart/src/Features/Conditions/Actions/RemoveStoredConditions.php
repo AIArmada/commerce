@@ -192,26 +192,7 @@ final class RemoveStoredConditions
             return $query->where('name', $condition)->get();
         }
 
-        $candidateNames = array_values(array_unique(array_filter([
-            $condition->display_name,
-            $condition->name,
-        ], static fn (?string $name): bool => is_string($name) && $name !== '')));
-
-        return $query
-            ->where(function (Builder $builder) use ($condition, $candidateNames): void {
-                $builder->where('attributes->condition_id', $condition->getKey());
-
-                if ($candidateNames === []) {
-                    return;
-                }
-
-                $builder->orWhere(function (Builder $fallback) use ($candidateNames): void {
-                    $fallback
-                        ->whereNull('attributes->condition_id')
-                        ->whereIn('name', $candidateNames);
-                });
-            })
-            ->get();
+        return $query->where('attributes->condition_id', $condition->getKey())->get();
     }
 
     /**
@@ -238,11 +219,18 @@ final class RemoveStoredConditions
     private function removeConditionFromCart(Cart $cart, CartSnapshotCondition $snapshotCondition): bool
     {
         $conditionName = $snapshotCondition->name;
+        $conditionId = $snapshotCondition->attributes['condition_id'] ?? null;
 
         if ($snapshotCondition->isCartLevel()) {
-            $removed = $cart->removeCondition($conditionName);
+            $stored = $cart->getStoredConditions()->getCondition($conditionName);
+            $dynamic = $cart->getDynamicConditions()->getCondition($conditionName);
+            $removed = false;
 
-            if ($cart->getDynamicConditions()->has($conditionName)) {
+            if ($stored !== null && $stored->getAttribute('condition_id') === $conditionId) {
+                $removed = $cart->removeCondition($conditionName);
+            }
+
+            if ($dynamic !== null && $dynamic->getAttribute('condition_id') === $conditionId) {
                 $cart->removeDynamicCondition($conditionName);
                 $removed = true;
             }
@@ -256,7 +244,9 @@ final class RemoveStoredConditions
                 continue;
             }
 
-            if (! $item->getConditions()->has($conditionName)) {
+            $condition = $item->getConditions()->getCondition($conditionName);
+
+            if ($condition === null || $condition->getAttribute('condition_id') !== $conditionId) {
                 continue;
             }
 
