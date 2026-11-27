@@ -209,8 +209,8 @@ JNT_OWNER_AUTO_ASSIGN=true
 The Filament resources automatically:
 
 - Filter queries by the owner resolved from `commerce-support` (`OwnerUiScope`), honouring `jnt.owner.include_global`
-- Display badge counts per owner, cached for 30–90 seconds by `NavigationBadgeHelper`
-- Cache dashboard widget stats per owner for 30–90 seconds
+- Display badge counts using the current scoped resource query
+- Calculate dashboard widget stats within the current owner scope
 
 Filament tenancy is not a security boundary. Owner scoping comes from the core `jnt`
 package, and action handlers still revalidate the record against the current owner scope.

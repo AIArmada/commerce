@@ -7,8 +7,7 @@ namespace AIArmada\FilamentJnt\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Services\JntExpressService;
-use Carbon\CarbonImmutable;
+use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
@@ -73,19 +72,8 @@ final class CancelOrderAction
                         return;
                     }
 
-                    $jntService = app(JntExpressService::class);
-
-                    $jntService->cancelOrder(
-                        orderId: $record->order_id,
-                        reason: $validated['reason_string'],
-                        trackingNumber: $record->tracking_number
-                    );
-
-                    $record->update([
-                        'status' => 'cancelled',
-                        'cancelled_at' => CarbonImmutable::now(),
-                        'cancellation_reason' => $validated['reason_string'],
-                    ]);
+                    app(CancelStoredOrder::class)->execute((string) $record->getKey(), $validated['reason_string']);
+                    $record->refresh();
 
                     Notification::make()
                         ->title('Order Cancelled')

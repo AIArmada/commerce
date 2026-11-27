@@ -1,6 +1,10 @@
 {
   "schema": 1,
   "name": "Orders",
-  "owns": {},
+  "owns": {
+    "table:jnt_orders": [
+      "AIArmada\\Jnt\\Features\\Orders\\Actions\\CancelStoredJntOrder"
+    ]
+  },
   "extensions": {}
 }
