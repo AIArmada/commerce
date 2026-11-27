@@ -80,7 +80,7 @@ describe('CustomerGroup Model', function (): void {
                 ->toThrow(InvalidArgumentException::class);
         });
 
-        it('rejects membership changes using another owner's models', function (): void {
+        it('rejects membership changes using models from another owner', function (): void {
             config(['customers.features.owner.enabled' => true, 'customers.features.owner.include_global' => false]);
 
             $ownerA = User::query()->create([
