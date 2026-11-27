@@ -12,7 +12,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use Mockery;
 
 /**
@@ -77,7 +77,7 @@ function mockValidateVoucherCode(): Mockery\MockInterface
 }
 
 beforeEach(function (): void {
-    $this->listener = new ValidateVoucherOnCheckout;
+    $this->listener = app(ValidateVoucherOnCheckout::class);
 });
 
 afterEach(function (): void {

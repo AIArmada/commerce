@@ -16,7 +16,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\EntryPoints\Listeners\IncrementVoucherAppliedCount;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;

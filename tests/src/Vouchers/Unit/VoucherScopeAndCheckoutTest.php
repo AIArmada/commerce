@@ -7,7 +7,7 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
+use AIArmada\Vouchers\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;

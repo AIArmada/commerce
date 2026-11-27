@@ -8,16 +8,28 @@ use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
+use AIArmada\Promotions\Actions\UpdatePromotion;
 use AIArmada\Promotions\Models\Promotion;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final class EditPromotion extends EditRecord
 {
     protected static string $resource = PromotionResource::class;
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        if (! $record instanceof Promotion) {
+            throw new InvalidArgumentException('Expected a promotion record.');
+        }
+
+        return app(UpdatePromotion::class)->handle($record, $data);
+    }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {

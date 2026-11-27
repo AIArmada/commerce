@@ -8,13 +8,19 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
-use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
+use AIArmada\Vouchers\Actions\CreateVoucher as CreateVoucherAction;
+use AIArmada\Vouchers\Models\Voucher;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
 final class CreateVoucher extends CreateRecord
 {
     protected static string $resource = VoucherResource::class;
+
+    protected function handleRecordCreation(array $data): Voucher
+    {
+        return app(CreateVoucherAction::class)->handle($data);
+    }
 
     protected function getRedirectUrl(): string
     {
@@ -26,7 +32,6 @@ final class CreateVoucher extends CreateRecord
         $data = parent::mutateFormDataBeforeCreate($data);
 
         $data = $this->enforceOwnerOnCreate($data);
-        $data = VoucherAffiliateOwnershipGuard::sanitize($data);
 
         return $this->persistConditionTargetDefinition($data);
     }

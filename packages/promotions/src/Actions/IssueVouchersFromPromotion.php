@@ -6,6 +6,7 @@ namespace AIArmada\Promotions\Actions;
 
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\States\Active;
@@ -33,6 +34,10 @@ final class IssueVouchersFromPromotion
             throw new InvalidArgumentException('Voucher issue count must be at least 1.');
         }
 
+        if (config('promotions.features.owner.enabled', false)) {
+            $promotion = OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
+        }
+
         $voucherService = $this->resolveVoucherService();
         $owner = OwnerContext::fromTypeAndId($promotion->owner_type, $promotion->owner_id);
 
@@ -42,7 +47,7 @@ final class IssueVouchersFromPromotion
             );
         }
 
-        return OwnerContext::withOwner($owner, function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
+        return OwnerContext::withOwner($owner, fn (): Collection => $promotion->getConnection()->transaction(function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
             $issued = collect();
 
             for ($sequence = 1; $sequence <= $count; $sequence++) {
@@ -51,11 +56,16 @@ final class IssueVouchersFromPromotion
                     $overrides,
                 );
 
+                unset($payload['promotionId']);
+                $payload['promotion_id'] = $promotion->id;
+                $payload['owner_type'] = $promotion->owner_type;
+                $payload['owner_id'] = $promotion->owner_id;
+
                 $issued->push($voucherService->create($payload));
             }
 
             return $issued;
-        });
+        }));
     }
 
     /**
