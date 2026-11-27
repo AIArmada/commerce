@@ -274,3 +274,32 @@ it('does not overwrite an existing CSV destination', function (): void {
         rmdir($directory);
     }
 });
+
+it('writes multilingual CSV using byte lengths rather than character counts', function (): void {
+    $export = new class implements ExportableInterface
+    {
+        public function getHeaders(): array
+        {
+            return ['Nama', '名称'];
+        }
+
+        public function getRows(): iterable
+        {
+            yield ['Kuala Lumpur', '日本語'];
+            yield ['Café', 'مرحبا'];
+        }
+
+        public function getFilename(): string
+        {
+            return 'unicode-export-' . bin2hex(random_bytes(8));
+        }
+    };
+
+    $path = $this->service->toCsvFile($export, sys_get_temp_dir());
+
+    try {
+        expect(file_get_contents($path))->toBe($this->service->toCsv($export));
+    } finally {
+        unlink($path);
+    }
+});

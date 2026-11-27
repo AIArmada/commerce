@@ -42,7 +42,7 @@ final class ExportService
 
         try {
             foreach ($this->stream($export) as $chunk) {
-                if (fwrite($output, $chunk) !== mb_strlen($chunk)) {
+                if (fwrite($output, $chunk) !== mb_strlen($chunk, '8bit')) {
                     throw new RuntimeException('Failed to write complete CSV row.');
                 }
             }

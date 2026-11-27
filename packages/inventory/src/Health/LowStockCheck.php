@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
-use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
+use InvalidArgumentException;
 use Spatie\Health\Checks\Result;
 
 /**
@@ -31,6 +31,10 @@ class LowStockCheck extends CommerceHealthCheck
      */
     public function threshold(int $threshold): self
     {
+        if ($threshold < 0) {
+            throw new InvalidArgumentException('Stock threshold cannot be negative.');
+        }
+
         $this->threshold = $threshold;
 
         return $this;
@@ -51,19 +55,9 @@ class LowStockCheck extends CommerceHealthCheck
      */
     protected function performCheck(): Result
     {
-        $lowStockQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->where('quantity_on_hand', '<=', $this->threshold)
-                ->where('quantity_on_hand', '>', 0)
-        );
-
-        $lowStockCount = $lowStockQuery->count();
-
-        $outOfStockQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()->where('quantity_on_hand', '<=', 0)
-        );
-
-        $outOfStockCount = $outOfStockQuery->count();
+        $counts = (new StockHealthQuery)->counts($this->threshold);
+        $lowStockCount = $counts['low_stock'];
+        $outOfStockCount = $counts['out_of_stock'];
 
         if ($outOfStockCount > 0) {
             $message = "{$outOfStockCount} items are out of stock";
@@ -86,10 +80,15 @@ class LowStockCheck extends CommerceHealthCheck
         }
 
         if ($lowStockCount > 0) {
-            return $this->warning("{$lowStockCount} items have low stock (≤{$this->threshold})", [
+            $message = "{$lowStockCount} items have low stock (≤{$this->threshold})";
+            $meta = [
                 'low_stock' => $lowStockCount,
                 'threshold' => $this->threshold,
-            ]);
+            ];
+
+            return $this->failOnLowStock
+                ? $this->failure($message, $meta)
+                : $this->warning($message, $meta);
         }
 
         return $this->success('All inventory levels are healthy', [

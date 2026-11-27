@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Features\Stock\Queries;
+
+use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+
+final readonly class StockHealthQuery
+{
+    /** @return array{low_stock: int, out_of_stock: int} */
+    public function counts(int $threshold): array
+    {
+        $counts = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            ->toBase()
+            ->selectRaw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved <= 0 THEN 1 END) AS out_of_stock')
+            ->selectRaw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved > 0 AND quantity_on_hand - quantity_reserved <= ? THEN 1 END) AS low_stock', [$threshold])
+            ->first();
+
+        return [
+            'low_stock' => (int) ($counts->low_stock ?? 0),
+            'out_of_stock' => (int) ($counts->out_of_stock ?? 0),
+        ];
+    }
+}
