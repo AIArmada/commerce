@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Registrations\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Data\EventWelcomeNotificationData;
@@ -81,6 +82,11 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
             /** @var EventRegistration $registration */
             $registration = new $registrationClass;
             $registration->fill(Arr::except($data, [
+                'id',
+                'created_at',
+                'updated_at',
+                'owner_type',
+                'owner_id',
                 'items',
                 'participants',
                 'answers',
@@ -107,8 +113,20 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
                         ? $participantData['answers']
                         : [];
                     $participantFields = array_merge(
-                        Arr::except($participantData, ['email', 'phone', 'company', 'answers']),
-                        $scopeFields,
+                        Arr::except($participantData, [
+                            'id',
+                            'event_registration_id',
+                            'event_id',
+                            'created_at',
+                            'updated_at',
+                            'owner_type',
+                            'owner_id',
+                            'email',
+                            'phone',
+                            'company',
+                            'answers',
+                        ]),
+                        $this->participantScopeFields($participantData, $scopeFields),
                     );
                     $participant = $registration->participants()->create($participantFields);
 
@@ -195,16 +213,31 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
             }
 
             $registration->transitionStatus(Confirmed::class);
+
+            if ($registration->status->getValue() === 'confirmed' && $registration->waitlisted_at !== null) {
+                $registration->waitlisted_at = null;
+            }
+
             $this->persistIfDirty($registration);
 
-            event(new EventRegistrationApproved(
+            $welcome = $this->buildWelcomeNotification($registration);
+            $owner = OwnerContext::resolve();
+            $approved = new EventRegistrationApproved(
                 (string) $registration->getKey(),
                 (string) $registration->event_id,
                 $this->nullableString($registration->getAttribute('registrant_type')),
                 $this->nullableString($registration->getAttribute('registrant_id')),
-            ));
+            );
 
-            $this->sendWelcomeNotification($registration);
+            DB::afterCommit(static function () use ($approved, $owner, $welcome): void {
+                OwnerContext::withOwner($owner, static function () use ($approved, $welcome): void {
+                    event($approved);
+
+                    if ($welcome !== null) {
+                        Notification::route('mail', $welcome['recipient'])->notify($welcome['notification']);
+                    }
+                });
+            });
         });
     }
 
@@ -416,6 +449,9 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
 
         EventWriteGuard::findOrFail($orderItemData['event_id']);
 
+        $this->validateScopeLinkage($orderItemData);
+        $this->validateOrderItemRegistration($orderItemData);
+
         DB::transaction(function () use ($orderItemData): void {
             $registrationClass = ModelResolver::registrationClass();
             /** @var EventRegistration $registration */
@@ -446,6 +482,31 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
         });
     }
 
+    /**
+     * @param  array<string, mixed>  $orderItemData
+     */
+    private function validateOrderItemRegistration(array $orderItemData): void
+    {
+        $this->assertNullOrNonEmptyString($orderItemData['registration_type'] ?? null, 'registration_type', 64);
+        $this->assertNullOrNonEmptyString($orderItemData['currency'] ?? null, 'currency', 16);
+        $this->assertNullOrNonEmptyString($orderItemData['order_id'] ?? null, 'order_id', 64);
+
+        if (array_key_exists('quantity', $orderItemData) && $orderItemData['quantity'] !== null) {
+            $this->assertPositiveInt($orderItemData['quantity'], 'quantity');
+        }
+
+        if (array_key_exists('total_price', $orderItemData) && $orderItemData['total_price'] !== null) {
+            $this->assertNonNegativeInt($orderItemData['total_price'], 'total_price');
+        }
+
+        $this->validateMorphPair(
+            $orderItemData['registrant_type'] ?? null,
+            $orderItemData['registrant_id'] ?? null,
+            'registrant',
+            true,
+        );
+    }
+
     private function lockedRegistration(string $registrationId): EventRegistration
     {
         $registrationClass = ModelResolver::registrationClass();
@@ -468,10 +529,13 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
         }
     }
 
-    private function sendWelcomeNotification(EventRegistration $registration): void
+    /**
+     * @return array{notification: EventWelcomeNotification, recipient: array<string, string>|string}|null
+     */
+    private function buildWelcomeNotification(EventRegistration $registration): ?array
     {
         if (! (bool) config('events.notifications.welcome.enabled', true)) {
-            return;
+            return null;
         }
 
         $eventId = (string) $registration->event_id;
@@ -493,10 +557,10 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
         $recipient = $registration->routeNotificationForMail($notification);
 
         if ($recipient === null) {
-            return;
+            return null;
         }
 
-        Notification::route('mail', $recipient)->notify($notification);
+        return ['notification' => $notification, 'recipient' => $recipient];
     }
 
     /**
@@ -730,10 +794,95 @@ final class DefaultRegistrationService implements RegistrationServiceInterface
                 true,
             );
 
+            $this->validateParticipantScope($participantData, $data);
+
             if (array_key_exists('answers', $participantData) && $participantData['answers'] !== null) {
                 $this->validateAnswers($participantData['answers'], 'participants.answers');
             }
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $participantData
+     * @param  array<string, mixed>  $registrationData
+     */
+    private function validateParticipantScope(array $participantData, array $registrationData): void
+    {
+        $eventId = (string) $registrationData['event_id'];
+
+        foreach (['event_occurrence_id', 'event_session_id'] as $field) {
+            if (! array_key_exists($field, $participantData) || $participantData[$field] === null) {
+                continue;
+            }
+
+            if (! is_string($participantData[$field]) || mb_trim($participantData[$field]) === '') {
+                throw new InvalidArgumentException(sprintf('The participant %s must be a non-empty string.', $field));
+            }
+        }
+
+        $occurrenceId = $this->cleanString($participantData['event_occurrence_id'] ?? null);
+        $sessionId = $this->cleanString($participantData['event_session_id'] ?? null);
+        $parentOccurrenceId = $this->cleanString($registrationData['event_occurrence_id'] ?? null);
+        $parentSessionId = $this->cleanString($registrationData['event_session_id'] ?? null);
+
+        if ($occurrenceId !== null) {
+            $occurrenceClass = ModelResolver::occurrenceClass();
+            $occurrence = $occurrenceClass::query()
+                ->whereKey($occurrenceId)
+                ->where('event_id', $eventId)
+                ->first();
+
+            if (! $occurrence instanceof Model) {
+                throw new InvalidArgumentException('The participant occurrence does not belong to the selected event.');
+            }
+
+            if ($parentOccurrenceId !== null && $occurrenceId !== $parentOccurrenceId) {
+                throw new InvalidArgumentException('The participant occurrence does not match the registration occurrence.');
+            }
+        }
+
+        if ($sessionId !== null) {
+            $sessionClass = ModelResolver::sessionClass();
+            $session = $sessionClass::query()
+                ->whereKey($sessionId)
+                ->where('event_id', $eventId)
+                ->first();
+
+            if (! $session instanceof Model) {
+                throw new InvalidArgumentException('The participant session does not belong to the selected event.');
+            }
+
+            if ($parentSessionId !== null && $sessionId !== $parentSessionId) {
+                throw new InvalidArgumentException('The participant session does not match the registration session.');
+            }
+
+            $sessionOccurrenceId = $this->cleanString($session->getAttribute('event_occurrence_id'));
+
+            if ($occurrenceId !== null && $sessionOccurrenceId !== $occurrenceId) {
+                throw new InvalidArgumentException('The participant session does not belong to the participant occurrence.');
+            }
+
+            if ($occurrenceId === null && $parentOccurrenceId !== null && $sessionOccurrenceId !== $parentOccurrenceId) {
+                throw new InvalidArgumentException('The participant session does not belong to the registration occurrence.');
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $participantData
+     * @param  array{event_id: string, event_occurrence_id: string|null, event_session_id: string|null}  $scopeFields
+     * @return array{event_id: string, event_occurrence_id: string|null, event_session_id: string|null}
+     */
+    private function participantScopeFields(array $participantData, array $scopeFields): array
+    {
+        $occurrenceId = $this->cleanString($participantData['event_occurrence_id'] ?? null);
+        $sessionId = $this->cleanString($participantData['event_session_id'] ?? null);
+
+        return [
+            'event_id' => $scopeFields['event_id'],
+            'event_occurrence_id' => $occurrenceId ?? $scopeFields['event_occurrence_id'],
+            'event_session_id' => $sessionId ?? $scopeFields['event_session_id'],
+        ];
     }
 
     private function validateAnswers(mixed $answers, string $field): void

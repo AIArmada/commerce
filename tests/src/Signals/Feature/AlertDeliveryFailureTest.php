@@ -8,12 +8,15 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Jobs\DispatchSignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\Actions\ProcessAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use Carbon\CarbonImmutable;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
@@ -30,6 +33,8 @@ function deliveryFailureOwner(string $suffix): User
 
 function deliveryFailureRule(User $owner, string $suffix, ?TrackedProperty $property = null): SignalAlertRule
 {
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
+
     return OwnerContext::withOwner($owner, function () use ($suffix, $property): SignalAlertRule {
         $property ??= TrackedProperty::query()->create([
             'name' => 'Delivery Failure ' . $suffix,
@@ -50,7 +55,10 @@ function deliveryFailureRule(User $owner, string $suffix, ?TrackedProperty $prop
             'cooldown_minutes' => 1,
             'severity' => 'warning',
             'channels' => ['email'],
-            'destination_keys' => ['ops'],
+            'destination_keys' => [],
+            'inline_destinations' => [
+                ['channel' => 'email', 'destination' => ['to' => 'ops@example.com']],
+            ],
         ]);
     });
 }
@@ -188,4 +196,51 @@ it('leaves dead deliveries untouched on repeated final failure', function (): vo
     expect($delivery->status)->toBe('dead')
         ->and($delivery->dead_at?->toAtomString())->toBe($deadAt->toAtomString())
         ->and($delivery->last_error_code)->toBe('transport_error');
+});
+
+it('preserves the specific transport failure code when retries are exhausted', function (): void {
+    $owner = deliveryFailureOwner('specific-code');
+    [, , $delivery] = deliveryFailureDispatch($owner, 'specific-code');
+
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+
+    $failure = new RuntimeException('Signals alert delivery failed.', previous: new RuntimeException('http_502'));
+
+    (new DispatchSignalAlertDelivery($delivery->id, $delivery->owner_type, $delivery->owner_id))->failed($failure);
+
+    expect($delivery->refresh()->status)->toBe('dead')
+        ->and($delivery->last_error_code)->toBe('http_502');
+});
+
+it('reports a retry delay while another worker holds an active lease', function (): void {
+    $owner = deliveryFailureOwner('lease');
+    [, , $delivery] = deliveryFailureDispatch($owner, 'lease');
+
+    OwnerContext::withOwner($owner, fn (): bool => $delivery->forceFill([
+        'status' => 'processing',
+        'attempt_count' => 1,
+        'leased_at' => CarbonImmutable::now(),
+    ])->save());
+
+    $retryAfter = OwnerContext::withOwner($owner, fn (): ?int => app(ProcessAlertDelivery::class)->run((string) $delivery->id));
+
+    (new DispatchSignalAlertDelivery($delivery->id, $delivery->owner_type, $delivery->owner_id))
+        ->failed(new MaxAttemptsExceededException);
+
+    expect($retryAfter)->toBeInt()
+        ->and($retryAfter)->toBeGreaterThan(0)
+        ->and($delivery->refresh()->status)->toBe('processing')
+        ->and($delivery->attempt_count)->toBe(1);
+});
+
+it('removes an orphaned delivery when its alert log was already deleted', function (): void {
+    $owner = deliveryFailureOwner('orphan');
+    [, $log, $delivery] = deliveryFailureDispatch($owner, 'orphan');
+
+    SignalAlertLog::query()->withoutOwnerScope()->whereKey($log->id)->delete();
+
+    $retryAfter = OwnerContext::withOwner($owner, fn (): ?int => app(ProcessAlertDelivery::class)->run((string) $delivery->id));
+
+    expect($retryAfter)->toBeNull()
+        ->and(SignalAlertDelivery::query()->withoutOwnerScope()->whereKey($delivery->id)->exists())->toBeFalse();
 });

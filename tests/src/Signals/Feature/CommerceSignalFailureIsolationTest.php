@@ -19,11 +19,11 @@ use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Signals\Exceptions\CommerceSignalRecordingFailed;
 use AIArmada\Signals\Exceptions\CommerceSignalTransactionControlFailed;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\CommerceSignalsRecorder;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
+use AIArmada\Signals\Features\Ingestion\Actions\CommerceSignalsRecorder;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -349,9 +349,9 @@ function enableThrowingSyncAlertEvaluation(): void
     config()->set('signals.features.alerts.evaluate_on_ingest.enabled', true);
     config()->set('signals.features.alerts.evaluate_on_ingest.queue', false);
 
-    app()->instance(SignalAlertEvaluator::class, new class
+    app()->instance(AlertEvaluator::class, new class implements AlertEvaluator
     {
-        public function evaluate(SignalAlertRule $rule): array
+        public function evaluate(SignalAlertRule $rule, ?string $revenueCurrency = null): array
         {
             throw new RuntimeException('alert evaluator boom');
         }

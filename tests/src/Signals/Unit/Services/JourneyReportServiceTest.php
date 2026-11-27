@@ -6,12 +6,14 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalSegment;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\JourneyReportService;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\JourneyReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -116,7 +118,7 @@ it('builds an owner-safe journey report', function (): void {
         ->and((int) ($row?->sessions ?? 0))->toBe(2)
         ->and((int) ($row?->bounced_sessions ?? 0))->toBe(1)
         ->and(round((float) ($row?->avg_duration_seconds ?? 0), 2))->toBe(90.0)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Journey Property']);
 });
 
@@ -255,6 +257,6 @@ it('uses saved journey report breakdown dimensions', function (): void {
         ->and((int) $rows[0]->sessions)->toBe(1)
         ->and($rows[1]->journey_breakdown_value)->toBe('mobile')
         ->and((int) $rows[1]->sessions)->toBe(2)
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('journeys'))
         ->toBe([$savedReport->id => 'Journey By Device']);
 });

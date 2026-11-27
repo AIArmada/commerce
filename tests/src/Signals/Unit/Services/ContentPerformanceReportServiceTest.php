@@ -6,11 +6,13 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -139,7 +141,7 @@ it('builds an owner-safe content performance report', function (): void {
         ->and($rows[0]['conversions'])->toBe(1)
         ->and($rows[0]['revenue_minor'])->toBe(12000)
         ->and($rows[0]['conversion_rate'])->toBe(50.0)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Content Property']);
 });
 
@@ -198,7 +200,7 @@ it('uses saved content report breakdown dimensions', function (): void {
 
     expect($rows)->toHaveCount(2)
         ->and($rows[0]['content_path'])->toBe('/pricing')
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('content_performance'))
         ->toBe([$savedReport->id => 'Content By Source']);
 
     $queryRows = $service->getTableQuery(null, '2026-03-10', '2026-03-10', null, $savedReport->id)

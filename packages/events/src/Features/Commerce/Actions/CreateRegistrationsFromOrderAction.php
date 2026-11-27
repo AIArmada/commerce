@@ -98,6 +98,8 @@ final class CreateRegistrationsFromOrderAction
                 throw new InvalidArgumentException('The selected order item must reference a ticket type that belongs to the same event scope.');
             }
 
+            $this->registrationsApi->lockScope($scopeType, $scopeId);
+
             $existing = $this->findExistingRegistrations($scope, $fresh, $expectedCount);
 
             if ($existing !== null) {
@@ -115,10 +117,6 @@ final class CreateRegistrationsFromOrderAction
                     purchaser: $purchaser,
                     options: $options,
                 );
-            }
-
-            if ($this->capacityEnforcementEnabled($scope)) {
-                $this->registrationsApi->lockScope($scopeType, $scopeId);
             }
 
             if ($this->shouldEnforceCapacity($expectedCount, $scope)) {

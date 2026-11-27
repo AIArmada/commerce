@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
-use AIArmada\CommerceSupport\Support\ValidatedHttpTarget;
-use AIArmada\Signals\Jobs\DispatchSignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
+use AIArmada\Signals\Contracts\AlertTransport;
+use AIArmada\Signals\Data\AlertDeliveryMessage;
+use AIArmada\Signals\Features\Alerts\Actions\SignalAlertDispatcher;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -26,52 +24,15 @@ function engineDeliveryRepeats(): int
     return 5;
 }
 
-/**
- * Fake outbound URL guard: accepts the configured test URL without DNS.
- * Never touches the network.
- */
-final class SigengFakeUrlGuard
-{
-    public function validate(string $url): ValidatedHttpTarget
-    {
-        return new ValidatedHttpTarget(
-            url: $url,
-            scheme: 'https',
-            host: 'alerts.example.test',
-            port: 443,
-            addresses: ['93.184.216.34'],
-            selectedIp: '93.184.216.34',
-            isIpLiteral: false,
-        );
-    }
-}
-
-/**
- * Fake pinned HTTP client: blocks inside the transport until the
- * coordinating worker releases it, then succeeds or throws per mode.
- * Never touches the network.
- */
-final class SigengBlockingHttpClient
+final class SigengBlockingAlertTransport implements AlertTransport
 {
     public function __construct(
         private readonly string $workdir,
         private readonly string $mode,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $options
-     * @param  array<string, string>  $headers
-     */
-    public function send(
-        string $method,
-        ValidatedHttpTarget $target,
-        array $options = [],
-        array $headers = [],
-        int $connectTimeout = 3,
-        int $timeout = 10,
-        int $attempts = 1,
-        int $retrySleepMilliseconds = 0,
-    ): Response {
+    public function send(string $channel, array $destination, AlertDeliveryMessage $message): ?int
+    {
         file_put_contents($this->workdir . '/transport-entered', (string) getmypid());
 
         $deadline = microtime(true) + 60;
@@ -88,7 +49,7 @@ final class SigengBlockingHttpClient
             throw new RuntimeException('sigeng invalid_destination probe');
         }
 
-        return new Response(new GuzzleHttp\Psr7\Response(200, [], '{}'));
+        return 200;
     }
 }
 
@@ -98,7 +59,7 @@ final class SigengBlockingHttpClient
 function engineDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string $suffix): array
 {
     Queue::fake();
-    config()->set('signals.features.alerts.destinations.email.ops', ['to' => 'ops@example.com']);
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
 
     return OwnerContext::withOwner($owner, function () use ($test, $suffix): array {
         $property = $test->engineProperty('Engine Delivery ' . $suffix);
@@ -114,7 +75,10 @@ function engineDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string
             'cooldown_minutes' => 0,
             'severity' => 'warning',
             'channels' => ['email'],
-            'destination_keys' => ['ops'],
+            'destination_keys' => [],
+            'inline_destinations' => [
+                ['channel' => 'email', 'destination' => ['to' => 'ops@example.com']],
+            ],
         ]);
 
         $log = app(SignalAlertDispatcher::class)->dispatch($rule, 2.0);
@@ -132,7 +96,7 @@ function engineDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string
 function engineWebhookDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string $suffix): array
 {
     Queue::fake();
-    config()->set('signals.features.alerts.destinations.webhook.ops', ['url' => 'https://alerts.example.test/hook']);
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
 
     return OwnerContext::withOwner($owner, function () use ($test, $suffix): array {
         $property = $test->engineProperty('Engine Webhook ' . $suffix);
@@ -148,7 +112,10 @@ function engineWebhookDeliveryDispatch(SignalsEngineTestCase $test, User $owner,
             'cooldown_minutes' => 0,
             'severity' => 'warning',
             'channels' => ['webhook'],
-            'destination_keys' => ['ops'],
+            'destination_keys' => [],
+            'inline_destinations' => [
+                ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/hook']],
+            ],
         ]);
 
         $log = app(SignalAlertDispatcher::class)->dispatch($rule, 2.0);
@@ -308,8 +275,7 @@ it('preserves a final dead row when a paused transport send resumes with success
         // after the sender provably entered the transport, then releases it.
         $results = EngineRace::run([
             'sender' => static function (string $workdir) use ($deliveryId, $ownerType, $ownerId): array {
-                app()->instance(PublicHttpUrlGuard::class, new SigengFakeUrlGuard);
-                app()->instance(PinnedHttpClient::class, new SigengBlockingHttpClient($workdir, 'success'));
+                app()->instance(AlertTransport::class, new SigengBlockingAlertTransport($workdir, 'success'));
 
                 (new DispatchSignalAlertDelivery($deliveryId, $ownerType, $ownerId))->handle();
 
@@ -369,8 +335,7 @@ it('preserves a final dead row when a paused transport error resumes after it', 
 
         $results = EngineRace::run([
             'sender' => static function (string $workdir) use ($deliveryId, $ownerType, $ownerId): array {
-                app()->instance(PublicHttpUrlGuard::class, new SigengFakeUrlGuard);
-                app()->instance(PinnedHttpClient::class, new SigengBlockingHttpClient($workdir, 'error'));
+                app()->instance(AlertTransport::class, new SigengBlockingAlertTransport($workdir, 'error'));
 
                 try {
                     (new DispatchSignalAlertDelivery($deliveryId, $ownerType, $ownerId))->handle();

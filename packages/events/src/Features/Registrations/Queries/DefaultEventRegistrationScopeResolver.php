@@ -9,6 +9,7 @@ use AIArmada\Events\Data\EventRegistrationScopeData;
 use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
 use AIArmada\Ticketing\Enums\PricingMode;
+use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
 
 final class DefaultEventRegistrationScopeResolver implements EventRegistrationScopeResolver
@@ -22,6 +23,12 @@ final class DefaultEventRegistrationScopeResolver implements EventRegistrationSc
         $scope = $this->catalog->describeScope($targetType, $targetId);
 
         if ($scope === null) {
+            if (in_array($targetType, ['event', 'occurrence', 'session'], true)) {
+                throw new AuthorizationException(
+                    'The referenced event scope is not accessible in the current owner scope.',
+                );
+            }
+
             throw new InvalidArgumentException(
                 sprintf('Target must be an event, event occurrence, or event session; got [%s].', $targetType),
             );

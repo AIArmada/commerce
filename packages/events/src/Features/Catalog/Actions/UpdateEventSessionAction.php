@@ -11,6 +11,7 @@ use AIArmada\Events\Features\Changes\Api\ChangesApi;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class UpdateEventSessionAction
@@ -25,70 +26,81 @@ final class UpdateEventSessionAction
      */
     public function handle(EventSession $session, array $attributes): array
     {
-        EventWriteGuard::findOrFail($session->event_id);
+        [$session, $changes, $original] = DB::transaction(function () use ($session, $attributes): array {
+            /** @var EventSession $session */
+            $session = $session->newQuery()
+                ->withoutOwnerScope()
+                ->whereKey($session->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $original = $session->getRawOriginal();
+            EventWriteGuard::findOrFail((string) $session->getAttribute('event_id'));
 
-        $fillable = $session->getFillable();
-        $allowed = array_intersect_key($attributes, array_flip($fillable));
-        unset(
-            $allowed['event_id'],
-            $allowed['event_occurrence_id'],
-            $allowed['published_at'],
-            $allowed['delayed_at'],
-            $allowed['postponed_at'],
-            $allowed['rescheduled_at'],
-            $allowed['cancelled_at'],
-            $allowed['completed_at'],
-            $allowed['archived_at'],
-        );
+            $original = $session->getRawOriginal();
 
-        if (array_key_exists('title', $allowed) && blank($allowed['title'])) {
-            throw new InvalidArgumentException('Session title is required.');
-        }
+            $fillable = $session->getFillable();
+            $allowed = array_intersect_key($attributes, array_flip($fillable));
+            unset(
+                $allowed['event_id'],
+                $allowed['event_occurrence_id'],
+                $allowed['published_at'],
+                $allowed['delayed_at'],
+                $allowed['postponed_at'],
+                $allowed['rescheduled_at'],
+                $allowed['cancelled_at'],
+                $allowed['completed_at'],
+                $allowed['archived_at'],
+            );
 
-        if (array_key_exists('title', $allowed)) {
-            $allowed['title'] = $this->contentNormalizer->normalizeTitle((string) $allowed['title']);
-        }
-
-        if (array_key_exists('summary', $allowed)) {
-            $allowed['summary'] = $this->contentNormalizer->normalizeSummary($allowed['summary'] !== null ? (string) $allowed['summary'] : null);
-        }
-
-        if (array_key_exists('description', $allowed)) {
-            $allowed['description'] = $this->contentNormalizer->normalizeDescription($allowed['description'] !== null ? (string) $allowed['description'] : null);
-        }
-
-        $statusValue = $allowed['status'] ?? null;
-        unset($allowed['status']);
-
-        if ($statusValue !== null && ! is_string($statusValue)) {
-            throw new InvalidArgumentException('Session status must be a state name.');
-        }
-
-        $session->update($allowed);
-
-        if ($statusValue !== null) {
-            $this->transitionStatus($session, $statusValue);
-        }
-
-        $session->refresh();
-
-        $current = $session->getAttributes();
-
-        $changes = [];
-        foreach ($allowed as $key => $newValue) {
-            $oldValue = $original[$key] ?? null;
-            $normalizedNewValue = $current[$key] ?? null;
-
-            if ($oldValue !== $normalizedNewValue) {
-                $changes[$key] = ['old' => $oldValue, 'new' => $normalizedNewValue];
+            if (array_key_exists('title', $allowed) && blank($allowed['title'])) {
+                throw new InvalidArgumentException('Session title is required.');
             }
-        }
 
-        if ($statusValue !== null && ($original['status'] ?? null) !== ($current['status'] ?? null)) {
-            $changes['status'] = ['old' => $original['status'] ?? null, 'new' => $current['status'] ?? null];
-        }
+            if (array_key_exists('title', $allowed)) {
+                $allowed['title'] = $this->contentNormalizer->normalizeTitle((string) $allowed['title']);
+            }
+
+            if (array_key_exists('summary', $allowed)) {
+                $allowed['summary'] = $this->contentNormalizer->normalizeSummary($allowed['summary'] !== null ? (string) $allowed['summary'] : null);
+            }
+
+            if (array_key_exists('description', $allowed)) {
+                $allowed['description'] = $this->contentNormalizer->normalizeDescription($allowed['description'] !== null ? (string) $allowed['description'] : null);
+            }
+
+            $statusValue = $allowed['status'] ?? null;
+            unset($allowed['status']);
+
+            if ($statusValue !== null && ! is_string($statusValue)) {
+                throw new InvalidArgumentException('Session status must be a state name.');
+            }
+
+            $session->update($allowed);
+
+            if ($statusValue !== null) {
+                $this->transitionStatus($session, $statusValue);
+            }
+
+            $session->refresh();
+
+            $current = $session->getAttributes();
+
+            $changes = [];
+            foreach ($allowed as $key => $newValue) {
+                $oldValue = $original[$key] ?? null;
+                $normalizedNewValue = $current[$key] ?? null;
+
+                if ($oldValue !== $normalizedNewValue) {
+                    $changes[$key] = ['old' => $oldValue, 'new' => $normalizedNewValue];
+                }
+            }
+
+            if ($statusValue !== null && ($original['status'] ?? null) !== ($current['status'] ?? null)) {
+                $changes['status'] = ['old' => $original['status'] ?? null, 'new' => $current['status'] ?? null];
+            }
+
+            return [$session, $changes, $original];
+        });
 
         if ($changes !== []) {
             event(new EventSessionUpdated(

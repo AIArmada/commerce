@@ -44,7 +44,7 @@ return new class extends Migration
 
             $table->string('pricing_mode')->nullable()->index();
             $table->string('registration_mode')->nullable()->index();
-            $table->boolean('issue_passes_for_free')->default(true);
+            $table->boolean('issue_passes_for_free')->nullable()->default(null);
         });
     }
 };

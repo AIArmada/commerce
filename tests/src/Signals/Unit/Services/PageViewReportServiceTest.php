@@ -6,10 +6,11 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\PageViewReportService;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -132,6 +133,33 @@ it('returns aggregated page views for the current owner only', function (): void
         ->and((int) ($result?->views ?? 0))->toBe(2)
         ->and((int) ($result?->visitors ?? 0))->toBe(2)
         ->and($result?->trackedProperty?->name)->toBe('Owner A Property')
-        ->and(app(PageViewReportService::class)->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Property']);
+});
+
+it('bounds the page view table to the requested day range', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Bounded Page View Property',
+        'slug' => 'bounded-page-view-property',
+        'write_key' => 'bounded-page-view-key',
+    ]);
+
+    foreach (['2026-01-01 10:00:00', '2026-01-02 10:00:00'] as $occurredAt) {
+        SignalEvent::query()->create([
+            'tracked_property_id' => $property->id,
+            'occurred_at' => CarbonImmutable::parse($occurredAt),
+            'event_name' => 'page_view',
+            'event_category' => 'page_view',
+            'path' => '/pricing',
+            'url' => 'https://bounded.test/pricing',
+        ]);
+    }
+
+    $row = app(PageViewReportService::class)
+        ->getTableQuery(from: CarbonImmutable::parse('2026-01-01'), until: CarbonImmutable::parse('2026-01-01'))
+        ->first();
+
+    expect($row)->not->toBeNull()
+        ->and((int) $row?->views)->toBe(1)
+        ->and($row?->last_seen_at)->toContain('2026-01-01');
 });

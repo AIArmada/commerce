@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Actions\IdentifySignalIdentity;
-use AIArmada\Signals\Actions\IngestSignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\RetentionReportService;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Ingestion\Actions\IdentifySignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -135,8 +135,8 @@ it('keeps identities active in ranges anchored on the latest observation', funct
     $action->handle($property, ['external_id' => 'bounds-activity', 'seen_at' => '2026-10-17 12:00:00']);
     $action->handle($property, ['external_id' => 'bounds-activity', 'seen_at' => '2026-10-05 12:00:00']);
 
-    $summary = app(SignalsDashboardService::class)->summary(
-        $property,
+    $summary = app(DashboardRead::class)->summary(
+        $property->id,
         CarbonImmutable::parse('2026-10-10 00:00:00'),
         CarbonImmutable::parse('2026-10-20 23:59:59'),
     );

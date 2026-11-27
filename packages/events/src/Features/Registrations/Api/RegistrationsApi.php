@@ -90,8 +90,9 @@ interface RegistrationsApi
 
     /**
      * @param  array<string, mixed>  $options
+     * @return list<string>
      */
-    public function expandComponents(string $parentRegistrationId, array $options = []): void;
+    public function expandComponents(string $parentRegistrationId, array $options = []): array;
 
     public function authorizeRefundRequest(mixed $actor, string $registrationId): void;
 }

@@ -51,6 +51,16 @@ final class LifecyclePolicy
         return in_array($registrationStatus, $statuses, true);
     }
 
+    public function canIssuePasses(string $registrationStatus): bool
+    {
+        $statuses = config(
+            'events.lifecycle.registration.pass_issuance_statuses',
+            ['confirmed', 'checked_in', 'completed'],
+        );
+
+        return in_array($registrationStatus, $statuses, true);
+    }
+
     public function isCapacityBlocking(string $registrationStatus): bool
     {
         $statuses = config('events.lifecycle.registration.capacity_blocking_statuses', ['pending', 'confirmed', 'checked_in']);

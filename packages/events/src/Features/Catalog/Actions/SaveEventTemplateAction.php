@@ -165,6 +165,7 @@ final class SaveEventTemplateAction
             'timezone' => $event->timezone,
             'pricing_mode' => $event->pricing_mode,
             'registration_mode' => $event->registration_mode,
+            'issue_passes_for_free' => $event->issue_passes_for_free,
             'metadata' => $event->metadata,
         ];
     }
@@ -182,6 +183,9 @@ final class SaveEventTemplateAction
             'visibility' => $occurrence->visibility,
             'delivery_mode' => $occurrence->delivery_mode,
             'capacity' => $occurrence->capacity,
+            'pricing_mode' => $occurrence->pricing_mode,
+            'registration_mode' => $occurrence->registration_mode,
+            'issue_passes_for_free' => $occurrence->issue_passes_for_free,
             'metadata' => $occurrence->metadata,
         ];
     }
@@ -201,6 +205,9 @@ final class SaveEventTemplateAction
             'visibility' => $session->visibility,
             'delivery_mode' => $session->delivery_mode,
             'capacity' => $session->capacity,
+            'pricing_mode' => $session->pricing_mode,
+            'registration_mode' => $session->registration_mode,
+            'issue_passes_for_free' => $session->issue_passes_for_free,
             'metadata' => $session->metadata,
         ];
     }

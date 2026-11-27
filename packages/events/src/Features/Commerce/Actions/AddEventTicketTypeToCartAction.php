@@ -154,7 +154,7 @@ final class AddEventTicketTypeToCartAction
             $attributes['inventoryable_id'] = (string) $ticketType->getKey();
         }
 
-        return array_merge($attributes, $extraAttributes);
+        return array_merge($extraAttributes, $attributes);
     }
 
     private function inventoryConfigured(TicketType $ticketType): bool

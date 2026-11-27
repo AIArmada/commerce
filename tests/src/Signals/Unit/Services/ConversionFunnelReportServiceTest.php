@@ -6,12 +6,14 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSegment;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -153,7 +155,7 @@ it('builds an owner-safe conversion funnel summary', function (): void {
         ->and($summary['paid_label'])->toBe('Completed Outcome')
         ->and($stages[2]['label'])->toBe('Completed Outcome')
         ->and($stages[2]['revenue_minor'])->toBe(12900)
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Funnel Property']);
 });
 
@@ -354,7 +356,7 @@ it('uses saved funnel definitions for custom conversion funnel reports', functio
         ->and($stages[1]['label'])->toBe('Signup Started')
         ->and($stages[2]['label'])->toBe('Subscription Activated')
         ->and($stages[2]['revenue_minor'])->toBe(7900)
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('conversion_funnel'))
         ->toBe([$savedReport->id => 'Signup Activation Funnel']);
 });
 

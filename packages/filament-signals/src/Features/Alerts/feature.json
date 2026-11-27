@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Alerts",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentSignals\\Features\\Alerts\\Extensions\\AdminPanelContribution"
+    ]
+  }
+}

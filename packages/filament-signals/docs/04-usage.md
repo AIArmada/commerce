@@ -32,7 +32,7 @@ Use the report pages for:
 
 The acquisition, conversion-funnel, content-performance, journey, and retention pages can preload a compatible `SavedSignalReport`.
 
-Saved-report ids, tracked-property ids, and segment ids are sanitized against the current owner scope before the page applies them.
+Saved-report ids, tracked-property ids, and segment ids are sanitized against the current owner scope before the page applies them. Page views are bounded to the page's sanitized date range, and acquisition campaign search uses the attributed campaign for the active attribution model.
 
 Monetary summaries, funnel stages, and goal rows render multi-currency totals as a joined string such as `MYR 10.00 + USD 20.00`, while single-property totals use the property's currency. Report tables format aggregate revenue with the row property's currency, and live-activity rows use the event's own currency.
 
@@ -80,7 +80,10 @@ Alert rules can be configured with:
 - event-category filters,
 - event property conditions,
 - database/email/webhook/Slack channels,
-- named destination keys.
+- named destination keys,
+- inline destinations when `allow_inline_destinations` is enabled.
+
+Named destination keys are platform-wide and are available to global alert rules. When Signals owner scoping is enabled, tenant alert rules use inline destinations instead. Inline destination entries pair a channel with its destination fields, for example a webhook URL or email recipient.
 
 Revenue rules scoped to a tracked property inherit that property's currency. Global revenue rules show a required `Revenue currency` selector backed by `event_filters.currency`, matching the Signals model contract.
 

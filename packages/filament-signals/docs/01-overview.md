@@ -52,6 +52,10 @@ The `aiarmada/filament-signals` package provides a Filament v5 analytics UI on t
 - Bot-aware reporting surfaces for page views and acquisition analysis
 - Monetary-aware UI that automatically hides revenue-focused cards, columns, and actions when the Signals package disables monetary analytics
 
+## Package structure
+
+The Configuration, Reporting and Alerts features contribute their own Filament resources, pages and widgets. Their `EntryPoints/Filament` directories own presentation only; persistence and owner checks belong to the corresponding Signals feature APIs. The dashboard uses `DashboardRead`, and segment selectors use `SegmentOptions`.
+
 ## Requirements
 
 - PHP 8.5+

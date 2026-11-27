@@ -11,7 +11,10 @@ Modular Dune event platform for Laravel: 9 owned features (`Catalog`, `Venues`, 
 - No legacy surface: there is no `Events` facade and no legacy top-level namespaces under `AIArmada\Events` — update call sites instead of adding shims.
 - External integrations live behind `AIArmada\Events\Contracts\` and resolve through `AIArmada\Events\Drivers\`; bind a custom driver or contract implementation in a service provider.
 - Scope slots (`events.cascade-delete`, `events.clone-scope`) resolve through `AIArmada\Events\Platform\ExtensionRegistry`; declare feature extensions in `feature.json` under `extensions`.
-- Ownership: event roots use `commerce-support` owner scoping; event children inherit the event boundary via `Platform\ScopesByEventOwner` with `Platform\EventWriteGuard::findOrFail()` on write paths.
+- Ownership: event roots use `commerce-support` owner scoping; event children inherit the event boundary via `Platform\ScopesByEventOwner` with `Platform\EventWriteGuard::findOrFail()` on write paths. `CatalogApi::describeScope()` and `RegistrationsApi::lock()` also honor the active owner context.
+- Record privacy: public events do not expose registration or submission records; `EventRegistrationPolicy` and `EventSubmissionPolicy` allow managers and the polymorphic record owner only. `requestRefund` and `manageAdmissions` are explicit deny-by-default abilities.
+- Pass issuance: `IssueEventRegistrationPassesAction` locks the scope chain and registration row, aggregates item quantities per ticket type, and only issues for `events.lifecycle.registration.pass_issuance_statuses`.
+- Registration modes (`pricing_mode`, `registration_mode`, `issue_passes_for_free`) inherit session → occurrence → event; `issue_passes_for_free` is nullable at every level, and explicit `false` must be preserved.
 
 @verbatim
 <code-snippet name="Resolve the configured event model and check in an attendee" lang="php">

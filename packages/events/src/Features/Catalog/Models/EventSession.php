@@ -416,7 +416,7 @@ final class EventSession extends Model implements HasMedia
         }
 
         if (! config('events.features.free_only.auto_derive_pricing_from_ticket_types', true)) {
-            return PricingMode::Paid;
+            return $this->occurrence?->effectivePricingMode() ?? $this->event?->effectivePricingMode() ?? PricingMode::Paid;
         }
 
         /** @var Collection<int, TicketType> $ticketTypes */

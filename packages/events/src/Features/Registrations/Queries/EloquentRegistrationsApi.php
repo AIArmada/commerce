@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Registrations\Queries;
 
-use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Features\Registrations\Actions\CreateEventComponentRegistrationsAction;
+use AIArmada\Events\Features\Registrations\Actions\LockEventRegistrationScopeAction;
 use AIArmada\Events\Features\Registrations\Actions\RecordRegistrationPaymentStatusAction;
 use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
 use AIArmada\Events\Features\Registrations\Api\EventRegistrationOrderItemRef;
@@ -15,7 +16,6 @@ use AIArmada\Events\Features\Registrations\Api\RegistrationSummary;
 use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
-use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +29,8 @@ final class EloquentRegistrationsApi implements RegistrationsApi
         private readonly CreateEventComponentRegistrationsAction $expandComponents,
         private readonly RecordRegistrationPaymentStatusAction $paymentStatus,
         private readonly RegistrationCapacityQuery $capacity,
+        private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly LockEventRegistrationScopeAction $scopeLock,
     ) {}
 
     public function registrationMorphClass(): string
@@ -181,7 +183,6 @@ final class EloquentRegistrationsApi implements RegistrationsApi
     {
         $registrationClass = ModelResolver::registrationClass();
         $registrationClass::query()
-            ->withoutGlobalScopes([OwnerScope::class, EventWriteGuard::OWNER_SCOPE])
             ->whereKey($registrationId)
             ->lockForUpdate()
             ->firstOrFail();
@@ -189,11 +190,7 @@ final class EloquentRegistrationsApi implements RegistrationsApi
 
     public function lockScope(string $scopeType, string $scopeId): void
     {
-        $modelClass = $this->scopeModelClass($scopeType);
-        $modelClass::query()
-            ->whereKey($scopeId)
-            ->lockForUpdate()
-            ->firstOrFail();
+        $this->scopeLock->handle($this->scopeResolver->resolve($scopeType, $scopeId));
     }
 
     public function capacityRemaining(
@@ -228,9 +225,9 @@ final class EloquentRegistrationsApi implements RegistrationsApi
         );
     }
 
-    public function expandComponents(string $parentRegistrationId, array $options = []): void
+    public function expandComponents(string $parentRegistrationId, array $options = []): array
     {
-        $this->expandComponents->handle($parentRegistrationId, options: $options);
+        return $this->expandComponents->handle($parentRegistrationId, options: $options);
     }
 
     public function authorizeRefundRequest(mixed $actor, string $registrationId): void
@@ -320,19 +317,6 @@ final class EloquentRegistrationsApi implements RegistrationsApi
             'event' => 'event_id',
             'occurrence' => 'event_occurrence_id',
             'session' => 'event_session_id',
-            default => throw new InvalidArgumentException(sprintf('Unknown event scope type [%s].', $scopeType)),
-        };
-    }
-
-    /**
-     * @return class-string<Model>
-     */
-    private function scopeModelClass(string $scopeType): string
-    {
-        return match ($scopeType) {
-            'event' => ModelResolver::eventClass(),
-            'occurrence' => ModelResolver::occurrenceClass(),
-            'session' => ModelResolver::sessionClass(),
             default => throw new InvalidArgumentException(sprintf('Unknown event scope type [%s].', $scopeType)),
         };
     }

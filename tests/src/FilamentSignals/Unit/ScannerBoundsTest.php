@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
+use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use Illuminate\Support\Facades\Route;
 
 uses(FilamentSignalsTestCase::class);
@@ -41,6 +41,18 @@ it('caps the number of files a local scan touches', function (): void {
         ->scanLocalSource('click', null, 100000, [$dir]);
 
     expect($candidates)->toHaveCount(InteractionRuleScanner::MAX_SCAN_FILES);
+});
+
+it('deduplicates overlapping local scan roots', function (): void {
+    $dir = scannerBladeDir('overlap');
+
+    file_put_contents($dir . '/view.blade.php', "<button data-track=\"once\">Track</button>\n");
+
+    $candidates = app(InteractionRuleScanner::class)
+        ->scanLocalSource('click', null, 100, [$dir, $dir]);
+
+    expect($candidates)->toHaveCount(1)
+        ->and($candidates[0]['selector'])->toBe('[data-track="once"]');
 });
 
 it('skips oversized views instead of loading them fully', function (): void {

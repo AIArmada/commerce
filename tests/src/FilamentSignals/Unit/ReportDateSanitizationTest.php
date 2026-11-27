@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\FilamentSignals\Pages\ConversionFunnelReport;
-use AIArmada\FilamentSignals\Pages\RetentionReport;
-use AIArmada\FilamentSignals\Support\SignalsReportStateSanitizer;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ConversionFunnelReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\GoalsReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\RetentionReport;
+use AIArmada\FilamentSignals\Features\Reporting\Support\SignalsReportStateSanitizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -70,5 +71,6 @@ it('reuses a report within a render and recomputes after its date filter changes
     }
 })->with([
     'conversion funnel' => [ConversionFunnelReport::class, 'getStages'],
+    'goals' => [GoalsReport::class, 'getRows'],
     'retention' => [RetentionReport::class, 'getRows'],
 ]);

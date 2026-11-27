@@ -5,17 +5,22 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalDailyMetric;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalInteractionRule;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Api\PropertyAdministration;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\GoalAdministration;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
 uses(SignalsTestCase::class);
@@ -412,4 +417,91 @@ it('still rejects same-property mismatches when owner scoping is disabled', func
 
     expect(fn () => $identity->forceFill(['tracked_property_id' => $propertyTwo->id])->save())
         ->toThrow(AuthorizationException::class, 'immutable');
+});
+
+it('updates alert read state atomically and rejects another owner', function (): void {
+    $ownerA = ownershipGuardOwner('alert-read-a');
+    $ownerB = ownershipGuardOwner('alert-read-b');
+
+    $makeLog = static function (User $owner, string $suffix): SignalAlertLog {
+        return OwnerContext::withOwner($owner, function () use ($suffix): SignalAlertLog {
+            $rule = SignalAlertRule::query()->create([
+                'name' => 'Alert ' . $suffix,
+                'slug' => 'alert-read-' . $suffix,
+                'metric_key' => 'events',
+                'operator' => '>=',
+                'threshold' => 1,
+            ]);
+
+            return SignalAlertLog::query()->create([
+                'signal_alert_rule_id' => $rule->id,
+                'metric_key' => 'events',
+                'operator' => '>=',
+                'metric_value' => 2,
+                'threshold_value' => 1,
+                'severity' => 'warning',
+                'title' => 'Alert ' . $suffix,
+            ]);
+        });
+    };
+
+    $logA = $makeLog($ownerA, 'a');
+    $logB = $makeLog($ownerB, 'b');
+
+    OwnerContext::withOwner($ownerA, function () use ($logA, $logB): void {
+        $action = app(AlertReadState::class);
+
+        expect(fn () => $action->set([$logA->id, $logB->id], true))->toThrow(AuthorizationException::class)
+            ->and($logA->fresh()->read_at)->toBeNull();
+
+        $action->set([$logA->id, $logA->id], true);
+        $firstRead = $logA->fresh()->read_at;
+        expect($firstRead)->not->toBeNull();
+
+        $action->set([$logA->id], true);
+        expect($logA->fresh()->read_at->equalTo($firstRead))->toBeTrue();
+
+        $action->set([$logA->id], false);
+        expect($logA->fresh()->read_at)->toBeNull();
+    });
+
+    OwnerContext::withOwner($ownerB, fn () => expect($logB->fresh()->read_at)->toBeNull());
+});
+
+it('keeps feature administration writes inside their owner and ignores forged owner attributes', function (): void {
+    $ownerA = ownershipGuardOwner('admin-a');
+    $ownerB = ownershipGuardOwner('admin-b');
+
+    $propertyId = OwnerContext::withOwner($ownerA, fn (): string => app(PropertyAdministration::class)->create([
+        'name' => 'Admin Property',
+        'slug' => 'admin-property',
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]));
+
+    $goalId = OwnerContext::withOwner($ownerA, fn (): string => app(GoalAdministration::class)->create([
+        'tracked_property_id' => $propertyId,
+        'name' => 'Admin Goal',
+        'slug' => 'admin-goal',
+        'goal_type' => 'conversion',
+        'event_name' => 'order.paid',
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]));
+
+    expect(TrackedProperty::query()->withoutOwnerScope()->findOrFail($propertyId)->owner_id)->toBe($ownerA->getKey())
+        ->and(SignalGoal::query()->withoutOwnerScope()->findOrFail($goalId)->owner_id)->toBe($ownerA->getKey());
+
+    OwnerContext::withOwner($ownerB, function () use ($propertyId, $goalId): void {
+        expect(fn () => app(PropertyAdministration::class)->update($propertyId, ['name' => 'Forged']))
+            ->toThrow(ModelNotFoundException::class)
+            ->and(fn () => app(GoalAdministration::class)->delete($goalId))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($propertyId, $goalId): void {
+        app(PropertyAdministration::class)->update($propertyId, ['name' => 'Updated']);
+        expect(TrackedProperty::query()->findOrFail($propertyId)->name)->toBe('Updated')
+            ->and(app(GoalAdministration::class)->delete($goalId))->toBeTrue();
+    });
 });

@@ -32,11 +32,14 @@ return new class extends Migration
             $table->string('status')->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
+            $table->unique(
+                ['searchable_type', 'searchable_id', 'document_type'],
+                'event_search_documents_identity_unique',
+            );
         });
 
         if (DB::getDriverName() === 'pgsql' && commerce_json_column_type('events', 'jsonb') === 'jsonb') {
             $searchTable = config('events.database.tables.event_search_documents', 'event_search_documents');
-            DB::statement("CREATE INDEX {$searchTable}_facets_gin_idx ON {$searchTable} USING GIN (facets jsonb_path_ops)");
             DB::statement("CREATE INDEX {$searchTable}_facets_gin_default_idx ON {$searchTable} USING GIN (facets)");
         }
     }

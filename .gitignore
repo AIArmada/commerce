@@ -28,3 +28,7 @@ architecture-handoff-*/
 architecture-handoff-*.zip
 
 .superpowers
+
+# Python bytecode caches
+__pycache__/
+*.py[cod]

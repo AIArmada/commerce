@@ -36,14 +36,6 @@ interface EventTicketingDriver
 
     public function shipInventory(string $ticketTypeId, int $quantity, string $reason, ?string $reference = null): void;
 
-    public function restoreRefundedInventory(
-        string $orderId,
-        ?string $orderNumber,
-        string $ticketTypeId,
-        int $quantity,
-        string $reason,
-    ): void;
-
     public function restoreRefundedRegistrationItemInventory(
         string $orderId,
         ?string $orderNumber,

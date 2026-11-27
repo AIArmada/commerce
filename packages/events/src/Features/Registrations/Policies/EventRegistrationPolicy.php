@@ -21,13 +21,11 @@ final class EventRegistrationPolicy
 
     public function view(mixed $user, EventRegistration $registration): bool
     {
-        $event = $registration->event;
-
-        if ($event instanceof Model
-            && method_exists($event, 'isPubliclyVisible')
-            && $event->isPubliclyVisible() === true) {
+        if ($this->isRegistrant($user, $registration)) {
             return true;
         }
+
+        $event = $registration->event;
 
         return $this->canManageEvent($user, 'view', $event instanceof Model ? $event : null);
     }
@@ -45,5 +43,31 @@ final class EventRegistrationPolicy
     public function delete(mixed $user, EventRegistration $registration): bool
     {
         return $this->canManageEvent($user, 'delete', $registration->event);
+    }
+
+    public function requestRefund(mixed $user, EventRegistration $registration): bool
+    {
+        if ($this->isRegistrant($user, $registration)) {
+            return true;
+        }
+
+        $event = $registration->event;
+
+        return $this->canManageEvent($user, 'requestRefund', $event instanceof Model ? $event : null);
+    }
+
+    private function isRegistrant(mixed $user, EventRegistration $registration): bool
+    {
+        if (! $user instanceof Model) {
+            return false;
+        }
+
+        $registrantType = $registration->getAttribute('registrant_type');
+        $registrantId = $registration->getAttribute('registrant_id');
+
+        return $registrantType !== null
+            && $registrantId !== null
+            && $registrantType === $user->getMorphClass()
+            && (string) $registrantId === (string) $user->getKey();
     }
 }

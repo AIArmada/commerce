@@ -6,10 +6,16 @@ use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
-use AIArmada\Signals\Models\SavedSignalReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Policies\SavedSignalReportPolicy;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Resources\SavedSignalReportResource;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use Illuminate\Support\Facades\Gate;
 
 uses(FilamentSignalsTestCase::class);
+
+it('registers the saved signal report policy', function (): void {
+    expect(Gate::getPolicyFor(SavedSignalReport::class))->toBeInstanceOf(SavedSignalReportPolicy::class);
+});
 
 it('scopes saved signal reports to the current owner', function (): void {
     /** @var User $ownerA */

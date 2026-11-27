@@ -13,7 +13,7 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Growth\Support\Context\ExperimentResolver;
-use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
+use AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

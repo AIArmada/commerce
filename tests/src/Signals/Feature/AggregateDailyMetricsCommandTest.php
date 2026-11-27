@@ -7,12 +7,15 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalDailyMetric;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 uses(SignalsTestCase::class);
 
@@ -179,4 +182,66 @@ it('aggregates daily metrics for each owner when no ambient owner is resolved', 
         ->and($metrics->pluck('tracked_property_id')->all())->toContain($propertyA->id, $propertyB->id)
         ->and($metrics->firstWhere('tracked_property_id', $propertyA->id)?->sessions)->toBe(1)
         ->and($metrics->firstWhere('tracked_property_id', $propertyB->id)?->sessions)->toBe(1);
+});
+
+it('rejects daily aggregation of a property outside the current owner', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Private rollup property',
+        'slug' => 'private-rollup-property',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
+
+    expect(fn () => app(AggregateDailyMetrics::class)
+        ->aggregateForDate(CarbonImmutable::parse('2026-03-10'), $property->id))
+        ->toThrow(ModelNotFoundException::class);
+});
+
+it('keeps repeated daily rollups idempotent for the same property and date', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Idempotent rollup property',
+        'slug' => 'idempotent-rollup-property',
+        'write_key' => 'idempotent-rollup-key',
+    ]);
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::parse('2026-03-11 08:00:00'),
+        'event_name' => 'page_view',
+        'event_category' => 'page_view',
+    ]);
+
+    $first = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::parse('2026-03-11'), $property->id);
+    $second = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::parse('2026-03-11'), $property->id);
+
+    expect($second->id)->toBe($first->id)
+        ->and($second->events)->toBe(1)
+        ->and(SignalDailyMetric::query()->where('tracked_property_id', $property->id)->where('date', '2026-03-11')->count())->toBe(1);
+});
+
+it('persists a full property batch in one rollup write', function (): void {
+    foreach (range(1, 100) as $number) {
+        TrackedProperty::query()->create([
+            'name' => "Rollup property {$number}",
+            'slug' => "rollup-property-{$number}",
+        ]);
+    }
+
+    $date = CarbonImmutable::parse('2026-03-11');
+    DB::enableQueryLog();
+
+    try {
+        $count = app(AggregateDailyMetrics::class)->aggregateRange($date, $date);
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($count)->toBe(100)
+        ->and(count($queries))->toBeLessThanOrEqual(6)
+        ->and(SignalDailyMetric::query()->count())->toBe(100);
 });

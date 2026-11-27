@@ -52,6 +52,9 @@ final class CloneEventSessionAction
                 'visibility' => $options['visibility'] ?? $session->visibility,
                 'delivery_mode' => $options['delivery_mode'] ?? $session->delivery_mode,
                 'capacity' => $options['capacity'] ?? $session->capacity,
+                'pricing_mode' => array_key_exists('pricing_mode', $options) ? $options['pricing_mode'] : $session->pricing_mode,
+                'registration_mode' => array_key_exists('registration_mode', $options) ? $options['registration_mode'] : $session->registration_mode,
+                'issue_passes_for_free' => array_key_exists('issue_passes_for_free', $options) ? $options['issue_passes_for_free'] : $session->issue_passes_for_free,
                 'sort_order' => $options['sort_order'] ?? $session->sort_order,
                 'metadata' => $options['metadata'] ?? $session->metadata,
             ]);

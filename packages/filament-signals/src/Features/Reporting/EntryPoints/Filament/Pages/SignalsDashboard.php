@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
+
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentSignals\Features\Alerts\Api\AlertDashboardWidgets;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\EventTrendWidget;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Widgets\SignalsStatsWidget;
+use BackedEnum;
+use Filament\Pages\Dashboard;
+
+final class SignalsDashboard extends Dashboard
+{
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar-square';
+
+    protected static ?string $title = 'Signals Dashboard';
+
+    protected static ?string $slug = 'signals';
+
+    /**
+     * Never inherit the Dashboard default route path of "/": a plugin
+     * dashboard must not claim the panel home route, or every user lands
+     * on this gated page (403 for anyone without its ability) instead of
+     * the panel redirect.
+     */
+    protected static string $routePath = '/signals';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-signals.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-signals.resources.navigation_sort.dashboard', 10);
+    }
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('signal-report.view');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('filament-signals.features.dashboard', true)
+            && static::canAccess();
+    }
+
+    public function getColumns(): int | array
+    {
+        return [
+            'md' => 2,
+            'xl' => 4,
+        ];
+    }
+
+    public function getWidgets(): array
+    {
+        $widgets = [];
+
+        if (config('filament-signals.features.widgets', true)) {
+            $widgets[] = SignalsStatsWidget::class;
+        }
+
+        if (config('filament-signals.features.trend_chart', true)) {
+            $widgets[] = EventTrendWidget::class;
+        }
+
+        if (config('filament-signals.features.pending_alerts_widget', true)) {
+            array_push($widgets, ...app(AlertDashboardWidgets::class)->widgets());
+        }
+
+        return $widgets;
+    }
+}

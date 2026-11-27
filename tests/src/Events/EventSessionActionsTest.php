@@ -357,6 +357,23 @@ it('normalizes editable session content during updates', function (): void {
         ->and($result['session']->description)->toBe('Updated description');
 });
 
+it('rolls back session changes when the status transition fails', function (): void {
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'status' => 'completed',
+        'title' => 'Original title',
+    ]);
+
+    expect(fn () => app(UpdateEventSessionAction::class)->handle($session, [
+        'title' => 'Should roll back',
+        'status' => 'scheduled',
+    ]))->toThrow(Exception::class);
+
+    expect($session->fresh()?->title)->toBe('Original title')
+        ->and($session->fresh()?->status->getValue())->toBe('completed');
+});
+
 it('rejects blank session titles during updates', function (): void {
     $session = EventSession::factory()->create([
         'event_id' => $this->event->id,
