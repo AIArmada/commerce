@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Contracts\DiscountProvider;
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;

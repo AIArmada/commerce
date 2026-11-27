@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 
 it('returns current cart instance when no name is given', function (): void {

@@ -13,7 +13,7 @@ This guide covers common workflows for tracking affiliates, recording conversion
 ```php
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 
 $cart = app(CartManagerInterface::class)->getCurrentCart();
 $affiliate = app(AffiliateDirectory::class)->findByCode('PARTNER42');

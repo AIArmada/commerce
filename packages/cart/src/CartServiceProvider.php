@@ -9,7 +9,7 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Handlers\ShippingConditionHandler;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
-use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;

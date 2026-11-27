@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Contracts;
+namespace AIArmada\Cart\Runtime;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Models\CartItem;
 
 interface CartValidatorInterface

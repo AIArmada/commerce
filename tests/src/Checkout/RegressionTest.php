@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Actions\CheckoutFinalizer;
 use AIArmada\Checkout\Actions\HandleCheckoutPaymentCallback;

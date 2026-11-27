@@ -8,7 +8,7 @@ use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentSucceeded;
 use AIArmada\Inventory\InventoryServiceProvider;

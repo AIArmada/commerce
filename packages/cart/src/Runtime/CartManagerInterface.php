@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Contracts;
+namespace AIArmada\Cart\Runtime;
 
 use AIArmada\Cart\Cart;
 use Illuminate\Database\Eloquent\Model;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\Conditions\Actions;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Features\Conditions\Models\Condition as StoredCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;

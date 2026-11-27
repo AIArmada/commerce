@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Support;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cashier\Checkout\CartCheckoutBuilder;
 use AIArmada\Cashier\GatewayManager;
 use Illuminate\Database\Eloquent\Model;

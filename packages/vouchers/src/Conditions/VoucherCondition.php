@@ -9,7 +9,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Target;
-use AIArmada\Cart\Contracts\CartConditionConvertible;
+use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;

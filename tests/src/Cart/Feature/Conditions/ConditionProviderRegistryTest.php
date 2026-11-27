@@ -7,7 +7,7 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Contracts\ConditionProviderInterface;
+use AIArmada\Cart\Runtime\ConditionProviderInterface;
 use AIArmada\Cart\Facades\Cart;
 
 it('syncs condition providers into cart conditions', function (): void {

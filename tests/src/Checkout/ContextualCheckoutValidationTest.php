@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Contracts\ContextualBuyableValidatorInterface;
 use AIArmada\Checkout\Enums\StepStatus;

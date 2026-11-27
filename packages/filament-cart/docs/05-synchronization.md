@@ -48,7 +48,7 @@ The primary synchronization listener that updates normalized models when cart st
 - For all other events: Synchronizes current cart state to database
 
 ```php
-use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 
 final class SyncCartOnEvent
 {

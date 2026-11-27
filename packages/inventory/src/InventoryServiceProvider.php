@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory;
 
 use AIArmada\Cart\CartManager;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\ItemAdded;

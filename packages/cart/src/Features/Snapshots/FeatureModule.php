@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\Snapshots;
 
-use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;

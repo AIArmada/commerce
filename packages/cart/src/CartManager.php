@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart;
 
 use AIArmada\Cart\Contracts\CartIdentityLookup;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\StorageInterface;

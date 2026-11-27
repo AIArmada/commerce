@@ -10,3 +10,7 @@ Cart's durable resources are owned by the LiveCart, Conditions and Snapshots fea
 ## Verification
 
 Run the package architecture checks and the affected monorepo Pest tests, PHPStan and Pint. Update callers directly when APIs change; do not add compatibility aliases or backfill migrations.
+
+### Runtime extension interfaces
+
+The pure `AIArmada\\Cart\\Contracts` namespace is reserved for data-oriented interfaces and immutable values. Laravel-facing cart extension interfaces that accept a mutable cart, cart item, condition object, or Eloquent owner model live in `AIArmada\\Cart\\Runtime`: `CartManagerInterface`, `CartSnapshotSyncInterface`, `CartValidatorInterface`, `CartConditionConvertible`, and `ConditionProviderInterface`. Import these directly from Runtime.
