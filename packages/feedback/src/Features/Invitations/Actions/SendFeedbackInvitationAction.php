@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Invitations\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Events\FeedbackInvitationSent;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use Carbon\CarbonImmutable;
@@ -21,19 +20,16 @@ final class SendFeedbackInvitationAction
     public function __construct(
         private readonly InvitationUrlGenerator $urlGenerator,
         private readonly FeedbackModelReferenceGuard $referenceGuard,
+        private readonly ReadsOwnedFormIdentity $forms,
     ) {}
 
     public function execute(
-        FeedbackForm $form,
+        string $formId,
         ?Model $recipient = null,
         ?string $email = null,
         ?string $phone = null,
         ?int $expiryDays = null,
     ): array {
-        $form = FeedbackForm::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id)
-            : FeedbackForm::query()->whereKey($form->id)->firstOrFail();
-
         if ($recipient !== null) {
             $this->referenceGuard->validate($recipient);
         }
@@ -43,7 +39,8 @@ final class SendFeedbackInvitationAction
             throw new InvalidArgumentException('Invitation expiry must be at least one day.');
         }
 
-        return (new FeedbackInvitation)->getConnection()->transaction(function () use ($form, $recipient, $email, $phone, $days): array {
+        return (new FeedbackInvitation)->getConnection()->transaction(function () use ($formId, $recipient, $email, $phone, $days): array {
+            $form = $this->forms->requireOwned($formId, lock: true);
             $rawToken = bin2hex(random_bytes(32));
             $tokenHash = hash('sha256', $rawToken);
 

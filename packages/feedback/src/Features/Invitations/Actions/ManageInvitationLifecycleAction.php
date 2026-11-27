@@ -7,7 +7,7 @@ namespace AIArmada\Feedback\Features\Invitations\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
@@ -16,7 +16,10 @@ use RuntimeException;
 
 final readonly class ManageInvitationLifecycleAction implements ManagesInvitationLifecycle
 {
-    public function __construct(private ExpireFeedbackInvitationAction $expireInvitation) {}
+    public function __construct(
+        private ExpireFeedbackInvitationAction $expireInvitation,
+        private ReadsOwnedFormIdentity $forms,
+    ) {}
 
     public function assertUsable(string $invitationId, string $formId, ?string $respondentType, ?string $respondentId): void
     {
@@ -65,9 +68,7 @@ final readonly class ManageInvitationLifecycleAction implements ManagesInvitatio
 
     public function deleteForForm(string $formId): void
     {
-        if (FeedbackForm::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
-        }
+        $this->forms->requireOwned($formId);
 
         FeedbackInvitation::query()->where('feedback_form_id', $formId)->delete();
     }

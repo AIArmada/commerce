@@ -360,7 +360,7 @@ it('marks invitations sent and dispatches the sent event', function (): void {
     Event::fake([FeedbackInvitationCreated::class, FeedbackInvitationSent::class]);
     $form = regressionPublishedForm('Sent Invitation Form');
 
-    $result = app(SendFeedbackInvitationAction::class)->execute(form: $form, email: 'sent@example.com');
+    $result = app(SendFeedbackInvitationAction::class)->execute(formId: $form->id, email: 'sent@example.com');
     $invitation = $result['invitation'];
 
     expect($invitation->status)->toBe(FeedbackInvitationStatus::Sent)

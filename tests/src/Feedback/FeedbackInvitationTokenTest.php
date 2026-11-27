@@ -75,7 +75,7 @@ it('generates cryptographic tokens and excludes raw tokens from events', functio
     Event::fake();
 
     $result = app(SendFeedbackInvitationAction::class)->execute(
-        form: $form,
+        formId: $form->id,
         email: 'recipient@example.com',
     );
     $invitation = $result['invitation'];
@@ -173,6 +173,6 @@ it('rolls back the invitation when URL generation fails', function (): void {
         }
     });
 
-    expect(fn () => app(SendFeedbackInvitationAction::class)->execute($form, email: 'example@example.com'))->toThrow(RuntimeException::class)
+    expect(fn () => app(SendFeedbackInvitationAction::class)->execute($form->id, email: 'example@example.com'))->toThrow(RuntimeException::class)
         ->and(FeedbackInvitation::query()->where('feedback_form_id', $form->id)->count())->toBe(0);
 });

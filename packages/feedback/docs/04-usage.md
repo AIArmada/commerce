@@ -81,7 +81,7 @@ app(PublishFeedbackFormAction::class)->execute($form);
 use AIArmada\Feedback\Features\Invitations\Actions\SendFeedbackInvitationAction;
 
 $result = app(SendFeedbackInvitationAction::class)->execute(
-    form: $form,
+    formId: $form->id,
     email: 'user@example.com',
 );
 

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Forms\Api\OwnedFormIdentity;
 use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 
 final readonly class ReadOwnedFormIdentityQuery implements ReadsOwnedFormIdentity
 {
@@ -31,6 +32,17 @@ final readonly class ReadOwnedFormIdentityQuery implements ReadsOwnedFormIdentit
         }
 
         return $this->identity($query->firstOrFail());
+    }
+
+    public function requireOwnedQuestion(string $questionId): void
+    {
+        if (FeedbackQuestion::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $questionId);
+
+            return;
+        }
+
+        FeedbackQuestion::query()->whereKey($questionId)->firstOrFail();
     }
 
     private function identity(FeedbackForm $form): OwnedFormIdentity
