@@ -9,7 +9,7 @@ use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;

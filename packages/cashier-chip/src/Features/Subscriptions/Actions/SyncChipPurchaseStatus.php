@@ -11,7 +11,7 @@ use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Data\RecordReference;

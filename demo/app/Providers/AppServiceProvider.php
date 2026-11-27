@@ -13,7 +13,7 @@ use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cashier\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;

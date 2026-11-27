@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;

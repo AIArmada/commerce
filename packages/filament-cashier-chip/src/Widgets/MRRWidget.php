@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;

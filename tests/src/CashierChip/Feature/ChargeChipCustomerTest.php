@@ -9,7 +9,7 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Testing\FakeChipClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Commerce\Tests\TestCase;

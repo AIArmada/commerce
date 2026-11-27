@@ -521,7 +521,7 @@ There is no `SubscriptionPaymentFailed` event — renewal failures dispatch
 Query subscriptions efficiently:
 
 ```php
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 
 // Active subscriptions
 $active = Subscription::active()->get();

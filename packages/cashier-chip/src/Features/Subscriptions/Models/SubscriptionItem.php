@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Subscription;
+namespace AIArmada\CashierChip\Features\Subscriptions\Models;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;

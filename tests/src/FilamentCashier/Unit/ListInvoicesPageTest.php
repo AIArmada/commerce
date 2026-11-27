@@ -6,7 +6,7 @@ use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Support\InvoiceStatus;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages\ListInvoices;

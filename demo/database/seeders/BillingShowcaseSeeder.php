@@ -7,7 +7,7 @@ namespace Database\Seeders;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CommerceSupport\Data\RecordReference;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use App\Models\User;

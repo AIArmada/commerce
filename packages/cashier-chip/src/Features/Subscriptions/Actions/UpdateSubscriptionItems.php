@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 

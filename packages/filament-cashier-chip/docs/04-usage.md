@@ -77,7 +77,7 @@ register your own resource instead:
 ```php
 namespace App\Filament\Resources;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\FilamentCashierChip\Resources\BaseCashierChipResource;
 use Filament\Support\Icons\Heroicon;
 

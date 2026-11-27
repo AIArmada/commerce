@@ -6,8 +6,8 @@ namespace AIArmada\Commerce\Tests\CashierChip;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;

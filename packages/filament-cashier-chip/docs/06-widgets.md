@@ -218,7 +218,7 @@ protected int | string | array $columnSpan = 1;      // SubscriptionDistribution
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;

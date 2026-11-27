@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;

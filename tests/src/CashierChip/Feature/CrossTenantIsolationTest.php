@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

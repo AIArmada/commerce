@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;

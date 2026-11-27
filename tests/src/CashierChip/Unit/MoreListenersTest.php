@@ -7,7 +7,7 @@ use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaymentFailure;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;

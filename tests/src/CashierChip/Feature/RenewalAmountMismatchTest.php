@@ -7,7 +7,7 @@ use AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;

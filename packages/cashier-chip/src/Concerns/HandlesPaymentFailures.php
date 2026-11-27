@@ -6,7 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 
 /**
  * Handles payment failures during subscription operations.

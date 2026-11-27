@@ -6,7 +6,7 @@ namespace AIArmada\CashierChip\Contracts;
 
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Data\ClientData;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
