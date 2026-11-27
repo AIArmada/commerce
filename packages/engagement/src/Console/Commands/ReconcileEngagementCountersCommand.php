@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Models\EngagementCounter;
 use Illuminate\Console\Command;
@@ -52,21 +51,17 @@ final class ReconcileEngagementCountersCommand extends Command
 
         $runner = $this->batchRunner();
 
-        $reconciled = OwnerContext::withOwner(null, function () use ($runner, $modelClass, $subjectId, $type): bool {
-            $found = false;
+        $reconciled = false;
 
-            $runner->forEach(function () use ($modelClass, $subjectId, $type, &$found): void {
-                $subject = (new $modelClass)->newQuery()->find($subjectId);
+        $runner->forEachAcrossOwners(function () use ($modelClass, $subjectId, $type, &$reconciled): void {
+            $subject = (new $modelClass)->newQuery()->find($subjectId);
 
-                if (! $subject) {
-                    return;
-                }
+            if (! $subject) {
+                return;
+            }
 
-                $found = true;
-                $this->reconcileSubject($subject, $type);
-            });
-
-            return $found;
+            $reconciled = true;
+            $this->reconcileSubject($subject, $type);
         });
 
         if (! $reconciled) {
@@ -84,30 +79,28 @@ final class ReconcileEngagementCountersCommand extends Command
     {
         $runner = $this->batchRunner();
 
-        OwnerContext::withOwner(null, function () use ($runner, $type): void {
-            $runner->forEach(function () use ($type): void {
-                EngagementCounter::query()
-                    ->select('subject_type', 'subject_id')
-                    ->distinct()
-                    ->orderBy('subject_type')
-                    ->orderBy('subject_id')
-                    ->cursor()
-                    ->each(function (EngagementCounter $row) use ($type): void {
-                        $modelClass = Relation::getMorphedModel($row->subject_type) ?? $row->subject_type;
+        $runner->forEachAcrossOwners(function () use ($type): void {
+            EngagementCounter::query()
+                ->select('subject_type', 'subject_id')
+                ->distinct()
+                ->orderBy('subject_type')
+                ->orderBy('subject_id')
+                ->cursor()
+                ->each(function (EngagementCounter $row) use ($type): void {
+                    $modelClass = Relation::getMorphedModel($row->subject_type) ?? $row->subject_type;
 
-                        if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
-                            return;
-                        }
+                    if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
+                        return;
+                    }
 
-                        $subject = (new $modelClass)->newQuery()->find($row->subject_id);
+                    $subject = (new $modelClass)->newQuery()->find($row->subject_id);
 
-                        if (! $subject) {
-                            return;
-                        }
+                    if (! $subject) {
+                        return;
+                    }
 
-                        $this->reconcileSubject($subject, $type);
-                    });
-            });
+                    $this->reconcileSubject($subject, $type);
+                });
         });
 
         $this->info('Reconciled all engagement counters.');
