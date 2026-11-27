@@ -70,6 +70,10 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
      */
     private function resolveOwner(array $payload): ?Model
     {
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return null;
+        }
+
         $ownerType = Arr::get($payload, '__owner_type');
         $ownerId = Arr::get($payload, '__owner_id');
         $tupleOwner = is_string($ownerType) && (is_string($ownerId) || is_int($ownerId))

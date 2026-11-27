@@ -66,7 +66,9 @@ This package supports both sources:
 - `chip.webhooks.collect.webhook_keys` (per-webhook keys for Collect registered webhooks)
 - `chip.webhooks.collect.brand_keys` (brand ID to public key, required when owner mode serves multiple brands)
 
-When `chip.owner.enabled=true` and `brand_keys` is configured, the verifier reads the `brand_id` from the exact signed body and uses only that brand's key. An unknown brand or a key from another brand fails closed. Signature validation runs once per request and the result is cached on the request; the dynamic public-key cache key includes the owner scope and credential fingerprint.
+When `chip.owner.enabled=true` and `brand_keys` is configured, the verifier reads the `brand_id` from the exact signed body and uses only that brand's key. An unknown brand or a key from another brand fails closed. Signature validation runs once per request and the result is cached on the request; the dynamic public-key cache key includes the owner scope and credential fingerprint. Owner routing uses the configured brand mapping. The controller replaces owner metadata with the server-resolved owner and ignores query parameters when storing the callback body.
+
+For signing keys and delivery retries, see the official [Collect webhook signatures](https://docs.chip-in.asia/chip-collect/overview/webhook-signatures) and [Collect delivery protocol](https://docs.chip-in.asia/chip-collect/overview/delivery-protocol).
 
 Send webhook verification requires the dedicated key returned by the CHIP Send webhook API. Send webhooks must not be posted to the Collect webhook route because their payloads have no Collect `event_type` and use SHA-512 verification.
 

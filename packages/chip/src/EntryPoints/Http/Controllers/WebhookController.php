@@ -24,7 +24,7 @@ class WebhookController extends Controller
     public function handle(Request $request): JsonResponse
     {
         /** @var array<string, mixed> $payload */
-        $payload = $request->all();
+        $payload = $request->json()->all();
         $eventType = $payload['event_type'] ?? 'unknown';
 
         $routeName = $request->route()?->getName() ?: 'chip.webhook';
@@ -49,10 +49,15 @@ class WebhookController extends Controller
             ], 401);
         }
 
+        unset($payload['__owner_type'], $payload['__owner_id']);
         $owner = null;
 
-        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
+        if ((bool) config('chip.owner.enabled', false)) {
             $owner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
+
+            if ($owner === null && config('chip.owner.webhook_brand_id_map', []) === []) {
+                $owner = OwnerContext::resolve();
+            }
 
             if ($owner === null) {
                 Log::channel(config('chip.logging.channel', 'stack'))
@@ -68,8 +73,10 @@ class WebhookController extends Controller
 
             $payload['__owner_type'] = $owner->getMorphClass();
             $payload['__owner_id'] = (string) $owner->getKey();
-            $request->replace($payload);
         }
+
+        $request->query->replace([]);
+        $request->replace($payload);
 
         $processor = function () use ($request, $config): JsonResponse {
             $response = (new WebhookProcessor($request, $config))->process();

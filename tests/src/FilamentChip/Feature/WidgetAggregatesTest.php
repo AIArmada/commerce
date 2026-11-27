@@ -311,3 +311,29 @@ it('returns an empty query for models without owner scope', function (): void {
     expect($query->toSql())->toContain('1 = 0');
     expect($query->count())->toBe(0);
 });
+
+it('withholds cached global summaries without an owner context', function (): void {
+    Purchase::withoutEvents(fn () => chipAggregatePurchase([
+        'status' => 'paid',
+        'is_test' => false,
+        'created_on' => now()->getTimestamp(),
+        'purchase' => ['total' => 2500],
+    ]));
+
+    $stats = new ReflectionMethod(ChipStatsWidget::class, 'getStats');
+    $chart = new ReflectionMethod(RevenueChartWidget::class, 'getData');
+    $methods = new ReflectionMethod(PaymentMethodsWidget::class, 'getPaymentMethodBreakdown');
+
+    OwnerContext::withOwner(null, function () use ($stats, $chart, $methods): void {
+        expect(PurchaseResource::getNavigationBadge())->toBe('1')
+            ->and($stats->invoke(app(ChipStatsWidget::class)))->toHaveCount(4)
+            ->and($chart->invoke(app(RevenueChartWidget::class))['labels'])->toHaveCount(30)
+            ->and($methods->invoke(app(PaymentMethodsWidget::class)))->not->toBeEmpty();
+    });
+
+    expect(PurchaseResource::getNavigationBadge())->toBeNull()
+        ->and(ChipStatsWidget::canView())->toBeFalse()
+        ->and($stats->invoke(app(ChipStatsWidget::class))[3]->getValue())->toBe('0%')
+        ->and($chart->invoke(app(RevenueChartWidget::class)))->toBe(['datasets' => [], 'labels' => []])
+        ->and($methods->invoke(app(PaymentMethodsWidget::class)))->toBe([]);
+});
