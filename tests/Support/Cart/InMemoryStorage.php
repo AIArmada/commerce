@@ -125,10 +125,16 @@ final class InMemoryStorage implements StorageInterface
 
     /**
      * @param  array<string, array<string, mixed>>  $items
+     * @param  array<string, mixed>|null  $metadata  Complete metadata replacement, or null to retain it
      */
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision
     {
-        return $this->replace($identifier, $instance, ['items' => $items], $expectedRevision);
+        $data = ['items' => $items];
+        if ($metadata !== null) {
+            $data['metadata'] = $metadata;
+        }
+
+        return $this->replace($identifier, $instance, $data, $expectedRevision);
     }
 
     /**

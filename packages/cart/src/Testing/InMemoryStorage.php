@@ -124,9 +124,14 @@ class InMemoryStorage implements StorageInterface
         return $this->getCart($identifier, $instance)['conditions'] ?? [];
     }
 
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision
     {
-        return $this->replace($identifier, $instance, ['items' => $items], $expectedRevision);
+        $data = ['items' => $items];
+        if ($metadata !== null) {
+            $data['metadata'] = $metadata;
+        }
+
+        return $this->replace($identifier, $instance, $data, $expectedRevision);
     }
 
     public function putConditions(string $identifier, string $instance, array $conditions, CartRevision $expectedRevision): CartRevision

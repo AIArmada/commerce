@@ -351,7 +351,7 @@ interface StorageInterface
 
     // Revisioned reads and writes
     public function getSnapshot(string $identifier, string $instance): ?CartStorageSnapshot;
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision;
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision;
     public function putConditions(string $identifier, string $instance, array $conditions, CartRevision $expectedRevision): CartRevision;
     public function putBoth(string $identifier, string $instance, array $items, array $conditions, CartRevision $expectedRevision): CartRevision;
 

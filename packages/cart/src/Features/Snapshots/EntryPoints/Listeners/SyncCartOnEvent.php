@@ -49,6 +49,10 @@ final class SyncCartOnEvent
             return;
         }
 
+        if ($event instanceof ItemConditionRemoved && ! $event->syncSnapshot) {
+            return;
+        }
+
         // All other events (including CartCleared): cart exists → sync its state
         // CartCleared means the cart exists but is empty - normalized cart must mirror this truth
         $this->syncManager->sync($event->cart);

@@ -17,7 +17,9 @@ use AIArmada\Cart\Events\CartConditionRemoved;
 use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Runtime\CartConditionConvertible;
+use Closure;
 use Traversable;
 
 trait ManagesConditions
@@ -281,54 +283,66 @@ trait ManagesConditions
      */
     public function removeItemConditions(array $expectedConditionIds): bool
     {
+        if ($expectedConditionIds === []) {
+            return false;
+        }
+
+        $removed = $this->removeMatchingItemConditions(static function (CartItem $item, CartCondition $condition) use ($expectedConditionIds): bool {
+            $expected = $expectedConditionIds[$item->id] ?? [];
+            $name = $condition->getName();
+
+            return array_key_exists($name, $expected)
+                && $expected[$name] === $condition->getAttribute('condition_id');
+        });
+        $this->dispatchItemConditionRemovals($removed);
+
+        return $removed !== [];
+    }
+
+    /**
+     * @param  Closure(CartItem, CartCondition): bool  $matches
+     * @param  (Closure(array<string, mixed>): array<string, mixed>)|null  $mutateMetadata
+     * @return list<array{string, CartCondition}>
+     */
+    private function removeMatchingItemConditions(Closure $matches, ?Closure $mutateMetadata = null): array
+    {
         $removed = [];
+        $mutated = $this->mutateItems(function (CartCollection $items) use ($matches, &$removed): ?CartCollection {
+            $removed = [];
 
-        $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($expectedConditionIds, &$removed): ?CartCollection {
-            $changed = false;
+            foreach ($items as $item) {
+                $updated = $item;
 
-            foreach ($expectedConditionIds as $itemId => $conditions) {
-                if (! $cartItems->has($itemId)) {
-                    continue;
-                }
-
-                $item = $cartItems->get($itemId);
-                assert($item !== null, 'Item should exist since we checked has()');
-                $itemChanged = false;
-
-                foreach ($conditions as $conditionName => $conditionId) {
-                    $condition = $item->conditions->getCondition($conditionName);
-
-                    if ($condition === null || $condition->getAttribute('condition_id') !== $conditionId) {
-                        continue;
+                foreach ($item->conditions as $condition) {
+                    if ($matches($item, $condition)) {
+                        $removed[] = [$item->id, $condition];
+                        $updated = $updated->removeCondition($condition->getName());
                     }
-
-                    $removed[$itemId][$conditionName] = $condition;
-                    $item = $item->removeCondition($conditionName);
-                    $itemChanged = true;
                 }
 
-                if ($itemChanged) {
-                    $cartItems->put($itemId, $item);
-                    $changed = true;
+                if ($updated !== $item) {
+                    $items->put($item->id, $updated);
                 }
             }
 
-            return $changed ? $cartItems : null;
-        });
+            return $removed === [] ? null : $items;
+        }, evaluateDynamicConditions: false, mutateMetadata: $mutateMetadata);
 
-        if (! $mutated) {
-            return false;
+        if ($mutated === null) {
+            return [];
         }
 
         $this->invalidatePipelineCache();
 
-        foreach ($removed as $itemId => $conditions) {
-            foreach ($conditions as $condition) {
-                $this->dispatchEvent(new ItemConditionRemoved($condition, $this, $itemId));
-            }
-        }
+        return $removed;
+    }
 
-        return true;
+    /** @param list<array{string, CartCondition}> $removed */
+    private function dispatchItemConditionRemovals(array $removed): void
+    {
+        foreach ($removed as $index => [$itemId, $condition]) {
+            $this->dispatchEvent(new ItemConditionRemoved($condition, $this, $itemId, syncSnapshot: $index === 0));
+        }
     }
 
     /**

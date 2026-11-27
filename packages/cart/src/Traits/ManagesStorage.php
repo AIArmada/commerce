@@ -152,28 +152,43 @@ trait ManagesStorage
      * precomputed payload.
      *
      * @param  Closure(CartCollection): (CartCollection|null)  $mutate
+     * @param  (Closure(array<string, mixed>): array<string, mixed>)|null  $mutateMetadata
      * @return CartRevision|null The committed revision, or null when the callback skipped the write
      *
      * @throws CartConflictException When every bounded retry lost the race
      */
-    private function mutateItems(Closure $mutate): ?CartRevision
+    private function mutateItems(Closure $mutate, bool $evaluateDynamicConditions = true, ?Closure $mutateMetadata = null): ?CartRevision
     {
-        $this->evaluateDynamicConditionsIfDirty();
+        if ($evaluateDynamicConditions) {
+            $this->evaluateDynamicConditionsIfDirty();
+        }
 
         for ($attempt = 1; ; $attempt++) {
             $snapshot = $this->storage->getSnapshot($this->getIdentifier(), $this->instance());
 
+            $metadata = $snapshot?->metadata ?? [];
+            $updatedMetadata = $mutateMetadata === null ? $metadata : $mutateMetadata($metadata);
             $updated = $mutate($this->hydrateItems($snapshot?->items ?? []));
 
-            if ($updated === null) {
+            if ($updated === null && $updatedMetadata === $metadata) {
                 return null;
             }
 
             try {
+                if ($updatedMetadata !== $metadata) {
+                    return $this->storage->putItems(
+                        $this->getIdentifier(),
+                        $this->instance(),
+                        $updated?->toArray() ?? $snapshot?->items ?? [],
+                        $snapshot?->revision() ?? CartRevision::none(),
+                        $updatedMetadata,
+                    );
+                }
+
                 return $this->storage->putItems(
                     $this->getIdentifier(),
                     $this->instance(),
-                    $updated->toArray(),
+                    $updated?->toArray() ?? [],
                     $snapshot?->revision() ?? CartRevision::none()
                 );
             } catch (CartConflictException $exception) {

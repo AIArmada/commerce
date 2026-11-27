@@ -36,12 +36,14 @@ final class ItemConditionRemoved implements CartEventInterface
      * @param  Cart  $cart  The cart instance containing the item
      * @param  string  $itemId  The ID of the item the condition was removed from
      * @param  string|null  $reason  Optional reason for removal ('expired', 'user_action', 'system', etc.)
+     * @param  bool  $syncSnapshot  Whether this event refreshes the cart snapshot for the mutation
      */
     public function __construct(
         public readonly CartCondition $condition,
         public readonly Cart $cart,
         public readonly string $itemId,
-        public readonly ?string $reason = null
+        public readonly ?string $reason = null,
+        public readonly bool $syncSnapshot = true,
     ) {
         $this->initializeEventData();
     }

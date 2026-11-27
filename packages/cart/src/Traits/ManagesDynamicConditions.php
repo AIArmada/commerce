@@ -10,6 +10,7 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Models\CartItem;
 use Closure;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -152,23 +153,37 @@ trait ManagesDynamicConditions
         $condition = $this->dynamicConditions->getCondition($name);
         $this->dynamicConditions->forget($name);
 
-        if ($condition !== null) {
-            if ($condition->getTargetDefinition()->scope === ConditionScope::ITEMS) {
-                foreach ($this->getItemsFromStorage() as $item) {
-                    if ($this->matchesDynamicCondition($condition, $item->conditions->getCondition($name))) {
-                        $this->removeItemCondition($item->id, $name);
-                    }
-                }
+        try {
+            if ($condition !== null && $condition->getTargetDefinition()->scope === ConditionScope::ITEMS) {
+                $removedItems = $this->removeMatchingItemConditions(
+                    fn (CartItem $item, CartCondition $applied): bool => $applied->getName() === $name
+                        && $this->matchesDynamicCondition($condition, $applied),
+                    static function (array $metadata) use ($name): array {
+                        if (is_array($metadata['dynamic_conditions'] ?? null)) {
+                            unset($metadata['dynamic_conditions'][$name]);
+                        }
+
+                        return $metadata;
+                    },
+                );
+            } else {
+                $this->removeDynamicConditionMetadata($name);
+                $removedItems = [];
+            }
+        } catch (Throwable $exception) {
+            if ($condition !== null) {
+                $this->dynamicConditions->put($name, $condition);
             }
 
-            if ($this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($name))) {
-                $this->removeCondition($name);
-            }
+            throw $exception;
         }
 
-        // Remove from metadata storage
-        $this->removeDynamicConditionMetadata($name);
         $this->invalidatePipelineCache();
+        $this->dispatchItemConditionRemovals($removedItems);
+
+        if ($condition !== null && $this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($name))) {
+            $this->removeCondition($name);
+        }
 
         return $this;
     }

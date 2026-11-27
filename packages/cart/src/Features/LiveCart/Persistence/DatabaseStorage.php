@@ -144,15 +144,19 @@ final readonly class DatabaseStorage implements CartIdentityLookup, StorageInter
      * Atomically replace cart items at the expected revision.
      *
      * @param  array<string, mixed>  $items
+     * @param  array<string, mixed>|null  $metadata  Complete metadata replacement, or null to retain it
      */
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision
     {
         $this->validateDataSize($items, 'items');
 
-        // Convert empty arrays to null for better database efficiency
-        return $this->replace($identifier, $instance, [
-            'items' => empty($items) ? null : $this->encodeData($items, 'items'),
-        ], 'items update', $expectedRevision);
+        $data = ['items' => $items === [] ? null : $this->encodeData($items, 'items')];
+        if ($metadata !== null) {
+            $this->validateDataSize($metadata, 'metadata');
+            $data['metadata'] = $metadata === [] ? null : $this->encodeData($metadata, 'metadata');
+        }
+
+        return $this->replace($identifier, $instance, $data, 'items update', $expectedRevision);
     }
 
     /**
@@ -535,20 +539,45 @@ final readonly class DatabaseStorage implements CartIdentityLookup, StorageInter
         }
 
         return $this->database->transaction(function () use ($sourceStorage, $sourceIdentifier, $targetIdentifier, $instance, $items, $conditions, $metadata, $sourceRevision, $targetRevision): CartRevision {
-            $revision = $this->putItems($targetIdentifier, $instance, $items, $targetRevision);
+            $this->validateDataSize($items, 'items');
+            $data = ['items' => $items === [] ? null : $this->encodeData($items, 'items')];
 
             if ($conditions !== []) {
-                $revision = $this->putConditions($targetIdentifier, $instance, $conditions, $revision);
+                $this->validateDataSize($conditions, 'conditions');
+                $data['conditions'] = $this->encodeData($conditions, 'conditions');
             }
 
             if ($metadata !== []) {
-                $this->putMetadataBatch($targetIdentifier, $instance, $metadata);
+                $currentMetadata = $this->mergeTargetMetadata($targetIdentifier, $instance, $targetRevision);
+                $mergedMetadata = array_filter(array_merge($currentMetadata, $metadata), static fn (mixed $value): bool => $value !== null);
+                $this->validateDataSize($mergedMetadata, 'metadata');
+                $data['metadata'] = $mergedMetadata === [] ? null : $this->encodeData($mergedMetadata, 'metadata');
             }
 
+            $revision = $this->replace($targetIdentifier, $instance, $data, 'merge transfer', $targetRevision);
             $targetCartId = (string) $revision->cartId;
 
             return $sourceStorage->consumeForMerge($sourceIdentifier, $instance, $sourceRevision, $targetCartId);
         });
+    }
+
+    /** @return array<string, mixed> */
+    private function mergeTargetMetadata(string $identifier, string $instance, CartRevision $revision): array
+    {
+        if ($revision->isCreation()) {
+            return [];
+        }
+
+        $row = $this->baseQuery($identifier, $instance)
+            ->where('id', $revision->cartId)
+            ->where('version', $revision->version)
+            ->first(['metadata']);
+
+        if ($row === null) {
+            throw $this->buildConflictException($identifier, $instance, $revision, 'merge transfer');
+        }
+
+        return $this->decodeData($row->metadata, 'metadata');
     }
 
     /**

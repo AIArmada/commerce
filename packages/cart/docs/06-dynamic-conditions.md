@@ -308,6 +308,11 @@ $conditions = Cart::getDynamicConditions();
 Cart::removeDynamicCondition('Weekend Sale');
 ```
 
+Removing an item-scoped dynamic condition updates all matching items and removes
+the persisted rule in the same revision-checked write.
+Each affected item still emits an `ItemConditionRemoved` event. The snapshot
+listener refreshes the cart once, after the persisted rule has been removed.
+
 ## Error Handling
 
 ```php
