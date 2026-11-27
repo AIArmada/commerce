@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Payment;
+namespace AIArmada\Customers\Drivers;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
@@ -16,10 +16,10 @@ use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 
-final class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterface
+final readonly class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterface
 {
     public function __construct(
-        private readonly CustomerResolver $customerResolver,
+        private CustomerResolver $customerResolver,
     ) {}
 
     public function getIdentifier(): string

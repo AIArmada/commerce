@@ -56,7 +56,7 @@ $title = app(ReorderTitleAction::class)->create([
 
 ```php
 use AIArmada\Persons\Enums\PersonNameType;
-use AIArmada\Persons\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 
 $person->names()->create([
     'name_type' => PersonNameType::Display,

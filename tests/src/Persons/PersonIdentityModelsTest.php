@@ -16,7 +16,7 @@ use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
 use AIArmada\Persons\Models\Person;
-use AIArmada\Persons\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Models\Person;
-use AIArmada\Persons\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

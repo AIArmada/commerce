@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use Spatie\LaravelData\Data;
 
 final class PersonNameData extends Data

@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Identity\Models;
 
+use AIArmada\Persons\Database\Factories\PersonNameFactory;
 use AIArmada\Persons\Enums\PersonNameType;
+use AIArmada\Persons\Models\Person;
 use AIArmada\Persons\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -67,7 +68,7 @@ class PersonName extends Model
             return parent::save($options);
         }
 
-        return DB::transaction(function () use ($options): bool {
+        return $this->getConnection()->transaction(function () use ($options): bool {
             $this->person()->lockForUpdate()->firstOrFail();
 
             static::query()
@@ -90,6 +91,11 @@ class PersonName extends Model
     {
         $this->full_name = mb_trim($this->full_name);
         $this->language_code = mb_strtolower(mb_trim($this->language_code));
+    }
+
+    protected static function newFactory(): PersonNameFactory
+    {
+        return PersonNameFactory::new();
     }
 
     public function getTable(): string

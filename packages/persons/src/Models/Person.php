@@ -9,6 +9,7 @@ use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Support\ModelResolver;
