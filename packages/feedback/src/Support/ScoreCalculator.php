@@ -53,7 +53,7 @@ final class ScoreCalculator
         }
 
         if ($type->isScoredType()) {
-            $settings = $question->settings ?? [];
+            $settings = $question->settings;
 
             return (float) match ($type) {
                 FeedbackQuestionType::Nps => 10,

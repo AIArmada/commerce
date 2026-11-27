@@ -15,7 +15,7 @@ final class ValidationRuleBuilder
     {
         $rules = [];
         $type = FeedbackQuestionType::tryFrom($question->type);
-        $settings = $question->settings ?? [];
+        $settings = $question->settings;
 
         if ($question->isRequired && ! $type?->isDisplayOnly()) {
             $rules[] = 'required';
