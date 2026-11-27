@@ -375,6 +375,11 @@ it('honors an explicit global forEach without iterating tenant owners', function
     });
 
     expect($results->all())->toBe(['global-only']);
+
+    $sweep = $runner->forEachAcrossOwners(fn (): ?string => OwnerContext::resolve()?->getKey());
+
+    expect($sweep->all())->toEqualCanonicalizing([null, $owner->getKey()])
+        ->and(OwnerContext::isExplicitGlobal())->toBeTrue();
 });
 
 it('deduplicates explicit global tuples when multiple global rows exist', function (): void {

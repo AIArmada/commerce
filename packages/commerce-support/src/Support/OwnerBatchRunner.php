@@ -75,7 +75,15 @@ final class OwnerBatchRunner
             return collect([$callback()]);
         }
 
-        $owners = $this->discoverOwners();
+        return $this->forEachAcrossOwners($callback);
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    public function forEachAcrossOwners(callable $callback): Collection
+    {
+        $owners = $this->isOwnerDisabled() ? collect() : $this->discoverOwners();
 
         if ($owners->isEmpty()) {
             return collect([OwnerContext::withOwner(null, $callback)]);

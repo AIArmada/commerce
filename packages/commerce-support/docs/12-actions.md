@@ -261,7 +261,8 @@ $allResults = $runner->forEach(function () {
 - Pass `null` for `ownerConfig` to fall back to the model's `ownerScopeConfig()` for the enabled state and include-global suppression
 - When `include_global` resolves truthy (from `ownerConfig` or the model config), iteration runs under `OwnerScopeOverride::withoutIncludeGlobal()` so per-owner work never picks up global rows
 - `run()` returns reduced results (sum for ints, merged sums for numeric array values, otherwise the first non-null result)
-- `forEach()` returns a Collection of all results
+- `forEach()` returns a collection of all results
+- System maintenance commands can call `forEachAcrossOwners()` to discover and scope each owner regardless of the caller’s current context
 
 ---
 
