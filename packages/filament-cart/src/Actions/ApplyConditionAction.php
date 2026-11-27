@@ -57,7 +57,7 @@ final class ApplyConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record, $livewire);
                     $action = app(ApplyStoredCondition::class);
-                    $condition = $action->apply($cart, (string) $data['condition_id'], $customName);
+                    $condition = $action->apply((string) $cart->getKey(), (string) $data['condition_id'], $customName);
 
                     Notification::make()
                         ->title('Condition Applied')
@@ -110,7 +110,7 @@ final class ApplyConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record->cart ?? null);
                     $action = app(ApplyStoredCondition::class);
-                    $condition = $action->applyToItem($cart, $record->item_id, (string) $data['condition_id'], $customName);
+                    $condition = $action->applyToItem((string) $cart->getKey(), $record->item_id, (string) $data['condition_id'], $customName);
 
                     Notification::make()
                         ->title('Item Condition Applied')
@@ -299,7 +299,7 @@ final class ApplyConditionAction extends Action
                 try {
                     $cart = self::resolveCartRecord($record, $livewire);
                     $action = app(ApplyStoredCondition::class);
-                    $condition = $action->applyCustom($cart, $data);
+                    $condition = $action->applyCustom((string) $cart->getKey(), $data);
 
                     Notification::make()
                         ->title('Custom Condition Applied')

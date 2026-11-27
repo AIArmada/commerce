@@ -6,6 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as CartModel;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartConditionModel;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
@@ -89,7 +90,7 @@ describe('RemoveStoredConditions action', function (): void {
         $syncManager = Mockery::mock(CartSyncManager::class);
         $syncManager->shouldReceive('sync')->with($realCart, true)->once();
 
-        $service = new RemoveStoredConditions($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class));
 
         $result = $service->handle($storedCondition);
 
@@ -136,7 +137,7 @@ describe('RemoveStoredConditions action', function (): void {
 
         $syncManager = Mockery::mock(CartSyncManager::class);
 
-        $service = new RemoveStoredConditions($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class));
 
         $result = $service->handle($storedCondition);
 
@@ -217,7 +218,7 @@ describe('RemoveStoredConditions action', function (): void {
             ->once()
             ->andThrow(new Exception('sync failed'));
 
-        $service = new RemoveStoredConditions($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class));
 
         $result = $service->handle($storedCondition);
 
@@ -263,7 +264,7 @@ describe('RemoveStoredConditions action', function (): void {
         $cartManager = Mockery::mock(CartInstanceManager::class);
         $syncManager = Mockery::mock(CartSyncManager::class);
 
-        $service = new RemoveStoredConditions($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class));
 
         $result = $service->handle($storedCondition);
 
@@ -400,7 +401,7 @@ describe('RemoveStoredConditions action', function (): void {
             expect(OwnerContext::resolve()?->getKey())->toBe($ownerB->getKey());
         });
 
-        $service = new RemoveStoredConditions($cartManager, $syncManager);
+        $service = new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class));
 
         $tenantResult = OwnerContext::withOwner($ownerA, fn () => $service->handle($storedCondition));
 
@@ -440,7 +441,7 @@ describe('RemoveStoredConditions action', function (): void {
         $syncManager = Mockery::mock(CartSyncManager::class);
         $syncManager->shouldNotReceive('sync');
 
-        $result = (new RemoveStoredConditions($cartManager, $syncManager))->handle($storedCondition);
+        $result = (new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class)))->handle($storedCondition);
 
         expect($result['success'])->toBeTrue()
             ->and($result['carts_processed'])->toBe(0)
@@ -494,7 +495,7 @@ describe('RemoveStoredConditions action', function (): void {
         $syncManager = Mockery::mock(CartSyncManager::class);
         $syncManager->shouldNotReceive('sync');
 
-        $result = (new RemoveStoredConditions($cartManager, $syncManager))->handle($storedCondition);
+        $result = (new RemoveStoredConditions($cartManager, $syncManager, app(SnapshotConditionLookup::class)))->handle($storedCondition);
 
         expect($result['success'])->toBeTrue()
             ->and($result['carts_processed'])->toBe(1)

@@ -148,7 +148,7 @@ final class CartSnapshotConditionsTable
                                 /** @var CartSnapshotCondition $record */
                                 foreach ($chunk as $record) {
                                     try {
-                                        if (app(RemoveStoredConditions::class)->removeSnapshotCondition($record)) {
+                                        if (app(RemoveStoredConditions::class)->removeSnapshotCondition((string) $record->getKey())) {
                                             $removed++;
                                         } else {
                                             $failed++;

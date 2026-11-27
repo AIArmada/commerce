@@ -6,6 +6,7 @@ use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
 use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
@@ -46,9 +47,10 @@ it('rejects a stored-condition action for a cart owned by another tenant', funct
     $action = new ApplyStoredCondition(
         new CartInstanceManager(new BuiltInRulesFactory),
         new BuiltInRulesFactory,
+        app(SnapshotConditionLookup::class),
     );
 
-    expect(fn () => $action->apply($cartB, 'condition-id'))
+    expect(fn () => $action->apply((string) $cartB->getKey(), 'condition-id'))
         ->toThrow(AuthorizationException::class, 'Cart is not accessible in the current owner scope.');
 });
 
@@ -82,9 +84,10 @@ it('rejects a stored condition owned by another tenant before resolving the cart
     $action = new ApplyStoredCondition(
         new CartInstanceManager(new BuiltInRulesFactory),
         new BuiltInRulesFactory,
+        app(SnapshotConditionLookup::class),
     );
 
-    expect(fn () => $action->apply($cartA, $conditionB->id))
+    expect(fn () => $action->apply((string) $cartA->getKey(), $conditionB->id))
         ->toThrow(AuthorizationException::class, 'Condition is not accessible in the current owner scope.');
 });
 

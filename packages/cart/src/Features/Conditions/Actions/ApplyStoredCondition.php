@@ -9,7 +9,7 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
-use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Support\CartLimits;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -22,18 +22,19 @@ final class ApplyStoredCondition
     public function __construct(
         private readonly CartInstanceManager $cartInstanceManager,
         private readonly RulesFactoryInterface $rulesFactory,
+        private readonly SnapshotConditionLookup $snapshots,
     ) {}
 
     /**
      * @throws Exception
      */
-    public function apply(CartSnapshot $cart, string $conditionId, ?string $customName = null): CartCondition
+    public function apply(string $snapshotId, string $conditionId, ?string $customName = null): CartCondition
     {
-        $cart = $this->authorizeCart($cart);
+        $cart = $this->snapshots->requireOwnedSnapshot($snapshotId);
         $conditionModel = $this->findStoredCondition($conditionId, forItems: false);
         $condition = $conditionModel->createCondition($customName);
 
-        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart->toSnapshotData());
+        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
         $cartInstance->addCondition($condition);
 
         return $condition;
@@ -43,16 +44,16 @@ final class ApplyStoredCondition
      * @throws Exception
      */
     public function applyToItem(
-        CartSnapshot $cart,
+        string $snapshotId,
         string $itemId,
         string $conditionId,
         ?string $customName = null,
     ): CartCondition {
-        $cart = $this->authorizeCart($cart);
+        $cart = $this->snapshots->requireOwnedSnapshot($snapshotId);
         $conditionModel = $this->findStoredCondition($conditionId, forItems: true);
         $condition = $conditionModel->createCondition($customName);
 
-        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart->toSnapshotData());
+        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
         if (! $cartInstance->addItemCondition($itemId, $condition)) {
             throw new Exception('Item not found in cart');
         }
@@ -76,11 +77,11 @@ final class ApplyStoredCondition
      *
      * @throws Exception
      */
-    public function applyCustom(CartSnapshot $cart, array $data): CartCondition
+    public function applyCustom(string $snapshotId, array $data): CartCondition
     {
-        $cart = $this->authorizeCart($cart);
+        $cart = $this->snapshots->requireOwnedSnapshot($snapshotId);
         $validated = $this->validateCustomData($data);
-        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart->toSnapshotData());
+        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
 
         $rulesDefinition = Condition::normalizeRulesDefinition(
             $data['dynamic_rules'] ?? null,
@@ -189,23 +190,6 @@ final class ApplyStoredCondition
             'value' => $value,
             'order' => (int) $order,
         ];
-    }
-
-    private function authorizeCart(CartSnapshot $cart): CartSnapshot
-    {
-        if (! CartSnapshot::ownerScopingEnabled()) {
-            return $cart;
-        }
-
-        /** @var CartSnapshot $validated */
-        $validated = OwnerWriteGuard::findOrFailForOwner(
-            CartSnapshot::class,
-            (string) $cart->getKey(),
-            includeGlobal: false,
-            message: 'Cart is not accessible in the current owner scope.',
-        );
-
-        return $validated;
     }
 
     /**

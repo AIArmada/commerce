@@ -7,23 +7,20 @@ namespace AIArmada\Cart\Features\Conditions\Actions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Features\Conditions\Models\Condition as StoredCondition;
-use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
-use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionData;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 final class RemoveStoredConditions
 {
     public function __construct(
         private readonly CartInstanceManager $cartInstances,
         private readonly CartSnapshotSyncInterface $syncManager,
+        private readonly SnapshotConditionLookup $snapshots,
     ) {}
 
     /**
@@ -58,26 +55,25 @@ final class RemoveStoredConditions
             : $condition;
 
         try {
-            $matchedConditions = $this->findMatchingConditions($condition);
-            $affectedCartIds = $matchedConditions->pluck('cart_id')->unique()->values();
-            $affectedSnapshots = $this->snapshotQuery($condition)
-                ->whereIn('id', $affectedCartIds)
-                ->get();
-            $conditionsByCart = $matchedConditions->groupBy('cart_id');
+            $matches = is_string($condition)
+                ? $this->snapshots->matchingNamedCondition($condition)
+                : $this->snapshots->matchingStoredCondition(
+                    (string) $condition->getKey(),
+                    allOwners: StoredCondition::ownerScopingEnabled()
+                        && $condition->owner_type === null
+                        && $condition->owner_id === null,
+                );
 
-            foreach ($affectedSnapshots as $snapshot) {
+            foreach ($matches as $match) {
+                $snapshot = $match->snapshot;
                 $cartsProcessed++;
 
                 try {
-                    $remove = function () use ($snapshot, $conditionsByCart): bool {
-                        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
+                    $remove = function () use ($match, $snapshot): bool {
+                        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
                         $conditionRemoved = false;
 
-                        foreach ($conditionsByCart->get($snapshot->id, collect()) as $snapshotCondition) {
-                            if (! $snapshotCondition instanceof CartSnapshotCondition) {
-                                continue;
-                            }
-
+                        foreach ($match->conditions as $snapshotCondition) {
                             $conditionRemoved = $this->removeConditionFromCart($cart, $snapshotCondition) || $conditionRemoved;
                         }
 
@@ -88,9 +84,9 @@ final class RemoveStoredConditions
                         return $conditionRemoved;
                     };
 
-                    $removed = CartSnapshot::ownerScopingEnabled()
+                    $removed = StoredCondition::ownerScopingEnabled()
                         ? OwnerContext::withOwner(
-                            OwnerContext::fromTypeAndId($snapshot->owner_type, $snapshot->owner_id),
+                            OwnerContext::fromTypeAndId($snapshot->ownerType, $snapshot->ownerId),
                             $remove,
                         )
                         : $remove();
@@ -129,17 +125,11 @@ final class RemoveStoredConditions
      *
      * @throws Exception
      */
-    public function removeSnapshotCondition(CartSnapshotCondition $snapshotCondition): bool
+    public function removeSnapshotCondition(string $snapshotConditionId): bool
     {
-        $snapshot = $snapshotCondition->cart;
-
-        if (! $snapshot instanceof CartSnapshot) {
-            throw new RuntimeException('Cart condition parent snapshot is not accessible.');
-        }
-
-        $snapshot = $this->authorizeSnapshot($snapshot);
-        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
-        $removed = $this->removeConditionFromCart($cart, $snapshotCondition);
+        $match = $this->snapshots->requireOwnedCondition($snapshotConditionId);
+        $cart = $this->cartInstances->resolveForSnapshot($match->snapshot);
+        $removed = $this->removeConditionFromCart($cart, $match->conditions[0]);
 
         if ($removed) {
             $this->syncManager->sync($cart, force: true);
@@ -153,10 +143,10 @@ final class RemoveStoredConditions
      *
      * @throws Exception
      */
-    public function clearAll(CartSnapshot $snapshot): void
+    public function clearAll(string $snapshotId): void
     {
-        $snapshot = $this->authorizeSnapshot($snapshot);
-        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
+        $snapshot = $this->snapshots->requireOwnedSnapshot($snapshotId);
+        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
 
         $cart->clearConditions();
 
@@ -172,56 +162,20 @@ final class RemoveStoredConditions
      *
      * @throws Exception
      */
-    public function clearByType(CartSnapshot $snapshot, string $type): void
+    public function clearByType(string $snapshotId, string $type): void
     {
-        $snapshot = $this->authorizeSnapshot($snapshot);
-        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
+        $snapshot = $this->snapshots->requireOwnedSnapshot($snapshotId);
+        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
         $cart->removeConditionsByType($type);
         $this->syncManager->sync($cart, force: true);
     }
 
-    /**
-     * @return Collection<int, CartSnapshotCondition>
-     */
-    private function findMatchingConditions(StoredCondition | string $condition): Collection
-    {
-        $query = CartSnapshotCondition::query()
-            ->whereIn('cart_id', $this->snapshotQuery($condition)->select('id'));
-
-        if (is_string($condition)) {
-            return $query->where('name', $condition)->get();
-        }
-
-        return $query->where('attributes->condition_id', $condition->getKey())->get();
-    }
-
-    /**
-     * @return Builder<CartSnapshot>
-     */
-    private function snapshotQuery(StoredCondition | string $condition): Builder
-    {
-        if (
-            $condition instanceof StoredCondition
-            && $condition->owner_type === null
-            && $condition->owner_id === null
-            && StoredCondition::ownerScopingEnabled()
-        ) {
-            if (! OwnerContext::isExplicitGlobal()) {
-                throw new RuntimeException('Removing shared global conditions from all carts requires explicit global owner context.');
-            }
-
-            return CartSnapshot::query()->withoutGlobalScope(OwnerScope::class);
-        }
-
-        return CartSnapshot::query()->forOwner();
-    }
-
-    private function removeConditionFromCart(Cart $cart, CartSnapshotCondition $snapshotCondition): bool
+    private function removeConditionFromCart(Cart $cart, SnapshotConditionData $snapshotCondition): bool
     {
         $conditionName = $snapshotCondition->name;
-        $conditionId = $snapshotCondition->attributes['condition_id'] ?? null;
+        $conditionId = $snapshotCondition->conditionId;
 
-        if ($snapshotCondition->isCartLevel()) {
+        if ($snapshotCondition->cartLevel) {
             $stored = $cart->getStoredConditions()->getCondition($conditionName);
             $dynamic = $cart->getDynamicConditions()->getCondition($conditionName);
             $removed = false;
@@ -240,7 +194,7 @@ final class RemoveStoredConditions
 
         $removed = false;
         foreach ($cart->getItems() as $item) {
-            if ($snapshotCondition->item_id !== null && $item->getId() !== $snapshotCondition->item_id) {
+            if ($snapshotCondition->itemId !== null && $item->getId() !== $snapshotCondition->itemId) {
                 continue;
             }
 
@@ -255,22 +209,5 @@ final class RemoveStoredConditions
         }
 
         return $removed;
-    }
-
-    private function authorizeSnapshot(CartSnapshot $snapshot): CartSnapshot
-    {
-        if (! CartSnapshot::ownerScopingEnabled()) {
-            return $snapshot;
-        }
-
-        /** @var CartSnapshot $validated */
-        $validated = OwnerWriteGuard::findOrFailForOwner(
-            CartSnapshot::class,
-            (string) $snapshot->getKey(),
-            includeGlobal: false,
-            message: 'Cart snapshot is not accessible in the current owner scope.',
-        );
-
-        return $validated;
     }
 }

@@ -20,9 +20,11 @@ use AIArmada\Cart\Features\Snapshots\Actions\MarkCartAbandoned;
 use AIArmada\Cart\Features\Snapshots\Actions\SweepAbandonedSnapshots;
 use AIArmada\Cart\Features\Snapshots\Api\AbandonmentSweep;
 use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\SyncCartOnEvent;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
+use AIArmada\Cart\Features\Snapshots\Queries\ReadSnapshotConditions;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\Cart\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
@@ -35,6 +37,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->singleton(CartAbandonmentMarker::class, MarkCartAbandoned::class);
         $app->singleton(AbandonmentSweep::class, SweepAbandonedSnapshots::class);
+        $app->singleton(SnapshotConditionLookup::class, ReadSnapshotConditions::class);
         $app->singleton(CartInstanceManager::class);
         $app->singleton(NormalizedCartSynchronizer::class);
         $app->singleton(CartSyncManager::class);
