@@ -32,8 +32,8 @@ use AIArmada\Inventory\Services\Costing\StandardCostService;
 use AIArmada\Inventory\Services\Costing\ValuationService;
 use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Serial\SerialLookupService;
-use AIArmada\Inventory\Services\Serial\SerialService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\Services\Stock\BackorderService;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
 use AIArmada\Inventory\Services\Stock\DemandForecastService;
@@ -140,8 +140,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     private function registerBatchSerialServices(): void
     {
         $this->app->singleton(BatchService::class);
-        $this->app->singleton(SerialService::class);
-        $this->app->singleton(SerialLookupService::class);
     }
 
     /**

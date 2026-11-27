@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Traceability\Actions;
 
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Models\InventorySerial;
-use AIArmada\Inventory\Services\Serial\SerialService;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;

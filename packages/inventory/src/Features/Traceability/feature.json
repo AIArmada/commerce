@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Traceability",
+  "owns": {
+    "table:inventory_serials": [
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService"
+    ],
+    "table:inventory_serial_history": [
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService"
+    ]
+  },
+  "extensions": {}
+}

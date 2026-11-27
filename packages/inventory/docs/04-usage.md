@@ -148,7 +148,7 @@ a read-only availability check or purchase context alone.
 
 ```php
 use AIArmada\Inventory\Actions\CreateBatch;
-use AIArmada\Inventory\Actions\RecordSerial;
+use AIArmada\Inventory\Features\Traceability\Actions\RecordSerial;
 use Carbon\CarbonImmutable;
 
 // Create a batch/lot
@@ -399,7 +399,7 @@ $batchService->recallBatches([$batch], 'Product recall notice #123');
 ### Registering Serials
 
 ```php
-use AIArmada\Inventory\Services\Serial\SerialService;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 
 $serialService = app(SerialService::class);
 
@@ -457,7 +457,7 @@ $options = SerialStatus::options();
 ### Serial Lookup
 
 ```php
-use AIArmada\Inventory\Services\Serial\SerialLookupService;
+use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 
 $lookup = app(SerialLookupService::class);
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Serial;
+namespace AIArmada\Inventory\Features\Traceability\Queries;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Inventory\Enums\SerialCondition;
