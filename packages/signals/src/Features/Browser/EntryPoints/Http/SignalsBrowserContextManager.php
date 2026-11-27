@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Browser\EntryPoints\Http;
 
-use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Signals\Data\SignalsBrowserContext;
+use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

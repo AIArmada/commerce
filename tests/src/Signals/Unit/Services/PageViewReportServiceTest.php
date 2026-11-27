@@ -10,6 +10,7 @@ use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -179,7 +180,7 @@ it('groups missing paths and explicit root paths together and counts anonymous v
     }
 
     $rows = SignalEvent::pageViewRows(trackedPropertyId: $property->id)->get();
-    $summary = app(\AIArmada\Signals\Features\Reporting\Api\DashboardRead::class)->report('page_view', trackedPropertyId: $property->id);
+    $summary = app(DashboardRead::class)->report('page_view', trackedPropertyId: $property->id);
 
     expect($rows)->toHaveCount(1)
         ->and($rows->first()->page_path)->toBe('/')

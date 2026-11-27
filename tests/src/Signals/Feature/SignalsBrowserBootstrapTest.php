@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
+use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;

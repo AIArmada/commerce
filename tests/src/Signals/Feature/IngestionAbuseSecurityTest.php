@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Persistence\TrustedSignatureReplayStore;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 
@@ -258,7 +259,7 @@ it('rejects array write keys without failing in throttle middleware', function (
 });
 
 it('reserves a signed request atomically until its timestamp expires', function (): void {
-    $store = app(\AIArmada\Signals\Features\Ingestion\Persistence\TrustedSignatureReplayStore::class);
+    $store = app(TrustedSignatureReplayStore::class);
     $timestamp = (string) time();
     $signature = hash('sha256', 'replay-test');
 

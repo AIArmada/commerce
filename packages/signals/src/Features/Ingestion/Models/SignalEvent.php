@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Models;
 
-use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
-use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
-use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
-use AIArmada\Signals\Features\Ingestion\Extensions\AcquisitionReportService;
-use Illuminate\Database\Eloquent\Builder;
-use AIArmada\Signals\Features\Ingestion\Extensions\LiveActivityReportService;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Signals\Features\Ingestion\Extensions\AcquisitionReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\LiveActivityReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
+use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -137,8 +137,7 @@ final class SignalEvent extends Model
         ?string $trackedPropertyId = null,
         ?CarbonImmutable $from = null,
         ?CarbonImmutable $until = null,
-    ): Builder
-    {
+    ): Builder {
         return app(PageViewReportService::class)->getTableQuery($signalSegmentId, $trackedPropertyId, $from, $until);
     }
 

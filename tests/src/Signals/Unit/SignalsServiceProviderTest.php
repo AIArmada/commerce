@@ -9,6 +9,14 @@ use AIArmada\Signals\Data\SessionLocation;
 use AIArmada\Signals\Drivers\NominatimGeocoder;
 use AIArmada\Signals\Features\Alerts\EntryPoints\Console\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Features\Ingestion\Actions\SignalLocationResolverPipeline;
+use AIArmada\Signals\Features\Ingestion\Api\AcquisitionReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\ConversionFunnelReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\GoalsReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\JourneyReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\LiveActivityReportRead;
+use AIArmada\Signals\Features\Ingestion\Api\RetentionReportRead;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Http\Middleware\VerifyTrustedSignalSignature;
 use AIArmada\Signals\Features\Ingestion\EntryPoints\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
@@ -179,14 +187,14 @@ it('preserves all signal route names, HTTP methods and middleware', function ():
 
 it('binds the typed report read contracts for sibling packages', function (): void {
     foreach ([
-        \AIArmada\Signals\Features\Ingestion\Api\GoalsReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\RetentionReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\ConversionFunnelReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\AcquisitionReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\JourneyReportRead::class,
-        \AIArmada\Signals\Features\Ingestion\Api\LiveActivityReportRead::class,
+        GoalsReportRead::class,
+        RetentionReportRead::class,
+        ConversionFunnelReportRead::class,
+        AcquisitionReportRead::class,
+        ContentPerformanceReportRead::class,
+        DevicesReportRead::class,
+        JourneyReportRead::class,
+        LiveActivityReportRead::class,
     ] as $contract) {
         expect(app($contract))->toBeInstanceOf($contract);
     }

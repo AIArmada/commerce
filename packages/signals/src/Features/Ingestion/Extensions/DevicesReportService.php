@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
-use AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead;
 use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use Illuminate\Database\Eloquent\Builder;
 
-final class DevicesReportService implements ReportInterface, DevicesReportRead
+final class DevicesReportService implements DevicesReportRead, ReportInterface
 {
     public function type(): string
     {

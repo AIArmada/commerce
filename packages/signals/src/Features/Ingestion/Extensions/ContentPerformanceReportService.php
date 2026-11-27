@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
-use AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead;
 use AIArmada\Signals\Contracts\ReportInterface;
+use AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
@@ -14,7 +14,7 @@ use AIArmada\Signals\Support\SignalCurrency;
 use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 
-final class ContentPerformanceReportService implements ReportInterface, ContentPerformanceReportRead
+final class ContentPerformanceReportService implements ContentPerformanceReportRead, ReportInterface
 {
     public function type(): string
     {

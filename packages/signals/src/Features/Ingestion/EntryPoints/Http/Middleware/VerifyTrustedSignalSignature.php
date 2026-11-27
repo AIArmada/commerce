@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\EntryPoints\Http\Middleware;
 
-use Closure;
 use AIArmada\Signals\Features\Ingestion\Persistence\TrustedSignatureReplayStore;
+use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;

@@ -265,7 +265,7 @@ final readonly class ResolveSession
             if ($packed === false) {
                 return $ip;
             }
-            $anonymized = substr($packed, 0, 6) . str_repeat("\x00", 10);
+            $anonymized = mb_substr($packed, 0, 6) . str_repeat("\x00", 10);
 
             return inet_ntop($anonymized) ?: $ip;
         }

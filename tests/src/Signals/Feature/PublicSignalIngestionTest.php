@@ -10,6 +10,7 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 uses(SignalsTestCase::class);
 
@@ -135,7 +136,7 @@ it('applies browser event and payload policy at the direct untrusted boundary', 
         ['event_name' => 'custom.click', 'properties' => ['value' => str_repeat('x', 2048)]],
     ] as $payload) {
         expect(fn () => $ingestion->handle($property->id, $payload, false))
-            ->toThrow(\Illuminate\Validation\ValidationException::class);
+            ->toThrow(ValidationException::class);
     }
 
     expect(SignalEvent::query()->count())->toBe(0);

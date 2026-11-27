@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Models;
 
-use AIArmada\Signals\Features\Ingestion\Extensions\JourneyReportService;
-use Illuminate\Database\Eloquent\Builder;
-use AIArmada\Signals\Features\Ingestion\Extensions\DevicesReportService;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Features\Ingestion\Actions\DetachDeletedTelemetry;
+use AIArmada\Signals\Features\Ingestion\Extensions\DevicesReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\JourneyReportService;
 use AIArmada\Signals\Features\Ingestion\Support\SignalOwnershipGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -148,8 +148,7 @@ final class SignalSession extends Model
         ?string $until = null,
         ?string $signalSegmentId = null,
         bool $excludeBots = true,
-    ): Builder
-    {
+    ): Builder {
         return app(DevicesReportService::class)->getDeviceTypeQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
     }
 
@@ -162,8 +161,7 @@ final class SignalSession extends Model
         ?string $until = null,
         ?string $signalSegmentId = null,
         bool $excludeBots = true,
-    ): Builder
-    {
+    ): Builder {
         return app(DevicesReportService::class)->getBrowserQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
     }
 
@@ -176,8 +174,7 @@ final class SignalSession extends Model
         ?string $until = null,
         ?string $signalSegmentId = null,
         bool $excludeBots = true,
-    ): Builder
-    {
+    ): Builder {
         return app(DevicesReportService::class)->getOsQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
     }
 
@@ -190,8 +187,7 @@ final class SignalSession extends Model
         ?string $until = null,
         ?string $signalSegmentId = null,
         bool $excludeBots = true,
-    ): Builder
-    {
+    ): Builder {
         return app(DevicesReportService::class)->getBrandModelQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
     }
 
