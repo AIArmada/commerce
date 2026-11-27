@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\ProductResource\Tables\ProductsTable;
+use AIArmada\Products\Actions\ImportCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
@@ -39,14 +40,12 @@ function runProductImport(array $data): void
 {
     $method = new ReflectionMethod(ProductsTable::class, 'importProducts');
 
-    $method->invoke(null, $data);
+    $method->invoke(null, $data, static fn (?Product $product): bool => true);
 }
 
 function validateImportRow(array $record, bool $isUpdate): array
 {
-    $method = new ReflectionMethod(ProductsTable::class, 'validateImportRow');
-
-    return $method->invoke(null, $record, $isUpdate);
+    return ImportCatalogProducts::validateImportRow($record, $isUpdate);
 }
 
 function runProductExport(array $data): string
@@ -196,4 +195,19 @@ it('streams product exports row by row', function (): void {
         ->and($csv)->toContain('EXP-1')
         ->and($csv)->toContain('12.99')
         ->and($csv)->toContain('active');
+});
+
+it('enforces per-row import authorization', function (): void {
+    OwnerContext::withOwner(null, static function (): void {
+        $result = app(ImportCatalogProducts::class)->execute(
+            [['name' => 'Denied Product', 'price' => '9.99']],
+            false,
+            true,
+            static fn (?Product $product): bool => false,
+        );
+
+        expect($result[0])->toBe(0)
+            ->and($result[2])->toHaveCount(1)
+            ->and(Product::query()->where('name', 'Denied Product')->exists())->toBeFalse();
+    });
 });

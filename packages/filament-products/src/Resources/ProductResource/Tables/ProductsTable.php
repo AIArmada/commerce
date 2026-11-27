@@ -12,6 +12,7 @@ use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Actions\UpdateCatalogProducts;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Actions\DuplicateProduct;
+use AIArmada\Products\Actions\ImportCatalogProducts;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -35,9 +36,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use League\Csv\Reader;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -171,7 +170,9 @@ class ProductsTable
                             ->default(true),
                     ])
                     ->action(function (array $data): void {
-                        self::importProducts($data);
+                        self::importProducts($data, static fn (?Product $product): bool => $product === null
+                            ? FilamentPermission::hasAbility('product.create')
+                            : FilamentPermission::hasAbility('product.update') && (auth()->user()?->can('update', $product) ?? false));
                     }),
 
                 Action::make('export')
@@ -434,7 +435,7 @@ class ProductsTable
         }
     }
 
-    private static function importProducts(array $data): void
+    private static function importProducts(array $data, \Closure $authorize): void
     {
         $csvFile = $data['csv_file'] ?? null;
 
@@ -447,7 +448,7 @@ class ProductsTable
                 throw new Exception('CSV file is missing.');
             }
 
-            if (! Str::startsWith($csvFile, 'imports/')) {
+            if (! preg_match('~^imports/[a-zA-Z0-9_-]+\\.csv$~i', $csvFile)) {
                 throw new Exception('Invalid CSV file path.');
             }
 
@@ -473,47 +474,7 @@ class ProductsTable
             $updateExisting = (bool) ($data['update_existing'] ?? false);
             $skipErrors = (bool) ($data['skip_errors'] ?? true);
 
-            $run = static function () use ($rows, $updateExisting, $skipErrors): array {
-                $imported = 0;
-                $updated = 0;
-                $errors = [];
-
-                foreach ($rows as $offset => $record) {
-                    try {
-                        $existing = null;
-
-                        if ($updateExisting && isset($record['sku']) && mb_trim((string) $record['sku']) !== '') {
-                            $existing = Product::query()->forOwner(self::resolveOwner(), false)->where('sku', mb_trim((string) $record['sku']))->first();
-                        }
-
-                        $productData = self::validateImportRow($record, $existing instanceof Product);
-
-                        if ($existing instanceof Product) {
-                            $existing->update($productData);
-                            $updated++;
-
-                            continue;
-                        }
-
-                        $product = new Product($productData);
-                        $owner = self::resolveOwner();
-                        if ($owner !== null) {
-                            $product->assignOwner($owner);
-                        }
-                        $product->save();
-                        $imported++;
-                    } catch (Exception $e) {
-                        $errors[] = "Row {$offset}: {$e->getMessage()}";
-                        if (! $skipErrors) {
-                            throw $e;
-                        }
-                    }
-                }
-
-                return [$imported, $updated, $errors];
-            };
-
-            [$imported, $updated, $errors] = $skipErrors ? $run() : DB::transaction($run);
+            [$imported, $updated, $errors] = app(ImportCatalogProducts::class)->execute($rows, $updateExisting, $skipErrors, $authorize);
 
             Storage::disk('local')->delete((string) $csvFile);
 
@@ -537,148 +498,6 @@ class ProductsTable
                 ->danger()
                 ->send();
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $record
-     * @return array<string, mixed>
-     */
-    private static function validateImportRow(array $record, bool $isUpdate): array
-    {
-        $present = static fn (string $key): bool => isset($record[$key]) && mb_trim((string) $record[$key]) !== '';
-        $text = static fn (string $key): string => mb_trim((string) ($record[$key] ?? ''));
-        $data = [];
-
-        if (! $isUpdate || $present('name')) {
-            $name = $text('name');
-
-            if ($name === '') {
-                throw new Exception('The name field is required.');
-            }
-
-            if (mb_strlen($name) > 255) {
-                throw new Exception('The name may not be longer than 255 characters.');
-            }
-
-            $data['name'] = $name;
-        }
-
-        if ($present('sku')) {
-            if (mb_strlen($text('sku')) > 255) {
-                throw new Exception('The sku may not be longer than 255 characters.');
-            }
-
-            $data['sku'] = $text('sku');
-        } elseif (! $isUpdate && isset($record['sku'])) {
-            $data['sku'] = null;
-        }
-
-        if (! $isUpdate || $present('slug')) {
-            $slug = $present('slug') ? Str::slug($text('slug')) : Str::slug($text('name'));
-            $slugMaxLength = (int) config('products.seo.slug_max_length', 100);
-
-            if ($slug === '') {
-                throw new Exception('The slug field is required.');
-            }
-
-            if (mb_strlen($slug) > $slugMaxLength) {
-                throw new Exception("The slug may not be longer than {$slugMaxLength} characters.");
-            }
-
-            $data['slug'] = $slug;
-        }
-
-        foreach (['description', 'short_description', 'tax_class'] as $key) {
-            if ($present($key)) {
-                $value = $text($key);
-
-                if ($key === 'tax_class' && mb_strlen($value) > 255) {
-                    throw new Exception('The tax class may not be longer than 255 characters.');
-                }
-
-                $data[$key] = $value;
-            }
-        }
-
-        if (! $isUpdate || $present('price')) {
-            $data['price'] = self::importMinorAmount($record, 'price', true);
-        }
-
-        foreach (['compare_price', 'cost'] as $key) {
-            if ($present($key)) {
-                $data[$key] = self::importMinorAmount($record, $key, false);
-            }
-        }
-
-        if ($present('weight')) {
-            if (! is_numeric($text('weight'))) {
-                throw new Exception('The weight must be numeric.');
-            }
-
-            $data['weight'] = $text('weight');
-        }
-
-        if ($present('currency')) {
-            $currency = mb_strtoupper($text('currency'));
-
-            if (! preg_match('/^[A-Z]{3}$/', $currency)) {
-                throw new Exception('The currency must be a three-letter code.');
-            }
-
-            $data['currency'] = $currency;
-        }
-
-        $enumDefaults = [
-            'status' => ProductStatus::Draft,
-            'type' => ProductType::Simple,
-            'visibility' => ProductVisibility::CatalogSearch,
-        ];
-
-        foreach (['status' => ProductStatus::class, 'type' => ProductType::class, 'visibility' => ProductVisibility::class] as $key => $enum) {
-            if ($present($key)) {
-                $value = $enum::tryFrom($text($key));
-
-                if ($value === null) {
-                    throw new Exception("The {$key} value is invalid.");
-                }
-
-                $data[$key] = $value;
-            } elseif (! $isUpdate) {
-                $data[$key] = $enumDefaults[$key];
-            }
-        }
-
-        foreach (['is_featured' => false, 'is_taxable' => true, 'requires_shipping' => true] as $key => $default) {
-            if (array_key_exists($key, $record) && mb_trim((string) $record[$key]) !== '') {
-                $data[$key] = filter_var($record[$key], FILTER_VALIDATE_BOOLEAN);
-            } elseif (! $isUpdate) {
-                $data[$key] = $default;
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param  array<string, mixed>  $record
-     */
-    private static function importMinorAmount(array $record, string $key, bool $required): int
-    {
-        $raw = isset($record[$key]) ? mb_trim((string) $record[$key]) : '';
-
-        if ($raw === '') {
-            if ($required) {
-                throw new Exception("The {$key} field is required.");
-            }
-
-            return 0;
-        }
-
-        if (! is_numeric($raw) || (float) $raw < 0) {
-            throw new Exception("The {$key} must be a positive number.");
-        }
-
-        return (int) round(((float) $raw) * 100);
     }
 
     private static function exportProducts(array $data): StreamedResponse
