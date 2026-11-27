@@ -72,24 +72,23 @@ it('counts each order only once when payment events are redelivered', function (
     expect($promotion->fresh()->usage_count)->toBe(1);
 });
 
-test('stamp persistence failure aborts instead of being swallowed', function (): void {
+test('stamp persistence failure rolls back the promotion usage increment', function (): void {
     $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
 
-    $order = new class extends Order
-    {
-        public function saveQuietly(array $options = []): bool
-        {
+    Order::updating(static function (Order $updating): void {
+        if (array_key_exists('promotions_usage_counted', $updating->metadata ?? [])) {
             throw new RuntimeException('disk on fire');
         }
-    };
-    $order->forceFill([
-        'id' => (string) Str::uuid(),
-        'metadata' => [],
-    ]);
-    $order->exists = true;
+    });
 
-    $method = new ReflectionMethod(RecordPromotionFulfillmentUsage::class, 'persistCountedPromotionIds');
+    expect(fn () => app(RecordPromotionFulfillmentUsage::class)->handle(
+        $order,
+        $owner->getMorphClass(),
+        $owner->getKey(),
+    ))->toThrow(RuntimeException::class, 'disk on fire');
 
-    expect(fn (): mixed => $method->invoke(new RecordPromotionFulfillmentUsage, $order, $owner, ['promo-1']))
-        ->toThrow(RuntimeException::class, 'disk on fire');
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
 });
