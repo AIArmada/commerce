@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Invoice;
 
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
+use AIArmada\CashierChip\Data\InvoiceRenderData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -27,7 +28,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     /**
      * The billable model instance.
      */
-    /** @phpstan-var Model&BillableContract */
+    /** @phpstan-var Model&BillableModel */
     protected Model $owner;
 
     /**
@@ -39,7 +40,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      * Create a new invoice instance.
      */
     /**
-     * @phpstan-param Model&BillableContract $owner
+     * @phpstan-param Model&BillableModel $owner
      */
     public function __construct(Model $owner, PurchaseData $purchase)
     {
@@ -310,7 +311,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      * Get the billable model.
      */
     /**
-     * @phpstan-return Model&BillableContract
+     * @phpstan-return Model&BillableModel
      */
     public function owner(): Model
     {
@@ -353,7 +354,24 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
             );
         }
 
-        return $renderer->render($this, $data, [
+        return $renderer->render(new InvoiceRenderData(
+            id: $this->id(),
+            number: $this->number(),
+            date: $this->date(),
+            dueDate: $this->dueDate(),
+            totalMinor: $this->rawTotal(),
+            currency: $this->currency(),
+            customerName: $this->customerName(),
+            customerEmail: $this->customerEmail(),
+            customerPhone: $this->customerPhone(),
+            status: $this->status(),
+            items: $this->invoiceItems()->map(fn (InvoiceLineItem $item): array => [
+                'name' => $item->description(),
+                'description' => $item->description(),
+                'quantity' => $item->quantity(),
+                'unit_price_minor' => $item->unitPrice(),
+            ])->values()->all(),
+        ), $data, [
             'paper' => config('cashier-chip.invoices.paper', 'A4'),
         ]);
     }

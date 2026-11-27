@@ -8,11 +8,11 @@ use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePendingRefund;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -156,7 +156,7 @@ describe('WebhookRetryManager', function (): void {
             ->and($webhook->processed)->toBeTrue();
     });
 
-    it('restores owner context when replaying dispatcher-backed events', function (): void {
+    it('replays dispatcher-backed events inside the explicitly selected owner context', function (): void {
         config()->set('chip.owner.enabled', true);
 
         $owner = User::query()->create([
@@ -188,6 +188,10 @@ describe('WebhookRetryManager', function (): void {
         });
 
         OwnerContext::withOwner(null, function () use ($manager, $webhook): void {
+            expect($manager->retry($webhook)->isSkipped())->toBeTrue();
+        });
+
+        OwnerContext::withOwner($owner, function () use ($manager, $webhook): void {
             $result = $manager->retry($webhook);
 
             expect($result->isHandled())->toBeTrue();

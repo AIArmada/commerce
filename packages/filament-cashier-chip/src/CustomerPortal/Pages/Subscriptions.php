@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\CustomerPortal\Pages;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
 use BackedEnum;
@@ -197,7 +197,7 @@ class Subscriptions extends Page
      */
     protected function getActiveStatuses(): array
     {
-        if (class_exists('\AIArmada\CashierChip\Subscription\Subscription')) {
+        if (class_exists('\AIArmada\CashierChip\Features\Subscriptions\Models\Subscription')) {
             return [
                 SubscriptionStatus::Active->value,
                 SubscriptionStatus::Trialing->value,

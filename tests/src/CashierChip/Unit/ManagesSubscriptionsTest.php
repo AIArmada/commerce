@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Billing\SubscriptionBuilder;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

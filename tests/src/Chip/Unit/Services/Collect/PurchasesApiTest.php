@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Actions\PurchasesApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -152,6 +152,40 @@ it('rejects an unreconciled stable total contract', function (): void {
         ],
         'brand_id' => 'brand_123',
     ]))->toThrow(ChipValidationException::class, 'total overrides do not reconcile');
+});
+
+it('rejects negative purchase amount overrides', function (): void {
+    $this->client->shouldNotReceive('post');
+
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'total_discount_override' => -1,
+        ],
+    ])))->toThrow(ChipValidationException::class, 'total discount override must be non-negative.');
+});
+
+it('rejects out-of-range floating point minor amounts before contacting CHIP', function (float $price): void {
+    $this->client->shouldNotReceive('post');
+
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => ['products' => [['price' => $price]]],
+    ])))->toThrow(ChipValidationException::class, 'integer amount in minor units');
+})->with([
+    'positive overflow' => [(float) PHP_INT_MAX],
+    'negative overflow' => [(float) PHP_INT_MIN * 2],
+]);
+
+it('rejects a purchase subtotal that exceeds the integer range before contacting CHIP', function (): void {
+    $this->client->shouldNotReceive('post');
+
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [
+                ['name' => 'First item', 'price' => PHP_INT_MAX],
+                ['name' => 'Second item', 'price' => 1],
+            ],
+        ],
+    ])))->toThrow(ChipValidationException::class, 'Purchase subtotal exceeds the supported range.');
 });
 
 it('rejects over-cap client address fields', function (string $field, int $max): void {
@@ -1052,4 +1086,14 @@ describe('PurchasesApi E4 shared validation', function (): void {
             'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => '9007199254740993']]],
         ])))->toThrow(ChipValidationException::class, 'out of range');
     });
+});
+
+it('sends every explicitly requested invoice resend even when a cache is configured', function (): void {
+    $this->client->shouldReceive('post')
+        ->twice()
+        ->with('purchases/purchase_invoice/resend_invoice/')
+        ->andReturn(chipPurchaseResponse());
+
+    $this->apiWithCache->resendInvoice('purchase_invoice');
+    $this->apiWithCache->resendInvoice('purchase_invoice');
 });

@@ -371,7 +371,7 @@ describe('EnrichedWebhookPayload data object', function (): void {
         $enriched = new EnrichedWebhookPayload(
             event: 'purchase.paid',
             rawPayload: [],
-            localPurchase: null,
+            localPurchaseId: null,
             owner: null,
         );
 

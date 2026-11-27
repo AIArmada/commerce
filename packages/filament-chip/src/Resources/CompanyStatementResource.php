@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\Chip\Models\CompanyStatement;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Schemas\CompanyStatementInfolist;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Tables\CompanyStatementTable;

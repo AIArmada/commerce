@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-use AIArmada\FilamentChip\BillingPanelProvider;
+use AIArmada\FilamentCashier\CustomerPortal\BillingPanelProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
 

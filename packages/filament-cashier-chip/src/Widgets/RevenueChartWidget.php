@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -89,6 +89,25 @@ final class RevenueChartWidget extends ChartWidget
             $labels = [];
             $mrr = [];
             $newRevenue = [];
+            $firstMonth = CarbonImmutable::now()->subMonths(11)->startOfMonth();
+            $lastMonth = CarbonImmutable::now()->endOfMonth();
+
+            $mrrSubscriptions = $this->subscriptionQuery()
+                ->where('chip_status', SubscriptionStatus::Active->value)
+                ->where('created_at', '<=', $lastMonth)
+                ->where(function ($query) use ($firstMonth): void {
+                    $query->whereNull('ends_at')
+                        ->orWhere('ends_at', '>=', $firstMonth);
+                })
+                ->select($this->revenueColumns())
+                ->with('items:id,subscription_id,unit_amount,quantity')
+                ->get();
+
+            $newSubscriptions = $this->subscriptionQuery()
+                ->whereBetween('created_at', [$firstMonth, $lastMonth])
+                ->select($this->revenueColumns())
+                ->with('items:id,subscription_id,unit_amount,quantity')
+                ->get();
 
             for ($i = 11; $i >= 0; $i--) {
                 $date = CarbonImmutable::now()->subMonths($i);
@@ -97,25 +116,16 @@ final class RevenueChartWidget extends ChartWidget
                 $startOfMonth = $date->copy()->startOfMonth();
                 $endOfMonth = $date->copy()->endOfMonth();
 
-                $monthMrr = $this->subscriptionQuery()
-                    ->where('chip_status', SubscriptionStatus::Active->value)
-                    ->where('created_at', '<=', $endOfMonth)
-                    ->where(function ($query) use ($startOfMonth): void {
-                        $query->whereNull('ends_at')
-                            ->orWhere('ends_at', '>=', $startOfMonth);
-                    })
-                    ->select($this->revenueColumns())
-                    ->withSum('items', 'unit_amount')
-                    ->get()
+                $monthMrr = $mrrSubscriptions
+                    ->filter(fn (Subscription $subscription): bool => $subscription->created_at <= $endOfMonth
+                        && ($subscription->ends_at === null || $subscription->ends_at >= $startOfMonth))
                     ->sum(fn (Subscription $subscription): int => $this->monthlyGrossAmount($subscription));
 
                 $mrr[] = (int) ($monthMrr / 100);
 
-                $newSubscriptionsRevenue = $this->subscriptionQuery()
-                    ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                    ->select($this->revenueColumns())
-                    ->withSum('items', 'unit_amount')
-                    ->get()
+                $newSubscriptionsRevenue = $newSubscriptions
+                    ->filter(fn (Subscription $subscription): bool => $subscription->created_at >= $startOfMonth
+                        && $subscription->created_at <= $endOfMonth)
                     ->sum(fn (Subscription $subscription): int => $this->monthlyGrossAmount($subscription));
 
                 $newRevenue[] = (int) ($newSubscriptionsRevenue / 100);
@@ -132,7 +142,7 @@ final class RevenueChartWidget extends ChartWidget
     private function monthlyGrossAmount(Subscription $subscription): int
     {
         return $this->normalizeToMonthly(
-            (int) ($subscription->items_sum_unit_amount ?? 0) * ($subscription->quantity ?? 1),
+            $subscription->items->sum(fn ($item): int => $item->totalAmount()),
             $subscription->billing_interval ?? 'month',
             $subscription->billing_interval_count ?? 1,
         );
@@ -148,6 +158,7 @@ final class RevenueChartWidget extends ChartWidget
             'billing_interval',
             'billing_interval_count',
             'quantity',
+            'chip_status',
             'created_at',
             'ends_at',
         ];

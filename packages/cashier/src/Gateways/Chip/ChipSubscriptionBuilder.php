@@ -9,7 +9,8 @@ use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\SubscriptionBuilder;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -38,13 +39,13 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
         protected string $type,
         string | array $prices = []
     ) {
-        if (! $billable instanceof Model || ! $billable instanceof \AIArmada\CashierChip\Contracts\BillableContract) {
+        if (! $billable instanceof Model || ! $billable instanceof BillableModel) {
             throw new InvalidArgumentException('CHIP subscriptions require a billable Eloquent model using the cashier-chip Billable implementation.');
         }
 
         // Directly instantiate the native SubscriptionBuilder to avoid
         // conflicts with the unified cashier package's method overrides
-        /** @var BillableContract&Model&\AIArmada\CashierChip\Contracts\BillableContract $billable */
+        /** @var BillableContract&Model&BillableModel $billable */
         $this->builder = new SubscriptionBuilder($billable, $type, $prices);
     }
 

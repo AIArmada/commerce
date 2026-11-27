@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Billing\SubscriptionRecord;
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Support\IdempotencyKey;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
-use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Collection;
 use RuntimeException;
 use Throwable;
 
-trait ManagesInvoices // @phpstan-ignore trait.unused
+trait ManagesInvoices
 {
     /**
      * Stored tab items for later invoicing (in-memory).
@@ -41,6 +41,10 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
         $invoices = collect();
 
         foreach ($this->subscriptions as $subscription) {
+            if (! $subscription instanceof SubscriptionRecord) {
+                throw new RuntimeException('Configured subscription model must implement SubscriptionRecord.');
+            }
+
             $subscriptionInvoices = $subscription->invoices($limit);
             $invoices = $invoices->merge($subscriptionInvoices);
         }
@@ -68,13 +72,7 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
     public function findInvoice(string $invoiceId): ?Invoice
     {
         try {
-            $purchaseData = Cashier::chip()->getPurchase($invoiceId);
-
-            if (is_array($purchaseData)) {
-                $purchase = PurchaseData::from($purchaseData);
-            } else {
-                $purchase = $purchaseData;
-            }
+            $purchase = Cashier::chip()->getPurchase($invoiceId);
 
             $purchaseClientId = $purchase->getClientId();
             $billableChipId = $this->chipId();

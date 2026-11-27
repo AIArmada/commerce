@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
+
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+final class ClaimRenewalAttempt
+{
+    use AsAction;
+
+    public function handle(string $subscriptionId): ?RenewalAttempt
+    {
+        try {
+            return DB::transaction(function () use ($subscriptionId): ?RenewalAttempt {
+                if ((bool) config('cashier-chip.features.owner.enabled', false)) {
+                    OwnerWriteGuard::findOrFailForOwner(
+                        Subscription::class,
+                        $subscriptionId,
+                        includeGlobal: (bool) config('cashier-chip.features.owner.include_global', false),
+                        message: 'Subscription is not accessible in the current owner scope.',
+                    );
+                }
+
+                $subscription = Subscription::query()
+                    ->with('items')
+                    ->lockForUpdate()
+                    ->find($subscriptionId);
+
+                if (! $subscription instanceof Subscription) {
+                    return null;
+                }
+
+                if (! self::canRenew($subscription)) {
+                    return null;
+                }
+
+                $periodKey = self::periodKeyFor($subscription);
+
+                $existingClaim = RenewalAttempt::query()
+                    ->where('subscription_id', $subscription->id)
+                    ->where('period_key', $periodKey)
+                    ->where('status', 'claimed')
+                    ->where('lease_expires_at', '>', CarbonImmutable::now())
+                    ->exists();
+
+                if ($existingClaim) {
+                    return null;
+                }
+
+                $amountMinor = $subscription->renewalAmount();
+
+                if ($amountMinor > Cashier::maximumAmount()) {
+                    return null;
+                }
+
+                $leaseMinutes = max(1, (int) config('cashier-chip.renewals.lease_minutes', 30));
+
+                return RenewalAttempt::create([
+                    'subscription_id' => $subscription->id,
+                    'status' => 'claimed',
+                    'amount_minor' => $amountMinor,
+                    'period_key' => $periodKey,
+                    'lease_expires_at' => CarbonImmutable::now()->addMinutes($leaseMinutes),
+                ]);
+            }, 3);
+        } catch (UniqueConstraintViolationException) {
+            return null;
+        }
+    }
+
+    public static function periodKeyFor(Subscription $subscription): string
+    {
+        return ($subscription->billing_interval ?? 'month') === 'month'
+            ? $subscription->next_billing_at->format('Y-m')
+            : $subscription->next_billing_at->toIso8601String();
+    }
+
+    public static function canRenew(Subscription $subscription): bool
+    {
+        return in_array($subscription->chip_status, [SubscriptionStatus::Active, SubscriptionStatus::Trialing], true)
+            && $subscription->next_billing_at !== null
+            && ! $subscription->next_billing_at->isFuture()
+            && ($subscription->ends_at === null || ($subscription->ends_at->isFuture() && $subscription->next_billing_at->lt($subscription->ends_at)));
+    }
+}

@@ -2,25 +2,30 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
-use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
+use AIArmada\CashierChip\Data\InvoiceRenderData;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
+use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\RenewSubscriptions;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\CashierChip\Invoice\Invoice;
-use AIArmada\CashierChip\Subscription\RenewalAttempt;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
@@ -99,7 +104,8 @@ describe('RepairRegression money lifecycle', function (): void {
 
         $subscription->swap('price_monthly');
 
-        expect($subscription->fresh()?->calculateSubscriptionAmount())->toBe(1000);
+        expect($subscription->fresh()?->calculateSubscriptionAmount())->toBe(1000)
+            ->and($subscription->items()->firstOrFail()->chip_product)->toBe('prod');
 
         $subscription->swap(['price_new' => ['unit_amount' => 1500]]);
 
@@ -140,6 +146,38 @@ describe('RepairRegression money lifecycle', function (): void {
         $checkout = Checkout::create($user, 1000, ['currency' => 'myr']);
 
         expect($checkout->asChipPurchase()->getCurrency())->toBe('MYR');
+    });
+
+    it('charges a subscription using its explicit recurring token', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_subscription_token']);
+        $subscription = $user->newSubscription('default', 'price_monthly')
+            ->create('tok_subscription_specific');
+
+        $payment = $subscription->charge(1000);
+        $purchases = $this->fakeChip->getFakeClient()->getPurchases();
+
+        expect(collect($purchases)->last()['recurring_token'])->toBe('tok_subscription_specific')
+            ->and($payment)->toBeInstanceOf(Payment::class);
+    });
+
+    it('keeps recurring tokens out of default subscription serialization', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_subscription_hidden']);
+        $subscription = $this->createTrustedSubscription($user, [
+            'type' => 'default',
+            'chip_id' => 'sub_hidden',
+            'chip_status' => SubscriptionStatus::Active,
+            'recurring_token' => 'tok_subscription_secret',
+        ]);
+
+        expect(json_encode($subscription, JSON_THROW_ON_ERROR))->not->toContain('tok_subscription_secret')
+            ->and($subscription->recurringToken())->toBe('tok_subscription_secret');
+    });
+
+    it('rejects a subscription charge without a recurring payment token', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_subscription_no_token']);
+        $subscription = $user->newSubscription('default', 'price_monthly')->create();
+
+        expect(fn () => $subscription->charge(1000))->toThrow(InvalidArgumentException::class);
     });
 
     it('charging an orphaned subscription throws InvalidCustomer', function (): void {
@@ -296,6 +334,34 @@ describe('RepairRegression renewal idempotency', function (): void {
             ->and($fresh?->next_billing_at?->toIso8601String())->toBe($nextBilling->toIso8601String());
     });
 
+    it('failed webhooks cannot reactivate or mark paused and canceled subscriptions past due', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_terminal_failure']);
+
+        foreach ([SubscriptionStatus::Paused, SubscriptionStatus::Canceled, SubscriptionStatus::IncompleteExpired, SubscriptionStatus::Unpaid] as $status) {
+            $subscription = $this->createTrustedSubscription($user, [
+                'type' => 'failure-' . $status->value,
+                'chip_id' => 'sub-' . $status->value,
+                'chip_status' => $status,
+                'next_billing_at' => CarbonImmutable::now()->subDay(),
+            ]);
+
+            $payload = [
+                'id' => 'pur-failure-' . $status->value,
+                'client_id' => 'cli_terminal_failure',
+                'status' => 'error',
+                'purchase' => [
+                    'total' => 1000,
+                    'currency' => 'MYR',
+                    'metadata' => ['subscription_type' => $subscription->type],
+                ],
+            ];
+
+            app(SyncChipPurchaseStatus::class)->syncFailed($user, PurchaseData::from($payload), $payload);
+
+            expect($subscription->refresh()->chip_status)->toBe($status);
+        }
+    });
+
     it('renewal charges carry a stable idempotency key', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_idem']);
         $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
@@ -310,10 +376,8 @@ describe('RepairRegression renewal idempotency', function (): void {
             'quantity' => 1,
         ]);
 
-        $command = app(RenewSubscriptionsCommand::class);
-        $method = new ReflectionMethod($command, 'processRenewals');
-        $method->setAccessible(true);
-        $result = $method->invoke($command, false, 0);
+        $action = app(RenewSubscriptions::class);
+        $result = $action->processRenewals(false, 0);
 
         $purchases = array_values($this->fakeChip->getFakeClient()->getPurchases());
         $attempt = RenewalAttempt::query()->where('subscription_id', $subscription->id)->first();
@@ -346,10 +410,8 @@ describe('RepairRegression renewal idempotency', function (): void {
             'last_error_code' => 'TRANSPORT_OUTCOME_UNKNOWN',
         ]);
 
-        $command = app(RenewSubscriptionsCommand::class);
-        $method = new ReflectionMethod($command, 'processRenewals');
-        $method->setAccessible(true);
-        $result = $method->invoke($command, false, 0);
+        $action = app(RenewSubscriptions::class);
+        $result = $action->processRenewals(false, 0);
 
         expect($result['renewed'])->toBe(1)
             ->and($unknown->fresh()?->status)->toBe('completed')
@@ -358,6 +420,35 @@ describe('RepairRegression renewal idempotency', function (): void {
 });
 
 describe('RepairRegression security', function (): void {
+    it('applies a subscription checkout coupon exactly once and protects subscription metadata', function (): void {
+        $this->app->instance(VoucherService::class, new RepairFakeVoucherService([
+            'CHECKOUT200' => regressionVoucher('CHECKOUT200', Active::class),
+        ]));
+
+        $user = $this->createUser(['chip_id' => 'cli_checkout_coupon']);
+        $checkout = $user->newSubscription('default')
+            ->price(['price' => 'price_monthly', 'unit_amount' => 1000])
+            ->trialDays(14)
+            ->skipTrial()
+            ->withCoupon('CHECKOUT200')
+            ->checkout([
+                'metadata' => ['subscription_type' => 'other', 'trial_ends_at' => '2099-01-01', 'note' => 'preserved'],
+                'recurring' => false,
+            ]);
+
+        $purchase = $this->fakeChip->getFakeClient()->getPurchases()[$checkout->id()];
+
+        expect($purchase['purchase']['total'])->toBe(800)
+            ->and($purchase['force_recurring'])->toBeTrue();
+
+        $metadata = $purchase['purchase']['metadata'] ?? $purchase['metadata'];
+
+        expect($metadata['subscription_type'])->toBe('default')
+            ->and($metadata['coupon_discount'])->toBe(200)
+            ->and($metadata['note'])->toBe('preserved')
+            ->and($metadata)->not->toHaveKey('trial_ends_at');
+    });
+
     it('rejects expired coupons at subscription creation', function (): void {
         $this->app->instance(VoucherService::class, new RepairFakeVoucherService([
             'DEAD' => regressionVoucher('DEAD', Paused::class, ['duration' => 'once']),
@@ -372,13 +463,14 @@ describe('RepairRegression security', function (): void {
     it('recurring tokens are encrypted at rest', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_encrypt']);
 
-        $stored = Cashier::paymentMethodStore()->saveForBillable($user, 'tok_secret_123', ['type' => 'card'], true);
+        $stored = Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_secret_123', ['type' => 'card'], true);
 
-        $raw = DB::table($stored->getTable())->where('id', $stored->id)->value('recurring_token');
+        $raw = DB::table((new StoredPaymentMethod)->getTable())->where('id', $stored->id)->value('recurring_token');
 
         expect($raw)->not->toBe('tok_secret_123')
-            ->and($stored->fresh()?->recurring_token)->toBe('tok_secret_123')
-            ->and(Cashier::paymentMethodStore()->findForBillable($user, 'tok_secret_123')?->id)->toBe($stored->id);
+            ->and($stored->recurringToken())->toBe('tok_secret_123')
+            ->and(json_encode($stored, JSON_THROW_ON_ERROR))->not->toContain('tok_secret_123')
+            ->and(Cashier::paymentMethodStore()->findForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_secret_123')?->id)->toBe($stored->id);
     });
 
     it('findPayment hides purchases owned by other billables', function (): void {
@@ -396,7 +488,7 @@ describe('RepairRegression security', function (): void {
     it('invoice downloads sanitize attacker-influenced references', function (): void {
         $this->app->instance(InvoiceRenderer::class, new class implements InvoiceRenderer
         {
-            public function render(Invoice $invoice, array $data = [], array $options = []): string
+            public function render(InvoiceRenderData $invoice, array $data = [], array $options = []): string
             {
                 return 'pdf-bytes';
             }
@@ -474,7 +566,7 @@ describe('RepairRegression security', function (): void {
 
         SyncChipPurchaseStatus::run($user, PurchaseData::from($payload), $payload);
 
-        $metadata = Cashier::paymentMethodStore()->findForBillable($user, 'tok_meta_1')?->metadata ?? [];
+        $metadata = Cashier::paymentMethodStore()->findForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_meta_1')?->metadata ?? [];
 
         expect($metadata)->not->toHaveKey('purchase')
             ->and($metadata)->not->toHaveKey('transaction_data')
@@ -484,22 +576,22 @@ describe('RepairRegression security', function (): void {
     it('no implicit default when nothing is flagged', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_nodefault']);
 
-        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_a', [], true);
-        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_b', [], false);
+        Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_a', [], true);
+        Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_b', [], false);
 
         DB::table('cashier_chip_payment_methods')
             ->where('billable_id', $user->getKey())
             ->update(['is_default' => false]);
 
-        expect(Cashier::paymentMethodStore()->defaultForBillable($user))->toBeNull()
+        expect(Cashier::paymentMethodStore()->defaultForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey())))->toBeNull()
             ->and($user->fresh()?->hasDefaultPaymentMethod())->toBeFalse();
     });
 
     it('isDefault reflects the stored flag', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_isdefault']);
 
-        $first = Cashier::paymentMethodStore()->saveForBillable($user, 'tok_first', [], true);
-        $second = Cashier::paymentMethodStore()->saveForBillable($user, 'tok_second', [], false);
+        $first = Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_first', [], true);
+        $second = Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_second', [], false);
 
         $methods = $user->paymentMethods()->keyBy(fn ($method) => $method->id());
 
@@ -513,4 +605,34 @@ describe('RepairRegression security', function (): void {
 
         expect($subscription->recurring_token)->toBeNull();
     });
+});
+
+it('keeps the default flag when the same saved payment method is selected repeatedly', function (): void {
+    $user = $this->createUser(['chip_id' => 'cli_default_repeat']);
+    $reference = new RecordReference($user->getMorphClass(), (string) $user->getKey());
+    $store = Cashier::paymentMethodStore();
+    $store->saveForBillable($reference, 'tok_repeat_default', [], true);
+    $store->saveForBillable($reference, 'tok_other_default', [], false);
+
+    $store->setDefaultForBillable($reference, 'tok_repeat_default');
+    $store->saveForBillable($reference, 'tok_repeat_default', [], true);
+
+    expect($store->defaultForBillable($reference)?->recurringToken())->toBe('tok_repeat_default')
+        ->and(collect($store->allForBillable($reference))->where('is_default', true)->count())->toBe(1);
+});
+
+it('excludes paused subscriptions from active queries and entitlement checks even during trial', function (): void {
+    $user = $this->createUser(['chip_id' => 'cli_pause_entitlement']);
+    $subscription = $this->createTrustedSubscription($user, [
+        'type' => 'paused-trial',
+        'chip_id' => 'sub_pause_entitlement',
+        'chip_status' => SubscriptionStatus::Paused,
+        'trial_ends_at' => CarbonImmutable::now()->addDay(),
+        'next_billing_at' => CarbonImmutable::now()->addDay(),
+    ]);
+
+    expect($subscription->active())->toBeFalse()
+        ->and($subscription->valid())->toBeFalse()
+        ->and(Subscription::query()->whereActive()->whereKey($subscription->getKey())->exists())->toBeFalse()
+        ->and($user->subscribed('paused-trial'))->toBeFalse();
 });

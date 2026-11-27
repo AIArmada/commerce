@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Commands\ChipHealthCheckCommand;
+use AIArmada\Chip\EntryPoints\Commands\ChipHealthCheckCommand;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;

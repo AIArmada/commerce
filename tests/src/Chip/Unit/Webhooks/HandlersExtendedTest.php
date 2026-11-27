@@ -52,7 +52,7 @@ function createTestEnrichedPayload(string $event, array $rawPayload = []): Enric
     return new EnrichedWebhookPayload(
         event: $event,
         rawPayload: $payload,
-        localPurchase: null,
+        localPurchaseId: null,
         owner: null,
         receivedAt: now(),
         purchaseId: data_get($payload, 'related_to.id') ?? ($payload['id'] ?? 'purchase-123'),

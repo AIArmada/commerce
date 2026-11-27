@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 
 final class RevenueChartWidget extends ChartWidget
 {
+    use RequiresChipOwnerContext;
+
     protected ?string $heading = 'Revenue Trend (Last 30 Days)';
 
     protected static ?int $sort = 2;
@@ -25,6 +28,10 @@ final class RevenueChartWidget extends ChartWidget
 
     protected function getData(): array
     {
+        if (! static::canView()) {
+            return ['datasets' => [], 'labels' => []];
+        }
+
         /** @var array{labels: array<string>, amounts: array<int>} $data */
         $data = OwnerCache::remember(
             OwnerContext::resolve(),

@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
+use Override;
 use Throwable;
 
 final class AccountTurnoverWidget extends ChartWidget
@@ -18,6 +21,16 @@ final class AccountTurnoverWidget extends ChartWidget
     protected static ?int $sort = 21;
 
     protected ?string $maxHeight = '300px';
+
+    #[Override]
+    public static function canView(): bool
+    {
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return true;
+        }
+
+        return OwnerContext::resolve() === null && OwnerContext::isExplicitGlobal();
+    }
 
     /**
      * @return array<string, mixed>
@@ -64,43 +77,58 @@ final class AccountTurnoverWidget extends ChartWidget
         $labels = [];
         $revenue = [];
         $fees = [];
+        $authorized = ! (bool) config('chip.owner.enabled', false)
+            || (OwnerContext::resolve() === null && OwnerContext::isExplicitGlobal());
 
-        try {
-            $service = app(ChipCollectService::class);
+        for ($i = 29; $i >= 0; $i--) {
+            $date = CarbonImmutable::now()->subDays($i);
+            $labels[] = $date->format('M d');
 
-            for ($i = 29; $i >= 0; $i--) {
-                $date = CarbonImmutable::now()->subDays($i);
-                $labels[] = $date->format('M d');
+            if (! $authorized) {
+                $revenue[] = 0.0;
+                $fees[] = 0.0;
 
-                $response = $service->getAccountTurnover([
-                    'from' => $date->startOfDay()->getTimestamp(),
-                    'to' => $date->endOfDay()->getTimestamp(),
-                    'currency' => 'MYR',
-                ]);
-
-                $dayRevenue = (float) ($response['incoming']['turnover'] ?? 0);
-                $dayFees = (float) ($response['incoming']['fee_sell'] ?? 0);
-
-                $revenue[] = round($dayRevenue / 100, 2);
-                $fees[] = round($dayFees / 100, 2);
+                continue;
             }
-        } catch (Throwable) {
-            $labels = [];
-            $revenue = [];
-            $fees = [];
 
-            for ($i = 29; $i >= 0; $i--) {
-                $date = CarbonImmutable::now()->subDays($i);
-                $labels[] = $date->format('M d');
-                $revenue[] = 0;
-                $fees[] = 0;
-            }
+            $bucket = OwnerCache::remember(
+                OwnerContext::resolve(),
+                'filament-chip.account-turnover.' . $date->format('Y-m-d'),
+                $date->isToday()
+                    ? max(1, (int) config('filament-chip.widgets.turnover_current_bucket_ttl', 60))
+                    : max(1, (int) config('filament-chip.widgets.turnover_cache_ttl', 3600)),
+                fn (): array => $this->fetchTurnoverBucket($date),
+            );
+
+            $revenue[] = round(((float) ($bucket['turnover'] ?? 0)) / 100, 2);
+            $fees[] = round(((float) ($bucket['fee_sell'] ?? 0)) / 100, 2);
         }
 
         return [
             'labels' => $labels,
             'revenue' => $revenue,
             'fees' => $fees,
+        ];
+    }
+
+    /**
+     * @return array{turnover: int|float, fee_sell: int|float}
+     */
+    private function fetchTurnoverBucket(CarbonImmutable $date): array
+    {
+        try {
+            $response = app(ChipCollectService::class)->getAccountTurnover([
+                'from' => $date->startOfDay()->getTimestamp(),
+                'to' => $date->endOfDay()->getTimestamp(),
+                'currency' => 'MYR',
+            ]);
+        } catch (Throwable) {
+            return ['turnover' => 0, 'fee_sell' => 0];
+        }
+
+        return [
+            'turnover' => (float) ($response['incoming']['turnover'] ?? 0),
+            'fee_sell' => (float) ($response['incoming']['fee_sell'] ?? 0),
         ];
     }
 }

@@ -42,7 +42,7 @@ keywords:
 - Owner/security: Owner-scoped (Subscription, SubscriptionItem, StoredPaymentMethod, RenewalAttempt).
 
 ## Key surfaces
-- Actions/Services: `Actions/CancelChipSubscription`, `Actions/ChargeChipCustomer`, `Actions/ClaimRenewalAttempt`, `Actions/CreateChipSubscription`, `Actions/RefundChipPayment`, `Actions/SyncChipPurchaseStatus`
+- Actions/Services: `Actions/CancelChipSubscription`, `Actions/ChargeChipCustomer`, `Actions/ClaimRenewalAttempt`, `Features/Subscriptions/Actions/CreateChipSubscription`, `Actions/RefundChipPayment`, `Actions/SyncChipPurchaseStatus`
 - Config `cashier-chip.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `subscriptions`, `subscription_items`, `payment_methods`, `renewal_attempts`, `currency`, `currency_locale`
 
 ## Docs map
