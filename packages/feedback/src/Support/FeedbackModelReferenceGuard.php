@@ -52,10 +52,8 @@ final class FeedbackModelReferenceGuard
             throw new InvalidArgumentException('The model reference type is invalid.');
         }
 
-        try {
+        if ($this->usesOwnerScope($modelClass)) {
             return OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
-        } catch (InvalidArgumentException) {
-            // Models without an enabled owner boundary still require existence validation.
         }
 
         /** @var Model|null $model */
@@ -66,6 +64,18 @@ final class FeedbackModelReferenceGuard
         }
 
         return $model;
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     */
+    private function usesOwnerScope(string $modelClass): bool
+    {
+        if (method_exists($modelClass, 'ownerScopeConfig')) {
+            return $modelClass::ownerScopeConfig()->enabled;
+        }
+
+        return method_exists($modelClass, 'scopeForOwner');
     }
 
     public function validate(Model $model): void
