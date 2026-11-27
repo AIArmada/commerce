@@ -57,7 +57,12 @@ final class DocTrackingController extends Controller
 
         $candidate = mb_trim($url);
 
-        if\x20($candidate\x20===\x20''\x20||\x20str_starts_with($candidate,\x20'//')\x20||\x20str_contains($candidate,\x20'\\')\x20||\x20preg_match('/[\x00-\x20\x7f]/',\x20$candidate)\x20===\x201)\x20{
+        if (
+            $candidate === ''
+            || str_starts_with($candidate, '//')
+            || str_contains($candidate, '\\')
+            || preg_match('/[\x00-\x20\x7f]/', $candidate) === 1
+        ) {
             return $fallback;
         }
 
