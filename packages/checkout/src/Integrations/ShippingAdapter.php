@@ -7,9 +7,9 @@ namespace AIArmada\Checkout\Integrations;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
-use AIArmada\Shipping\Features\Rates\Api\RateAddress;
-use AIArmada\Shipping\Features\Rates\Api\RatePackage;
-use AIArmada\Shipping\Features\Rates\Api\RateQuote;
+use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\PackageData;
+use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ComponentLines;
 
@@ -45,7 +45,7 @@ final class ShippingAdapter
             return $this->getDefaultRates($session);
         }
 
-        /** @var list<RateQuote> $rateQuotes */
+        /** @var list<RateQuoteData> $rateQuotes */
         $rateQuotes = app(CalculateRates::class)->handle(
             origin: $origin,
             destination: $destination,
@@ -124,7 +124,7 @@ final class ShippingAdapter
     /**
      * @param  array<string, mixed>  $shippingData
      */
-    private function buildDestinationAddress(array $shippingData): ?RateAddress
+    private function buildDestinationAddress(array $shippingData): ?AddressData
     {
         $line1 = $shippingData['line1'] ?? '';
         $postcode = $shippingData['postcode'] ?? '';
@@ -133,7 +133,7 @@ final class ShippingAdapter
             return null;
         }
 
-        return new RateAddress(
+        return new AddressData(
             name: $shippingData['name'] ?? 'Customer',
             phone: $shippingData['phone'] ?? '',
             line1: $line1,
@@ -149,7 +149,7 @@ final class ShippingAdapter
 
     /**
      * @param  array<string, mixed>  $cartSnapshot
-     * @return array<RatePackage>
+     * @return array<PackageData>
      */
     private function buildPackages(array $cartSnapshot): array
     {
@@ -187,7 +187,7 @@ final class ShippingAdapter
                         continue;
                     }
 
-                    $packages[] = new RatePackage(
+                    $packages[] = new PackageData(
                         weight: $weight,
                         length: $component['dimensions']['length'] ?? null,
                         width: $component['dimensions']['width'] ?? null,
@@ -224,7 +224,7 @@ final class ShippingAdapter
                 $attributes['dimensions'] ?? null,
             ], $item + $attributes);
 
-            $packages[] = new RatePackage(
+            $packages[] = new PackageData(
                 weight: $weight * $quantity,
                 length: $dimensions['length'] ?? null,
                 width: $dimensions['width'] ?? null,
@@ -237,7 +237,7 @@ final class ShippingAdapter
         return $packages;
     }
 
-    private function getOriginAddress(): ?RateAddress
+    private function getOriginAddress(): ?AddressData
     {
         $origin = config('shipping.defaults.origin', []);
 
@@ -248,7 +248,7 @@ final class ShippingAdapter
             return null;
         }
 
-        return new RateAddress(
+        return new AddressData(
             name: $origin['name'] ?? config('app.name', 'Store'),
             phone: $origin['phone'] ?? '',
             line1: $line1,
@@ -263,12 +263,12 @@ final class ShippingAdapter
     }
 
     /**
-     * @param  list<RateQuote>  $rates
+     * @param  list<RateQuoteData>  $rates
      * @return array<array<string, mixed>>
      */
     private function normalizeRates(array $rates): array
     {
-        return array_map(static function (RateQuote $rate): array {
+        return array_map(static function (RateQuoteData $rate): array {
             return [
                 'method_id' => $rate->carrier . '_' . $rate->service,
                 'carrier' => $rate->carrier,

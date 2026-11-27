@@ -8,11 +8,7 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
-use AIArmada\Shipping\Features\Rates\Api\RateAddress;
-use AIArmada\Shipping\Features\Rates\Api\RatePackage;
-use AIArmada\Shipping\Features\Rates\Api\RateQuote;
 use AIArmada\Shipping\ShippingManager;
-use DateTimeImmutable;
 use Throwable;
 
 /**
@@ -27,25 +23,21 @@ final class CalculateShippingRate implements CalculateRates
     /**
      * Calculate shipping rates for packages.
      *
-     * @param  list<RatePackage>  $packages
+     * @param  list<PackageData>  $packages
      * @param  array<string, mixed>  $options
-     * @return list<RateQuote>
+     * @return list<RateQuoteData>
      */
     public function handle(
-        RateAddress $origin,
-        RateAddress $destination,
+        AddressData $origin,
+        AddressData $destination,
         array $packages,
         ?string $carrier = null,
         array $options = []
     ): array {
-        $origin = new AddressData(...get_object_vars($origin));
-        $destination = new AddressData(...get_object_vars($destination));
-        $packages = array_map(static fn (RatePackage $package): PackageData => new PackageData(...get_object_vars($package)), $packages);
-
         if ($carrier !== null) {
             $driver = $this->shippingManager->driver($carrier);
 
-            return $driver->getRates($origin, $destination, $packages, $options)->map($this->toQuote(...))->values()->all();
+            return $driver->getRates($origin, $destination, $packages, $options)->values()->all();
         }
 
         // Get rates from all registered drivers (skip drivers that don't service destination)
@@ -68,24 +60,6 @@ final class CalculateShippingRate implements CalculateRates
             }
         }
 
-        return $rates->sortBy('rate')->map($this->toQuote(...))->values()->all();
-    }
-
-    private function toQuote(RateQuoteData $rate): RateQuote
-    {
-        return new RateQuote(
-            carrier: $rate->carrier,
-            service: $rate->service,
-            rate: $rate->rate,
-            currency: $rate->currency,
-            estimatedDays: $rate->estimatedDays,
-            estimatedDeliveryDate: $rate->estimatedDeliveryDate,
-            serviceDescription: $rate->serviceDescription,
-            restrictions: $rate->restrictions,
-            calculatedLocally: $rate->calculatedLocally,
-            quoteId: $rate->quoteId,
-            expiresAt: $rate->expiresAt === null ? null : DateTimeImmutable::createFromInterface($rate->expiresAt),
-            note: $rate->note,
-        );
+        return $rates->sortBy('rate')->values()->all();
     }
 }

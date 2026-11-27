@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
-use AIArmada\Shipping\Features\Rates\Api\RateAddress;
-use AIArmada\Shipping\Features\Rates\Api\RatePackage;
-use AIArmada\Shipping\Features\Rates\Api\RateQuote;
+use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\PackageData;
+use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
 
 describe('CalculateShippingRate Action', function (): void {
     it('can calculate rates for a specific carrier', function (): void {
         $action = app(CalculateRates::class);
 
-        $origin = new RateAddress(
+        $origin = new AddressData(
             name: 'Test Origin',
             phone: '123-456-7890',
             line1: '123 Origin St',
@@ -22,7 +22,7 @@ describe('CalculateShippingRate Action', function (): void {
             state: 'OS'
         );
 
-        $destination = new RateAddress(
+        $destination = new AddressData(
             name: 'Test Destination',
             phone: '987-654-3210',
             line1: '456 Dest St',
@@ -33,7 +33,7 @@ describe('CalculateShippingRate Action', function (): void {
         );
 
         $packages = [
-            new RatePackage(1000, 10, 5, 5, 500, 'box', 1),
+            new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
         $rates = $action->handle($origin, $destination, $packages, 'null');
@@ -42,7 +42,7 @@ describe('CalculateShippingRate Action', function (): void {
         expect($rates)->toHaveCount(2);
 
         $standardRate = ($rates[0] ?? null);
-        expect($standardRate)->toBeInstanceOf(RateQuote::class);
+        expect($standardRate)->toBeInstanceOf(RateQuoteData::class);
         expect($standardRate->carrier)->toBe('null');
         expect($standardRate->service)->toBe('standard');
     });
@@ -82,7 +82,7 @@ describe('CalculateShippingRate Action', function (): void {
 
         $action = app(CalculateRates::class);
 
-        $origin = new RateAddress(
+        $origin = new AddressData(
             name: 'Test Origin',
             phone: '123-456-7890',
             line1: '123 Origin St',
@@ -92,7 +92,7 @@ describe('CalculateShippingRate Action', function (): void {
             state: 'OS'
         );
 
-        $destination = new RateAddress(
+        $destination = new AddressData(
             name: 'Test Destination',
             phone: '987-654-3210',
             line1: '456 Dest St',
@@ -103,7 +103,7 @@ describe('CalculateShippingRate Action', function (): void {
         );
 
         $packages = [
-            new RatePackage(1000, 10, 5, 5, 500, 'box', 1),
+            new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
         $rates = $action->handle($origin, $destination, $packages);
@@ -115,7 +115,7 @@ describe('CalculateShippingRate Action', function (): void {
     it('handles multiple packages correctly', function (): void {
         $action = app(CalculateRates::class);
 
-        $origin = new RateAddress(
+        $origin = new AddressData(
             name: 'Test Origin',
             phone: '123-456-7890',
             line1: '123 Origin St',
@@ -125,7 +125,7 @@ describe('CalculateShippingRate Action', function (): void {
             state: 'OS'
         );
 
-        $destination = new RateAddress(
+        $destination = new AddressData(
             name: 'Test Destination',
             phone: '987-654-3210',
             line1: '456 Dest St',
@@ -136,8 +136,8 @@ describe('CalculateShippingRate Action', function (): void {
         );
 
         $packages = [
-            new RatePackage(1000, 10, 5, 5, 500, 'box', 1),
-            new RatePackage(2000, 15, 10, 8, 1000, 'box', 2),
+            new PackageData(1000, 10, 5, 5, 500, 'box', 1),
+            new PackageData(2000, 15, 10, 8, 1000, 'box', 2),
         ];
 
         $rates = $action->handle($origin, $destination, $packages, 'null');
@@ -150,7 +150,7 @@ describe('CalculateShippingRate Action', function (): void {
     it('passes options to the driver', function (): void {
         $action = app(CalculateRates::class);
 
-        $origin = new RateAddress(
+        $origin = new AddressData(
             name: 'Test Origin',
             phone: '123-456-7890',
             line1: '123 Origin St',
@@ -160,7 +160,7 @@ describe('CalculateShippingRate Action', function (): void {
             state: 'OS'
         );
 
-        $destination = new RateAddress(
+        $destination = new AddressData(
             name: 'Test Destination',
             phone: '987-654-3210',
             line1: '456 Dest St',
@@ -171,7 +171,7 @@ describe('CalculateShippingRate Action', function (): void {
         );
 
         $packages = [
-            new RatePackage(1000, 10, 5, 5, 500, 'box', 1),
+            new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
         $options = ['insurance' => true, 'signature' => true];
@@ -193,7 +193,7 @@ describe('CalculateShippingRate Action', function (): void {
 
         $action = app(CalculateRates::class);
 
-        $origin = new RateAddress(
+        $origin = new AddressData(
             name: 'Test Origin',
             phone: '123-456-7890',
             line1: '123 Origin St',
@@ -201,7 +201,7 @@ describe('CalculateShippingRate Action', function (): void {
             country: 'US',
         );
 
-        $destination = new RateAddress(
+        $destination = new AddressData(
             name: 'Test Destination',
             phone: '987-654-3210',
             line1: '456 Dest St',
@@ -210,7 +210,7 @@ describe('CalculateShippingRate Action', function (): void {
         );
 
         $packages = [
-            new RatePackage(1000),
+            new PackageData(1000),
         ];
 
         // Should not throw, just skip failing carrier
