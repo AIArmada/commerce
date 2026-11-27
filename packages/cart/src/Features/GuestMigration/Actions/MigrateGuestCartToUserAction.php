@@ -77,6 +77,10 @@ final class MigrateGuestCartToUserAction
         $guestIdentifier = $sessionId;
         $userIdentifier = (string) $userId;
 
+        if ($guestIdentifier === '') {
+            throw new InvalidArgumentException('A non-empty guest identifier is required to migrate a guest cart.');
+        }
+
         if ($userIdentifier === '') {
             throw new InvalidArgumentException('A non-empty user identifier is required to migrate a guest cart.');
         }
@@ -88,13 +92,6 @@ final class MigrateGuestCartToUserAction
 
         $guestStorage = $this->resolveGlobalStorage();
         $targetStorage = $this->resolveStorage();
-
-        $guestSnapshot = $guestStorage->getSnapshot($guestIdentifier, $instance);
-
-        // If guest cart is empty, nothing to migrate
-        if ($guestSnapshot === null || $guestSnapshot->items === []) {
-            return false;
-        }
 
         // All writes run in one transaction and the whole cycle re-reads both
         // carts against fresh snapshots when a concurrent mutation wins the
@@ -212,6 +209,10 @@ final class MigrateGuestCartToUserAction
                 }
 
                 $userSnapshot = $targetStorage->getSnapshot($userIdentifier, $instance);
+
+                if ($userSnapshot?->id === $guestSnapshot->id) {
+                    return null;
+                }
 
                 $guestItems = $guestSnapshot->items;
                 $userItems = $userSnapshot?->items ?? [];

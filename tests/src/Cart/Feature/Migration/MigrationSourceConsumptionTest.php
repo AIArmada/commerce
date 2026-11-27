@@ -82,3 +82,24 @@ it('leaves an owner-scoped source cart untouched when migrating in owner mode', 
         ->and($ownerStorage->getItems('src-owner-guest', 'default'))->toHaveKey('a')
         ->and($ownerStorage->has('src-owner-user', 'default'))->toBeFalse();
 });
+
+it('does not consume or rewrite a cart when source and target resolve to the same row', function (): void {
+    $storage = $this->storage;
+    $storage->putItems('same-identity', 'default', [
+        'a' => migrationSourceItem('a', 2),
+    ], CartRevision::none());
+    $before = $storage->getSnapshot('same-identity', 'default');
+
+    $action = new MigrateGuestCartToUserAction($this->registry, $storage);
+
+    expect($action->execute('same-identity', 'default', 'same-identity'))->toBeFalse()
+        ->and($storage->getSnapshot('same-identity', 'default'))->toEqual($before)
+        ->and($storage->isExpired('same-identity', 'default'))->toBeFalse();
+});
+
+it('rejects an empty guest identifier before reading storage', function (): void {
+    $action = new MigrateGuestCartToUserAction($this->registry, $this->storage);
+
+    expect(fn () => $action->execute('user', 'default', ''))
+        ->toThrow(InvalidArgumentException::class);
+});
