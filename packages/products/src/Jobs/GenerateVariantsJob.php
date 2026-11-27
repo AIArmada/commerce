@@ -7,8 +7,7 @@ namespace AIArmada\Products\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Products\Models\Product;
-use AIArmada\Products\Strategies\MatrixVariantGenerator;
+use AIArmada\Products\Actions\GenerateQueuedVariants;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -35,17 +34,6 @@ final class GenerateVariantsJob implements OwnerScopedJob, ShouldQueue
 
     protected function performJob(): void
     {
-        // Resolved through the job's owner context (established by
-        // OwnerContextJob), so a tampered product id yields nothing instead
-        // of generating variants for another owner's product.
-        $product = Product::query()
-            ->whereKey($this->productId)
-            ->first();
-
-        if ($product === null) {
-            return;
-        }
-
-        app(MatrixVariantGenerator::class)->generateSynchronously($product);
+        app(GenerateQueuedVariants::class)->execute($this->productId);
     }
 }

@@ -8,8 +8,8 @@ use AIArmada\FilamentPricing\Resources\PriceListResource;
 use AIArmada\Pricing\Actions\UpdatePriceList;
 use AIArmada\Pricing\Models\PriceList;
 use Filament\Actions;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditPriceList extends EditRecord
 {

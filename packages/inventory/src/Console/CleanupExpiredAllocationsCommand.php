@@ -7,10 +7,11 @@ namespace AIArmada\Inventory\Console;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryReservation;
+use AIArmada\Inventory\Queries\ExpiredReservations;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
 final class CleanupExpiredAllocationsCommand extends Command
@@ -74,28 +75,6 @@ final class CleanupExpiredAllocationsCommand extends Command
 
     private function reservationsToCleanupCount(): int
     {
-        $now = now();
-        $cutoff = $now->copy()->subMinutes(max(0, (int) config('inventory.cleanup.keep_expired_for_minutes', 0)));
-
-        return InventoryOwnerScope::applyToLocationQuery(InventoryReservation::query())
-            ->where(function ($query) use ($now, $cutoff): void {
-                $query
-                    ->where(function ($reserved) use ($now): void {
-                        $reserved
-                            ->where('status', InventoryReservation::STATE_RESERVED)
-                            ->whereNotNull('expires_at')
-                            ->where('expires_at', '<=', $now);
-                    })
-                    ->orWhere(function ($terminal) use ($cutoff): void {
-                        $terminal
-                            ->whereIn('status', [
-                                InventoryReservation::STATE_COMMITTED,
-                                InventoryReservation::STATE_RELEASED,
-                                InventoryReservation::STATE_EXPIRED,
-                            ])
-                            ->where('updated_at', '<=', $cutoff);
-                    });
-            })
-            ->count();
+        return (new ExpiredReservations)->query(CarbonImmutable::now())->count();
     }
 }

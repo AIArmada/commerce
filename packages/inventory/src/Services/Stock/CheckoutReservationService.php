@@ -13,6 +13,7 @@ use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Exceptions\ReservationReferenceConflict;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryReservation;
+use AIArmada\Inventory\Queries\ExpiredReservations;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
@@ -303,31 +304,9 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
     public function cleanupExpiredReservations(): int
     {
         $now = CarbonImmutable::now();
-        $cutoff = $now->subMinutes(max(0, (int) config('inventory.cleanup.keep_expired_for_minutes', 0)));
 
-        return DB::transaction(function () use ($now, $cutoff): int {
-            $groups = InventoryOwnerScope::applyToLocationQuery(
-                InventoryReservation::query()
-                    ->where(function ($query) use ($now, $cutoff): void {
-                        $query
-                            ->where(function ($reserved) use ($now): void {
-                                $reserved
-                                    ->where('status', InventoryReservation::STATE_RESERVED)
-                                    ->whereNotNull('expires_at')
-                                    ->where('expires_at', '<=', $now);
-                            })
-                            ->orWhere(function ($terminal) use ($cutoff): void {
-                                $terminal
-                                    ->whereIn('status', [
-                                        InventoryReservation::STATE_COMMITTED,
-                                        InventoryReservation::STATE_RELEASED,
-                                        InventoryReservation::STATE_EXPIRED,
-                                    ])
-                                    ->where('updated_at', '<=', $cutoff);
-                            });
-                    })
-                    ->lockForUpdate()
-            )->get();
+        return DB::transaction(function () use ($now): int {
+            $groups = (new ExpiredReservations)->query($now)->lockForUpdate()->get();
 
             $deleted = 0;
 
