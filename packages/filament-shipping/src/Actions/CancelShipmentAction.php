@@ -6,7 +6,7 @@ namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -32,8 +32,8 @@ class CancelShipmentAction extends Action
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('cancel', $record) ?? false)
             ->action(function (Shipment $record): void {
                 try {
-                    $shipmentService = app(ShipmentService::class);
-                    $shipmentService->cancel($record);
+                    $operations = app(ShipmentOperations::class);
+                    $operations->cancel((string) $record->getKey());
 
                     Notification::make()
                         ->title('Shipment Cancelled')
@@ -80,7 +80,7 @@ class CancelShipmentAction extends Action
                     return;
                 }
 
-                $shipmentService = app(ShipmentService::class);
+                $operations = app(ShipmentOperations::class);
 
                 $cancellableShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
@@ -106,7 +106,7 @@ class CancelShipmentAction extends Action
                     $results = BatchRateLimiter::forCarrier($carrierCode)
                         ->execute(
                             $shipments,
-                            fn (Shipment $shipment) => $shipmentService->cancel($shipment),
+                            fn (Shipment $shipment) => $operations->cancel((string) $shipment->getKey()),
                             'cancel'
                         );
 

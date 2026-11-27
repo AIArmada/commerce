@@ -6,7 +6,7 @@ namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -29,12 +29,13 @@ class SyncTrackingAction extends Action
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('syncTracking', $record) ?? false)
             ->action(function (Shipment $record): void {
                 try {
-                    $aggregator = app(TrackingAggregator::class);
-                    $updatedShipment = $aggregator->syncTracking($record);
+                    $operations = app(ShipmentOperations::class);
+                    $operations->syncTracking((string) $record->getKey());
+                    $record->refresh();
 
                     Notification::make()
                         ->title('Tracking Updated')
-                        ->body("Status: {$updatedShipment->status->label()}")
+                        ->body("Status: {$record->status->label()}")
                         ->success()
                         ->send();
                 } catch (Throwable $e) {
@@ -75,7 +76,7 @@ class SyncTrackingAction extends Action
                     return;
                 }
 
-                $aggregator = app(TrackingAggregator::class);
+                $operations = app(ShipmentOperations::class);
 
                 $trackableShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
@@ -101,7 +102,7 @@ class SyncTrackingAction extends Action
                     $results = BatchRateLimiter::forCarrier($carrierCode)
                         ->execute(
                             $shipments,
-                            fn (Shipment $shipment) => $aggregator->syncTracking($shipment),
+                            fn (Shipment $shipment) => $operations->syncTracking((string) $shipment->getKey()),
                             'sync_tracking'
                         );
 

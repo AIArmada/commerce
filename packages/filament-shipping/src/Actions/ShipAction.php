@@ -6,7 +6,7 @@ namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -32,8 +32,8 @@ class ShipAction extends Action
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('ship', $record) ?? false)
             ->action(function (Shipment $record): void {
                 try {
-                    $shipmentService = app(ShipmentService::class);
-                    $shipmentService->ship($record);
+                    $operations = app(ShipmentOperations::class);
+                    $operations->ship((string) $record->getKey());
 
                     $record->refresh();
 
@@ -83,7 +83,7 @@ class ShipAction extends Action
                     return;
                 }
 
-                $shipmentService = app(ShipmentService::class);
+                $operations = app(ShipmentOperations::class);
 
                 $pendingShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
@@ -109,7 +109,7 @@ class ShipAction extends Action
                     $results = BatchRateLimiter::forCarrier($carrierCode)
                         ->execute(
                             $shipments,
-                            fn (Shipment $shipment) => $shipmentService->ship($shipment),
+                            fn (Shipment $shipment) => $operations->ship((string) $shipment->getKey()),
                             'ship'
                         );
 
