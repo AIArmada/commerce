@@ -9,9 +9,12 @@ use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelinePhaseContext;
 use AIArmada\Cart\Conditions\Pipeline\LazyConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
+use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Cart\Services\CartFactory;
 use Tests\Support\Cart\InMemoryStorage;
 
 it('returns correct subtotal with lazy evaluation', function (): void {
@@ -252,4 +255,26 @@ it('refreshes live cart context after explicit lazy pipeline invalidation', func
     $pipeline->invalidate();
 
     expect($pipeline->getTotal())->toBe(1500);
+});
+
+it('preserves the configured condition engine across cart factory owner storage changes', function (): void {
+    $pipelineFactory = new ConditionPipelineFactory;
+    $pipelineFactory->configure(function (ConditionPipeline $pipeline): void {
+        $pipeline->registerPhaseProcessor(
+            ConditionPhase::CART_SUBTOTAL,
+            fn (ConditionPipelinePhaseContext $context): int => $context->baseAmount + 100,
+        );
+    });
+
+    $factory = new CartFactory(
+        storage: new InMemoryStorage,
+        conditionResolver: new CartConditionResolver,
+        pipelineFactory: $pipelineFactory,
+    );
+
+    $cart = $factory->withStorage(new InMemoryStorage)->make('configured-pipeline');
+    $cart->add('item1', 'Product', 1000, 1);
+
+    expect($cart->evaluateConditionPipeline()->total())->toBe(1100);
+    expect($cart->evaluateConditionPipeline(conditions: $cart->getStoredConditions())->total())->toBe(1100);
 });

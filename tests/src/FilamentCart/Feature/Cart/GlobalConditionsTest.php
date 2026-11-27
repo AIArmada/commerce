@@ -949,15 +949,16 @@ it('removes applied item conditions when their global dynamic rule is deactivate
     $condition = Condition::factory()->create([
         'name' => 'temporary-item-discount',
         'type' => 'discount',
-        'target' => 'items@item_discount/per_item',
+        'target' => 'items@item_discount/per-item',
+        'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
-        'rules' => ['factory_keys' => ['min-items'], 'context' => ['min' => 1]],
+        'rules' => ['factory_keys' => ['item-quantity-at-least'], 'context' => ['quantity' => 1]],
     ]);
 
     CartFacade::add('sku-1', 'Product', 1000, 1);
-    CartFacade::getConditions();
+    expect(CartFacade::getItems()->first()->conditions->has('temporary-item-discount'))->toBeTrue();
     expect(CartFacade::getDynamicConditions()->has('temporary-item-discount'))->toBeTrue();
 
     $condition->update(['is_active' => false]);
