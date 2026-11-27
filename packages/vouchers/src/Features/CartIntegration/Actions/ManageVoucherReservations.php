@@ -28,9 +28,9 @@ final class ManageVoucherReservations implements VoucherReservations
 
         $this->guardSessionIndex($sessionsKey, static function () use ($sessionsKey, $sessionId, $ttl, $cacheKey, $voucher): void {
             Cache::put($cacheKey, [
-            'voucher_id' => $voucher->id,
-            'session_id' => $sessionId,
-            'reserved_at' => CarbonImmutable::now()->toIso8601String(),
+                'voucher_id' => $voucher->id,
+                'session_id' => $sessionId,
+                'reserved_at' => CarbonImmutable::now()->toIso8601String(),
             ], $ttl);
             $sessionIds = Cache::get($sessionsKey, []);
 

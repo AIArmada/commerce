@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use LogicException;
@@ -581,9 +580,7 @@ class Promotion extends Model implements Auditable
                 }
             }
 
-            DB::table((string) config('promotions.database.tables.promotionables', 'promotionables'))
-                ->where('promotion_id', $promotion->id)
-                ->delete();
+            app(\AIArmada\Promotions\Actions\DeletePromotionTargets::class)->handle($promotion);
         });
     }
 }

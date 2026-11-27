@@ -10,10 +10,12 @@
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher",
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ChangeVoucherAvailability",
       "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\IssueAffiliateVoucher",
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DepleteVoucher"
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DepleteVoucher",
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DeleteVoucher"
     ],
     "table:voucher_usage": [
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage",
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\DeleteVoucher"
     ]
   },
   "extensions": {}

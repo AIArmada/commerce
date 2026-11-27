@@ -7,6 +7,7 @@ namespace AIArmada\Vouchers\Services;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
+use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
@@ -104,11 +105,7 @@ class VoucherService implements VoucherServiceInterface
 
     public function delete(string $code): bool
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->first();
-
-        return $voucher !== null && $voucher->delete();
+        return app(VoucherDeletion::class)->handle($code);
     }
 
     public function validate(string $code, mixed $cart): VoucherValidationResult

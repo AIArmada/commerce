@@ -620,8 +620,7 @@ class Voucher extends Model implements Auditable
 
         self::deleting(function (Voucher $voucher): void {
             app(VoucherLookupCache::class)->forgetForVoucher($voucher);
-            $voucher->usages()->delete();
-            $voucher->walletEntries()->delete();
+            app(\AIArmada\Vouchers\Runtime\VoucherDeletion::class)->deleteDependents($voucher);
         });
     }
 
