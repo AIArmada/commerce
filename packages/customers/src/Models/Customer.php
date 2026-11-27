@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
-use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -17,15 +16,13 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
-use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Concerns\HasCustomerLifecycle;
 use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
-use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
-use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Carbon\CarbonImmutable;
@@ -45,7 +42,6 @@ use Spatie\LaravelData\Optional;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\File;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Tags\HasTags;
 
 /**
@@ -390,13 +386,7 @@ class Customer extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::deleting(function (Customer $customer): void {
-            app(AddressAttachmentWriter::class)->detachAll($customer->getMorphClass(), (string) $customer->getKey());
-            $customer->notes()->delete();
-            app(DetachDeletedSegmentMemberships::class)->forCustomer($customer);
-            app(DetachDeletedCustomerGroupMemberships::class)->forCustomer($customer);
-            $customer->contactMethods()->get()->each(fn (ContactMethod $contactMethod): bool => $contactMethod->delete());
-            $customer->socialProfiles()->get()->each(fn (SocialProfile $socialProfile): bool => $socialProfile->delete());
-            $customer->media()->get()->each(fn (Media $medium): bool => (bool) $medium->delete());
+            app(CustomerDependentsCleaner::class)->cleanup((string) $customer->getKey());
         });
     }
 

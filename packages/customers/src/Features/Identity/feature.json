@@ -12,7 +12,8 @@
     ],
     "table:customer_notes": [
       "AIArmada\\Customers\\Features\\Identity\\Actions\\ManageCustomerNote",
-      "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers"
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\CleanupCustomerDependents"
     ]
   },
   "extensions": {}
