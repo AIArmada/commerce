@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Features\Analytics\Queries;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
 /**
@@ -14,14 +16,18 @@ use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
  */
 final class FeedbackDashboardMemo
 {
-    /** @var array<string, mixed>|null */
-    private ?array $dashboard = null;
+    /** @var array<string, array<string, mixed>> */
+    private array $dashboards = [];
 
     /**
      * @return array<string, mixed>
      */
     public function dashboard(): array
     {
-        return $this->dashboard ??= app(FeedbackAnalyticsQuery::class)->dashboard();
+        $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+        $key = OwnerScopeKey::forOwner($owner);
+
+        return $this->dashboards[$key] ??= app(FeedbackAnalyticsQuery::class)->dashboard();
     }
 }

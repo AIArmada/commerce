@@ -181,3 +181,36 @@ it('keeps reviewed responses in analytics and dashboard totals', function (): vo
         ->and($dashboard['overview']['submitted_responses'])->toBe(1)
         ->and(array_sum($dashboard['response_trend']))->toBe(1);
 });
+
+it('returns only bounded comment projections without contact answers or response metadata', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Comment privacy'));
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $response = FeedbackResponse::query()->create([
+        'feedback_form_id' => $form->id,
+        'status' => 'reviewed',
+        'is_anonymous' => true,
+        'ip_address' => '192.0.2.1',
+        'metadata' => ['private' => 'not for dashboard'],
+    ]);
+
+    foreach (['short_text' => 'Useful comment', 'email' => 'private@example.test', 'phone' => '+60123456789'] as $type => $value) {
+        $question = $structure->saveQuestion($form->id, [
+            'key' => $type,
+            'type' => $type,
+            'label' => $type,
+        ]);
+        FeedbackAnswer::query()->create([
+            'feedback_response_id' => $response->id,
+            'feedback_question_id' => $question->id,
+            'text_value' => $value,
+        ]);
+    }
+
+    $analytics = app(FeedbackAnalyticsQuery::class);
+    $comments = $analytics->latestComments($form);
+
+    expect($comments)->toHaveCount(1)
+        ->and(array_keys($comments[0]))->toBe(['id', 'text_value'])
+        ->and($comments[0]['text_value'])->toBe('Useful comment')
+        ->and($analytics->latestComments($form, 0))->toBe([]);
+});
