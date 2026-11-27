@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\DB;
  */
 final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
 {
-
     public function handle(PaymentData $refundPayment, ?string $purchaseId = null): void
     {
         if ($refundPayment->payment_type !== 'refund') {
@@ -38,7 +37,7 @@ final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
 
         $refundAmount = $refundPayment->getAmountInCents();
         if ($refundAmount <= 0) {
-            return $purchase;
+            return;
         }
 
         // Lock the row so concurrent refund webhooks cannot both read the
@@ -47,7 +46,7 @@ final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
             $locked = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($purchaseId)->lockForUpdate()->first();
 
             if (! $locked instanceof Purchase) {
-                return null;
+                return;
             }
 
             $purchaseTotal = $this->resolvePurchaseTotal($locked);
