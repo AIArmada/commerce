@@ -6,6 +6,7 @@ namespace AIArmada\FilamentShipping\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Pending;
@@ -37,7 +38,7 @@ class PendingShipmentsWidget extends BaseWidget
             if ($owner === null) {
                 $query->whereRaw('0 = 1');
             } else {
-                $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
+                $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
             }
         }
 

@@ -11,6 +11,7 @@ use AIArmada\FilamentShipping\Widgets\CarrierPerformanceWidget;
 use AIArmada\FilamentShipping\Widgets\PendingActionsWidget;
 use AIArmada\FilamentShipping\Widgets\PendingShipmentsWidget;
 use AIArmada\FilamentShipping\Widgets\ShippingDashboardWidget;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;
@@ -231,11 +232,7 @@ describe('PendingActionsWidget', function (): void {
             }
         });
 
-        $widget = new PendingActionsWidget;
-
-        $method = new ReflectionMethod($widget, 'getPendingShipmentsCount');
-
-        expect($method->invoke($widget))->toBe(2);
+        expect(app(DashboardStats::class)->pendingActions()['pending'])->toBe(2);
     });
 
     it('builds stats without requiring Filament panel routes', function (): void {

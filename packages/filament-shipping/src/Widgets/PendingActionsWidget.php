@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\States\DeliveryFailed;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
 use AIArmada\Shipping\States\ExceptionStatus;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\ShipmentStatus;
@@ -25,8 +21,10 @@ class PendingActionsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        $counts = app(DashboardStats::class)->pendingActions();
+
         return [
-            Stat::make('Pending Shipments', $this->getPendingShipmentsCount())
+            Stat::make('Pending Shipments', $counts['pending'])
                 ->description('Ready to ship')
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->color('warning')
@@ -34,7 +32,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                     'tableFilters[status][value]' => ShipmentStatus::normalize(Pending::class),
                 ])),
 
-            Stat::make('Exceptions', $this->getExceptionShipmentsCount())
+            Stat::make('Exceptions', $counts['exceptions'])
                 ->description('Need attention')
                 ->icon('heroicon-o-exclamation-triangle')
                 ->color('danger')
@@ -42,7 +40,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                     'tableFilters[status][value]' => ShipmentStatus::normalize(ExceptionStatus::class),
                 ])),
 
-            Stat::make('Pending Returns', $this->getPendingReturnsCount())
+            Stat::make('Pending Returns', $counts['pendingReturns'])
                 ->description('Awaiting approval')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('info')
@@ -50,7 +48,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                     'tableFilters[status][value]' => 'pending',
                 ])),
 
-            Stat::make('Approved Returns', $this->getApprovedReturnsCount())
+            Stat::make('Approved Returns', $counts['approvedReturns'])
                 ->description('Awaiting shipment')
                 ->icon('heroicon-o-check-badge')
                 ->color('success')
@@ -58,80 +56,5 @@ class PendingActionsWidget extends StatsOverviewWidget
                     'tableFilters[status][value]' => 'approved',
                 ])),
         ];
-    }
-
-    protected function getPendingShipmentsCount(): int
-    {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', ShipmentStatus::normalize(Pending::class))
-            ->count();
-    }
-
-    protected function getExceptionShipmentsCount(): int
-    {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->whereIn('status', [
-                ShipmentStatus::normalize(ExceptionStatus::class),
-                ShipmentStatus::normalize(DeliveryFailed::class),
-            ])
-            ->count();
-    }
-
-    protected function getPendingReturnsCount(): int
-    {
-        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', 'pending')
-            ->count();
-    }
-
-    protected function getApprovedReturnsCount(): int
-    {
-        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', 'approved')
-            ->count();
     }
 }
