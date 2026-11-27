@@ -10,7 +10,7 @@ use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Support\CartLimits;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;

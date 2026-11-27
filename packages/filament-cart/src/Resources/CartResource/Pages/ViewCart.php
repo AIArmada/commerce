@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
 use AIArmada\Cart\Actions\ClearLiveCart;
 use AIArmada\Cart\Actions\DestroyLiveCart;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
 use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;

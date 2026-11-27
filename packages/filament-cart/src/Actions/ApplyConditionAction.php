@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCart\Actions;
 use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

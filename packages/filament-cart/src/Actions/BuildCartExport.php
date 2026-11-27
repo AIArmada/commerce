@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Data\CartExport;
 use Carbon\CarbonImmutable;

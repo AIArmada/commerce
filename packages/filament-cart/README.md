@@ -41,8 +41,8 @@ The plugin registers three Filament resources under the **E-Commerce** navigatio
 
 | Resource | Model | Purpose |
 |----------|-------|---------|
-| Carts | `AIArmada\\Cart\\Snapshots\\CartSnapshot` | View normalized cart snapshots |
-| Cart Items | `AIArmada\\Cart\\Snapshots\\CartSnapshotItem` | Browse individual line items |
+| Carts | `AIArmada\\Cart\\Features\\Snapshots\\Models\\CartSnapshot` | View normalized cart snapshots |
+| Cart Items | `AIArmada\\Cart\\Features\\Snapshots\\Models\\CartSnapshotItem` | Browse individual line items |
 | Conditions | `AIArmada\\Cart\\Features\\Conditions\\Models\\Condition` | Manage reusable condition templates |
 
 ### Cart Resource

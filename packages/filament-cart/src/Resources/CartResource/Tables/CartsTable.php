@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Tables;
 
 use AIArmada\Cart\Actions\ClearLiveCart;
 use AIArmada\Cart\Actions\DestroyLiveCart;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\FilamentCart\Resources\CartResource;
 use Exception;

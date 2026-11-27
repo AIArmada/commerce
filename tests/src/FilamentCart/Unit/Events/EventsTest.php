@@ -6,7 +6,7 @@ use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\Cart\Events\CartCheckoutStarted;
 use AIArmada\Cart\Events\CartSnapshotSynced;
 use AIArmada\Cart\Events\HighValueCartDetected;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 
 it('creates scalar payloads for cart operational events', function (string $eventClass): void {
     $cart = Cart::query()->create([

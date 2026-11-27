@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition as CoreCondition;
 use AIArmada\Cart\Facades\Cart as CartFacade;
-use AIArmada\Cart\Snapshots\CartSnapshot;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
-use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem as CartItem;
 
 beforeEach(function (): void {
     CartFacade::clear();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

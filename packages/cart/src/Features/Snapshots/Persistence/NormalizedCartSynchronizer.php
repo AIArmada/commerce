@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\Snapshots\Persistence;
 
-use AIArmada\Cart\Snapshots\CartSnapshot;
-use AIArmada\Cart\Snapshots\CartSnapshotItem;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Conditions\CartCondition as BaseCartCondition;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;

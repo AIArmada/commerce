@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ListCarts;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;

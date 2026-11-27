@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Actions;
 
 use AIArmada\Cart\Events\CartAbandoned;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\CartResource\Tables;
 
 use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
 use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use Exception;

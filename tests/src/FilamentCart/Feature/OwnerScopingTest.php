@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Features\Conditions\Models\Condition;
-use AIArmada\Cart\Snapshots\CartSnapshot;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
-use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem as CartItem;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;

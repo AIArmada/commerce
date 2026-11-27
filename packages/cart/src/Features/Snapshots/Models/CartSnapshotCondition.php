@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Snapshots;
+namespace AIArmada\Cart\Features\Snapshots\Models;
 
 use AIArmada\Cart\Database\Factories\CartSnapshotConditionFactory;
 use AIArmada\Cart\Support\CartMoney;

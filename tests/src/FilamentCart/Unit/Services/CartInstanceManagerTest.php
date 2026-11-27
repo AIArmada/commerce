@@ -6,7 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;

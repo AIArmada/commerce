@@ -6,7 +6,7 @@ use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;

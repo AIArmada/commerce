@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as SnapshotCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as SnapshotCondition;
 
 beforeEach(function (): void {
     config()->set('cart.snapshots.synchronization.queue_sync', false);

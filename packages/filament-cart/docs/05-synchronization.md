@@ -167,7 +167,7 @@ $cart = $manager->resolve($instance, $identifier);
 This is useful when you need to perform operations on the actual cart from a snapshot record:
 
 ```php
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 
 $cartModel = CartSnapshot::find($id);
 $liveCart = $cartModel->getCartInstance();
@@ -247,7 +247,7 @@ app(CartSyncManager::class)->sync(Cart::getCartInstance('default'));
 The `CartSnapshot` model stores a complete read projection of cart state:
 
 ```php
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 
 $cart = CartSnapshot::find($id);
 
@@ -355,7 +355,7 @@ Syncs are idempotent — running the same sync multiple times produces the same 
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 
 $cart = Cart::getCartInstance('default');
 $identifier = $cart->getIdentifier();

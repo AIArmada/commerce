@@ -7,7 +7,7 @@ namespace App\Http\Controllers;
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Features\Snapshots\Actions\StartCartCheckout;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Checkout\Facades\Checkout;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\WebhookReceived;

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Snapshots;
+namespace AIArmada\Cart\Features\Snapshots\Models;
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Database\Factories\CartSnapshotFactory;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;

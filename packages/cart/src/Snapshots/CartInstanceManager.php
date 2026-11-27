@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Snapshots;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;

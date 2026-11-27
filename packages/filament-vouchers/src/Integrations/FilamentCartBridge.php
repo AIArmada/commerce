@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Integrations;
 
 use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;

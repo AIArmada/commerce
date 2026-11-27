@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Events;
 
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use Carbon\CarbonImmutable;
 
 final readonly class CartCheckoutStarted
