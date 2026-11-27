@@ -44,6 +44,7 @@ use AIArmada\Feedback\Support\ScoreCalculator;
 use AIArmada\Feedback\Traits\ReceivesFeedback;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\MultipleRecordsFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -759,6 +760,6 @@ it('rejects ambiguous template slugs without creating a form', function (): void
     }
 
     expect(fn () => $traitSubject->createFeedbackFormFromTemplate('ambiguous-template'))
-        ->toThrow(\Illuminate\Database\MultipleRecordsFoundException::class)
+        ->toThrow(MultipleRecordsFoundException::class)
         ->and($traitSubject->feedbackForms()->count())->toBe(0);
 });
