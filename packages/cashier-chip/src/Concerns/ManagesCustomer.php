@@ -58,6 +58,8 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
             throw CustomerAlreadyCreated::exists($this);
         }
 
+        Cashier::chipCustomerDirectory()->assertCanCreate($this->chipSubjectReference());
+
         $payload = array_merge([
             'email' => $this->chipEmail(),
             'full_name' => $this->chipName(),

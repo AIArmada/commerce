@@ -85,6 +85,16 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
         return $this->getChipCustomerId($subject) !== null;
     }
 
+    public function assertCanCreate(RecordReference $subject): void
+    {
+        $model = $this->resolveSubject($subject);
+        $this->assertSubjectOwner($model);
+
+        if ($this->findAnyForSubject($model) !== null) {
+            throw new AuthorizationException('A CHIP customer link already exists for this subject.');
+        }
+    }
+
     public function link(RecordReference $subject, string $chipCustomerId, array $metadata = []): CustomerLinkData
     {
         return $this->toData($this->linkSubject($this->resolveSubject($subject), $chipCustomerId, $metadata));

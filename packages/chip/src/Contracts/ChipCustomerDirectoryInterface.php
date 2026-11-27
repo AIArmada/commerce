@@ -18,6 +18,8 @@ interface ChipCustomerDirectoryInterface
 
     public function hasChipCustomerId(RecordReference $subject): bool;
 
+    public function assertCanCreate(RecordReference $subject): void;
+
     /**
      * @param  array<string, mixed>  $metadata
      */

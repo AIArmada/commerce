@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Data\RecordReference;
-use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PaymentData;
@@ -20,7 +18,9 @@ use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Features\Collect\Actions\PurchasesApi;
 use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Chip\Features\Collect\Persistence\ChipCustomerDirectory;
 use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
 use AIArmada\Chip\Features\Payouts\Models\BankAccount;
@@ -32,7 +32,6 @@ use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
-use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
@@ -42,6 +41,7 @@ use AIArmada\Chip\Services\LocalAnalyticsService;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use Akaunting\Money\Money;

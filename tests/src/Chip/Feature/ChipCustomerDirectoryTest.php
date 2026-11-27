@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -48,6 +49,9 @@ describe('ChipCustomerDirectory', function (): void {
             ->and($directory->findByChipCustomerId('chip_customer_test_123', new RecordReference($ownerOne->getMorphClass(), (string) $ownerOne->getKey()))?->id)->toBe($link->id)
             ->and($directory->findByChipCustomerId('chip_customer_test_123', new RecordReference($ownerTwo->getMorphClass(), (string) $ownerTwo->getKey())))->toBeNull();
 
+        expect(fn () => OwnerContext::withOwner($ownerTwo, fn () => $directory->assertCanCreate(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()))))
+            ->toThrow(AuthorizationException::class);
+
         expect(fn () => OwnerContext::withOwner(
             $ownerTwo,
             fn () => $directory->link(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()), 'chip_customer_cross_owner')
@@ -78,5 +82,5 @@ it('rejects a missing owner before linking any customer in owner mode', function
     $reference = new RecordReference($subject->getMorphClass(), (string) $subject->getKey());
 
     expect(fn () => app(ChipCustomerDirectoryInterface::class)->link($reference, 'foreign-customer'))
-        ->toThrow(AuthorizationException::class);
+        ->toThrow(NoCurrentOwnerException::class);
 });

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
@@ -13,6 +12,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
 

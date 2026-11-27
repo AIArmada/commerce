@@ -15,6 +15,7 @@ use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 
 /**
@@ -127,7 +128,11 @@ final class Cashier
     private static function resolveBillable(string $chipId, ?Model $owner = null): ?Model
     {
         $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, EloquentRecordReference::fromModel($owner));
-        $subject = EloquentRecordReference::resolve($link?->subject);
+        try {
+            $subject = EloquentRecordReference::resolve($link?->subject);
+        } catch (ModelNotFoundException) {
+            return null;
+        }
 
         /** @var (Model&BillableContract)|null $billable */
         $billable = $subject instanceof Model && static::isBillableModel($subject)
