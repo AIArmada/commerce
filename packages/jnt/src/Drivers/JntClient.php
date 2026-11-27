@@ -80,9 +80,13 @@ class JntClient
                 throw JntApiException::invalidApiResponse($endpoint, 'Failed to decode API response: expected a JSON object or array');
             }
 
+            if (isset($data['code']) && ! is_string($data['code']) && ! is_int($data['code'])) {
+                throw JntApiException::invalidApiResponse($endpoint, 'Invalid response code type');
+            }
+
             if (isset($data['code']) && (string) $data['code'] !== '1') {
                 throw new JntApiException(
-                    message: 'J&T API request failed: ' . ($data['msg'] ?? 'Unknown error'),
+                    message: 'J&T API request failed: ' . (is_string($data['msg'] ?? null) ? $data['msg'] : 'Unknown error'),
                     errorCode: (string) $data['code'],
                     apiResponse: $data,
                     endpoint: $endpoint,
@@ -146,7 +150,7 @@ class JntClient
             }
         } else {
             $body = $response->body();
-            $payload['body_length'] = mb_strlen($body);
+            $payload['body_length'] = strlen($body);
             $payload['body_sha256'] = hash('sha256', $body);
         }
 

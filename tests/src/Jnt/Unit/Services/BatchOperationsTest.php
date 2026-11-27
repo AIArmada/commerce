@@ -6,6 +6,7 @@ use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Services\JntExpressService;
+use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Facades\Http;
 
 function createTestService(): JntExpressService
@@ -114,6 +115,23 @@ describe('Batch Create Orders', function (): void {
 });
 
 describe('Batch Track Parcels', function (): void {
+    it('keeps the calling instance and owner context for tracking and waybill batches', function (): void {
+        $service = createTestService();
+        config(['jnt.owner.enabled' => true]);
+        Concurrency::shouldReceive('run')->never();
+        app()->forgetInstance(JntExpressService::class);
+
+        Http::fake([
+            '*/api/logistics/trace' => Http::response(['code' => '1', 'data' => ['txlogisticId' => 'OWNER-BATCH-1', 'billCode' => 'OWNER-TN-1', 'details' => []]]),
+            '*/api/order/printOrder' => Http::response(['code' => '1', 'data' => ['content' => 'PDF']]),
+        ]);
+
+        expect($service->batchTrackParcels(orderIds: ['OWNER-BATCH-1'])['successful'])->toHaveCount(1)
+            ->and($service->batchPrintWaybills(['OWNER-BATCH-1'])['successful'])->toHaveCount(1);
+
+        Http::assertSentCount(2);
+    });
+
     it('tracks multiple parcels by order IDs', function (): void {
         Http::fake([
             '*/api/logistics/trace' => Http::sequence()

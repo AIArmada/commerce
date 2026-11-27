@@ -396,10 +396,13 @@ class JntExpressService
         // Each closure will resolve a fresh service instance in its child process.
         // Tasks use list keys so duplicate identifiers are preserved, not collapsed.
         $tasks = [];
+        $inOwnerContext = $this->requiresLocalBatchExecution();
 
         // Tasks for order IDs
         foreach (array_values($orderIds) as $index => $orderId) {
-            $tasks["order:{$index}:{$orderId}"] = static fn (): array => self::executeTrackingTask(
+            $tasks["order:{$index}:{$orderId}"] = $inOwnerContext
+                ? fn (): array => self::executeTrackingTask($orderId, null, $this)
+                : static fn (): array => self::executeTrackingTask(
                 orderId: $orderId,
                 trackingNumber: null,
             );
@@ -407,7 +410,9 @@ class JntExpressService
 
         // Tasks for tracking numbers
         foreach (array_values($trackingNumbers) as $index => $trackingNumber) {
-            $tasks["tracking:{$index}:{$trackingNumber}"] = static fn (): array => self::executeTrackingTask(
+            $tasks["tracking:{$index}:{$trackingNumber}"] = $inOwnerContext
+                ? fn (): array => self::executeTrackingTask(null, $trackingNumber, $this)
+                : static fn (): array => self::executeTrackingTask(
                 orderId: null,
                 trackingNumber: $trackingNumber,
             );
@@ -420,7 +425,7 @@ class JntExpressService
 
         // Execute tracking requests in bounded parallel chunks
         /** @var list<array{success: bool, data?: TrackingData, error?: string, identifier: string, type: string}> $results */
-        $results = $this->runTasksInChunks($tasks);
+        $results = $this->runTasksInChunks($tasks, $inOwnerContext);
 
         // Process results
         foreach ($results as $result) {
@@ -528,13 +533,16 @@ class JntExpressService
         // Build concurrent tasks - pass primitives only. Tasks use list keys
         // so duplicate order IDs are preserved, not collapsed.
         $tasks = [];
+        $inOwnerContext = $this->requiresLocalBatchExecution();
         foreach (array_values($orderIds) as $index => $orderId) {
-            $tasks["print:{$index}:{$orderId}"] = static fn (): array => self::executePrintTask($orderId, $templateName);
+            $tasks["print:{$index}:{$orderId}"] = $inOwnerContext
+                ? fn (): array => self::executePrintTask($orderId, $templateName, $this)
+                : static fn (): array => self::executePrintTask($orderId, $templateName);
         }
 
         // Execute print requests in bounded parallel chunks
         /** @var list<array{success: bool, orderId: string, data?: array<string, mixed>, error?: string}> $results */
-        $results = $this->runTasksInChunks($tasks);
+        $results = $this->runTasksInChunks($tasks, $inOwnerContext);
 
         $successful = [];
         $failed = [];
@@ -610,6 +618,11 @@ class JntExpressService
         return $this->password;
     }
 
+    private function requiresLocalBatchExecution(): bool
+    {
+        return (bool) config('jnt.owner.enabled', false) || OwnerContext::resolve() !== null;
+    }
+
     /**
      * Run concurrency tasks in bounded chunks so huge batches cannot exhaust
      * processes or connections.
@@ -617,14 +630,16 @@ class JntExpressService
      * @param  array<string, callable>  $tasks
      * @return list<mixed>
      */
-    private function runTasksInChunks(array $tasks): array
+    private function runTasksInChunks(array $tasks, bool $local): array
     {
         $chunkSize = max(1, (int) config('jnt.batch.concurrency_chunk_size', 25));
         $results = [];
 
         foreach (array_chunk($tasks, $chunkSize, true) as $chunk) {
             /** @var array<string, mixed> $chunkResults */
-            $chunkResults = Concurrency::run($chunk);
+            $chunkResults = $local
+                ? array_map(static fn (callable $task): mixed => $task(), $chunk)
+                : Concurrency::run($chunk);
 
             foreach ($chunkResults as $result) {
                 $results[] = $result;
@@ -642,7 +657,7 @@ class JntExpressService
      *
      * @return array{success: bool, data?: TrackingData, error?: string, identifier: string, type: string}
      */
-    private static function executeTrackingTask(?string $orderId, ?string $trackingNumber): array
+    private static function executeTrackingTask(?string $orderId, ?string $trackingNumber, ?self $service = null): array
     {
         $identifier = $orderId ?? $trackingNumber ?? '';
         $type = $orderId !== null ? 'orderId' : 'trackingNumber';
@@ -650,7 +665,7 @@ class JntExpressService
         try {
             // Resolve a fresh service instance in the child process
             /** @var JntExpressService $service */
-            $service = app(self::class);
+            $service ??= app(self::class);
             $tracking = $service->trackParcel(orderId: $orderId, trackingNumber: $trackingNumber);
 
             return [
@@ -674,11 +689,11 @@ class JntExpressService
      *
      * @return array{success: bool, orderId: string, data?: array<string, mixed>, error?: string}
      */
-    private static function executePrintTask(string $orderId, ?string $templateName): array
+    private static function executePrintTask(string $orderId, ?string $templateName, ?self $service = null): array
     {
         try {
             /** @var JntExpressService $service */
-            $service = app(self::class);
+            $service ??= app(self::class);
             $data = $service->printOrder($orderId, null, $templateName);
 
             return [

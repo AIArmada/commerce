@@ -287,3 +287,5 @@ Schedule::command('jnt:batch-sync-tracking')
 3. **Log failures** for manual review
 4. **Use queues** for large batches
 5. **Handle partial success** gracefully
+
+When J&T owner mode is enabled or an owner context is active, batch tracking and printing run in the current process with the calling service instance. This preserves tenant credentials and cache isolation; process-based concurrency is used only without an owner context.
