@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Language;
+use AIArmada\FilamentPersons\FilamentPersonsServiceProvider;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource;
 use AIArmada\FilamentPersons\Resources\PersonResource;
 use AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers\AffiliationsRelationManager;
@@ -34,7 +35,7 @@ use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->app->register(PersonsServiceProvider::class);
-    $this->app->register(\AIArmada\FilamentPersons\FilamentPersonsServiceProvider::class);
+    $this->app->register(FilamentPersonsServiceProvider::class);
 
     $base = dirname(__DIR__, 3) . '/packages/persons/database/migrations/';
     $migrations = glob($base . '*.php') ?: [];

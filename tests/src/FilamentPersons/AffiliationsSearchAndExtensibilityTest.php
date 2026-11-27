@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentPersons\FilamentPersonsServiceProvider;
 use AIArmada\FilamentPersons\Resources\PersonResource;
 use AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers\AffiliationsRelationManager;
 use AIArmada\Persons\Enums\AffiliationType;
@@ -25,7 +26,7 @@ final class TestPersonExtraRelationManager extends RelationManager
 
 beforeEach(function (): void {
     $this->app->register(PersonsServiceProvider::class);
-    $this->app->register(\AIArmada\FilamentPersons\FilamentPersonsServiceProvider::class);
+    $this->app->register(FilamentPersonsServiceProvider::class);
 
     $base = dirname(__DIR__, 3) . '/packages/persons/database/migrations/';
     $migrations = glob($base . '*.php') ?: [];
