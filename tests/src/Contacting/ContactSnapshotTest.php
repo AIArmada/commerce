@@ -19,7 +19,7 @@ test('CreateContactSnapshotAction persists snapshots with the source owner', fun
 
     $contactMethod = $customer->addContactMethod(ContactMethodData::email('snapshot-' . uniqid() . '@example.com'));
 
-    $snapshot = (new CreateContactSnapshotAction)->fromContactMethod($customer, $contactMethod, 'checkout');
+    $snapshot = app(CreateContactSnapshotAction::class)->fromContactMethod($customer, $contactMethod->id, 'checkout');
 
     expect($snapshot->exists)->toBeTrue()
         ->and($snapshot->owner_type)->toBe($contactMethod->owner_type)
@@ -39,7 +39,7 @@ test('CreateContactSnapshotAction throws when snapshots are disabled', function 
 
     $contactMethod = $customer->addContactMethod(ContactMethodData::email('snapshot-disabled-' . uniqid() . '@example.com'));
 
-    expect(fn () => (new CreateContactSnapshotAction)->fromContactMethod($customer, $contactMethod, 'checkout'))
+    expect(fn () => app(CreateContactSnapshotAction::class)->fromContactMethod($customer, $contactMethod->id, 'checkout'))
         ->toThrow(ContactSnapshotsDisabledException::class);
 
     expect(ContactSnapshot::query()->count())->toBe(0);
@@ -58,7 +58,7 @@ test('CreateContactSnapshotAction persists social profile snapshots', function (
         handle: 'snapshot-' . uniqid(),
     ));
 
-    $snapshot = (new CreateContactSnapshotAction)->fromSocialProfile($customer, $profile, 'checkout');
+    $snapshot = app(CreateContactSnapshotAction::class)->fromSocialProfile($customer, $profile->id, 'checkout');
 
     expect($snapshot->exists)->toBeTrue()
         ->and($snapshot->snapshot_type)->toBe('social_profile')
@@ -78,8 +78,9 @@ test('snapshot payloads exclude loaded relations', function (): void {
     $method = $customer->addContactMethod(ContactMethodData::email('payload-' . uniqid() . '@example.com'));
     $method->setRelation('contactable', $customer);
 
-    $snapshot = (new CreateContactSnapshotAction)->fromContactMethod($customer, $method);
+    $snapshot = app(CreateContactSnapshotAction::class)->fromContactMethod($customer, $method->id);
 
-    expect($snapshot->payload)->not->toHaveKeys(['owner', 'contactable'])
+    expect($snapshot->payload)->not->toHaveKey('owner')
+        ->and($snapshot->payload)->not->toHaveKey('contactable')
         ->and($snapshot->payload['value'])->toBe($method->value);
 });

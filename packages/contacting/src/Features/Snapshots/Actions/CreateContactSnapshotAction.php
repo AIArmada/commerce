@@ -5,255 +5,109 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Features\Snapshots\Actions;
 
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\Contacting\Data\ContactSnapshotSourceData;
+use AIArmada\Contacting\Features\ContactMethods\Api\ReadsContactMethodSnapshotSources;
 use AIArmada\Contacting\Features\Snapshots\Exceptions\ContactSnapshotsDisabledException;
-use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
-use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use AIArmada\Contacting\Features\SocialProfiles\Api\ReadsSocialProfileSnapshotSources;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-final class CreateContactSnapshotAction
+final readonly class CreateContactSnapshotAction
 {
-    public function fromContactMethod(Model $snapshotable, ContactMethod $contactMethod, ?string $reason = null): ContactSnapshot
-    {
-        $this->assertSnapshotsEnabled();
-        $contactMethod = $this->guardContactMethod($contactMethod);
-        $contactMethod->loadMissing('owner');
-        $owner = $this->sourceOwner($contactMethod);
-        $this->assertOwnerMatches($snapshotable, $owner);
+    public function __construct(
+        private ReadsContactMethodSnapshotSources $contactMethods,
+        private ReadsSocialProfileSnapshotSources $socialProfiles,
+        private ContactingModelReferenceGuard $references,
+    ) {}
 
-        return $this->persistSnapshot(
-            $this->makeSnapshot(
-                snapshotable: $snapshotable,
-                snapshotType: 'contact_method',
-                sourceId: $contactMethod->id,
-                sourceType: $contactMethod->getMorphClass(),
-                reason: $reason,
-                label: $contactMethod->label,
-                channel: $contactMethod->type,
-                value: $contactMethod->value,
-                normalizedValue: $contactMethod->normalized_value,
-                url: null,
-                displayValue: $contactMethod->display_value,
-                isPublic: $contactMethod->is_public,
-                payload: $contactMethod->attributesToArray(),
-                owner: $owner,
-            ),
-            $owner,
-        );
+    public function fromContactMethod(Model $snapshotable, string $contactMethodId, ?string $reason = null): ContactSnapshot
+    {
+        return $this->fromBundle($snapshotable, [$contactMethodId], [], $reason)->firstOrFail();
     }
 
-    public function fromSocialProfile(Model $snapshotable, SocialProfile $socialProfile, ?string $reason = null): ContactSnapshot
+    public function fromSocialProfile(Model $snapshotable, string $socialProfileId, ?string $reason = null): ContactSnapshot
     {
-        $this->assertSnapshotsEnabled();
-        $socialProfile = $this->guardSocialProfile($socialProfile);
-        $socialProfile->loadMissing('owner');
-        $owner = $this->sourceOwner($socialProfile);
-        $this->assertOwnerMatches($snapshotable, $owner);
-
-        return $this->persistSnapshot(
-            $this->makeSnapshot(
-                snapshotable: $snapshotable,
-                snapshotType: 'social_profile',
-                sourceId: $socialProfile->id,
-                sourceType: $socialProfile->getMorphClass(),
-                reason: $reason,
-                label: $socialProfile->label,
-                channel: $socialProfile->platform,
-                value: $socialProfile->handle ?? $socialProfile->url,
-                normalizedValue: $socialProfile->normalized_url,
-                url: $socialProfile->url,
-                displayValue: $socialProfile->display_name ?? $socialProfile->handle,
-                isPublic: $socialProfile->is_public,
-                payload: $socialProfile->attributesToArray(),
-                owner: $owner,
-            ),
-            $owner,
-        );
+        return $this->fromBundle($snapshotable, [], [$socialProfileId], $reason)->firstOrFail();
     }
 
     /**
-     * @param  iterable<ContactMethod>  $contactMethods
-     * @param  iterable<SocialProfile>  $socialProfiles
+     * @param iterable<string> $contactMethodIds
+     * @param iterable<string> $socialProfileIds
      * @return Collection<int, ContactSnapshot>
      */
-    public function fromBundle(Model $snapshotable, iterable $contactMethods, iterable $socialProfiles, ?string $reason = null): Collection
+    public function fromBundle(Model $snapshotable, iterable $contactMethodIds, iterable $socialProfileIds, ?string $reason = null): Collection
     {
         $this->assertSnapshotsEnabled();
 
-        return DB::transaction(function () use ($contactMethods, $reason, $snapshotable, $socialProfiles): Collection {
-            $contactMethods = Collection::make($contactMethods)->map(fn (ContactMethod $source): ContactMethod => $this->guardContactMethod($source))->loadMissing('owner');
-            $socialProfiles = Collection::make($socialProfiles)->map(fn (SocialProfile $source): SocialProfile => $this->guardSocialProfile($source))->loadMissing('owner');
+        return (new ContactSnapshot)->getConnection()->transaction(function () use ($snapshotable, $contactMethodIds, $socialProfileIds, $reason): Collection {
+            $target = $this->references->resolve($snapshotable->getMorphClass(), (string) $snapshotable->getKey());
 
+            if (! $target instanceof Model) {
+                throw new AuthorizationException('The snapshot target must be persisted.');
+            }
+
+            [$ownerType, $ownerId] = $this->ownerTuple($target);
+            $owner = OwnerTupleParser::fromTypeAndId($ownerType, $ownerId)->toOwnerModelOrFail();
+            $sources = [
+                ...$this->contactMethods->read($contactMethodIds),
+                ...$this->socialProfiles->read($socialProfileIds),
+            ];
             $snapshots = new Collection;
             $rows = [];
             $now = Carbon::now();
 
-            foreach ($contactMethods as $contactMethod) {
-                $owner = $this->sourceOwner($contactMethod);
-                $this->assertOwnerMatches($snapshotable, $owner);
+            foreach ($sources as $source) {
+                if ($source->ownerType !== $ownerType || $source->ownerId !== $ownerId) {
+                    throw new AuthorizationException('The contact source and snapshotable must share the same owner context.');
+                }
 
-                $snapshots->push($this->stageSnapshot(
-                    $this->makeSnapshot(
-                        snapshotable: $snapshotable,
-                        snapshotType: 'contact_method',
-                        sourceId: $contactMethod->id,
-                        sourceType: $contactMethod->getMorphClass(),
-                        reason: $reason,
-                        label: $contactMethod->label,
-                        channel: $contactMethod->type,
-                        value: $contactMethod->value,
-                        normalizedValue: $contactMethod->normalized_value,
-                        url: null,
-                        displayValue: $contactMethod->display_value,
-                        isPublic: $contactMethod->is_public,
-                        payload: $contactMethod->attributesToArray(),
-                        owner: $owner,
-                    ),
-                    $rows,
-                    $now,
-                ));
+                $snapshot = $this->makeSnapshot($target, $source, $reason, $owner);
+                $snapshot->id = (string) Str::uuid();
+                $snapshot->created_at = $now;
+                $snapshot->updated_at = $now;
+                $rows[] = $snapshot->getAttributes();
+                $snapshot->exists = true;
+                $snapshot->wasRecentlyCreated = true;
+                $snapshot->syncOriginal();
+                $snapshots->push($snapshot);
             }
 
-            foreach ($socialProfiles as $socialProfile) {
-                $owner = $this->sourceOwner($socialProfile);
-                $this->assertOwnerMatches($snapshotable, $owner);
-
-                $snapshots->push($this->stageSnapshot(
-                    $this->makeSnapshot(
-                        snapshotable: $snapshotable,
-                        snapshotType: 'social_profile',
-                        sourceId: $socialProfile->id,
-                        sourceType: $socialProfile->getMorphClass(),
-                        reason: $reason,
-                        label: $socialProfile->label,
-                        channel: $socialProfile->platform,
-                        value: $socialProfile->handle ?? $socialProfile->url,
-                        normalizedValue: $socialProfile->normalized_url,
-                        url: $socialProfile->url,
-                        displayValue: $socialProfile->display_name ?? $socialProfile->handle,
-                        isPublic: $socialProfile->is_public,
-                        payload: $socialProfile->attributesToArray(),
-                        owner: $owner,
-                    ),
-                    $rows,
-                    $now,
-                ));
-            }
-
-            if ($rows !== []) {
-                app(ContactingModelReferenceGuard::class)->resolve(
-                    $snapshotable->getMorphClass(),
-                    (string) $snapshotable->getKey(),
-                );
-
-                ContactSnapshot::query()->insert($rows);
+            foreach (array_chunk($rows, 100) as $batch) {
+                ContactSnapshot::query()->insert($batch);
             }
 
             return $snapshots;
         });
     }
 
-    private function guardContactMethod(ContactMethod $source): ContactMethod
+    private function makeSnapshot(Model $target, ContactSnapshotSourceData $source, ?string $reason, ?Model $owner): ContactSnapshot
     {
-        return ContactMethod::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $source->id)
-            : ContactMethod::query()->whereKey($source->id)->firstOrFail();
-    }
-
-    private function guardSocialProfile(SocialProfile $source): SocialProfile
-    {
-        return SocialProfile::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $source->id)
-            : SocialProfile::query()->whereKey($source->id)->firstOrFail();
-    }
-
-    private function sourceOwner(ContactMethod | SocialProfile $source): ?Model
-    {
-        $owner = $source->getRelationValue('owner');
-
-        if ($source->owner_type !== null && ! $owner instanceof Model) {
-            throw new AuthorizationException('The contact source owner cannot be resolved.');
-        }
-
-        return $owner instanceof Model ? $owner : null;
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $rows
-     */
-    private function stageSnapshot(ContactSnapshot $snapshot, array &$rows, Carbon $now): ContactSnapshot
-    {
-        $snapshot->id ??= (string) Str::uuid();
-        $snapshot->created_at = $now;
-        $snapshot->updated_at = $now;
-
-        $rows[] = $snapshot->getAttributes();
-
-        $snapshot->exists = true;
-        $snapshot->wasRecentlyCreated = true;
-        $snapshot->syncOriginal();
-
-        return $snapshot;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function makeSnapshot(
-        Model $snapshotable,
-        string $snapshotType,
-        string $sourceId,
-        string $sourceType,
-        ?string $reason,
-        ?string $label,
-        ?string $channel,
-        ?string $value,
-        ?string $normalizedValue,
-        ?string $url,
-        ?string $displayValue,
-        bool $isPublic,
-        array $payload,
-        ?Model $owner,
-    ): ContactSnapshot {
         $snapshot = new ContactSnapshot;
-        $snapshot->snapshotable()->associate($snapshotable);
-        $snapshot->snapshot_type = $snapshotType;
-        $snapshot->source_id = $sourceId;
-        $snapshot->source_type = $sourceType;
+        $snapshot->snapshotable()->associate($target);
+        $snapshot->snapshot_type = $source->snapshotType;
+        $snapshot->source_id = $source->id;
+        $snapshot->source_type = $source->type;
         $snapshot->reason = $reason;
-        $snapshot->label = $label;
-        $snapshot->channel = $channel;
-        $snapshot->value = $value;
-        $snapshot->normalized_value = $normalizedValue;
-        $snapshot->url = $url;
-        $snapshot->display_value = $displayValue;
-        $snapshot->is_public = $isPublic;
-        $snapshot->payload = $payload;
+        $snapshot->label = $source->label;
+        $snapshot->channel = $source->channel;
+        $snapshot->value = $source->value;
+        $snapshot->normalized_value = $source->normalizedValue;
+        $snapshot->url = $source->url;
+        $snapshot->display_value = $source->displayValue;
+        $snapshot->is_public = $source->isPublic;
+        $snapshot->payload = $source->payload;
 
         if ($owner !== null) {
             $snapshot->assignOwner($owner);
         }
 
         return $snapshot;
-    }
-
-    private function persistSnapshot(ContactSnapshot $snapshot, ?Model $owner): ContactSnapshot
-    {
-        $this->assertSnapshotsEnabled();
-
-        return OwnerContext::withOwner($owner, function () use ($snapshot): ContactSnapshot {
-            $snapshot->save();
-
-            return $snapshot;
-        });
     }
 
     private function assertSnapshotsEnabled(): void
@@ -265,20 +119,6 @@ final class CreateContactSnapshotAction
         throw new ContactSnapshotsDisabledException(
             'Contact snapshots are disabled; enable contacting.features.contact_snapshots before creating one.',
         );
-    }
-
-    private function assertOwnerMatches(Model $snapshotable, ?Model $sourceOwner): void
-    {
-        [$sourceType, $sourceId] = $sourceOwner instanceof Model
-            ? [$sourceOwner->getMorphClass(), (string) $sourceOwner->getKey()]
-            : [null, null];
-        [$targetType, $targetId] = $this->ownerTuple($snapshotable);
-
-        if ($sourceType === $targetType && $sourceId === $targetId) {
-            return;
-        }
-
-        throw new AuthorizationException('The contact source and snapshotable must share the same owner context.');
     }
 
     /**

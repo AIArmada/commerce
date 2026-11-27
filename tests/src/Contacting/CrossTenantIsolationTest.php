@@ -145,9 +145,9 @@ it('blocks cross-owner contacting writes', function (): void {
         return $customerB->addContactMethod(ContactMethodData::email('snapshot-source-' . uniqid() . '@example.com'));
     });
 
-    expect(fn (): ContactSnapshot => (new CreateContactSnapshotAction)->fromContactMethod(
+    expect(fn (): ContactSnapshot => app(CreateContactSnapshotAction::class)->fromContactMethod(
         $customerA,
-        $contactMethodB,
+        $contactMethodB->id,
         'cross-owner',
     ))->toThrow(AuthorizationException::class);
 });

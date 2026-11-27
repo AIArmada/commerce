@@ -206,8 +206,8 @@ use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 // When event is published, snapshot the organizer's public contacts
 app(CreateContactSnapshotAction::class)->fromBundle(
     snapshotable: $event,
-    contactMethods: $event->organizer->publicContactMethods()->get(),
-    socialProfiles: $event->organizer->publicSocialProfiles()->get(),
+    contactMethodIds: $event->organizer->publicContactMethods()->pluck('id'),
+    socialProfileIds: $event->organizer->publicSocialProfiles()->pluck('id'),
     reason: 'event_public_contact',
 );
 ```

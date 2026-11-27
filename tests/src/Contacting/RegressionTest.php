@@ -338,10 +338,10 @@ it('snapshots bundles in bulk with per-source owners', function (): void {
         handle: 'bundle-' . uniqid(),
     ));
 
-    $snapshots = (new CreateContactSnapshotAction)->fromBundle(
+    $snapshots = app(CreateContactSnapshotAction::class)->fromBundle(
         $customer,
-        [$method, $phone],
-        [$profile],
+        [$method->id, $phone->id],
+        [$profile->id],
         'bundle-test',
     );
 
@@ -357,7 +357,7 @@ it('snapshots bundles in bulk with per-source owners', function (): void {
 
     expect($snapshots->where('snapshot_type', 'contact_method')->first()?->source_id)->toBe($method->id)
         ->and($snapshots->where('snapshot_type', 'social_profile')->first()?->source_id)->toBe($profile->id)
-        ->and((new CreateContactSnapshotAction)->fromBundle($customer, [], [], 'bundle-empty'))->toHaveCount(0);
+        ->and(app(CreateContactSnapshotAction::class)->fromBundle($customer, [], [], 'bundle-empty'))->toHaveCount(0);
 });
 
 it('limits contact link building when asked', function (): void {
@@ -374,7 +374,7 @@ it('treats snapshots as append-only with action-owned lineage', function (): voi
     $customer = regressionCustomer('immutable');
 
     $method = $customer->addContactMethod(ContactMethodData::email('locked-' . uniqid() . '@example.com'));
-    $snapshot = (new CreateContactSnapshotAction)->fromContactMethod($customer, $method, 'locked');
+    $snapshot = app(CreateContactSnapshotAction::class)->fromContactMethod($customer, $method->id, 'locked');
 
     expect($snapshot->source_id)->toBe($method->id)
         ->and(fn () => $snapshot->update(['label' => 'changed']))->toThrow(LogicException::class)

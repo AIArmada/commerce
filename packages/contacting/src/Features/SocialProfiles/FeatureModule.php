@@ -6,6 +6,8 @@ namespace AIArmada\Contacting\Features\SocialProfiles;
 
 use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Api\ReadsSocialProfileSnapshotSources;
+use AIArmada\Contacting\Features\SocialProfiles\Queries\ReadSocialProfileSnapshotSourcesQuery;
 use AIArmada\Contacting\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -13,6 +15,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(ReadsSocialProfileSnapshotSources::class, ReadSocialProfileSnapshotSourcesQuery::class);
         $app->bind(SocialProfileNormalizer::class, NormalizeSocialProfileAction::class);
     }
 

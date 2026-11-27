@@ -6,6 +6,8 @@ namespace AIArmada\Contacting\Features\ContactMethods;
 
 use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Features\ContactMethods\Actions\NormalizeContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Api\ReadsContactMethodSnapshotSources;
+use AIArmada\Contacting\Features\ContactMethods\Queries\ReadContactMethodSnapshotSourcesQuery;
 use AIArmada\Contacting\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -13,6 +15,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(ReadsContactMethodSnapshotSources::class, ReadContactMethodSnapshotSourcesQuery::class);
         $app->bind(ContactMethodNormalizer::class, NormalizeContactMethodAction::class);
     }
 
