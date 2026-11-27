@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartItemResource\Tables;
 
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use Filament\Forms\Components\TextInput;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -46,26 +46,6 @@ final class CartItemsTable
                     ->formatStateUsing(fn ($state, $record) => self::formatMoney((int) ($state ?? 0), $record->cart->currency ?? null))
                     ->sortable(),
 
-                // IconColumn::make('conditions')
-                //     ->label('Conditions')
-                //     ->icon(fn ($state): \Filament\Support\Icons\Heroicon =>
-                //         (is_array($state) ? count($state) > 0 : !empty($state))
-                //             ? \Filament\Support\Icons\Heroicon::OutlinedCheckCircle
-                //             : \Filament\Support\Icons\Heroicon::OutlinedXCircle
-                //     )
-                //     ->toggleable()
-                //     ->sortable(),
-
-                // IconColumn::make('attributes')
-                //     ->label('Attributes')
-                //     ->icon(fn ($state): \Filament\Support\Icons\Heroicon =>
-                //         (is_array($state) ? count($state) > 0 : !empty($state))
-                //             ? \Filament\Support\Icons\Heroicon::OutlinedCheckCircle
-                //             : \Filament\Support\Icons\Heroicon::OutlinedXCircle
-                //     )
-                //     ->toggleable()
-                //     ->sortable(),
-
                 TextColumn::make('created_at')
                     ->label('Added')
                     ->dateTime()
@@ -100,11 +80,11 @@ final class CartItemsTable
 
                 Filter::make('has_conditions')
                     ->label('Has Conditions')
-                    ->query(fn (Builder $query): Builder => $query->withConditions()),
+                    ->query(self::withConditions(...)),
 
                 Filter::make('no_conditions')
                     ->label('No Conditions')
-                    ->query(fn (Builder $query): Builder => $query->withoutConditions()),
+                    ->query(self::withoutConditions(...)),
 
                 Filter::make('price_range')
                     ->form([
@@ -157,6 +137,24 @@ final class CartItemsTable
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('cart'))
             ->defaultSort('created_at', 'desc')
             ->poll('30s');
+    }
+
+    /**
+     * @param  Builder<CartSnapshotItem>  $query
+     * @return Builder<CartSnapshotItem>
+     */
+    private static function withConditions(Builder $query): Builder
+    {
+        return $query->withConditions();
+    }
+
+    /**
+     * @param  Builder<CartSnapshotItem>  $query
+     * @return Builder<CartSnapshotItem>
+     */
+    private static function withoutConditions(Builder $query): Builder
+    {
+        return $query->withoutConditions();
     }
 
     private static function resolveCurrency(): string

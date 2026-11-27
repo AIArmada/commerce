@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * Managers created through forOwner() are deliberately pinned to a single
  * owner and never re-resolve ambient storage.
  */
-class CartManager implements CartManagerInterface
+final class CartManager implements CartManagerInterface
 {
     /** @var array<string, StorageInterface> */
     private array $storages = [];
@@ -199,7 +199,7 @@ class CartManager implements CartManagerInterface
     {
         $scopedStorage = $this->storage->withOwner($owner);
 
-        return new static(
+        return new self(
             storage: $scopedStorage,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,

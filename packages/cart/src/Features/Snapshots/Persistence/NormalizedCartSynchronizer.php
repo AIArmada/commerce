@@ -20,7 +20,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -512,7 +511,7 @@ class NormalizedCartSynchronizer
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function resolveLastActivityAt(BaseCart $cart, array $metadata, ?DateTimeInterface $existingLastActivityAt): ?Carbon
+    private function resolveLastActivityAt(BaseCart $cart, array $metadata, ?DateTimeInterface $existingLastActivityAt): ?CarbonImmutable
     {
         if (array_key_exists('last_activity_at', $metadata)) {
             return $this->parseTimestamp($metadata['last_activity_at']);
@@ -526,7 +525,7 @@ class NormalizedCartSynchronizer
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function resolveMetadataTimestamp(array $metadata, string $key, ?DateTimeInterface $existingValue): ?Carbon
+    private function resolveMetadataTimestamp(array $metadata, string $key, ?DateTimeInterface $existingValue): ?CarbonImmutable
     {
         if (array_key_exists($key, $metadata)) {
             return $this->parseTimestamp($metadata[$key]);
@@ -535,14 +534,14 @@ class NormalizedCartSynchronizer
         return $this->parseTimestamp($existingValue);
     }
 
-    private function parseTimestamp(mixed $value): ?Carbon
+    private function parseTimestamp(mixed $value): ?CarbonImmutable
     {
-        if ($value instanceof Carbon) {
+        if ($value instanceof CarbonImmutable) {
             return $value;
         }
 
         if ($value instanceof DateTimeInterface) {
-            return Carbon::instance($value);
+            return CarbonImmutable::instance($value);
         }
 
         if (! is_string($value) || $value === '') {
@@ -550,7 +549,7 @@ class NormalizedCartSynchronizer
         }
 
         try {
-            return Carbon::parse($value);
+            return CarbonImmutable::parse($value);
         } catch (Throwable) {
             return null;
         }
