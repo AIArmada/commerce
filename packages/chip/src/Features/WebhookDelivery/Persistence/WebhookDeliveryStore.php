@@ -134,7 +134,7 @@ final readonly class WebhookDeliveryStore
         $attributes = [
             'event_type' => $eventType,
             'payload' => $payload,
-            'status' => 'pending',
+            'status' => 'processing',
             'verified' => true,
             'processed' => false,
             'processed_at' => null,

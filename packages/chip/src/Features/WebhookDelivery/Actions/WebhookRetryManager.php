@@ -61,6 +61,7 @@ class WebhookRetryManager
                 }
 
                 $current->forceFill([
+                    'status' => 'processing',
                     'retry_count' => $current->retry_count + 1,
                     'last_retry_at' => CarbonImmutable::now(),
                 ])->save();
@@ -86,17 +87,19 @@ class WebhookRetryManager
                         'last_error' => null,
                     ])->save();
                 } else {
-                    $webhook->update([
+                    $webhook->forceFill([
+                        'status' => 'failed',
                         'last_error' => $result->message,
-                    ]);
+                    ])->save();
                 }
 
                 return $result;
 
             } catch (Throwable $e) {
-                $webhook->update([
+                $webhook->forceFill([
+                    'status' => 'failed',
                     'last_error' => $e->getMessage(),
-                ]);
+                ])->save();
 
                 return WebhookResult::failed($e->getMessage());
             }

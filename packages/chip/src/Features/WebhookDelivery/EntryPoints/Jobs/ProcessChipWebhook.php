@@ -9,11 +9,9 @@ use AIArmada\Chip\Features\WebhookDelivery\Persistence\WebhookDeliveryStore;
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
 use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use RuntimeException;
-use Spatie\WebhookClient\Models\WebhookCall;
 use Throwable;
 
 class ProcessChipWebhook extends CommerceWebhookProcessor
@@ -92,9 +90,22 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
      */
     protected function extractEventId(array $payload): ?string
     {
-        $eventId = parent::extractEventId($payload);
+        $explicitId = $payload['event_id'] ?? null;
+        $resourceId = $payload['id'] ?? null;
 
-        if ($eventId === null || ! (bool) config('chip.owner.enabled', false)) {
+        if (is_scalar($explicitId) && (string) $explicitId !== '') {
+            $eventId = (string) $explicitId;
+        } elseif (is_scalar($resourceId) && (string) $resourceId !== '') {
+            $eventId = hash('sha256', serialize([
+                (string) $resourceId,
+                (string) ($payload['status'] ?? ''),
+                (string) ($payload['updated_on'] ?? $payload['created_on'] ?? ''),
+            ]));
+        } else {
+            return null;
+        }
+
+        if (! (bool) config('chip.owner.enabled', false)) {
             return $eventId;
         }
 
@@ -124,9 +135,7 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
     {
         $components = [
             $eventType,
-            (string) ($payload['id'] ?? ''),
-            (string) ($payload['status'] ?? ''),
-            (string) ($payload['updated_on'] ?? $payload['created_on'] ?? ''),
+            $this->extractEventId($payload) ?? hash('sha256', serialize($payload)),
         ];
 
         $owner = OwnerContext::resolve();
@@ -142,39 +151,5 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
     {
         return (bool) config('chip.webhooks.store_webhooks', true)
             && (bool) config('chip.webhooks.deduplication', true);
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    protected function isDuplicateProcessedEvent(WebhookCall $current, array $payload, string $eventType): bool
-    {
-        $eventId = $payload['id'] ?? null;
-
-        if (! is_string($eventId) || $eventId === '') {
-            return false;
-        }
-
-        $ownerType = Arr::get($payload, '__owner_type');
-        $ownerId = Arr::get($payload, '__owner_id');
-
-        return WebhookCall::query()
-            ->where('name', $current->name)
-            ->whereKeyNot($current->getKey())
-            ->whereNotNull('processed_at')
-            ->where('payload->id', $eventId)
-            ->where('payload->event_type', $eventType)
-            ->where(function (Builder $builder) use ($ownerType, $ownerId): void {
-                if (is_string($ownerType) && (is_string($ownerId) || is_int($ownerId))) {
-                    $builder->where('payload->__owner_type', $ownerType)
-                        ->where('payload->__owner_id', (string) $ownerId);
-
-                    return;
-                }
-
-                $builder->whereNull('payload->__owner_type')
-                    ->whereNull('payload->__owner_id');
-            })
-            ->exists();
     }
 }

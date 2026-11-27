@@ -102,6 +102,25 @@ describe('ProcessChipWebhook', function (): void {
         Event::assertDispatchedTimes(PurchasePaid::class, 1);
     });
 
+    it('does not collapse distinct events for the same purchase into a single delivery', function (): void {
+        $payload = WebhookFactory::purchasePaid([
+            'id' => 'purchase-distinct-events',
+            'updated_on' => 1704067200,
+        ]);
+
+        foreach ([1704067200, 1704070800] as $updatedOn) {
+            $call = WebhookCall::create([
+                'name' => Webhook::WEBHOOK_NAME,
+                'url' => 'https://example.test/chip/webhooks',
+                'payload' => array_replace($payload, ['updated_on' => $updatedOn]),
+            ]);
+
+            (new ProcessChipWebhook($call))->handle();
+        }
+
+        Event::assertDispatchedTimes(PurchasePaid::class, 2);
+    });
+
     it('dispatches PurchasePaid event', function (): void {
         $payload = [
             'event_type' => 'purchase.paid',

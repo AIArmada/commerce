@@ -30,7 +30,8 @@ final readonly class CleanWebhooks
 
         $query = Webhook::query()
             ->forOwner($owner, false)
-            ->where('created_at', '<', $cutoffDate);
+            ->where('created_at', '<', $cutoffDate)
+            ->where('status', '!=', 'processing');
 
         if ($status !== 'all') {
             $query->where('status', $status);
