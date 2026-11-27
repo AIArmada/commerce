@@ -5,10 +5,9 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 
@@ -42,7 +41,7 @@ it('distributes a checkout coupon across product lines and does not mutate the b
         'type' => VoucherType::Fixed->value,
         'value' => 1500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => [],
     ]);
 
