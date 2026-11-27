@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
-use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
@@ -106,6 +106,7 @@ final class UpdateContactMethodAction
             if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
                 throw new RuntimeException('The contact write was cancelled.');
             }
+
             return $contactMethod->refresh();
         }, attempts: 3);
     }

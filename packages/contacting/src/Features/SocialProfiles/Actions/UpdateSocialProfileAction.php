@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
-use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
@@ -91,6 +91,7 @@ final class UpdateSocialProfileAction
             if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new RuntimeException('The contact write was cancelled.');
             }
+
             return $profile->refresh();
         }, attempts: 3);
     }

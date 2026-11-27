@@ -11,11 +11,11 @@ use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
+use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Illuminate\Support\Facades\Gate;
-use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 final class FeedbackFormResponses extends Page implements HasTable
 {

@@ -7,10 +7,10 @@ namespace AIArmada\Feedback\Features\Forms\Api;
 final readonly class QuestionDefinition
 {
     /**
-     * @param array<string, mixed> $settings
-     * @param array<string, mixed> $visibilityRules
-     * @param array<string, mixed> $scoringRules
-     * @param list<array{value: string, score: float|null}> $options
+     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $visibilityRules
+     * @param  array<string, mixed>  $scoringRules
+     * @param  list<array{value: string, score: float|null}>  $options
      */
     public function __construct(
         public string $id,

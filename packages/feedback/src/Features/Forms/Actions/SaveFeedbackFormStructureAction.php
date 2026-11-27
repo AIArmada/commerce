@@ -155,6 +155,7 @@ final readonly class SaveFeedbackFormStructureAction
 
     /**
      * @template TModel of FeedbackForm|FeedbackSection|FeedbackQuestion|FeedbackQuestionOption
+     *
      * @param  class-string<TModel>  $modelClass
      * @return TModel
      */

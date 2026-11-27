@@ -43,7 +43,7 @@ final class VisibilityRuleEvaluator
     }
 
     /**
-     * @param list<QuestionDefinition> $questions
+     * @param  list<QuestionDefinition>  $questions
      * @return list<QuestionDefinition>
      */
     public function filterHiddenQuestions(array $questions, array $answerValues): array

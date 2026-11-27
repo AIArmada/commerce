@@ -18,7 +18,7 @@ final class ValidateFeedbackAnswersAction
     ) {}
 
     /**
-     * @param list<QuestionDefinition> $questions
+     * @param  list<QuestionDefinition>  $questions
      * @return list<QuestionDefinition>
      */
     public function execute(array $questions, array $answerValues): array

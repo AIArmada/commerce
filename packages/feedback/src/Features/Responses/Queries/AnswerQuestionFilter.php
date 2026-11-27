@@ -19,8 +19,8 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 final class AnswerQuestionFilter
 {
     /**
-     * @param Builder<FeedbackAnswer> $answers
-     * @param list<string> $types
+     * @param  Builder<FeedbackAnswer>  $answers
+     * @param  list<string>  $types
      * @return Builder<FeedbackAnswer>
      */
     public static function apply(Builder $answers, ?string $formId = null, ?string $questionKey = null, array $types = []): Builder

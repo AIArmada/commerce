@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Features\Invitations\EntryPoints\Filament\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Filament\Resources\Resource;
 use Filament\Tables;
