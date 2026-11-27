@@ -6,6 +6,8 @@ namespace AIArmada\FilamentShipping\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\ShipmentStatus;
@@ -143,12 +145,7 @@ class ManifestPage extends Page implements HasTable
                     ->visible(fn (Shipment $record) => ! ($record->metadata['picked_up'] ?? false))
                     ->authorize(fn (Shipment $record): bool => auth()->user()?->can('update', $record) ?? false)
                     ->action(function (Shipment $record): void {
-                        $record->update([
-                            'metadata' => array_merge($record->metadata ?? [], [
-                                'picked_up' => true,
-                                'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
-                            ]),
-                        ]);
+                        app(MarkShipmentPickedUp::class)->execute((string) $record->getKey());
 
                         Notification::make()
                             ->title('Marked as Picked Up')
@@ -171,6 +168,8 @@ class ManifestPage extends Page implements HasTable
                             return;
                         }
 
+                        $updated = 0;
+
                         foreach ($records as $record) {
                             if (! $record instanceof Shipment) {
                                 continue;
@@ -180,17 +179,14 @@ class ManifestPage extends Page implements HasTable
                                 continue;
                             }
 
-                            $record->update([
-                                'metadata' => array_merge($record->metadata ?? [], [
-                                    'picked_up' => true,
-                                    'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
-                                ]),
-                            ]);
+                            if (app(MarkShipmentPickedUp::class)->execute((string) $record->getKey())) {
+                                $updated++;
+                            }
                         }
 
                         Notification::make()
                             ->title('Shipments Marked as Picked Up')
-                            ->body(count($records) . ' shipment(s) updated.')
+                            ->body($updated . ' shipment(s) updated.')
                             ->success()
                             ->send();
                     }),
@@ -201,19 +197,6 @@ class ManifestPage extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('generate_manifest')
-                ->label('Generate Manifest PDF')
-                ->icon('heroicon-o-document-arrow-down')
-                ->color('primary')
-                ->action(function (): void {
-                    // In a real implementation, this would generate a PDF manifest
-                    Notification::make()
-                        ->title('Manifest Generated')
-                        ->body('The manifest PDF has been generated.')
-                        ->success()
-                        ->send();
-                }),
-
             Action::make('mark_all_picked_up')
                 ->label('Mark All Picked Up')
                 ->icon('heroicon-o-check-circle')
@@ -252,14 +235,9 @@ class ManifestPage extends Page implements HasTable
                     continue;
                 }
 
-                $shipment->update([
-                    'metadata' => array_merge($shipment->metadata ?? [], [
-                        'picked_up' => true,
-                        'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
-                    ]),
-                ]);
-
-                $updated++;
+                if (app(MarkShipmentPickedUp::class)->execute((string) $shipment->getKey())) {
+                    $updated++;
+                }
             }
         });
 
@@ -279,7 +257,7 @@ class ManifestPage extends Page implements HasTable
                 return $query->whereRaw('0 = 1');
             }
 
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
+            $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
         }
 
         $query->where('status', ShipmentStatus::normalize(Shipped::class));

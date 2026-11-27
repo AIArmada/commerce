@@ -10,7 +10,7 @@ use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use Exception;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
@@ -46,7 +46,7 @@ class ViewShipment extends ViewRecord
                     [$itemId, $ordinal] = explode(':', $data['unit'], 2);
                     $rmaId = app(PackageReturnWorkflow::class)->request((string) $record->getKey(), $itemId, (int) $ordinal, $data['reason']);
 
-                    $this->redirect(ReturnAuthorizationResource::getUrl('view', ['record' => $rma]));
+                    $this->redirect(ReturnAuthorizationResource::getUrl('view', ['record' => $rmaId]));
                 }),
 
             Actions\Action::make('ship')
@@ -58,7 +58,8 @@ class ViewShipment extends ViewRecord
                 ->authorize(fn (Shipment $record): bool => auth()->user()?->can('ship', $record) ?? false)
                 ->action(function (Shipment $record): void {
                     try {
-                        app(ShipmentService::class)->ship($record);
+                        app(ShipmentOperations::class)->ship((string) $record->getKey());
+                        $record->refresh();
 
                         Notification::make()
                             ->title('Shipment Shipped')
@@ -66,9 +67,11 @@ class ViewShipment extends ViewRecord
                             ->success()
                             ->send();
                     } catch (Exception $e) {
+                        report($e);
+
                         Notification::make()
                             ->title('Ship Failed')
-                            ->body($e->getMessage())
+                            ->body('The operation failed. Please check the logs.')
                             ->danger()
                             ->send();
                     }
@@ -83,16 +86,19 @@ class ViewShipment extends ViewRecord
                 ->authorize(fn (Shipment $record): bool => auth()->user()?->can('cancel', $record) ?? false)
                 ->action(function (Shipment $record): void {
                     try {
-                        app(ShipmentService::class)->cancel($record);
+                        app(ShipmentOperations::class)->cancel((string) $record->getKey());
+                        $record->refresh();
 
                         Notification::make()
                             ->title('Shipment Cancelled')
                             ->success()
                             ->send();
                     } catch (Exception $e) {
+                        report($e);
+
                         Notification::make()
                             ->title('Cancel Failed')
-                            ->body($e->getMessage())
+                            ->body('The operation failed. Please check the logs.')
                             ->danger()
                             ->send();
                     }
