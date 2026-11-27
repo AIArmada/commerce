@@ -7,17 +7,15 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\Tables;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentProducts\Resources\ProductResource;
-use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Actions\UpdateCatalogProducts;
+use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\Variant;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Exception;
@@ -269,7 +267,7 @@ class ProductsTable
                     ->authorize(fn (Product $record): bool => auth()->user()?->can('duplicate', $record) ?? false)
                     ->action(function (Product $record) {
                         try {
-                            $newProduct = self::duplicateProduct($record);
+                            $newProduct = app(DuplicateProduct::class)->execute($record);
                             self::duplicateProductMedia($record, $newProduct);
 
                             return redirect(ProductResource::getUrl('edit', ['record' => $newProduct]));
@@ -428,97 +426,11 @@ class ProductsTable
         return OwnerQuery::applyToEloquentBuilder($query->select(['id', 'name']), $owner, false);
     }
 
-    private static function duplicateProduct(Product $record): Product
-    {
-        return DB::transaction(static function () use ($record): Product {
-            $ownerType = $record->getAttribute('owner_type');
-            $ownerId = $record->getAttribute('owner_id');
-
-            $newProduct = $record->replicate();
-            $newProduct->name = $record->name . ' (Copy)';
-            $newProduct->slug = self::uniqueOwnerValue(Product::class, 'slug', $record->slug . '-copy', $ownerType, $ownerId);
-            $newProduct->sku = $record->sku !== null && $record->sku !== ''
-                ? self::uniqueOwnerValue(Product::class, 'sku', $record->sku . '-COPY', $ownerType, $ownerId)
-                : null;
-            $newProduct->status = ProductStatus::Draft;
-            $newProduct->save();
-
-            $newProduct->categories()->sync($record->categories->pluck('id')->all());
-            $newProduct->collections()->sync($record->collections->pluck('id')->all());
-            $newProduct->tags()->sync($record->tags->pluck('id')->all());
-
-            $valueMap = [];
-
-            foreach ($record->options()->with('values')->get() as $option) {
-                $newOption = $option->replicate();
-                $newOption->product_id = $newProduct->getKey();
-                $newOption->save();
-
-                foreach ($option->values as $value) {
-                    $newValue = $value->replicate();
-                    $newValue->option_id = $newOption->getKey();
-                    $newValue->save();
-                    $valueMap[(string) $value->getKey()] = (string) $newValue->getKey();
-                }
-            }
-
-            foreach ($record->variants()->with('optionValues')->get() as $variant) {
-                $newVariant = $variant->replicate();
-                $newVariant->product_id = $newProduct->getKey();
-                $newVariant->sku = self::uniqueOwnerValue(Variant::class, 'sku', $variant->sku . '-COPY', $ownerType, $ownerId);
-                $newVariant->save();
-
-                $remapped = $variant->optionValues
-                    ->map(static fn ($optionValue): ?string => $valueMap[(string) $optionValue->getKey()] ?? null)
-                    ->filter()
-                    ->all();
-
-                $newVariant->optionValues()->sync($remapped);
-            }
-
-            if (class_exists(Price::class)) {
-                foreach ($record->prices()->get() as $price) {
-                    $newPrice = $price->replicate();
-                    $newPrice->setAttribute('priceable_id', $newProduct->getKey());
-                    $newPrice->save();
-                }
-            }
-
-            return $newProduct;
-        });
-    }
-
     private static function duplicateProductMedia(Product $record, Product $newProduct): void
     {
         foreach ($record->getMedia() as $media) {
             $newProduct->copyMedia($media->getPath())->toMediaCollection($media->collection_name, $media->disk);
         }
-    }
-
-    /**
-     * @param  class-string<Model>  $modelClass
-     */
-    private static function uniqueOwnerValue(string $modelClass, string $column, string $base, mixed $ownerType, mixed $ownerId): string
-    {
-        $candidate = $base;
-
-        for ($suffix = 2; $suffix <= 100; $suffix++) {
-            $query = $modelClass::query()->withoutGlobalScope(OwnerScope::class)->where($column, $candidate);
-
-            if ($ownerType === null || $ownerId === null) {
-                $query->whereNull('owner_type')->whereNull('owner_id');
-            } else {
-                $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
-            }
-
-            if (! $query->exists()) {
-                return $candidate;
-            }
-
-            $candidate = $base . '-' . $suffix;
-        }
-
-        throw new Exception("Unable to generate a unique {$column} for the duplicated product.");
     }
 
     private static function importProducts(array $data): void
