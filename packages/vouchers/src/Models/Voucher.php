@@ -623,7 +623,6 @@ class Voucher extends Model implements Auditable
         });
     }
 
-
     protected function casts(): array
     {
         $casts = [

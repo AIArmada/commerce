@@ -12,6 +12,7 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Services\VoucherService;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -632,7 +633,7 @@ test('voucher deletion removes dependent usage and wallet rows through database 
 
     $customer = User::factory()->create();
     $service = app(VoucherService::class);
-    $service->recordUsage($voucher->code, \Akaunting\Money\Money::MYR(100), redeemedBy: $customer);
+    $service->recordUsage($voucher->code, Money::MYR(100), redeemedBy: $customer);
     $wallet = $service->addToWallet($voucher->code, $customer);
     $usageId = $voucher->usages()->sole()->getKey();
 
