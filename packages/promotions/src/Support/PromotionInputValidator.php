@@ -33,7 +33,7 @@ final readonly class PromotionInputValidator
 
         $discountValue = $data['discount_value'] ?? null;
 
-        if (filter_var($discountValue, FILTER_VALIDATE_INT) === false) {
+        if (! $this->isInteger($discountValue)) {
             throw new InvalidArgumentException('A numeric discount value is required.');
         }
 
@@ -50,7 +50,7 @@ final readonly class PromotionInputValidator
         foreach (['usage_limit', 'per_customer_limit', 'min_purchase_amount', 'min_quantity'] as $field) {
             $value = $data[$field] ?? null;
 
-            if ($value !== null && (filter_var($value, FILTER_VALIDATE_INT) === false || (int) $value < 0)) {
+            if ($value !== null && (! $this->isInteger($value) || (int) $value < 0)) {
                 throw new InvalidArgumentException("Promotion {$field} must be zero or a positive integer.");
             }
         }
@@ -63,6 +63,11 @@ final readonly class PromotionInputValidator
         }
 
         $this->assertCodeAvailable($data['code'] ?? null, $existing);
+    }
+
+    private function isInteger(mixed $value): bool
+    {
+        return is_int($value) || (is_string($value) && filter_var($value, FILTER_VALIDATE_INT) !== false);
     }
 
     private function parseDate(mixed $value, string $field): ?CarbonImmutable

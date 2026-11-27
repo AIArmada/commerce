@@ -228,3 +228,22 @@ it('overrides provided owner columns when resolver owner is available', function
         ->and((string) $voucher->owner_id)->toBe((string) $owner->getKey())
         ->and($voucher->owner_type)->toBe($owner->getMorphClass());
 });
+
+it('enforces the manual redemption flag at the usage write boundary', function (): void {
+    $voucher = \AIArmada\Vouchers\Models\Voucher::create([
+        'code' => 'DIRECT-MANUAL-GUARD',
+        'name' => 'Manual guard',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'allows_manual_redemption' => false,
+    ]);
+
+    expect(fn () => app(\AIArmada\Vouchers\Runtime\VoucherUsageRecorder::class)->handle(
+        $voucher->code,
+        \Akaunting\Money\Money::MYR(100),
+        channel: (string) config('vouchers.redemption.manual_channel', 'manual'),
+    ))->toThrow(\AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException::class);
+    expect($voucher->usages()->count())->toBe(0);
+});

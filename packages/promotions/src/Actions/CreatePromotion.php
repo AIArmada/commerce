@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Events\PromotionCreated;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Support\PromotionInputValidator;
-use Illuminate\Support\Facades\DB;
 
 final readonly class CreatePromotion
 {
@@ -19,9 +18,9 @@ final readonly class CreatePromotion
     {
         $this->assertOwnerContext();
         $this->validator->validate($data);
-        unset($data['usage_count']);
+        unset($data['usage_count'], $data['deactivated_at'], $data['owner_type'], $data['owner_id']);
 
-        $promotion = DB::transaction(fn (): Promotion => Promotion::create($data));
+        $promotion = (new Promotion)->getConnection()->transaction(fn (): Promotion => Promotion::create($data));
 
         PromotionCreated::dispatch($promotion);
 

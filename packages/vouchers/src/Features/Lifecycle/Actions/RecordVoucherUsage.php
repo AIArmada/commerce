@@ -10,6 +10,7 @@ use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
@@ -110,6 +111,12 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
 
             if (! $lockedVoucher->status->canBeUsed()) {
                 throw InvalidVoucherException::notActive($lockedVoucher->code);
+            }
+
+            if ($channel === config('vouchers.redemption.manual_channel', 'manual')
+                && config('vouchers.redemption.manual_requires_flag', true)
+                && ! $lockedVoucher->allowsManualRedemption()) {
+                throw ManualRedemptionNotAllowedException::forVoucher($lockedVoucher->code);
             }
 
             $this->assertCurrencyMatches($lockedVoucher, $discountAmount);

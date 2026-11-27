@@ -1,0 +1,12 @@
+---
+name: vouchers-development
+description: Develop and integrate vouchers using owner-safe domain operations.
+---
+
+# vouchers development
+
+Lifecycle owns vouchers, usage records and lookup caching. Wallet owns wallet records; CartIntegration owns reservation caching and cart integration. Use `AIArmada\Vouchers\Runtime\VoucherServiceInterface` or the Voucher facade for business operations. Use the registered Runtime interfaces for lifecycle and wallet mutations; do not import private feature actions. `Data\VoucherData` is an immutable snapshot with `Data\VoucherType` and `Data\VoucherStatus` enums. Use canonical snake_case array keys, integer minor units for money, and integer basis points for percentages. Resolve owner context explicitly for mutations. Usage recording enforces assignee, currency, validity, manual redemption permission, usage limits and idempotency. Never treat reservation cache entries as committed usage.
+
+## Verification
+
+Run the package architecture checks and affected monorepo Pest, PHPStan and Pint checks. Migrate callers directly and delete superseded code; do not introduce compatibility aliases or backfill migrations.
