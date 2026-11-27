@@ -25,12 +25,6 @@ final readonly class RecordDeliveryOutcome implements CommunicationRecorder
             return;
         }
 
-        $communication = Communication::query()->find($communicationId);
-
-        if ($communication !== null && ($communication->cancelled_at !== null || $communication->status === CommunicationStatus::Cancelled)) {
-            return;
-        }
-
         if ($this->isAlreadySettledForSending($delivery)) {
             return;
         }
@@ -46,7 +40,7 @@ final readonly class RecordDeliveryOutcome implements CommunicationRecorder
     {
         $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
 
-        if ($delivery === null) {
+        if ($delivery === null || $delivery->cancelled_at !== null || ! in_array($delivery->status, [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending, DeliveryStatus::Accepted], true)) {
             return;
         }
 
@@ -62,7 +56,7 @@ final readonly class RecordDeliveryOutcome implements CommunicationRecorder
     {
         $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
 
-        if ($delivery === null) {
+        if ($delivery === null || $delivery->cancelled_at !== null || ! in_array($delivery->status, [DeliveryStatus::Pending, DeliveryStatus::Scheduled, DeliveryStatus::Queued, DeliveryStatus::Sending, DeliveryStatus::Accepted], true)) {
             return;
         }
 
@@ -90,6 +84,12 @@ final readonly class RecordDeliveryOutcome implements CommunicationRecorder
 
         if (Communication::ownerScopeConfig()->enabled) {
             OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
+
+        $communication = Communication::query()->find($communicationId);
+
+        if ($communication === null || $communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
+            return null;
         }
 
         return $delivery;

@@ -10,6 +10,8 @@ use AIArmada\Communications\Features\Delivery\Actions\CancelCommunicationDeliver
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSendingAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSentAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationFailureAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
@@ -182,6 +184,8 @@ function actionGuardRun(
             $communication->id,
             $delivery->id,
         ),
+        'notification-sent' => app(RecordNotificationSentAction::class)->handle($communication->id, $delivery->id),
+        'notification-failed' => app(RecordNotificationFailureAction::class)->handle($communication->id, $delivery->id, 'failure'),
         'retry-delivery' => app(RetryCommunicationDeliveryAction::class)->handle($delivery->id),
         'cancel-delivery' => app(CancelCommunicationDeliveryAction::class)->handle($delivery->id),
         'complete-attempt' => app(CompleteDeliveryAttemptAction::class)->handle($attempt->id),
@@ -216,7 +220,9 @@ function actionGuardAssertPassed(
             ->and($result->attempt_number)->toBe(2),
         'cancel-delivery' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Cancelled),
         'complete-attempt' => expect($attempt->fresh()->responded_at)->not->toBeNull(),
-        'recalculate-status' => expect($result->id)->toBe($communication->id),
+        'recalculate-status' => expect($communication->fresh()->status)->toBe(CommunicationStatus::Processing),
+        'notification-sent' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sent),
+        'notification-failed' => expect($delivery->fresh()->status)->toBe(DeliveryStatus::Failed),
         'redact-content', 'redact-delivery', 'redact-attempt', 'redact-event' => expect($result->id)->not->toBeNull(),
         'attach-reference' => expect($result->communication_id)->toBe($communication->id),
         'cancel-communication' => expect($communication->fresh()->status)->toBe(CommunicationStatus::Cancelled),
@@ -231,6 +237,8 @@ function actionGuardCases(): array
         'provider-event-via-attempt' => ['provider-event-via-attempt'],
         'provider-event-via-communication' => ['provider-event-via-communication'],
         'notification-sending' => ['notification-sending'],
+        'notification-sent' => ['notification-sent'],
+        'notification-failed' => ['notification-failed'],
         'retry-delivery' => ['retry-delivery'],
         'cancel-delivery' => ['cancel-delivery'],
         'complete-attempt' => ['complete-attempt'],

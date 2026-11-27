@@ -828,3 +828,36 @@ test('native auto capture isolates the same notification sent to multiple recipi
 
     expect(Communication::query()->count())->toBe(2);
 });
+
+test('delivery fencing rejects mismatched aggregate before touching any delivery or attempt', function (): void {
+    $first = regressionCommunication(['status' => CommunicationStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
+    $second = regressionCommunication(['status' => CommunicationStatus::Processing]);
+    $delivery = regressionDelivery($second, ['status' => DeliveryStatus::Sending]);
+    $attempt = app(StartDeliveryAttemptAction::class)->handle($delivery->id);
+    $fencing = app(\AIArmada\Communications\Contracts\DeliveryFencing::class);
+
+    \Illuminate\Support\Facades\DB::transaction(function () use ($first, $delivery, $attempt, $fencing): void {
+        expect(\AIArmada\Communications\Support\GuardedDeliverySend::claim($delivery->id, $first->id))->toBeNull()
+            ->and($fencing->recordExternalSent($first->id, $delivery->id, $attempt->id))->toBeFalse()
+            ->and($fencing->recordExternalFailure($first->id, $delivery->id, $attempt->id, 'wrong aggregate'))->toBeFalse();
+    });
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sending)
+        ->and($attempt->fresh()->responded_at)->toBeNull()
+        ->and($attempt->fresh()->failed_at)->toBeNull();
+});
+
+test('late native delivery callbacks cannot regress cancelled or delivered records', function (): void {
+    $recorder = app(CommunicationRecorder::class);
+    $communication = regressionCommunication();
+    $delivered = regressionDelivery($communication, ['status' => DeliveryStatus::Delivered]);
+    $cancelled = regressionDelivery($communication, ['status' => DeliveryStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
+
+    foreach ([$delivered, $cancelled] as $delivery) {
+        $recorder->markSent($communication->id, $delivery->id, []);
+        $recorder->markFailed($communication->id, $delivery->id, 'late failure');
+    }
+
+    expect($delivered->fresh()->status)->toBe(DeliveryStatus::Delivered)
+        ->and($cancelled->fresh()->status)->toBe(DeliveryStatus::Cancelled);
+});

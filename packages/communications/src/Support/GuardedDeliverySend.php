@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Support;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Features\Delivery\Actions\PersistDeliveryFencingAction;
 use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
@@ -46,7 +47,7 @@ final class GuardedDeliverySend
     {
         $delivery = CommunicationDelivery::query()->whereKey($deliveryId)->lockForUpdate()->first();
 
-        if (! $delivery instanceof CommunicationDelivery) {
+        if (! $delivery instanceof CommunicationDelivery || $communicationId === null || $delivery->communication_id !== $communicationId) {
             return null;
         }
 
@@ -57,6 +58,10 @@ final class GuardedDeliverySend
         if (! $communication instanceof Communication) {
             self::restoreSettledFlip($delivery);
 
+            return null;
+        }
+
+        if (! self::ownsPair($delivery, $communication)) {
             return null;
         }
 
@@ -119,6 +124,10 @@ final class GuardedDeliverySend
         CommunicationDelivery $delivery,
         array $operation = [],
     ): CommunicationAttempt {
+        if ($delivery->id !== $deliveryId) {
+            throw new \InvalidArgumentException('Attempt delivery must match the claimed delivery.');
+        }
+
         $frozen = [
             'delivery_id' => $deliveryId,
             'communication_id' => (string) $delivery->communication_id,
@@ -156,6 +165,7 @@ final class GuardedDeliverySend
             || ! $communication instanceof Communication
             || ! $attempt instanceof CommunicationAttempt
             || (string) $attempt->delivery_id !== $deliveryId
+            || ! self::ownsPair($delivery, $communication)
         ) {
             return false;
         }
@@ -218,6 +228,7 @@ final class GuardedDeliverySend
             || ! $communication instanceof Communication
             || ! $attempt instanceof CommunicationAttempt
             || (string) $attempt->delivery_id !== $deliveryId
+            || ! self::ownsPair($delivery, $communication)
         ) {
             return false;
         }
@@ -275,6 +286,20 @@ final class GuardedDeliverySend
     public static function hasAnyAttempt(string $deliveryId): bool
     {
         return CommunicationAttempt::query()->where('delivery_id', $deliveryId)->exists();
+    }
+
+    private static function ownsPair(CommunicationDelivery $delivery, Communication $communication): bool
+    {
+        if ($delivery->communication_id !== $communication->id) {
+            return false;
+        }
+
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $delivery->id);
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communication->id);
+        }
+
+        return true;
     }
 
     private static function attemptOwns(CommunicationDelivery $delivery, CommunicationAttempt $attempt): bool
