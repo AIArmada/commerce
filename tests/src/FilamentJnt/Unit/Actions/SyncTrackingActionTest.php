@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
-use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
+use AIArmada\Jnt\Features\Orders\Api\SyncStoredTracking;
 use Illuminate\Support\Facades\Gate;
 
 uses(FilamentJntTestCase::class);
@@ -68,7 +68,7 @@ it('syncs tracking and shows a success notification when authenticated', functio
 
     $called = false;
 
-    app()->bind(JntTrackingService::class, function () use (&$called) {
+    app()->bind(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class, function () use (&$called) {
         return new class($called)
         {
             public function __construct(private bool &$called) {}
@@ -107,7 +107,7 @@ it('handles sync failures and shows a failure notification', function (): void {
 
     $this->actingAs($user);
 
-    app()->bind(JntTrackingService::class, fn () => new class
+    app()->bind(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class, fn () => new class
     {
         public function syncOrderTracking(JntOrder $order): void
         {
@@ -145,7 +145,7 @@ it('blocks syncing global rows without explicit global context', function (): vo
 
     $called = false;
 
-    app()->bind(JntTrackingService::class, function () use (&$called) {
+    app()->bind(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class, function () use (&$called) {
         return new class($called)
         {
             public function __construct(private bool &$called) {}
@@ -181,9 +181,9 @@ it('rejects synchronization without a tracking number at the domain boundary', f
         'tracking_number' => null,
     ]);
 
-    $service = Mockery::mock(JntTrackingService::class);
+    $service = Mockery::mock(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class);
     $service->shouldNotReceive('syncOrderTracking');
-    app()->instance(JntTrackingService::class, $service);
+    app()->instance(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class, $service);
 
     expect(fn () => app(SyncStoredTracking::class)->execute($order->id))
         ->toThrow(DomainException::class);

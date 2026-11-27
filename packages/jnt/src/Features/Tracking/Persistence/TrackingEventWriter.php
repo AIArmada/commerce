@@ -6,7 +6,7 @@ namespace AIArmada\Jnt\Features\Tracking\Persistence;
 
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 
-final class TrackingEventWriter
+final class TrackingEventWriter implements \AIArmada\Jnt\Features\Tracking\Api\StoreTrackingEvents
 {
     /** @param list<array<string, mixed>> $rows */
     public function insertMissing(array $rows): void

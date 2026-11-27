@@ -157,9 +157,9 @@ Sync tracking events to your database:
 
 ```php
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 
-$trackingService = app(JntTrackingService::class);
+$trackingService = app(SyncOrderTracking::class);
 
 // Sync a single order
 $order = JntOrder::where('order_id', 'ORDER-2024-001')->first();
@@ -213,11 +213,11 @@ Set up scheduled tracking sync in your scheduler:
 
 ```php
 // routes/console.php
-use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
-    $trackingService = app(JntTrackingService::class);
+    $trackingService = app(SyncOrderTracking::class);
     
     $orders = $trackingService->getOrdersNeedingTrackingUpdate(100);
     $trackingService->batchSyncTracking($orders);

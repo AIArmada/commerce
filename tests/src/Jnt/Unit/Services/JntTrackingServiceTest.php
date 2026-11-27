@@ -295,7 +295,7 @@ describe('JntTrackingService', function (): void {
 
         $statusMapper = Mockery::mock(JntStatusMapper::class);
 
-        $service = new JntTrackingService($expressService, $statusMapper);
+        $service = new \AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking($expressService, new JntTrackingService($expressService, $statusMapper));
 
         $order1 = new JntOrder;
         $order1->forceFill(['id' => 'test-id', 'tracking_number' => 'JNT001']);
@@ -324,7 +324,7 @@ describe('JntTrackingService', function (): void {
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
 
-        $service = new JntTrackingService($expressService, $statusMapper);
+        $service = new \AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking($expressService, new JntTrackingService($expressService, $statusMapper));
 
         expect(fn (): Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
             ->toThrow(AuthorizationException::class);

@@ -252,6 +252,7 @@ class JntServiceProvider extends PackageServiceProvider
             statusMapper: $app->make(JntStatusMapper::class),
         ));
         $this->app->alias(JntTrackingService::class, 'jnt.tracking');
+        $this->app->bind(\AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus::class, fn (Application $app): \AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus => $app->make(JntTrackingService::class));
         $this->app->bind(TrackingReader::class, fn (Application $app): TrackingReader => $app->make(JntTrackingService::class));
         $this->app->bind(WaybillWriter::class, LocalWaybillWriter::class);
     }

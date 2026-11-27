@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Features\Tracking\Api;
+namespace AIArmada\Jnt\Features\Orders\Api;
 
 interface SyncStoredTracking
 {

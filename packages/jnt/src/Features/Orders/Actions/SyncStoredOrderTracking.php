@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Features\Tracking\Actions;
+namespace AIArmada\Jnt\Features\Orders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
+use AIArmada\Jnt\Features\Orders\Api\SyncStoredTracking;
 use DomainException;
 
 final class SyncStoredOrderTracking implements SyncStoredTracking
@@ -21,6 +21,6 @@ final class SyncStoredOrderTracking implements SyncStoredTracking
             throw new DomainException('The order has no tracking number.');
         }
 
-        app(JntTrackingService::class)->syncOrderTracking($order);
+        app(SyncOrderTracking::class)->syncOrderTracking($order);
     }
 }
