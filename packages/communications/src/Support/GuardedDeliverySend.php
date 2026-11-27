@@ -10,8 +10,8 @@ use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationAttempt;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Illuminate\Notifications\Notification;
 
 /**

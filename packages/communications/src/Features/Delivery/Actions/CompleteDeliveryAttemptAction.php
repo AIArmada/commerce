@@ -6,7 +6,7 @@ namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use Carbon\CarbonImmutable;
 
 final class CompleteDeliveryAttemptAction

@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\TrackingInteractionType;
-use AIArmada\Communications\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;

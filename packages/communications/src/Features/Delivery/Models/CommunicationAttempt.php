@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Models;
+namespace AIArmada\Communications\Features\Delivery\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;

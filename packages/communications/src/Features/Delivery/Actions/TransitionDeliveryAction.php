@@ -14,7 +14,7 @@ use AIArmada\Communications\Events\DeliveryReplied;
 use AIArmada\Communications\Events\DeliverySending;
 use AIArmada\Communications\Events\DeliverySent;
 use AIArmada\Communications\Events\DeliverySuppressed;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;

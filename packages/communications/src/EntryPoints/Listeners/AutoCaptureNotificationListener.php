@@ -15,7 +15,7 @@ use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Support\AutoCaptureState;
 use Carbon\CarbonImmutable;

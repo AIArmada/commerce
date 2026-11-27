@@ -9,7 +9,7 @@ use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\CommunicationCancelled;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 

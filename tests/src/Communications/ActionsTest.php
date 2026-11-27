@@ -30,7 +30,7 @@ use AIArmada\Communications\Features\Suppressions\Actions\CreateSuppressionActio
 use AIArmada\Communications\Features\Suppressions\Actions\LiftSuppressionAction;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use Carbon\CarbonImmutable;

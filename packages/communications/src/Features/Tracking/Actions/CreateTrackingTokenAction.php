@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CreatedTrackingTokenData;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;

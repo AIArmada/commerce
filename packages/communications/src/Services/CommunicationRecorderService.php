@@ -10,7 +10,7 @@ use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 
 class CommunicationRecorderService implements CommunicationRecorder

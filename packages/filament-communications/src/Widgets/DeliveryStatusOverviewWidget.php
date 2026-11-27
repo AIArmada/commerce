@@ -7,7 +7,7 @@ namespace AIArmada\Filament\Communications\Widgets;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;

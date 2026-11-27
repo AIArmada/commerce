@@ -12,7 +12,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Events\DeliverySending;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;

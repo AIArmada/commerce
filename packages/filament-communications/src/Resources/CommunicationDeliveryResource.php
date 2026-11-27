@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Filament\Communications\Resources\CommunicationDeliveryResource\Pages;
 use AIArmada\Filament\Communications\Support\CommunicationFilterOptions;
 use BackedEnum;

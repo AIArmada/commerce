@@ -6,7 +6,7 @@ namespace AIArmada\Communications\Actions;
 
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliveryFailed;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;

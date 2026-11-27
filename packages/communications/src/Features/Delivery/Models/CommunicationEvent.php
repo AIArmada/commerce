@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Models;
+namespace AIArmada\Communications\Features\Delivery\Models;
 
+use AIArmada\Communications\Models\Communication;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\CommunicationEventSource;

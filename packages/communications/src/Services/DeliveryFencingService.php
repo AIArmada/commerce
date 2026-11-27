@@ -8,7 +8,7 @@ use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\DeliveryFencing;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Support\GuardedDeliverySend;
 use Illuminate\Support\Facades\DB;
 

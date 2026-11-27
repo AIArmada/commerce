@@ -7,7 +7,7 @@ namespace AIArmada\Communications\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliverySending;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;

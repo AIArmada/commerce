@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Communications\Actions\RecalculateCommunicationStatusAction;
 use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

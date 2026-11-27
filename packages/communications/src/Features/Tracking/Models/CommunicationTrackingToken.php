@@ -6,7 +6,7 @@ namespace AIArmada\Communications\Features\Tracking\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

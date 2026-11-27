@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Models\CommunicationAttempt;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 

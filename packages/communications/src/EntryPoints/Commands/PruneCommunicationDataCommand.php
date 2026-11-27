@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Models\CommunicationAttempt;
-use AIArmada\Communications\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;

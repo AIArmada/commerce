@@ -13,7 +13,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Enums\RecipientRole;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationBatch;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;

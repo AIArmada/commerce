@@ -10,7 +10,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliveryPlanned;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

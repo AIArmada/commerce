@@ -6,10 +6,10 @@ namespace AIArmada\Communications\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Models\CommunicationAttempt;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 
 final class RedactCommunicationPayloadAction
 {
