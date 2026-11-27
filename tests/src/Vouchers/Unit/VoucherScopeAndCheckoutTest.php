@@ -145,6 +145,25 @@ describe('checkout voucher validation', function (): void {
     });
 });
 
+it('revalidates directly registered vouchers without voucher-code metadata', function (): void {
+    $voucher = scopeVoucher();
+    $cart = new Cart(new InMemoryStorage, 'checkout-direct-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+    expect($cart->getDynamicConditions())->not->toBeEmpty();
+
+    $voucher->update(['expires_at' => now()->subMinute()]);
+    $event = new class($cart)
+    {
+        public function __construct(public readonly Cart $cart) {}
+    };
+
+    app(ValidateVoucherOnCheckout::class)->handle($event);
+
+    expect($cart->getDynamicConditions()->isEmpty())->toBeTrue()
+        ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
+});
+
 describe('voucher expiry is derived from the date', function (): void {
 
     it('reports a past-due voucher as expired without any sweep', function (): void {

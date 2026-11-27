@@ -5,41 +5,79 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Exceptions\VoucherValidationException;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 
 final readonly class RevalidateCartVouchers
 {
+    use NormalizesVoucherCodes;
+
     public function handle(Cart $cart): void
     {
-        /** @var array<string> $voucherCodes */
-        $voucherCodes = $cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES, []);
+        $metadata = $cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES, []);
+        $metadataCodes = [];
 
-        if (empty($voucherCodes)) {
-            return;
+        if (is_array($metadata)) {
+            foreach ($metadata as $code) {
+                if (is_string($code) && mb_trim($code) !== '') {
+                    $metadataCodes[] = $this->normalizeCode($code);
+                }
+            }
         }
 
+        $conditionNames = [];
+
+        foreach ([$cart->getDynamicConditions(), $cart->getStoredConditions()] as $conditions) {
+            foreach ($conditions as $condition) {
+                if ($condition->getType() !== 'voucher') {
+                    continue;
+                }
+
+                $code = $condition->getAttributes()['voucher_code'] ?? null;
+
+                if (is_string($code) && mb_trim($code) !== '') {
+                    $conditionNames[$this->normalizeCode($code)][$condition->getName()] = true;
+                }
+            }
+        }
+
+        $codes = array_unique([...$metadataCodes, ...array_keys($conditionNames)]);
         $invalidCodes = [];
-        $validCodes = [];
 
-        foreach ($voucherCodes as $code) {
-            $result = ValidateVoucherCode::run($code, $cart);
+        foreach ($codes as $code) {
+            $result = ValidateVoucherCode::run((string) $code, $cart);
 
-            if ($result->isValid) {
-                $validCodes[] = $code;
-            } else {
+            if (! $result->isValid) {
                 $invalidCodes[$code] = $result->reason ?? 'Voucher is no longer valid';
             }
         }
-        if (count($invalidCodes) > 0) {
-            foreach (array_keys($invalidCodes) as $invalidCode) {
-                RemoveVoucherFromCart::run($cart, (string) $invalidCode);
-            }
 
-            $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, $validCodes);
-            if (config('vouchers.checkout.block_on_invalid', false)) {
-                throw VoucherValidationException::multipleInvalid($invalidCodes);
+        if ($invalidCodes === []) {
+            return;
+        }
+
+        if ($metadataCodes !== []) {
+            $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, array_values(array_filter(
+                $metadataCodes,
+                static fn (string $code): bool => ! isset($invalidCodes[$code]),
+            )));
+        }
+
+        foreach (array_keys($invalidCodes) as $code) {
+            RemoveVoucherFromCart::run($cart, (string) $code);
+
+            foreach (array_keys($conditionNames[$code] ?? []) as $name) {
+                if ($cart->getDynamicConditions()->has($name)) {
+                    $cart->removeDynamicCondition($name);
+                }
+
+                $cart->removeCondition($name);
             }
+        }
+
+        if (config('vouchers.checkout.block_on_invalid', false)) {
+            throw VoucherValidationException::multipleInvalid($invalidCodes);
         }
     }
 }
