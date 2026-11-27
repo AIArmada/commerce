@@ -34,7 +34,7 @@ use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use AIArmada\Chip\Services\LocalAnalyticsService;
-use AIArmada\Chip\Support\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Persistence\PurchaseIdempotencyLedger;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
 use AIArmada\Chip\Webhooks\WebhookMonitor;
@@ -223,7 +223,7 @@ describe('signature verified before owner resolution', function (): void {
 });
 
 describe('idempotency reservations expire', function (): void {
-    it('releases an expired reservation instead of bricking the key', function (): void {
+    it('keeps an expired reservation blocked until remote reconciliation', function (): void {
         $ledger = new PurchaseIdempotencyLedger;
         $fingerprint = hash('sha256', 'payload');
 
@@ -236,17 +236,20 @@ describe('idempotency reservations expire', function (): void {
         $metadata['chip_idempotency']['reserved_at'] = time() - 90000;
         $stub->forceFill(['metadata' => $metadata])->save();
 
-        expect($ledger->find('brand-1', 'repair-key-1', $fingerprint))->toBeNull();
+        expect(fn () => $ledger->find('brand-1', 'repair-key-1', $fingerprint))
+            ->toThrow(ChipValidationException::class, 'requires reconciliation');
 
-        $fresh = $ledger->reserve('brand-1', 'repair-key-1', $fingerprint, [
-            'client' => ['email' => 'a@example.com'],
-            'purchase' => ['total' => 100],
-        ]);
+        expect(fn () => $ledger->reserve('brand-1', 'repair-key-1', $fingerprint, []))
+            ->toThrow(ChipValidationException::class, 'requires reconciliation');
+
+        expect($ledger->releaseReconciledReservation((string) $stub->getKey()))->toBeTrue();
+
+        $fresh = $ledger->reserve('brand-1', 'repair-key-1', $fingerprint, []);
 
         expect($fresh->exists)->toBeTrue();
     });
 
-    it('prunes only expired stubs', function (): void {
+    it('releases only a specifically confirmed expired reservation', function (): void {
         $ledger = new PurchaseIdempotencyLedger;
 
         $expired = $ledger->reserve('brand-1', 'repair-prune-old', hash('sha256', 'a'), []);
@@ -256,7 +259,12 @@ describe('idempotency reservations expire', function (): void {
 
         $fresh = $ledger->reserve('brand-1', 'repair-prune-new', hash('sha256', 'b'), []);
 
-        $this->artisan('chip:prune-idempotency-stubs')->assertExitCode(0);
+        $this->artisan('chip:prune-idempotency-stubs')->assertFailed();
+        $this->artisan('chip:prune-idempotency-stubs', ['--dry-run' => true])->assertSuccessful();
+        $this->artisan('chip:prune-idempotency-stubs', [
+            '--reservation-id' => (string) $expired->getKey(),
+            '--confirmed-not-created' => true,
+        ])->assertSuccessful();
 
         expect(Purchase::query()->whereKey($expired->getKey())->exists())->toBeFalse()
             ->and(Purchase::query()->whereKey($fresh->getKey())->exists())->toBeTrue();

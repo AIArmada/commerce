@@ -8,7 +8,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
-use AIArmada\Chip\Support\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Persistence\PurchaseIdempotencyLedger;
 use Illuminate\Support\Facades\Cache;
 
 /**

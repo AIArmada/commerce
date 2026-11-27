@@ -5,38 +5,57 @@ declare(strict_types=1);
 namespace AIArmada\Chip\EntryPoints\Commands;
 
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Support\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Persistence\PurchaseIdempotencyLedger;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Illuminate\Console\Command;
 
-/**
- * AGENTS: only expired stubs are deleted, but an expired stub may still
- * cover a purchase that WAS created at CHIP (crash after POST, before
- * record). If anyone plans to retry the operation after pruning, reconcile
- * by `reference` at CHIP first — prune + blind retry = second purchase.
- * See PurchaseIdempotencyLedger for the full runbook.
- */
 final class PruneIdempotencyStubsCommand extends Command
 {
     protected $signature = 'chip:prune-idempotency-stubs
                             {--limit=1000 : Maximum number of stubs to delete}
-                            {--dry-run : Report expired stubs without deleting}';
+                            {--dry-run : Report expired stubs without deleting}
+                            {--reservation-id= : Release only this reconciled local reservation}
+                            {--confirmed-not-created : Confirm the remote purchase was not created}';
 
-    protected $description = 'Delete expired unrecorded purchase idempotency reservations';
+    protected $description = 'Inspect expired purchase reservations or release a reconciled reservation';
 
     public function handle(PurchaseIdempotencyLedger $ledger): int
     {
         $limit = max(1, (int) $this->option('limit'));
         $dryRun = (bool) $this->option('dry-run');
 
-        if (! (bool) config('chip.owner.enabled', false) || OwnerContext::resolve() !== null) {
-            $count = $dryRun
-                ? $ledger->countExpiredReservations($limit)
-                : $ledger->pruneExpiredReservations($limit);
+        if (! $dryRun) {
+            $reservationId = $this->option('reservation-id');
 
-            $this->report($count, $dryRun);
+            if (! is_string($reservationId) || $reservationId === '' || ! $this->option('confirmed-not-created')) {
+                $this->error('Release requires --reservation-id and --confirmed-not-created after remote reconciliation.');
+
+                return self::FAILURE;
+            }
+
+            if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
+                $this->error('Release requires an explicit owner context.');
+
+                return self::FAILURE;
+            }
+
+            if (! $ledger->releaseReconciledReservation($reservationId)) {
+                $this->error('No expired unrecorded reservation was found for this owner.');
+
+                return self::FAILURE;
+            }
+
+            $this->info('Released reconciled reservation.');
+
+            return self::SUCCESS;
+        }
+
+        if (! (bool) config('chip.owner.enabled', false) || OwnerContext::resolve() !== null) {
+            $count = $ledger->countExpiredReservations($limit);
+
+            $this->report($count);
 
             return self::SUCCESS;
         }
@@ -50,11 +69,9 @@ final class PruneIdempotencyStubsCommand extends Command
             ->get();
 
         if ($owners->isEmpty()) {
-            $count = OwnerContext::withOwner(null, fn (): int => $dryRun
-                ? $ledger->countExpiredReservations($limit)
-                : $ledger->pruneExpiredReservations($limit));
+            $count = OwnerContext::withOwner(null, fn (): int => $ledger->countExpiredReservations($limit));
 
-            $this->report($count, $dryRun);
+            $this->report($count);
 
             return self::SUCCESS;
         }
@@ -69,24 +86,16 @@ final class PruneIdempotencyStubsCommand extends Command
             $remaining = $limit - $total;
             $owner = OwnerTupleParser::fromRow($row, OwnerTupleColumns::forModelClass(Purchase::class))->toOwnerModel();
 
-            $total += OwnerContext::withOwner($owner, fn (): int => $dryRun
-                ? $ledger->countExpiredReservations($remaining)
-                : $ledger->pruneExpiredReservations($remaining));
+            $total += OwnerContext::withOwner($owner, fn (): int => $ledger->countExpiredReservations($remaining));
         }
 
-        $this->report($total, $dryRun);
+        $this->report($total);
 
         return self::SUCCESS;
     }
 
-    private function report(int $count, bool $dryRun): void
+    private function report(int $count): void
     {
-        if ($dryRun) {
-            $this->info("Found {$count} expired idempotency stub(s).");
-
-            return;
-        }
-
-        $this->info("Pruned {$count} expired idempotency stub(s).");
+        $this->info("Found {$count} expired idempotency stub(s).");
     }
 }

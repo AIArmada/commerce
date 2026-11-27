@@ -366,7 +366,7 @@ Canonical statuses live in `AIArmada\Chip\Enums\PurchaseStatus` (`paid`, `cleare
 
 Currency must be a three-letter ISO 4217 code, amounts are integer minor units, and quantities are finite numerics zero or greater, below 2^53, with at most 4 decimal places. The upper bound is a local safety limit, not a proven server maximum. The sandbox accepted a zero-quantity line in a nonzero purchase and `"1.5000"`; exponent, padded, and plus-prefixed spellings had no field errors in a mixed request that failed on a 5-decimal line (`max_decimal_places`). The client trims numeric strings and stringifies floats before emission. Line totals follow the server formula — a single half-up round per line of `(price × quantity − discount) × (1 + tax/100)` in minor units, sandbox-proven (100 x 1.555 + 100 x 1.555 totals 312). Discount is per-line: a 100/1-discount/3 line totals 299, and a discount above the unit price is accepted up to the line gross — beyond it the server 400s `product_subtotal_negative`, mirrored locally. Tax applies to the net line (0–100 with at most 5 digits and 2 decimal places — server 400s `max_digits`/`max_decimal_places` beyond that, mirrored locally), and `total_price_override` is final even with tax. Subtotal/total overrides must reconcile (`subtotal - discount + tax === total`) or creation throws `ChipValidationException`.
 
-`AIArmada\Chip\Support\PurchaseIdempotencyLedger` fails closed: replaying a key with a different payload fingerprint throws, and a key reserved without a recorded response throws until reconciled. Reserving requires an owner context when `chip.owner.enabled` is set.
+`AIArmada\Chip\Persistence\PurchaseIdempotencyLedger` fails closed: replaying a key with a different payload fingerprint throws, and a key reserved without a recorded response throws until reconciled, even after the reservation TTL expires. Reserving requires an owner context when `chip.owner.enabled` is set.
 
 Breaking change: `purchase.total` is rejected on the create path. It was previously accepted when no `total_override` was set; now any create payload containing it throws `ChipValidationException` (`purchase.total is server-calculated; use total_override.`). The response field is unchanged — CHIP still calculates and returns `purchase.total`.
 
@@ -509,7 +509,8 @@ When owner scoping is enabled, pass `owner:` (or `--owner-type` / `--owner-id` o
 | `chip:retry-webhooks [--limit=] [--dry-run]` | Retry failed webhooks |
 | `chip:clean-webhooks [--days=] [--status=] [--dry-run]` | Clean old webhook records |
 | `chip:sync-from-api` | Sync `chip_clients`, `chip_purchases`, and `chip_payments` from the CHIP API |
-| `chip:prune-idempotency-stubs [--limit=] [--dry-run]` | Delete expired unrecorded purchase idempotency reservations |
+| `chip:prune-idempotency-stubs --dry-run [--limit=]` | Inspect expired unrecorded purchase reservations | 
+| `chip:prune-idempotency-stubs --reservation-id=ID --confirmed-not-created` | Release one expired reservation after confirming remotely that no purchase was created |
 
 `chip:sync-from-api` accepts repeatable and scope options:
 

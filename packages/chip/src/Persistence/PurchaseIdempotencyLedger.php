@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Support;
+namespace AIArmada\Chip\Persistence;
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
@@ -10,20 +10,8 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Support\Facades\DB;
 
-/**
- * Local create-dedupe ledger. CHIP ignores Idempotency-Key on purchase
- * creation (sandbox-proven), so this ledger is the ONLY create dedupe.
- *
- * AGENTS — crash window + reconcile runbook: if the process dies after the
- * CHIP POST succeeds but before record(), the key stays reserved with a null
- * response and retries fail closed ("requires reconciliation") — no
- * duplicate, but the purchase is unknown locally. Before retrying with a
- * fresh key, expiring the stub, or running chip:prune-idempotency-stubs,
- * reconcile first: look the purchase up at CHIP by `reference`; if it
- * exists, adopt it instead of re-creating. Pruning/expiry followed by a
- * blind retry creates a SECOND remote purchase and orphans the first.
- */
 final class PurchaseIdempotencyLedger
 {
     private const METADATA_KEY = 'chip_idempotency';
@@ -44,12 +32,6 @@ final class PurchaseIdempotencyLedger
 
         $response = $entry['response'] ?? null;
         if ($response === null) {
-            if ($this->isExpiredReservation($ledger, $entry)) {
-                $this->deleteLedger($ledger);
-
-                return null;
-            }
-
             throw new ChipValidationException(
                 'Purchase idempotency key is already reserved and requires reconciliation.'
             );
@@ -77,17 +59,9 @@ final class PurchaseIdempotencyLedger
         $existing = $this->findLedger($brandId, $idempotencyKey);
 
         if ($existing !== null) {
-            $existingEntry = $this->entry($existing);
-
-            if (($existingEntry['response'] ?? null) !== null || ! $this->isExpiredReservation($existing, $existingEntry)) {
-                throw new ChipValidationException(
-                    'Purchase idempotency key is already reserved and requires reconciliation.'
-                );
-            }
-
-            // A crashed reservation left a stub behind; the key expired, so
-            // release it instead of bricking the key forever.
-            $this->deleteLedger($existing);
+            throw new ChipValidationException(
+                'Purchase idempotency key is already reserved and requires reconciliation.'
+            );
         }
 
         $timestamp = time();
@@ -166,26 +140,29 @@ final class PurchaseIdempotencyLedger
     }
 
     /**
-     * Delete unrecorded reservations older than the idempotency TTL.
+     * Release one expired reservation only after an operator verifies that
+     * CHIP did not create a purchase for it.
      */
-    public function pruneExpiredReservations(int $limit = 1000): int
+    public function releaseReconciledReservation(string $reservationId): bool
     {
         $this->assertOwnerContext();
 
-        $pruned = 0;
+        return DB::transaction(function () use ($reservationId): bool {
+            $stub = Purchase::query()
+                ->whereKey($reservationId)
+                ->whereNotNull('metadata->chip_idempotency->idempotency_key')
+                ->whereNull('metadata->chip_idempotency->response')
+                ->lockForUpdate()
+                ->first();
 
-        $this->eachExpiredStub(function (Purchase $stub) use (&$pruned, $limit): bool {
-            if ($pruned >= $limit) {
+            if ($stub === null || ! $this->isExpiredReservation($stub, $this->entry($stub))) {
                 return false;
             }
 
             $this->deleteLedger($stub);
-            $pruned++;
 
             return true;
         });
-
-        return $pruned;
     }
 
     public function countExpiredReservations(int $limit = 1000): int
