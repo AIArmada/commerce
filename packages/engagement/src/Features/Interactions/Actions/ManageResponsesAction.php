@@ -122,7 +122,7 @@ final readonly class ManageResponsesAction
                     'respondable_id' => $subjectIdentity['id'],
                     'response_type' => $responseType,
                     'status' => 'active',
-                    'visibility' => $visibility ?? config('engagement.defaults.response_visibility', 'public'),
+                    'visibility' => $visibility ?? EngagementModelGuard::requiredString($subject->defaultResponseVisibility(), 'visibility'),
                     'responded_at' => CarbonImmutable::now(),
                     'source' => $source,
                     'metadata' => $metadata,

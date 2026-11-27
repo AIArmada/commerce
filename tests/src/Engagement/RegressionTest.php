@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Remindable;
+use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Enums\BookmarkStatus;
@@ -645,4 +646,41 @@ it('rejects missing model keys at each engagement state boundary', function (): 
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => app(ReadsReminderState::class)->remindersFor($missing, $this->subject))
         ->toThrow(InvalidArgumentException::class);
+});
+
+it('honors a subject private response default without resetting existing visibility', function (): void {
+    config(['engagement.defaults.response_visibility' => 'public']);
+
+    $subject = new class extends Model implements Respondable
+    {
+        public function getMorphClass(): string
+        {
+            return 'private-response-subject';
+        }
+
+        public function allowedResponseTypes(): array
+        {
+            return ['going', 'maybe'];
+        }
+
+        public function defaultResponseVisibility(): string
+        {
+            return 'private';
+        }
+
+        public function allowsMultipleResponsesFromSameResponder(): bool
+        {
+            return false;
+        }
+    };
+    $subject->setAttribute($subject->getKeyName(), (string) Str::uuid());
+
+    $action = app(ManageInteractionsAction::class);
+    $response = $action->respond($this->actor, $subject, 'going');
+    expect($response->visibility)->toBe('private');
+
+    $changed = $action->respond($this->actor, $subject, 'maybe', ['visibility' => 'public']);
+    expect($changed->visibility)->toBe('public');
+
+    expect($action->respond($this->actor, $subject, 'going')->visibility)->toBe('public');
 });
