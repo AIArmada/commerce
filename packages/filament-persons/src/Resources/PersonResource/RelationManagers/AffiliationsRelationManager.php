@@ -203,13 +203,14 @@ class AffiliationsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
-                    ->using(fn (Affiliation $record, array $data): Affiliation => app(SaveAffiliation::class)->update($record, $data))
+                    ->using(fn (Affiliation $record, array $data): Affiliation => app(SaveAffiliation::class)->update($this->getOwnerRecord(), $record, $data))
                     ->mutateFormDataUsing(function (array $data): array {
                         $this->assertInstitutionReference($data);
 
                         return $data;
                     }),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->using(fn (Affiliation $record): bool => app(SaveAffiliation::class)->delete($this->getOwnerRecord(), $record)),
             ]);
     }
 

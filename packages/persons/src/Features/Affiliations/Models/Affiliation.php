@@ -62,40 +62,6 @@ class Affiliation extends Model
 
     }
 
-    /**
-     * Save a primary affiliation while serializing primary replacement per
-     * affiliatable model. The database partial unique is the final backstop.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
-    {
-        $this->guardReferences();
-
-        $needsPrimarySync = $this->is_primary
-            && (! $this->exists
-                || $this->isDirty('is_primary')
-                || $this->isDirty('affiliatable_type')
-                || $this->isDirty('affiliatable_id'));
-
-        if (! $needsPrimarySync) {
-            return parent::save($options);
-        }
-
-        return DB::transaction(function () use ($options): bool {
-            $this->affiliatable()->lockForUpdate()->firstOrFail();
-
-            static::query()
-                ->where('affiliatable_type', $this->affiliatable_type)
-                ->where('affiliatable_id', $this->affiliatable_id)
-                ->whereKeyNot($this->getKey())
-                ->lockForUpdate()
-                ->update(['is_primary' => false]);
-
-            return parent::save($options);
-        });
-    }
-
     private function guardReferences(): void
     {
         app(PersonsModelReferenceGuard::class)->resolve(

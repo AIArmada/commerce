@@ -16,6 +16,7 @@ use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
 use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Models\Title;
@@ -163,16 +164,12 @@ describe('person identity models', function (): void {
     it('keeps only one primary affiliation per affiliatable model', function (): void {
         $person = Person::factory()->create();
 
-        $first = Affiliation::create([
-            'affiliatable_type' => $person->getMorphClass(),
-            'affiliatable_id' => $person->getKey(),
+        $first = app(SaveAffiliation::class)->create($person, [
             'affiliation_type' => AffiliationType::Member,
             'is_primary' => true,
         ]);
 
-        $second = Affiliation::create([
-            'affiliatable_type' => $person->getMorphClass(),
-            'affiliatable_id' => $person->getKey(),
+        $second = app(SaveAffiliation::class)->create($person, [
             'affiliation_type' => AffiliationType::Employee,
             'is_primary' => true,
         ]);
@@ -295,9 +292,7 @@ describe('person identity models', function (): void {
     it('creates affiliation with roles for a person', function (): void {
         $person = Person::factory()->create();
 
-        $affiliation = Affiliation::create([
-            'affiliatable_type' => 'person',
-            'affiliatable_id' => $person->id,
+        $affiliation = app(SaveAffiliation::class)->create($person, [
             'institution_id' => null,
             'affiliation_type' => AffiliationType::Employee,
             'is_primary' => true,
@@ -489,4 +484,16 @@ describe('person identity models', function (): void {
         }
     });
 
+});
+
+it('rejects cross-person affiliation changes and preserves existing primary on invalid replacement', function (): void {
+    $person = Person::factory()->create();
+    $other = Person::factory()->create();
+    $action = app(SaveAffiliation::class);
+    $record = $action->create($person, ['affiliation_type' => AffiliationType::Member, 'is_primary' => true]);
+
+    expect(fn () => $action->update($other, $record, ['position' => 'Forged']))
+        ->toThrow(AuthorizationException::class);
+    expect(fn () => $action->delete($other, $record))->toThrow(AuthorizationException::class);
+    expect($record->fresh()->is_primary)->toBeTrue();
 });

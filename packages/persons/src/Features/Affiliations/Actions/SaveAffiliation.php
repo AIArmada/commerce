@@ -5,40 +5,87 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Features\Affiliations\Actions;
 
 use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
-final class SaveAffiliation
+final readonly class SaveAffiliation
 {
     /** @param array<string, mixed> $attributes */
     public function create(Model $subject, array $attributes): Affiliation
+    {
+        $affiliation = new Affiliation;
+
+        return $affiliation->getConnection()->transaction(function () use ($subject, $attributes, $affiliation): Affiliation {
+            $locked = $this->lockSubject($subject);
+            $affiliation->fill($this->attributes($attributes));
+            $affiliation->affiliatable()->associate($locked);
+            $this->persist($affiliation);
+
+            return $affiliation;
+        });
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function update(Model $subject, Affiliation $affiliation, array $attributes): Affiliation
+    {
+        return $affiliation->getConnection()->transaction(function () use ($subject, $affiliation, $attributes): Affiliation {
+            $locked = $this->lockAffiliation($this->lockSubject($subject), $affiliation);
+            $locked->fill($this->attributes($attributes));
+            $this->persist($locked);
+
+            return $locked;
+        });
+    }
+
+    public function delete(Model $subject, Affiliation $affiliation): bool
+    {
+        return $affiliation->getConnection()->transaction(function () use ($subject, $affiliation): bool {
+            return (bool) $this->lockAffiliation($this->lockSubject($subject), $affiliation)->delete();
+        });
+    }
+
+    private function lockSubject(Model $subject): Model
     {
         if (! $subject->exists || $subject->getKey() === null) {
             throw new InvalidArgumentException('Affiliations require a persisted subject.');
         }
 
-        $affiliation = new Affiliation;
-        $affiliation->fill($this->attributes($attributes));
-        $affiliation->affiliatable()->associate($subject);
-        $affiliation->save();
-
-        return $affiliation;
+        return $subject->newQuery()->whereKey($subject->getKey())->lockForUpdate()->firstOrFail();
     }
 
-    /** @param array<string, mixed> $attributes */
-    public function update(Affiliation $affiliation, array $attributes): Affiliation
+    private function lockAffiliation(Model $subject, Affiliation $affiliation): Affiliation
     {
-        $affiliation->fill($this->attributes($attributes));
-        $affiliation->save();
+        $locked = $affiliation->newQuery()->whereKey($affiliation->getKey())->lockForUpdate()->firstOrFail();
 
-        return $affiliation;
+        if ($locked->affiliatable_type !== $subject->getMorphClass() || (string) $locked->affiliatable_id !== (string) $subject->getKey()) {
+            throw new AuthorizationException('Affiliation does not belong to this subject.');
+        }
+
+        return $locked;
+    }
+
+    private function persist(Affiliation $affiliation): void
+    {
+        if ($affiliation->is_primary) {
+            $siblings = $affiliation->newQuery()
+                ->where('affiliatable_type', $affiliation->affiliatable_type)
+                ->where('affiliatable_id', $affiliation->affiliatable_id)
+                ->where('is_primary', true);
+
+            if ($affiliation->exists) {
+                $siblings->whereKeyNot($affiliation->getKey());
+            }
+
+            $siblings->update(['is_primary' => false]);
+        }
+
+        $affiliation->save();
     }
 
     /** @param array<string, mixed> $attributes @return array<string, mixed> */
     private function attributes(array $attributes): array
     {
-        unset($attributes['affiliatable_id'], $attributes['affiliatable_type']);
-
-        return $attributes;
+        return array_intersect_key($attributes, array_flip(['institution_id', 'affiliation_type', 'position', 'joined_at', 'left_at', 'is_primary']));
     }
 }

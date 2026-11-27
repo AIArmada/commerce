@@ -7,6 +7,7 @@ use AIArmada\FilamentPersons\Resources\PersonResource;
 use AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers\AffiliationsRelationManager;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -58,7 +59,7 @@ it('uses searchable async institution select and eager-loads institutions in tab
 
     $institution = User::factory()->create(['name' => 'Science Guild']);
     $person = Person::query()->create(['name' => 'Dr. Ahmad']);
-    $person->affiliations()->create([
+    app(SaveAffiliation::class)->create($person, [
         'affiliation_type' => AffiliationType::Advisor,
         'position' => 'Senior Fellow',
         'institution_id' => $institution->getKey(),

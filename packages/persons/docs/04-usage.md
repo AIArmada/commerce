@@ -147,9 +147,10 @@ $person->credentialAssignments()->create([
 
 ```php
 use AIArmada\Persons\Enums\AffiliationType;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
 
 // institution_id is validated against the configured institution model
-$affiliation = $person->affiliations()->create([
+$affiliation = app(SaveAffiliation::class)->create($person, [
     'institution_id' => $institutionId,
     'affiliation_type' => AffiliationType::Employee,
     'is_primary' => true,
