@@ -48,7 +48,7 @@ use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationRefere
 use AIArmada\Communications\Features\Delivery\Actions\RecordDeliveryOutcome;
 use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
 use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
-use AIArmada\Communications\Services\DeliveryFencingService;
+use AIArmada\Communications\Features\Delivery\Services\DeliveryFencingService;
 use AIArmada\Communications\Drivers\Audit\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Drivers\Notifications\NullContentRenderer;
 use AIArmada\Communications\Drivers\Notifications\NullRecipientSnapshotResolver;

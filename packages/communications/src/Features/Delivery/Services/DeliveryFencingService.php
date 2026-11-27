@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Features\Delivery\Services;
 
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\DeliveryFencing;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Support\GuardedDeliverySend;
+use AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend;
 use Illuminate\Support\Facades\DB;
 
 final readonly class DeliveryFencingService implements DeliveryFencing

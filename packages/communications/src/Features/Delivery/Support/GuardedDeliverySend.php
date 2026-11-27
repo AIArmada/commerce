@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Support;
+namespace AIArmada\Communications\Features\Delivery\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;

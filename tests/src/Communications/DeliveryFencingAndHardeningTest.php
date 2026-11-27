@@ -15,7 +15,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
-use AIArmada\Communications\Support\GuardedDeliverySend;
+use AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;

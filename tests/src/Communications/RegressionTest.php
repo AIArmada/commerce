@@ -862,7 +862,7 @@ test('delivery fencing rejects mismatched aggregate before touching any delivery
     $fencing = app(\AIArmada\Communications\Contracts\DeliveryFencing::class);
 
     \Illuminate\Support\Facades\DB::transaction(function () use ($first, $delivery, $attempt, $fencing): void {
-        expect(\AIArmada\Communications\Support\GuardedDeliverySend::claim($delivery->id, $first->id))->toBeNull()
+        expect(\AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend::claim($delivery->id, $first->id))->toBeNull()
             ->and($fencing->recordExternalSent($first->id, $delivery->id, $attempt->id))->toBeFalse()
             ->and($fencing->recordExternalFailure($first->id, $delivery->id, $attempt->id, 'wrong aggregate'))->toBeFalse();
     });
