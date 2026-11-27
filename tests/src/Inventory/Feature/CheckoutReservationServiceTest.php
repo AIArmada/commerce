@@ -231,6 +231,60 @@ describe('CheckoutReservationService', function (): void {
             ->and(InventoryAllocation::query()->where('inventoryable_id', $otherItem->getKey())->where('cart_id', 'ref-isolated')->exists())->toBeTrue();
     });
 
+    it('isolates cart allocation mutations from checkout reservations sharing the same reference and item', function (): void {
+        $reference = 'shared-cart-reference';
+        $allocations = app(InventoryAllocationService::class);
+        $allocations->allocate($this->item, 3, $reference);
+        $this->reservationService->reserve($reference, [
+            new ReservationLine(productId: $this->item->getKey(), quantity: 2),
+        ], 900);
+
+        $group = InventoryReservation::query()->where('reference', $reference)->firstOrFail();
+        $groupAllocation = InventoryAllocation::query()->where('reservation_group_id', $group->id)->firstOrFail();
+        $originalExpiry = $groupAllocation->expires_at;
+
+        expect($allocations->getAllocationsForCart($reference)->sum('quantity'))->toBe(3)
+            ->and($allocations->getAllocations($this->item, $reference)->sum('quantity'))->toBe(3)
+            ->and($allocations->extendAllocations($reference, 60))->toBe(1)
+            ->and($groupAllocation->fresh()->expires_at->eq($originalExpiry))->toBeTrue()
+            ->and($allocations->releaseAllocation($groupAllocation))->toBe(0)
+            ->and($allocations->release($this->item, $reference))->toBe(3);
+
+        $allocations->allocate($this->item, 4, $reference);
+        expect($allocations->releaseAllForCart($reference))->toBe(4);
+
+        $allocations->allocate($this->item, 1, $reference);
+        expect($allocations->commit($reference, 'CART-ORDER'))->toHaveCount(1)
+            ->and($groupAllocation->fresh())->not->toBeNull()
+            ->and($this->reservationService->find($reference)->state)->toBe('reserved');
+
+        $this->reservationService->commit($reference, 'CHECKOUT-ORDER');
+        $level = $this->inventoryService->getLevel($this->item, $this->location->id)->fresh();
+
+        expect($level->quantity_on_hand)->toBe(7)
+            ->and($level->quantity_reserved)->toBe(0);
+    });
+
+    it('leaves grouped allocations to the checkout reservation expiry lifecycle', function (): void {
+        $reference = 'group-expiry';
+        $this->reservationService->reserve($reference, [
+            new ReservationLine(productId: $this->item->getKey(), quantity: 2),
+        ], 900);
+
+        $group = InventoryReservation::query()->where('reference', $reference)->firstOrFail();
+        InventoryAllocation::query()->where('reservation_group_id', $group->id)
+            ->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+
+        $allocations = app(InventoryAllocationService::class);
+        expect($allocations->cleanupExpired())->toBe(0)
+            ->and($allocations->cleanupExpiredGlobal())->toBe(0)
+            ->and($this->reservationService->find($reference)->state)->toBe('reserved');
+
+        $group->update(['expires_at' => CarbonImmutable::now()->subSecond()]);
+        expect($this->reservationService->cleanupExpiredReservations())->toBe(1)
+            ->and($this->inventoryService->getLevel($this->item, $this->location->id)->fresh()->quantity_reserved)->toBe(0);
+    });
+
     it('throws on invalid commit from released', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
         $this->reservationService->reserve('ref-bad-commit', $lines, 900);

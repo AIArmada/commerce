@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services\Stock;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Stock\Actions\CheckLowInventory;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
@@ -74,7 +76,8 @@ final class InventoryAllocationService
         Model $model,
         int $quantity,
         string $cartId,
-        int $ttlMinutes = 30
+        int $ttlMinutes = 30,
+        ?string $reservationGroupId = null,
     ): Collection {
         if ($quantity <= 0) {
             throw new InvalidArgumentException('Quantity must be positive');
@@ -84,9 +87,27 @@ final class InventoryAllocationService
             throw new InvalidArgumentException('TTL minutes must be positive');
         }
 
-        return DB::transaction(function () use ($model, $quantity, $cartId, $ttlMinutes): Collection {
-            // Release any existing allocations for this model/cart combo
-            $this->release($model, $cartId);
+        if (trim($cartId) === '') {
+            throw new InvalidArgumentException('Allocation reference must not be empty');
+        }
+
+        return DB::transaction(function () use ($model, $quantity, $cartId, $ttlMinutes, $reservationGroupId): Collection {
+            if ($reservationGroupId === null) {
+                $this->release($model, $cartId);
+            } else {
+                $groupQuery = InventoryReservation::query()
+                    ->whereKey($reservationGroupId)
+                    ->where('reference', $cartId)
+                    ->where('status', InventoryReservation::STATE_RESERVED);
+
+                if (InventoryOwnerScope::isEnabled()) {
+                    $owner = InventoryOwnerScope::resolveOwner();
+                    OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                    $groupQuery->forOwner($owner, false);
+                }
+
+                $groupQuery->lockForUpdate()->firstOrFail();
+            }
 
             $strategy = $this->getStrategy($model);
             $allowSplit = $strategy->allowsSplit() && config('inventory.allow_split_allocation', true);
@@ -121,6 +142,7 @@ final class InventoryAllocationService
                     'location_id' => $level->location_id,
                     'level_id' => $level->id,
                     'cart_id' => $cartId,
+                    'reservation_group_id' => $reservationGroupId,
                     'quantity' => $toAllocate,
                     'expires_at' => $expiresAt,
                 ]);
@@ -138,12 +160,7 @@ final class InventoryAllocationService
             }
 
             if ($remaining > 0) {
-                // Rollback all allocations if we couldn't fulfill the full quantity
-                foreach ($allocations as $allocation) {
-                    $allocation->level->decrementReserved($allocation->quantity);
-                    $allocation->delete();
-                }
-
+                // The enclosing transaction rolls back every allocation and stock update.
                 $allocatedQuantity = $quantity - $remaining;
 
                 throw new InsufficientInventoryException(
@@ -174,6 +191,7 @@ final class InventoryAllocationService
             $allocationQuery = InventoryOwnerScope::applyToLocationQuery(
                 InventoryAllocation::query()
                     ->whereKey($allocation->getKey())
+                    ->whereNull('reservation_group_id')
                     ->lockForUpdate()
                     ->with('location')
             );
@@ -220,7 +238,7 @@ final class InventoryAllocationService
                 InventoryAllocation::query()
                     ->where('inventoryable_type', $model->getMorphClass())
                     ->where('inventoryable_id', $model->getKey())
-                    ->forCart($cartId)
+                    ->forCart($cartId)->whereNull('reservation_group_id')
                     ->with('location')
                     ->lockForUpdate()
             );
@@ -257,7 +275,7 @@ final class InventoryAllocationService
         return DB::transaction(function () use ($cartId): int {
             $allocationsQuery = InventoryOwnerScope::applyToLocationQuery(
                 InventoryAllocation::query()
-                    ->forCart($cartId)
+                    ->forCart($cartId)->whereNull('reservation_group_id')
                     ->with('level')
                     ->with('location')
                     ->lockForUpdate()
@@ -318,7 +336,7 @@ final class InventoryAllocationService
         return DB::transaction(function () use ($cartId, $orderId): array {
             $allocationsQuery = InventoryOwnerScope::applyToLocationQuery(
                 InventoryAllocation::query()
-                    ->forCart($cartId)
+                    ->forCart($cartId)->whereNull('reservation_group_id')
                     ->with(['level', 'inventoryable'])
                     ->with('location')
                     ->lockForUpdate()
@@ -413,10 +431,14 @@ final class InventoryAllocationService
      */
     public function extendAllocations(string $cartId, int $minutes): int
     {
+        if ($minutes <= 0) {
+            throw new InvalidArgumentException('TTL minutes must be positive');
+        }
+
         $newExpiry = CarbonImmutable::now()->addMinutes($minutes);
 
         $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryAllocation::query()->forCart($cartId)->with('location')
+            InventoryAllocation::query()->forCart($cartId)->whereNull('reservation_group_id')->with('location')
         );
 
         return $query->update(['expires_at' => $newExpiry]);
@@ -424,6 +446,10 @@ final class InventoryAllocationService
 
     public function extendReservationGroupAllocations(string $reservationGroupId, int $minutes): int
     {
+        if ($minutes <= 0) {
+            throw new InvalidArgumentException('TTL minutes must be positive');
+        }
+
         return InventoryOwnerScope::applyToLocationQuery(
             InventoryAllocation::query()
                 ->where('reservation_group_id', $reservationGroupId)
@@ -440,7 +466,7 @@ final class InventoryAllocationService
     {
         $query = InventoryOwnerScope::applyToLocationQuery(
             InventoryAllocation::query()
-                ->forCart($cartId)
+                ->forCart($cartId)->whereNull('reservation_group_id')
                 ->active()
                 ->with(['location', 'level', 'inventoryable'])
         );
@@ -459,7 +485,7 @@ final class InventoryAllocationService
             InventoryAllocation::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
-                ->forCart($cartId)
+                ->forCart($cartId)->whereNull('reservation_group_id')
                 ->active()
                 ->with('location')
         );
@@ -546,6 +572,7 @@ final class InventoryAllocationService
             $allocationsQuery = InventoryOwnerScope::applyToLocationQuery(
                 InventoryAllocation::query()
                     ->expired()
+                    ->whereNull('reservation_group_id')
                     ->with(['level', 'location'])
                     ->lockForUpdate()
             );
@@ -570,6 +597,7 @@ final class InventoryAllocationService
             $allocations = InventoryAllocation::query()
                 ->withoutOwnerScope()
                 ->expired()
+                ->whereNull('reservation_group_id')
                 ->with('level')
                 ->lockForUpdate()
                 ->get();

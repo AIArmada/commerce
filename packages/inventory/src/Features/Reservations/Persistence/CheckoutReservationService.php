@@ -13,7 +13,6 @@ use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Data\ReservationOutcome;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Exceptions\ReservationReferenceConflict;
-use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Reservations\Queries\ExpiredReservations;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -134,14 +133,13 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
             }
 
             foreach ($resolvedLines as $resolvedLine) {
-                $allocations = $this->allocationService->allocate(
+                $this->allocationService->allocate(
                     model: $resolvedLine['model'],
                     quantity: $resolvedLine['quantity'],
                     cartId: $reference,
                     ttlMinutes: max(1, (int) ceil($ttlSeconds / 60)),
+                    reservationGroupId: $group->id,
                 );
-
-                $allocations->each(fn (InventoryAllocation $a) => $a->update(['reservation_group_id' => $group->id]));
             }
 
             $group->refresh();

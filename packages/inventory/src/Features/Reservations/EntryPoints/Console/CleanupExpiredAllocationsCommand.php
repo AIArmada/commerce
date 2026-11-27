@@ -52,7 +52,7 @@ final class CleanupExpiredAllocationsCommand extends Command
     ): void {
         if ($isDryRun) {
             $allocationsQuery = InventoryOwnerScope::applyToLocationQuery(
-                InventoryAllocation::query()->expired()
+                InventoryAllocation::query()->expired()->whereNull('reservation_group_id')
             );
 
             $count = $allocationsQuery->count();
