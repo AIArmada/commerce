@@ -54,9 +54,9 @@ AdjustInventory::run($product, $locationId, newQuantity: 50, reason: 'Stock coun
 ### Stock Allocation & Commitment
 
 ```php
-use AIArmada\Inventory\Actions\AllocateStock;
-use AIArmada\Inventory\Actions\CommitStock;
-use AIArmada\Inventory\Actions\ReleaseStock;
+use AIArmada\Inventory\Features\Reservations\Actions\AllocateStock;
+use AIArmada\Inventory\Features\Reservations\Actions\CommitStock;
+use AIArmada\Inventory\Features\Reservations\Actions\ReleaseStock;
 
 // Reserve stock for a cart
 AllocateStock::run($product, quantity: 5, cartId: $cartId, ttlMinutes: 30);

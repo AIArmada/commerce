@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;

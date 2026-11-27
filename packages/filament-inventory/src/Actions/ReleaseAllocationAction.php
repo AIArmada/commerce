@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
-use AIArmada\Inventory\Actions\ReleaseStock;
+use AIArmada\Inventory\Features\Reservations\Actions\ReleaseStock;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;

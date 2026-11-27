@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryAllocation;
