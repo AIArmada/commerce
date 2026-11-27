@@ -3,7 +3,8 @@
   "name": "Stock",
   "owns": {
     "table:inventory_locations": [
-      "AIArmada\\Inventory\\Features\\Stock\\Actions\\SaveInventoryLocation"
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\SaveInventoryLocation",
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\LocationTreeService"
     ],
     "table:inventory_levels": [
       "AIArmada\\Inventory\\Features\\Stock\\Persistence\\InventoryLevelStore",
@@ -14,7 +15,9 @@
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\UpdateInventoryLevel",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\BootstrapInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\SetDefaultInventoryQuantity",
-      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService"
+      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService",
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\AlertDispatchService",
+      "AIArmada\\Inventory\\Features\\Stock\\Persistence\\StockThresholdService"
     ],
     "table:inventory_movements": [
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\ReceiveInventory",

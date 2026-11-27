@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\LocationTreeService;
+use AIArmada\Inventory\Features\Stock\Persistence\LocationTreeService;
 use Illuminate\Database\Eloquent\Collection;
 
 describe('HasLocationHierarchy', function (): void {

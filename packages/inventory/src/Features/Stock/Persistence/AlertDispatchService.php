@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Stock\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 final class AlertDispatchService
@@ -98,16 +100,19 @@ final class AlertDispatchService
     public function getAlertSummary(): array
     {
         $summary = [];
+        $statuses = array_map(static fn (AlertStatus $status): string => $status->value, AlertStatus::cases());
 
-        foreach (AlertStatus::cases() as $status) {
-            $query = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLevel::query()->where('alert_status', $status->value)
-            );
+        $counts = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            ->whereIn('alert_status', $statuses)
+            ->selectRaw('alert_status, COUNT(*) as aggregate')
+            ->groupBy('alert_status')
+            ->pluck('aggregate', 'alert_status');
 
-            $count = $query->count();
+        foreach ($statuses as $status) {
+            $count = (int) ($counts[$status] ?? 0);
 
             if ($count > 0) {
-                $summary[$status->value] = $count;
+                $summary[$status] = $count;
             }
         }
 
@@ -139,11 +144,14 @@ final class AlertDispatchService
      */
     public function acknowledgeAlert(InventoryLevel $level, ?string $note = null): void
     {
-        $metadata = $level->metadata ?? [];
-        $metadata['last_acknowledged_at'] = CarbonImmutable::now()->toIso8601String();
-        $metadata['acknowledged_note'] = $note;
-
-        $level->update(['metadata' => $metadata]);
+        DB::transaction(function () use ($level, $note): void {
+            $record = $this->lockOwnedLevel($level);
+            $metadata = $record->metadata ?? [];
+            $metadata['last_acknowledged_at'] = CarbonImmutable::now()->toIso8601String();
+            $metadata['acknowledged_note'] = $note;
+            $record->update(['metadata' => $metadata]);
+            $level->refresh();
+        });
     }
 
     /**
@@ -151,9 +159,25 @@ final class AlertDispatchService
      */
     public function clearAlert(InventoryLevel $level): void
     {
-        $level->update([
-            'alert_status' => AlertStatus::None->value,
-            'last_alert_at' => null,
-        ]);
+        DB::transaction(function () use ($level): void {
+            $this->lockOwnedLevel($level)->update([
+                'alert_status' => AlertStatus::None->value,
+                'last_alert_at' => null,
+            ]);
+            $level->refresh();
+        });
+    }
+
+    private function lockOwnedLevel(InventoryLevel $level): InventoryLevel
+    {
+        $query = InventoryLevel::query();
+
+        if (InventoryOwnerScope::isEnabled()) {
+            $owner = InventoryOwnerScope::resolveOwner();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+            $query->forOwner($owner, false);
+        }
+
+        return $query->whereKey($level->getKey())->lockForUpdate()->firstOrFail();
     }
 }

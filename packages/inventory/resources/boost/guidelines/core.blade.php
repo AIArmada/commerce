@@ -7,3 +7,5 @@ Cart allocations are independent of checkout reservation groups. Use the checkou
 Allocation actions (`AllocateStock`, `CommitStock`, `ReleaseStock`) live under `AIArmada\Inventory\Features\Reservations\Actions`.
 
 Stock levels, locations and movement ledger models live under `AIArmada\Inventory\Features\Stock\Models`.
+
+Stock threshold evaluation, alert persistence and location hierarchy services belong to `Features/Stock/Persistence`; use the feature-owned classes directly.

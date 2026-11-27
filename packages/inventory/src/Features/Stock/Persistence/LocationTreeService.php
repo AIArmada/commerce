@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Stock\Persistence;
 
 use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Enums\TemperatureZone;
@@ -80,7 +80,7 @@ final class LocationTreeService
     {
         return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
             ->withCount('children')
-            ->orderByRaw('COALESCE(path, id)')
+            ->orderByRaw('COALESCE(path, CAST(id AS VARCHAR))')
             ->get()
             ->map(fn (InventoryLocation $loc): array => [
                 'id' => $loc->id,
@@ -102,7 +102,7 @@ final class LocationTreeService
     {
         return InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
             ->active()
-            ->orderByRaw('COALESCE(path, id)')
+            ->orderByRaw('COALESCE(path, CAST(id AS VARCHAR))')
             ->get()
             ->mapWithKeys(fn (InventoryLocation $loc): array => [
                 $loc->id => str_repeat('— ', $loc->depth) . $loc->name . ' (' . $loc->code . ')',
@@ -251,16 +251,26 @@ final class LocationTreeService
      */
     private function buildTree(Collection $locations, ?string $parentId = null): Collection
     {
-        $tree = new Collection;
+        $byParent = $locations->groupBy(static fn (InventoryLocation $location): string => $location->parent_id ?? '');
+        $visited = [];
 
-        $roots = $locations->filter(fn (InventoryLocation $loc): bool => $loc->parent_id === $parentId);
+        $build = function (?string $parentId) use (&$build, $byParent, &$visited): Collection {
+            $tree = new Collection;
 
-        foreach ($roots as $root) {
-            $root->setRelation('children', $this->buildTree($locations, $root->id));
-            $tree->push($root);
-        }
+            foreach ($byParent->get($parentId ?? '', []) as $location) {
+                if (isset($visited[$location->id])) {
+                    continue;
+                }
 
-        return $tree;
+                $visited[$location->id] = true;
+                $location->setRelation('children', $build($location->id));
+                $tree->push($location);
+            }
+
+            return $tree;
+        };
+
+        return $build($parentId);
     }
 
     /**

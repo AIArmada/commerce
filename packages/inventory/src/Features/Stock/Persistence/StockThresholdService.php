@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Stock\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\MaxStockExceeded;
@@ -15,6 +16,7 @@ use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 final class StockThresholdService
@@ -24,18 +26,31 @@ final class StockThresholdService
      */
     public function evaluateThresholds(InventoryLevel $level): AlertStatus
     {
-        $previousStatus = $level->alert_status !== null
-            ? AlertStatus::from($level->alert_status)
-            : AlertStatus::None;
+        return DB::transaction(function () use ($level): AlertStatus {
+            $query = InventoryLevel::query();
 
-        $newStatus = $this->calculateStatus($level);
+            if (InventoryOwnerScope::isEnabled()) {
+                $owner = InventoryOwnerScope::resolveOwner();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
 
-        if ($newStatus !== $previousStatus) {
-            $this->updateAlertStatus($level, $newStatus);
-            $this->dispatchStatusEvents($level, $previousStatus, $newStatus);
-        }
+            $record = $query->whereKey($level->getKey())->lockForUpdate()->firstOrFail();
+            $previousStatus = $record->alert_status !== null
+                ? AlertStatus::from($record->alert_status)
+                : AlertStatus::None;
 
-        return $newStatus;
+            $newStatus = $this->calculateStatus($record);
+
+            if ($newStatus !== $previousStatus) {
+                $this->updateAlertStatus($record, $newStatus);
+                $this->dispatchStatusEvents($record, $previousStatus, $newStatus);
+            }
+
+            $level->refresh();
+
+            return $newStatus;
+        });
     }
 
     /**

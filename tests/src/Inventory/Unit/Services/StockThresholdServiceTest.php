@@ -11,7 +11,7 @@ use AIArmada\Inventory\Events\SafetyStockBreached;
 use AIArmada\Inventory\Events\StockRestored;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\StockThresholdService;
+use AIArmada\Inventory\Features\Stock\Persistence\StockThresholdService;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
