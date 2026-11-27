@@ -32,14 +32,14 @@ final class DocTotals
             $unitPriceMinor = (int) $item['unit_price_minor'];
             $itemTaxMinor = (int) ($item['tax_amount_minor'] ?? 0);
 
-            $subtotalMinor += $quantity * $unitPriceMinor;
-            $taxAmountMinor += $itemTaxMinor;
+            $subtotalMinor = $this->add($subtotalMinor, $this->multiply($quantity, $unitPriceMinor));
+            $taxAmountMinor = $this->add($taxAmountMinor, $itemTaxMinor);
         }
 
         return [
             'subtotal_minor' => $subtotalMinor,
             'tax_amount_minor' => $taxAmountMinor,
-            'total_minor' => max(0, $subtotalMinor + $taxAmountMinor - $discountAmountMinor),
+            'total_minor' => $this->net($subtotalMinor, $taxAmountMinor, $discountAmountMinor),
         ];
     }
 
@@ -49,6 +49,50 @@ final class DocTotals
     public function subtotal(array $items, string $currency): int
     {
         return $this->calculate($items, 0, $currency)['subtotal_minor'];
+    }
+
+    public function net(int $subtotalMinor, int $taxAmountMinor, int $discountAmountMinor): int
+    {
+        if (min($subtotalMinor, $taxAmountMinor, $discountAmountMinor) < 0) {
+            throw new InvalidArgumentException('Document monetary amounts must be non-negative minor-unit integers.');
+        }
+
+        if ($discountAmountMinor >= $subtotalMinor) {
+            return max(0, $taxAmountMinor - ($discountAmountMinor - $subtotalMinor));
+        }
+
+        return $this->add($subtotalMinor - $discountAmountMinor, $taxAmountMinor);
+    }
+
+    public function applyBasisPoints(int $amountMinor, int $basisPoints): int
+    {
+        if ($amountMinor < 0 || $basisPoints < 0 || $basisPoints > 100_000) {
+            throw new InvalidArgumentException('Invalid amount or tax rate.');
+        }
+
+        // Split the calculation to avoid overflowing the intermediate product.
+        $whole = $this->multiply(intdiv($amountMinor, 10_000), $basisPoints);
+        $fraction = intdiv(($amountMinor % 10_000) * $basisPoints + 5_000, 10_000);
+
+        return $this->add($whole, $fraction);
+    }
+
+    private function add(int $left, int $right): int
+    {
+        if ($left > PHP_INT_MAX - $right) {
+            throw new InvalidArgumentException('Document monetary amount exceeds the supported integer range.');
+        }
+
+        return $left + $right;
+    }
+
+    private function multiply(int $left, int $right): int
+    {
+        if ($right !== 0 && $left > intdiv(PHP_INT_MAX, $right)) {
+            throw new InvalidArgumentException('Document monetary amount exceeds the supported integer range.');
+        }
+
+        return $left * $right;
     }
 
     /**

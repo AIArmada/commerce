@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Actions\CreateDocVersion;
 use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Data\DocData;
@@ -101,13 +102,13 @@ final class DocService implements DocServiceInterface
                 $this->assertMatchesComputed(
                     'total_minor',
                     $data->totalMinor,
-                    max(0, $calculatedSubtotalMinor + $calculatedTaxMinor - $discountAmountMinor)
+                    $this->totals->net($calculatedSubtotalMinor, $calculatedTaxMinor, $discountAmountMinor)
                 );
             }
 
             $subtotalMinor = $data->subtotalMinor ?? $calculatedSubtotalMinor;
             $taxAmountMinor = $data->taxAmountMinor ?? $this->applyBasisPoints($subtotalMinor, $taxRateBasisPoints);
-            $totalMinor = $data->totalMinor ?? max(0, $subtotalMinor + $taxAmountMinor - $discountAmountMinor);
+            $totalMinor = $data->totalMinor ?? $this->totals->net($subtotalMinor, $taxAmountMinor, $discountAmountMinor);
             $this->assertNonNegativeAmounts($subtotalMinor, $taxAmountMinor, $discountAmountMinor, $totalMinor);
 
             // Merge metadata with pdf options (if provided)
@@ -270,7 +271,12 @@ final class DocService implements DocServiceInterface
             );
         }
 
-        return DB::transaction(function () use ($doc, $data): Doc {
+        return $doc->getConnection()->transaction(function () use ($doc, $data): Doc {
+            $doc = $doc->newQuery()
+                ->forOwner(OwnerContext::resolve(), (bool) config('docs.owner.include_global', false))
+                ->lockForUpdate()
+                ->findOrFail($doc->getKey());
+
             $attributes = $this->filterUpdatableAttributes($data);
 
             if (array_key_exists('body', $attributes)) {
@@ -319,9 +325,10 @@ final class DocService implements DocServiceInterface
                 );
                 $attributes = array_merge($attributes, $totals);
             } elseif (array_key_exists('discount_amount_minor', $attributes)) {
-                $attributes['total_minor'] = max(
-                    0,
-                    $doc->subtotal_minor + $doc->tax_amount_minor - $attributes['discount_amount_minor']
+                $attributes['total_minor'] = $this->totals->net(
+                    $doc->subtotal_minor,
+                    $doc->tax_amount_minor,
+                    $attributes['discount_amount_minor'],
                 );
             }
 
@@ -438,34 +445,7 @@ final class DocService implements DocServiceInterface
      */
     public function createVersion(Doc $doc, ?string $summary = null): DocVersion
     {
-        return OwnerContext::withOwner($doc->owner, function () use ($doc, $summary): DocVersion {
-            return DB::transaction(function () use ($doc, $summary): DocVersion {
-                $attempts = 0;
-
-                while (true) {
-                    $attempts++;
-                    $nextVersion = (int) $doc->versions()->lockForUpdate()->max('version_number') + 1;
-
-                    try {
-                        $version = $doc->versions()->make([
-                            'version_number' => $nextVersion,
-                            'snapshot' => $doc->toArray(),
-                            'change_summary' => $summary,
-                            'changed_by' => auth()->id(),
-                            'created_at' => CarbonImmutable::now(),
-                        ]);
-
-                        $version->save();
-
-                        return $version;
-                    } catch (QueryException $exception) {
-                        if ($attempts >= 2 || ! self::isUniqueViolation($exception)) {
-                            throw $exception;
-                        }
-                    }
-                }
-            });
-        });
+        return app(CreateDocVersion::class)->execute($doc, $summary);
     }
 
     /**
@@ -536,7 +516,7 @@ final class DocService implements DocServiceInterface
 
     private function applyBasisPoints(int $amountMinor, int $basisPoints): int
     {
-        return intdiv(($amountMinor * $basisPoints) + 5_000, 10_000);
+        return $this->totals->applyBasisPoints($amountMinor, $basisPoints);
     }
 
     private function resolveConfiguredTaxRateBasisPoints(): int

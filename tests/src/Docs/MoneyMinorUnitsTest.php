@@ -73,3 +73,22 @@ it('uses exact integer payment comparisons and rejects overpayment and currency 
 
     expect($doc->fresh()->status->equals(Paid::class))->toBeTrue();
 });
+
+it('rejects overflowing line totals instead of converting money to floating point', function (): void {
+    expect(fn () => app(DocService::class)->calculateTotals([
+        ['quantity' => 2, 'unit_price_minor' => PHP_INT_MAX],
+    ]))->toThrow(InvalidArgumentException::class, 'Document monetary amount exceeds the supported integer range.');
+});
+
+it('rejects overflowing accumulated line totals', function (): void {
+    expect(fn () => app(DocService::class)->calculateTotals([
+        ['unit_price_minor' => PHP_INT_MAX],
+        ['unit_price_minor' => 1],
+    ]))->toThrow(InvalidArgumentException::class, 'Document monetary amount exceeds the supported integer range.');
+});
+
+it('applies discounts without overflowing an intermediate gross total', function (): void {
+    expect(app(DocService::class)->calculateTotals([
+        ['unit_price_minor' => PHP_INT_MAX, 'tax_amount_minor' => 1],
+    ], 1)['total_minor'])->toBe(PHP_INT_MAX);
+});
