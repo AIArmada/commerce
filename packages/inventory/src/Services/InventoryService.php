@@ -82,7 +82,6 @@ final class InventoryService
         return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
             $level = $this->getOrCreateLevel($model, $locationId);
             $level->incrementOnHand($quantity);
-            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -136,7 +135,6 @@ final class InventoryService
             }
 
             $level->decrementOnHand($quantity);
-            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -199,7 +197,6 @@ final class InventoryService
 
             $fromLevel->decrementOnHand($quantity);
             $toLevel->incrementOnHand($quantity);
-            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -259,7 +256,6 @@ final class InventoryService
             // level's direct-write auto-audit must stand down.
             $level->suppressLedgerAudit = true;
             $level->update(['quantity_on_hand' => $newQuantity]);
-            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -284,9 +280,7 @@ final class InventoryService
 
     /**
      * Get availability across all locations.
-     *
-     * Uses parameter-keyed caching to avoid redundant queries when the same
-     * model is checked multiple times within a single request (e.g., during checkout).
+     * Availability is read directly from committed inventory levels.
      *
      * @return array<string, int> Location ID => available quantity
      */
@@ -354,10 +348,22 @@ final class InventoryService
             return $totals;
         }
 
+        $byType = [];
+
+        foreach ($pairs as $pair) {
+            $byType[$pair['inventoryable_type']][] = $pair['inventoryable_id'];
+        }
+
         $rows = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()
-                ->whereIn('inventoryable_type', array_unique(array_column($pairs, 'inventoryable_type')))
-                ->whereIn('inventoryable_id', array_unique(array_column($pairs, 'inventoryable_id')))
+                ->where(function (Builder $query) use ($byType): void {
+                    foreach ($byType as $type => $ids) {
+                        $query->orWhere(function (Builder $group) use ($type, $ids): void {
+                            $group->where('inventoryable_type', $type)
+                                ->whereIn('inventoryable_id', $ids);
+                        });
+                    }
+                })
                 ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
         )
             ->select('inventoryable_type', 'inventoryable_id')
@@ -407,23 +413,10 @@ final class InventoryService
 
     /**
      * Check if sufficient inventory exists.
-     *
-     * Uses the cached getTotalAvailable() to avoid redundant queries.
      */
     public function hasInventory(Model $model, int $quantity): bool
     {
         return $this->getTotalAvailable($model) >= $quantity;
-    }
-
-    /**
-     * Clear the availability cache for a specific model.
-     *
-     * Call this after inventory mutations (receive, ship, transfer, adjust)
-     * if you need fresh data within the same request.
-     */
-    public function clearCache(?Model $model = null): void
-    {
-        // No-op: availability is derived from fresh queries to remain safe under long-lived workers.
     }
 
     /**

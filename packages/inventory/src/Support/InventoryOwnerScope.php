@@ -45,9 +45,13 @@ final class InventoryOwnerScope
         $owner = self::resolveOwner();
         $includeGlobal = self::includeGlobal();
 
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @phpstan-ignore-next-line dynamic scope from HasOwner trait */
-            return $query->forOwner($owner, $includeGlobal);
+        $model = $query->getModel();
+
+        if (is_callable([$model, 'scopeForOwner']) && method_exists($model, 'scopeForOwner')) {
+            /** @var Builder<TModel> $scoped */
+            $scoped = $model->scopeForOwner($query, $owner, $includeGlobal);
+
+            return $scoped;
         }
 
         return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);

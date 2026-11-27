@@ -156,7 +156,6 @@ final class InventoryAllocationService
             }
 
             if ($allocations->isNotEmpty()) {
-                $this->inventoryService->clearCache($model);
                 Event::dispatch(new InventoryAllocated($model, $allocations, $cartId));
             }
 
@@ -198,7 +197,6 @@ final class InventoryAllocationService
             $lockedAllocation->delete();
 
             if ($inventoryable !== null) {
-                $this->inventoryService->clearCache($inventoryable);
                 Event::dispatch(new InventoryReleased($inventoryable, $quantity, $cartId));
             }
 
@@ -239,7 +237,6 @@ final class InventoryAllocationService
             }
 
             if ($totalReleased > 0) {
-                $this->inventoryService->clearCache($model);
                 Event::dispatch(new InventoryReleased($model, $totalReleased, $cartId));
             }
 
@@ -277,10 +274,6 @@ final class InventoryAllocationService
                 $allocation->delete();
             }
 
-            if ($totalReleased > 0) {
-                $this->inventoryService->clearCache();
-            }
-
             return $totalReleased;
         });
     }
@@ -305,10 +298,6 @@ final class InventoryAllocationService
                 $allocation->level->decrementReserved($allocation->quantity);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
-            }
-
-            if ($totalReleased > 0) {
-                $this->inventoryService->clearCache();
             }
 
             return $totalReleased;
@@ -366,10 +355,6 @@ final class InventoryAllocationService
                 $allocation->delete();
             }
 
-            if (count($movements) > 0) {
-                $this->inventoryService->clearCache();
-            }
-
             return $movements;
         });
     }
@@ -411,10 +396,6 @@ final class InventoryAllocationService
                 $movements[] = $movement;
                 $this->checkLowInventory($allocation->inventoryable, $allocation->level);
                 $allocation->delete();
-            }
-
-            if ($movements !== []) {
-                $this->inventoryService->clearCache();
             }
 
             return $movements;
@@ -609,10 +590,6 @@ final class InventoryAllocationService
             $allocation->level->decrementReserved($allocation->quantity);
             $allocation->delete();
             $count++;
-        }
-
-        if ($count > 0) {
-            $this->inventoryService->clearCache();
         }
 
         return $count;
