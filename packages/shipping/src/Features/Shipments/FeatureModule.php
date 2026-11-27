@@ -12,6 +12,8 @@ use AIArmada\Shipping\Features\Shipments\Actions\MarkStoredShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Api\MarkShipmentPickedUp;
 use AIArmada\Shipping\Features\Shipments\Api\PrintableLabel;
 use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
+use AIArmada\Shipping\Features\Shipments\Api\ShipmentStatistics;
+use AIArmada\Shipping\Features\Shipments\Queries\ReadShipmentStatistics;
 use AIArmada\Shipping\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(ShipmentStatistics::class, ReadShipmentStatistics::class);
         $app->bind(ShipmentOperations::class, OperateStoredShipment::class);
         $app->bind(ManageManualShipment::class, WriteManualShipment::class);
         $app->bind(MarkShipmentPickedUp::class, MarkStoredShipmentPickedUp::class);
