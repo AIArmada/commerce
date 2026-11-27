@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 use Illuminate\Support\Facades\Notification;
@@ -17,14 +18,14 @@ describe('SendShipmentNotifications listener', function (): void {
 
     it('can be instantiated', function (): void {
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
 
         expect($listener)->toBeInstanceOf(SendShipmentNotifications::class);
     });
 
     it('should queue based on config', function (): void {
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
 
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-id', 'order_id' => 'ORDER123']);
@@ -43,7 +44,7 @@ describe('SendShipmentNotifications listener', function (): void {
         config(['jnt.notifications.enabled' => false]);
 
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
 
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-id', 'order_id' => 'ORDER123']);
@@ -59,7 +60,7 @@ describe('SendShipmentNotifications listener', function (): void {
         Notification::fake();
 
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
 
         $order = JntOrder::query()->create([
             'order_id' => 'ORDER123',
@@ -76,7 +77,7 @@ describe('SendShipmentNotifications listener', function (): void {
 
     it('resolves notifiable from metadata email', function (): void {
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new NotifyShipmentStatusChanged($trackingService);
 
         $reflection = new ReflectionClass($listener);
         $method = $reflection->getMethod('resolveNotifiable');
@@ -100,7 +101,7 @@ describe('SendShipmentNotifications listener', function (): void {
         $trackingService->shouldReceive('track')
             ->andThrow(new Exception('Not found'));
 
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new NotifyShipmentStatusChanged($trackingService);
 
         $reflection = new ReflectionClass($listener);
         $method = $reflection->getMethod('createNotification');
@@ -121,7 +122,7 @@ describe('SendShipmentNotifications listener', function (): void {
 
     it('calculates estimated delivery from config', function (): void {
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new NotifyShipmentStatusChanged($trackingService);
 
         $reflection = new ReflectionClass($listener);
         $method = $reflection->getMethod('getEstimatedDelivery');

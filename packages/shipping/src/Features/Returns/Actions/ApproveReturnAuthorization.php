@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Returns\Actions;
 
 use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
-
 use AIArmada\Shipping\Integrations\PackageReturns;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;

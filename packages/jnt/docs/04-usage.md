@@ -124,18 +124,18 @@ $result = $jntService->createOrder(
 );
 ```
 
-### Using Action Classes
+### Using Dependency Injection
 
-The package provides action classes for dependency injection:
+Inject the carrier service when creating an order from a controller:
 
 ```php
-use AIArmada\Jnt\Features\Orders\Actions\CreateOrder;
+use AIArmada\Jnt\Services\JntExpressService;
 
 class OrderController
 {
-    public function store(CreateOrder $createOrder)
+    public function store(JntExpressService $jnt)
     {
-        $result = $createOrder->handle(
+        $result = $jnt->createOrder(
             sender: $sender,
             receiver: $receiver,
             items: [$items],

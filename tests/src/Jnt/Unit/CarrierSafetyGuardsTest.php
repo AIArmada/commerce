@@ -17,6 +17,7 @@ use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\EntryPoints\Http\Controllers\AwbController;
 use AIArmada\Jnt\JntServiceProvider;
 use AIArmada\Jnt\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntOrderItem;
 use AIArmada\Jnt\Models\JntTrackingEvent;
@@ -256,7 +257,7 @@ describe('carrier safety guards', function (): void {
         config()->set('jnt.owner.enabled', false);
 
         $trackingService = Mockery::mock(JntTrackingService::class);
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new NotifyShipmentStatusChanged($trackingService);
         $method = new ReflectionMethod($listener, 'resolveNotifiable');
 
         $arrayEmail = new JntOrder;
@@ -399,7 +400,7 @@ describe('carrier safety guards', function (): void {
             'events' => [],
         ]);
 
-        $listener = new SendShipmentNotifications($trackingService);
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
         $listener->handle(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered));
 
         Notification::assertSentTimes(OrderDeliveredNotification::class, 1);
