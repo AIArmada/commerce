@@ -87,9 +87,10 @@ it('generates cryptographic tokens and excludes raw tokens from events', functio
         ->and($invitation->getAttributes())->not->toContain($rawToken);
 
     Event::assertDispatched(FeedbackInvitationCreated::class, function (FeedbackInvitationCreated $event) use ($rawToken): bool {
-        $attributes = $event->invitation->getAttributes();
+        $attributes = get_object_vars($event);
 
         return ! array_key_exists('token', $attributes)
+            && ! array_key_exists('token_hash', $attributes)
             && ! in_array($rawToken, $attributes, true);
     });
 });

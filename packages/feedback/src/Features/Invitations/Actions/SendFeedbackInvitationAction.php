@@ -61,8 +61,8 @@ final class SendFeedbackInvitationAction
 
             $url = $this->urlGenerator->generate($invitation->id, $rawToken);
 
-            FeedbackInvitationCreated::dispatch($invitation);
-            FeedbackInvitationSent::dispatch($invitation);
+            FeedbackInvitationCreated::dispatch($invitation->id, $invitation->owner_type, $invitation->owner_id);
+            FeedbackInvitationSent::dispatch($invitation->id, $invitation->owner_type, $invitation->owner_id);
 
             return [
                 'invitation' => $invitation,

@@ -38,7 +38,7 @@ final class CreateFeedbackFormAction
             'metadata' => $data->metadata,
         ]);
 
-        FeedbackFormCreated::dispatch($form);
+        FeedbackFormCreated::dispatch($form->id, $form->owner_type, $form->owner_id);
 
         return $form;
     }

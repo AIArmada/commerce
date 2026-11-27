@@ -91,7 +91,7 @@ $url = $result['url']; // Send this to the user
 The raw invitation token is only available when the invitation is created. Store or
 send the returned URL immediately; only its hash is persisted. Sending an
 invitation marks it `sent` (with `sent_at`) and dispatches
-`FeedbackInvitationSent` in addition to `FeedbackInvitationCreated`.
+`FeedbackInvitationSent` in addition to `FeedbackInvitationCreated`. Both events expose `invitationId`, `ownerType`, and `ownerId`, never the invitation model or token hash.
 
 ### Reading invitation status
 

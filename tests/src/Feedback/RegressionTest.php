@@ -129,7 +129,7 @@ it('creates a full form from a template through the trait', function (): void {
         ->and($form->subject_type)->toBe($traitSubject->getMorphClass())
         ->and((string) $form->subject_id)->toBe((string) $traitSubject->getKey());
 
-    Event::assertDispatched(FeedbackFormCreated::class);
+    Event::assertDispatched(FeedbackFormCreated::class, fn (FeedbackFormCreated $event): bool => $event->formId === $form->id);
 });
 
 it('aggregates per-question NPS and CSAT over answer scores', function (): void {
@@ -366,8 +366,8 @@ it('marks invitations sent and dispatches the sent event', function (): void {
     expect($invitation->status)->toBe(FeedbackInvitationStatus::Sent)
         ->and($invitation->sent_at)->not->toBeNull();
 
-    Event::assertDispatched(FeedbackInvitationCreated::class);
-    Event::assertDispatched(FeedbackInvitationSent::class);
+    Event::assertDispatched(FeedbackInvitationCreated::class, fn (FeedbackInvitationCreated $event): bool => $event->invitationId === $invitation->id);
+    Event::assertDispatched(FeedbackInvitationSent::class, fn (FeedbackInvitationSent $event): bool => $event->invitationId === $invitation->id);
 });
 
 it('rejects respondents outside the allowlist', function (): void {

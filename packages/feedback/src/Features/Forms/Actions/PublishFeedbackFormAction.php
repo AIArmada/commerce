@@ -29,7 +29,7 @@ final readonly class PublishFeedbackFormAction
                 'published_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackFormPublished::dispatch($form);
+            FeedbackFormPublished::dispatch($form->id, $form->owner_type, $form->owner_id);
 
             return $form;
         });

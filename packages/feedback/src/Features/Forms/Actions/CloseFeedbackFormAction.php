@@ -29,7 +29,7 @@ final readonly class CloseFeedbackFormAction
                 'closed_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackFormClosed::dispatch($form);
+            FeedbackFormClosed::dispatch($form->id, $form->owner_type, $form->owner_id);
 
             return $form;
         });

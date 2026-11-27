@@ -37,7 +37,7 @@ final readonly class MarkFeedbackInvitationOpenedAction
                 'opened_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackInvitationOpened::dispatch($invitation);
+            FeedbackInvitationOpened::dispatch($invitation->id, $invitation->owner_type, $invitation->owner_id);
 
             return $invitation;
         });
