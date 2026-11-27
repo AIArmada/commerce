@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
@@ -64,6 +66,7 @@ it('enforces usage_limit_per_user during recordUsage', function (): void {
     };
 
     $service = app(VoucherService::class);
+    Event::fake([VoucherUsageRecorded::class]);
 
     $service->recordUsage(
         code: $voucher->code,
@@ -71,6 +74,8 @@ it('enforces usage_limit_per_user during recordUsage', function (): void {
         channel: 'test',
         redeemedBy: $user
     );
+
+    Event::assertDispatched(VoucherUsageRecorded::class, fn (VoucherUsageRecorded $event): bool => $event->usage->redeemedById === '1');
 
     expect(fn () => $service->recordUsage(
         code: $voucher->code,

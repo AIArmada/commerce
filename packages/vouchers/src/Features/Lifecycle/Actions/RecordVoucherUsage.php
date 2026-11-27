@@ -158,7 +158,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 'metadata' => $metadata,
                 'target_definition' => $lockedVoucher->target_definition,
                 'redeemed_by_type' => $redeemedBy?->getMorphClass(),
-                'redeemed_by_id' => $redeemedBy?->getKey(),
+                'redeemed_by_id' => $redeemedBy === null ? null : (string) $redeemedBy->getKey(),
                 'notes' => $notes,
                 'used_at' => CarbonImmutable::now(),
             ];
@@ -191,7 +191,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 currency: $usage->currency,
                 channel: $usage->channel,
                 redeemedByType: $usage->redeemed_by_type,
-                redeemedById: $usage->redeemed_by_id,
+                redeemedById: $usage->redeemed_by_id === null ? null : (string) $usage->redeemed_by_id,
                 usedAt: $usage->used_at,
                 metadata: $usage->metadata,
                 notes: $usage->notes,
