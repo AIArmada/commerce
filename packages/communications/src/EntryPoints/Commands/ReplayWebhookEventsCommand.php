@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Actions\TransitionDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;

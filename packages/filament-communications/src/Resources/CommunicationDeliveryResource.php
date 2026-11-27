@@ -6,7 +6,7 @@ namespace AIArmada\Filament\Communications\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Actions\RetryCommunicationDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Filament\Communications\Resources\CommunicationDeliveryResource\Pages;

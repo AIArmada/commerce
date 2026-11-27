@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Actions\TransitionDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;

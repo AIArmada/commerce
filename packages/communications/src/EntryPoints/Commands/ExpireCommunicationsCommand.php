@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\TransitionDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\CommunicationExpired;

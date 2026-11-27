@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Support;
 
-use AIArmada\Communications\Actions\CompleteDeliveryAttemptAction;
-use AIArmada\Communications\Actions\PersistDeliveryFencingAction;
-use AIArmada\Communications\Actions\StartDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Actions\PersistDeliveryFencingAction;
+use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
@@ -12,7 +12,7 @@ use AIArmada\Communications\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -119,13 +119,9 @@ final class RecordProviderEventAction
 
             try {
                 $eventRecord->save();
-            } catch (QueryException $exception) {
-                if ($exception->getCode() === '23000') {
-                    throw new RuntimeException("Duplicate provider event {$provider}/{$providerEventId}.");
-                }
-
-                throw $exception;
-            }
+            } catch (UniqueConstraintViolationException $exception) {
+            throw new RuntimeException("Duplicate provider event {$provider}/{$providerEventId}.");
+        }
 
             return $eventRecord;
         });

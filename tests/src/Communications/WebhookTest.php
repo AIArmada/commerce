@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;

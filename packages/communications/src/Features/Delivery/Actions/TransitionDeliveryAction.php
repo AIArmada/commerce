@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Events\DeliveryAccepted;

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "name": "Delivery",
+  "owns": {
+    "table:communication_deliveries": [
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CancelCommunicationDeliveryAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RetryCommunicationDeliveryAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\TransitionDeliveryAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PlanCommunicationDeliveriesAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction"
+    ],
+    "table:communication_attempts": [
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CompleteDeliveryAttemptAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction"
+    ],
+    "table:communication_events": [
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordProviderEventAction"
+    ]
+  },
+  "extensions": {}
+}

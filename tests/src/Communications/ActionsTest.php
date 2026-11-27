@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Communications\Actions\AddCommunicationRecipientAction;
-use AIArmada\Communications\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Actions\CompleteDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Actions\CreateCommunicationAction;
-use AIArmada\Communications\Actions\PlanCommunicationDeliveriesAction;
+use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
 use AIArmada\Communications\Actions\RecordNotificationSendingAction;
-use AIArmada\Communications\Actions\RecordProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Actions\RenderCommunicationContentAction;
-use AIArmada\Communications\Actions\StartDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Data\PlannedDeliveryData;

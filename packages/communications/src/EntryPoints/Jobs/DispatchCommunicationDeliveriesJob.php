@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Communications\Actions\RecalculateCommunicationStatusAction;
-use AIArmada\Communications\Actions\TransitionDeliveryAction;
+use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Illuminate\Bus\Queueable;
