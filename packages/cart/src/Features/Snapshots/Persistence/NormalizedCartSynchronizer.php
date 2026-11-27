@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Snapshots;
+namespace AIArmada\Cart\Features\Snapshots\Persistence;
 
+use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Snapshots\CartSnapshotItem;
+use AIArmada\Cart\Snapshots\CartSnapshotCondition;
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Conditions\CartCondition as BaseCartCondition;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
@@ -21,7 +24,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
@@ -34,13 +36,13 @@ class NormalizedCartSynchronizer
         // Concurrent first-syncs race the snapshot unique key; the loser retries
         // once in a fresh transaction, where firstOrNew() finds the winner's row.
         try {
-            DB::transaction(fn () => $this->syncFromCartInTransaction($cart));
+            (new CartSnapshot)->getConnection()->transaction(fn () => $this->syncFromCartInTransaction($cart));
         } catch (QueryException $exception) {
             if (! $this->isUniqueViolation($exception)) {
                 throw $exception;
             }
 
-            DB::transaction(fn () => $this->syncFromCartInTransaction($cart));
+            (new CartSnapshot)->getConnection()->transaction(fn () => $this->syncFromCartInTransaction($cart));
         }
     }
 
@@ -57,7 +59,7 @@ class NormalizedCartSynchronizer
 
         $currency = $this->resolveCurrency();
 
-        $cartModel = CartSnapshot::query()->forOwner($owner)->firstOrNew([
+        $cartModel = CartSnapshot::query()->forOwner($owner, false)->lockForUpdate()->firstOrNew([
             'identifier' => $identifier,
             'instance' => $instance,
         ]);
@@ -198,10 +200,11 @@ class NormalizedCartSynchronizer
             ? OwnerContext::fromTypeAndId($ownerType, $ownerId)
             : CartSnapshot::resolveCurrentOwner();
 
-        $runDelete = function (?EloquentModel $scopedOwner) use ($identifier, $instance): void {
-            $cartModel = CartSnapshot::query()->forOwner($scopedOwner)
+        $delete = function (?EloquentModel $scopedOwner) use ($identifier, $instance): void {
+            $cartModel = CartSnapshot::query()->forOwner($scopedOwner, false)
                 ->where('identifier', $identifier)
                 ->where('instance', $instance)
+                ->lockForUpdate()
                 ->first();
 
             if (! $cartModel) {
@@ -213,6 +216,10 @@ class NormalizedCartSynchronizer
             CartSnapshotCondition::query()->where('cart_id', $cartModel->id)->delete();
             CartSnapshotItem::query()->where('cart_id', $cartModel->id)->delete();
             $cartModel->delete();
+        };
+
+        $runDelete = static function (?EloquentModel $scopedOwner) use ($delete): void {
+            (new CartSnapshot)->getConnection()->transaction(fn () => $delete($scopedOwner));
         };
 
         if (CartSnapshot::ownerScopingEnabled() && $hasExplicitOwnerTuple && $ownerType === null && $ownerId === null) {

@@ -82,7 +82,7 @@ jobs:
           COMPOSER_MAX_PARALLEL_HTTP: 4
         run: |
           for attempt in 1 2 3; do
-            if composer install --download-only --prefer-dist --no-interaction --no-progress; then
+            if composer install --download-only --no-scripts --prefer-dist --no-interaction --no-progress; then
               exit 0
             fi
             if [ "$attempt" -lt 3 ]; then sleep $((attempt * 15)); fi

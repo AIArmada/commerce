@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Actions;
+namespace AIArmada\Cart\Features\Snapshots\Actions;
 
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition;
 use AIArmada\Cart\Snapshots\CartSnapshotItem;
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 final readonly class ReconcileMergedCartSnapshot

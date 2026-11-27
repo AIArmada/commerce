@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Snapshots;
+namespace AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners;
 
 use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
 use AIArmada\Cart\Events\CartCleared;

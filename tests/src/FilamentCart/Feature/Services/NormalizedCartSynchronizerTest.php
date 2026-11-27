@@ -8,7 +8,7 @@ use AIArmada\Cart\Events\HighValueCartDetected;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
 use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
-use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
+use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;

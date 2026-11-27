@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Snapshots;
+namespace AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners;
 
-use AIArmada\Cart\Actions\ReconcileMergedCartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Actions\ReconcileMergedCartSnapshot;
 use AIArmada\Cart\Events\CartMerged;
 use Throwable;
 

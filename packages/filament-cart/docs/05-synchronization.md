@@ -103,7 +103,7 @@ Handles cleanup when guest carts merge with authenticated user carts.
 Core service that transforms cart state into normalized database records.
 
 ```php
-use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
+use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 
 $synchronizer = app(NormalizedCartSynchronizer::class);
 
@@ -140,7 +140,7 @@ $synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId
 High-level manager that coordinates synchronization.
 
 ```php
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 
 $manager = app(CartSyncManager::class);
 
@@ -209,7 +209,7 @@ Force-sync carts when needed (e.g., after data repairs):
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 
 // Get the cart
 $cart = Cart::getCartInstance('default');

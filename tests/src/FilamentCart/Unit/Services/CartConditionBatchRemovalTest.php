@@ -8,7 +8,7 @@ use AIArmada\Cart\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as CartModel;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartConditionModel;
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\Cart\Storage\StorageInterface;

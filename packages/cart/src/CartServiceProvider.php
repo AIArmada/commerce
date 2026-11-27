@@ -11,26 +11,13 @@ use AIArmada\Cart\Conditions\Handlers\ShippingConditionHandler;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
-use AIArmada\Cart\Events\CartCleared;
-use AIArmada\Cart\Events\CartConditionAdded;
-use AIArmada\Cart\Events\CartConditionRemoved;
-use AIArmada\Cart\Events\CartCreated;
-use AIArmada\Cart\Events\CartDestroyed;
-use AIArmada\Cart\Events\CartMerged;
-use AIArmada\Cart\Events\ItemAdded;
-use AIArmada\Cart\Events\ItemConditionAdded;
-use AIArmada\Cart\Events\ItemConditionRemoved;
-use AIArmada\Cart\Events\ItemRemoved;
-use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Services\RulePresets;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSyncManager;
-use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
-use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
-use AIArmada\Cart\Snapshots\SyncCartOnEvent;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Platform\ExtensionRegistry;
 use AIArmada\Cart\Platform\FeatureCatalog;
 use AIArmada\Cart\Platform\FeatureModule;
@@ -79,7 +66,6 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerFactories();
         $this->registerConditionTypeHandlers();
         $this->registerCartManager();
-        $this->registerSnapshotServices();
         $this->registerFeatures();
     }
 
@@ -93,8 +79,6 @@ final class CartServiceProvider extends PackageServiceProvider
         foreach ($this->modules as $module) {
             $module->boot($this->app);
         }
-
-        $this->registerEventListeners();
 
         $this->registerOctaneListeners();
 
@@ -152,15 +136,6 @@ final class CartServiceProvider extends PackageServiceProvider
 
             return $app->make($factoryClass ?: Services\BuiltInRulesFactory::class);
         });
-    }
-
-    protected function registerSnapshotServices(): void
-    {
-        $this->app->singleton(CartInstanceManager::class);
-        $this->app->singleton(NormalizedCartSynchronizer::class);
-        $this->app->singleton(CartSyncManager::class);
-        $this->app->alias(CartSyncManager::class, CartSnapshotSyncInterface::class);
-        $this->app->alias(CartSyncManager::class, 'cart.snapshot-sync');
     }
 
     protected function registerStorage(): void
@@ -238,29 +213,6 @@ final class CartServiceProvider extends PackageServiceProvider
         ));
 
         $this->app->singleton(ConditionPipelineFactory::class);
-    }
-
-    protected function registerEventListeners(): void
-    {
-        $dispatcher = $this->app->make(Dispatcher::class);
-
-        if (! config('cart.events', true)) {
-            return;
-        }
-
-        $dispatcher->listen([
-            CartCreated::class,
-            CartCleared::class,
-            CartDestroyed::class,
-            ItemAdded::class,
-            ItemUpdated::class,
-            ItemRemoved::class,
-            CartConditionAdded::class,
-            CartConditionRemoved::class,
-            ItemConditionAdded::class,
-            ItemConditionRemoved::class,
-        ], SyncCartOnEvent::class);
-        $dispatcher->listen(CartMerged::class, CleanupSnapshotOnCartMerged::class);
     }
 
     private function registerFeatures(): void

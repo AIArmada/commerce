@@ -125,9 +125,9 @@ The core `aiarmada/cart` package owns snapshot projection and registers its
 event listeners. Filament Cart consumes the resulting read model and provides
 the UI adapter:
 
-- `AIArmada\\Cart\\Snapshots\\SyncCartOnEvent` — Creates/updates normalized records
+- `AIArmada\\Cart\\Features\\Snapshots\\EntryPoints\\Listeners\\SyncCartOnEvent` — Creates/updates normalized records
 - `AIArmada\\Cart\\Listeners\\ApplyGlobalConditions` — Applies global conditions
-- `AIArmada\\Cart\\Snapshots\\CleanupSnapshotOnCartMerged` — Handles merge cleanup
+- `AIArmada\\Cart\\Features\\Snapshots\\EntryPoints\\Listeners\\CleanupSnapshotOnCartMerged` — Handles merge cleanup
 
 ## Dynamic Conditions
 

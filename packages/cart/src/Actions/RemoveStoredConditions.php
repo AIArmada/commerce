@@ -9,7 +9,7 @@ use AIArmada\Cart\Models\Condition as StoredCondition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition;
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -23,7 +23,7 @@ final class RemoveStoredConditions
 {
     public function __construct(
         private readonly CartInstanceManager $cartInstances,
-        private readonly CartSyncManager $syncManager,
+        private readonly CartSnapshotSyncInterface $syncManager,
     ) {}
 
     /**

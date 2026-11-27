@@ -8,7 +8,7 @@ use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
 use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
-use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
+use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
