@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\EntryPoints\Jobs;
 
+use AIArmada\CashierChip\Actions\SyncCustomersToChip;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
-use AIArmada\CashierChip\Actions\SyncCustomersToChip;
-use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
+use AIArmada\Chip\Events\WebhookReceived;
 
 describe('StoreWebhookData listener', function (): void {
     it('returns early when config disabled', function (): void {

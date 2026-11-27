@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Actions;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
+use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;

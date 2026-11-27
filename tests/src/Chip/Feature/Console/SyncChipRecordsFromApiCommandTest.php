@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
+use AIArmada\Chip\Facades\Chip;
 
 describe('SyncChipRecordsFromApiCommand', function (): void {
     it('runs with explicit purchase ids in dry-run mode', function (): void {

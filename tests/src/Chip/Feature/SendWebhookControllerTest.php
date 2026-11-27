@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Events\SendWebhookReceived;
 use AIArmada\Chip\EntryPoints\Http\Controllers\SendWebhookController;
+use AIArmada\Chip\Events\SendWebhookReceived;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 

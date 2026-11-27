@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Illuminate\Support\Facades\Cache;
 

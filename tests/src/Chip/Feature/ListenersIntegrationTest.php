@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
+use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;

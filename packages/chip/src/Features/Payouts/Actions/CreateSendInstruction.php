@@ -55,10 +55,10 @@ final readonly class CreateSendInstruction
         }
 
         [$whole, $fraction] = array_pad(explode('.', $amount, 2), 2, '');
-        $digits = ltrim($whole . str_pad($fraction, 2, '0'), '0');
+        $digits = mb_ltrim($whole . mb_str_pad($fraction, 2, '0'), '0');
         $max = (string) PHP_INT_MAX;
 
-        if ($digits === '' || strlen($digits) > strlen($max) || (strlen($digits) === strlen($max) && strcmp($digits, $max) > 0)) {
+        if ($digits === '' || mb_strlen($digits) > mb_strlen($max) || (mb_strlen($digits) === mb_strlen($max) && strcmp($digits, $max) > 0)) {
             throw new ChipValidationException('Payout amount is outside the supported range.');
         }
 
