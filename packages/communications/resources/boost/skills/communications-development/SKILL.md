@@ -19,3 +19,5 @@ description: Develop and integrate Communications with Laravel Dune ownership, s
 - `CommunicationBatch`, `CommunicationThread` and `CommunicationReference` live under `Features/Aggregate/Models/`; use the owning Aggregate actions for mutations.
 
 - `CommunicationContent` and `CommunicationRecipient` are Aggregate-owned models under `Features/Aggregate/Models/`. Use Aggregate actions to create or modify recipient and content records.
+
+- Native notification recording uses the registered notification event listeners and `NativeNotificationCapture`; the manager handles managed notification dispatch only.

@@ -17,9 +17,6 @@ final class FakeCommunicationManager implements CommunicationManager
     /** @var array<int, array{notifiable: mixed, notification: Notification, context: CommunicationContextData|Model|array|null, communication: Communication}> */
     private array $sent = [];
 
-    /** @var array<int, array{notifiable: mixed, notification: Notification, channel: string, communication: ?Communication}> */
-    private array $recordedNative = [];
-
     public function notify(
         mixed $notifiable,
         Notification $notification,
@@ -32,24 +29,6 @@ final class FakeCommunicationManager implements CommunicationManager
             'notifiable' => $notifiable,
             'notification' => $notification,
             'context' => $context,
-            'communication' => $communication,
-        ];
-
-        return $communication;
-    }
-
-    public function recordNative(
-        mixed $notifiable,
-        Notification $notification,
-        string $channel,
-    ): ?Communication {
-        $communication = new Communication;
-        $communication->id = (string) Str::uuid();
-
-        $this->recordedNative[] = [
-            'notifiable' => $notifiable,
-            'notification' => $notification,
-            'channel' => $channel,
             'communication' => $communication,
         ];
 
@@ -98,7 +77,6 @@ final class FakeCommunicationManager implements CommunicationManager
     public function reset(): void
     {
         $this->sent = [];
-        $this->recordedNative = [];
     }
 
     /** @return array<int, array{notifiable: mixed, notification: Notification, context: CommunicationContextData|Model|array|null, communication: Communication}> */

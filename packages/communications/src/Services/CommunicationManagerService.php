@@ -153,12 +153,4 @@ class CommunicationManagerService implements CommunicationManager
             null,
         ];
     }
-
-    public function recordNative(
-        mixed $notifiable,
-        Notification $notification,
-        string $channel,
-    ): ?Communication {
-        return null;
-    }
 }

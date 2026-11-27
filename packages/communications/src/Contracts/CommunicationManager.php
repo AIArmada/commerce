@@ -16,10 +16,4 @@ interface CommunicationManager
         Notification $notification,
         CommunicationContextData | Model | array | null $context = null,
     ): Communication;
-
-    public function recordNative(
-        mixed $notifiable,
-        Notification $notification,
-        string $channel,
-    ): ?Communication;
 }

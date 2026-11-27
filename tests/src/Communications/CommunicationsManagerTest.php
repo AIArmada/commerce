@@ -57,30 +57,6 @@ test('manager notify creates communication record', function (): void {
     expect($result->purpose)->toBe('manager-test');
 });
 
-test('manager recordNative returns null by default', function (): void {
-    $notifiable = new class
-    {
-        use Notifiable;
-
-        public function routeNotificationForMail(): string
-        {
-            return 'test@example.com';
-        }
-    };
-
-    $notification = new class extends Notification
-    {
-        public function via(object $notifiable): array
-        {
-            return ['mail'];
-        }
-    };
-
-    $result = Communications::recordNative($notifiable, $notification, 'mail');
-
-    expect($result)->toBeNull();
-});
-
 test('config driven table names support prefix', function (): void {
     config()->set('communications.database.table_prefix', 'test_');
     config()->set('communications.database.tables.batches', 'test_communication_batches');
