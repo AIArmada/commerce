@@ -20,6 +20,16 @@ final readonly class IngestSignal implements SignalIngestion
     {
         $trackedProperty = $this->resolveTrackedProperty($trackedPropertyId);
 
+        if (! $trackedProperty->is_active) {
+            throw new InvalidArgumentException('The tracked property is inactive.');
+        }
+
+        $eventName = $payload['event_name'] ?? null;
+
+        if (! is_string($eventName) || mb_trim($eventName) === '' || mb_strlen($eventName) > 255) {
+            throw new InvalidArgumentException('The event name must be a non-empty string of at most 255 characters.');
+        }
+
         $event = $this->ingestSignalEvent->handle($trackedProperty, $payload, $trusted);
 
         return new IngestedSignalEvent(

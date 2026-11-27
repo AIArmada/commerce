@@ -98,3 +98,29 @@ it('rejects a tracked property owned by another owner', function (): void {
         'properties' => [],
     ], true))->toThrow(AuthorizationException::class);
 });
+
+it('rejects inactive tracked properties before writing any events', function (): void {
+    $property = publicIngestionProperty();
+    $property->update(['is_active' => false]);
+
+    expect(fn () => app(SignalIngestion::class)->handle($property->id, [
+        'event_name' => 'test.public_ingestion',
+    ], true))->toThrow(InvalidArgumentException::class);
+
+    expect(SignalEvent::query()->count())->toBe(0);
+});
+
+it('rejects invalid event names before writing any events', function (array $payload): void {
+    $property = publicIngestionProperty();
+
+    expect(fn () => app(SignalIngestion::class)->handle($property->id, $payload, true))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(SignalEvent::query()->count())->toBe(0);
+})->with([
+    'missing' => [[]],
+    'empty' => [['event_name' => '']],
+    'whitespace' => [['event_name' => '   ']],
+    'array' => [['event_name' => ['invalid']]],
+    'too long' => [['event_name' => str_repeat('x', 256)]],
+]);

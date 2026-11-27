@@ -247,3 +247,12 @@ it('deduplicates separately signed trusted retries by idempotency key', function
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(1);
 });
+
+it('rejects array write keys without failing in throttle middleware', function (): void {
+    $this->postJson('/api/signals/collect/browser-event', [
+        'write_key' => ['invalid'],
+        'event_name' => 'custom.clicked',
+    ])->assertUnprocessable();
+
+    expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
+});

@@ -13,7 +13,7 @@ interface SignalIngestion
      * @param  array<string, mixed>  $payload
      *
      * @throws AuthorizationException When the tracked property is outside the current owner scope.
-     * @throws InvalidArgumentException When the tracked property id is malformed or unknown.
+     * @throws InvalidArgumentException When the tracked property is inactive, its id is malformed or unknown, or the event name is invalid.
      */
     public function handle(string $trackedPropertyId, array $payload, bool $trusted): IngestedSignalEvent;
 }
