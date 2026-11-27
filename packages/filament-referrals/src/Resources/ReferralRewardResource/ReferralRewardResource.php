@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Resources\ReferralRewardResource;
 
+use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Pages\ListReferralRewards;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Pages\ViewReferralReward;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Schemas\ReferralRewardInfolist;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Tables\ReferralRewardsTable;
-use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\Referrals\Models\ReferralReward;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

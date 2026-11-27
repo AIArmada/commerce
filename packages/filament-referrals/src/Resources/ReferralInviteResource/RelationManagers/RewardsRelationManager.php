@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Resources\ReferralInviteResource\RelationManagers;
 
-use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Tables\ReferralRewardsTable;
 use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
+use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Tables\ReferralRewardsTable;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;

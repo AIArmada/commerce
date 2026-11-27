@@ -6,10 +6,10 @@ namespace AIArmada\Links\Actions;
 
 use AIArmada\Links\Contracts\FallbackRedirectGateInterface;
 use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
-use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Support\LinkAttributes;
 use Illuminate\Http\RedirectResponse;

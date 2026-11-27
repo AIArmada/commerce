@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Resources\ReferralInviteResource;
 
+use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Pages\ListReferralInvites;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Pages\ViewReferralInvite;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\RelationManagers\RewardsRelationManager;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Schemas\ReferralInviteInfolist;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Tables\ReferralInvitesTable;
-use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\Referrals\Models\ReferralInvite;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
