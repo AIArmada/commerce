@@ -6,8 +6,8 @@ namespace AIArmada\Feedback\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use Carbon\CarbonImmutable;
 use Eloquent;

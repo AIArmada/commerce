@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Concerns;
+namespace AIArmada\Contacting\Features\ContactMethods\Concerns;
 
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;

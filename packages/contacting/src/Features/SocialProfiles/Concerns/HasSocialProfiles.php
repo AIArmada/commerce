@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Contacting\Concerns;
+namespace AIArmada\Contacting\Features\SocialProfiles\Concerns;
 
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;

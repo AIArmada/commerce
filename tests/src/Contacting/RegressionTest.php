@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Venues\Models;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
 use AIArmada\Events\Features\Venues\Actions\DeleteVenueDependents;

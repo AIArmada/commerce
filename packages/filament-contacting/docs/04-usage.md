@@ -28,8 +28,8 @@ final class InstitutionResource extends Resource
 The model must use the core traits:
 
 ```php
-use AIArmada\Contacting\Concerns\HasContactMethods;
-use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
+use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 
 final class Institution extends Model
 {
