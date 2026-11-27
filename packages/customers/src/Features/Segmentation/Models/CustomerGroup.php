@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Models;
+namespace AIArmada\Customers\Features\Segmentation\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
+use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

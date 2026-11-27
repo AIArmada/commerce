@@ -11,7 +11,7 @@ use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Schema\Blueprint;

@@ -6,7 +6,7 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use Carbon\CarbonImmutable;
 use Closure;
 use InvalidArgumentException;

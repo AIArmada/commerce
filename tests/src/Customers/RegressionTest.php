@@ -19,7 +19,7 @@ use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 use AIArmada\Persons\Models\Person;

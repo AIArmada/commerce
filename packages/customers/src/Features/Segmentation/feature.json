@@ -18,6 +18,9 @@
     ],
     "table:customer_segments": [
       "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SaveSegment"
+    ],
+    "table:customer_groups": [
+      "AIArmada\\Customers\\Features\\Segmentation\\Actions\\SaveCustomerGroup"
     ]
   },
   "extensions": {}

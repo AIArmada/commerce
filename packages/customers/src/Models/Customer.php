@@ -26,6 +26,7 @@ use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

@@ -6,8 +6,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
+use AIArmada\Customers\Features\Segmentation\Actions\SaveCustomerGroup;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -106,12 +107,24 @@ describe('CustomerGroup Model', function (): void {
         });
 
         it('can create a group', function (): void {
-            $group = CustomerGroup::create([
+            $group = app(SaveCustomerGroup::class)->create([
                 'name' => 'Test Group ' . uniqid(),
             ]);
 
             expect($group)->toBeInstanceOf(CustomerGroup::class)
                 ->and($group->id)->not->toBeEmpty();
+        });
+
+        it('updates and deletes groups through the lifecycle action', function (): void {
+            $action = app(SaveCustomerGroup::class);
+            $group = $action->create(['name' => 'Original']);
+
+            $updated = $action->update($group, ['name' => 'Updated', 'is_active' => false]);
+
+            expect($updated->name)->toBe('Updated')
+                ->and($updated->deactivated_at)->not->toBeNull()
+                ->and($action->delete($updated))->toBeTrue()
+                ->and($group->fresh())->toBeNull();
         });
 
         it('can have members', function (): void {

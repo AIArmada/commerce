@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\FilamentTax\Pages\ManageTaxSettings;
 use AIArmada\FilamentTax\Policies\TaxClassPolicy;
 use AIArmada\FilamentTax\Policies\TaxExemptionPolicy;

@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
 use AIArmada\Customers\Features\Segmentation\EntryPoints\Commands\RebuildSegmentsCommand;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Drivers\CustomersPaymentSubjectDriver;
 use AIArmada\Customers\Platform\ExtensionRegistry;

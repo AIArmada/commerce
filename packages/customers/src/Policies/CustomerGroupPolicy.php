@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;

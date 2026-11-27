@@ -490,7 +490,7 @@ php artisan customers:rebuild-segments --dry-run
 
 ```php
 use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
-use AIArmada\Customers\Models\CustomerGroup;
+use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 
 $group = CustomerGroup::create([
     'name' => 'Corporate Buyers',

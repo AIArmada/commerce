@@ -7,3 +7,5 @@
 - Contacting owns email and phone; Addressing owns addresses. Payment integration uses `AIArmada\Customers\Drivers\CustomersPaymentSubjectDriver`. Never duplicate contact or address data in customer columns.
 
 - Customer notes are owned by Identity (`Features\Identity\Models\CustomerNote`); mutate them through `Features\Identity\Actions\ManageCustomerNote`.
+
+- Customer groups are owned by Segmentation (`Features\Segmentation\Models\CustomerGroup`); use `Features\Segmentation\Actions\SaveCustomerGroup` for group lifecycle writes and `ManageCustomerGroupMembership` for membership changes.
