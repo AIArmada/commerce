@@ -29,7 +29,7 @@ final readonly class MarkFeedbackResponseAsSpamAction
                 'marked_spam_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackResponseMarkedSpam::dispatch($response);
+            FeedbackResponseMarkedSpam::dispatch($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id);
 
             return $response;
         });

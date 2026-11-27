@@ -141,7 +141,7 @@ final class SubmitFeedbackResponseAction
                         $this->extractTestimonial->execute($response->id);
                     }
 
-                    FeedbackResponseSubmitted::dispatch($response);
+                    FeedbackResponseSubmitted::dispatch($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id);
 
                     return $response;
                 }, 5);

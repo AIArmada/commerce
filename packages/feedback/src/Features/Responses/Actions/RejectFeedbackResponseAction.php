@@ -29,7 +29,7 @@ final readonly class RejectFeedbackResponseAction
                 'rejected_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackResponseRejected::dispatch($response);
+            FeedbackResponseRejected::dispatch($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id);
 
             return $response;
         });

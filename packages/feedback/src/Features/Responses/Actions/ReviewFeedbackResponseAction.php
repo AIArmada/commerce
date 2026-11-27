@@ -29,7 +29,7 @@ final readonly class ReviewFeedbackResponseAction
                 'reviewed_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackResponseReviewed::dispatch($response);
+            FeedbackResponseReviewed::dispatch($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id);
 
             return $response;
         });

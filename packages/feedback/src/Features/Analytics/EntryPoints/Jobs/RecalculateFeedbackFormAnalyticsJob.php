@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Feedback\Features\Analytics\Actions\RecalculateFeedbackFormAnalyticsAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -29,16 +28,6 @@ final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, Shoul
         public readonly string | int | null $ownerId,
         public readonly bool $ownerIsGlobal = false,
     ) {}
-
-    public static function forResponse(FeedbackResponse $response): self
-    {
-        return new self(
-            formId: (string) $response->feedback_form_id,
-            ownerType: $response->owner_type,
-            ownerId: $response->owner_id,
-            ownerIsGlobal: $response->owner_type === null && $response->owner_id === null,
-        );
-    }
 
     public static function forForm(FeedbackForm $form): self
     {

@@ -16,6 +16,11 @@ final class QueueFeedbackAnalyticsRecalculation
     public function handle(
         FeedbackResponseStarted | FeedbackResponseSubmitted | FeedbackResponseReviewed | FeedbackResponseRejected | FeedbackResponseMarkedSpam $event,
     ): void {
-        dispatch(RecalculateFeedbackFormAnalyticsJob::forResponse($event->response))->afterCommit();
+        dispatch(new RecalculateFeedbackFormAnalyticsJob(
+            formId: $event->formId,
+            ownerType: $event->ownerType,
+            ownerId: $event->ownerId,
+            ownerIsGlobal: $event->ownerType === null && $event->ownerId === null,
+        ))->afterCommit();
     }
 }

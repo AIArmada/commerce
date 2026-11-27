@@ -144,7 +144,7 @@ final class StartFeedbackResponseAction
                 $this->invitationLifecycle->start($invitationId);
             }
 
-            FeedbackResponseStarted::dispatch($response);
+            FeedbackResponseStarted::dispatch($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id);
 
             return $response;
         }, 5);

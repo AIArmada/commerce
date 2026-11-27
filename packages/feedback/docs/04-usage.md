@@ -204,7 +204,7 @@ app(PublishFeedbackTestimonialAction::class)->execute($testimonial);
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 
 Event::listen(FeedbackResponseSubmitted::class, function ($event) {
-    // Issue certificate, update metrics, etc.
+    // Use $event->responseId and $event->formId to identify the submission.
 });
 ```
 
@@ -265,7 +265,7 @@ $invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToke
 
 ## Analytics aggregates
 
-`summaryForForm()` reads the `feedback_form_analytics` aggregate row and falls back to live calculation. The dashboard is owner-keyed via `OwnerCache::remember(..., config('feedback.analytics.dashboard_cache_ttl', 30))`, and submissions queue `RecalculateFeedbackFormAnalyticsJob::forResponse($response)` to refresh the aggregate:
+`summaryForForm()` reads the `feedback_form_analytics` aggregate row and falls back to live calculation. The dashboard is owner-keyed via `OwnerCache::remember(..., config('feedback.analytics.dashboard_cache_ttl', 30))`, and submissions queue `RecalculateFeedbackFormAnalyticsJob` with the response event's form ID and owner tuple to refresh the aggregate:
 
 ```php
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;

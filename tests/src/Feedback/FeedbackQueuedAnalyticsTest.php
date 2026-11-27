@@ -109,7 +109,7 @@ it('queues recalculation with the response owner tuple', function (): void {
         'is_anonymous' => true,
     ]));
 
-    event(new FeedbackResponseSubmitted($response));
+    event(new FeedbackResponseSubmitted($response->id, $response->feedback_form_id, $response->owner_type, $response->owner_id));
 
     Queue::assertPushed(RecalculateFeedbackFormAnalyticsJob::class, function (RecalculateFeedbackFormAnalyticsJob $job) use ($form, $owner): bool {
         return $job->formId === $form->id
