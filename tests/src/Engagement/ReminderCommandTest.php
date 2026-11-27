@@ -6,11 +6,12 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Events\ReminderFailed;
 use AIArmada\Engagement\Events\ReminderSent;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
@@ -199,7 +200,7 @@ it('bounds due reads and excludes expired reminders from active state', function
     ]);
 
     $due = app(ReadDueRemindersQuery::class)->execute(limit: 1);
-    $state = app(\AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState::class)
+    $state = app(ReadsReminderState::class)
         ->remindersFor($this->recipient, $this->subject);
 
     expect($due->pluck('id')->all())->toBe([$first->id])

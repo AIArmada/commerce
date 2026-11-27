@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
+use AIArmada\Feedback\Data\CreateFeedbackFormData;
+use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
+use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Invitations\Actions\ExpireFeedbackInvitationAction;
 use AIArmada\Feedback\Features\Invitations\Actions\GenerateFeedbackInvitationUrlAction;
 use AIArmada\Feedback\Features\Invitations\Actions\MarkFeedbackInvitationOpenedAction;
 use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
 use AIArmada\Feedback\Features\Invitations\Actions\SendFeedbackInvitationAction;
-use AIArmada\Feedback\Data\CreateFeedbackFormData;
-use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
@@ -163,7 +164,8 @@ it('does not open an expired invitation', function (): void {
 
 it('rolls back the invitation when URL generation fails', function (): void {
     $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Failed URL Form'));
-    app()->instance(\AIArmada\Feedback\Contracts\InvitationUrlGenerator::class, new class implements \AIArmada\Feedback\Contracts\InvitationUrlGenerator {
+    app()->instance(InvitationUrlGenerator::class, new class implements InvitationUrlGenerator
+    {
         public function generate(string $invitationId, string $rawToken): string
         {
             throw new RuntimeException('URL generation failed');

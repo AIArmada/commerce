@@ -3,10 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Features\Responses\Actions\StartFeedbackResponseAction;
-use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
@@ -14,11 +10,16 @@ use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Responses\Actions\StartFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -477,7 +478,7 @@ it('rejects a targeted invitation used by a different respondent', function (): 
         respondentType: $other->getMorphClass(),
         respondentId: (string) $other->getKey(),
         invitationId: $invitation->id,
-    ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    ))->toThrow(AuthorizationException::class);
 });
 
 it('rejects invalid submission answer lists at the DTO boundary', function (): void {

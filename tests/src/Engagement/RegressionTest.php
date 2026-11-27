@@ -6,12 +6,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
-use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Enums\ReminderStatus;
@@ -21,13 +18,19 @@ use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
-use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
-use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementContextSubject;
@@ -128,7 +131,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
             ->and($reminder->offset_minutes)->toBe(30)
             ->and($reminder->anchor_type)->toBe('start');
 
-        $due = collect(app(\AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery::class)->execute($now->addMinutes(31)));
+        $due = collect(app(ReadDueRemindersQuery::class)->execute($now->addMinutes(31)));
 
         expect($due)->not->toBeEmpty();
     } finally {
@@ -558,7 +561,7 @@ it('places share tokens before URL fragments and preserves existing query parame
         }
     };
 
-    $url = app(\AIArmada\Engagement\Contracts\ShareUrlGenerator::class)
+    $url = app(ShareUrlGenerator::class)
         ->generateShareUrl($subject, ['token' => 'a+b']);
 
     parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
@@ -574,7 +577,7 @@ it('returns interaction snapshots through feature APIs without exposing mutable 
     $response = $manager->respond($this->actor, $this->subject, 'going');
     $reaction = $manager->react($this->actor, $this->subject, 'like');
     $share = $manager->share($this->actor, $this->subject);
-    $state = app(\AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState::class);
+    $state = app(ReadsInteractionState::class);
 
     expect($state->isFollowing($this->actor, $this->subject))->toBeTrue()
         ->and($state->isBookmarked($this->actor, $this->subject))->toBeTrue()

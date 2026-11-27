@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Support;
 
-use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
-use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Features\Interactions\Models\Share;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 
 final class ModelResolver
 {

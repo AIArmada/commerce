@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\Followable;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
 use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
 use Illuminate\Database\Eloquent\Model;

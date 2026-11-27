@@ -97,5 +97,4 @@ final readonly class ManageInteractionsAction
     {
         $this->manageBookmarkCollectionItems->removeBookmarkFromCollection($actor, $bookmark, $collection, $options);
     }
-
 }

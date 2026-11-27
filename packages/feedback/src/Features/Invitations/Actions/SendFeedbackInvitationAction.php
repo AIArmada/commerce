@@ -14,6 +14,7 @@ use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class SendFeedbackInvitationAction
 {
@@ -39,7 +40,7 @@ final class SendFeedbackInvitationAction
 
         $days = $expiryDays ?? (int) config('feedback.defaults.invitation_expiry_days', 14);
         if ($days < 1) {
-            throw new \InvalidArgumentException('Invitation expiry must be at least one day.');
+            throw new InvalidArgumentException('Invitation expiry must be at least one day.');
         }
 
         return (new FeedbackInvitation)->getConnection()->transaction(function () use ($form, $recipient, $email, $phone, $days): array {

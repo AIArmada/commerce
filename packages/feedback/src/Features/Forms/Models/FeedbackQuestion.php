@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Forms\Models;
 
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackQuestionDependentsAction;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

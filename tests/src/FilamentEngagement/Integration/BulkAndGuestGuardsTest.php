@@ -12,9 +12,9 @@ use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actio
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\ReactAction;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\RemoveBookmarkAction;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\RespondAction;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\UnfollowAction;
 use AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Actions\SetReminderAction;
 use AIArmada\FilamentEngagement\Features\Subscriptions\EntryPoints\Filament\Actions\SubscribeAction;
-use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\UnfollowAction;
 use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
 use Illuminate\Auth\Access\AuthorizationException;

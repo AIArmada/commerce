@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Reminders\Concerns;
 
-use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Traits\InteractsWithEngagement;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

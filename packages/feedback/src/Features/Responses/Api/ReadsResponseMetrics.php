@@ -14,6 +14,7 @@ interface ReadsResponseMetrics
 
     /** @return array<string, mixed> */
     public function dashboardMetrics(): array;
+
     public function nps(?string $formId = null, ?string $questionKey = null): NpsResultData;
 
     public function csat(?string $formId = null, ?string $questionKey = null): CsatResultData;

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement;
 
-use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
-use AIArmada\Engagement\Features\Reminders\EntryPoints\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\Features\Counters\EntryPoints\Commands\ReconcileEngagementCountersCommand;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Reminders\EntryPoints\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\Features\Subscriptions\EntryPoints\Commands\MatchSubscriptionsCommand;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
 use AIArmada\Engagement\Platform\ExtensionRegistry;
@@ -88,5 +88,4 @@ final class EngagementServiceProvider extends PackageServiceProvider
             EngagementEventEngagementManager::class,
         );
     }
-
 }

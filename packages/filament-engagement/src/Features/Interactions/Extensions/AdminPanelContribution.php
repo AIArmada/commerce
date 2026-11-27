@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEngagement\Features\Interactions\Extensions;
 
 use AIArmada\FilamentEngagement\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\FollowResource;
-use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkResource;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkCollectionResource;
-use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ResponseResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\FollowResource;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ReactionResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ResponseResource;
 
 final class AdminPanelContribution implements ContributionContract
 {

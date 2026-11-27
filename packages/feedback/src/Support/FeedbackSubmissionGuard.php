@@ -37,5 +37,4 @@ final class FeedbackSubmissionGuard
             throw new RuntimeException('You must be logged in to submit this form.');
         }
     }
-
 }

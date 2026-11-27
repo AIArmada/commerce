@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Responses\Actions;
 
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 
 final class NormalizeFeedbackAnswerAction
 {

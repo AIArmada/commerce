@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Features\Testimonials\EntryPoints\Filament\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Features\Testimonials\Actions\ApproveFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Actions\HideFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Actions\RejectFeedbackTestimonialAction;
-use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;

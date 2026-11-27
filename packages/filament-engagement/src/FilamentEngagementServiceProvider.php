@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement;
 
-use AIArmada\FilamentEngagement\Platform\FeatureCatalog;
 use AIArmada\FilamentEngagement\Platform\ExtensionRegistry;
+use AIArmada\FilamentEngagement\Platform\FeatureCatalog;
 use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -31,6 +31,7 @@ final class FilamentEngagementServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(FilamentEngagementPlugin::class);
     }
+
     public function packageBooted(): void
     {
         foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {

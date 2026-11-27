@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Concerns;
 
-use AIArmada\Engagement\Traits\ReceivesEngagement;
-
 use AIArmada\Engagement\Features\Interactions\Models\Share;
+use AIArmada\Engagement\Traits\ReceivesEngagement;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasShares

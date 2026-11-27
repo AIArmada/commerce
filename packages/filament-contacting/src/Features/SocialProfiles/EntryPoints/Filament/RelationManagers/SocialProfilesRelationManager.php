@@ -8,9 +8,9 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Schemas\SocialProfileFormSchema;
+use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Tables\SocialProfileTable;
 use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
-use AIArmada\FilamentContacting\Features\SocialProfiles\EntryPoints\Filament\Tables\SocialProfileTable;
 use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;

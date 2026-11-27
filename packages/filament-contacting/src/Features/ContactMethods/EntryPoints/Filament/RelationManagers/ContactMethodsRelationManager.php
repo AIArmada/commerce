@@ -8,9 +8,9 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodFormSchema;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Tables\ContactMethodTable;
 use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
-use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Tables\ContactMethodTable;
 use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;

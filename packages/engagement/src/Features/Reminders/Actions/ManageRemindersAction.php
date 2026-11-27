@@ -20,8 +20,8 @@ use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
 
 final readonly class ManageRemindersAction

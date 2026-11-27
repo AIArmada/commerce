@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Support;
 
-use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;

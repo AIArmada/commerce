@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback;
 
-use AIArmada\FilamentFeedback\Platform\FeatureCatalog;
 use AIArmada\FilamentFeedback\Platform\ExtensionRegistry;
+use AIArmada\FilamentFeedback\Platform\FeatureCatalog;
 use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -32,6 +32,7 @@ final class FilamentFeedbackServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(FilamentFeedbackPlugin::class);
     }
+
     public function packageBooted(): void
     {
         foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {
