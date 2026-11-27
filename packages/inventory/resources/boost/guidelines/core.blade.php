@@ -15,3 +15,5 @@ Inventory reporting and reconciliation queries live under `AIArmada\Inventory\Fe
 Use `AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService` for read-only fulfillment location planning.
 
 Inventory exports use `Contracts/ExportableInterface`, `Features/Reporting/Queries` and `Features/Reporting/Actions/ExportService`.
+
+Use the immutable `AIArmada\Inventory\Data\AllocationContext` for allocation strategy inputs. Fluent context methods return new instances.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Strategies;
 
+use AIArmada\Inventory\Data\AllocationContext;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -85,15 +86,14 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
         $sortedLevels = $this->sortByDistance($levels, $context);
 
         $locationIds = $sortedLevels->pluck('location_id')->unique()->values();
+        $positionById = array_flip($locationIds->all());
 
         $locationsQuery = InventoryOwnerScope::applyToLocationQuery(
             InventoryLocation::query()->whereIn('id', $locationIds)
         );
 
         return $locationsQuery->get()
-            ->sortBy(function ($location) use ($locationIds) {
-                return $locationIds->search($location->id);
-            })
+            ->sortBy(fn (InventoryLocation $location): int => $positionById[$location->id])
             ->values();
     }
 
