@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-final class BlockEntityAction implements BlocksEntity
+final readonly class BlockEntityAction implements BlocksEntity
 {
     public function execute(
         Model $blockable,
@@ -37,7 +37,7 @@ final class BlockEntityAction implements BlocksEntity
         }
 
         return DB::transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
-            $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->first();
+            $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->firstOrFail();
 
             $existing = Block::query()
                 ->where('blockable_type', $blockable->getMorphClass())

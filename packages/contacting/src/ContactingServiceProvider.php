@@ -7,7 +7,9 @@ namespace AIArmada\Contacting;
 use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
+use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
 use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
+use AIArmada\Contacting\Drivers\PinnedPublicHtmlFetcher;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -25,6 +27,8 @@ final class ContactingServiceProvider extends PackageServiceProvider
     public function register(): void
     {
         parent::register();
+
+        $this->app->bind(PublicHtmlFetcher::class, PinnedPublicHtmlFetcher::class);
 
         $this->app->bind(ContactMethodNormalizer::class, NormalizeContactMethodAction::class);
         $this->app->bind(SocialProfileNormalizer::class, NormalizeSocialProfileAction::class);

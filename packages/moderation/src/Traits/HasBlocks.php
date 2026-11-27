@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Traits;
 
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Moderation\Actions\ExpireDeletedEntityBlocksAction;
 use AIArmada\Moderation\Contracts\BlocksEntity;
 use AIArmada\Moderation\Enums\BlockReason;
-use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /** @mixin Model */
@@ -26,18 +23,7 @@ trait HasBlocks
     public static function bootHasBlocks(): void
     {
         static::deleting(function (Model $model): void {
-            DB::transaction(function () use ($model): void {
-                $model->blocks()
-                    ->withoutGlobalScope(OwnerScope::class)
-                    ->where('status', BlockStatus::Active)
-                    ->chunkById(500, function (Collection $blocks): void {
-                        Block::withoutOwnerScope()
-                            ->whereKey($blocks->modelKeys())
-                            ->update([
-                                'status' => BlockStatus::Expired->value,
-                                'updated_at' => CarbonImmutable::now(),
-                            ]);
-                    });
+            app(ExpireDeletedEntityBlocksAction::class)->execute($model);
             });
         });
     }

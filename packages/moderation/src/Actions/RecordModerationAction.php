@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class RecordModerationAction implements RecordsModerationAction
+final readonly class RecordModerationAction implements RecordsModerationAction
 {
     public function execute(
         Model $actionable,
@@ -77,7 +77,7 @@ final class RecordModerationAction implements RecordsModerationAction
 
         $encoded = json_encode($metadata);
 
-        if ($encoded === false || mb_strlen($encoded) > 65535) {
+        if ($encoded === false || strlen($encoded) > 65535) {
             throw new InvalidArgumentException('Moderation metadata must not exceed 65535 bytes.');
         }
     }

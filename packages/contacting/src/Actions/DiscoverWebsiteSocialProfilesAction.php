@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
-use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
-use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
+use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
 use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use DOMDocument;
@@ -17,12 +16,9 @@ class DiscoverWebsiteSocialProfilesAction
 {
     use AsAction;
 
-    private const int MAX_HTML_BYTES = 524288;
-
     public function __construct(
         private readonly SocialProfileConfig $socialProfileConfig,
-        private readonly ?PublicHttpUrlGuard $guard = null,
-        private readonly ?PinnedHttpClient $http = null,
+        private readonly PublicHtmlFetcher $htmlFetcher,
     ) {}
 
     /**
@@ -41,7 +37,7 @@ class DiscoverWebsiteSocialProfilesAction
         }
 
         try {
-            $html = $this->fetchPublicHtml($websiteUrl);
+            $html = $this->htmlFetcher->fetch($websiteUrl);
         } catch (Throwable) {
             return [];
         }
@@ -97,9 +93,12 @@ class DiscoverWebsiteSocialProfilesAction
     {
         $document = new DOMDocument;
         $previousErrors = libxml_use_internal_errors(true);
-        $document->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previousErrors);
+        try {
+            $document->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousErrors);
+        }
 
         $profiles = [];
         $seen = [];
@@ -144,33 +143,6 @@ class DiscoverWebsiteSocialProfilesAction
         }
 
         return $this->uniqueProfiles($profiles);
-    }
-
-    private function fetchPublicHtml(string $url): ?string
-    {
-        $guard = $this->guard ?? app(PublicHttpUrlGuard::class);
-        $http = $this->http ?? app(PinnedHttpClient::class);
-
-        $response = $http->downloadToLimit(
-            guard: $guard,
-            url: $url,
-            maxBytes: self::MAX_HTML_BYTES,
-            maxRedirects: 3,
-            connectTimeout: 2,
-            timeout: 5,
-        );
-
-        if ($response === null || ! $response->successful()) {
-            return null;
-        }
-
-        $contentType = mb_strtolower((string) $response->header('Content-Type'));
-
-        if (! str_contains($contentType, 'text/html')) {
-            return null;
-        }
-
-        return $http->readBoundedBody($response, self::MAX_HTML_BYTES);
     }
 
     /**
