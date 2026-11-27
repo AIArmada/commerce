@@ -153,4 +153,26 @@ describe('Growth owner batch commands', function (): void {
             $this->travelBack();
         }
     });
+    it('archives only eligible concluded experiments and is idempotent', function (): void {
+        $owner = batchKeyOwner();
+        $eligible = batchKeyExperiment($owner, ExperimentStatus::Concluded);
+        $recent = batchKeyExperiment($owner, ExperimentStatus::Concluded);
+        $active = batchKeyExperiment($owner, ExperimentStatus::Active);
+
+        OwnerContext::withOwner($owner, fn (): int => Experiment::query()->whereKey([$eligible->getKey(), $active->getKey()])->update([
+            'updated_at' => CarbonImmutable::now()->subDays(120),
+        ]));
+
+        $this->artisan('growth:archive-experiments')
+            ->expectsOutputToContain('Experiments archived: 1')
+            ->assertSuccessful();
+
+        $this->artisan('growth:archive-experiments')
+            ->expectsOutputToContain('Experiments archived: 0')
+            ->assertSuccessful();
+
+        expect($eligible->fresh()->status)->toBe(ExperimentStatus::Archived)
+            ->and($recent->fresh()->status)->toBe(ExperimentStatus::Concluded)
+            ->and($active->fresh()->status)->toBe(ExperimentStatus::Active);
+    });
 });

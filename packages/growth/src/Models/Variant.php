@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Growth\Actions\DeleteVariantAssignments;
 use AIArmada\Growth\Enums\VariantStatus;
 use AIArmada\Growth\Support\Context\ExperimentResolver;
 use Carbon\CarbonImmutable;
@@ -134,7 +135,7 @@ final class Variant extends Model implements Auditable
         });
 
         static::deleting(function (Variant $variant): void {
-            $variant->assignments()->delete();
+            app(DeleteVariantAssignments::class)->handle($variant);
         });
     }
 

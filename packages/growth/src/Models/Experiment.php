@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
+use AIArmada\Growth\Actions\DeleteExperimentDependents;
 use AIArmada\Growth\Actions\ResolveExperimentPreset;
 use AIArmada\Growth\Actions\ScopeSignalQueryToOwner;
 use AIArmada\Growth\Enums\ExperimentModuleType;
@@ -262,10 +263,7 @@ final class Experiment extends Model implements Auditable
         });
 
         static::deleting(function (Experiment $experiment): void {
-            $experiment->assignments()->delete();
-            $experiment->variants()->each(static function (Variant $variant): void {
-                $variant->delete();
-            });
+            app(DeleteExperimentDependents::class)->handle($experiment);
         });
     }
 

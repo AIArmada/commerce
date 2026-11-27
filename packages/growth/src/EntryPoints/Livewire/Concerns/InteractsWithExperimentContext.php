@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Livewire\Concerns;
+namespace AIArmada\Growth\EntryPoints\Livewire\Concerns;
 
 use AIArmada\Growth\Support\Context\ExperimentContext;
 

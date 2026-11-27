@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Support;
+namespace AIArmada\Growth\Data;
 
 final readonly class ExperimentMetricBatchRow
 {

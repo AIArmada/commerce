@@ -199,7 +199,7 @@ For simpler checks, you can also use the helper directly:
 Growth ships a lightweight concern for Laravel Livewire components that want to read the current request context without introducing a hard Livewire dependency into the package itself.
 
 ```php
-use AIArmada\Growth\Livewire\Concerns\InteractsWithExperimentContext;
+use AIArmada\Growth\EntryPoints\Livewire\Concerns\InteractsWithExperimentContext;
 use Livewire\Component;
 
 final class PricingHero extends Component
