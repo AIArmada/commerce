@@ -96,6 +96,7 @@ final readonly class RevalidateCartVouchers
             throw VoucherValidationException::multipleInvalid($invalidCodes);
         }
     }
+
     private function matchesCurrentVoucher(mixed $snapshot, mixed $current): bool
     {
         if (! is_array($snapshot) || ! is_array($current)) {
