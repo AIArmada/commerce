@@ -18,6 +18,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use InvalidArgumentException;
 
 final class PurchasesApi extends CollectApi implements PurchaseOperations
 {
@@ -966,7 +967,13 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
             // (400 product_subtotal_negative beyond it, sandbox-proven).
             // Exact comparison: float64 misplaces valid boundary lines
             // (200 x "1.005" with discount 201 must pass).
-            if ($price < 0 || $discount < 0 || ProductData::discountExceedsLineGross($discount, $price, $quantity)) {
+            try {
+                $discountExceedsGross = ProductData::discountExceedsLineGross($discount, $price, $quantity);
+            } catch (InvalidArgumentException $e) {
+                throw new ChipValidationException($e->getMessage(), previous: $e);
+            }
+
+            if ($price < 0 || $discount < 0 || $discountExceedsGross) {
                 throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price times quantity.');
             }
 
@@ -984,7 +991,11 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
                 TaxPercent::normalize($product['tax_percent']);
             }
 
-            $lineTotal = $totalPriceOverride ?? ProductData::multiplyMinorUnits($price, (string) $quantity);
+            try {
+                $lineTotal = $totalPriceOverride ?? ProductData::multiplyMinorUnits($price, (string) $quantity);
+            } catch (InvalidArgumentException $e) {
+                throw new ChipValidationException($e->getMessage(), previous: $e);
+            }
 
             if ($lineTotal > PHP_INT_MAX - $subtotal) {
                 throw new ChipValidationException('Purchase subtotal exceeds the supported range.');

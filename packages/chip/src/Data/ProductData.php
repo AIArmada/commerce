@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
-use AIArmada\Chip\Exceptions\ChipValidationException;
+
 use Akaunting\Money\Money;
 use InvalidArgumentException;
-
 
 
 final readonly class ProductData
@@ -156,7 +155,7 @@ final readonly class ProductData
         $netNum = bcsub(bcmul((string) $priceMinor, $quantityNum), bcmul((string) $discountMinor, $quantityDen));
 
         if (bccomp($netNum, '0') < 0) {
-            throw new ChipValidationException('Product discount cannot be larger than price times quantity.');
+            throw new InvalidArgumentException('Product discount cannot be larger than price times quantity.');
         }
 
         if ($totalPriceOverride !== null) {
@@ -199,7 +198,7 @@ final readonly class ProductData
         }
 
         if (bccomp($rounded, (string) PHP_INT_MAX) > 0) {
-            throw new ChipValidationException('Line total exceeds the supported range.');
+            throw new InvalidArgumentException('Line total exceeds the supported range.');
         }
 
         $result = (int) $rounded;

@@ -85,9 +85,15 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             return false;
         }
 
-        if (! Cashier::paymentMethodStore()->hasAnyForBillable($this->paymentMethodSubject()) && $this->hasChipId()) {
-            $this->syncPaymentMethodsFromChip();
+        if (Cashier::paymentMethodStore()->hasAnyForBillable($this->paymentMethodSubject())) {
+            return true;
         }
+
+        if (! $this->hasChipId()) {
+            return false;
+        }
+
+        $this->syncPaymentMethodsFromChip();
 
         return Cashier::paymentMethodStore()->hasAnyForBillable($this->paymentMethodSubject());
     }
@@ -118,7 +124,9 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
 
     public function getPmTypeAttribute(): ?string
     {
-        return $this->defaultPaymentMethod()?->brand() ?? $this->defaultPaymentMethod()?->type();
+        $method = $this->defaultPaymentMethod();
+
+        return $method?->brand() ?? $method?->type();
     }
 
     public function getPmLastFourAttribute(): ?string
@@ -236,8 +244,6 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             'cancel_redirect',
             'success_callback',
             'send_receipt',
-            'skip_capture',
-            'force_recurring',
         ]));
 
         foreach (['success_redirect', 'failure_redirect', 'cancel_redirect', 'success_callback'] as $key) {
@@ -253,6 +259,9 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             'force_recurring' => true,
             'purchase' => [
                 'currency' => config('cashier-chip.currency', 'MYR'),
+                'subtotal_override' => 0,
+                'total_discount_override' => 0,
+                'total_tax_override' => 0,
                 'total_override' => 0,
                 'products' => [
                     [
