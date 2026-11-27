@@ -100,7 +100,8 @@ final class Subscription extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', SubscriptionStatus::Active);
+        return $query->where('status', SubscriptionStatus::Active)
+            ->where(fn (Builder $query): Builder => $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now()));
     }
 
     /**

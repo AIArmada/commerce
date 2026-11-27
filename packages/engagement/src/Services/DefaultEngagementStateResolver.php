@@ -11,6 +11,7 @@ use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
+use Carbon\CarbonImmutable;
 
 final class DefaultEngagementStateResolver implements EngagementStateResolver
 {
@@ -68,7 +69,8 @@ final class DefaultEngagementStateResolver implements EngagementStateResolver
         $query = Subscription::query()
             ->where('subscriber_type', $subscriber->getMorphClass())
             ->where('subscriber_id', $subscriber->getKey())
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now()));
 
         if ($subject !== null) {
             $query

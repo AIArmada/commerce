@@ -22,7 +22,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 
 final readonly class ManageSubscriptionsAction
 {
@@ -52,11 +51,12 @@ final readonly class ManageSubscriptionsAction
         $subjectIdentity = $subject === null ? null : EngagementModelGuard::identity($subject, 'subject');
 
         try {
-            return DB::transaction(function () use ($subscriber, $subject, $subscriptionType, $criteria, $notificationLevel, $source, $metadata, $subscriberIdentity, $subjectIdentity): Subscription {
+            return (new Subscription)->getConnection()->transaction(function () use ($subscriber, $subject, $subscriptionType, $criteria, $notificationLevel, $source, $metadata, $subscriberIdentity, $subjectIdentity): Subscription {
                 $existing = $this->findMatchingSubscription($subscriber, $subject, $subscriptionType, $criteria, null, true);
 
                 if ($existing !== null) {
-                    if ($existing->status === SubscriptionStatus::Active) {
+                    if ($existing->status === SubscriptionStatus::Active
+                        && ($existing->expires_at === null || $existing->expires_at->isFuture())) {
                         return $existing;
                     }
 
@@ -65,6 +65,7 @@ final readonly class ManageSubscriptionsAction
                         'criteria' => $criteria,
                         'unsubscribed_at' => null,
                         'muted_at' => null,
+                        'expires_at' => null,
                         'subscribed_at' => CarbonImmutable::now(),
                         'notification_level' => $notificationLevel,
                         'source' => $source,
@@ -119,39 +120,53 @@ final readonly class ManageSubscriptionsAction
         $subscriptionType = EngagementModelGuard::requiredString($subscriptionType, 'subscription_type');
         $criteria = SubscriptionCriteria::normalize(EngagementModelGuard::optionalArray($criteria, 'criteria') ?? []);
 
-        $subscription = $this->findMatchingSubscription(
-            $subscriber,
-            $subject,
-            $subscriptionType,
-            $criteria,
-            SubscriptionStatus::Active->value,
-        );
+        (new Subscription)->getConnection()->transaction(function () use ($subscriber, $subject, $subscriptionType, $criteria): void {
+            $subscription = $this->findMatchingSubscription($subscriber, $subject, $subscriptionType, $criteria, null, true);
 
-        if ($subscription !== null) {
-            $subscription->update(['status' => SubscriptionStatus::Unsubscribed, 'unsubscribed_at' => CarbonImmutable::now()]);
+            if ($subscription === null || ! in_array($subscription->status, [SubscriptionStatus::Active, SubscriptionStatus::Muted], true)) {
+                return;
+            }
+
+            $subscription->update([
+                'status' => SubscriptionStatus::Unsubscribed,
+                'unsubscribed_at' => CarbonImmutable::now(),
+                'muted_at' => null,
+            ]);
             event(new SubscriptionCancelled($subscription));
-        }
+        });
     }
 
     public function muteSubscription(Subscription $subscription): Subscription
     {
-        $subscription = OwnerWriteGuard::findOrFailForOwner(Subscription::class, $subscription->getKey());
-        $subscription->update(['status' => SubscriptionStatus::Muted, 'muted_at' => CarbonImmutable::now()]);
-        event(new SubscriptionMuted($subscription));
-
-        return $subscription;
+        return $this->transition($subscription, SubscriptionStatus::Active, SubscriptionStatus::Muted);
     }
 
     public function unmuteSubscription(Subscription $subscription): Subscription
     {
-        $subscription = OwnerWriteGuard::findOrFailForOwner(Subscription::class, $subscription->getKey());
-        $subscription->update([
-            'status' => SubscriptionStatus::Active,
-            'muted_at' => null,
-        ]);
-        event(new SubscriptionUnmuted($subscription));
+        return $this->transition($subscription, SubscriptionStatus::Muted, SubscriptionStatus::Active);
+    }
 
-        return $subscription;
+    private function transition(Subscription $subscription, SubscriptionStatus $from, SubscriptionStatus $to): Subscription
+    {
+        return $subscription->getConnection()->transaction(function () use ($subscription, $from, $to): Subscription {
+            if (Subscription::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Subscription::class, $subscription->getKey());
+            }
+
+            $locked = Subscription::query()->whereKey($subscription->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== $from || ($locked->expires_at !== null && ! $locked->expires_at->isFuture())) {
+                return $locked;
+            }
+
+            $locked->update([
+                'status' => $to,
+                'muted_at' => $to === SubscriptionStatus::Muted ? CarbonImmutable::now() : null,
+            ]);
+            event($to === SubscriptionStatus::Muted ? new SubscriptionMuted($locked) : new SubscriptionUnmuted($locked));
+
+            return $locked;
+        });
     }
 
     public function matchingSubscriptions(Subscribable $subject, string $trigger, array $context = []): iterable

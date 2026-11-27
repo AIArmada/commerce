@@ -47,3 +47,23 @@ it('unmutes a subscription through the domain manager', function (): void {
     expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Active)
         ->and($subscription->fresh()->muted_at)->toBeNull();
 });
+
+it('cancels muted subscriptions without allowing unmute to resurrect them', function (): void {
+    $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    $this->subscriptionManager->muteSubscription($subscription);
+    $this->subscriptionManager->unsubscribe($this->actor, $this->subject);
+    $this->subscriptionManager->unmuteSubscription($subscription);
+
+    expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Unsubscribed);
+});
+
+it('excludes expired subscriptions and renews them on an explicit subscribe', function (): void {
+    $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    $subscription->update(['expires_at' => now()->subMinute()]);
+
+    expect(iterator_to_array($this->subscriptionManager->matchingSubscriptions($this->subject, 'updated')))->toBe([]);
+
+    $renewed = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    expect($renewed->id)->toBe($subscription->id)
+        ->and($renewed->expires_at)->toBeNull();
+});
