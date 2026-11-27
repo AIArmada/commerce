@@ -37,6 +37,24 @@ describe('CustomerNote Model', function (): void {
         expect($note->fresh()->is_pinned)->toBeFalse();
     });
 
+    it('rejects cancelled note creation, update and deletion', function (): void {
+        $action = app(ManageCustomerNote::class);
+        $note = $action->create($this->customer, ['content' => 'Original']);
+
+        CustomerNote::saving(static fn (CustomerNote $record): bool => $record->content !== 'Veto');
+        CustomerNote::deleting(static fn (CustomerNote $record): bool => $record->id !== $note->id);
+
+        expect(fn () => $action->create($this->customer, ['content' => 'Veto']))
+            ->toThrow(RuntimeException::class, 'Customer note creation was cancelled.');
+        expect(fn () => $action->update($this->customer, $note, ['content' => 'Veto']))
+            ->toThrow(RuntimeException::class, 'Customer note update was cancelled.');
+        expect(fn () => $action->delete($this->customer, $note))
+            ->toThrow(RuntimeException::class, 'Customer note deletion was cancelled.');
+
+        expect($note->fresh()->content)->toBe('Original')
+            ->and($this->customer->notes()->count())->toBe(1);
+    });
+
     describe('Creation', function (): void {
         it('can create a note', function (): void {
             $note = CustomerNote::create([

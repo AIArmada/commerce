@@ -10,6 +10,7 @@ use AIArmada\Customers\Models\Customer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class ManageCustomerNote
 {
@@ -21,7 +22,13 @@ final readonly class ManageCustomerNote
             $data = $this->attributes($attributes);
             $data['created_by'] = $authorId;
 
-            return $locked->notes()->create($data);
+            $note = $locked->notes()->make($data);
+
+            if (! $note->save()) {
+                throw new RuntimeException('Customer note creation was cancelled.');
+            }
+
+            return $note;
         });
     }
 
@@ -30,7 +37,11 @@ final readonly class ManageCustomerNote
     {
         return $customer->getConnection()->transaction(function () use ($customer, $note, $attributes): CustomerNote {
             $locked = $this->lockNote($this->lockCustomer($customer), $note);
-            $locked->fill($this->attributes($attributes))->save();
+            $locked->fill($this->attributes($attributes));
+
+            if (! $locked->save()) {
+                throw new RuntimeException('Customer note update was cancelled.');
+            }
 
             return $locked;
         });
@@ -38,9 +49,13 @@ final readonly class ManageCustomerNote
 
     public function delete(Customer $customer, CustomerNote $note): bool
     {
-        return $customer->getConnection()->transaction(
-            fn (): bool => (bool) $this->lockNote($this->lockCustomer($customer), $note)->delete(),
-        );
+        return $customer->getConnection()->transaction(function () use ($customer, $note): bool {
+            if (! $this->lockNote($this->lockCustomer($customer), $note)->delete()) {
+                throw new RuntimeException('Customer note deletion was cancelled.');
+            }
+
+            return true;
+        });
     }
 
     private function lockCustomer(Customer $customer): Customer

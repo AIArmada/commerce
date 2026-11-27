@@ -146,6 +146,9 @@ it('denies merges without the update ability on both records', function (): void
 });
 
 it('matches LIKE wildcards literally in merge search', function (): void {
+    test()->actingAs(filamentCustomers_makeUser('merge-search'));
+    Gate::before(static fn (mixed $user, string $ability): ?bool => in_array($ability, ['viewAny', 'view'], true) ? true : null);
+
     $owner = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
 
     OwnerContext::withOwner($owner, function () use ($owner): void {
@@ -168,6 +171,9 @@ it('matches LIKE wildcards literally in merge search', function (): void {
 });
 
 it('labels merge search results without per-row lookups', function (): void {
+    test()->actingAs(filamentCustomers_makeUser('merge-search'));
+    Gate::before(static fn (mixed $user, string $ability): ?bool => in_array($ability, ['viewAny', 'view'], true) ? true : null);
+
     $owner = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
 
     OwnerContext::withOwner($owner, function () use ($owner): void {
@@ -189,5 +195,18 @@ it('labels merge search results without per-row lookups', function (): void {
         foreach ($results as $label) {
             expect($label)->toContain('Searchable');
         }
+    });
+});
+
+it('denies customer merge search to users without read permission', function (): void {
+    $owner = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
+    test()->actingAs(filamentCustomers_makeUser('merge-search-denied'));
+    Gate::before(static fn (mixed $user, string $ability): ?bool => $ability === 'viewAny' ? false : null);
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        filamentCustomers_makeCustomer($owner, 'Private');
+
+        expect(fn () => filamentCustomers_searchCustomers('Private'))
+            ->toThrow(AuthorizationException::class);
     });
 });

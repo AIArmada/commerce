@@ -97,6 +97,11 @@ final class MergeCustomersPage extends Page implements HasForms
      */
     protected function searchCustomers(string $search): array
     {
+        $user = Filament::auth()->user();
+        abort_if($user === null, 403);
+        $gate = Gate::forUser($user);
+        $gate->authorize('viewAny', Customer::class);
+
         $query = Customer::query()
             ->tap(fn ($query) => OwnerUiScope::apply($query))
             ->with('contactMethods');
@@ -121,6 +126,7 @@ final class MergeCustomersPage extends Page implements HasForms
             })
             ->limit(20)
             ->get()
+            ->filter(fn (Customer $customer): bool => $gate->allows('view', $customer))
             ->mapWithKeys(fn (Customer $customer): array => [
                 $customer->id => self::labelForCustomer($customer),
             ])
@@ -134,6 +140,10 @@ final class MergeCustomersPage extends Page implements HasForms
         if (! $customer) {
             return '';
         }
+
+        $user = Filament::auth()->user();
+        abort_if($user === null, 403);
+        Gate::forUser($user)->authorize('view', $customer);
 
         return self::labelForCustomer($customer);
     }

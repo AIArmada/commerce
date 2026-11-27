@@ -20,8 +20,11 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\LazyCollection;
 use InvalidArgumentException;
+use Throwable;
 
 class NotesRelationManager extends RelationManager
 {
@@ -99,6 +102,7 @@ class NotesRelationManager extends RelationManager
                     ->using(function (array $data): CustomerNote {
                         $user = Filament::auth()->user();
                         abort_if($user === null, 403);
+                        Gate::forUser($user)->authorize('create', CustomerNote::class);
 
                         return app(ManageCustomerNote::class)->create(
                             $this->customer(),
@@ -138,15 +142,41 @@ class NotesRelationManager extends RelationManager
                     })
                     ->visible(fn ($record) => $record->is_pinned),
                 EditAction::make()
-                    ->using(fn (CustomerNote $record, array $data): CustomerNote => app(ManageCustomerNote::class)->update($this->customer(), $record, $data)),
+                    ->using(function (CustomerNote $record, array $data): CustomerNote {
+                        $user = Filament::auth()->user();
+                        abort_if($user === null, 403);
+                        Gate::forUser($user)->authorize('update', $record);
+
+                        return app(ManageCustomerNote::class)->update($this->customer(), $record, $data);
+                    }),
                 DeleteAction::make()
-                    ->using(fn (CustomerNote $record): bool => app(ManageCustomerNote::class)->delete($this->customer(), $record)),
+                    ->using(fn (CustomerNote $record): bool => $this->deleteNote($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! $record instanceof CustomerNote || ! $this->deleteNote($record)) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
+    }
+
+    private function deleteNote(CustomerNote $record): bool
+    {
+        $user = Filament::auth()->user();
+        abort_if($user === null, 403);
+        Gate::forUser($user)->authorize('delete', $record);
+
+        return app(ManageCustomerNote::class)->delete($this->customer(), $record);
     }
 
     private function customer(): Customer
