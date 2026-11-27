@@ -10,7 +10,7 @@ use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as CartModel;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartConditionModel;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\Cart\Storage\StorageInterface;

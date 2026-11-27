@@ -6,7 +6,7 @@ use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
 use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

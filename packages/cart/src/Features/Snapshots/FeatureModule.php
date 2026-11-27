@@ -27,7 +27,7 @@ use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Features\Snapshots\Queries\ReadSnapshotConditions;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\Cart\Platform\FeatureModule as FeatureModuleContract;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 

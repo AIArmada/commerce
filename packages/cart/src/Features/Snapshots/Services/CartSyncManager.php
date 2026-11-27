@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 
 class CartSyncManager implements CartSnapshotSyncInterface
 {

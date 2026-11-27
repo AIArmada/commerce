@@ -21,7 +21,7 @@ use AIArmada\Cart\Platform\FeatureModule;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Services\RulePresets;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;

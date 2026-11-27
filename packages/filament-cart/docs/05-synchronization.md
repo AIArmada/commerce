@@ -156,7 +156,7 @@ $manager->deleteByIdentity($instance, $identifier, $ownerType, $ownerId);
 Resolves live cart instances from stored identifiers.
 
 ```php
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 
 $manager = app(CartInstanceManager::class);
 

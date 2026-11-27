@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;

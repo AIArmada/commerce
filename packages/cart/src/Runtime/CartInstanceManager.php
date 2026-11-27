@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Snapshots;
+namespace AIArmada\Cart\Runtime;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
