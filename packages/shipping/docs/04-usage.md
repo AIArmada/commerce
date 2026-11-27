@@ -398,7 +398,7 @@ $rate = $zone->rates()->create([
 ### Resolving Zones for Address
 
 ```php
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use AIArmada\Shipping\Data\AddressData;
 
 $resolver = app(ShippingZoneResolver::class);

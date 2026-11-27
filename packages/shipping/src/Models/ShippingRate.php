@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\Shipping\Data\PackageData;
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

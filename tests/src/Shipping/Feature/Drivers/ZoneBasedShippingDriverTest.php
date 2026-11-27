@@ -12,7 +12,7 @@ use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 
 // ============================================
 // ZoneBasedShippingDriver Tests

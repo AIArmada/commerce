@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

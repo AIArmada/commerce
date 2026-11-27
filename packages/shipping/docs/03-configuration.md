@@ -177,7 +177,7 @@ Zone candidates are owner-scoped via `forOwner()` with `shipping.features.owner.
 
 ```php
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 
 $zone = app(ShippingZoneResolver::class)->resolve(
     AddressData::from([

@@ -147,7 +147,7 @@ dd(Shipping::getAvailableDrivers());
 **Solutions**:
 1. Debug zone resolution:
    ```php
-   use AIArmada\Shipping\Services\ShippingZoneResolver;
+   use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
    
    $resolver = app(ShippingZoneResolver::class);
    $zone = $resolver->resolve($address);

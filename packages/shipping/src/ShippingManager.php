@@ -11,7 +11,7 @@ use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
 use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;

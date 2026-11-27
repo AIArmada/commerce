@@ -22,7 +22,7 @@ use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Services\FreeShippingEvaluator;
 use AIArmada\Shipping\Services\RateShoppingEngine;
 use AIArmada\Shipping\Services\ShipmentService;
-use AIArmada\Shipping\Services\ShippingZoneResolver;
+use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
 use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;
 use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
