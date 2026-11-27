@@ -6,7 +6,6 @@ namespace AIArmada\Engagement\Traits;
 
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,11 +24,6 @@ trait InteractsWithEngagement
     protected function engagementManager(): ManageInteractionsAction
     {
         return app(ManageInteractionsAction::class);
-    }
-
-    protected function engagementStateResolver(): EngagementStateResolver
-    {
-        return app(EngagementStateResolver::class);
     }
 
 }

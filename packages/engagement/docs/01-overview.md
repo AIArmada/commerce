@@ -57,7 +57,9 @@ title: Engagement Overview
 | `ManageInteractionsAction` | `ManageInteractionsAction` | Central facade: follow, bookmark, respond, react, remind, share |
 | `ManageSubscriptionsAction` | `ManageSubscriptionsAction` | Subscribe, unsubscribe, mute, match subscriptions |
 | `ManageRemindersAction` | `ManageRemindersAction` | Set, cancel, due reminders, mark sent/failed |
-| `EngagementStateResolver` | `DefaultEngagementStateResolver` | Query state: isFollowing, isBookmarked, responseFor, reactionFor |
+| `ReadsInteractionState` | `ReadInteractionStateQuery` | Follow, bookmark, response and reaction state |
+| `ReadsSubscriptionState` | `ReadSubscriptionStateQuery` | Bounded active subscription snapshots |
+| `ReadsReminderState` | `ReadReminderStateQuery` | Bounded pending reminder snapshots |
 | `UpdateEngagementCountersAction` | `UpdateEngagementCountersAction` | Count followers, bookmarks, responses, reactions |
 | `EngagementPolicyResolver` | `DefaultEngagementPolicyResolver` | Resolve engagement policies per model |
 | `ShareUrlGenerator` | `DefaultShareUrlGenerator` | Generate share URLs for platforms |

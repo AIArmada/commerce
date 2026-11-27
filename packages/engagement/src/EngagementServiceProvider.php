@@ -6,7 +6,6 @@ namespace AIArmada\Engagement;
 
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Features\Reminders\EntryPoints\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\Features\Counters\EntryPoints\Commands\ReconcileEngagementCountersCommand;
@@ -16,7 +15,6 @@ use AIArmada\Engagement\Platform\ExtensionRegistry;
 use AIArmada\Engagement\Platform\FeatureCatalog;
 use AIArmada\Engagement\Platform\FeatureModule;
 use AIArmada\Engagement\Services\DefaultEngagementPolicyResolver;
-use AIArmada\Engagement\Services\DefaultEngagementStateResolver;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
 use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\EventsServiceProvider;
@@ -47,7 +45,6 @@ final class EngagementServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton('engagement', fn ($app): ManageInteractionsAction => $app->make(ManageInteractionsAction::class));
 
-        $this->app->bind(EngagementStateResolver::class, DefaultEngagementStateResolver::class);
         $this->app->bind(EngagementPolicyResolver::class, DefaultEngagementPolicyResolver::class);
         $this->app->bind(ShareUrlGenerator::class, DefaultShareUrlGenerator::class);
 

@@ -8,7 +8,8 @@ use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
@@ -35,7 +36,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -432,7 +432,7 @@ it('authorizes share creation through the policy resolver', function (): void {
         ->toThrow(AuthorizationException::class);
 });
 
-it('returns bounded collections from the state resolver', function (): void {
+it('returns bounded detached snapshots from the feature state queries', function (): void {
     config()->set('engagement.state.result_limit', 2);
 
     $subscriptions = app(ManageSubscriptionsAction::class);
@@ -441,9 +441,10 @@ it('returns bounded collections from the state resolver', function (): void {
         $subscriptions->subscribe($this->actor, new EngagementSubject(['name' => $name]), 'updates');
     }
 
-    $resolved = app(EngagementStateResolver::class)->subscriptionsFor($this->actor);
+    $resolved = app(ReadsSubscriptionState::class)->subscriptionsFor($this->actor);
 
-    expect($resolved)->toBeInstanceOf(Collection::class)->and($resolved->count())->toBe(2);
+    expect($resolved)->toBeArray()->toHaveCount(2)
+        ->and($resolved[0])->toBeArray();
 
     $reminders = app(ManageRemindersAction::class);
 
@@ -453,9 +454,10 @@ it('returns bounded collections from the state resolver', function (): void {
         ]);
     }
 
-    $resolvedReminders = app(EngagementStateResolver::class)->remindersFor($this->actor, $this->subject);
+    $resolvedReminders = app(ReadsReminderState::class)->remindersFor($this->actor, $this->subject);
 
-    expect($resolvedReminders)->toBeInstanceOf(Collection::class)->and($resolvedReminders->count())->toBe(2);
+    expect($resolvedReminders)->toBeArray()->toHaveCount(2)
+        ->and($resolvedReminders[0])->toBeArray();
 });
 
 it('rejects overlong free-form inputs at manager boundaries', function (): void {

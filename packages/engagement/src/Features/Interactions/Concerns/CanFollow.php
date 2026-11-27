@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Concerns;
 
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Traits\InteractsWithEngagement;
 
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
@@ -35,6 +36,6 @@ trait CanFollow
 
     public function isFollowing(mixed $subject): bool
     {
-        return $this->engagementStateResolver()->isFollowing($this->engagementActor(), $subject);
+        return app(ReadsInteractionState::class)->isFollowing($this->engagementActor(), $subject);
     }
 }

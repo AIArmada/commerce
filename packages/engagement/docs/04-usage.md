@@ -38,7 +38,7 @@ Passing a model that does not implement the required marker fails at the manager
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
 use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
@@ -60,7 +60,7 @@ app(ManageInteractionsAction::class)->muteFollow($user, $speaker);
 app(ManageInteractionsAction::class)->unmuteFollow($user, $speaker);
 
 // Check state
-$resolver = app(EngagementStateResolver::class);
+$resolver = app(ReadsInteractionState::class);
 $resolver->isFollowing($user, $speaker);  // bool
 ```
 
@@ -105,7 +105,7 @@ app(ManageInteractionsAction::class)->removeBookmarkFromCollection($user, $bookm
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Features\Interactions\Concerns\CanRespond;
 use AIArmada\Engagement\Features\Interactions\Concerns\HasResponses;
@@ -123,7 +123,7 @@ app(ManageInteractionsAction::class)->respond($user, $occurrence, 'maybe');
 app(ManageInteractionsAction::class)->cancelResponse($user, $occurrence);
 
 // Check current response
-$response = $resolver->responseFor($user, $occurrence);
+$response = app(ReadsInteractionState::class)->responseFor($user, $occurrence);
 ```
 
 Common response types: `interested`, `going`, `maybe`, `not_going`. The response type is a free-form string — define your own enum or constants.
@@ -133,7 +133,7 @@ Common response types: `interested`, `going`, `maybe`, `not_going`. The response
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Contracts\Reactable;
 use AIArmada\Engagement\Features\Interactions\Concerns\CanReact;
 use AIArmada\Engagement\Features\Interactions\Concerns\HasReactions;
@@ -151,7 +151,7 @@ app(ManageInteractionsAction::class)->removeReaction($user, $recording);
 app(ManageInteractionsAction::class)->removeReaction($user, $recording, 'like');
 
 // Check current reaction
-$reaction = $resolver->reactionFor($user, $recording);
+$reaction = app(ReadsInteractionState::class)->reactionFor($user, $recording);
 ```
 
 Common reaction types: `like`, `love`, `useful`, `support`, `insightful`, `funny`. Free-form string.
@@ -349,16 +349,18 @@ from console cron without an ambient owner.
 ## Working with the state resolver
 
 ```php
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 
-$resolver = app(EngagementStateResolver::class);
+$resolver = app(ReadsInteractionState::class);
 
 $isFollowing = $resolver->isFollowing($user, $speaker);
 $isBookmarked = $resolver->isBookmarked($user, $event);
 $response = $resolver->responseFor($user, $occurrence);
 $reaction = $resolver->reactionFor($user, $recording);
-$subscriptions = $resolver->subscriptionsFor($user, $event);
-$reminders = $resolver->remindersFor($user, $occurrence);
+$subscriptions = app(ReadsSubscriptionState::class)->subscriptionsFor($user, $event);
+$reminders = app(ReadsReminderState::class)->remindersFor($user, $occurrence);
 ```
 
 ## Events package adapter and attendance separation

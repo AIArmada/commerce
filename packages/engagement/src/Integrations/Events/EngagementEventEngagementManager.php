@@ -7,7 +7,9 @@ namespace AIArmada\Engagement\Integrations\Events;
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
-use AIArmada\Engagement\Contracts\EngagementStateResolver;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Subscriptions\Api\ReadsSubscriptionState;
+use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
@@ -26,7 +28,9 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
         private readonly ManageInteractionsAction $engagementManager,
         private readonly ManageSubscriptionsAction $subscriptionManager,
         private readonly ManageRemindersAction $reminderManager,
-        private readonly EngagementStateResolver $stateResolver,
+        private readonly ReadsInteractionState $interactionState,
+        private readonly ReadsSubscriptionState $subscriptionState,
+        private readonly ReadsReminderState $reminderState,
     ) {}
 
     public function follow(mixed $actor, mixed $eventTarget, array $options = []): mixed
@@ -96,7 +100,7 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
         $eventTarget = EngagementModelGuard::requireModel($eventTarget, 'event target');
         $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
         $eventTargetIdentity = EngagementModelGuard::identity($eventTarget, 'event target');
-        $response = $this->stateResolver->responseFor($actor, $eventTarget);
+        $response = $this->interactionState->responseFor($actor, $eventTarget);
 
         $share = Share::query()
             ->where('sharer_type', $actorIdentity['type'])
@@ -107,11 +111,11 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
             ->first();
 
         return [
-            'is_following' => $this->stateResolver->isFollowing($actor, $eventTarget),
-            'is_bookmarked' => $this->stateResolver->isBookmarked($actor, $eventTarget),
-            'response' => $response?->response_type,
-            'subscriptions' => $this->stateResolver->subscriptionsFor($actor, $eventTarget),
-            'reminders' => $this->stateResolver->remindersFor($actor, $eventTarget),
+            'is_following' => $this->interactionState->isFollowing($actor, $eventTarget),
+            'is_bookmarked' => $this->interactionState->isBookmarked($actor, $eventTarget),
+            'response' => $response['response_type'] ?? null,
+            'subscriptions' => $this->subscriptionState->subscriptionsFor($actor, $eventTarget),
+            'reminders' => $this->reminderState->remindersFor($actor, $eventTarget),
             'share' => $share ? [
                 'id' => $share->getKey(),
                 'share_url' => $share->share_url,
