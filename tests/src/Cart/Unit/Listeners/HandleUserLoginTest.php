@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
-use AIArmada\Cart\Listeners\HandleUserLogin;
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLogin;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Container\Container;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Schemas;
 
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Filament\Forms\Components\KeyValue;

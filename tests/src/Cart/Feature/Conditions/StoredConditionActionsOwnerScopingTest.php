@@ -2,11 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\ApplyStoredCondition;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -44,9 +50,10 @@ it('rejects a stored-condition action for a cart owned by another tenant', funct
     $action = new ApplyStoredCondition(
         new CartInstanceManager(new BuiltInRulesFactory),
         new BuiltInRulesFactory,
+        app(SnapshotConditionLookup::class),
     );
 
-    expect(fn () => $action->apply($cartB, 'condition-id'))
+    expect(fn () => $action->apply((string) $cartB->getKey(), 'condition-id'))
         ->toThrow(AuthorizationException::class, 'Cart is not accessible in the current owner scope.');
 });
 
@@ -80,8 +87,62 @@ it('rejects a stored condition owned by another tenant before resolving the cart
     $action = new ApplyStoredCondition(
         new CartInstanceManager(new BuiltInRulesFactory),
         new BuiltInRulesFactory,
+        app(SnapshotConditionLookup::class),
     );
 
-    expect(fn () => $action->apply($cartA, $conditionB->id))
+    expect(fn () => $action->apply((string) $cartA->getKey(), $conditionB->id))
         ->toThrow(AuthorizationException::class, 'Condition is not accessible in the current owner scope.');
+});
+
+it('prevents cross-owner stored condition edits and deletes', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $condition = OwnerContext::withOwner($ownerB, fn (): Condition => Condition::factory()->create());
+
+    OwnerContext::withOwner($ownerA, function () use ($condition): void {
+        expect(fn () => app(SaveStoredCondition::class)->update($condition, ['name' => 'tampered']))
+            ->toThrow(AuthorizationException::class);
+        expect(fn () => app(DeleteStoredCondition::class)->execute($condition))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($condition): void {
+        expect($condition->fresh()->name)->not->toBe('tampered');
+    });
+});
+
+it('clears the requested condition type from both cart and item levels', function (): void {
+    config(['cart.owner.enabled' => false, 'cart.events' => false]);
+
+    $snapshot = CartSnapshot::query()->create([
+        'identifier' => 'clear-condition-types',
+        'instance' => 'default',
+    ]);
+    $cart = Cart::getCartInstance('default', 'clear-condition-types');
+    $cart->add('sku-1', 'Product', 1000, 1);
+
+    $cart->addCondition(new CartCondition(
+        name: 'cart-discount',
+        type: 'discount',
+        target: 'cart@cart_subtotal/aggregate',
+        value: '-10%',
+    ));
+    $cart->addItemCondition('sku-1', new CartCondition(
+        name: 'item-discount',
+        type: 'discount',
+        target: 'items@item_discount/per-item',
+        value: '-5%',
+    ));
+    $cart->addItemCondition('sku-1', new CartCondition(
+        name: 'item-fee',
+        type: 'fee',
+        target: 'items@item_discount/per-item',
+        value: '+1',
+    ));
+
+    app(RemoveStoredConditions::class)->clearByType((string) $snapshot->getKey(), 'discount');
+
+    expect($cart->getStoredConditions()->getCondition('cart-discount'))->toBeNull()
+        ->and($cart->get('sku-1')->getConditions()->getCondition('item-discount'))->toBeNull()
+        ->and($cart->get('sku-1')->getConditions()->getCondition('item-fee'))->not->toBeNull();
 });

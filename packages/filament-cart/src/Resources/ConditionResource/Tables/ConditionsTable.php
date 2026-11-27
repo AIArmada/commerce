@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Tables;
 
-use AIArmada\Cart\Models\Condition;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use Filament\Actions\BulkAction;
@@ -201,7 +201,7 @@ final class ConditionsTable
                 DeleteAction::make()
                     ->visible(fn (Condition $record): bool => ConditionResource::canDelete($record))
                     ->using(function (Condition $record): void {
-                        self::authorizeCondition($record)->delete();
+                        app(DeleteStoredCondition::class)->execute($record);
                     }),
             ])
             ->toolbarActions([
@@ -216,29 +216,12 @@ final class ConditionsTable
                                     throw new RuntimeException('Shared global conditions can only be modified from explicit global context.');
                                 }
 
-                                self::authorizeCondition($record)->delete();
+                                app(DeleteStoredCondition::class)->execute($record);
                             }
                         }),
                 ]),
             ])
             ->defaultSort('name')
             ->poll('30s');
-    }
-
-    private static function authorizeCondition(Condition $condition): Condition
-    {
-        if (! Condition::ownerScopingEnabled()) {
-            return $condition;
-        }
-
-        /** @var Condition $validated */
-        $validated = OwnerWriteGuard::findOrFailForOwner(
-            Condition::class,
-            (string) $condition->getKey(),
-            includeGlobal: false,
-            message: 'Condition is not accessible in the current owner scope.',
-        );
-
-        return $validated;
     }
 }

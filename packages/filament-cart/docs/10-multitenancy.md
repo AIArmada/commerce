@@ -31,6 +31,12 @@ The database may include an internal `owner_scope` column for nullable-owner uni
 
 Resources, widgets, dashboard queries, and relation lookups query through owner-aware models. When owner mode is enabled, a missing owner fails fast unless the call site uses explicit global context.
 
+Navigation badges and the stats dashboard authorize the owner scope before
+reading or rebuilding their `OwnerCache` entries. Cache keys include the
+resolved scope (`owner` or `global`), whether the scope is unscoped, and the
+`include_global` mode, so a warm tenant cache cannot answer an explicit global
+request or an include-global variant.
+
 Snapshot read surfaces now apply `include_global` consistently through package helpers rather than ad hoc query differences.
 
 ## Write paths

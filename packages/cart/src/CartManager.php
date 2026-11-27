@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Contracts\CartIdentityLookup;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
-use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartIdentifierResolver;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * Managers created through forOwner() are deliberately pinned to a single
  * owner and never re-resolve ambient storage.
  */
-class CartManager implements CartManagerInterface
+final class CartManager implements CartManagerInterface
 {
     /** @var array<string, StorageInterface> */
     private array $storages = [];
@@ -199,13 +199,13 @@ class CartManager implements CartManagerInterface
     {
         $scopedStorage = $this->storage->withOwner($owner);
 
-        // @phpstan-ignore-next-line late static binding constructor
-        return new static(
+        return new self(
             storage: $scopedStorage,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,
             conditionResolver: $this->conditionResolver,
             cartFactory: $this->cartFactoryFor($scopedStorage),
+            identifierResolver: $this->identifierResolver,
         );
     }
 
@@ -239,18 +239,24 @@ class CartManager implements CartManagerInterface
         $storage = $this->resolveStorage();
         $key = $this->partitionKey($storage);
 
-        if (isset($this->cartCaches[$key][$uuid])) {
-            return $this->cartCaches[$key][$uuid];
-        }
-
-        if (! $storage instanceof DatabaseStorage) {
+        if (! $storage instanceof CartIdentityLookup) {
             return null;
         }
 
         $snapshot = $storage->findSnapshotById($uuid);
 
-        if (! $snapshot) {
+        if ($snapshot === null) {
+            unset($this->cartCaches[$key][$uuid]);
+
             return null;
+        }
+
+        $cached = $this->cartCaches[$key][$uuid] ?? null;
+
+        if ($cached !== null
+            && $cached->getIdentifier() === $snapshot->identifier
+            && $cached->instance() === $snapshot->instance) {
+            return $cached;
         }
 
         return $this->cartCaches[$key][$uuid] = $this->getCartInstance($snapshot->instance, $snapshot->identifier);

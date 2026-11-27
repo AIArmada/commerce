@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
