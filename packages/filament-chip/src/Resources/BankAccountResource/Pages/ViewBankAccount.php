@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Pages;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use Filament\Actions;

@@ -20,6 +20,9 @@ use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Platform\ExtensionRegistry;
+use AIArmada\Chip\Platform\FeatureCatalog;
+use AIArmada\Chip\Platform\FeatureModule;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
@@ -41,6 +44,9 @@ use Spatie\WebhookClient\WebhookClientServiceProvider;
 final class ChipServiceProvider extends PackageServiceProvider
 {
     use ValidatesConfiguration;
+
+    /** @var list<FeatureModule> */
+    private array $modules = [];
 
     public function configurePackage(Package $package): void
     {
@@ -81,6 +87,24 @@ final class ChipServiceProvider extends PackageServiceProvider
         $this->registerMiddleware();
         $this->registerActions();
         $this->registerSupport();
+        $this->registerFeatureModules();
+    }
+
+    private function registerFeatureModules(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid CHIP feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     protected function configureSpatieWebhookClient(): void
@@ -149,6 +173,10 @@ final class ChipServiceProvider extends PackageServiceProvider
         $this->validateSendWebhookOwner();
         $this->configureWebhookRoutes();
         $this->registerEventListeners();
+
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     /**

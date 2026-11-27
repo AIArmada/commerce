@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Schemas;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;

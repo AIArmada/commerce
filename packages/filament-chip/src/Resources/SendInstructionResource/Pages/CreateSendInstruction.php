@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Pages;
 
-use AIArmada\Chip\Actions\CreateSendInstruction as CreateSendInstructionAction;
+use AIArmada\Chip\Features\Payouts\Actions\CreateSendInstruction as CreateSendInstructionAction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\Payouts\Models;
 
+use AIArmada\Chip\Models\ChipIntegerModel;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

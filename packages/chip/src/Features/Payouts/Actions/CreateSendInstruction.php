@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Actions;
+namespace AIArmada\Chip\Features\Payouts\Actions;
 
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 

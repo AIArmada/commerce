@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Pages;
 
-use AIArmada\Chip\Actions\CreateBankAccount as CreateBankAccountAction;
+use AIArmada\Chip\Features\Payouts\Actions\CreateBankAccount as CreateBankAccountAction;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;

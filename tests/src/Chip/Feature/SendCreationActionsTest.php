@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Actions\CreateBankAccount;
-use AIArmada\Chip\Actions\CreateSendInstruction;
+use AIArmada\Chip\Features\Payouts\Actions\CreateBankAccount;
+use AIArmada\Chip\Features\Payouts\Actions\CreateSendInstruction;
 use AIArmada\Chip\Data\BankAccountData;
 use AIArmada\Chip\Data\SendInstructionData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\Chip\Services\ChipSendService;
 use Illuminate\Support\Facades\Schema;
 

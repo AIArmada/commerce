@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\Payouts\Models;
+
+use AIArmada\Chip\Models\ChipIntegerModel;
 
 /**
  * @property int $id

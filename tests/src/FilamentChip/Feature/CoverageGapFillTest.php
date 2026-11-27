@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;

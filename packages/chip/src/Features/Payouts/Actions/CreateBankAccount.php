@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Actions;
+namespace AIArmada\Chip\Features\Payouts\Actions;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
