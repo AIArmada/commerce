@@ -38,13 +38,13 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
         protected string $type,
         string | array $prices = []
     ) {
-        if (! $billable instanceof Model || ! $billable instanceof \AIArmada\CashierChip\Contracts\BillableContract) {
+        if (! $billable instanceof Model || ! $billable instanceof \AIArmada\CashierChip\Billing\BillableModel) {
             throw new InvalidArgumentException('CHIP subscriptions require a billable Eloquent model using the cashier-chip Billable implementation.');
         }
 
         // Directly instantiate the native SubscriptionBuilder to avoid
         // conflicts with the unified cashier package's method overrides
-        /** @var BillableContract&Model&\AIArmada\CashierChip\Contracts\BillableContract $billable */
+        /** @var BillableContract&Model&\AIArmada\CashierChip\Billing\BillableModel $billable */
         $this->builder = new SubscriptionBuilder($billable, $type, $prices);
     }
 

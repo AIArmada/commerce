@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 \uses(TestCase::class);
 describe('CreateChipSubscription', function (): void {
     it('rejects empty prices', function (): void {
-        $customer = new class extends Model implements BillableContract
+        $customer = new class extends Model implements BillableModel
         {
             protected $guarded = [];
 

@@ -6,7 +6,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Akaunting\Money\Money;
@@ -91,7 +91,7 @@ final readonly class UpdateSubscriptionDiscount
         $subscription->loadMissing('billable');
         $billable = $subscription->getRelation('billable');
 
-        if (! $billable instanceof BillableContract) {
+        if (! $billable instanceof BillableModel) {
             throw new LogicException('A billable model is required to record coupon usage.');
         }
 

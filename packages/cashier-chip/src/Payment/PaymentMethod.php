@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Payment;
 
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Data\StoredPaymentMethodData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -23,7 +23,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     /**
      * The owner of the payment method.
      *
-     * @phpstan-var Model&BillableContract
+     * @phpstan-var Model&BillableModel
      */
     protected $owner;
 
@@ -41,7 +41,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      * @return void
      */
     /**
-     * @phpstan-param Model&BillableContract $owner
+     * @phpstan-param Model&BillableModel $owner
      */
     public function __construct(Model $owner, array | StoredPaymentMethodData $recurringToken)
     {

@@ -15,10 +15,10 @@ task-specific guides for the exact billing flow you need.
 namespace App\Models;
 
 use AIArmada\CashierChip\Billing\Billable;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable implements BillableContract
+class User extends Authenticatable implements BillableModel
 {
     use Billable;
 }

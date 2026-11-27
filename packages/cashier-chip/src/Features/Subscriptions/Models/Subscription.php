@@ -10,7 +10,7 @@ use AIArmada\CashierChip\Billing\Discount;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
@@ -78,7 +78,7 @@ use Throwable;
  * @property CarbonImmutable|null $updated_at
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property-read Model&BillableContract $customer
+ * @property-read Model&BillableModel $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, SubscriptionItem> $items
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RenewalAttempt> $renewalAttempts
  *
@@ -759,7 +759,7 @@ class Subscription extends Model
     {
         $customer = $this->customer;
 
-        if (! $customer instanceof BillableContract) {
+        if (! $customer instanceof BillableModel) {
             throw InvalidCustomer::missingBillable($this);
         }
 
@@ -828,7 +828,7 @@ class Subscription extends Model
 
         $billable = $this->billableModel();
 
-        if (! $billable instanceof BillableContract) {
+        if (! $billable instanceof BillableModel) {
             return null;
         }
 
@@ -908,7 +908,7 @@ class Subscription extends Model
 
         $payment = new Payment($purchase);
 
-        if ($billable instanceof Model && $billable instanceof BillableContract) {
+        if ($billable instanceof Model && $billable instanceof BillableModel) {
             $payment->setCustomer($billable);
         }
 
@@ -969,7 +969,7 @@ class Subscription extends Model
 
         $billable = $this->billableModel();
 
-        if (! $billable instanceof Model || ! $billable instanceof BillableContract) {
+        if (! $billable instanceof Model || ! $billable instanceof BillableModel) {
             return null;
         }
 
@@ -1028,7 +1028,7 @@ class Subscription extends Model
     {
         $billable = $this->billableModel();
 
-        if (! $billable instanceof Model || ! $billable instanceof BillableContract) {
+        if (! $billable instanceof Model || ! $billable instanceof BillableModel) {
             return collect();
         }
 
@@ -1337,7 +1337,7 @@ class Subscription extends Model
         $this->loadMissing('billable');
         $billable = $this->getRelation('billable');
 
-        if (! $billable instanceof Model || ! $billable instanceof BillableContract) {
+        if (! $billable instanceof Model || ! $billable instanceof BillableModel) {
             return null;
         }
 

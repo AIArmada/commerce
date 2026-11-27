@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
@@ -45,7 +45,7 @@ describe('SyncChipPurchaseStatus', function (): void {
             'amount_in_cents' => 5000,
         ]);
 
-        $billable = new class extends Model implements BillableContract
+        $billable = new class extends Model implements BillableModel
         {
             public function chipId(): ?string
             {
@@ -160,7 +160,7 @@ describe('SyncChipPurchaseStatus', function (): void {
             'amount_in_cents' => 5000,
         ]);
 
-        $billable = new class extends Model implements BillableContract
+        $billable = new class extends Model implements BillableModel
         {
             public function chipId(): ?string
             {

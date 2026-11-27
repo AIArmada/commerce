@@ -6,7 +6,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
@@ -108,7 +108,7 @@ final readonly class RenewSubscriptions
         $subscription = $attempt->subscription()->with(['billable', 'items'])->first();
         $billable = $subscription?->billable;
 
-        if (! $subscription instanceof Subscription || ! $billable instanceof Model || ! $billable instanceof BillableContract) {
+        if (! $subscription instanceof Subscription || ! $billable instanceof Model || ! $billable instanceof BillableModel) {
             $this->recordSkipped($attempt, 'INVALID_RENEWAL_SUBJECT');
 
             return 'skipped';
@@ -130,7 +130,7 @@ final readonly class RenewSubscriptions
             return 'failed';
         }
 
-        /** @var Model&BillableContract $billable */
+        /** @var Model&BillableModel $billable */
         if ($attempt->amount_minor === 0) {
             $this->recordSuccess($attempt, $subscription);
 

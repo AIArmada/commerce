@@ -11,7 +11,7 @@ use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -37,9 +37,9 @@ class SubscriptionBuilder
      * The model that is subscribing.
      */
     /**
-     * @phpstan-var Model&BillableContract
+     * @phpstan-var Model&BillableModel
      */
-    /** @var Model&BillableContract */
+    /** @var Model&BillableModel */
     protected Model $owner;
 
     /**
@@ -88,7 +88,7 @@ class SubscriptionBuilder
      * @param  string|string[]|array[]  $prices
      */
     /**
-     * @phpstan-param Model&BillableContract $owner
+     * @phpstan-param Model&BillableModel $owner
      */
     public function __construct(Model $owner, string $type, string | array $prices = [])
     {
@@ -479,7 +479,7 @@ class SubscriptionBuilder
     /**
      * Get the owner (billable) model.
      *
-     * @return Model&BillableContract
+     * @return Model&BillableModel
      */
     public function getOwner(): Model
     {

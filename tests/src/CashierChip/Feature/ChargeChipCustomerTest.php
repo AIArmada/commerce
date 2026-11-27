@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
@@ -22,7 +22,7 @@ describe('ChargeChipCustomer', function (): void {
     it('charges a billable customer', function (): void {
         Cashier::fake(new FakeChipClient);
 
-        $customer = (new class extends Model implements BillableContract
+        $customer = (new class extends Model implements BillableModel
         {
             public function chipId(): ?string
             {

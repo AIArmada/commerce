@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Invoice;
 
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
@@ -27,7 +27,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     /**
      * The billable model instance.
      */
-    /** @phpstan-var Model&BillableContract */
+    /** @phpstan-var Model&BillableModel */
     protected Model $owner;
 
     /**
@@ -39,7 +39,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      * Create a new invoice instance.
      */
     /**
-     * @phpstan-param Model&BillableContract $owner
+     * @phpstan-param Model&BillableModel $owner
      */
     public function __construct(Model $owner, PurchaseData $purchase)
     {
@@ -310,7 +310,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      * Get the billable model.
      */
     /**
-     * @phpstan-return Model&BillableContract
+     * @phpstan-return Model&BillableModel
      */
     public function owner(): Model
     {

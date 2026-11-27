@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
@@ -29,7 +29,7 @@ final class SyncChipPurchaseStatus
     use AsAction;
 
     /**
-     * @param  Model&BillableContract  $billable
+     * @param  Model&BillableModel  $billable
      * @param  array<string, mixed>  $purchase
      */
     public function handle(Model $billable, PurchaseData $purchaseData, array $purchase): void
@@ -50,7 +50,7 @@ final class SyncChipPurchaseStatus
     }
 
     /**
-     * @param  Model&BillableContract  $billable
+     * @param  Model&BillableModel  $billable
      * @param  array<string, mixed>  $purchase
      */
     public function syncFailed(Model $billable, PurchaseData $purchaseData, array $purchase): void
@@ -79,7 +79,7 @@ final class SyncChipPurchaseStatus
     }
 
     /**
-     * @param  Model&BillableContract  $billable
+     * @param  Model&BillableModel  $billable
      */
     private function saveRecurringToken(Model $billable, string $recurringToken, array $purchase): void
     {
@@ -117,7 +117,7 @@ final class SyncChipPurchaseStatus
     }
 
     /**
-     * @param  Model&BillableContract  $billable
+     * @param  Model&BillableModel  $billable
      */
     private function syncSubscriptionPayment(Model $billable, string $subscriptionType, PurchaseData $purchaseData): void
     {

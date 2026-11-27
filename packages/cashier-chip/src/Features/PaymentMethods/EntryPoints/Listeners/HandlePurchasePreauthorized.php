@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -32,7 +32,7 @@ class HandlePurchasePreauthorized
             return;
         }
 
-        /** @var (Model&BillableContract)|null $billable */
+        /** @var (Model&BillableModel)|null $billable */
         $billable = (bool) config('cashier-chip.features.owner.enabled', false)
             ? Cashier::findBillableForWebhook($clientId)
             : Cashier::findBillable($clientId);
@@ -56,7 +56,7 @@ class HandlePurchasePreauthorized
      *
      * @param  array<string, mixed>  $purchase
      */
-    protected function handleRecurringToken(Model & BillableContract $billable, string $recurringToken, array $purchase): void
+    protected function handleRecurringToken(Model & BillableModel $billable, string $recurringToken, array $purchase): void
     {
         $transactionData = $purchase['transaction_data'] ?? [];
         $extra = is_array($transactionData) && is_array($transactionData['extra'] ?? null)

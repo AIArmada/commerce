@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Billing;
 
-use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
@@ -102,7 +101,7 @@ final class Cashier
     /**
      * Get the customer instance by its CHIP ID.
      *
-     * @return (Model&BillableContract)|null
+     * @return (Model&BillableModel)|null
      */
     public static function findBillable(?string $chipId): ?Model
     {
@@ -123,7 +122,7 @@ final class Cashier
     }
 
     /**
-     * @return (Model&BillableContract)|null
+     * @return (Model&BillableModel)|null
      */
     private static function resolveBillable(string $chipId, ?Model $owner = null): ?Model
     {
@@ -135,7 +134,7 @@ final class Cashier
             return null;
         }
 
-        /** @var (Model&BillableContract)|null $billable */
+        /** @var (Model&BillableModel)|null $billable */
         $billable = $subject instanceof Model && static::isBillableModel($subject)
             ? $subject
             : null;
@@ -149,7 +148,7 @@ final class Cashier
      * In owner mode this fails closed when owner context is missing and, when enabled,
      * validates the resolved billable against the active owner boundary.
      *
-     * @return (Model&BillableContract)|null
+     * @return (Model&BillableModel)|null
      */
     public static function findBillableForWebhook(?string $chipId): ?Model
     {
@@ -178,7 +177,7 @@ final class Cashier
 
     private static function isBillableModel(Model $subject): bool
     {
-        if ($subject instanceof BillableContract) {
+        if ($subject instanceof BillableModel) {
             return true;
         }
 
