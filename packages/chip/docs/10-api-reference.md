@@ -354,7 +354,7 @@ The dedicated CHIP Send webhook route verifies the raw request with the Send web
 ### SyncChipRecordsFromApiAction
 
 ```php
-use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 
 $action = app(SyncChipRecordsFromApiAction::class);
 

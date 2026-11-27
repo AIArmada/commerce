@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PaymentData;

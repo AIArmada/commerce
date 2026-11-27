@@ -1053,3 +1053,13 @@ describe('PurchasesApi E4 shared validation', function (): void {
         ])))->toThrow(ChipValidationException::class, 'out of range');
     });
 });
+
+it('sends every explicitly requested invoice resend even when a cache is configured', function (): void {
+    $this->client->shouldReceive('post')
+        ->twice()
+        ->with('purchases/purchase_invoice/resend_invoice/')
+        ->andReturn(chipPurchaseResponse());
+
+    $this->apiWithCache->resendInvoice('purchase_invoice');
+    $this->apiWithCache->resendInvoice('purchase_invoice');
+});

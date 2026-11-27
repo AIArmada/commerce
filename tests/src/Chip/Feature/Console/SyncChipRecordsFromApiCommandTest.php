@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
+use AIArmada\Chip\Features\Collect\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\Facades\Chip;
 
 describe('SyncChipRecordsFromApiCommand', function (): void {

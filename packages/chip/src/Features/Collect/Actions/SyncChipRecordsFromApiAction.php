@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Actions;
+namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
@@ -36,8 +36,8 @@ final readonly class SyncChipRecordsFromApiAction
             return OwnerContext::withOwner($owner, $execute);
         }
 
-        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
-            return OwnerContext::withOwner(null, $execute);
+        if ((bool) config('chip.owner.enabled', false)) {
+            OwnerContext::assertResolvedOrExplicitGlobal(OwnerContext::resolve());
         }
 
         return $execute();
@@ -77,7 +77,7 @@ final readonly class SyncChipRecordsFromApiAction
             $summary['processed']++;
 
             try {
-                if (! $dryRun && ! $overwriteExisting && Purchase::query()->whereKey($purchaseId)->exists()) {
+                if (! $dryRun && ! $overwriteExisting && Purchase::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($purchaseId)->exists()) {
                     $summary['skipped']++;
 
                     continue;
@@ -85,6 +85,10 @@ final readonly class SyncChipRecordsFromApiAction
 
                 $remotePurchase = Chip::getPurchase($purchaseId);
                 $payload = $this->toPayload($remotePurchase);
+                if (($payload['id'] ?? null) !== $purchaseId) {
+                    throw new \UnexpectedValueException('CHIP returned a different purchase identifier.');
+                }
+
                 $remoteStatus = mb_strtolower((string) ($payload['status'] ?? ''));
 
                 if ($normalizedStatuses->isNotEmpty() && ! $normalizedStatuses->contains($remoteStatus)) {

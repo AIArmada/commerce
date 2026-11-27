@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\EntryPoints\Commands;
+namespace AIArmada\Chip\Features\Collect\EntryPoints\Commands;
 
-use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +52,12 @@ final class SyncChipRecordsFromApiCommand extends Command
         $owner = $this->resolveOwnerOption();
 
         if ($owner === false) {
+            return self::FAILURE;
+        }
+
+        if ((bool) config('chip.owner.enabled', false) && $owner === null && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
+            $this->error('An explicit owner context is required when owner scoping is enabled.');
+
             return self::FAILURE;
         }
 

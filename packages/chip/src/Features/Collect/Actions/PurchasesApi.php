@@ -36,7 +36,6 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
         'charge',
         'release',
         'mark_as_paid',
-        'resend_invoice',
         'delete_recurring_token',
     ];
 
@@ -280,6 +279,10 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
         bool $sendEmptyPayload = false,
         ?string $idempotencyKey = null,
     ): array {
+        if ($idempotencyKey !== null && mb_trim($idempotencyKey) === '') {
+            throw new ChipValidationException('Idempotency key must be a non-empty string.');
+        }
+
         if (! in_array($operation, self::CACHED_MUTATION_OPERATIONS, true)) {
             return $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload, $idempotencyKey);
         }

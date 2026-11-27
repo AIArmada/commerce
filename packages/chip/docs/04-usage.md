@@ -484,7 +484,7 @@ The package does not invent a status-to-event mapping for Send. CHIP Send suppli
 Syncs CHIP purchase records from the remote API into local storage. It emits the normal CHIP payload/event seam for downstream integrations; it does not link checkout customers itself:
 
 ```php
-use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 
 $summary = app(SyncChipRecordsFromApiAction::class)->handle(
     purchaseIds: ['purchase_abc123', 'purchase_def456'],
