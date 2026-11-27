@@ -41,6 +41,10 @@ trait HasCustomerProfile
      */
     public function getOrCreateCustomerProfile(): Customer
     {
+        if (! $this->exists || $this->getKey() === null) {
+            throw new InvalidArgumentException('A persisted user is required to create a customer profile.');
+        }
+
         $customer = $this->customerProfile()->first();
 
         if ($customer instanceof Customer) {
@@ -52,10 +56,6 @@ trait HasCustomerProfile
 
         if ($email === '') {
             throw new InvalidArgumentException('User email is required to create a customer profile.');
-        }
-
-        if (! $this->exists || $this->getKey() === null) {
-            throw new InvalidArgumentException('A persisted user is required to create a customer profile.');
         }
 
         [$firstName, $lastName] = $normalizer->splitName($this->name, 'User');

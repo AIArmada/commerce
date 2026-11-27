@@ -30,3 +30,19 @@ it('persists admin status and consent without permitting ownership or identity c
         ->and($customer->accepts_marketing)->toBeFalse()
         ->and($customer->marketing_revoked_at)->not->toBeNull();
 });
+
+it('keeps consent timestamps idempotent and rejects ambiguous input', function (): void {
+    $action = app(SaveCustomerDetails::class);
+    $customer = $action->create(['first_name' => 'Consent', 'last_name' => 'Test']);
+    $customer = $action->update($customer, ['accepts_marketing' => true]);
+    $consentedAt = $customer->marketing_consented_at;
+
+    $customer = $action->update($customer, ['accepts_marketing' => true]);
+
+    expect($customer->marketing_consented_at?->equalTo($consentedAt))->toBeTrue();
+
+    expect(fn () => $action->update($customer, ['accepts_marketing' => null]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($customer->fresh()->accepts_marketing)->toBeTrue();
+});

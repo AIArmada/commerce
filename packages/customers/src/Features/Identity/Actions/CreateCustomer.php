@@ -34,6 +34,10 @@ final class CreateCustomer
             ?? $normalizer->normalizePhone($user?->getAttribute('phone'));
         $normalizedEmail = $normalizer->normalizeEmail($email);
 
+        if ($user !== null && (! $user->exists || $user->getKey() === null)) {
+            throw new \InvalidArgumentException('Customer creation requires a persisted user.');
+        }
+
         $model = new Customer;
 
         return $model->getConnection()->transaction(function () use ($company, $firstName, $isGuest, $lastName, $normalizedEmail, $personId, $phone, $user): Customer {

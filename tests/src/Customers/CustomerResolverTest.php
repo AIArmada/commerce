@@ -170,33 +170,30 @@ describe('CustomerResolver', function (): void {
             ->and(OwnerContext::withOwner($owner, fn (): int => $guest->addresses()->count()))->toBe(0);
     });
 
-    it('resolves existing guest customer by email contact method even without normalized value', function (): void {
+    it('resolves existing guest customer by email contact method using its canonical normalized value', function (): void {
         $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $owner = CustomersTestOwner::query()->create(['name' => 'Resolver Owner']);
-        $email = 'legacy-contact-' . uniqid() . '@example.com';
+        $email = 'normalized-contact-' . uniqid() . '@example.com';
 
         [$guest, $resolved] = OwnerContext::withOwner($owner, function () use ($email, $resolver): array {
             $guest = createResolverTestCustomer([
-                'first_name' => 'Legacy',
+                'first_name' => 'Canonical',
                 'last_name' => 'Contact',
                 'email' => 'different-' . uniqid() . '@example.com',
                 'status' => 'active',
                 'is_guest' => true,
                 'user_id' => null,
             ]);
-            $contactMethod = $guest->addContactMethod(ContactMethodData::email($email));
-
-            ContactMethod::query()
-                ->whereKey($contactMethod->id)
-                ->update(['normalized_value' => null]);
+            $contactMethod = $guest->addContactMethod(ContactMethodData::email(mb_strtoupper($email)));
+            expect($contactMethod->normalized_value)->toBe($email);
 
             $resolved = $resolver->resolve(
                 user: null,
                 sessionCustomer: null,
                 billingData: [
                     'email' => $email,
-                    'line1' => '123 Legacy Street',
+                    'line1' => '123 Canonical Street',
                     'city' => 'Kuala Lumpur',
                     'postcode' => '50000',
                     'country' => 'MY',
