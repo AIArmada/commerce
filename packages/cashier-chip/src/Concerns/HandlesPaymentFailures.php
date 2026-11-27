@@ -21,6 +21,7 @@ trait HandlesPaymentFailures
      * Handle a failed payment for the given subscription.
      *
      * @param  callable(): ?Payment  $incompletePayment
+     *
      * @throws IncompletePayment
      *
      * @internal

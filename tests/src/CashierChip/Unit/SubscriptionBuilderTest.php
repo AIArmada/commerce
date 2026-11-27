@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Carbon\Carbon;

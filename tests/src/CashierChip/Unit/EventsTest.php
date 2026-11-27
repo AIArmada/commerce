@@ -8,9 +8,9 @@ use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
 uses(CashierChipTestCase::class);
 

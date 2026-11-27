@@ -19,7 +19,6 @@ use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionDiscount;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionItems;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\UpdateSubscriptionLifecycle;
-use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;

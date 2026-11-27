@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;

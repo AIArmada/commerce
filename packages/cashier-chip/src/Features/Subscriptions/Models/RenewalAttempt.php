@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Models;
 
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;

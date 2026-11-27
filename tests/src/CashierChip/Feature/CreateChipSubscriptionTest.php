@@ -6,10 +6,10 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
-use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Commerce\Tests\TestCase;
 use Exception;

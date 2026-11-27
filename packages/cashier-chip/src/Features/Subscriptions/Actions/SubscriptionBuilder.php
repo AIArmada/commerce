@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
-
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
@@ -15,6 +13,7 @@ use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
