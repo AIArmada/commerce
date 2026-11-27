@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -156,28 +155,6 @@ class Person extends Model implements Sortable
     public function names(): HasMany
     {
         return $this->hasMany(PersonName::class, 'person_id');
-    }
-
-    /**
-     * Retry slug-unique races once: the saving hook probes for a free slug,
-     * but a concurrent insert can still collide on `persons_slug_unique`.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
-    {
-        try {
-            return $this->getConnection()->transaction(fn (): bool => parent::save($options));
-        } catch (UniqueConstraintViolationException $exception) {
-            if (! str_contains($exception->getMessage(), 'persons_slug_unique')) {
-                throw $exception;
-            }
-
-            $this->slug = null;
-            $this->normalizeIdentityValues();
-
-            return parent::save($options);
-        }
     }
 
     /**

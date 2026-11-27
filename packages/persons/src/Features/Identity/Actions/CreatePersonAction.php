@@ -19,7 +19,11 @@ final class CreatePersonAction
     {
         $this->validate($attributes);
 
-        return ModelResolver::personClass()::query()->create($attributes);
+        $person = new (ModelResolver::personClass());
+        $person->fill($attributes);
+        app(PersistPerson::class)->execute($person);
+
+        return $person;
     }
 
     /**

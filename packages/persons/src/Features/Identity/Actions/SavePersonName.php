@@ -19,7 +19,8 @@ final readonly class SavePersonName
             $locked = $this->lockPerson($person);
             $name = $locked->names()->make($this->attributes($attributes));
             $this->persist($locked, $name);
-            $locked->unsetRelation('names')->save();
+            $locked->unsetRelation('names');
+            app(PersistPerson::class)->execute($locked);
 
             return $name;
         });
@@ -33,7 +34,8 @@ final readonly class SavePersonName
             $record = $this->lockName($locked, $name);
             $record->fill($this->attributes($attributes));
             $this->persist($locked, $record);
-            $locked->unsetRelation('names')->save();
+            $locked->unsetRelation('names');
+            app(PersistPerson::class)->execute($locked);
 
             return $record;
         });
@@ -45,7 +47,8 @@ final readonly class SavePersonName
             $locked = $this->lockPerson($person);
             $record = $this->lockName($locked, $name);
             $deleted = (bool) $record->delete();
-            $locked->unsetRelation('names')->save();
+            $locked->unsetRelation('names');
+            app(PersistPerson::class)->execute($locked);
 
             return $deleted;
         });
