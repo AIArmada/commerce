@@ -1,0 +1,100 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Resources;
+
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodFormSchema;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Schemas\ContactMethodInfolistSchema;
+use AIArmada\FilamentContacting\Support\GuardsContactingUi;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Tables\ContactMethodTable;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+
+final class ContactMethodResource extends Resource
+{
+    protected static ?string $model = ContactMethod::class;
+
+    protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-phone';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-contacting.navigation.group');
+    }
+
+    public static function getNavigationIcon(): BackedEnum | string | null
+    {
+        return config('filament-contacting.navigation.icons.contact_methods', parent::getNavigationIcon());
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-contacting.navigation.sort', 70);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return ContactMethodTable::table($table);
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema(ContactMethodFormSchema::make());
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->schema(ContactMethodInfolistSchema::make());
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return ! app(GuardsContactingUi::class)->contactMethodsReadOnly() && parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return ! app(GuardsContactingUi::class)->contactMethodsReadOnly() && parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return ! app(GuardsContactingUi::class)->contactMethodsReadOnly() && parent::canDeleteAny();
+    }
+
+    public static function getPages(): array
+    {
+        $guard = app(GuardsContactingUi::class);
+        $pages = [
+            'index' => ContactMethodResource\Pages\ListContactMethods::route('/'),
+            'view' => ContactMethodResource\Pages\ViewContactMethod::route('/{record}'),
+        ];
+
+        if (! $guard->contactMethodsReadOnly()) {
+            $pages['edit'] = ContactMethodResource\Pages\EditContactMethod::route('/{record}/edit');
+        }
+
+        return $pages;
+    }
+}

@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentContacting\Imports\ContactMethodImporter;
+use AIArmada\FilamentContacting\Features\ContactMethods\EntryPoints\Filament\Imports\ContactMethodImporter;
 use Filament\Actions\Imports\Models\Import;
 use Illuminate\Auth\Access\AuthorizationException;
 
