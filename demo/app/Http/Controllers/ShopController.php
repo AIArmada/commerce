@@ -21,7 +21,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Shipping\Cart\ShippingCondition;
-use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
+use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -770,11 +770,11 @@ final class ShopController extends Controller
         }
 
         try {
-            /** @var SignalsBrowserContextManager $browserContextManager */
-            $browserContextManager = app(SignalsBrowserContextManager::class);
-            $browserContext = $browserContextManager->current($request) ?? $browserContextManager->resolveOrCreate($request);
+            /** @var BrowserContextAccess $browserContextManager */
+            $browserContextManager = app(BrowserContextAccess::class);
+            $browserContext = $browserContextManager->ensureCurrent();
 
-            if ($browserContext->visitorId !== '') {
+            if ($browserContext !== null && $browserContext->visitorId !== '') {
                 return $browserContext->visitorId;
             }
         } catch (Throwable) {

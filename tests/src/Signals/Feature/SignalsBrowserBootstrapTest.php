@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Contracts\Http\Kernel;
@@ -34,4 +35,18 @@ it('registers the browser context middleware on the bound http kernel web group'
         ->toContain(BootstrapSignalsBrowserContext::class)
         ->and(app('router')->getMiddlewareGroups()['web'] ?? [])
         ->toContain(BootstrapSignalsBrowserContext::class);
+});
+
+it('exposes the same request context through the public browser contract', function (): void {
+    $request = Request::create('/signals-browser-bootstrap', 'GET');
+    app()->instance('request', $request);
+
+    $access = app(BrowserContextAccess::class);
+    expect($access->current())->toBeNull();
+
+    $context = $access->ensureCurrent();
+
+    expect($context)->not->toBeNull()
+        ->and($access->current())->toBe($context)
+        ->and($access->ensureCurrent())->toBe($context);
 });

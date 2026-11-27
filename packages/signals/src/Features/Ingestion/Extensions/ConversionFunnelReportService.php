@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
+use AIArmada\Signals\Features\Ingestion\Api\ConversionFunnelReportRead;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalEventConditionMatcher;
@@ -19,7 +20,7 @@ use AIArmada\Signals\Support\SignalRouteCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
-final class ConversionFunnelReportService implements ReportInterface
+final class ConversionFunnelReportService implements ReportInterface, ConversionFunnelReportRead
 {
     public function type(): string
     {

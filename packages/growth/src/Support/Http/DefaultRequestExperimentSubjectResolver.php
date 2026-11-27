@@ -10,7 +10,7 @@ use AIArmada\Growth\Contracts\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Support\Request\RequestExperimentSubjects;
 use AIArmada\Signals\Data\SignalsBrowserContext;
-use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
+use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -24,13 +24,13 @@ final class DefaultRequestExperimentSubjectResolver implements RequestExperiment
 {
     public function __construct(
         private readonly ScopeSignalQueryToOwner $scopeSignalQueryToOwner,
-        private readonly SignalsBrowserContextManager $browserContextManager,
+        private readonly BrowserContextAccess $browserContextManager,
     ) {}
 
     public function resolve(Request $request, Experiment $experiment): RequestExperimentSubjects
     {
         $owner = OwnerContext::fromTypeAndId($experiment->owner_type, $experiment->owner_id);
-        $browserContext = $this->browserContextManager->current($request);
+        $browserContext = $this->browserContextManager->current();
 
         return new RequestExperimentSubjects(
             identity: $this->resolveIdentity($request, $experiment, $owner),

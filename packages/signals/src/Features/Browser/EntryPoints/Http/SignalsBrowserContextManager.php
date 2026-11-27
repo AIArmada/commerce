@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Browser\EntryPoints\Http;
 
+use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Signals\Data\SignalsBrowserContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
-final class SignalsBrowserContextManager
+final class SignalsBrowserContextManager implements BrowserContextAccess
 {
     public const string CONTEXT_ATTRIBUTE = 'signals.browser.context';
 
@@ -29,6 +30,13 @@ final class SignalsBrowserContextManager
         $context = $request->attributes->get(self::CONTEXT_ATTRIBUTE);
 
         return $context instanceof SignalsBrowserContext ? $context : null;
+    }
+
+    public function ensureCurrent(): ?SignalsBrowserContext
+    {
+        $request = $this->request();
+
+        return $request instanceof Request ? $this->resolveOrCreate($request) : null;
     }
 
     public function resolveOrCreate(Request $request): SignalsBrowserContext
@@ -171,7 +179,7 @@ final class SignalsBrowserContextManager
 
         $normalized = mb_trim((string) $value);
 
-        return $normalized === '' ? null : $normalized;
+        return $normalized === '' || mb_strlen($normalized) > 255 || ! mb_check_encoding($normalized, 'UTF-8') ? null : $normalized;
     }
 
     private function request(): ?Request

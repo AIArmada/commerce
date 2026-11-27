@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion;
 
+use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Api\ConversionFunnelReportRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Api\RetentionReportRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\GoalsReportService;
+use AIArmada\Signals\Features\Ingestion\Api\GoalsReportRead;
 use AIArmada\Signals\Contracts\ReverseGeocoderContract;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Features\Ingestion\Actions\AdministerInteractionRule;
@@ -34,6 +40,9 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(GoalsReportRead::class, GoalsReportService::class);
+        $app->bind(RetentionReportRead::class, RetentionReportService::class);
+        $app->bind(ConversionFunnelReportRead::class, ConversionFunnelReportService::class);
         $app->bind(DailyTelemetryRead::class, ReadDailyTelemetry::class);
         $app->bind(TelemetryRead::class, ReadTelemetry::class);
         $app->bind(BrowserInteractionRules::class, ActiveBrowserInteractionRules::class);
