@@ -26,6 +26,9 @@
     "table:communication_contents": [
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RenderCommunicationContentAction",
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CaptureRecipientContent"
+    ],
+    "table:communication_attachments": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationAggregateAction"
     ]
   },
   "extensions": {}

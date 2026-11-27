@@ -9,7 +9,7 @@ use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationAttachment;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Models\CommunicationBatch;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;

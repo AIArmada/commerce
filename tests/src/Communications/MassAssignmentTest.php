@@ -8,7 +8,7 @@ use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Enums\ThreadStatus;
 use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationAttachment;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationBatch;
 use AIArmada\Communications\Models\CommunicationContent;

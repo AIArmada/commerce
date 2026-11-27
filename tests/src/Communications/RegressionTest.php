@@ -35,7 +35,7 @@ use AIArmada\Communications\Enums\TrackingInteractionType;
 use AIArmada\Communications\Events\CommunicationExpired;
 use AIArmada\Communications\Events\DeliveryDelivered;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\CommunicationAttachment;
+use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
