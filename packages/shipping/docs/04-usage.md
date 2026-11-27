@@ -8,11 +8,11 @@ The recommended entrypoint for shipment operations is the Action classes. Each A
 and supports both `::run()` (static) and `->handle()` (injected).
 
 ```php
-use AIArmada\Shipping\Actions\CreateShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
-use AIArmada\Shipping\Actions\RecordTrackingEvent;
+use AIArmada\Shipping\Features\Shipments\Actions\RecordTrackingEvent;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\TrackingEventData;
 

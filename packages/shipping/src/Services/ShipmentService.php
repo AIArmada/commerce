@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Services;
 
 use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
-use AIArmada\Shipping\Actions\CreateShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
 use AIArmada\Shipping\Features\Shipments\Actions\RecalculateShipmentWeight;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;

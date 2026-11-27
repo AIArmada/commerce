@@ -58,15 +58,6 @@ final class CancelShipment
                     $result = $driver->cancelShipment($shipment->tracking_number);
                     $operation->complete($result);
 
-                    if (! $result->success && ! $result->alreadyApplied) {
-                        Log::warning('Carrier cancellation returned failure after operation recorded', [
-                            'shipment_id' => $shipment->id,
-                            'tracking_number' => $shipment->tracking_number,
-                            'error' => $result->error,
-                        ]);
-
-                        throw new RuntimeException($result->error ?? 'The carrier rejected shipment cancellation.');
-                    }
                 } catch (Throwable $e) {
                     $operation->complete(
                         CarrierOperationResult::unknown($e->getMessage()),
@@ -78,6 +69,16 @@ final class CancelShipment
                     ]);
 
                     throw $e;
+                }
+
+                if (! $result->success && ! $result->alreadyApplied) {
+                    Log::warning('Carrier cancellation returned failure after operation recorded', [
+                        'shipment_id' => $shipment->id,
+                        'tracking_number' => $shipment->tracking_number,
+                        'error' => $result->error,
+                    ]);
+
+                    throw new RuntimeException($result->error ?? 'The carrier rejected shipment cancellation.');
                 }
             }
 

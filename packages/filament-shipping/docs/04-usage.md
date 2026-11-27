@@ -203,7 +203,7 @@ public static function table(Table $table): Table
 For programmatic shipping operations outside of table actions, use the domain Actions:
 
 ```php
-use AIArmada\Shipping\Actions\CreateShipment;
+use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
 use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
 use AIArmada\Shipping\Data\ShipmentData;
