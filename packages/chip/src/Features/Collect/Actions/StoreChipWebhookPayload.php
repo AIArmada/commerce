@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Features\Collect\Actions;
 
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\Chip\Features\Collect\Models\Client;
 use AIArmada\Chip\Features\Collect\Models\Payment;
@@ -251,10 +252,20 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         }
 
         $payment = Payment::query()->forOwner(OwnerContext::CURRENT, false)->where($paymentMatch)->first() ?? new Payment;
+
+        if ($payment->exists && (
+            (string) $payment->purchase_id !== $purchaseId
+            || $payment->payment_type !== ($paymentData['payment_type'] ?? 'purchase')
+            || $payment->currency !== $paymentData['currency']
+            || (int) $payment->amount !== (int) $paymentData['amount']
+        )) {
+            throw new ChipValidationException('Payment identifier conflicts with an existing payment.');
+        }
+
         $payment->forceFill(
             array_merge($paymentId !== null ? ['id' => $paymentId] : [], [
                 'purchase_id' => $purchaseId,
-                'payment_type' => $paymentData['payment_type'] ?? null,
+                'payment_type' => $paymentData['payment_type'] ?? 'purchase',
                 'is_outgoing' => $paymentData['is_outgoing'] ?? false,
                 'amount' => $paymentData['amount'],
                 'currency' => $paymentData['currency'],

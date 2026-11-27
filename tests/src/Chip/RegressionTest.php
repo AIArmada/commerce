@@ -815,3 +815,33 @@ it('persists a refund identity and prevents duplicate increments even without th
         ->and($purchase->refundable_amount)->toBe(7000)
         ->and($purchase->payments()->whereKey($refundId)->count())->toBe(1);
 });
+
+
+it('rejects reuse of a remote payment identifier for a different purchase', function (): void {
+    $first = regressionPurchase();
+    $second = regressionPurchase();
+    $paymentId = (string) Str::uuid();
+    $payload = [
+        'id' => $paymentId,
+        'type' => 'payment',
+        'related_to' => ['type' => 'purchase', 'id' => $first->id],
+        'created_on' => time(),
+        'updated_on' => time(),
+        'payment' => [
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+            'amount' => 3000,
+            'currency' => 'MYR',
+            'net_amount' => 3000,
+            'fee_amount' => 0,
+        ],
+    ];
+
+    $mirror = app(StoreChipWebhookPayload::class);
+    $mirror->storePayment($payload);
+    $payload['related_to']['id'] = $second->id;
+
+    expect(fn () => $mirror->storePayment($payload))->toThrow(ChipValidationException::class)
+        ->and(Payment::query()->findOrFail($paymentId)->purchase_id)->toBe($first->id)
+        ->and($second->payments()->count())->toBe(0);
+});
