@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
 use Illuminate\Support\Facades\DB;
 

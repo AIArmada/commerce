@@ -28,7 +28,7 @@ use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLogin;
 use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Storage\CartRevision;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;

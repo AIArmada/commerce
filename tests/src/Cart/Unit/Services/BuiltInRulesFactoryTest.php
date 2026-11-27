@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

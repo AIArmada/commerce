@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Storage\CartRevision;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;

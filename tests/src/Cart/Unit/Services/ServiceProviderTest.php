@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\CartServiceProvider;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;

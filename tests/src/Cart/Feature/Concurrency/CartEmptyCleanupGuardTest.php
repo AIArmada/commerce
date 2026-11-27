@@ -7,7 +7,7 @@ use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Storage\CartRevision;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Commerce\Tests\Cart\Support\InterleavingStorage;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Events\Dispatcher;

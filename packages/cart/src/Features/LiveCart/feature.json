@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "LiveCart",
+  "owns": {
+    "table:carts": [
+      "AIArmada\\Cart\\Features\\LiveCart\\Persistence\\DatabaseStorage"
+    ]
+  },
+  "extensions": {}
+}

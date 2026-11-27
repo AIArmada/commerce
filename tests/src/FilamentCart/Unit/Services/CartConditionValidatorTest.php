@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Actions\ValidateStoredCondition;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition as ConditionModel;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use Illuminate\Support\Facades\DB;

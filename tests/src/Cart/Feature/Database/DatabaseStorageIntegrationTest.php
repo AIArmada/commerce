@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Storage\CartRevision;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;

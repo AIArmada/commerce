@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Storage;
+namespace AIArmada\Cart\Features\LiveCart\Persistence;
 
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Storage\CartRevision;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
+use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartLimits;
 use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
@@ -300,8 +303,6 @@ final readonly class DatabaseStorage implements StorageInterface
                 if ($attempt >= self::MAX_METADATA_ATTEMPTS) {
                     throw $exception;
                 }
-
-                $this->backOffBeforeCasRetry($attempt);
             }
         }
     }
@@ -348,8 +349,6 @@ final readonly class DatabaseStorage implements StorageInterface
                 if ($attempt >= self::MAX_METADATA_ATTEMPTS) {
                     throw $exception;
                 }
-
-                $this->backOffBeforeCasRetry($attempt);
             }
         }
     }
@@ -1049,24 +1048,12 @@ final readonly class DatabaseStorage implements StorageInterface
                 if ($attempts >= 2) {
                     throw $exception;
                 }
-
-                $this->backOffBeforeCasRetry($attempts);
             } catch (QueryException $exception) {
                 if ($attempts >= 2 || ! $this->isUniqueViolation($exception)) {
                     throw $exception;
                 }
-
-                $this->backOffBeforeCasRetry($attempts);
             }
         }
-    }
-
-    /**
-     * Brief backoff before a CAS retry so racing writers do not spin in lockstep.
-     */
-    private function backOffBeforeCasRetry(int $attempt): void
-    {
-        usleep(25000 * $attempt);
     }
 
     private function isUniqueViolation(QueryException $exception): bool

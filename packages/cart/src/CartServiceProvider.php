@@ -21,7 +21,7 @@ use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Platform\ExtensionRegistry;
 use AIArmada\Cart\Platform\FeatureCatalog;
 use AIArmada\Cart\Platform\FeatureModule;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
