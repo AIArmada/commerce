@@ -19,6 +19,7 @@ final class RecordHeadcountLogAction
 {
     public function __construct(
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly EnsureOpenDoorLifecycleAction $lifecycle,
     ) {}
 
     public function execute(
@@ -34,6 +35,7 @@ final class RecordHeadcountLogAction
         return DB::transaction(function () use ($scope, $count, $intervalLabel, $recordedBy, $notes): string {
             EventWriteGuard::findOrFail($scope->eventId);
 
+            $this->lifecycle->handle($scope);
             $this->validateOpenDoorMode($scope);
 
             $log = EventHeadcountLog::query()->create([

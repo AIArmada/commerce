@@ -21,11 +21,15 @@ final class EventSubmissionPolicy
 
     public function view(mixed $user, EventSubmission $submission): bool
     {
+        if ($this->isSubmitter($user, $submission)) {
+            return true;
+        }
+
         $event = $submission->event;
 
-        if ($event instanceof Model) {
-            return $this->isPubliclyVisible($event)
-                || $this->canManageEvent($user, 'view', $event);
+        if ($event instanceof Model
+            && $this->canManageEvent($user, 'view', $event)) {
+            return true;
         }
 
         return $this->canManageOwnerTarget($user, 'view', $submission->target);
@@ -58,8 +62,18 @@ final class EventSubmissionPolicy
         return $this->canManageOwnerTarget($user, 'delete', $submission->target);
     }
 
-    private function isPubliclyVisible(Model $event): bool
+    private function isSubmitter(mixed $user, EventSubmission $submission): bool
     {
-        return method_exists($event, 'isPubliclyVisible') && $event->isPubliclyVisible();
+        if (! $user instanceof Model) {
+            return false;
+        }
+
+        $submitterType = $submission->getAttribute('submitter_type');
+        $submitterId = $submission->getAttribute('submitter_id');
+
+        return $submitterType !== null
+            && $submitterId !== null
+            && $submitterType === $user->getMorphClass()
+            && (string) $submitterId === (string) $user->getKey();
     }
 }

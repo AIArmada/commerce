@@ -30,3 +30,27 @@ it('has uuid primary keys in all create table migrations', function (): void {
         }
     }
 });
+
+it('defines portable lookup indexes and nullable inherited mode defaults', function (): void {
+    $dir = __DIR__ . '/../../../packages/events/database/migrations/';
+
+    $registrations = file_get_contents($dir . '2000_01_01_000014_create_event_registrations_table.php');
+    $search = file_get_contents($dir . '2000_01_01_000053_create_event_search_documents_table.php');
+    $events = file_get_contents($dir . '2000_01_01_000001_create_events_table.php');
+    $occurrences = file_get_contents($dir . '2000_01_01_000002_create_event_occurrences_table.php');
+    $sessions = file_get_contents($dir . '2000_01_01_000003_create_event_sessions_table.php');
+
+    expect($registrations)
+        ->toContain("'event_registrations_external_order_index'")
+        ->toContain("'event_registrations_event_idempotency_index'")
+        ->and($search)
+        ->toContain("'event_search_documents_identity_unique'")
+        ->toContain('USING GIN (facets)')
+        ->not->toContain('jsonb_path_ops')
+        ->and($events)
+        ->toContain("boolean('issue_passes_for_free')->nullable()->default(null)")
+        ->and($occurrences)
+        ->toContain("boolean('issue_passes_for_free')->nullable()->default(null)")
+        ->and($sessions)
+        ->toContain("boolean('issue_passes_for_free')->nullable()->default(null)");
+});

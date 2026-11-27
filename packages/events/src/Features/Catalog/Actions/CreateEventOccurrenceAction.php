@@ -65,6 +65,9 @@ final class CreateEventOccurrenceAction
             'capacity' => blank($attributes['capacity'] ?? null)
                 ? null
                 : (int) $attributes['capacity'],
+            'pricing_mode' => $attributes['pricing_mode'] ?? null,
+            'registration_mode' => $attributes['registration_mode'] ?? null,
+            'issue_passes_for_free' => $attributes['issue_passes_for_free'] ?? null,
             'metadata' => $attributes['metadata'] ?? null,
         ]);
 

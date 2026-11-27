@@ -54,8 +54,10 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
         }
 
         $issued = 0;
+        $delivered = 0;
         $stepData = $session->getStepData($this->getIdentifier());
         $stepData['pass_ids'] = $this->stringList($stepData['pass_ids'] ?? []);
+        $stepData['delivered_pass_ids'] = $this->stringList($stepData['delivered_pass_ids'] ?? []);
 
         $ticketTypeIds = [];
 
@@ -89,22 +91,40 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
 
                 $stepData['pass_ids'] = array_values(array_unique([
                     ...$this->stringList($stepData['pass_ids']),
-                    ...$newPassIds,
+                    ...$passIds,
                 ]));
 
                 $session->setStepData($this->getIdentifier(), $stepData);
 
-                $this->ticketing->deliverPasses($passIds);
-                $issued += count($passIds);
+                $pendingDelivery = array_values(array_diff(
+                    $passIds,
+                    $this->stringList($stepData['delivered_pass_ids']),
+                ));
+
+                if ($pendingDelivery !== []) {
+                    $this->ticketing->deliverPasses($pendingDelivery);
+
+                    $stepData['delivered_pass_ids'] = array_values(array_unique([
+                        ...$this->stringList($stepData['delivered_pass_ids']),
+                        ...$pendingDelivery,
+                    ]));
+
+                    $session->setStepData($this->getIdentifier(), $stepData);
+                }
+
+                $issued += count($newPassIds);
+                $delivered += count($pendingDelivery);
             }
         }
 
-        if ($issued === 0) {
+        if ($issued === 0 && $delivered === 0) {
             return $this->skipped('No registrations to issue passes for.');
         }
 
         return $this->success(
-            sprintf('%d passes issued.', $issued),
+            $issued > 0
+                ? sprintf('%d passes issued.', $issued)
+                : sprintf('%d passes delivered.', $delivered),
             $stepData,
         );
     }

@@ -94,7 +94,7 @@ test('assignment requests can be approved and rejected with timestamps', functio
         ->and($rejectedRequest->reviewed_at)->not->toBeNull();
 
     $cancelledRequest = $submitAction->handle($manageable, makeCustomer('requestor-cancel'), 'Cancel this person.');
-    $cancelAction->handle($cancelledRequest, $reviewer);
+    $cancelAction->handle($cancelledRequest, $cancelledRequest->requestor);
 
     $cancelledRequest->refresh();
 

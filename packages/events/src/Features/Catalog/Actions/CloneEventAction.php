@@ -55,7 +55,7 @@ final class CloneEventAction
                 'default_venue_id' => $event->default_venue_id,
                 'pricing_mode' => $event->pricing_mode,
                 'registration_mode' => $event->registration_mode,
-                'issue_passes_for_free' => $event->issue_passes_for_free ?? true,
+                'issue_passes_for_free' => $event->issue_passes_for_free,
                 'metadata' => $event->metadata,
             ])->save();
 

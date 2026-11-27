@@ -257,6 +257,7 @@ return [
         'registration' => [
             'check_in_allowed_statuses' => ['confirmed'],
             'capacity_blocking_statuses' => ['pending', 'confirmed', 'refund_pending', 'checked_in'],
+            'pass_issuance_statuses' => ['confirmed', 'checked_in', 'completed'],
             'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
             'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
         ],

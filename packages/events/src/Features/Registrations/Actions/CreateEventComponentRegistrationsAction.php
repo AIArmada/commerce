@@ -10,7 +10,10 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Ticketing\Actions\ExpandTicketTypeComponentsAction;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * Creates event registrations for ticketing components.
@@ -32,113 +35,218 @@ final class CreateEventComponentRegistrationsAction
      */
     public function handle(string $parentRegistrationId, int $multiplier = 1, array $options = []): array
     {
-        /** @var EventRegistration $parentRegistration */
-        $parentRegistration = EventRegistration::query()->findOrFail($parentRegistrationId);
+        return DB::transaction(function () use ($parentRegistrationId, $multiplier, $options): array {
+            /** @var EventRegistration $parentRegistration */
+            $parentRegistration = EventRegistration::query()
+                ->whereKey($parentRegistrationId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $parentRegistration->loadMissing(['items.ticketType', 'participants']);
+            $parentRegistration->loadMissing([
+                'items.ticketType',
+                'participants.contactMethods',
+                'participants.answers',
+                'childRegistrations.items',
+            ]);
 
-        $ticketType = $parentRegistration->items->first()?->ticketType;
+            $ticketType = $parentRegistration->items->first()?->ticketType;
 
-        if (! $ticketType instanceof TicketType) {
-            return [];
-        }
+            if (! $ticketType instanceof TicketType) {
+                return [];
+            }
 
-        $ticketType->loadMissing('components.componentTicketType');
+            $ticketType->loadMissing('components.componentTicketType');
 
-        if ($ticketType->components->isEmpty()) {
-            return [];
-        }
+            if ($ticketType->components->isEmpty()) {
+                return [];
+            }
 
-        $this->components->handle($ticketType, $multiplier);
-        $ticketType->loadMissing('ticketable', 'components.componentTicketType');
+            $this->components->handle($ticketType, $multiplier);
+            $ticketType->loadMissing('ticketable', 'components.componentTicketType');
 
-        $scopeRef = $this->scopeRef($ticketType);
+            $status = $this->registrationStatus($options, $parentRegistration);
+            $source = $this->source($options, $parentRegistration);
+            $paymentStatus = $this->paymentStatus($options, $parentRegistration);
+            $metadata = $this->metadata($options, $parentRegistration);
+            $participants = $this->participantPayloads($parentRegistration);
+            $existingChildren = $this->existingChildrenByTicketType($parentRegistration);
 
-        if ($scopeRef === null) {
-            return [];
-        }
+            $childIds = [];
 
-        $scope = $this->scopeResolver->resolve($scopeRef['type'], $scopeRef['id']);
-        $scopeData = $scope->toRegistrationData();
+            foreach ($ticketType->components as $component) {
+                $componentQuantity = $component->quantity * $multiplier;
+                $componentTicketType = $component->getRelation('componentTicketType');
 
-        $status = $this->registrationStatus($options, $parentRegistration);
-        $source = $this->source($options, $parentRegistration);
-        $paymentStatus = $this->paymentStatus($options, $parentRegistration);
-        $metadata = $this->metadata($options, $parentRegistration);
-        $participants = $parentRegistration->participants
-            ->map(fn ($participant): array => Arr::only($participant->toArray(), [
-                'name',
-                'email',
-                'phone',
-                'participant_type',
-                'participant_id',
-                'relationship_to_registrant',
-                'is_primary',
-                'is_purchaser',
-                'age',
-                'gender',
-                'status',
-                'notes',
-                'metadata',
-                'answers',
-            ]))
+                if (! $componentTicketType instanceof TicketType) {
+                    continue;
+                }
+
+                $scopeRef = $this->scopeRef($componentTicketType);
+
+                if ($scopeRef === null) {
+                    throw new InvalidArgumentException('Each component ticket type must belong to an event scope.');
+                }
+
+                $componentScope = $this->scopeResolver->resolve($scopeRef['type'], $scopeRef['id']);
+
+                if ($componentScope->eventId !== (string) $parentRegistration->event_id) {
+                    throw new InvalidArgumentException('Component ticket types must belong to the same event as the parent registration.');
+                }
+
+                $scopeData = $componentScope->toRegistrationData();
+
+                for ($index = 0; $index < $componentQuantity; $index++) {
+                    $existingId = $existingChildren[(string) $componentTicketType->getKey()][$index] ?? null;
+
+                    if ($existingId !== null) {
+                        $childIds[] = $existingId;
+
+                        continue;
+                    }
+
+                    $childId = $this->registrations->register(array_merge($scopeData, [
+                        'registrant_type' => $parentRegistration->registrant_type,
+                        'registrant_id' => $parentRegistration->registrant_id,
+                        'registration_type' => 'component',
+                        'status' => $status,
+                        'source' => $source,
+                        'total_participants' => $parentRegistration->total_participants,
+                        'total_amount' => 0,
+                        'payment_status' => $paymentStatus,
+                        'metadata' => $metadata,
+                        'parent_registration_id' => $parentRegistration->getKey(),
+                        'is_bundle_root' => false,
+                        'items' => [[
+                            'ticket_type_id' => $componentTicketType->getKey(),
+                            'quantity' => 1,
+                            'unit_price' => 0,
+                            'total_price' => 0,
+                            'currency' => $componentTicketType->currency,
+                            'status' => $status,
+                        ]],
+                        'participants' => $participants,
+                    ]));
+
+                    $childIds[] = $childId;
+                }
+            }
+
+            if ($childIds !== []) {
+                $parentRegistration->update([
+                    'is_bundle_root' => true,
+                    'pass_entitlements' => $this->entitlements($parentRegistration, $childIds),
+                ]);
+            }
+
+            return array_values(array_unique($childIds));
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function participantPayloads(EventRegistration $parentRegistration): array
+    {
+        return $parentRegistration->participants
+            ->map(function ($participant): array {
+                $payload = Arr::only($participant->toArray(), [
+                    'name',
+                    'participant_type',
+                    'participant_id',
+                    'relationship_to_registrant',
+                    'is_primary',
+                    'is_purchaser',
+                    'age',
+                    'gender',
+                    'status',
+                    'notes',
+                    'metadata',
+                ]);
+
+                $email = $participant->resolveEmail();
+                $phone = $participant->resolvePhone();
+
+                if ($email !== null) {
+                    $payload['email'] = $email;
+                }
+
+                if ($phone !== null) {
+                    $payload['phone'] = $phone;
+                }
+
+                $answers = $participant->getRelationValue('answers');
+
+                if ($answers instanceof Collection && $answers->isNotEmpty()) {
+                    $payload['answers'] = $answers
+                        ->map(static fn ($answer): array => Arr::only($answer->toArray(), [
+                            'field_key',
+                            'question',
+                            'answer',
+                            'answer_json',
+                            'metadata',
+                        ]))
+                        ->values()
+                        ->all();
+                }
+
+                return $payload;
+            })
+            ->values()
             ->all();
+    }
 
-        $entitlements = $parentRegistration->getPassEntitlements();
-        $childIds = [];
+    /**
+     * @return array<string, list<string>>
+     */
+    private function existingChildrenByTicketType(EventRegistration $parentRegistration): array
+    {
+        $children = [];
 
-        foreach ($ticketType->components as $component) {
-            $componentQuantity = $component->quantity * $multiplier;
-            $componentTicketType = $component->getRelation('componentTicketType');
+        foreach ($parentRegistration->childRegistrations
+            ->sortBy([['created_at', 'asc'], ['id', 'asc']]) as $child) {
+            $item = $child->items->first();
 
-            if (! $componentTicketType instanceof TicketType) {
+            if ($item?->ticket_type_id === null) {
                 continue;
             }
 
-            for ($index = 0; $index < $componentQuantity; $index++) {
-                $childId = $this->registrations->register(array_merge($scopeData, [
-                    'registrant_type' => $parentRegistration->registrant_type,
-                    'registrant_id' => $parentRegistration->registrant_id,
-                    'registration_type' => 'component',
-                    'status' => $status,
-                    'source' => $source,
-                    'total_participants' => $parentRegistration->total_participants,
-                    'total_amount' => 0,
-                    'payment_status' => $paymentStatus,
-                    'metadata' => $metadata,
-                    'parent_registration_id' => $parentRegistration->getKey(),
-                    'is_bundle_root' => false,
-                    'items' => [[
-                        'ticket_type_id' => $componentTicketType->getKey(),
-                        'quantity' => 1,
-                        'unit_price' => 0,
-                        'total_price' => 0,
-                        'currency' => $componentTicketType->currency,
-                        'status' => $status,
-                    ]],
-                    'participants' => $participants,
-                ]));
+            $children[(string) $item->ticket_type_id][] = (string) $child->getKey();
+        }
 
-                $childIds[] = $childId;
+        return $children;
+    }
 
-                $entitlements[] = [
-                    'event_registration_id' => $childId,
-                    'ticket_type_id' => $componentTicketType->getKey(),
-                    'event_occurrence_id' => $scope->occurrenceId,
-                    'event_session_id' => $scope->sessionId,
-                    'event_id' => $scope->eventId,
-                ];
+    /**
+     * @param  list<string>  $childIds
+     * @return list<array<string, mixed>>
+     */
+    private function entitlements(EventRegistration $parentRegistration, array $childIds): array
+    {
+        $entitlements = [];
+        $children = $parentRegistration->childRegistrations()
+            ->with('items')
+            ->whereIn('id', $childIds)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($children as $child) {
+            $ticketTypeId = $child->items->first()?->ticket_type_id;
+
+            if ($ticketTypeId === null) {
+                continue;
             }
+
+            $entitlements[] = [
+                'event_registration_id' => (string) $child->getKey(),
+                'ticket_type_id' => (string) $ticketTypeId,
+                'event_occurrence_id' => $child->event_occurrence_id,
+                'event_session_id' => $child->event_session_id,
+                'event_id' => (string) $child->event_id,
+            ];
         }
 
-        if ($childIds !== []) {
-            $parentRegistration->update([
-                'is_bundle_root' => $parentRegistration->getPassEntitlements() === [],
-                'pass_entitlements' => $entitlements,
-            ]);
-        }
-
-        return $childIds;
+        return $entitlements;
     }
 
     /**

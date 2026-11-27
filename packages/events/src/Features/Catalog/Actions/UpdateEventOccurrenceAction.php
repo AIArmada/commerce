@@ -11,6 +11,7 @@ use AIArmada\Events\Features\Changes\Api\ChangesApi;
 use AIArmada\Events\Platform\EventContentNormalizer;
 use AIArmada\Events\Platform\EventWriteGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class UpdateEventOccurrenceAction
@@ -28,79 +29,90 @@ final class UpdateEventOccurrenceAction
      */
     public function handle(EventOccurrence $occurrence, array $attributes): array
     {
-        EventWriteGuard::findOrFail($occurrence->event_id);
+        [$occurrence, $changes, $original] = DB::transaction(function () use ($occurrence, $attributes): array {
+            /** @var EventOccurrence $occurrence */
+            $occurrence = $occurrence->newQuery()
+                ->withoutOwnerScope()
+                ->whereKey($occurrence->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $original = $occurrence->getRawOriginal();
+            EventWriteGuard::findOrFail((string) $occurrence->getAttribute('event_id'));
 
-        $fillable = $occurrence->getFillable();
-        $allowed = array_intersect_key($attributes, array_flip($fillable));
-        unset(
-            $allowed['event_id'],
-            $allowed['published_at'],
-            $allowed['delayed_at'],
-            $allowed['postponed_at'],
-            $allowed['rescheduled_at'],
-            $allowed['cancelled_at'],
-            $allowed['completed_at'],
-            $allowed['archived_at'],
-            $allowed['rescheduled_from_occurrence_id'],
-            $allowed['rescheduled_to_occurrence_id'],
-        );
+            $original = $occurrence->getRawOriginal();
 
-        if (array_key_exists('title', $allowed) && blank($allowed['title'])) {
-            throw new InvalidArgumentException('Occurrence title is required.');
-        }
+            $fillable = $occurrence->getFillable();
+            $allowed = array_intersect_key($attributes, array_flip($fillable));
+            unset(
+                $allowed['event_id'],
+                $allowed['published_at'],
+                $allowed['delayed_at'],
+                $allowed['postponed_at'],
+                $allowed['rescheduled_at'],
+                $allowed['cancelled_at'],
+                $allowed['completed_at'],
+                $allowed['archived_at'],
+                $allowed['rescheduled_from_occurrence_id'],
+                $allowed['rescheduled_to_occurrence_id'],
+            );
 
-        if (array_key_exists('title', $allowed)) {
-            $allowed['title'] = $this->contentNormalizer->normalizeTitle((string) $allowed['title']);
-        }
-
-        if (array_key_exists('starts_at', $allowed) && blank($allowed['starts_at'])) {
-            throw new InvalidArgumentException('Occurrence start time is required.');
-        }
-
-        $startsAt = array_key_exists('starts_at', $allowed)
-            ? CarbonImmutable::parse($allowed['starts_at'])
-            : $occurrence->starts_at;
-        $endsAt = ! array_key_exists('ends_at', $allowed)
-            ? $occurrence->ends_at
-            : ($allowed['ends_at'] === null ? null : CarbonImmutable::parse($allowed['ends_at']));
-
-        if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
-            throw new InvalidArgumentException('Occurrence end time must be after the start time.');
-        }
-
-        $statusValue = $allowed['status'] ?? null;
-        unset($allowed['status']);
-
-        if ($statusValue !== null && ! is_string($statusValue)) {
-            throw new InvalidArgumentException('Occurrence status must be a state name.');
-        }
-
-        $occurrence->update($allowed);
-
-        if ($statusValue !== null) {
-            $this->transitionStatus($occurrence, $statusValue);
-        }
-
-        $occurrence->refresh();
-
-        $current = $occurrence->getAttributes();
-
-        $changes = [];
-
-        foreach ($allowed as $key => $newValue) {
-            $oldValue = $original[$key] ?? null;
-            $normalizedNewValue = $current[$key] ?? null;
-
-            if ($oldValue !== $normalizedNewValue) {
-                $changes[$key] = ['old' => $oldValue, 'new' => $normalizedNewValue];
+            if (array_key_exists('title', $allowed) && blank($allowed['title'])) {
+                throw new InvalidArgumentException('Occurrence title is required.');
             }
-        }
 
-        if ($statusValue !== null && ($original['status'] ?? null) !== ($current['status'] ?? null)) {
-            $changes['status'] = ['old' => $original['status'] ?? null, 'new' => $current['status'] ?? null];
-        }
+            if (array_key_exists('title', $allowed)) {
+                $allowed['title'] = $this->contentNormalizer->normalizeTitle((string) $allowed['title']);
+            }
+
+            if (array_key_exists('starts_at', $allowed) && blank($allowed['starts_at'])) {
+                throw new InvalidArgumentException('Occurrence start time is required.');
+            }
+
+            $startsAt = array_key_exists('starts_at', $allowed)
+                ? CarbonImmutable::parse($allowed['starts_at'])
+                : $occurrence->starts_at;
+            $endsAt = ! array_key_exists('ends_at', $allowed)
+                ? $occurrence->ends_at
+                : ($allowed['ends_at'] === null ? null : CarbonImmutable::parse($allowed['ends_at']));
+
+            if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
+                throw new InvalidArgumentException('Occurrence end time must be after the start time.');
+            }
+
+            $statusValue = $allowed['status'] ?? null;
+            unset($allowed['status']);
+
+            if ($statusValue !== null && ! is_string($statusValue)) {
+                throw new InvalidArgumentException('Occurrence status must be a state name.');
+            }
+
+            $occurrence->update($allowed);
+
+            if ($statusValue !== null) {
+                $this->transitionStatus($occurrence, $statusValue);
+            }
+
+            $occurrence->refresh();
+
+            $current = $occurrence->getAttributes();
+
+            $changes = [];
+
+            foreach ($allowed as $key => $newValue) {
+                $oldValue = $original[$key] ?? null;
+                $normalizedNewValue = $current[$key] ?? null;
+
+                if ($oldValue !== $normalizedNewValue) {
+                    $changes[$key] = ['old' => $oldValue, 'new' => $normalizedNewValue];
+                }
+            }
+
+            if ($statusValue !== null && ($original['status'] ?? null) !== ($current['status'] ?? null)) {
+                $changes['status'] = ['old' => $original['status'] ?? null, 'new' => $current['status'] ?? null];
+            }
+
+            return [$occurrence, $changes, $original];
+        });
 
         if ($changes !== []) {
             event(new EventOccurrenceUpdated(

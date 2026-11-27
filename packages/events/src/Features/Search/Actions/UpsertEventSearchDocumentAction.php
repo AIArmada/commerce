@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Search\Actions;
 
-use AIArmada\Events\Contracts\EventSearchDocumentBuilder as EventSearchDocumentBuilderContract;
+use AIArmada\Events\Contracts\EventSearchRelationProvider;
+use AIArmada\Events\Features\Search\Queries\EventSearchDocumentBuilder;
 use AIArmada\Events\Platform\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 
 final class UpsertEventSearchDocumentAction
 {
     public function __construct(
-        private readonly EventSearchDocumentBuilderContract $builder,
+        private readonly EventSearchDocumentBuilder $builder,
+        private readonly EventSearchRelationProvider $relations,
     ) {}
 
     public function handle(string $targetType, string $targetId): void
@@ -22,19 +24,30 @@ final class UpsertEventSearchDocumentAction
             return;
         }
 
+        $this->handleTarget($target, $targetType);
+    }
+
+    public function handleTarget(Model $target, string $targetType): void
+    {
+        $documentType = $this->documentType($targetType);
+
+        if ($documentType === null) {
+            return;
+        }
+
         if ($this->isHidden($target, $targetType)) {
-            app(DeleteEventSearchDocumentAction::class)->handle($targetType, $targetId);
+            app(DeleteEventSearchDocumentAction::class)->handle($targetType, (string) $target->getKey());
 
             return;
         }
 
-        $lookup = $this->lookupAttributes($targetType, $targetId);
+        $lookup = $this->lookupAttributes($targetType, (string) $target->getKey());
 
         if ($lookup === []) {
             return;
         }
 
-        $payload = $this->payloadFor($targetType, $targetId);
+        $payload = $this->builder->buildForTarget($target, $documentType);
 
         if ($payload === []) {
             return;
@@ -47,13 +60,15 @@ final class UpsertEventSearchDocumentAction
 
     private function resolveTarget(string $targetType, string $targetId): ?Model
     {
-        foreach ($this->supportedClasses() as $class) {
-            if (is_a($targetType, $class, true)) {
-                return $class::query()->find($targetId);
-            }
+        $class = $this->targetClass($targetType);
+
+        if ($class === null) {
+            return null;
         }
 
-        return null;
+        return $class::query()
+            ->with($this->relations->relations())
+            ->find($targetId);
     }
 
     /**
@@ -76,26 +91,6 @@ final class UpsertEventSearchDocumentAction
         return [];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function payloadFor(string $targetType, string $targetId): array
-    {
-        if (is_a($targetType, ModelResolver::eventClass(), true)) {
-            return $this->builder->buildForEvent($targetId);
-        }
-
-        if (is_a($targetType, ModelResolver::occurrenceClass(), true)) {
-            return $this->builder->buildForOccurrence($targetId);
-        }
-
-        if (is_a($targetType, ModelResolver::sessionClass(), true)) {
-            return $this->builder->buildForSession($targetId);
-        }
-
-        return [];
-    }
-
     private function isHidden(Model $target, string $targetType): bool
     {
         if ($target->getAttribute('visibility') === 'hidden') {
@@ -110,18 +105,53 @@ final class UpsertEventSearchDocumentAction
 
         $event = $target->getRelationValue('event');
 
-        return $event instanceof Model && $event->getAttribute('visibility') === 'hidden';
+        if ($event instanceof Model && $event->getAttribute('visibility') === 'hidden') {
+            return true;
+        }
+
+        if (! is_a($targetType, ModelResolver::sessionClass(), true)) {
+            return false;
+        }
+
+        $target->loadMissing('occurrence');
+
+        $occurrence = $target->getRelationValue('occurrence');
+
+        return $occurrence instanceof Model && $occurrence->getAttribute('visibility') === 'hidden';
     }
 
     /**
-     * @return list<class-string<Model>>
+     * @return class-string<Model>|null
      */
-    private function supportedClasses(): array
+    private function targetClass(string $targetType): ?string
     {
-        return [
+        foreach ([
             ModelResolver::eventClass(),
             ModelResolver::occurrenceClass(),
             ModelResolver::sessionClass(),
-        ];
+        ] as $class) {
+            if (is_a($targetType, $class, true)) {
+                return $class;
+            }
+        }
+
+        return null;
+    }
+
+    private function documentType(string $targetType): ?string
+    {
+        if (is_a($targetType, ModelResolver::eventClass(), true)) {
+            return 'event';
+        }
+
+        if (is_a($targetType, ModelResolver::occurrenceClass(), true)) {
+            return 'occurrence';
+        }
+
+        if (is_a($targetType, ModelResolver::sessionClass(), true)) {
+            return 'session';
+        }
+
+        return null;
     }
 }

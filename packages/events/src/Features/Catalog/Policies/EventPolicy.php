@@ -52,4 +52,9 @@ final class EventPolicy
     {
         return $this->canManageEvent($user, 'cancel', $event);
     }
+
+    public function manageAdmissions(mixed $user, Event $event): bool
+    {
+        return $this->canManageEvent($user, 'manageAdmissions', $event);
+    }
 }
