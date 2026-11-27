@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Features\Collect\Actions;
 
+use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-final readonly class StoreChipWebhookPayload
+final readonly class StoreChipWebhookPayload implements PurchaseMirror
 {
     /**
      * Store a purchase resource returned by the CHIP API.
@@ -47,12 +48,12 @@ final readonly class StoreChipWebhookPayload
     {
         $owner = $this->resolveOwner();
 
-        $purchase = Purchase::query()->find($payload['id']);
+        $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->find($payload['id']);
 
         if ($purchase === null) {
             // Promote the reservation stub written when the purchase was created
             // so the ledger and the mirror remain a single row keyed by the CHIP id.
-            $purchase = Purchase::query()
+            $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
                 ->where('metadata->chip_idempotency->response->id', $payload['id'])
                 ->first() ?? new Purchase;
         }
@@ -125,11 +126,11 @@ final readonly class StoreChipWebhookPayload
                 'created_from_ip' => $payload['created_from_ip'] ?? null,
             ]
         );
-        $purchase->save();
-
         if ($owner !== null && ! $purchase->hasOwner()) {
-            $purchase->assignOwner($owner)->save();
+            $purchase->assignOwner($owner);
         }
+
+        $purchase->save();
     }
 
     /**
@@ -182,7 +183,7 @@ final readonly class StoreChipWebhookPayload
             $match['owner_id'] = $owner->getKey();
         }
 
-        $client = Client::updateOrCreate(
+        $client = Client::query()->forOwner(OwnerContext::CURRENT, false)->updateOrCreate(
             $match,
             [
                 'type' => 'client',
@@ -256,7 +257,7 @@ final readonly class StoreChipWebhookPayload
             $paymentMatch['owner_id'] = (string) $owner->getKey();
         }
 
-        $payment = Payment::query()->where($paymentMatch)->first() ?? new Payment;
+        $payment = Payment::query()->forOwner(OwnerContext::CURRENT, false)->where($paymentMatch)->first() ?? new Payment;
         $payment->forceFill(
             array_merge($paymentId !== null ? ['id' => $paymentId] : [], [
                 'purchase_id' => $purchaseId,
@@ -275,11 +276,11 @@ final readonly class StoreChipWebhookPayload
                 'updated_on' => $payload['updated_on'] ?? null,
             ])
         );
-        $payment->save();
-
         if ($owner !== null && ! $payment->hasOwner()) {
-            $payment->assignOwner($owner)->save();
+            $payment->assignOwner($owner);
         }
+
+        $payment->save();
     }
 
     private function resolveOwner(): ?Model

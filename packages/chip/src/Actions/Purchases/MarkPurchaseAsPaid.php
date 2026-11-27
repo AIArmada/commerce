@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Actions\Purchases;
 
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
+use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 final readonly class MarkPurchaseAsPaid
 {
-    public function __construct(private ChipCollectService $chip, private StoreChipWebhookPayload $store) {}
+    public function __construct(private ChipCollectService $chip, private PurchaseMirror $store) {}
 
     public function handle(string $purchaseId): void
     {

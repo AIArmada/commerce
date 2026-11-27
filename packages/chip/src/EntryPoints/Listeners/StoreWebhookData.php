@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Chip\EntryPoints\Listeners;
 
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
+use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Log;
 
 final readonly class StoreWebhookData
 {
-    public function __construct(private StoreChipWebhookPayload $action) {}
+    public function __construct(private PurchaseMirror $action) {}
 
     public function handle(WebhookReceived $event): void
     {

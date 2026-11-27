@@ -14,7 +14,7 @@ use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Checkout\Support\ChipRefundGateway;
 use AIArmada\Checkout\Support\NormalizesCallbackAmounts;
 use AIArmada\Chip\Facades\Chip;
-use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
+use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -146,7 +146,7 @@ final class ChipProcessor implements PaymentCompensationInterface, PaymentProces
     private function syncPurchaseMirror(array $payload): void
     {
         try {
-            app(StoreChipWebhookPayload::class)->storePurchasePayload($payload);
+            app(PurchaseMirror::class)->storePurchasePayload($payload);
         } catch (Throwable $exception) {
             Log::warning('CHIP purchase mirror sync failed during status check.', [
                 'purchase_id' => $payload['id'] ?? null,
