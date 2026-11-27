@@ -8,7 +8,7 @@ use AIArmada\Cart\Conditions\ConditionPresets;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Handlers\ShippingConditionHandler;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Conditions\Pipeline\Resolvers;
+namespace AIArmada\Cart\Runtime\Conditions\Pipeline\Resolvers;
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelinePhaseContext;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelinePhaseContext;
 
 final class DefaultScopeResolver implements ConditionScopeResolverInterface
 {

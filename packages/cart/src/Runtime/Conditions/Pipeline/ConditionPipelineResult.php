@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Conditions\Pipeline;
+namespace AIArmada\Cart\Runtime\Conditions\Pipeline;
 
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 

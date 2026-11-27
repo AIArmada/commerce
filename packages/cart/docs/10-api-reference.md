@@ -794,7 +794,7 @@ $wishlist = $factory->cloneForInstance($cart, 'wishlist');
 Configures and creates condition pipeline instances.
 
 ```php
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
 
 $factory = app(ConditionPipelineFactory::class);
 

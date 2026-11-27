@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Conditions\Pipeline;
+namespace AIArmada\Cart\Runtime\Conditions\Pipeline;
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Conditions\Pipeline\Resolvers\CartScopeResolver;
-use AIArmada\Cart\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
-use AIArmada\Cart\Conditions\Pipeline\Resolvers\DefaultScopeResolver;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\Resolvers\CartScopeResolver;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\Resolvers\DefaultScopeResolver;
 
 final class ConditionPipeline
 {

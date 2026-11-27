@@ -7,7 +7,7 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 
