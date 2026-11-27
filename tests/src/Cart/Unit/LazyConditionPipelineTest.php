@@ -219,3 +219,37 @@ it('respects custom scope resolvers with lazy evaluation', function (): void {
     expect($pipeline->getSubtotal())->toBe(1800);
     expect($pipeline->getTotal())->toBe(1800);
 });
+
+it('does not execute a cached phase processor again when requesting the total', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'pipeline-once', events: null);
+    $cart->add('item1', 'Product', 1000, 1);
+    $calls = 0;
+    $pipeline = LazyConditionPipeline::fromContext(
+        ConditionPipelineContext::fromCart($cart),
+        function (ConditionPipeline $engine) use (&$calls): void {
+            $engine->registerPhaseProcessor(ConditionPhase::CART_SUBTOTAL, function (ConditionPipelinePhaseContext $context) use (&$calls): int {
+                $calls++;
+
+                return $context->baseAmount + 100;
+            });
+        },
+    );
+
+    expect($pipeline->getSubtotal())->toBe(1100);
+    expect($pipeline->getTotal())->toBe(1100);
+    expect($pipeline->getFullResult()->total())->toBe(1100);
+    expect($calls)->toBe(1);
+});
+
+it('refreshes live cart context after explicit lazy pipeline invalidation', function (): void {
+    $cart = new Cart(new InMemoryStorage, 'pipeline-invalidate', events: null);
+    $cart->add('item1', 'Product', 1000, 1);
+    $pipeline = new LazyConditionPipeline(ConditionPipelineContext::fromCart($cart));
+
+    expect($pipeline->getTotal())->toBe(1000);
+
+    $cart->add('item2', 'Second product', 500, 1);
+    $pipeline->invalidate();
+
+    expect($pipeline->getTotal())->toBe(1500);
+});

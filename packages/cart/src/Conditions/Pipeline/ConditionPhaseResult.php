@@ -6,14 +6,14 @@ namespace AIArmada\Cart\Conditions\Pipeline;
 
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 
-final class ConditionPhaseResult
+final readonly class ConditionPhaseResult
 {
     public function __construct(
-        public readonly ConditionPhase $phase,
-        public readonly int $baseAmount,
-        public readonly int $finalAmount,
-        public readonly int $adjustment,
-        public readonly int $appliedConditions
+        public ConditionPhase $phase,
+        public int $baseAmount,
+        public int $finalAmount,
+        public int $adjustment,
+        public int $appliedConditions
     ) {}
 
     /**

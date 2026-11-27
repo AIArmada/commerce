@@ -8,7 +8,7 @@ use Closure;
 
 final class ConditionPipelineFactory
 {
-    /** @var array<string, callable(ConditionPipeline): void> */
+    /** @var list<callable(ConditionPipeline): void> */
     private array $pipelineConfigurators = [];
 
     public function createEager(): ConditionPipeline

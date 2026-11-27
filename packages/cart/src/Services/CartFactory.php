@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 
@@ -19,6 +20,7 @@ final class CartFactory
         private readonly ?ConditionTypeHandlerRegistry $conditionTypeHandlerRegistry = null,
         private readonly ?Dispatcher $events = null,
         private readonly bool $eventsEnabled = true,
+        private readonly ?ConditionPipelineFactory $pipelineFactory = null,
     ) {}
 
     /**
@@ -34,6 +36,7 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,
         );
@@ -54,6 +57,7 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
         );
     }
 
@@ -68,6 +72,7 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
         );
     }
 
@@ -82,6 +87,7 @@ final class CartFactory
             conditionResolver: $this->conditionResolver,
             conditionProviderRegistry: $this->conditionProviderRegistry,
             conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            pipelineFactory: $this->pipelineFactory,
         );
     }
 }

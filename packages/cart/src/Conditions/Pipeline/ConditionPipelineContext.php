@@ -12,11 +12,17 @@ final class ConditionPipelineContext
 {
     private ?int $initialAmount = null;
 
+    private readonly ?int $explicitInitialAmount;
+
+    private readonly bool $explicitConditions;
+
     public function __construct(
         private Cart $cart,
         private ?CartConditionCollection $conditions = null,
         ?int $initialAmount = null
     ) {
+        $this->explicitConditions = $conditions !== null;
+        $this->explicitInitialAmount = $initialAmount;
         $this->conditions ??= $cart->getConditions();
         $this->initialAmount = $initialAmount;
     }
@@ -33,7 +39,16 @@ final class ConditionPipelineContext
 
     public function conditions(): CartConditionCollection
     {
-        return $this->conditions ?? $this->cart->getConditions();
+        return $this->conditions ??= $this->cart->getConditions();
+    }
+
+    public function invalidate(): void
+    {
+        $this->initialAmount = $this->explicitInitialAmount;
+
+        if (! $this->explicitConditions) {
+            $this->conditions = null;
+        }
     }
 
     public function initialAmount(): int

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Conditions\Pipeline;
 
+use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 
 /**
@@ -141,6 +142,7 @@ final class LazyConditionPipeline
         $this->memoizedPhases = [];
         $this->memoizedAmounts = [];
         $this->fullResult = null;
+        $this->context->invalidate();
     }
 
     /**
@@ -198,10 +200,10 @@ final class LazyConditionPipeline
      */
     private function evaluatePartially(ConditionPhase $targetPhase): int
     {
-        $conditions = $this->context->conditions();
+        $conditionsByPhase = $this->context->conditions()->groupByPhase();
         $amount = $this->context->initialAmount();
 
-        foreach ($this->phasesInOrder() as $phase) {
+        foreach ($this->pipeline->phasesInOrder() as $phase) {
             if (! $this->isStale && isset($this->memoizedAmounts[$phase->value])) {
                 $amount = $this->memoizedAmounts[$phase->value];
 
@@ -212,7 +214,7 @@ final class LazyConditionPipeline
                 continue;
             }
 
-            $phaseConditions = $conditions->byPhase($phase);
+            $phaseConditions = $conditionsByPhase->get($phase->value) ?? new CartConditionCollection;
             $phaseContext = new ConditionPipelinePhaseContext(
                 $phase,
                 $amount,
@@ -254,13 +256,15 @@ final class LazyConditionPipeline
             return $this->fullResult;
         }
 
-        $this->fullResult = $this->pipeline->process($this->context);
+        $phases = $this->pipeline->phasesInOrder();
+        $lastPhase = $phases[array_key_last($phases)];
+        $finalAmount = $this->evaluatePartially($lastPhase);
 
-        // Populate memoization caches from full result
-        foreach ($this->fullResult->phases() as $phaseKey => $phaseResult) {
-            $this->memoizedPhases[$phaseKey] = $phaseResult;
-            $this->memoizedAmounts[$phaseKey] = $phaseResult->finalAmount;
-        }
+        $this->fullResult = new ConditionPipelineResult(
+            $this->context->initialAmount(),
+            $finalAmount,
+            $this->memoizedPhases,
+        );
 
         $this->isStale = false;
 
@@ -285,16 +289,4 @@ final class LazyConditionPipeline
         return $this->memoizedAmounts[$phase->value] ?? $result->total();
     }
 
-    /**
-     * Get phases in execution order.
-     *
-     * @return list<ConditionPhase>
-     */
-    private function phasesInOrder(): array
-    {
-        $phases = ConditionPhase::cases();
-        usort($phases, static fn (ConditionPhase $a, ConditionPhase $b) => $a->order() <=> $b->order());
-
-        return $phases;
-    }
 }

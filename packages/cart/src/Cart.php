@@ -382,7 +382,7 @@ final class Cart implements CheckoutableInterface
      *
      * @param  callable(ConditionPipeline):void|null  $configure  Optional pipeline configuration callback
      */
-    public function evaluateConditionPipeline(?callable $configure = null): ConditionPipelineResult
+    public function evaluateConditionPipeline(?callable $configure = null, ?CartConditionCollection $conditions = null): ConditionPipelineResult
     {
         $pipeline = $this->pipelineFactory?->createEager() ?? new ConditionPipeline;
 
@@ -390,7 +390,7 @@ final class Cart implements CheckoutableInterface
             $configure($pipeline);
         }
 
-        return $pipeline->process(ConditionPipelineContext::fromCart($this));
+        return $pipeline->process(new ConditionPipelineContext($this, $conditions));
     }
 
     /**

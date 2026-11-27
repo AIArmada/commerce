@@ -6,14 +6,14 @@ namespace AIArmada\Cart\Conditions\Pipeline;
 
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 
-final class ConditionPipelineResult
+final readonly class ConditionPipelineResult
 {
     /**
      * @param  array<string, ConditionPhaseResult>  $phases
      */
     public function __construct(
-        public readonly int $initialAmount,
-        public readonly int $finalAmount,
+        public int $initialAmount,
+        public int $finalAmount,
         private array $phases
     ) {}
 
@@ -34,14 +34,12 @@ final class ConditionPipelineResult
 
     public function subtotal(): int
     {
-        /** @phpstan-ignore-next-line nullable phase result */
         return $this->getPhaseResult(ConditionPhase::CART_SUBTOTAL)?->finalAmount
             ?? $this->initialAmount;
     }
 
     public function total(): int
     {
-        /** @phpstan-ignore-next-line nullable phase result */
         return $this->getPhaseResult(ConditionPhase::GRAND_TOTAL)?->finalAmount
             ?? $this->finalAmount;
     }

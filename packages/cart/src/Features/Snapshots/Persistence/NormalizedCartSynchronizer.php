@@ -6,8 +6,6 @@ namespace AIArmada\Cart\Features\Snapshots\Persistence;
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Conditions\CartCondition as BaseCartCondition;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
 use AIArmada\Cart\Events\CartSnapshotSynced;
 use AIArmada\Cart\Events\HighValueCartDetected;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
@@ -78,8 +76,7 @@ class NormalizedCartSynchronizer
         $cartModel->last_activity_at = $this->resolveLastActivityAt($cart, $metadata, $cartModel->last_activity_at);
         $cartModel->checkout_started_at = $this->resolveMetadataTimestamp($metadata, 'checkout_started_at', $cartModel->checkout_started_at);
         $cartModel->checkout_abandoned_at = $this->resolveMetadataTimestamp($metadata, 'checkout_abandoned_at', $cartModel->checkout_abandoned_at);
-        $pipeline = new ConditionPipeline;
-        $pipelineResult = $pipeline->process(new ConditionPipelineContext($cart, $conditions));
+        $pipelineResult = $cart->evaluateConditionPipeline(conditions: $conditions);
 
         $subtotalWithoutConditions = (int) $cart->subtotalWithoutConditions()->getAmount();
         $cartModel->subtotal = $subtotalWithoutConditions;

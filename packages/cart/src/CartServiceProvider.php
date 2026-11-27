@@ -173,6 +173,7 @@ final class CartServiceProvider extends PackageServiceProvider
             conditionResolver: $app->make(CartConditionResolver::class),
             conditionProviderRegistry: $app->make(ConditionProviderRegistry::class),
             conditionTypeHandlerRegistry: $app->make(ConditionTypeHandlerRegistry::class),
+            pipelineFactory: $app->make(ConditionPipelineFactory::class),
             events: $app->make(Dispatcher::class),
             eventsEnabled: config('cart.events', true),
         ));

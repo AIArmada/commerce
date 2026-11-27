@@ -44,13 +44,13 @@ final class ConditionPipeline
 
     public function process(ConditionPipelineContext $context): ConditionPipelineResult
     {
-        $conditions = $context->conditions();
+        $conditionsByPhase = $context->conditions()->groupByPhase();
         $amount = $context->initialAmount();
         $initialAmount = $amount;
         $phaseResults = [];
 
         foreach ($this->phasesInOrder() as $phase) {
-            $phaseConditions = $conditions->byPhase($phase);
+            $phaseConditions = $conditionsByPhase->get($phase->value) ?? new CartConditionCollection;
             $phaseContext = new ConditionPipelinePhaseContext(
                 $phase,
                 $amount,
@@ -76,7 +76,7 @@ final class ConditionPipeline
     /**
      * @return list<ConditionPhase>
      */
-    private function phasesInOrder(): array
+    public function phasesInOrder(): array
     {
         $phases = ConditionPhase::cases();
         usort($phases, static fn (ConditionPhase $a, ConditionPhase $b) => $a->order() <=> $b->order());

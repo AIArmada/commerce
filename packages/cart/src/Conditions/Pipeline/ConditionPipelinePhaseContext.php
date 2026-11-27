@@ -7,13 +7,13 @@ namespace AIArmada\Cart\Conditions\Pipeline;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 
-final class ConditionPipelinePhaseContext
+final readonly class ConditionPipelinePhaseContext
 {
     public function __construct(
-        public readonly ConditionPhase $phase,
-        public readonly int $baseAmount,
-        public readonly CartConditionCollection $conditions,
-        public readonly ConditionPipelineContext $pipelineContext
+        public ConditionPhase $phase,
+        public int $baseAmount,
+        public CartConditionCollection $conditions,
+        public ConditionPipelineContext $pipelineContext
     ) {}
 
     public function isEmpty(): bool
