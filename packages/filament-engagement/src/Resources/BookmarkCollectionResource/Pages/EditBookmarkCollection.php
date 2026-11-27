@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources\BookmarkCollectionResource\Pages;
 
-use AIArmada\Engagement\Actions\UpdateBookmarkCollectionAction;
-use AIArmada\Engagement\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Actions\UpdateBookmarkCollectionAction;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use AIArmada\FilamentEngagement\Resources\BookmarkCollectionResource;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;

@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Traits;
+namespace AIArmada\Engagement\Features\Interactions\Concerns;
 
-use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Traits\ReceivesEngagement;
+
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

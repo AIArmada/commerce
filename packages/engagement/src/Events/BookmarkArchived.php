@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 
 final class BookmarkArchived
 {

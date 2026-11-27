@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use AIArmada\Events\Contracts\EventEngagementManager;
 use Illuminate\Database\Eloquent\Model;
 
 it('rejects non-marker models at the manager signature', function (): void {
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
     $actor = new EngagementActor;
     $subject = new EngagementSubject;
     $nonEngageable = new class extends Model {};
@@ -22,7 +22,7 @@ it('rejects non-marker models at the manager signature', function (): void {
 });
 
 it('rejects marker objects that are not Eloquent models at the boundary', function (): void {
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
     $actor = new class implements CanInteract
     {
         public function interactionDisplayName(): string

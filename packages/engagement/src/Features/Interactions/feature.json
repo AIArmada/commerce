@@ -1,0 +1,30 @@
+{
+    "schema": 1,
+    "name": "Interactions",
+    "owns": {
+        "table:follows": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+        ],
+        "table:bookmarks": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+        ],
+        "table:responses": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+        ],
+        "table:reactions": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+        ],
+        "table:engagement_shares": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+        ],
+        "table:bookmark_collection_items": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction",
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\DeleteBookmarkCollectionItemsAction"
+        ],
+        "table:bookmark_collections": [
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\CreateBookmarkCollectionAction",
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\UpdateBookmarkCollectionAction"
+        ]
+    },
+    "extensions": {}
+}

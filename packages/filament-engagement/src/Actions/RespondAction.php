@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Actions;
 
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
@@ -24,7 +24,7 @@ final class RespondAction
             ])
             ->action(function (array $data, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(EngagementManager::class)->respond(AuthenticatedUser::resolve(), $record, $data['response_type']);
+                app(ManageInteractionsAction::class)->respond(AuthenticatedUser::resolve(), $record, $data['response_type']);
             });
     }
 }

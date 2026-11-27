@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Actions;
 
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
@@ -18,7 +18,7 @@ final class FollowAction
             ->icon('heroicon-o-heart')
             ->action(function ($livewire, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(EngagementManager::class)->follow(AuthenticatedUser::resolve(), $record);
+                app(ManageInteractionsAction::class)->follow(AuthenticatedUser::resolve(), $record);
             });
     }
 }

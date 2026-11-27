@@ -6,7 +6,7 @@ namespace AIArmada\Engagement\Integrations\Events;
 
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Remindable;
@@ -16,14 +16,14 @@ use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\Subscribable;
 use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
-use AIArmada\Engagement\Models\Share;
+use AIArmada\Engagement\Features\Interactions\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use AIArmada\Events\Contracts\EventEngagementManager as EventEngagementManagerContract;
 
 final class EngagementEventEngagementManager implements EventEngagementManagerContract
 {
     public function __construct(
-        private readonly EngagementManager $engagementManager,
+        private readonly ManageInteractionsAction $engagementManager,
         private readonly ManageSubscriptionsAction $subscriptionManager,
         private readonly ManageRemindersAction $reminderManager,
         private readonly EngagementStateResolver $stateResolver,

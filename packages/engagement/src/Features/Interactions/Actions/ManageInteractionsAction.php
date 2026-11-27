@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Services;
+namespace AIArmada\Engagement\Features\Interactions\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Reactable;
@@ -37,14 +36,14 @@ use AIArmada\Engagement\Events\ResponseChanged;
 use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Events\ShareCompleted;
 use AIArmada\Engagement\Events\ShareCreated;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\Follow;
-use AIArmada\Engagement\Models\Reaction;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
-use AIArmada\Engagement\Models\Response;
-use AIArmada\Engagement\Models\Share;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -52,7 +51,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-final class DefaultEngagementManager implements EngagementManager
+final readonly class ManageInteractionsAction
 {
     public function __construct(
         private readonly EngagementPolicyResolver $policy,

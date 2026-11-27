@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement;
 
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
@@ -15,7 +15,6 @@ use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
 use AIArmada\Engagement\Platform\ExtensionRegistry;
 use AIArmada\Engagement\Platform\FeatureCatalog;
 use AIArmada\Engagement\Platform\FeatureModule;
-use AIArmada\Engagement\Services\DefaultEngagementManager;
 use AIArmada\Engagement\Services\DefaultEngagementPolicyResolver;
 use AIArmada\Engagement\Services\DefaultEngagementStateResolver;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
@@ -46,9 +45,8 @@ final class EngagementServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        $this->app->singleton('engagement', fn ($app): EngagementManager => $app->make(EngagementManager::class));
+        $this->app->singleton('engagement', fn ($app): ManageInteractionsAction => $app->make(ManageInteractionsAction::class));
 
-        $this->app->bind(EngagementManager::class, DefaultEngagementManager::class);
         $this->app->bind(EngagementStateResolver::class, DefaultEngagementStateResolver::class);
         $this->app->bind(EngagementPolicyResolver::class, DefaultEngagementPolicyResolver::class);
         $this->app->bind(ShareUrlGenerator::class, DefaultShareUrlGenerator::class);

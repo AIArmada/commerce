@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Events\FollowCreated;
-use AIArmada\Engagement\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->manager = app(EngagementManager::class);
+    $this->manager = app(ManageInteractionsAction::class);
     $this->actor = new EngagementActor;
     $this->subject = new EngagementSubject;
 });

@@ -6,8 +6,8 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
@@ -90,7 +90,7 @@ final class ResponseResource extends Resource
                     ->visible(fn (Response $record): bool => $record->isActive())
                     ->action(function (Response $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(EngagementManager::class)->cancelResponse($record->responder, $record->respondable);
+                        app(ManageInteractionsAction::class)->cancelResponse($record->responder, $record->respondable);
                     })
                     ->requiresConfirmation(),
                 Action::make('restore')
@@ -98,7 +98,7 @@ final class ResponseResource extends Resource
                     ->action(function (Response $record): Response {
                         $record = ActionRecordResolver::resolve($record);
 
-                        return app(EngagementManager::class)->respond($record->responder, $record->respondable, $record->response_type, [
+                        return app(ManageInteractionsAction::class)->respond($record->responder, $record->respondable, $record->response_type, [
                             'visibility' => $record->visibility,
                             'source' => $record->source,
                             'metadata' => $record->metadata,

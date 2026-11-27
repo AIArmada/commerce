@@ -54,7 +54,7 @@ title: Engagement Overview
 
 | Contract | Default Service | Purpose |
 |---|---|---|
-| `EngagementManager` | `DefaultEngagementManager` | Central facade: follow, bookmark, respond, react, remind, share |
+| `ManageInteractionsAction` | `ManageInteractionsAction` | Central facade: follow, bookmark, respond, react, remind, share |
 | `ManageSubscriptionsAction` | `ManageSubscriptionsAction` | Subscribe, unsubscribe, mute, match subscriptions |
 | `ManageRemindersAction` | `ManageRemindersAction` | Set, cancel, due reminders, mark sent/failed |
 | `EngagementStateResolver` | `DefaultEngagementStateResolver` | Query state: isFollowing, isBookmarked, responseFor, reactionFor |

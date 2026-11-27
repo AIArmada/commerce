@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Traits;
+namespace AIArmada\Engagement\Features\Interactions\Concerns;
 
-use AIArmada\Engagement\Models\Share;
+use AIArmada\Engagement\Traits\ReceivesEngagement;
+
+use AIArmada\Engagement\Features\Interactions\Models\Share;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasShares

@@ -37,11 +37,11 @@ Passing a model that does not implement the required marker fails at the manager
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Followable;
-use AIArmada\Engagement\Traits\CanFollow;
-use AIArmada\Engagement\Traits\HasFollowers;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
 
 // Actor model implements CanInteract and uses CanFollow
 class User extends Model implements CanInteract { use CanFollow; }
@@ -50,14 +50,14 @@ class User extends Model implements CanInteract { use CanFollow; }
 class Speaker extends Model implements Followable { use HasFollowers; }
 
 // Follow a speaker
-$follow = app(EngagementManager::class)->follow($user, $speaker);
+$follow = app(ManageInteractionsAction::class)->follow($user, $speaker);
 
 // Unfollow
-app(EngagementManager::class)->unfollow($user, $speaker);
+app(ManageInteractionsAction::class)->unfollow($user, $speaker);
 
 // Mute/unmute notifications from a follow
-app(EngagementManager::class)->muteFollow($user, $speaker);
-app(EngagementManager::class)->unmuteFollow($user, $speaker);
+app(ManageInteractionsAction::class)->muteFollow($user, $speaker);
+app(ManageInteractionsAction::class)->unmuteFollow($user, $speaker);
 
 // Check state
 $resolver = app(EngagementStateResolver::class);
@@ -71,23 +71,23 @@ Follow statuses: `active`, `muted`, `unfollowed`, `blocked`. The package never d
 ```php
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Traits\CanBookmark;
-use AIArmada\Engagement\Traits\HasBookmarks;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanBookmark;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasBookmarks;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 class User extends Model implements CanInteract { use CanBookmark; }
 class Event extends Model implements Bookmarkable { use HasBookmarks; }
 
 // Bookmark an event
-$bookmark = app(EngagementManager::class)->bookmark($user, $event);
+$bookmark = app(ManageInteractionsAction::class)->bookmark($user, $event);
 
 // Remove bookmark
-app(EngagementManager::class)->removeBookmark($user, $event);
+app(ManageInteractionsAction::class)->removeBookmark($user, $event);
 
 // Archive bookmark
-app(EngagementManager::class)->archiveBookmark($user, $event);
+app(ManageInteractionsAction::class)->archiveBookmark($user, $event);
 
 // Create collections
 $collection = OwnerContext::withOwner($tenant, fn () => BookmarkCollection::create([
@@ -96,31 +96,31 @@ $collection = OwnerContext::withOwner($tenant, fn () => BookmarkCollection::crea
 ]));
 
 // Organize bookmarks into collections
-app(EngagementManager::class)->addBookmarkToCollection($user, $bookmark, $collection);
-app(EngagementManager::class)->removeBookmarkFromCollection($user, $bookmark, $collection);
+app(ManageInteractionsAction::class)->addBookmarkToCollection($user, $bookmark, $collection);
+app(ManageInteractionsAction::class)->removeBookmarkFromCollection($user, $bookmark, $collection);
 ```
 
 ## Responding (RSVP)
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Respondable;
-use AIArmada\Engagement\Traits\CanRespond;
-use AIArmada\Engagement\Traits\HasResponses;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanRespond;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasResponses;
 
 class User extends Model implements CanInteract { use CanRespond; }
 class Occurrence extends Model implements Respondable { use HasResponses; }
 
 // RSVP with a response type
-app(EngagementManager::class)->respond($user, $occurrence, 'going');
+app(ManageInteractionsAction::class)->respond($user, $occurrence, 'going');
 
 // Change response
-app(EngagementManager::class)->respond($user, $occurrence, 'maybe');
+app(ManageInteractionsAction::class)->respond($user, $occurrence, 'maybe');
 
 // Cancel response
-app(EngagementManager::class)->cancelResponse($user, $occurrence);
+app(ManageInteractionsAction::class)->cancelResponse($user, $occurrence);
 
 // Check current response
 $response = $resolver->responseFor($user, $occurrence);
@@ -132,23 +132,23 @@ Common response types: `interested`, `going`, `maybe`, `not_going`. The response
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Reactable;
-use AIArmada\Engagement\Traits\CanReact;
-use AIArmada\Engagement\Traits\HasReactions;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanReact;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasReactions;
 
 class User extends Model implements CanInteract { use CanReact; }
 class Recording extends Model implements Reactable { use HasReactions; }
 
 // React to a recording
-app(EngagementManager::class)->react($user, $recording, 'like');
+app(ManageInteractionsAction::class)->react($user, $recording, 'like');
 
 // Remove reaction
-app(EngagementManager::class)->removeReaction($user, $recording);
+app(ManageInteractionsAction::class)->removeReaction($user, $recording);
 
 // Remove specific reaction type
-app(EngagementManager::class)->removeReaction($user, $recording, 'like');
+app(ManageInteractionsAction::class)->removeReaction($user, $recording, 'like');
 
 // Check current reaction
 $reaction = $resolver->reactionFor($user, $recording);
@@ -284,21 +284,21 @@ ever reach the dispatch listener.
 
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\Shareable;
-use AIArmada\Engagement\Traits\CanShare;
-use AIArmada\Engagement\Traits\HasShares;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanShare;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasShares;
 
 class User extends Model implements CanInteract { use CanShare; }
 class Event extends Model implements Shareable { use HasShares; }
 
 // Share an event to WhatsApp
-$share = app(EngagementManager::class)->share($user, $event, [
+$share = app(ManageInteractionsAction::class)->share($user, $event, [
     'channel' => 'whatsapp',
 ]);
 
 // Share with a custom message
-$share = app(EngagementManager::class)->share($user, $event, [
+$share = app(ManageInteractionsAction::class)->share($user, $event, [
     'channel' => 'telegram',
     'message' => 'Check this out!',
 ]);
@@ -368,8 +368,8 @@ When `aiarmada/events` is installed, the engagement package can bind an `EventEn
 Use `engagement:match-subscriptions` explicitly for content-based matching. The subject model supplied to that command must implement `Subscribable`.
 
 ```php
-// Sharing a compatible event subject persists a Share record via EngagementManager
-app(EngagementManager::class)->share($user, $event, ['channel' => 'twitter']);
+// Sharing a compatible event subject persists a Share record via ManageInteractionsAction
+app(ManageInteractionsAction::class)->share($user, $event, ['channel' => 'twitter']);
 // → Share record created with status 'created', then 'shared'
 // → ShareCreated and ShareCompleted dispatched
 ```

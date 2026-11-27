@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Models\Share;
+use AIArmada\Engagement\Features\Interactions\Models\Share;
 
 final class ShareRevoked
 {

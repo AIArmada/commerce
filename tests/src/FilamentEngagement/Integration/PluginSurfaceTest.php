@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Enums\FollowStatus;
-use AIArmada\Engagement\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\FilamentEngagement\FilamentEngagementPlugin;
 use AIArmada\FilamentEngagement\Resources\BookmarkCollectionResource;
 use AIArmada\FilamentEngagement\Resources\BookmarkResource;

@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Enums\BookmarkStatus;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
 
 beforeEach(function (): void {
     $this->owner = User::query()->create([

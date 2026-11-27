@@ -6,8 +6,8 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
@@ -94,7 +94,7 @@ final class BookmarkResource extends Resource
                 Action::make('remove')
                     ->action(function (Bookmark $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(EngagementManager::class)->removeBookmark($record->bookmarker, $record->bookmarkable);
+                        app(ManageInteractionsAction::class)->removeBookmark($record->bookmarker, $record->bookmarkable);
                     })
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isActive()),
@@ -102,7 +102,7 @@ final class BookmarkResource extends Resource
                     ->action(function (Bookmark $record): Bookmark {
                         $record = ActionRecordResolver::resolve($record);
 
-                        return app(EngagementManager::class)->bookmark($record->bookmarker, $record->bookmarkable, [
+                        return app(ManageInteractionsAction::class)->bookmark($record->bookmarker, $record->bookmarkable, [
                             'notes' => $record->notes,
                             'source' => $record->source,
                             'metadata' => $record->metadata,
@@ -120,7 +120,7 @@ final class BookmarkResource extends Resource
                             }
 
                             $record = ActionRecordResolver::resolve($record);
-                            app(EngagementManager::class)
+                            app(ManageInteractionsAction::class)
                                 ->removeBookmark($record->bookmarker, $record->bookmarkable);
                         });
                     }),

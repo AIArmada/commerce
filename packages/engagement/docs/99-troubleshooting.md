@@ -79,9 +79,9 @@ For custom URL generation, bind your own `ShareUrlGenerator` implementation.
 ### Traits not finding expected methods
 
 The engagement traits add methods to your models at runtime. If a method is not found, verify:
-- The trait is imported correctly (`use AIArmada\Engagement\Traits\CanFollow`)
+- The trait is imported correctly (`use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow`)
 - The model uses the trait in its class definition
 
 ### Model class overrides not applied
 
-If you've configured custom model classes in `config/engagement.php` under the `models` key and they're not being used, check that you're resolving models through the contracts (e.g., `EngagementManager`) rather than instantiating them directly. The contracts use config-resolved model classes.
+If you've configured custom model classes in `config/engagement.php` under the `models` key and they're not being used, check that you're resolving models through the contracts (e.g., `ManageInteractionsAction`) rather than instantiating them directly. The contracts use config-resolved model classes.

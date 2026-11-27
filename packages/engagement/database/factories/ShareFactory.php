@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Database\Factories;
 
 use AIArmada\Engagement\Enums\ShareStatus;
-use AIArmada\Engagement\Models\Share;
+use AIArmada\Engagement\Features\Interactions\Models\Share;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

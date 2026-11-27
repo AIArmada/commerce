@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Actions;
+namespace AIArmada\Engagement\Features\Interactions\Actions;
 
-use AIArmada\Engagement\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 

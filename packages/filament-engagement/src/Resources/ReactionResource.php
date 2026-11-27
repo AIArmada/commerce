@@ -6,8 +6,8 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Engagement\Contracts\EngagementManager;
-use AIArmada\Engagement\Models\Reaction;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
+use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
@@ -83,7 +83,7 @@ final class ReactionResource extends Resource
                     ->visible(fn (Reaction $record): bool => $record->isActive())
                     ->action(function (Reaction $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(EngagementManager::class)->removeReaction($record->reactor, $record->reactable, $record->reaction_type);
+                        app(ManageInteractionsAction::class)->removeReaction($record->reactor, $record->reactable, $record->reaction_type);
                     })
                     ->requiresConfirmation(),
                 Action::make('restore')
@@ -91,7 +91,7 @@ final class ReactionResource extends Resource
                     ->action(function (Reaction $record): Reaction {
                         $record = ActionRecordResolver::resolve($record);
 
-                        return app(EngagementManager::class)->react($record->reactor, $record->reactable, $record->reaction_type, [
+                        return app(ManageInteractionsAction::class)->react($record->reactor, $record->reactable, $record->reaction_type, [
                             'source' => $record->source,
                             'metadata' => $record->metadata,
                         ]);

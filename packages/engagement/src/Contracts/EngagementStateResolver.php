@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Contracts;
 
-use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Reaction;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 
 interface EngagementStateResolver
 {

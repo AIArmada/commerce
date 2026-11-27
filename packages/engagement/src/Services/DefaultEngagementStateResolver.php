@@ -6,11 +6,11 @@ namespace AIArmada\Engagement\Services;
 
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\Follow;
-use AIArmada\Engagement\Models\Reaction;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\Follow;
+use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
-use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 use Carbon\CarbonImmutable;
 
 final class DefaultEngagementStateResolver implements EngagementStateResolver

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\Followable;
-use AIArmada\Engagement\Traits\CanFollow;
-use AIArmada\Engagement\Traits\HasFollowers;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
 use Illuminate\Database\Eloquent\Model;
 
 it('keeps actor and subject trait calls equivalent to manager calls', function (): void {
@@ -52,7 +52,7 @@ it('keeps actor and subject trait calls equivalent to manager calls', function (
     $actor->setAttribute('id', 'trait-actor');
     $subject->setAttribute('id', 'trait-subject');
 
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
     $viaTrait = $actor->follow($subject);
     $viaManager = $manager->follow($actor, $subject);
 

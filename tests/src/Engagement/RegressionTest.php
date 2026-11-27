@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Remindable;
@@ -22,11 +22,11 @@ use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction
 use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
-use AIArmada\Engagement\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementContextSubject;
@@ -46,7 +46,7 @@ beforeEach(function (): void {
 });
 
 it('stores the same share token that is embedded in the share url', function (): void {
-    $share = app(EngagementManager::class)->share($this->actor, $this->subject, ['channel' => 'whatsapp']);
+    $share = app(ManageInteractionsAction::class)->share($this->actor, $this->subject, ['channel' => 'whatsapp']);
 
     expect($share->share_token)->toBeString()
         ->and(mb_strlen((string) $share->share_token))->toBe(32);
@@ -57,7 +57,7 @@ it('stores the same share token that is embedded in the share url', function ():
 });
 
 it('respects an explicit share token in storage and url', function (): void {
-    $share = app(EngagementManager::class)->share($this->actor, $this->subject, ['token' => 'explicit-token-1']);
+    $share = app(ManageInteractionsAction::class)->share($this->actor, $this->subject, ['token' => 'explicit-token-1']);
 
     expect($share->share_token)->toBe('explicit-token-1');
 
@@ -73,8 +73,8 @@ it('reconciles counters per owner without an ambient owner', function (): void {
     $actorA = EngagementActor::query()->create(['name' => 'Reconcile Actor A', 'email' => 'reconcile-actor-a-' . uniqid() . '@example.com', 'password' => 'secret']);
     $actorB = EngagementActor::query()->create(['name' => 'Reconcile Actor B', 'email' => 'reconcile-actor-b-' . uniqid() . '@example.com', 'password' => 'secret']);
 
-    OwnerContext::withOwner($ownerA, fn () => app(EngagementManager::class)->follow($actorA, $subject));
-    OwnerContext::withOwner($ownerB, fn () => app(EngagementManager::class)->follow($actorB, $subject));
+    OwnerContext::withOwner($ownerA, fn () => app(ManageInteractionsAction::class)->follow($actorA, $subject));
+    OwnerContext::withOwner($ownerB, fn () => app(ManageInteractionsAction::class)->follow($actorB, $subject));
 
     OwnerContext::withOwner($ownerA, function (): void {
         EngagementCounter::query()->where('counter_type', 'followers')->update(['count_value' => 99]);
@@ -95,7 +95,7 @@ it('reconciles a single subject without an ambient owner', function (): void {
     $subject = EngagementSubject::query()->create(['name' => 'Single Subject', 'email' => 'single-subject-' . uniqid() . '@example.com', 'password' => 'secret']);
     $actor = EngagementActor::query()->create(['name' => 'Single Actor', 'email' => 'single-actor-' . uniqid() . '@example.com', 'password' => 'secret']);
 
-    OwnerContext::withOwner($owner, fn () => app(EngagementManager::class)->follow($actor, $subject));
+    OwnerContext::withOwner($owner, fn () => app(ManageInteractionsAction::class)->follow($actor, $subject));
     OwnerContext::withOwner($owner, function (): void {
         EngagementCounter::query()->where('counter_type', 'followers')->update(['count_value' => 42]);
     });
@@ -205,7 +205,7 @@ it('dedupes subscriptions by normalized criteria hash', function (): void {
 });
 
 it('keeps collection items unique and reactivates removed rows', function (): void {
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
 
     $bookmark = Bookmark::query()->create([
         'bookmarker_type' => $this->actor->getMorphClass(),
@@ -336,7 +336,7 @@ it('emits response created/changed events with reactivation semantics', function
         ResponseChanged::class,
     ]);
 
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
 
     $manager->respond($this->actor, $this->subject, 'interested');
 
@@ -364,7 +364,7 @@ it('emits response created/changed events with reactivation semantics', function
 });
 
 it('keeps keyed response counters exact across change and cancel', function (): void {
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
     $counters = app(UpdateEngagementCountersAction::class);
 
     $manager->respond($this->actor, $this->subject, 'interested');
@@ -428,7 +428,7 @@ it('authorizes share creation through the policy resolver', function (): void {
         }
     });
 
-    expect(fn () => app(EngagementManager::class)->share($this->actor, $this->subject))
+    expect(fn () => app(ManageInteractionsAction::class)->share($this->actor, $this->subject))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -460,7 +460,7 @@ it('returns bounded collections from the state resolver', function (): void {
 
 it('rejects overlong free-form inputs at manager boundaries', function (): void {
     $long = str_repeat('x', 300);
-    $manager = app(EngagementManager::class);
+    $manager = app(ManageInteractionsAction::class);
 
     expect(fn () => $manager->respond($this->actor, $this->subject, $long))
         ->toThrow(InvalidArgumentException::class)
@@ -481,7 +481,7 @@ it('rejects overlong free-form inputs at manager boundaries', function (): void 
 });
 
 it('url-encodes the share token in generated urls', function (): void {
-    $share = app(EngagementManager::class)->share($this->actor, $this->subject, ['token' => 'a+b/c=d?&']);
+    $share = app(ManageInteractionsAction::class)->share($this->actor, $this->subject, ['token' => 'a+b/c=d?&']);
 
     expect($share->share_token)->toBe('a+b/c=d?&')
         ->and($share->share_url)->toContain('share=a%2Bb%2Fc%3Dd%3F%26');

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Engagement\Models\BookmarkCollection;
+use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Infolists;

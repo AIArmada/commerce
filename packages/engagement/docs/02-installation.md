@@ -64,10 +64,10 @@ Schedule::command('engagement:reconcile-counters')->hourly();
 ## Adding traits to models
 
 ```php
-use AIArmada\Engagement\Traits\CanFollow;
-use AIArmada\Engagement\Traits\HasBookmarks;
-use AIArmada\Engagement\Traits\HasFollowers;
-use AIArmada\Engagement\Traits\HasReactions;
+use AIArmada\Engagement\Features\Interactions\Concerns\CanFollow;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasBookmarks;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasFollowers;
+use AIArmada\Engagement\Features\Interactions\Concerns\HasReactions;
 
 class User extends Model
 {

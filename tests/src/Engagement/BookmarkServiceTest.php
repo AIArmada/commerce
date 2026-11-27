@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Enums\BookmarkStatus;
-use AIArmada\Engagement\Models\Bookmark;
+use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
 beforeEach(function (): void {
-    $this->manager = app(EngagementManager::class);
+    $this->manager = app(ManageInteractionsAction::class);
     $this->actor = new EngagementActor;
     $this->subject = new EngagementSubject;
 });
