@@ -7,11 +7,9 @@ namespace AIArmada\Feedback\Features\Analytics\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
@@ -54,14 +52,6 @@ final class FeedbackFormAnalytics extends Model
         $prefix = (string) config('feedback.database.table_prefix', '');
 
         return $prefix . (string) config('feedback.database.tables.form_analytics', 'feedback_form_analytics');
-    }
-
-    /**
-     * @return BelongsTo<FeedbackForm, FeedbackFormAnalytics>
-     */
-    public function form(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackForm::class, 'feedback_form_id');
     }
 
     public function toData(): FeedbackAnalyticsData

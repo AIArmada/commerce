@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Feedback\Features\Analytics\Actions\RecalculateFeedbackFormAnalyticsAction;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -29,16 +29,6 @@ final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, Shoul
         public readonly bool $ownerIsGlobal = false,
     ) {}
 
-    public static function forForm(FeedbackForm $form): self
-    {
-        return new self(
-            formId: (string) $form->getKey(),
-            ownerType: $form->owner_type,
-            ownerId: $form->owner_id,
-            ownerIsGlobal: $form->owner_type === null && $form->owner_id === null,
-        );
-    }
-
     public function ownerContext(): OwnerJobContext
     {
         return new OwnerJobContext(
@@ -55,12 +45,10 @@ final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, Shoul
 
     protected function performJob(): void
     {
-        $form = FeedbackForm::query()->whereKey($this->formId)->first();
-
-        if (! $form instanceof FeedbackForm) {
+        if (app(ReadsOwnedFormIdentity::class)->find($this->formId) === null) {
             return;
         }
 
-        app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form);
+        app(RecalculateFeedbackFormAnalyticsAction::class)->execute($this->formId);
     }
 }

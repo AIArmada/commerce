@@ -40,7 +40,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
         'max_score' => 5,
     ]));
 
-    RecalculateFeedbackFormAnalyticsJob::forForm($form)->handle();
+    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id))->handle();
 
     $aggregate = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($aggregate->owner_type)->toBe($ownerA->getMorphClass())
@@ -55,7 +55,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
     $stale = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($stale->average_score)->toBe('5.00');
 
-    RecalculateFeedbackFormAnalyticsJob::forForm($form)->handle();
+    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id))->handle();
 
     $fresh = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($fresh->average_score)->toBe('3.00');
@@ -64,7 +64,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
         ->where('feedback_form_id', $form->id)
         ->exists()))->toBeFalse();
 
-    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form)))
+    expect(fn () => OwnerContext::withOwner($ownerB, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form->id)))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -83,7 +83,7 @@ it('keeps persisted analytics owner tuples immutable', function (): void {
     $form = OwnerContext::withOwner($ownerA, fn (): FeedbackForm => app(CreateFeedbackFormAction::class)->execute(
         new CreateFeedbackFormData(name: 'Immutable analytics'),
     ));
-    OwnerContext::withOwner($ownerA, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form));
+    OwnerContext::withOwner($ownerA, fn () => app(RecalculateFeedbackFormAnalyticsAction::class)->execute($form->id));
 
     $aggregate = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     $aggregate->assignOwner($ownerB);

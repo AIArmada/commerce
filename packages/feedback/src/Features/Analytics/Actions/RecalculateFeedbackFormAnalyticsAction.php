@@ -4,30 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Analytics\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 
 final readonly class RecalculateFeedbackFormAnalyticsAction
 {
     public function __construct(
         private CalculateFeedbackFormAnalyticsAction $calculate,
+        private ReadsOwnedFormIdentity $forms,
     ) {}
 
-    public function execute(FeedbackForm $form): FeedbackFormAnalytics
+    public function execute(string $formId): FeedbackFormAnalytics
     {
-        $this->assertOwnerContextMatchesForm($form);
-        $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
-
-        return DB::transaction(function () use ($guarded): FeedbackFormAnalytics {
-            $form = FeedbackForm::query()
-                ->whereKey($guarded->id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        return (new FeedbackFormAnalytics)->getConnection()->transaction(function () use ($formId): FeedbackFormAnalytics {
+            $form = $this->forms->requireOwned($formId, lock: true);
 
             $data = $this->calculate->execute($form->id);
             $analytics = FeedbackFormAnalytics::query()
@@ -38,8 +30,8 @@ final readonly class RecalculateFeedbackFormAnalyticsAction
                 $analytics = new FeedbackFormAnalytics;
                 $analytics->fill(['feedback_form_id' => $form->id]);
             } elseif (
-                $analytics->owner_type !== $form->owner_type
-                || (string) $analytics->owner_id !== (string) $form->owner_id
+                $analytics->owner_type !== $form->ownerType
+                || (string) $analytics->owner_id !== (string) $form->ownerId
             ) {
                 throw new AuthorizationException('Feedback analytics owner does not match its form owner.');
             }
@@ -60,28 +52,4 @@ final readonly class RecalculateFeedbackFormAnalyticsAction
         });
     }
 
-    private function assertOwnerContextMatchesForm(FeedbackForm $form): void
-    {
-        if (! FeedbackForm::ownerScopeConfig()->enabled) {
-            return;
-        }
-
-        $owner = OwnerContext::resolve();
-
-        if ($form->owner_type === null && $form->owner_id === null) {
-            if (! OwnerContext::isExplicitGlobal()) {
-                throw new AuthorizationException('Explicit global owner context is required for global feedback analytics.');
-            }
-
-            return;
-        }
-
-        if (
-            $owner === null
-            || $form->owner_type !== $owner->getMorphClass()
-            || (string) $form->owner_id !== (string) $owner->getKey()
-        ) {
-            throw new AuthorizationException('Feedback analytics requires the form owner context.');
-        }
-    }
 }
