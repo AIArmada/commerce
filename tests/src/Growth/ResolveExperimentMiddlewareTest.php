@@ -13,7 +13,9 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Growth\Support\Context\ExperimentResolver;
+use AIArmada\Growth\Support\Http\DefaultRequestExperimentSubjectResolver;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware\BootstrapSignalsBrowserContext;
+use AIArmada\Signals\Support\Http\SignalsBrowserContextManager;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -148,6 +150,48 @@ it('reuses an existing assignment when request subjects resolve through Signals 
 
     expect($response->getStatusCode())->toBe(200)
         ->and($response->getContent())->toContain((string) $existingAssignment->getKey());
+});
+
+it('resolves subjects from the supplied request instead of the bound request or auth guard', function (): void {
+    config()->set('signals.integrations.browser.enabled', true);
+
+    $owner = growthPresentationCreateOwner();
+    $experiment = growthPresentationCreateExperiment($owner);
+    $suppliedSessionIdentifier = 'supplied-session-identifier';
+
+    [$identity, $session] = OwnerContext::withOwner($owner, function () use ($experiment, $owner, $suppliedSessionIdentifier): array {
+        $identity = growthPresentationCreateIdentityForUser($experiment->trackedProperty, $owner);
+        $session = growthPresentationCreateSessionForIdentifier(
+            $experiment->trackedProperty,
+            $owner,
+            $suppliedSessionIdentifier,
+            $identity,
+        );
+
+        return [$identity, $session];
+    });
+
+    $boundRequest = Request::create('/bound-request', 'GET');
+    $boundRequest->cookies->set('sig_vid', 'bound-visitor');
+    $boundRequest->cookies->set('sig_sid', 'bound-session');
+    app()->instance('request', $boundRequest);
+    app(SignalsBrowserContextManager::class)->resolveOrCreate($boundRequest);
+
+    $suppliedRequest = Request::create('/supplied-request', 'GET');
+    $suppliedRequest->cookies->set('sig_vid', 'supplied-visitor');
+    $suppliedRequest->cookies->set('sig_sid', $suppliedSessionIdentifier);
+
+    auth()->guard('web')->setUser($owner);
+
+    $subjects = OwnerContext::withOwner(
+        $owner,
+        fn () => app(DefaultRequestExperimentSubjectResolver::class)->resolve($suppliedRequest, $experiment),
+    );
+
+    expect($subjects->anonymousId)->toBe('supplied-visitor')
+        ->and($subjects->session?->getKey())->toBe($session->getKey())
+        ->and($subjects->identity)->toBeNull()
+        ->and($identity->getKey())->not->toBeNull();
 });
 
 it('rejects experiment middleware resolution outside the current owner scope', function (): void {

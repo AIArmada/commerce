@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\GoalsReportRead;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\GoalsReportService;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
@@ -76,7 +76,7 @@ final class GoalsReport extends ReportPage
         ];
 
         if ($this->reportCache === null || $this->reportCacheParameters !== $parameters) {
-            $this->reportCache = app(GoalsReportService::class)->report(...$parameters);
+            $this->reportCache = app(GoalsReportRead::class)->report(...$parameters);
             $this->reportCacheParameters = $parameters;
         }
 
