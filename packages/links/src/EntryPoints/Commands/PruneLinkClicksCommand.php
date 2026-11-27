@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Links\Console\Commands;
+namespace AIArmada\Links\EntryPoints\Commands;
 
-use AIArmada\Links\Models\LinkClick;
+use AIArmada\Links\Actions\PruneLinkClicks;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
 final class PruneLinkClicksCommand extends Command
 {
     protected $signature = 'links:prune-clicks
-        {--days= : Delete clicks older than this many days. Defaults to links.retention.prune_clicks_after_days.}';
+        {--days= : Delete clicks older than this many days. Defaults to links.features.retention.prune_clicks_after_days.}';
 
     protected $description = 'Delete tracked link clicks older than the retention window.';
 
@@ -29,17 +29,7 @@ final class PruneLinkClicksCommand extends Command
         }
 
         $cutoff = CarbonImmutable::now()->subDays($days);
-        $pruned = 0;
-
-        do {
-            $deleted = LinkClick::query()
-                ->withoutOwnerScope()
-                ->where('occurred_at', '<', $cutoff)
-                ->limit(1000)
-                ->delete();
-
-            $pruned += $deleted;
-        } while ($deleted > 0);
+        $pruned = app(PruneLinkClicks::class)->handle($cutoff);
 
         $this->info("Pruned {$pruned} link click(s) older than {$days} day(s).");
 

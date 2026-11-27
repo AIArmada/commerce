@@ -36,7 +36,7 @@ final class EditLink extends EditRecord
     {
         /** @var Link $record */
         if (LinkForm::isProtectedSubject($record)) {
-            unset($data['slug'], $data['destination_url'], $data['parameters'], $data['utm_defaults'], $data['require_signature']);
+            unset($data['slug_prefix'], $data['slug'], $data['destination_url'], $data['parameters'], $data['utm_defaults'], $data['require_signature']);
         }
 
         return UpdateLinkAction::run($record, $data);

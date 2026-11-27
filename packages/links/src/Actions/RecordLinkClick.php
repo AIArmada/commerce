@@ -65,18 +65,27 @@ final class RecordLinkClick
         $owner = OwnerContext::fromTypeAndId($link->owner_type, $link->owner_id);
 
         OwnerContext::withOwner($owner, static function () use ($click, $link, $isBot): void {
-            $click->save();
+            $link->getConnection()->transaction(static function () use ($click, $link, $isBot): void {
+                $locked = Link::query()->withoutOwnerScope()->whereKey($link->getKey())->lockForUpdate()->firstOrFail();
+                $click->save();
 
-            $link->increment('total_clicks');
+                $locked->total_clicks++;
 
-            if (! $isBot || (bool) config('links.features.tracking.bots.count', false)) {
-                $link->increment('human_clicks');
-            }
+                if (! $isBot || (bool) config('links.features.tracking.bots.count', false)) {
+                    $locked->human_clicks++;
+                }
 
-            $link->update([
-                'first_clicked_at' => $link->first_clicked_at ?? $click->occurred_at,
-                'last_clicked_at' => $click->occurred_at,
-            ]);
+                if ($locked->first_clicked_at === null || $locked->first_clicked_at->greaterThan($click->occurred_at)) {
+                    $locked->first_clicked_at = $click->occurred_at;
+                }
+
+                if ($locked->last_clicked_at === null || $locked->last_clicked_at->lessThan($click->occurred_at)) {
+                    $locked->last_clicked_at = $click->occurred_at;
+                }
+
+                $locked->save();
+                $link->setRawAttributes($locked->getAttributes(), true);
+            });
         });
 
         event(new LinkClicked($link, $click));

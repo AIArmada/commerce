@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Links\Support;
+namespace AIArmada\Links\Drivers;
 
 use AIArmada\Links\Contracts\UserAgentParserInterface;
 use DeviceDetector\DeviceDetector;

@@ -107,6 +107,7 @@ final class LinksTable
                     ->requiresConfirmation()
                     ->visible(fn (Link $record): bool => $record->deactivated_at === null
                         && ! LinkForm::isProtectedSubject($record))
+                    ->authorize(fn (Link $record): bool => LinkResource::canEdit($record) && ! LinkForm::isProtectedSubject($record))
                     ->action(function (Link $record): void {
                         DeactivateLink::run($record);
 
@@ -119,6 +120,7 @@ final class LinksTable
                     ->color('success')
                     ->visible(fn (Link $record): bool => $record->deactivated_at !== null
                         && ! LinkForm::isProtectedSubject($record))
+                    ->authorize(fn (Link $record): bool => LinkResource::canEdit($record) && ! LinkForm::isProtectedSubject($record))
                     ->action(function (Link $record): void {
                         ReactivateLink::run($record);
 
