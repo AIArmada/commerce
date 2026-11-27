@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services\Collect;
+namespace AIArmada\Chip\Support;
 
 use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Exceptions\ChipValidationException;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Features\Statements\Actions;
 
 use AIArmada\Chip\Features\Statements\Api\AccountOperations;
-use AIArmada\Chip\Services\Collect\CollectApi;
+use AIArmada\Chip\Support\CollectApi;
 
 final class AccountApi extends CollectApi implements AccountOperations
 {

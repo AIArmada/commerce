@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Features\Collect\Api\ClientOperations;
-use AIArmada\Chip\Services\Collect\CollectApi;
+use AIArmada\Chip\Support\CollectApi;
 
 final class ClientsApi extends CollectApi implements ClientOperations
 {

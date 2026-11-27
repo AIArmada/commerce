@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Features\WebhookDelivery\Actions;
 
 use AIArmada\Chip\Features\WebhookDelivery\Api\WebhookRegistrationOperations;
-use AIArmada\Chip\Services\Collect\CollectApi;
+use AIArmada\Chip\Support\CollectApi;
 
 final class WebhooksApi extends CollectApi implements WebhookRegistrationOperations
 {
