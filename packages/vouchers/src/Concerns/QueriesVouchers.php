@@ -26,12 +26,18 @@ trait QueriesVouchers
      */
     protected function voucherQuery(): Builder
     {
-        return Voucher::query()
+        $owner = $this->resolveOwner();
+        $includeGlobal = $this->shouldIncludeGlobal();
+
+        $query = Voucher::query()
             ->withCount('usages')
-            ->forOwner(
-                $this->resolveOwner(),
-                $this->shouldIncludeGlobal()
-            );
+            ->forOwner($owner, $includeGlobal);
+
+        if ($owner !== null && $includeGlobal) {
+            $query->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END');
+        }
+
+        return $query;
     }
 
     protected function resolveOwner(): ?Model

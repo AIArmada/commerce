@@ -11,11 +11,13 @@ use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVou
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 use AIArmada\Vouchers\Traits\HasVouchers;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -272,4 +274,29 @@ it('removes a voucher from metadata and all cart condition stores together', fun
     expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
         ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue()
         ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
+});
+
+it('prefers the exact owner voucher when a global voucher shares its code', function (): void {
+    config()->set('vouchers.owner.enabled', true);
+    config()->set('vouchers.owner.include_global', true);
+    Voucher::clearBootedModels();
+
+    try {
+        $owner = scopeWalletUser('voucher-owner-priority');
+        $global = OwnerContext::withOwner(null, static fn (): Voucher => scopeVoucher(['code' => 'OWNERFIRST', 'value' => 100]));
+        $owned = OwnerContext::withOwner($owner, static fn (): Voucher => scopeVoucher(['code' => 'OWNERFIRST', 'value' => 500]));
+
+        OwnerContext::withOwner($owner, function () use ($owned): void {
+            $service = app(VoucherService::class);
+
+            expect($service->find('OWNERFIRST')?->id)->toBe($owned->id);
+
+            $service->recordUsage('OWNERFIRST', Money::MYR(500));
+        });
+
+        expect($owned->usages()->count())->toBe(1)
+            ->and($global->usages()->count())->toBe(0);
+    } finally {
+        Voucher::clearBootedModels();
+    }
 });

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
+use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\States\VoucherStatus;
@@ -17,7 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 final class UpdateVoucher implements VoucherUpdater
 {
     use AsAction;
-    use NormalizesVoucherCodes;
+    use QueriesVouchers;
 
     public function __construct(private readonly VoucherInputValidator $validator) {}
 
@@ -26,7 +26,7 @@ final class UpdateVoucher implements VoucherUpdater
     {
         $record = $voucher instanceof VoucherModel
             ? $voucher
-            : VoucherModel::query()->where('code', $this->normalizeCode($voucher))->firstOrFail();
+            : $this->voucherQuery()->where('code', $this->normalizeCode($voucher))->firstOrFail();
 
         return $record->getConnection()->transaction(function () use ($record, $data): VoucherModel {
             if (config('vouchers.owner.enabled', false)) {
