@@ -10,8 +10,10 @@ use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Runtime\ConditionProviderInterface;
+use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Jnt\Data\AddressData;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 
 /**
  * Calculates J&T Express shipping rates and exposes them as cart conditions.
@@ -64,12 +66,50 @@ final class JntShippingCalculator implements ConditionProviderInterface
         $totalWeight = 0;
 
         foreach ($cart->getItems() as $item) {
-            $weight = $item->getAttribute('weight') ?? 0;
-            $quantity = $item->quantity;
-            $totalWeight += (int) ($weight * $quantity);
+            $quantity = (int) $item->quantity;
+            $components = $item->getAttribute('components');
+
+            if ($components !== null) {
+                foreach (CompositeComponents::expand(CompositeComponents::read($components), $quantity) as $component) {
+                    if ($component['requires_shipping'] && $component['weight'] !== null) {
+                        $totalWeight = $this->addWeight($totalWeight, $component['weight'], $component['quantity']);
+                    }
+                }
+
+                continue;
+            }
+
+            if ($item->getAttribute('requires_shipping') === false) {
+                continue;
+            }
+
+            $weight = $item->getAttribute('weight_grams') ?? $item->getAttribute('weight');
+
+            if (! is_numeric($weight) || ! is_finite((float) $weight) || $weight <= 0) {
+                continue;
+            }
+
+            if ((float) $weight >= (float) PHP_INT_MAX) {
+                throw new InvalidArgumentException('Cart item weight exceeds the supported range.');
+            }
+
+            $totalWeight = $this->addWeight($totalWeight, (int) round((float) $weight), $quantity);
         }
 
         return $totalWeight;
+    }
+
+    private function addWeight(int $total, int $weight, int $quantity): int
+    {
+        if ($weight <= 0 || $quantity <= 0) {
+            return $total;
+        }
+
+        if ($weight > intdiv(PHP_INT_MAX - $total, $quantity)) {
+            throw new InvalidArgumentException('Cart weight exceeds the supported range.');
+        }
+
+        return $total + ($weight * $quantity);
     }
 
     /**
@@ -79,14 +119,13 @@ final class JntShippingCalculator implements ConditionProviderInterface
      */
     public function getConditionsFor(Cart $cart): array
     {
-        /** @var array<string, mixed>|null $shippingAddress */
-        $shippingAddress = $cart->getMetadata(self::SHIPPING_ADDRESS_KEY);
+        $destination = $this->destination($cart);
 
-        if (! is_array($shippingAddress)) {
+        if ($destination === null) {
             return [];
         }
 
-        $quote = $this->calculateShipping($cart, AddressData::fromApiArray($shippingAddress));
+        $quote = $this->calculateShipping($cart, $destination);
 
         if ($quote === null) {
             return [];
@@ -101,7 +140,30 @@ final class JntShippingCalculator implements ConditionProviderInterface
             return true;
         }
 
-        return is_array($cart->getMetadata(self::SHIPPING_ADDRESS_KEY));
+        return $this->destination($cart) !== null && $this->getCartWeight($cart) > 0 && $this->getOriginAddress() !== null;
+    }
+
+    private function destination(Cart $cart): ?AddressData
+    {
+        $data = $cart->getMetadata(self::SHIPPING_ADDRESS_KEY);
+
+        if (! is_array($data)) {
+            return null;
+        }
+
+        foreach (['name', 'phone', 'address', 'postCode'] as $field) {
+            if (! is_string($data[$field] ?? null) || mb_trim($data[$field]) === '') {
+                return null;
+            }
+        }
+
+        foreach (['countryCode', 'prov', 'city', 'area', 'email', 'idCard'] as $field) {
+            if (isset($data[$field]) && ! is_string($data[$field])) {
+                return null;
+            }
+        }
+
+        return AddressData::fromApiArray($data);
     }
 
     public function getType(): string
@@ -141,13 +203,18 @@ final class JntShippingCalculator implements ConditionProviderInterface
      */
     private function calculateWeightBasedRate(int $weightGrams, AddressData $destination): int
     {
-        $weightKg = (int) ceil($weightGrams / 1000);
+        $weightKg = intdiv($weightGrams - 1, 1000) + 1;
         $baseRate = (int) config('jnt.shipping.base_rate', 800);
         $perKgRate = (int) config('jnt.shipping.per_kg_rate', 200);
         $minCharge = (int) config('jnt.shipping.min_charge', 800);
         $regionMultiplierBasisPoints = $this->getRegionMultiplierBasisPoints($destination);
 
-        $rate = $baseRate + ($perKgRate * max(0, $weightKg - 1));
+        if (min($baseRate, $perKgRate, $minCharge, $regionMultiplierBasisPoints) < 0
+            || ($perKgRate > 0 && $weightKg - 1 > intdiv(PHP_INT_MAX - $baseRate, $perKgRate))) {
+            throw new InvalidArgumentException('Invalid or overflowing shipping rate configuration.');
+        }
+
+        $rate = $baseRate + ($perKgRate * ($weightKg - 1));
         $rate = $this->applyRegionMultiplier($rate, $regionMultiplierBasisPoints);
 
         return max($rate, $minCharge);
@@ -177,6 +244,10 @@ final class JntShippingCalculator implements ConditionProviderInterface
 
     private function applyRegionMultiplier(int $rate, int $basisPoints): int
     {
+        if ($basisPoints > 0 && $rate > intdiv(PHP_INT_MAX - 5000, $basisPoints)) {
+            throw new InvalidArgumentException('Regional shipping rate exceeds the supported range.');
+        }
+
         return intdiv(($rate * $basisPoints) + 5000, 10000);
     }
 

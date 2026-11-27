@@ -98,7 +98,7 @@ describe('JntShippingCalculator condition provider', function (): void {
         expect($provider->validate($condition, $cart))->toBeFalse();
     });
 
-    it('validates condition returns true when shipping address exists', function (): void {
+    it('validates condition returns true when shipping address and physical weight exist', function (): void {
         $cart = createConditionTestCart('with-addr-validation');
         $cart->setMetadata('jnt_shipping_address', [
             'name' => 'Test',
@@ -107,6 +107,7 @@ describe('JntShippingCalculator condition provider', function (): void {
             'postCode' => '50000',
         ]);
 
+        $cart->add(['id' => 'physical', 'name' => 'Physical', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => 1000]]);
         $condition = createTestCondition('shipping');
 
         $provider = createRealCalculator();
@@ -243,4 +244,13 @@ describe('JntShippingCalculator condition provider', function (): void {
         // Should have recalculated, not used cached 800
         expect($conditions[0]->getValue())->not->toBe('800');
     });
+});
+
+it('rejects malformed destination metadata without producing a condition', function (): void {
+    $cart = createConditionTestCart('malformed-destination');
+    $cart->setMetadata('jnt_shipping_address', ['name' => 'Test', 'phone' => [], 'address' => 'Test', 'postCode' => '50000']);
+    $provider = createRealCalculator();
+
+    expect($provider->getConditionsFor($cart))->toBeEmpty()
+        ->and($provider->validate(createTestCondition(), $cart))->toBeFalse();
 });

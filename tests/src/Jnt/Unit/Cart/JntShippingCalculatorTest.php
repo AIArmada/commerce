@@ -378,3 +378,41 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
             ->and($quote['amount'])->toBe(1);
     });
 });
+
+it('uses canonical gram weights and ignores nonphysical items', function (): void {
+    $cart = createJntTestCart('canonical-grams');
+    $cart->add(['id' => 'physical', 'name' => 'Physical', 'price' => 100, 'quantity' => 2, 'attributes' => ['weight_grams' => 750, 'weight' => 10]]);
+    $cart->add(['id' => 'service', 'name' => 'Service', 'price' => 100, 'quantity' => 1, 'attributes' => ['requires_shipping' => false, 'weight' => 5000]]);
+    $cart->add(['id' => 'negative', 'name' => 'Negative', 'price' => 100, 'quantity' => 1, 'attributes' => ['weight' => -100]]);
+
+    expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1500);
+});
+
+it('uses only physical composite components and expands their quantities', function (): void {
+    $cart = createJntTestCart('composite-grams');
+    $component = [
+        'product_id' => 'physical-product',
+        'variant_id' => null,
+        'inventoryable_type' => 'product',
+        'inventoryable_id' => 'physical-product',
+        'quantity' => 3,
+        'sku' => 'PHYSICAL',
+        'name' => 'Physical component',
+        'weight' => 200,
+        'dimensions' => null,
+        'requires_shipping' => true,
+        'tracks_inventory' => true,
+    ];
+    $service = array_replace($component, [
+        'product_id' => 'service-product',
+        'inventoryable_id' => 'service-product',
+        'sku' => 'SERVICE',
+        'name' => 'Service component',
+        'requires_shipping' => false,
+        'weight' => 5000,
+    ]);
+
+    $cart->add(['id' => 'composite', 'name' => 'Composite', 'price' => 100, 'quantity' => 2, 'attributes' => ['weight' => 9999, 'components' => [$component, $service]]]);
+
+    expect((new JntShippingCalculator)->getCartWeight($cart))->toBe(1200);
+});
