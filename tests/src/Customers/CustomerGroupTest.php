@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Actions\ManageCustomerGroupMembership;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -75,6 +78,31 @@ describe('CustomerGroup Model', function (): void {
 
             expect(fn () => app(ManageCustomerGroupMembership::class)->add($group, $customer))
                 ->toThrow(InvalidArgumentException::class);
+        });
+
+        it('rejects membership changes using another owner's models', function (): void {
+            config(['customers.features.owner.enabled' => true, 'customers.features.owner.include_global' => false]);
+
+            $ownerA = User::query()->create([
+                'name' => 'Group Owner A',
+                'email' => 'group-owner-a-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $ownerB = User::query()->create([
+                'name' => 'Group Owner B',
+                'email' => 'group-owner-b-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+
+            [$group, $customer] = OwnerContext::withOwner($ownerB, static fn (): array => [
+                CustomerGroup::create(['name' => 'Tenant B group']),
+                Customer::create(['first_name' => 'Tenant', 'last_name' => 'B']),
+            ]);
+
+            expect(fn () => OwnerContext::withOwner($ownerA, fn () => app(ManageCustomerGroupMembership::class)->add($group, $customer)))
+                ->toThrow(AuthorizationException::class);
+
+            expect(OwnerContext::withOwner($ownerB, fn (): bool => $group->hasMember($customer)))->toBeFalse();
         });
 
         it('can create a group', function (): void {

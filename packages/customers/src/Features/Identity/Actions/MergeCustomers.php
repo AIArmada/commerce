@@ -11,10 +11,10 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Segmentation\Actions\TransferCustomerGroupMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -43,7 +43,7 @@ final class MergeCustomers
                 $this->moveContactMethods($source, $target);
                 $this->moveSocialProfiles($source, $target);
                 app(TransferSegmentMemberships::class)->execute($source, $target);
-                $this->mergeGroups($source, $target);
+                app(TransferCustomerGroupMemberships::class)->execute($source, $target);
                 $this->moveNotes($source, $target);
 
                 if (! empty($source->metadata) && empty($target->metadata)) {
@@ -181,24 +181,6 @@ final class MergeCustomers
             ->where('purpose', $socialProfile->purpose)
             ->where('is_primary', true)
             ->exists();
-    }
-
-    private function mergeGroups(Customer $source, Customer $target): void
-    {
-        $source->loadMissing('groups');
-
-        $attach = [];
-
-        foreach ($source->groups as $group) {
-            $attach[$group->getKey()] = [
-                'role' => $group->pivot->role ?? 'member',
-                'joined_at' => $group->pivot->joined_at ?? CarbonImmutable::now(),
-            ];
-        }
-
-        if ($attach !== []) {
-            $target->groups()->syncWithoutDetaching($attach);
-        }
     }
 
     private function moveNotes(Customer $source, Customer $target): void

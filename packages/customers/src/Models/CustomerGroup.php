@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -184,7 +185,7 @@ class CustomerGroup extends Model implements Auditable
         });
 
         static::deleting(function (CustomerGroup $group): void {
-            $group->members()->detach();
+            app(DetachDeletedCustomerGroupMemberships::class)->forGroup($group);
         });
     }
 }

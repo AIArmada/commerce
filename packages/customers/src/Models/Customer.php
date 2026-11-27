@@ -23,6 +23,7 @@ use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Carbon\CarbonImmutable;
@@ -403,7 +404,7 @@ class Customer extends Model implements Auditable, HasMedia
             app(AddressAttachmentWriter::class)->detachAll($customer->getMorphClass(), (string) $customer->getKey());
             $customer->notes()->delete();
             app(DetachDeletedSegmentMemberships::class)->forCustomer($customer);
-            $customer->groups()->detach();
+            app(DetachDeletedCustomerGroupMemberships::class)->forCustomer($customer);
             $customer->contactMethods()->get()->each(fn (ContactMethod $contactMethod): bool => $contactMethod->delete());
             $customer->socialProfiles()->get()->each(fn (SocialProfile $socialProfile): bool => $socialProfile->delete());
             $customer->media()->get()->each(fn (Media $medium): bool => (bool) $medium->delete());
