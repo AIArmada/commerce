@@ -45,6 +45,12 @@ test('sends reminders for upcoming due docs', function (): void {
         'customer_data' => ['email' => 'upcoming@example.com', 'name' => 'John Doe'],
     ]);
 
+    $pastDue = Doc::factory()->create([
+        'status' => Sent::class,
+        'due_date' => now()->subDay(),
+        'customer_data' => ['email' => 'pastdue@example.com'],
+    ]);
+
     // Ignored docs
     Doc::factory()->create(['status' => Paid::class, 'due_date' => $dueDate, 'customer_data' => ['email' => 'paid@example.com']]);
     Doc::factory()->create(['status' => Sent::class, 'due_date' => now()->addDays(4), 'customer_data' => ['email' => 'notyet@example.com']]);
@@ -53,7 +59,8 @@ test('sends reminders for upcoming due docs', function (): void {
     $job->handle(app(DeliverDocReminders::class), app(DueDocReminders::class));
 
     expect($doc->emails)->toHaveCount(1)
-        ->and($doc->emails->first()->recipient_email)->toBe('upcoming@example.com');
+        ->and($doc->emails->first()->recipient_email)->toBe('upcoming@example.com')
+        ->and($pastDue->emails()->count())->toBe(0);
 });
 
 test('sends reminders for overdue docs', function (): void {
