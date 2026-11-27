@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Drivers\ChipCollectClient;
-use AIArmada\Chip\Services\Collect\AccountApi;
+use AIArmada\Chip\Features\Statements\Actions\AccountApi;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function (): void {

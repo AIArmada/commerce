@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services\Collect;
+namespace AIArmada\Chip\Features\WebhookDelivery\Actions;
 
-final class WebhooksApi extends CollectApi
+use AIArmada\Chip\Features\WebhookDelivery\Api\WebhookRegistrationOperations;
+use AIArmada\Chip\Services\Collect\CollectApi;
+
+final class WebhooksApi extends CollectApi implements WebhookRegistrationOperations
 {
     /**
      * @param  array<string, mixed>  $data

@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Services\Collect;
+namespace AIArmada\Chip\Features\Statements\Actions;
 
-final class AccountApi extends CollectApi
+use AIArmada\Chip\Features\Statements\Api\AccountOperations;
+use AIArmada\Chip\Services\Collect\CollectApi;
+
+final class AccountApi extends CollectApi implements AccountOperations
 {
     /**
      * @param  array<string, mixed>  $filters
