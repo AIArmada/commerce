@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
@@ -130,7 +131,7 @@ describe('Customer Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($inSegment);
+            app(AssignCustomerToSegment::class)->execute($inSegment, $segment);
 
             $matchedIds = Customer::query()->inSegment($segment)->pluck('id')->all();
 

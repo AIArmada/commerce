@@ -5,6 +5,7 @@ $app = require_once __DIR__.'/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Customer;
@@ -55,7 +56,7 @@ echo "Customer C2 created: {$c2->id} (Accepts Marketing: No)\n";
 
 // 4. Run Logic
 echo "4. Running Rebuild Logic...\n";
-$count = $segment->rebuildCustomerList();
+$count = app(RebuildAllSegments::class)->rebuildSegment($segment);
 echo "Rebuilt list. Count: {$count}\n";
 
 // 5. Verification

@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Customer;
@@ -109,7 +112,7 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
             expect($segment->customers)->toHaveCount(1)
                 ->and($segment->customers->first()->id)->toBe($customer->id);
@@ -128,8 +131,8 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
-            $segment->removeCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
+            app(RemoveCustomerFromSegment::class)->execute($customer, $segment);
 
             expect($segment->fresh()->customers)->toHaveCount(0);
         });
@@ -211,7 +214,7 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
             $matching = $segment->getMatchingCustomers();
 
@@ -239,7 +242,7 @@ describe('Segment Model', function (): void {
                 'accepts_marketing' => true,
             ]);
 
-            $count = $segment->rebuildCustomerList();
+            $count = app(RebuildAllSegments::class)->rebuildSegment($segment);
 
             expect($count)->toBeGreaterThanOrEqual(1);
         });
@@ -333,7 +336,7 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
             $segmentId = $segment->id;
             $segment->delete();
@@ -358,9 +361,9 @@ describe('Segment Model', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
 
-            $count = $segment->rebuildCustomerList();
+            $count = app(RebuildAllSegments::class)->rebuildSegment($segment);
 
             expect($count)->toBe(1);
         });

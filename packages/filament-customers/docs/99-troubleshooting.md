@@ -274,7 +274,7 @@ protected ?string $pollingInterval = null;
 1. **Use queue**:
 ```php
 dispatch(function() use ($segment) {
-    $segment->rebuildCustomerList();
+    app(\AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments::class)->rebuildSegment($segment);
 })->onQueue('segments');
 ```
 

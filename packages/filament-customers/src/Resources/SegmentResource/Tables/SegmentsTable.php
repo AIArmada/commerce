@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\SegmentResource\Tables;
 
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Filament\Actions\Action;
@@ -103,7 +104,7 @@ final class SegmentsTable
 
                         Gate::forUser($user)->authorize('rebuild', $record);
 
-                        $count = $record->rebuildCustomerList();
+                        $count = app(RebuildAllSegments::class)->rebuildSegment($record);
 
                         Notification::make()
                             ->success()

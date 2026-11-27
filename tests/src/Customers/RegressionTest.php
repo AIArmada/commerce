@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -375,7 +376,7 @@ describe('bounded segment operations', function (): void {
                 'status' => $status,
                 'accepts_marketing' => $marketing,
             ]);
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
         }
 
         $stats = app(SegmentationService::class)->getSegmentStats($segment);

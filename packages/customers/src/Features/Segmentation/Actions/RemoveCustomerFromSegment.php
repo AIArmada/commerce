@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Features\Segmentation\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
@@ -19,6 +20,11 @@ final class RemoveCustomerFromSegment
 
         if (! $this->shareOwner($customer, $segment)) {
             throw new InvalidArgumentException('Customer and segment must share the same owner context.');
+        }
+
+        if (Customer::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
+            OwnerWriteGuard::findOrFailForOwner(Segment::class, $segment->getKey());
         }
 
         if (! $customer->segments()->whereKey($segment->id)->exists()) {

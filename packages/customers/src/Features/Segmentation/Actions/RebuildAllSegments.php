@@ -102,7 +102,7 @@ final class RebuildAllSegments
                     foreach ($customers as $customer) {
                         $currentCustomerIds[] = (string) $customer->getKey();
                     }
-                }, $relatedKey);
+                }, $relatedKey, 'id');
 
             $addedIds = array_values(array_diff($newCustomerIds, $currentCustomerIds));
             $removedIds = array_values(array_diff($currentCustomerIds, $newCustomerIds));

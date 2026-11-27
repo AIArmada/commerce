@@ -210,30 +210,6 @@ class Segment extends Model implements Auditable
             ->map(fn (Customer $customer): string => (string) $customer->getKey());
     }
 
-    /**
-     * Rebuild the customer list for automatic segments.
-     */
-    public function rebuildCustomerList(): int
-    {
-        if (! $this->is_automatic) {
-            return $this->customers()->count();
-        }
-
-        $matchingIds = [];
-
-        $this->matchingCustomersQuery()
-            ->select('id')
-            ->chunkById(1000, function (Collection $customers) use (&$matchingIds): void {
-                foreach ($customers as $customer) {
-                    $matchingIds[] = $customer->getKey();
-                }
-            });
-
-        $this->customers()->sync($matchingIds);
-
-        return count($matchingIds);
-    }
-
     // =========================================================================
     // HELPERS
     // =========================================================================
@@ -246,40 +222,6 @@ class Segment extends Model implements Auditable
     public function isManual(): bool
     {
         return ! $this->is_automatic;
-    }
-
-    /**
-     * Add a customer to this segment.
-     */
-    public function addCustomer(Customer $customer): void
-    {
-        if (! $this->isSameOwnerAsCustomer($customer)) {
-            throw new InvalidArgumentException('Segment and customer must share the same owner context.');
-        }
-
-        $this->customers()->syncWithoutDetaching([$customer->id]);
-    }
-
-    /**
-     * Remove a customer from this segment.
-     */
-    public function removeCustomer(Customer $customer): void
-    {
-        if (! $this->isSameOwnerAsCustomer($customer)) {
-            throw new InvalidArgumentException('Segment and customer must share the same owner context.');
-        }
-
-        $this->customers()->detach($customer->id);
-    }
-
-    private function isSameOwnerAsCustomer(Customer $customer): bool
-    {
-        if ($this->owner_type === null && $this->owner_id === null) {
-            return $customer->owner_type === null && $customer->owner_id === null;
-        }
-
-        return $customer->owner_type === $this->owner_type
-            && $customer->owner_id === $this->owner_id;
     }
 
     // =========================================================================

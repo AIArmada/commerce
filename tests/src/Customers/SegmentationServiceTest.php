@@ -262,7 +262,7 @@ describe('SegmentationService', function (): void {
                 'status' => CustomerStatus::Active,
             ]);
 
-            $segment->addCustomer($customer);
+            app(AssignCustomerToSegment::class)->execute($customer, $segment);
             $this->service->removeFromSegment($customer, $segment);
 
             expect($customer->fresh()->segments->pluck('id'))->not->toContain($segment->id);
@@ -292,8 +292,8 @@ describe('SegmentationService', function (): void {
                 'accepts_marketing' => false,
             ]);
 
-            $segment->addCustomer($customer1);
-            $segment->addCustomer($customer2);
+            app(AssignCustomerToSegment::class)->execute($customer1, $segment);
+            app(AssignCustomerToSegment::class)->execute($customer2, $segment);
 
             $stats = $this->service->getSegmentStats($segment);
 
