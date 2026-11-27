@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
 use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use Illuminate\Support\Facades\Gate;
 
 uses(FilamentJntTestCase::class);

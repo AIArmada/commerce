@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Services;
+namespace AIArmada\Jnt\Features\Tracking\Support;
 
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
 use AIArmada\Jnt\Enums\ScanTypeCode;

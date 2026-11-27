@@ -267,7 +267,7 @@ OwnerContext::withOwner($tenant, function () use ($data) {
 ### JntTrackingService
 
 ```php
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 
 $service = app(JntTrackingService::class);
 
@@ -328,7 +328,7 @@ Jobs must explicitly handle owner context. The `OwnerContextJob` trait from
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 
 class SyncJntTracking implements OwnerScopedJob, ShouldQueue
 {

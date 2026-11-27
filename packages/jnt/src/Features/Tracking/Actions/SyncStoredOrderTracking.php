@@ -7,7 +7,7 @@ namespace AIArmada\Jnt\Features\Tracking\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use DomainException;
 
 final class SyncStoredOrderTracking implements SyncStoredTracking

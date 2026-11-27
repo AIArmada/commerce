@@ -7,7 +7,7 @@ use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use Illuminate\Support\Facades\Notification;
 
 describe('SendShipmentNotifications listener', function (): void {

@@ -99,7 +99,7 @@ The package normalizes J&T scan types to a unified `TrackingStatus` enum:
 
 ```php
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
 $status = $mapper->fromCode('100');  // ScanTypeCode for "signed"
@@ -132,7 +132,7 @@ $status->requiresAttention(); // Needs action?
 The `JntTrackingService` provides high-level tracking operations:
 
 ```php
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 
 $trackingService = app(JntTrackingService::class);
 
@@ -157,7 +157,7 @@ Sync tracking events to your database:
 
 ```php
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 
 $trackingService = app(JntTrackingService::class);
 
@@ -213,7 +213,7 @@ Set up scheduled tracking sync in your scheduler:
 
 ```php
 // routes/console.php
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
@@ -347,7 +347,7 @@ The package implements `StatusMapperInterface` for unified tracking:
 
 ```php
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
 
@@ -423,7 +423,7 @@ $strategies = $registry->all();
 `JntStatusMapper` implements both `StatusMapperInterface` (shipping abstraction) and `StatusMappingStrategyInterface` (strategy pattern), registering itself with carrier code `jnt`:
 
 ```php
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 
 $mapper = app(JntStatusMapper::class);
 

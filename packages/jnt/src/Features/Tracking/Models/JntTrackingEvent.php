@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Support\InheritedOwnerGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

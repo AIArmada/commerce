@@ -12,7 +12,7 @@ use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;

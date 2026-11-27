@@ -12,7 +12,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Services\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

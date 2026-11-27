@@ -14,7 +14,7 @@ use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Notifications\OrderProblemNotification;
 use AIArmada\Jnt\Notifications\OrderShippedNotification;
 use AIArmada\Jnt\Notifications\ShipmentEmailRecipient;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;

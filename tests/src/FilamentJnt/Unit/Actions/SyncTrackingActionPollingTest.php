@@ -7,8 +7,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Services\JntStatusMapper;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use Illuminate\Support\Facades\Http;
 
 uses(FilamentJntTestCase::class);
