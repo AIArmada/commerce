@@ -11,6 +11,7 @@ use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -46,7 +47,7 @@ describe('InventoryLocation', function (): void {
         expect($regularLocation->isDefault())->toBeFalse();
     });
 
-    it('deleting location cascades to inventory levels', function (): void {
+    it('rejects deleting a location with inventory levels', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -57,9 +58,9 @@ describe('InventoryLocation', function (): void {
         ]);
         $levelId = $level->id;
 
-        $location->delete();
-
-        expect(InventoryLevel::find($levelId))->toBeNull();
+        expect($location->delete())->toBeFalse()
+            ->and(InventoryLevel::find($levelId))->not->toBeNull()
+            ->and($location->fresh())->not->toBeNull();
     });
 
     it('depth property', function (): void {
@@ -331,7 +332,7 @@ describe('InventoryLocation', function (): void {
         expect($notCertified->canStoreHazmat())->toBeFalse();
     });
 
-    it('deleting location cascades to allocations', function (): void {
+    it('preserves allocations when location deletion is rejected', function (): void {
         $location = InventoryLocation::factory()->create();
         $item = InventoryItem::create(['name' => 'Test Item']);
 
@@ -350,9 +351,8 @@ describe('InventoryLocation', function (): void {
         ]);
         $allocationId = $allocation->id;
 
-        $location->delete();
-
-        expect(InventoryAllocation::find($allocationId))->toBeNull();
+        expect($location->delete())->toBeFalse()
+            ->and(InventoryAllocation::find($allocationId))->not->toBeNull();
     });
 
     it('scope for owner when disabled', function (): void {
@@ -505,4 +505,16 @@ describe('InventoryLocation', function (): void {
 
         expect($distance)->toBe(10.0);
     });
+});
+
+it('preserves a location referenced only by a shipped serial history', function (): void {
+    $location = InventoryLocation::factory()->create();
+    $item = InventoryItem::create(['name' => 'Tracked item']);
+    $service = app(SerialService::class);
+    $serial = $service->register($item, 'SN-HISTORY-LOCATION', $location->id);
+    $serial->update(['location_id' => null]);
+
+    expect($location->delete())->toBeFalse()
+        ->and($location->fresh())->not->toBeNull()
+        ->and($serial->history()->count())->toBe(1);
 });

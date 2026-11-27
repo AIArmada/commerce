@@ -12,10 +12,15 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Database\Factories\InventoryLocationFactory;
 use AIArmada\Inventory\Enums\TemperatureZone;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerialHistory;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Traits\HasLocationHierarchy;
 use Carbon\CarbonImmutable;
@@ -464,42 +469,53 @@ final class InventoryLocation extends Model implements Auditable
             $location->assignOwner($owner);
         });
 
-        static::deleting(function (InventoryLocation $location): void {
-            // Re-parent through model saves (not a mass update) so each
-            // child recomputes its path and depth via the normal hooks.
+        static::deleting(function (InventoryLocation $location): bool {
+            InventoryOwnerScope::forMutation(self::query())->whereKey($location->getKey())->firstOrFail();
+
+            if ($location->hasOperationalReferences()) {
+                return false;
+            }
+
+            // Re-parent only after confirming the location has no operational records.
             $location->children()->chunkById(200, function ($children) use ($location): void {
                 foreach ($children as $child) {
                     $child->update(['parent_id' => $location->parent_id]);
                 }
             });
+
+            return true;
         });
+    }
 
-        self::deleting(function (InventoryLocation $location): void {
-            $location->inventoryLevels()->delete();
-            $location->allocations()->delete();
-            $location->movementsFrom()->delete();
-            $location->movementsTo()->delete();
+    private function hasOperationalReferences(): bool
+    {
+        $id = $this->getKey();
 
-            $batchIds = InventoryBatch::query()
-                ->where('location_id', $location->getKey())
-                ->pluck('id');
+        foreach ([
+            InventoryLevel::class,
+            InventoryAllocation::class,
+            InventoryBatch::class,
+            InventorySerial::class,
+            InventoryCostLayer::class,
+            InventoryValuationSnapshot::class,
+            InventoryBackorder::class,
+            InventoryDemandHistory::class,
+            InventoryReorderSuggestion::class,
+        ] as $model) {
+            if ($model::query()->withoutGlobalScopes()->where('location_id', $id)->exists()) {
+                return true;
+            }
+        }
 
-            // Cost layers belong to batches, which are removed below with a
-            // query delete that skips model events; clear them first so no
-            // layer outlives its batch. Batch-linked allocations are already
-            // gone via the location-wide allocation delete above.
-            InventoryCostLayer::query()->whereIn('batch_id', $batchIds)->delete();
-            InventoryBatch::query()->where('location_id', $location->getKey())->delete();
+        foreach ([InventoryMovement::class, InventorySerialHistory::class] as $model) {
+            if ($model::query()->withoutGlobalScopes()
+                ->where(fn (Builder $query): Builder => $query->where('from_location_id', $id)->orWhere('to_location_id', $id))
+                ->exists()) {
+                return true;
+            }
+        }
 
-            // Per-model deletes so serial history cascades fire.
-            InventorySerial::query()
-                ->where('location_id', $location->getKey())
-                ->chunkById(200, function ($serials): void {
-                    foreach ($serials as $serial) {
-                        $serial->delete();
-                    }
-                });
-        });
+        return false;
     }
 
     /**

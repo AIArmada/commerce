@@ -357,11 +357,13 @@ describe('InventoryLevel', function (): void {
         expect($level->inventoryable->id)->toBe($this->item->id);
     });
 
-    it('deleting level cascades to allocations', function (): void {
+    it('rejects deleting a level referenced by an allocation', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
+            'quantity_on_hand' => 0,
+            'quantity_reserved' => 0,
         ]);
 
         $allocation = InventoryAllocation::factory()->create([
@@ -370,11 +372,26 @@ describe('InventoryLevel', function (): void {
             'location_id' => $this->location->id,
             'level_id' => $level->id,
             'cart_id' => 'cart-1',
+            'level_id' => $level->id,
+            'location_id' => $this->location->id,
             'expires_at' => now()->addHour(),
         ]);
 
-        $level->delete();
-
-        expect(InventoryAllocation::find($allocation->id))->toBeNull();
+        expect($level->delete())->toBeFalse()
+            ->and(InventoryAllocation::find($allocation->id))->not->toBeNull();
     });
+});
+
+it('rejects deleting a stale level after stock is received', function (): void {
+    $location = InventoryLocation::factory()->create();
+    $level = InventoryLevel::factory()->create([
+        'location_id' => $location->id,
+        'quantity_on_hand' => 0,
+        'quantity_reserved' => 0,
+    ]);
+    $stale = $level->fresh();
+    $level->incrementOnHand(5);
+
+    expect($stale->delete())->toBeFalse()
+        ->and($level->fresh()->quantity_on_hand)->toBe(5);
 });

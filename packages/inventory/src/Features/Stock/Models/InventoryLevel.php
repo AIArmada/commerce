@@ -407,8 +407,12 @@ final class InventoryLevel extends Model implements Auditable
             $level->auditDirectOnHandChange();
         });
 
-        self::deleting(function (InventoryLevel $level): void {
-            $level->allocations()->delete();
+        self::deleting(function (InventoryLevel $level): bool {
+            $record = InventoryOwnerScope::forMutation(self::query())->whereKey($level->getKey())->firstOrFail();
+
+            return $record->quantity_on_hand === 0
+                && $record->quantity_reserved === 0
+                && ! $record->allocations()->withoutGlobalScopes()->exists();
         });
     }
 
