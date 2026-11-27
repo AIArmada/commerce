@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Console\Commands\Webhooks;
+namespace AIArmada\Jnt\EntryPoints\Commands\Webhooks;
 
-use AIArmada\Jnt\Console\JntCommand;
+use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Services\WebhookService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Console\Commands\Orders;
+namespace AIArmada\Jnt\EntryPoints\Commands\Orders;
 
-use AIArmada\Jnt\Console\JntCommand;
+use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Services\JntExpressService;
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Console\Commands\Tracking;
+namespace AIArmada\Jnt\EntryPoints\Commands\Tracking;
 
-use AIArmada\Jnt\Console\JntCommand;
+use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Services\JntExpressService;
 
 class OrderTrackCommand extends JntCommand
