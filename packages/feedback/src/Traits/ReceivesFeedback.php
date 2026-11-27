@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Traits;
 
-use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
+use AIArmada\Feedback\Features\Forms\Api\CreatesFormsFromTemplates;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectFeedbackMetrics;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
@@ -40,18 +39,13 @@ trait ReceivesFeedback
         return $this->feedbackTestimonials()->published();
     }
 
-    public function createFeedbackFormFromTemplate(string | FeedbackTemplate $template, array $overrides = []): FeedbackForm
+    public function createFeedbackFormFromTemplate(string $templateSlug, array $overrides = []): string
     {
-        if (is_string($template)) {
-            $template = FeedbackTemplate::where('slug', $template)->firstOrFail();
-        }
-
-        return app(CreateFeedbackFormFromTemplateAction::class)->execute(
-            $template,
-            array_merge($overrides, [
-                'subject_type' => $this->getMorphClass(),
-                'subject_id' => $this->getKey(),
-            ]),
+        return app(CreatesFormsFromTemplates::class)->createForSubject(
+            $templateSlug,
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $overrides,
         );
     }
 

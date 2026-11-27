@@ -116,7 +116,11 @@ it('creates a full form from a template through the trait', function (): void {
         ],
     ]);
 
-    $form = $traitSubject->createFeedbackFormFromTemplate('trait-template');
+    $formId = $traitSubject->createFeedbackFormFromTemplate('trait-template', [
+        'subject_type' => 'untrusted-type',
+        'subject_id' => 'untrusted-id',
+    ]);
+    $form = FeedbackForm::query()->findOrFail($formId);
 
     expect($form->sections()->count())->toBe(1)
         ->and($form->questions()->count())->toBe(1)
@@ -739,4 +743,22 @@ it('includes reviewed subject feedback and excludes drafts, rejected and other s
 
     expect($traitSubject->averageFeedbackScore())->toBe(5.0)
         ->and($traitSubject->npsScore($form))->toBe(0);
+});
+
+it('rejects ambiguous template slugs without creating a form', function (): void {
+    $subject = feedbackRegressionUser('Ambiguous template subject');
+    $traitSubject = RepairReceivesFeedbackUser::query()->whereKey($subject->id)->firstOrFail();
+
+    foreach (['First', 'Second'] as $name) {
+        FeedbackTemplate::query()->create([
+            'name' => $name,
+            'slug' => 'ambiguous-template',
+            'purpose' => 'general',
+            'status' => 'published',
+        ]);
+    }
+
+    expect(fn () => $traitSubject->createFeedbackFormFromTemplate('ambiguous-template'))
+        ->toThrow(\Illuminate\Database\MultipleRecordsFoundException::class)
+        ->and($traitSubject->feedbackForms()->count())->toBe(0);
 });

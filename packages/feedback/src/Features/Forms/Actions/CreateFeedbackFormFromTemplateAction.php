@@ -6,20 +6,30 @@ namespace AIArmada\Feedback\Features\Forms\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
+use AIArmada\Feedback\Features\Forms\Api\CreatesFormsFromTemplates;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
-use Illuminate\Support\Facades\DB;
 
-final class CreateFeedbackFormFromTemplateAction
+final class CreateFeedbackFormFromTemplateAction implements CreatesFormsFromTemplates
 {
     public function __construct(
         private readonly CreateFeedbackFormAction $createForm,
         private readonly SaveFeedbackFormStructureAction $saveStructure,
     ) {}
 
+    public function createForSubject(string $templateSlug, string $subjectType, string $subjectId, array $overrides = []): string
+    {
+        $template = FeedbackTemplate::query()->where('slug', $templateSlug)->sole();
+
+        return $this->execute($template, array_merge($overrides, [
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+        ]))->id;
+    }
+
     public function execute(FeedbackTemplate $template, array $overrides = []): FeedbackForm
     {
-        return DB::transaction(function () use ($template, $overrides): FeedbackForm {
+        return (new FeedbackForm)->getConnection()->transaction(function () use ($template, $overrides): FeedbackForm {
             $template = OwnerWriteGuard::findOrFailForOwner(
                 FeedbackTemplate::class,
                 $template->id,
