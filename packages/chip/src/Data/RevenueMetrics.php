@@ -5,21 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Data;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use Spatie\LaravelData\Data;
 
 /**
  * Revenue metrics from local data.
  */
-final class RevenueMetrics extends Data
+final readonly class RevenueMetrics
 {
     public function __construct(
-        public readonly int $grossRevenue,
-        public readonly int $refunds,
-        public readonly int $netRevenue,
-        public readonly int $transactionCount,
-        public readonly float $averageTransaction,
-        public readonly float $growthRate,
-        public readonly string $currency = 'MYR',
+        public int $grossRevenue,
+        public int $refunds,
+        public int $netRevenue,
+        public int $transactionCount,
+        public float $averageTransaction,
+        public float $growthRate,
+        public string $currency = 'MYR',
     ) {}
 
     /**
@@ -52,5 +51,19 @@ final class RevenueMetrics extends Data
     public function hasPositiveGrowth(): bool
     {
         return $this->growthRate > 0;
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            'grossRevenue' => $this->grossRevenue,
+            'refunds' => $this->refunds,
+            'netRevenue' => $this->netRevenue,
+            'transactionCount' => $this->transactionCount,
+            'averageTransaction' => $this->averageTransaction,
+            'growthRate' => $this->growthRate,
+            'currency' => $this->currency,
+        ];
     }
 }
