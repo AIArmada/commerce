@@ -45,7 +45,7 @@ final class AutoCaptureNotificationListener
         $this->state->enterRecursion();
 
         try {
-            $existing = $this->state->get($event->notification);
+            $existing = $this->state->get($event->notification, $event->notifiable);
 
             $captured = $this->capture->capture(
                 notifiable: $event->notifiable,
@@ -55,9 +55,9 @@ final class AutoCaptureNotificationListener
             );
 
             if ($existing === null) {
-                $this->state->register($event->notification, $captured->communicationId, [$event->channel => $captured->deliveryId]);
+                $this->state->register($event->notification, $event->notifiable, $captured->communicationId, [$event->channel => $captured->deliveryId]);
             } else {
-                $this->state->addDelivery($event->notification, $event->channel, $captured->deliveryId);
+                $this->state->addDelivery($event->notification, $event->notifiable, $event->channel, $captured->deliveryId);
             }
         } finally {
             $this->state->leaveRecursion();
@@ -70,7 +70,7 @@ final class AutoCaptureNotificationListener
             return;
         }
 
-        $state = $this->state->get($event->notification);
+        $state = $this->state->get($event->notification, $event->notifiable);
 
         if ($state === null) {
             return;
@@ -94,7 +94,7 @@ final class AutoCaptureNotificationListener
         }
 
         $this->recorder->markSent($state['communicationId'], $deliveryId, $result);
-        $this->state->removeDelivery($event->notification, $event->channel);
+        $this->state->removeDelivery($event->notification, $event->notifiable, $event->channel);
     }
 
     private function isAllowedNotification(mixed $notification): bool

@@ -800,3 +800,31 @@ test('aggregate reconciliation preserves cancellation and classifies all rejecte
     $action->handle($cancelled->id);
     expect($cancelled->fresh()->status)->toBe(CommunicationStatus::Cancelled);
 });
+
+test('native auto capture isolates the same notification sent to multiple recipients on the same channel', function (): void {
+    Config::set('communications.features.auto_capture', true);
+
+    $first = RepairMorphUser::create(['name' => 'First', 'email' => 'first-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $second = RepairMorphUser::create(['name' => 'Second', 'email' => 'second-' . uniqid() . '@example.com', 'password' => 'secret']);
+    $notification = new RepairMailNotification;
+    Config::set('communications.features.auto_capture_allowlist', [$notification::class]);
+
+    event(new NotificationSending($first, $notification, 'mail'));
+    event(new NotificationSending($second, $notification, 'mail'));
+    event(new NotificationSent($second, $notification, 'mail', 'second-message'));
+    event(new NotificationSent($first, $notification, 'mail', 'first-message'));
+
+    foreach ([[$first, 'first-message'], [$second, 'second-message']] as [$user, $message]) {
+        $recipient = CommunicationRecipient::query()
+            ->where('recipient_type', 'repair-morph-user')
+            ->where('recipient_id', $user->getKey())
+            ->sole();
+
+        $delivery = CommunicationDelivery::query()->where('recipient_id', $recipient->id)->sole();
+
+        expect($delivery->status)->toBe(DeliveryStatus::Sent)
+            ->and($delivery->provider_message_id)->toBe($message);
+    }
+
+    expect(Communication::query()->count())->toBe(2);
+});
