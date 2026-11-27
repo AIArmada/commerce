@@ -6,14 +6,14 @@ require_once __DIR__ . '/PresentationTestSupport.php';
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
+use AIArmada\Growth\EntryPoints\Http\DefaultRequestExperimentSubjectResolver;
+use AIArmada\Growth\EntryPoints\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\Enums\ExperimentStatus;
-use AIArmada\Growth\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Growth\Support\Context\ExperimentResolver;
-use AIArmada\Growth\Support\Http\DefaultRequestExperimentSubjectResolver;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware\BootstrapSignalsBrowserContext;
 use AIArmada\Signals\Support\Http\SignalsBrowserContextManager;
 use Illuminate\Auth\Access\AuthorizationException;

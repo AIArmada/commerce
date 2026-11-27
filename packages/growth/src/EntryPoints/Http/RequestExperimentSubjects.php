@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Support\Request;
+namespace AIArmada\Growth\EntryPoints\Http;
 
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;

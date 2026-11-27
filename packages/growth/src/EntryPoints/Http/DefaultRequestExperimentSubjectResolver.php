@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Support\Http;
+namespace AIArmada\Growth\EntryPoints\Http;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ScopeSignalQueryToOwner;
-use AIArmada\Growth\Contracts\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Growth\Support\Request\RequestExperimentSubjects;
 use AIArmada\Signals\Data\SignalsBrowserContext;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;

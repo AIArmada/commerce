@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Http\Middleware;
+namespace AIArmada\Growth\EntryPoints\Http\Middleware;
 
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
-use AIArmada\Growth\Contracts\RequestExperimentSubjectResolver;
+use AIArmada\Growth\EntryPoints\Http\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Settings\GrowthSettings;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;

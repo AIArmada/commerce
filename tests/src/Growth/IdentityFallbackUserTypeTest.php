@@ -6,9 +6,9 @@ namespace AIArmada\Commerce\Tests\Growth;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Growth\EntryPoints\Http\DefaultRequestExperimentSubjectResolver;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Growth\Support\Http\DefaultRequestExperimentSubjectResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Http\Request;
