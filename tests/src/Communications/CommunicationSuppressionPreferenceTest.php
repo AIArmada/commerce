@@ -93,3 +93,25 @@ test('preference mass assigns documented scope columns', function (): void {
     expect($preference->scope_type)->toBe('event')
         ->and($preference->scope_key)->toBe('evt-1');
 });
+
+test('default suppression resolver honors active category and destination restrictions', function (): void {
+    $hash = hash('sha256', 'suppressed@example.com');
+    $suppression = CommunicationSuppression::create([
+        'destination_hash' => $hash,
+        'channel' => 'mail',
+        'category' => 'marketing',
+        'reason' => SuppressionReason::Bounced,
+        'starts_at' => CarbonImmutable::now()->subMinute(),
+        'expires_at' => CarbonImmutable::now()->addHour(),
+    ]);
+
+    $resolver = app(\AIArmada\Communications\Contracts\SuppressionResolver::class);
+
+    expect($resolver->resolveSuppression(null, null, $hash, 'mail', 'marketing')->suppressed)->toBeTrue()
+        ->and($resolver->resolveSuppression(null, null, $hash, 'mail', 'notification')->suppressed)->toBeFalse()
+        ->and($resolver->resolveSuppression(null, null, $hash, 'sms', 'marketing')->suppressed)->toBeFalse();
+
+    $suppression->update(['lifted_at' => CarbonImmutable::now()]);
+
+    expect($resolver->resolveSuppression(null, null, $hash, 'mail', 'marketing')->suppressed)->toBeFalse();
+});

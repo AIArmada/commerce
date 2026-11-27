@@ -30,6 +30,7 @@ use AIArmada\Communications\Features\Inbox\EntryPoints\Http\Livewire\InboxIndex;
 use AIArmada\Communications\EntryPoints\Listeners\AutoCaptureNotificationListener;
 use AIArmada\Communications\EntryPoints\Listeners\RecordNativeNotificationSending;
 use AIArmada\Communications\EntryPoints\Listeners\RecordNativeNotificationSent;
+use AIArmada\Communications\Features\Suppressions\Queries\ActiveSuppressionResolver;
 use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
 use AIArmada\Communications\Platform\ExtensionRegistry;
 use AIArmada\Communications\Platform\FeatureCatalog;
@@ -119,7 +120,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         $this->app->bind(DestinationResolver::class, CommunicationDestinationResolver::class);
         $this->app->bind(ContentRenderer::class, NullContentRenderer::class);
         $this->app->bind(ConsentResolver::class, PermissiveEligibilityResolver::class);
-        $this->app->bind(SuppressionResolver::class, PermissiveEligibilityResolver::class);
+        $this->app->bind(SuppressionResolver::class, ActiveSuppressionResolver::class);
         $this->app->bind(PreferenceResolver::class, PermissiveEligibilityResolver::class);
         $this->app->bind(QuietHoursResolver::class, PermissiveEligibilityResolver::class);
         $this->app->bind(RateLimiterContract::class, PermissiveEligibilityResolver::class);
