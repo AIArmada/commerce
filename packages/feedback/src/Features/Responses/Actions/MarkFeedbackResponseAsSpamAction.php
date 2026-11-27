@@ -9,19 +9,29 @@ use AIArmada\Feedback\Events\FeedbackResponseMarkedSpam;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
 
-final class MarkFeedbackResponseAsSpamAction
+final readonly class MarkFeedbackResponseAsSpamAction
 {
     public function execute(FeedbackResponse $response): FeedbackResponse
     {
-        $response = OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
+        return $response->getConnection()->transaction(function () use ($response): FeedbackResponse {
+            if (FeedbackResponse::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
+            }
 
-        $response->forceFill([
-            'status' => 'spam',
-            'marked_spam_at' => CarbonImmutable::now(),
-        ])->save();
+            $response = FeedbackResponse::query()->whereKey($response->id)->lockForUpdate()->firstOrFail();
 
-        FeedbackResponseMarkedSpam::dispatch($response);
+            if ($response->status->value === 'spam') {
+                return $response;
+            }
 
-        return $response;
+            $response->forceFill([
+                'status' => 'spam',
+                'marked_spam_at' => CarbonImmutable::now(),
+            ])->save();
+
+            FeedbackResponseMarkedSpam::dispatch($response);
+
+            return $response;
+        });
     }
 }

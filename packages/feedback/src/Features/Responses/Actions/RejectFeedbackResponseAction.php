@@ -9,19 +9,29 @@ use AIArmada\Feedback\Events\FeedbackResponseRejected;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
 
-final class RejectFeedbackResponseAction
+final readonly class RejectFeedbackResponseAction
 {
     public function execute(FeedbackResponse $response): FeedbackResponse
     {
-        $response = OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
+        return $response->getConnection()->transaction(function () use ($response): FeedbackResponse {
+            if (FeedbackResponse::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
+            }
 
-        $response->forceFill([
-            'status' => 'rejected',
-            'rejected_at' => CarbonImmutable::now(),
-        ])->save();
+            $response = FeedbackResponse::query()->whereKey($response->id)->lockForUpdate()->firstOrFail();
 
-        FeedbackResponseRejected::dispatch($response);
+            if ($response->status->value === 'rejected') {
+                return $response;
+            }
 
-        return $response;
+            $response->forceFill([
+                'status' => 'rejected',
+                'rejected_at' => CarbonImmutable::now(),
+            ])->save();
+
+            FeedbackResponseRejected::dispatch($response);
+
+            return $response;
+        });
     }
 }

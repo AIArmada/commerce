@@ -15,7 +15,7 @@ use AIArmada\Feedback\Platform\FeatureModule;
 use AIArmada\Feedback\Features\Forms\Policies\FeedbackFormPolicy;
 use AIArmada\Feedback\Features\Responses\Policies\FeedbackResponsePolicy;
 use AIArmada\Feedback\Features\Forms\Policies\FeedbackTemplatePolicy;
-use AIArmada\Feedback\Support\AnswerValueNormalizer;
+use AIArmada\Feedback\Drivers\AnswerValueNormalizer;
 use AIArmada\Feedback\Drivers\InvitationUrlGenerator as DefaultInvitationUrlGenerator;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;

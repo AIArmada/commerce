@@ -2,19 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Support;
+namespace AIArmada\Feedback\Drivers;
 
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use Carbon\CarbonImmutable;
 use Throwable;
 
 final class AnswerValueNormalizer implements AnswerNormalizer
 {
-    public function normalize(FeedbackQuestion $question, mixed $value): array
+    public function normalize(string $questionType, mixed $value): array
     {
-        $type = FeedbackQuestionType::tryFrom($question->type);
+        $type = FeedbackQuestionType::tryFrom($questionType);
 
         return match (true) {
             $type === null => $this->defaultNormalize($value),

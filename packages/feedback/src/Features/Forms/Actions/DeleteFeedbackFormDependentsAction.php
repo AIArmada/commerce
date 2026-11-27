@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
 use AIArmada\Feedback\Features\Analytics\Api\DeletesFormAnalytics;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Api\DeletesResponseDependencies;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +20,7 @@ final readonly class DeleteFeedbackFormDependentsAction
         private DeletesFormAnalytics $deleteAnalytics,
         private ManagesInvitationLifecycle $invitations,
         private ManagesTestimonialDependencies $testimonials,
+        private DeletesResponseDependencies $responses,
     ) {}
 
     public function execute(FeedbackForm $form): void
@@ -33,11 +34,7 @@ final readonly class DeleteFeedbackFormDependentsAction
 
             $this->testimonials->deleteForForm($formId);
 
-            FeedbackAnswer::query()
-                ->whereHas('response', fn (Builder $query) => $query->where('feedback_form_id', $formId))
-                ->delete();
-
-            $form->responses()->delete();
+            $this->responses->deleteForForm($formId);
             $this->invitations->deleteForForm($formId);
 
             FeedbackQuestionOption::query()
