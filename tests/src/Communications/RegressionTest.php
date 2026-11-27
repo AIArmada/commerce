@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Features\Aggregate\Actions\AddCommunicationRecipientAction;
 use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
 use AIArmada\Communications\Features\Aggregate\Actions\ReceiveInboundCommunicationAction;
 use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;

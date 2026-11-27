@@ -6,7 +6,7 @@ namespace AIArmada\Engagement\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Models\Reminder;

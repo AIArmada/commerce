@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Services;
 
 use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Data\CommunicationContextData;

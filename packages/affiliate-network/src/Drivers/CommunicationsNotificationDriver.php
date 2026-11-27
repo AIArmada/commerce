@@ -10,7 +10,7 @@ use AIArmada\AffiliateNetwork\Notifications\ApplicationApprovedNotification;
 use AIArmada\AffiliateNetwork\Notifications\ApplicationSubmittedNotification;
 use AIArmada\AffiliateNetwork\Notifications\NetworkConversionNotification;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

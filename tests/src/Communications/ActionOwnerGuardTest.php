@@ -9,7 +9,7 @@ use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction
 use AIArmada\Communications\Features\Delivery\Actions\CancelCommunicationDeliveryAction;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
-use AIArmada\Communications\Actions\RecordNotificationSendingAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSendingAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;

@@ -148,7 +148,7 @@ final class ApplyProviderEventAction
         try {
             $event->save();
         } catch (UniqueConstraintViolationException $exception) {
-            throw new RuntimeException("Duplicate provider event {$data->provider}/{$providerEventId}.");
+            throw new RuntimeException("Duplicate provider event {$data->provider}/{$providerEventId}.", previous: $exception);
         }
 
         return $event;

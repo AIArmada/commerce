@@ -120,8 +120,8 @@ final class RecordProviderEventAction
             try {
                 $eventRecord->save();
             } catch (UniqueConstraintViolationException $exception) {
-            throw new RuntimeException("Duplicate provider event {$provider}/{$providerEventId}.");
-        }
+                throw new RuntimeException("Duplicate provider event {$provider}/{$providerEventId}.", previous: $exception);
+            }
 
             return $eventRecord;
         });

@@ -7,7 +7,7 @@ use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
 use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
-use AIArmada\Communications\Actions\RecordNotificationSendingAction;
+use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSendingAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RenderCommunicationContentAction;

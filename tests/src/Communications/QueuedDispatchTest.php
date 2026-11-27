@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
+use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\EntryPoints\Jobs\DispatchManagedNotificationJob;

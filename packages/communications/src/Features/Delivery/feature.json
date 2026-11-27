@@ -9,7 +9,11 @@
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\TransitionDeliveryAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\PlanCommunicationDeliveriesAction",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\DispatchManagedNotificationAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationSendingAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationSentAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationFailureAction"
     ],
     "table:communication_attempts": [
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",

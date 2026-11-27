@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\Communications\Contracts\ConsentResolver;
 use AIArmada\Communications\Contracts\PreferenceResolver;
