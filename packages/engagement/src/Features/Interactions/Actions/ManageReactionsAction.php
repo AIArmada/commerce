@@ -59,7 +59,16 @@ final readonly class ManageReactionsAction
                         'removed_at' => null,
                         'reacted_at' => CarbonImmutable::now(),
                     ]);
-                    event(new ReactionCreated($existing));
+                    event(new ReactionCreated(
+                        $existing->id,
+                        $existing->reactor_type,
+                        $existing->reactor_id,
+                        $existing->reactable_type,
+                        $existing->reactable_id,
+                        $existing->owner_type,
+                        $existing->owner_id,
+                        $existing->reaction_type,
+                    ));
 
                     return $existing;
                 }
@@ -76,7 +85,16 @@ final readonly class ManageReactionsAction
                     'metadata' => $metadata,
                 ]);
 
-                event(new ReactionCreated($reaction));
+                event(new ReactionCreated(
+                    $reaction->id,
+                    $reaction->reactor_type,
+                    $reaction->reactor_id,
+                    $reaction->reactable_type,
+                    $reaction->reactable_id,
+                    $reaction->owner_type,
+                    $reaction->owner_id,
+                    $reaction->reaction_type,
+                ));
 
                 return $reaction;
             });
@@ -121,7 +139,16 @@ final readonly class ManageReactionsAction
 
             foreach ($query->lockForUpdate()->get() as $reaction) {
                 $reaction->update(['status' => 'removed', 'removed_at' => CarbonImmutable::now()]);
-                event(new ReactionRemoved($reaction));
+                event(new ReactionRemoved(
+                    $reaction->id,
+                    $reaction->reactor_type,
+                    $reaction->reactor_id,
+                    $reaction->reactable_type,
+                    $reaction->reactable_id,
+                    $reaction->owner_type,
+                    $reaction->owner_id,
+                    $reaction->reaction_type,
+                ));
             }
         });
     }

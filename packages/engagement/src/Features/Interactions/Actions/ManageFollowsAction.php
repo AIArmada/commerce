@@ -68,7 +68,15 @@ final readonly class ManageFollowsAction
                         'muted_at' => null,
                         'followed_at' => CarbonImmutable::now(),
                     ]);
-                    event(new FollowCreated($existing));
+                    event(new FollowCreated(
+                        $existing->id,
+                        $existing->follower_type,
+                        $existing->follower_id,
+                        $existing->followable_type,
+                        $existing->followable_id,
+                        $existing->owner_type,
+                        $existing->owner_id,
+                    ));
 
                     return $existing;
                 }
@@ -85,7 +93,15 @@ final readonly class ManageFollowsAction
                     'metadata' => $metadata,
                 ]);
 
-                event(new FollowCreated($follow));
+                event(new FollowCreated(
+                    $follow->id,
+                    $follow->follower_type,
+                    $follow->follower_id,
+                    $follow->followable_type,
+                    $follow->followable_id,
+                    $follow->owner_type,
+                    $follow->owner_id,
+                ));
 
                 return $follow;
             });
@@ -133,7 +149,15 @@ final readonly class ManageFollowsAction
                 $wasActive = $follow->status === FollowStatus::Active;
                 $follow->update(['status' => 'unfollowed', 'unfollowed_at' => CarbonImmutable::now()]);
                 if ($wasActive) {
-                    event(new FollowRemoved($follow));
+                    event(new FollowRemoved(
+                        $follow->id,
+                        $follow->follower_type,
+                        $follow->follower_id,
+                        $follow->followable_type,
+                        $follow->followable_id,
+                        $follow->owner_type,
+                        $follow->owner_id,
+                    ));
                 }
             }
         });
@@ -156,7 +180,15 @@ final readonly class ManageFollowsAction
                 ->firstOrFail();
 
             $follow->update(['status' => 'muted', 'muted_at' => CarbonImmutable::now()]);
-            event(new FollowMuted($follow));
+            event(new FollowMuted(
+                $follow->id,
+                $follow->follower_type,
+                $follow->follower_id,
+                $follow->followable_type,
+                $follow->followable_id,
+                $follow->owner_type,
+                $follow->owner_id,
+            ));
 
             return $follow;
         });
@@ -179,7 +211,15 @@ final readonly class ManageFollowsAction
                 ->firstOrFail();
 
             $follow->update(['status' => 'active', 'muted_at' => null]);
-            event(new FollowUnmuted($follow));
+            event(new FollowUnmuted(
+                $follow->id,
+                $follow->follower_type,
+                $follow->follower_id,
+                $follow->followable_type,
+                $follow->followable_id,
+                $follow->owner_type,
+                $follow->owner_id,
+            ));
 
             return $follow;
         });

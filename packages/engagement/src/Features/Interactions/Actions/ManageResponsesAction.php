@@ -61,7 +61,16 @@ final readonly class ManageResponsesAction
                         'changed_at' => null,
                         'cancelled_at' => null,
                     ]);
-                    event(new ResponseCreated($existing));
+                    event(new ResponseCreated(
+                        $existing->id,
+                        $existing->responder_type,
+                        $existing->responder_id,
+                        $existing->respondable_type,
+                        $existing->respondable_id,
+                        $existing->owner_type,
+                        $existing->owner_id,
+                        $existing->response_type,
+                    ));
 
                     return $existing;
                 }
@@ -82,7 +91,17 @@ final readonly class ManageResponsesAction
                             ['previous_response_type' => $oldType],
                         ),
                     ]);
-                    event(new ResponseChanged($existing, $oldType));
+                    event(new ResponseChanged(
+                        $existing->id,
+                        $existing->responder_type,
+                        $existing->responder_id,
+                        $existing->respondable_type,
+                        $existing->respondable_id,
+                        $existing->owner_type,
+                        $existing->owner_id,
+                        $existing->response_type,
+                        $oldType,
+                    ));
 
                     return $existing;
                 }
@@ -100,7 +119,16 @@ final readonly class ManageResponsesAction
                     'metadata' => $metadata,
                 ]);
 
-                event(new ResponseCreated($response));
+                event(new ResponseCreated(
+                    $response->id,
+                    $response->responder_type,
+                    $response->responder_id,
+                    $response->respondable_type,
+                    $response->respondable_id,
+                    $response->owner_type,
+                    $response->owner_id,
+                    $response->response_type,
+                ));
 
                 return $response;
             });
@@ -142,7 +170,16 @@ final readonly class ManageResponsesAction
 
             if ($response) {
                 $response->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
-                event(new ResponseCancelled($response));
+                event(new ResponseCancelled(
+                    $response->id,
+                    $response->responder_type,
+                    $response->responder_id,
+                    $response->respondable_type,
+                    $response->respondable_id,
+                    $response->owner_type,
+                    $response->owner_id,
+                    $response->response_type,
+                ));
             }
         });
     }

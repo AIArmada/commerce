@@ -365,85 +365,85 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     public function onFollowCreated(FollowCreated $event): void
     {
-        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', 1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', 1);
     }
 
     public function onFollowRemoved(FollowRemoved $event): void
     {
-        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', -1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', -1);
     }
 
     public function onFollowMuted(FollowMuted $event): void
     {
-        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', -1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', -1);
     }
 
     public function onFollowUnmuted(FollowUnmuted $event): void
     {
-        $this->adjustCounter($event->follow->followable_type, (string) $event->follow->followable_id, 'followers', '', 1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'followers', '', 1);
     }
 
     public function onReactionCreated(ReactionCreated $event): void
     {
-        $subjectType = $event->reaction->reactable_type;
-        $subjectId = (string) $event->reaction->reactable_id;
+        $subjectType = $event->subjectType;
+        $subjectId = $event->subjectId;
 
         $this->adjustCounter($subjectType, $subjectId, 'reactions', '', 1);
-        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reaction->reaction_type, 1);
+        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reactionType, 1);
     }
 
     public function onReactionRemoved(ReactionRemoved $event): void
     {
-        $subjectType = $event->reaction->reactable_type;
-        $subjectId = (string) $event->reaction->reactable_id;
+        $subjectType = $event->subjectType;
+        $subjectId = $event->subjectId;
 
         $this->adjustCounter($subjectType, $subjectId, 'reactions', '', -1);
-        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reaction->reaction_type, -1);
+        $this->adjustCounter($subjectType, $subjectId, 'reactions', $event->reactionType, -1);
     }
 
     public function onBookmarkCreated(BookmarkCreated $event): void
     {
-        $this->adjustCounter($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id, 'bookmarks', '', 1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', 1);
     }
 
     public function onBookmarkRemoved(BookmarkRemoved $event): void
     {
-        $this->adjustCounter($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id, 'bookmarks', '', -1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', -1);
     }
 
     public function onBookmarkArchived(BookmarkArchived $event): void
     {
-        $this->adjustCounter($event->bookmark->bookmarkable_type, (string) $event->bookmark->bookmarkable_id, 'bookmarks', '', -1);
+        $this->adjustCounter($event->subjectType, $event->subjectId, 'bookmarks', '', -1);
     }
 
     public function onResponseCreated(ResponseCreated $event): void
     {
-        $subjectType = $event->response->respondable_type;
-        $subjectId = (string) $event->response->respondable_id;
+        $subjectType = $event->subjectType;
+        $subjectId = $event->subjectId;
 
         $this->adjustCounter($subjectType, $subjectId, 'responses', '', 1);
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->response->response_type, 1);
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->responseType, 1);
     }
 
     public function onResponseChanged(ResponseChanged $event): void
     {
-        if ($event->previousType === $event->response->response_type) {
+        if ($event->previousType === $event->responseType) {
             return;
         }
 
-        $subjectType = $event->response->respondable_type;
-        $subjectId = (string) $event->response->respondable_id;
+        $subjectType = $event->subjectType;
+        $subjectId = $event->subjectId;
 
         $this->adjustCounter($subjectType, $subjectId, 'responses', $event->previousType, -1);
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->response->response_type, 1);
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->responseType, 1);
     }
 
     public function onResponseCancelled(ResponseCancelled $event): void
     {
-        $subjectType = $event->response->respondable_type;
-        $subjectId = (string) $event->response->respondable_id;
+        $subjectType = $event->subjectType;
+        $subjectId = $event->subjectId;
 
         $this->adjustCounter($subjectType, $subjectId, 'responses', '', -1);
-        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->response->response_type, -1);
+        $this->adjustCounter($subjectType, $subjectId, 'responses', $event->responseType, -1);
     }
 }

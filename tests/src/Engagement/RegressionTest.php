@@ -354,6 +354,9 @@ it('emits response created/changed events with reactivation semantics', function
     $manager->respond($this->actor, $this->subject, 'going');
 
     Event::assertDispatchedTimes(ResponseChanged::class, 1);
+    Event::assertDispatched(ResponseChanged::class, fn (ResponseChanged $event): bool => $event->previousType === 'interested'
+        && $event->responseType === 'going'
+        && $event->subjectId === $this->subject->getKey());
 
     $manager->cancelResponse($this->actor, $this->subject);
     $restored = $manager->respond($this->actor, $this->subject, 'going');

@@ -59,7 +59,15 @@ final readonly class ManageBookmarksAction
                         'removed_at' => null,
                         'bookmarked_at' => CarbonImmutable::now(),
                     ]);
-                    event(new BookmarkCreated($existing));
+                    event(new BookmarkCreated(
+                        $existing->id,
+                        $existing->bookmarker_type,
+                        $existing->bookmarker_id,
+                        $existing->bookmarkable_type,
+                        $existing->bookmarkable_id,
+                        $existing->owner_type,
+                        $existing->owner_id,
+                    ));
 
                     return $existing;
                 }
@@ -76,7 +84,15 @@ final readonly class ManageBookmarksAction
                     'metadata' => $metadata,
                 ]);
 
-                event(new BookmarkCreated($bookmark));
+                event(new BookmarkCreated(
+                    $bookmark->id,
+                    $bookmark->bookmarker_type,
+                    $bookmark->bookmarker_id,
+                    $bookmark->bookmarkable_type,
+                    $bookmark->bookmarkable_id,
+                    $bookmark->owner_type,
+                    $bookmark->owner_id,
+                ));
 
                 return $bookmark;
             });
@@ -118,7 +134,15 @@ final readonly class ManageBookmarksAction
 
             if ($bookmark) {
                 $bookmark->update(['status' => 'removed', 'removed_at' => CarbonImmutable::now()]);
-                event(new BookmarkRemoved($bookmark));
+                event(new BookmarkRemoved(
+                    $bookmark->id,
+                    $bookmark->bookmarker_type,
+                    $bookmark->bookmarker_id,
+                    $bookmark->bookmarkable_type,
+                    $bookmark->bookmarkable_id,
+                    $bookmark->owner_type,
+                    $bookmark->owner_id,
+                ));
             }
         });
     }
@@ -141,7 +165,15 @@ final readonly class ManageBookmarksAction
 
             if ($bookmark) {
                 $bookmark->update(['status' => 'archived', 'archived_at' => CarbonImmutable::now()]);
-                event(new BookmarkArchived($bookmark));
+                event(new BookmarkArchived(
+                    $bookmark->id,
+                    $bookmark->bookmarker_type,
+                    $bookmark->bookmarker_id,
+                    $bookmark->bookmarkable_type,
+                    $bookmark->bookmarkable_id,
+                    $bookmark->owner_type,
+                    $bookmark->owner_id,
+                ));
             }
         });
     }

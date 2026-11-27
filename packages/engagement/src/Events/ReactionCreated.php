@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Features\Interactions\Models\Reaction;
-
-final class ReactionCreated
+final readonly class ReactionCreated
 {
-    public function __construct(public Reaction $reaction) {}
+    public function __construct(
+        public string $reactionId,
+        public string $actorType,
+        public string $actorId,
+        public string $subjectType,
+        public string $subjectId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+        public string $reactionType,
+    ) {}
 }
