@@ -99,7 +99,7 @@ describe('Webhook Handlers Integration', function (): void {
             return new EnrichedWebhookPayload(
                 event: $event,
                 rawPayload: $payload,
-                localPurchase: $purchase,
+                localPurchaseId: (string) $purchase->getKey(),
                 owner: null,
                 receivedAt: now(),
                 purchaseId: data_get($payload, 'related_to.id') ?? $purchase->id,
@@ -327,4 +327,18 @@ describe('Webhook Handlers Integration', function (): void {
         });
 
     });
+});
+
+it('does not downgrade a paid or refunded purchase on a late failure or cancellation', function (): void {
+    Event::fake();
+
+    foreach (['paid', 'refunded'] as $status) {
+        $purchase = createTestPurchase(['status' => $status]);
+        $failed = app(PaymentFailedHandler::class)->handle(createPayloadWithPurchase('purchase.payment_failure', $purchase));
+        $cancelled = app(PurchaseCancelledHandler::class)->handle(createPayloadWithPurchase('purchase.cancelled', $purchase));
+
+        expect($failed->isSkipped())->toBeTrue()
+            ->and($cancelled->isSkipped())->toBeTrue()
+            ->and($purchase->refresh()->status)->toBe($status);
+    }
 });

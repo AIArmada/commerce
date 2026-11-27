@@ -16,9 +16,9 @@ class PurchaseRefundedHandler implements WebhookHandler
 {
     public function handle(EnrichedWebhookPayload $payload): WebhookResult
     {
-        $localPurchase = $payload->localPurchase;
+        $localPurchaseId = $payload->localPurchaseId;
 
-        if ($localPurchase === null) {
+        if ($localPurchaseId === null) {
             return WebhookResult::skipped('Purchase not found locally');
         }
 
@@ -32,13 +32,11 @@ class PurchaseRefundedHandler implements WebhookHandler
             return WebhookResult::skipped('Refund payment payload is missing');
         }
 
-        app(RefundStateSynchronizer::class)->handle($paymentRefunded->payment, (string) $localPurchase->getKey());
+        app(RefundStateSynchronizer::class)->handle($paymentRefunded->payment, $localPurchaseId);
 
         PaymentRefunded::dispatch($paymentRefunded->payment, $payload->rawPayload);
 
-        $localPurchase->refresh();
-
-        return WebhookResult::handled("Purchase {$localPurchase->id} refund state synchronized");
+        return WebhookResult::handled("Purchase {$localPurchaseId} refund state synchronized");
     }
 
     /**

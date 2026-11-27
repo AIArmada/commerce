@@ -5,7 +5,8 @@
     "table:chip_purchases": [
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload",
       "AIArmada\\Chip\\Features\\Collect\\Persistence\\PurchaseIdempotencyLedger",
-      "AIArmada\\Chip\\Features\\Collect\\Actions\\SyncPurchaseRefundState"
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\SyncPurchaseRefundState",
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\ApplyPurchaseWebhookState"
     ],
     "table:chip_clients": [
       "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"

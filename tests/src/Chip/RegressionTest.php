@@ -715,7 +715,7 @@ describe('paid handler refreshes denormalized columns', function (): void {
             'purchase' => ['total' => 10000, 'currency' => 'MYR'],
         ]);
 
-        $enriched = EnrichedWebhookPayload::fromPayload('purchase.paid', [
+        $enriched = app(\AIArmada\Chip\Webhooks\WebhookEnricher::class)->enrich('purchase.paid', [
             'id' => $purchase->id,
             'type' => 'purchase',
             'status' => 'paid',

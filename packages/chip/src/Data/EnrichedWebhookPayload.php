@@ -4,29 +4,26 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Model;
-use Spatie\LaravelData\Data;
 use Throwable;
 
 /**
  * Enriched webhook payload with local context.
  */
-final class EnrichedWebhookPayload extends Data
+final readonly class EnrichedWebhookPayload
 {
     public function __construct(
-        public readonly string $event,
+        public string $event,
         /** @var array<string, mixed> */
-        public readonly array $rawPayload,
-        public readonly ?Purchase $localPurchase = null,
-        public readonly ?Model $owner = null,
-        public readonly ?CarbonInterface $receivedAt = null,
-        public readonly ?CarbonInterface $eventTimestamp = null,
-        public readonly ?string $purchaseId = null,
-        public readonly ?string $clientId = null,
+        public array $rawPayload,
+        public ?string $localPurchaseId = null,
+        public ?RecordReference $owner = null,
+        public ?CarbonInterface $receivedAt = null,
+        public ?CarbonInterface $eventTimestamp = null,
+        public ?string $purchaseId = null,
+        public ?string $clientId = null,
     ) {}
 
     /**
@@ -34,7 +31,7 @@ final class EnrichedWebhookPayload extends Data
      *
      * @param  array<string, mixed>  $payload
      */
-    public static function fromPayload(string $event, array $payload): self
+    public static function fromPayload(string $event, array $payload, ?string $localPurchaseId = null, ?RecordReference $owner = null): self
     {
         $purchaseId = data_get($payload, 'related_to.type') === 'purchase'
             ? data_get($payload, 'related_to.id')
@@ -43,26 +40,12 @@ final class EnrichedWebhookPayload extends Data
         $clientId = $payload['client_id'] ?? (is_array($payload['client'] ?? null) ? ($payload['client']['id'] ?? null) : null);
         $clientId = is_string($clientId) || is_int($clientId) ? (string) $clientId : null;
 
-        $localPurchase = null;
-        $owner = self::resolveOwnerFromPayload($payload);
-
-        if ($purchaseId) {
-            $query = Purchase::query();
-
-            if ($owner !== null && method_exists($query->getModel(), 'scopeForOwner')) {
-                $query->forOwner($owner);
-            }
-
-            $localPurchase = $query->whereKey($purchaseId)->first();
-            $owner ??= $localPurchase?->owner;
-        }
-
         $eventTimestamp = self::resolveEventTimestamp($payload);
 
         return new self(
             event: $event,
             rawPayload: $payload,
-            localPurchase: $localPurchase,
+            localPurchaseId: $localPurchaseId,
             owner: $owner,
             receivedAt: CarbonImmutable::now(),
             eventTimestamp: $eventTimestamp,
@@ -73,7 +56,7 @@ final class EnrichedWebhookPayload extends Data
 
     public function hasLocalPurchase(): bool
     {
-        return $this->localPurchase !== null;
+        return $this->localPurchaseId !== null;
     }
 
     public function hasOwner(): bool
@@ -87,21 +70,6 @@ final class EnrichedWebhookPayload extends Data
     public function get(string $key, mixed $default = null): mixed
     {
         return data_get($this->rawPayload, $key, $default);
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private static function resolveOwnerFromPayload(array $payload): ?Model
-    {
-        $ownerType = $payload['__owner_type'] ?? null;
-        $ownerId = $payload['__owner_id'] ?? null;
-
-        if (! is_string($ownerType) || (! is_string($ownerId) && ! is_int($ownerId))) {
-            return null;
-        }
-
-        return OwnerContext::fromTypeAndId($ownerType, $ownerId);
     }
 
     /**

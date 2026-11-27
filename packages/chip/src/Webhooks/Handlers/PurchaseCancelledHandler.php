@@ -7,8 +7,8 @@ namespace AIArmada\Chip\Webhooks\Handlers;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Events\PurchaseCancelled;
+use AIArmada\Chip\Features\Collect\Api\PurchaseWebhookState;
 
 /**
  * Handles purchase.cancelled webhook events.
@@ -17,16 +17,15 @@ class PurchaseCancelledHandler implements WebhookHandler
 {
     public function handle(EnrichedWebhookPayload $payload): WebhookResult
     {
-        $localPurchase = $payload->localPurchase;
+        $localPurchaseId = $payload->localPurchaseId;
 
-        if ($localPurchase === null) {
+        if ($localPurchaseId === null) {
             return WebhookResult::skipped('Purchase not found locally');
         }
 
-        // Update local status
-        $localPurchase->forceFill([
-            'status' => PurchaseStatus::CANCELLED,
-        ])->save();
+        if (! app(PurchaseWebhookState::class)->markCancelled($localPurchaseId)) {
+            return WebhookResult::skipped('Purchase is not eligible for cancellation');
+        }
 
         // Dispatch Laravel event
         PurchaseCancelled::dispatch(
@@ -34,6 +33,6 @@ class PurchaseCancelledHandler implements WebhookHandler
             $payload->rawPayload,
         );
 
-        return WebhookResult::handled("Purchase {$localPurchase->id} marked as cancelled");
+        return WebhookResult::handled("Purchase {$localPurchaseId} marked as cancelled");
     }
 }

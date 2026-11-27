@@ -19,10 +19,13 @@ class DispatchChipWebhookAction
 
     public function execute(string $event, array $payload, ?Model $owner = null): WebhookResult
     {
-        $enriched = $this->enricher->enrich($event, $payload);
-        $resolvedOwner = $owner ?? $enriched->owner;
+        $resolvedOwner = $owner ?? OwnerContext::resolve();
 
-        $executor = fn (): WebhookResult => $this->router->route($event, $enriched);
+        if ((bool) config('chip.owner.enabled', false) && $resolvedOwner === null && ! OwnerContext::isExplicitGlobal()) {
+            return WebhookResult::failed('Webhook dispatch requires an explicit owner context.');
+        }
+
+        $executor = fn (): WebhookResult => $this->router->route($event, $this->enricher->enrich($event, $payload));
 
         if ($resolvedOwner instanceof Model) {
             return OwnerContext::withOwner($resolvedOwner, $executor);
