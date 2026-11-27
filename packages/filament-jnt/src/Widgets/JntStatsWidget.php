@@ -4,24 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Widgets;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Jnt\Queries\JntStatsAggregator;
-use AIArmada\Jnt\Models\JntOrder;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
 final class JntStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $stats = Cache::flexible(
-            $this->statsCacheKey(),
-            [30, 90],
-            fn (): array => $this->calculateOrderStats()
-        );
+        $stats = JntStatsAggregator::calculateOrderStats();
 
         $totalOrders = (int) ($stats['total'] ?? 0);
         $deliveredCount = (int) ($stats['delivered'] ?? 0);
@@ -70,25 +62,5 @@ final class JntStatsWidget extends BaseWidget
     protected function getColumns(): int
     {
         return 6;
-    }
-
-    private function statsCacheKey(): string
-    {
-        $owner = OwnerUiScope::resolveOwner(JntOrder::class);
-        $ownerKey = $owner instanceof Model
-            ? $owner->getMorphClass() . ':' . (string) $owner->getKey()
-            : 'none';
-
-        $includeGlobal = (bool) config('jnt.owner.include_global', false);
-
-        return 'filament-jnt:widget:stats:' . $ownerKey . ':' . ($includeGlobal ? '1' : '0');
-    }
-
-    /**
-     * @return array{total:int, delivered:int, in_transit:int, problems:int, pending:int, returns:int}
-     */
-    private function calculateOrderStats(): array
-    {
-        return JntStatsAggregator::calculateOrderStats();
     }
 }

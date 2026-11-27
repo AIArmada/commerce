@@ -6,6 +6,7 @@ namespace AIArmada\Shipping\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
@@ -21,24 +22,6 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class ShippingStatsAggregator
 {
-    private function getPendingReturnsCount(): int
-    {
-        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', 'pending')
-            ->count();
-    }
-
     /**
      * @return array{total: int, pending: int, inTransit: int, deliveredToday: int, exceptions: int, pendingReturns: int}
      */
@@ -80,6 +63,27 @@ final class ShippingStatsAggregator
         ];
     }
 
+    private function getPendingReturnsCount(): int
+    {
+        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
+
+        if ((bool) config('shipping.features.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            if ($owner === null) {
+                return 0;
+            }
+
+            $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
+        }
+
+        return $query
+            ->where('status', 'pending')
+            ->count();
+    }
+
+    /**
+     * @return Builder<Shipment>
+     */
     private function shipmentQuery(): Builder
     {
         $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
@@ -90,7 +94,7 @@ final class ShippingStatsAggregator
                 return $query->whereRaw('0 = 1');
             }
 
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
+            $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query;

@@ -34,5 +34,4 @@ final class JntStatsAggregator
             'returns' => (int) ($row?->getAttribute('returns') ?? 0),
         ];
     }
-
 }

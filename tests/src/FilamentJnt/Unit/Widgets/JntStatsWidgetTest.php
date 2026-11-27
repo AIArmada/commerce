@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
@@ -113,6 +114,12 @@ it('builds stats and respects owner scoping', function (): void {
     $expectedTotal = 1 + 4;
     expect($globalDelivered)->not()->toBeNull();
     expect($stats[0]->getValue())->toBe($expectedTotal);
+
+    $strictStats = OwnerScopeOverride::withoutIncludeGlobal(fn () => filamentJnt_invokeProtected($widget, 'getStats'));
+    expect($strictStats[0]->getValue())->toBe(4);
+
+    $otherOwnerStats = OwnerContext::withOwner($ownerB, fn () => filamentJnt_invokeProtected($widget, 'getStats'));
+    expect($otherOwnerStats[0]->getValue())->toBe(2);
 });
 
 it('builds stats without owner scoping when owner mode is disabled', function (): void {

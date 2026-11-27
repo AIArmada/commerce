@@ -7,8 +7,8 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\Shipping\Queries\ShippingStatsAggregator;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Queries\ShippingStatsAggregator;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;
 use AIArmada\Shipping\States\Pending;
@@ -83,7 +83,7 @@ describe('Shipping stats aggregation', function (): void {
             ->and($stats['deliveredToday'])->toBe(1)
             ->and($stats['exceptions'])->toBe(1)
             ->and($stats['total'])->toBe(4)
-            ->and($queries)->toHaveCount(5);
+            ->and($queries)->toHaveCount(3);
     });
 });
 
