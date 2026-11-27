@@ -42,17 +42,17 @@ final class InventoryBatchesTable
                     ->placeholder('No location')
                     ->sortable(),
 
-                TextColumn::make('current_quantity')
+                TextColumn::make('quantity_on_hand')
                     ->label('Current')
                     ->numeric()
                     ->sortable(),
 
-                TextColumn::make('available_quantity')
+                TextColumn::make('available')
                     ->label('Available')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderByRaw('CASE WHEN quantity_on_hand > quantity_reserved THEN quantity_on_hand - quantity_reserved ELSE 0 END ' . ($direction === 'desc' ? 'DESC' : 'ASC'))),
 
-                TextColumn::make('reserved_quantity')
+                TextColumn::make('quantity_reserved')
                     ->label('Reserved')
                     ->numeric()
                     ->toggleable(),

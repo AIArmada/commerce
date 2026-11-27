@@ -109,10 +109,11 @@ final class InventoryBatchForm
                             TextInput::make('unit_cost_minor')
                                 ->label('Unit Cost (Minor)')
                                 ->numeric()
+                                ->minValue(0)
                                 ->prefix(config('inventory.defaults.currency', 'MYR')),
                         ]),
 
-                    Textarea::make('notes')
+                    Textarea::make('metadata.notes')
                         ->label('Notes')
                         ->rows(3),
                 ])
