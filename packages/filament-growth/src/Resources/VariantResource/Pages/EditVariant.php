@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
 
-use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
+use AIArmada\Growth\Actions\SaveVariant;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;

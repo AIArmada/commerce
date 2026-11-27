@@ -7,8 +7,6 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Growth\Actions\SaveExperiment;
-use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\GrowthDashboard;
 use AIArmada\FilamentGrowth\Policies\ExperimentPolicy;
@@ -17,11 +15,15 @@ use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
+use AIArmada\Growth\Actions\SaveExperiment;
+use AIArmada\Growth\Actions\SaveVariant;
+use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     filament()->setCurrentPanel('admin');
@@ -358,9 +360,9 @@ it('does not reopen an archived experiment through a direct administrative updat
     $this->actingAs($owner);
 
     OwnerContext::withOwner($owner, function () use ($experiment): void {
-        $experiment->transitionTo(\AIArmada\Growth\Enums\ExperimentStatus::Archived)->save();
+        $experiment->transitionTo(ExperimentStatus::Archived)->save();
 
         expect(fn () => app(SaveExperiment::class)->update((string) $experiment->getKey(), ['status' => 'active']))
-            ->toThrow(\Illuminate\Validation\ValidationException::class);
+            ->toThrow(ValidationException::class);
     });
 });

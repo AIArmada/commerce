@@ -11,12 +11,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\FilamentGrowth\Actions\DeleteSelectedExperiments;
 use AIArmada\FilamentGrowth\Actions\DeleteSelectedVariants;
-use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
+use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
@@ -802,11 +802,11 @@ it('prunes stale variant settings when the selected experiment module changes', 
     });
 
     $settings = app(SaveVariant::class)->normalizeSettings('pricing_test', [
-            'headline' => 'Keep me out',
-            'cta_copy' => 'Nope',
-            'price_label' => 'Starter',
-            'price_minor' => 12345,
-            'currency' => 'USD',
+        'headline' => 'Keep me out',
+        'cta_copy' => 'Nope',
+        'price_label' => 'Starter',
+        'price_minor' => 12345,
+        'currency' => 'USD',
     ]);
 
     expect($settings)->toBe([

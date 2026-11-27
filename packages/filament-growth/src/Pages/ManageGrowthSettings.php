@@ -109,5 +109,4 @@ final class ManageGrowthSettings extends Page
                 ->action('save'),
         ];
     }
-
 }

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Growth\Actions;
 
-use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class SaveVariant
 {
@@ -72,7 +73,7 @@ final readonly class SaveVariant
 
             foreach ($records as $record) {
                 if ($record->delete() !== true) {
-                    throw new \RuntimeException('Growth record deletion failed.');
+                    throw new RuntimeException('Growth record deletion failed.');
                 }
             }
         });

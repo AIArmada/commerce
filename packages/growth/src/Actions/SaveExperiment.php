@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Growth\Actions;
 
-use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class SaveExperiment
 {
@@ -110,7 +111,7 @@ final readonly class SaveExperiment
 
             foreach ($records as $record) {
                 if ($record->delete() !== true) {
-                    throw new \RuntimeException('Growth record deletion failed.');
+                    throw new RuntimeException('Growth record deletion failed.');
                 }
             }
         });

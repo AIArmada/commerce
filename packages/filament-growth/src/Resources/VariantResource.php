@@ -10,8 +10,8 @@ use AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Models\Variant;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -111,7 +111,6 @@ final class VariantResource extends Resource
         return parent::canDeleteAny()
             && Gate::allows('deleteAny', static::getModel());
     }
-
 
     public static function getPages(): array
     {

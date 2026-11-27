@@ -103,10 +103,10 @@ final class ExperimentOwnership
         return $query->whereExists($parents);
     }
 
-
     /**
      * @template TModel of Model
-     * @param Builder<TModel> $query
+     *
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function scopeOwner(Builder $query, bool $writable = false): Builder

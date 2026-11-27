@@ -10,8 +10,8 @@ use AIArmada\Growth\EntryPoints\Http\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
-use AIArmada\Signals\Features\Browser\Api\BrowserPageProperties;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
+use AIArmada\Signals\Features\Browser\Api\BrowserPageProperties;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 

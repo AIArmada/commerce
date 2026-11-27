@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Resources\ExperimentResource\Pages;
 
+use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\Growth\Actions\SaveExperiment;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;

@@ -7,8 +7,8 @@ namespace AIArmada\FilamentGrowth\Policies;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Models\Experiment;
-use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Growth\Models\Variant;
+use AIArmada\Growth\Queries\ExperimentOwnership;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
