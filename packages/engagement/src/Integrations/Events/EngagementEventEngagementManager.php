@@ -16,9 +16,7 @@ use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
-use AIArmada\Engagement\Features\Interactions\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use AIArmada\Events\Contracts\EventEngagementManager as EventEngagementManagerContract;
 
@@ -98,17 +96,7 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
     {
         $actor = EngagementModelGuard::requireModel($actor, 'actor');
         $eventTarget = EngagementModelGuard::requireModel($eventTarget, 'event target');
-        $actorIdentity = EngagementModelGuard::identity($actor, 'actor');
-        $eventTargetIdentity = EngagementModelGuard::identity($eventTarget, 'event target');
         $response = $this->interactionState->responseFor($actor, $eventTarget);
-
-        $share = Share::query()
-            ->where('sharer_type', $actorIdentity['type'])
-            ->where('sharer_id', $actorIdentity['id'])
-            ->where('shareable_type', $eventTargetIdentity['type'])
-            ->where('shareable_id', $eventTargetIdentity['id'])
-            ->whereIn('status', [ShareStatus::Created, ShareStatus::Shared])
-            ->first();
 
         return [
             'is_following' => $this->interactionState->isFollowing($actor, $eventTarget),
@@ -116,14 +104,7 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
             'response' => $response['response_type'] ?? null,
             'subscriptions' => $this->subscriptionState->subscriptionsFor($actor, $eventTarget),
             'reminders' => $this->reminderState->remindersFor($actor, $eventTarget),
-            'share' => $share ? [
-                'id' => $share->getKey(),
-                'share_url' => $share->share_url,
-                'share_token' => $share->share_token,
-                'channel' => $share->channel,
-                'status' => $share->status,
-                'shared_at' => $share->shared_at,
-            ] : null,
+            'share' => $this->interactionState->shareFor($actor, $eventTarget),
         ];
     }
 }

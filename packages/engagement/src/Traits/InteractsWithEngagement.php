@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Traits;
 
 use AIArmada\Engagement\Contracts\CanInteract;
-use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,10 +19,4 @@ trait InteractsWithEngagement
     {
         return EngagementModelGuard::requireContract($this, CanInteract::class, 'actor');
     }
-
-    protected function engagementManager(): ManageInteractionsAction
-    {
-        return app(ManageInteractionsAction::class);
-    }
-
 }

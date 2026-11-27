@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Queries;
 
+use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 
 final class ReadInteractionStateQuery implements ReadsInteractionState
@@ -72,5 +74,34 @@ final class ReadInteractionStateQuery implements ReadsInteractionState
         }
 
         return $query->first()?->toArray();
+    }
+
+    public function shareFor(mixed $actor, mixed $subject): ?array
+    {
+        $actor = EngagementModelGuard::requireModel($actor, 'actor');
+        $subject = EngagementModelGuard::requireModel($subject, 'subject');
+
+        $share = Share::query()
+            ->where('sharer_type', $actor->getMorphClass())
+            ->where('sharer_id', $actor->getKey())
+            ->where('shareable_type', $subject->getMorphClass())
+            ->where('shareable_id', $subject->getKey())
+            ->whereIn('status', [ShareStatus::Created, ShareStatus::Shared])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($share === null) {
+            return null;
+        }
+
+        return [
+            'id' => $share->getKey(),
+            'share_url' => $share->share_url,
+            'share_token' => $share->share_token,
+            'channel' => $share->channel,
+            'status' => $share->status,
+            'shared_at' => $share->shared_at,
+        ];
     }
 }

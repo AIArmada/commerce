@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Concerns;
-
 use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Interactions\Actions\ManageFollowsAction;
 use AIArmada\Engagement\Traits\InteractsWithEngagement;
-
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -26,12 +25,12 @@ trait CanFollow
 
     public function follow(mixed $subject, array $options = []): Follow
     {
-        return $this->engagementManager()->follow($this->engagementActor(), $subject, $options);
+        return app(ManageFollowsAction::class)->follow($this->engagementActor(), $subject, $options);
     }
 
     public function unfollow(mixed $subject): void
     {
-        $this->engagementManager()->unfollow($this->engagementActor(), $subject);
+        app(ManageFollowsAction::class)->unfollow($this->engagementActor(), $subject);
     }
 
     public function isFollowing(mixed $subject): bool

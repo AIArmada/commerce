@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Concerns;
-
+use AIArmada\Engagement\Features\Interactions\Actions\ManageReactionsAction;
 use AIArmada\Engagement\Traits\InteractsWithEngagement;
-
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -25,11 +24,11 @@ trait CanReact
 
     public function react(mixed $subject, string $type, array $options = []): Reaction
     {
-        return $this->engagementManager()->react($this->engagementActor(), $subject, $type, $options);
+        return app(ManageReactionsAction::class)->react($this->engagementActor(), $subject, $type, $options);
     }
 
     public function removeReaction(mixed $subject, ?string $type = null): void
     {
-        $this->engagementManager()->removeReaction($this->engagementActor(), $subject, $type);
+        app(ManageReactionsAction::class)->removeReaction($this->engagementActor(), $subject, $type);
     }
 }

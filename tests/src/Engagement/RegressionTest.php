@@ -566,3 +566,21 @@ it('places share tokens before URL fragments and preserves existing query parame
     expect($query)->toBe(['source' => 'feed', 'share' => 'a+b'])
         ->and(parse_url($url, PHP_URL_FRAGMENT))->toBe('details');
 });
+
+it('returns interaction snapshots through feature APIs without exposing mutable models', function (): void {
+    $manager = app(ManageInteractionsAction::class);
+    $manager->follow($this->actor, $this->subject);
+    $manager->bookmark($this->actor, $this->subject);
+    $response = $manager->respond($this->actor, $this->subject, 'going');
+    $reaction = $manager->react($this->actor, $this->subject, 'like');
+    $share = $manager->share($this->actor, $this->subject);
+    $state = app(\AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState::class);
+
+    expect($state->isFollowing($this->actor, $this->subject))->toBeTrue()
+        ->and($state->isBookmarked($this->actor, $this->subject))->toBeTrue()
+        ->and($state->responseFor($this->actor, $this->subject)['id'])->toBe($response->getKey())
+        ->and($state->reactionFor($this->actor, $this->subject, 'like')['id'])->toBe($reaction->getKey())
+        ->and($state->shareFor($this->actor, $this->subject)['id'])->toBe($share->getKey())
+        ->and($state->responseFor(new EngagementActor, $this->subject))->toBeNull()
+        ->and(fn () => $state->isFollowing('invalid', $this->subject))->toThrow(InvalidArgumentException::class);
+});
