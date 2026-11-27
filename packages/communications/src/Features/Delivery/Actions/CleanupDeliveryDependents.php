@@ -11,6 +11,7 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Tracking\Api\DeliveryTrackingCleaner;
 use AIArmada\Communications\Models\Communication;
+use RuntimeException;
 
 final readonly class CleanupDeliveryDependents implements DeliveryDependentsCleaner
 {
@@ -26,8 +27,16 @@ final readonly class CleanupDeliveryDependents implements DeliveryDependentsClea
             }
 
             $this->tracking->cleanup($deliveryId);
-            $delivery->events()->eachById(fn (CommunicationEvent $event) => $event->delete(), 200);
-            $delivery->attempts()->eachById(fn (CommunicationAttempt $attempt) => $attempt->delete(), 200);
+            $delivery->events()->eachById(static function (CommunicationEvent $event): void {
+                if (! $event->delete()) {
+                    throw new RuntimeException('Communication dependent deletion was cancelled.');
+                }
+            }, 200);
+            $delivery->attempts()->eachById(static function (CommunicationAttempt $attempt): void {
+                if (! $attempt->delete()) {
+                    throw new RuntimeException('Communication dependent deletion was cancelled.');
+                }
+            }, 200);
         });
     }
 
@@ -40,7 +49,11 @@ final readonly class CleanupDeliveryDependents implements DeliveryDependentsClea
         (new CommunicationDelivery)->getConnection()->transaction(function () use ($communicationId): void {
             CommunicationDelivery::query()
                 ->where('communication_id', $communicationId)
-                ->eachById(fn (CommunicationDelivery $delivery) => $delivery->delete(), 100);
+                ->eachById(static function (CommunicationDelivery $delivery): void {
+                    if (! $delivery->delete()) {
+                        throw new RuntimeException('Communication dependent deletion was cancelled.');
+                    }
+                }, 100);
 
             CommunicationEvent::query()->where('communication_id', $communicationId)->delete();
         });

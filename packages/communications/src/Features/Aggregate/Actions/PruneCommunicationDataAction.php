@@ -7,7 +7,6 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 use AIArmada\Communications\Models\Communication;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class PruneCommunicationDataAction
 {
@@ -19,7 +18,7 @@ final class PruneCommunicationDataAction
     {
         $pruned = 0;
 
-        $pruned += DB::transaction(function () use ($before) {
+        $pruned += (new Communication)->getConnection()->transaction(function () use ($before): int {
             $query = Communication::query()
                 ->where(function ($q) use ($before): void {
                     $q->where('completed_at', '<', $before)
@@ -28,11 +27,12 @@ final class PruneCommunicationDataAction
                         ->orWhere('expires_at', '<', $before);
                 });
 
-            $count = $query->count();
-            $query->chunkById(100, function (Collection $communications): void {
-                $communications->each(function (Communication $communication): void {
+            $count = 0;
+            $query->chunkById(100, function (Collection $communications) use (&$count): void {
+                foreach ($communications as $communication) {
                     $this->deleteCommunication->handle((string) $communication->getKey());
-                });
+                    $count++;
+                }
             });
 
             return $count;

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Features\Aggregate\Actions\DeleteCommunicationAggregateAction;
 use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Data\ProviderEventData;
@@ -221,4 +222,34 @@ test('provider events without IDs use a payload hash and are replay-safe', funct
 
     expect(fn () => app(ApplyProviderEventAction::class)->handle($eventData))
         ->toThrow(RuntimeException::class, 'Duplicate provider event');
+});
+
+test('aggregate deletion rolls back if the communication deletion is cancelled', function (): void {
+    $id = $this->communication->id;
+    $deliveryId = $this->delivery->id;
+    $recipientId = $this->recipient->id;
+
+    Communication::deleting(static fn (Communication $record): bool => $record->id !== $id);
+
+    expect(fn () => app(DeleteCommunicationAggregateAction::class)->handle($id))
+        ->toThrow(RuntimeException::class, 'Communication deletion was cancelled.');
+
+    expect(Communication::query()->whereKey($id)->exists())->toBeTrue()
+        ->and(CommunicationDelivery::query()->whereKey($deliveryId)->exists())->toBeTrue()
+        ->and(CommunicationRecipient::query()->whereKey($recipientId)->exists())->toBeTrue();
+});
+
+test('aggregate deletion rolls back if a delivery deletion is cancelled', function (): void {
+    $id = $this->communication->id;
+    $deliveryId = $this->delivery->id;
+    $recipientId = $this->recipient->id;
+
+    CommunicationDelivery::deleting(static fn (CommunicationDelivery $record): bool => $record->id !== $deliveryId);
+
+    expect(fn () => app(DeleteCommunicationAggregateAction::class)->handle($id))
+        ->toThrow(RuntimeException::class, 'Communication dependent deletion was cancelled.');
+
+    expect(Communication::query()->whereKey($id)->exists())->toBeTrue()
+        ->and(CommunicationDelivery::query()->whereKey($deliveryId)->exists())->toBeTrue()
+        ->and(CommunicationRecipient::query()->whereKey($recipientId)->exists())->toBeTrue();
 });

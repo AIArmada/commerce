@@ -6,6 +6,7 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Models\Communication;
+use RuntimeException;
 
 final class DeleteCommunicationAggregateAction
 {
@@ -18,7 +19,9 @@ final class DeleteCommunicationAggregateAction
                 OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
             }
 
-            $communication->delete();
+            if (! $communication->delete()) {
+                throw new RuntimeException('Communication deletion was cancelled.');
+            }
         });
     }
 }
