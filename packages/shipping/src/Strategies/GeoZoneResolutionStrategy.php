@@ -6,7 +6,7 @@ namespace AIArmada\Shipping\Strategies;
 
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Support\Collection;
 
 /**

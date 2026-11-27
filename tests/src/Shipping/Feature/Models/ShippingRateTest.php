@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\PackageData;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('ShippingRate Model', function (): void {

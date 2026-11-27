@@ -17,7 +17,7 @@ use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;

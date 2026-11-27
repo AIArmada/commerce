@@ -10,8 +10,8 @@ use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
 use AIArmada\Shipping\Models\ShipmentItem;
 use AIArmada\Shipping\Models\ShipmentLabel;
-use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('shipping core models are auditable and activity loggable', function (): void {

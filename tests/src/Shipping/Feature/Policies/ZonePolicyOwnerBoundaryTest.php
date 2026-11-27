@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Policies;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;

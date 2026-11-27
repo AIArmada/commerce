@@ -7,7 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManag
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\Shipping\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;

@@ -311,7 +311,7 @@ if ($shipment->isCancellable()) {
 ### Creating Zones
 
 ```php
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 
 // Country-based zone
 $zone = ShippingZone::create([
@@ -354,7 +354,7 @@ $zone = ShippingZone::create([
 `estimated_days_min` / `estimated_days_max`, and `active`:
 
 ```php
-use AIArmada\Shipping\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 
 // Flat rate
 $rate = $zone->rates()->create([

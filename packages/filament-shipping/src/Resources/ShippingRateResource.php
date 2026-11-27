@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Schemas\ShippingRateForm;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Tables\ShippingRatesTable;
-use AIArmada\Shipping\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

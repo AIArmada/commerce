@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Contracts;
 
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Support\Collection;
 
 /**

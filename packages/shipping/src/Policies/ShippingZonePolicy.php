@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;

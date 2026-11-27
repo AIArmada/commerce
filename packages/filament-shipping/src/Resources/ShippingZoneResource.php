@@ -10,7 +10,7 @@ use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Schemas\ShippingZoneForm;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Tables\ShippingZonesTable;
-use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
