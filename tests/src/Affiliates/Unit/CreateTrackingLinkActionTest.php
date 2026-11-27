@@ -21,6 +21,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -216,10 +217,10 @@ test('it counts only human clicks associated with the public tracking link', fun
     $forged = clone $tracked;
     $forged->setAttribute($forged->getKeyName(), (string) Str::uuid());
     $listener->handle(new LinkClicked($forged, new LinkClick(['link_id' => $forged->getKey()])));
-    expect(app(AffiliateLinkGate::class)->blockedReason($tracked))->toBeNull()
-        ->and(app(AffiliateLinkGate::class)->blockedReason($forged))->toBe('link_unknown');
+    expect(app(AffiliateLinkGate::class)->blockedReason(new LinkGateContext((string) $tracked->getKey(), $tracked->slug, $tracked->subject_type, $tracked->subject_id)))->toBeNull()
+        ->and(app(AffiliateLinkGate::class)->blockedReason(new LinkGateContext((string) $forged->getKey(), $forged->slug, $forged->subject_type, $forged->subject_id)))->toBe('link_unknown');
     $forged->subject_id = 'malformed-subject';
-    expect(app(AffiliateLinkGate::class)->blockedReason($forged))->toBe('link_unknown');
+    expect(app(AffiliateLinkGate::class)->blockedReason(new LinkGateContext((string) $forged->getKey(), $forged->slug, $forged->subject_type, $forged->subject_id)))->toBe('link_unknown');
 
     expect($link->refresh()->clicks)->toBe(0);
 
