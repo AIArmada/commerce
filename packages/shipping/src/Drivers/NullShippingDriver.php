@@ -17,7 +17,6 @@ use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -41,9 +40,9 @@ class NullShippingDriver implements ShippingDriverInterface
         return true; // Everything "works" in the null driver
     }
 
-    public function getAvailableMethods(): Collection
+    public function getAvailableMethods(): array
     {
-        return collect([
+        return [
             new ShippingMethodData(
                 code: 'standard',
                 name: 'Standard Shipping',
@@ -56,7 +55,7 @@ class NullShippingDriver implements ShippingDriverInterface
                 minDays: 1,
                 maxDays: 2,
             ),
-        ]);
+        ];
     }
 
     public function getRates(
@@ -64,8 +63,8 @@ class NullShippingDriver implements ShippingDriverInterface
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
-        return collect([
+    ): array {
+        return [
             new RateQuoteData(
                 carrier: 'null',
                 service: 'standard',
@@ -84,7 +83,7 @@ class NullShippingDriver implements ShippingDriverInterface
                 serviceDescription: 'Test Express Shipping',
                 calculatedLocally: true,
             ),
-        ]);
+        ];
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

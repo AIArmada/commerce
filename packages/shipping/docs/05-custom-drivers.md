@@ -24,7 +24,6 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Enums\DriverCapability;
-use Illuminate\Support\Collection;
 
 interface ShippingDriverInterface
 {
@@ -46,23 +45,23 @@ interface ShippingDriverInterface
     /**
      * Get available shipping methods for this carrier.
      *
-     * @return Collection<int, ShippingMethodData>
+     * @return list<ShippingMethodData>
      */
-    public function getAvailableMethods(): Collection;
+    public function getAvailableMethods(): array;
 
     /**
      * Get rate quotes for a shipment.
      *
      * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
-     * @return Collection<int, RateQuoteData>
+     * @return list<RateQuoteData>
      */
     public function getRates(
         AddressData $origin,
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection;
+    ): array;
 
     /**
      * Create a shipment with the carrier.
@@ -131,7 +130,6 @@ use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Services\RetryService;
 use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class JntShippingDriver implements ShippingDriverInterface
@@ -178,12 +176,12 @@ class JntShippingDriver implements ShippingDriverInterface
         return in_array($capability, $this->capabilities, true);
     }
 
-    public function getAvailableMethods(): Collection
+    public function getAvailableMethods(): array
     {
-        return collect([
+        return [
             new ShippingMethodData(code: 'jnt_standard', name: 'J&T Standard', maxDays: 5),
             new ShippingMethodData(code: 'jnt_express', name: 'J&T Express', maxDays: 2),
-        ]);
+        ];
     }
 
     public function servicesDestination(AddressData $destination): bool
@@ -197,7 +195,7 @@ class JntShippingDriver implements ShippingDriverInterface
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
+    ): array {
         // PackageData::$weight is already an int in grams — sum integers,
         // never scale a float.
         $totalWeight = collect($packages)->sum(fn (PackageData $p) => $p->weight);
@@ -224,13 +222,13 @@ class JntShippingDriver implements ShippingDriverInterface
             return $response->json('rates') ?? [];
         });
 
-        return collect($quotes)->map(fn (array $rate) => new RateQuoteData(
+        return array_values(array_map(fn (array $rate) => new RateQuoteData(
             carrier: 'jnt',
             service: (string) $rate['service_code'],
             rate: (int) round(((float) $rate['amount']) * 100),
             currency: 'MYR',
             estimatedDays: (int) ($rate['days_min'] ?? $rate['days_max'] ?? 0),
-        ));
+        ), $quotes));
     }
 
     public function createShipment(ShipmentData $shipment): CarrierOperationResult
@@ -603,6 +601,6 @@ test('jnt driver returns rates for malaysian address', function () {
     $rates = $driver->getRates($origin, $destination, $packages);
 
     expect($rates)->not->toBeEmpty();
-    expect($rates->first()->carrier)->toBe('jnt');
+    expect($rates[0]->carrier)->toBe('jnt');
 });
 ```

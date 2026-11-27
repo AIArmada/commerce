@@ -248,7 +248,7 @@ class RateShoppingEngine
                         );
 
                         if (! $driver->servicesDestination($destination)) {
-                            return collect();
+                            return [];
                         }
 
                         $rates = $driver->getRates($origin, $destination, $packages, $options);
@@ -261,7 +261,7 @@ class RateShoppingEngine
                         app(self::class)->recordCarrierFailure($carrierCode);
                         report($e);
 
-                        return collect();
+                        return [];
                     }
                 },
             ];
@@ -274,7 +274,7 @@ class RateShoppingEngine
         // Merge all successful results
         $rates = collect();
         foreach ($results as $carrierRates) {
-            if ($carrierRates instanceof Collection) {
+            if (is_array($carrierRates)) {
                 $rates = $rates->merge($carrierRates);
             }
         }
@@ -375,13 +375,11 @@ class RateShoppingEngine
             return null;
         }
 
-        return $this->shippingManager->driver('manual')
-            ->getRates(
+        return $this->shippingManager->driver('manual')->getRates(
                 new AddressData(name: '', phone: '', line1: '', postcode: ''),
                 $destination,
                 $packages
-            )
-            ->first();
+            )[0] ?? null;
     }
 
     /**

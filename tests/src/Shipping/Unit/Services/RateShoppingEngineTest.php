@@ -231,9 +231,9 @@ describe('RateShoppingEngine', function (): void {
             new PackageData(1000, 10, 5, 5, 500, 'box', 1),
         ];
 
-        $fallbackRates = collect([
+        $fallbackRates = [
             new RateQuoteData(carrier: 'manual', service: 'standard', rate: 500, currency: 'USD', estimatedDays: 7),
-        ]);
+        ];
 
         $manualDriver->shouldReceive('getRates')
             ->andReturn($fallbackRates);
@@ -465,9 +465,9 @@ describe('RateShoppingEngine', function (): void {
 
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(true);
-        $fedexDriver->shouldReceive('getRates')->andReturn(collect([
+        $fedexDriver->shouldReceive('getRates')->andReturn([
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-        ]));
+        ]);
 
         $shippingManager->shouldReceive('hasDriver')->with('fedex')->andReturn(true);
         $shippingManager->shouldReceive('hasDriver')->with('ups')->andReturn(false); // UPS not available
@@ -593,9 +593,9 @@ describe('RateShoppingEngine', function (): void {
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('getCarrierCode')->andReturn('fedex');
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(true);
-        $fedexDriver->shouldReceive('getRates')->andReturn(collect([
+        $fedexDriver->shouldReceive('getRates')->andReturn([
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-        ]));
+        ]);
 
         $shippingManager->shouldReceive('getAvailableDrivers')->andReturn(['fedex']);
         $shippingManager->shouldReceive('hasDriver')->with('fedex')->andReturn(true);

@@ -34,7 +34,7 @@ it('returns test shipping methods', function (): void {
 
     expect($methods)->not->toBeEmpty();
     expect($methods)->toHaveCount(2);
-    expect($methods->first()->code)->toBe('standard');
+    expect($methods[0]->code)->toBe('standard');
 });
 
 it('returns test rate quotes', function (): void {
@@ -58,8 +58,8 @@ it('returns test rate quotes', function (): void {
 
     expect($rates)->not->toBeEmpty();
     expect($rates)->toHaveCount(2);
-    expect($rates->first())->toBeInstanceOf(RateQuoteData::class);
-    expect($rates->first()->rate)->toBe(0);
+    expect($rates[0])->toBeInstanceOf(RateQuoteData::class);
+    expect($rates[0]->rate)->toBe(0);
 });
 
 it('creates test shipment successfully', function (): void {

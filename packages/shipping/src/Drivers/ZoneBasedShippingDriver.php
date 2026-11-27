@@ -19,7 +19,6 @@ use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Contracts\ZoneRateReader;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -58,31 +57,31 @@ class ZoneBasedShippingDriver implements ShippingDriverInterface
     }
 
     /**
-     * @return Collection<int, ShippingMethodData>
+     * @return list<ShippingMethodData>
      */
-    public function getAvailableMethods(): Collection
+    public function getAvailableMethods(): array
     {
-        return collect([
+        return [
             new ShippingMethodData(
                 code: 'zone_standard',
                 name: 'Zone-Based Shipping',
                 description: 'Shipping rates based on destination zone',
                 trackingAvailable: false,
             ),
-        ]);
+        ];
     }
 
     /**
      * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
-     * @return Collection<int, RateQuoteData>
+     * @return list<RateQuoteData>
      */
     public function getRates(
         AddressData $origin,
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
+    ): array {
         $ownerId = $options['owner_id'] ?? null;
         $ownerType = $options['owner_type'] ?? null;
         $cartTotal = (int) ($options['cart_total'] ?? 0);
@@ -90,7 +89,7 @@ class ZoneBasedShippingDriver implements ShippingDriverInterface
 
         $currency = $this->config['currency'] ?? config('shipping.defaults.currency', 'MYR');
 
-        return collect($this->zoneResolver->quote($destination, $packages, $cartTotal, $itemCount, $currency, $ownerId, $ownerType));
+        return $this->zoneResolver->quote($destination, $packages, $cartTotal, $itemCount, $currency, $ownerId, $ownerType);
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

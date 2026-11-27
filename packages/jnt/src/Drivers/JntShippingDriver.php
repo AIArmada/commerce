@@ -31,7 +31,6 @@ use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Throwable;
 
 /**
@@ -74,9 +73,9 @@ class JntShippingDriver implements ShippingDriverInterface
         };
     }
 
-    public function getAvailableMethods(): Collection
+    public function getAvailableMethods(): array
     {
-        return collect([
+        return [
             new ShippingMethodData(
                 code: 'EZ',
                 name: 'J&T EZ',
@@ -93,27 +92,27 @@ class JntShippingDriver implements ShippingDriverInterface
                 maxDays: 2,
                 trackingAvailable: true,
             ),
-        ]);
+        ];
     }
 
     /**
      * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
-     * @return Collection<int, RateQuoteData>
+     * @return list<RateQuoteData>
      */
     public function getRates(
         AddressData $origin,
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
+    ): array {
         $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
 
         // Calculate rate based on weight
         $rate = $this->calculateWeightBasedRate($totalWeight, $destination);
         $estimatedDays = $this->getEstimatedDays($destination);
 
-        return collect([
+        return [
             new RateQuoteData(
                 carrier: 'jnt',
                 service: 'EZ',
@@ -123,7 +122,7 @@ class JntShippingDriver implements ShippingDriverInterface
                 serviceDescription: 'J&T EZ - Standard Delivery',
                 calculatedLocally: true,
             ),
-        ]);
+        ];
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

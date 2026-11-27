@@ -101,8 +101,8 @@ describe('available methods', function (): void {
         $methods = $this->driver->getAvailableMethods();
 
         expect($methods)->toHaveCount(2);
-        expect($methods->first()->code)->toBe('EZ');
-        expect($methods->last()->code)->toBe('EXPRESS');
+        expect($methods[0]->code)->toBe('EZ');
+        expect($methods[array_key_last($methods)]->code)->toBe('EXPRESS');
     });
 
     it('methods have tracking available', function (): void {
@@ -143,9 +143,9 @@ describe('getRates', function (): void {
         $rates = $this->driver->getRates($origin, $destination, $packages);
 
         expect($rates)->not->toBeEmpty();
-        expect($rates->first()->carrier)->toBe('jnt');
-        expect($rates->first()->service)->toBe('EZ');
-        expect($rates->first()->currency)->toBe('MYR');
+        expect($rates[0]->carrier)->toBe('jnt');
+        expect($rates[0]->service)->toBe('EZ');
+        expect($rates[0]->currency)->toBe('MYR');
     });
 
     it('applies higher rate for East Malaysia', function (): void {
@@ -180,7 +180,7 @@ describe('getRates', function (): void {
         $ratesWest = $this->driver->getRates($origin, $destinationWest, $packages);
         $ratesEast = $this->driver->getRates($origin, $destinationEast, $packages);
 
-        expect($ratesEast->first()->rate)->toBeGreaterThan($ratesWest->first()->rate);
+        expect($ratesEast[0]->rate)->toBeGreaterThan($ratesWest[0]->rate);
     });
 
     it('rounds regional multipliers in integer minor units at the half-sen boundary', function (): void {
@@ -211,10 +211,10 @@ describe('getRates', function (): void {
         );
 
         config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 15000]]);
-        $roundedUp = $this->driver->getRates($origin, $halfSen, $packages)->first();
+        $roundedUp = $this->driver->getRates($origin, $halfSen, $packages)[0] ?? null;
 
         config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 14999]]);
-        $roundedDown = $this->driver->getRates($origin, $halfSen, $packages)->first();
+        $roundedDown = $this->driver->getRates($origin, $halfSen, $packages)[0] ?? null;
 
         expect($roundedUp?->rate)->toBe(2)
             ->and($roundedDown?->rate)->toBe(1);

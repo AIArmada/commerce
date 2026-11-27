@@ -65,8 +65,8 @@ it('returns zone_standard method', function (): void {
     $methods = $this->driver->getAvailableMethods();
 
     expect($methods)->toHaveCount(1);
-    expect($methods->first()->code)->toBe('zone_standard');
-    expect($methods->first()->name)->toBe('Zone-Based Shipping');
+    expect($methods[0]->code)->toBe('zone_standard');
+    expect($methods[0]->name)->toBe('Zone-Based Shipping');
 });
 
 it('returns empty rates when no zones exist', function (): void {
@@ -110,13 +110,13 @@ it('returns rates from matching zone', function (): void {
     );
 
     expect($rates)->toHaveCount(1);
-    expect($rates->first())->toBeInstanceOf(RateQuoteData::class);
-    expect($rates->first()->carrier)->toBe('zone');
-    expect($rates->first()->service)->toBe('standard');
-    expect($rates->first()->rate)->toBe(800);
-    expect($rates->first()->estimatedDays)->toBe(3);
-    expect($rates->first()->serviceDescription)->toBe('Standard Delivery');
-    expect($rates->first()->calculatedLocally)->toBeTrue();
+    expect($rates[0])->toBeInstanceOf(RateQuoteData::class);
+    expect($rates[0]->carrier)->toBe('zone');
+    expect($rates[0]->service)->toBe('standard');
+    expect($rates[0]->rate)->toBe(800);
+    expect($rates[0]->estimatedDays)->toBe(3);
+    expect($rates[0]->serviceDescription)->toBe('Standard Delivery');
+    expect($rates[0]->calculatedLocally)->toBeTrue();
 });
 
 it('returns multiple rates from one zone', function (): void {
@@ -161,7 +161,7 @@ it('returns multiple rates from one zone', function (): void {
     );
 
     expect($rates)->toHaveCount(2);
-    expect($rates->pluck('service')->all())->toContain('standard', 'express');
+    expect(array_column($rates, 'service'))->toContain('standard', 'express');
 });
 
 it('excludes inactive rates', function (): void {
@@ -204,7 +204,7 @@ it('excludes inactive rates', function (): void {
     );
 
     expect($rates)->toHaveCount(1);
-    expect($rates->first()->serviceDescription)->toBe('Active Rate');
+    expect($rates[0]->serviceDescription)->toBe('Active Rate');
 });
 
 it('filters rates by conditions', function (): void {
@@ -251,7 +251,7 @@ it('filters rates by conditions', function (): void {
     );
 
     expect($rates)->toHaveCount(1);
-    expect($rates->first()->serviceDescription)->toBe('Standard (no conditions)');
+    expect($rates[0]->serviceDescription)->toBe('Standard (no conditions)');
 
     $heavyPackages = [new PackageData(weight: 6000)];
 
@@ -349,7 +349,7 @@ it('uses carrier_code from rate when available', function (): void {
         ['owner_id' => 'test-owner-123', 'owner_type' => 'TestOwner'],
     );
 
-    expect($rates->first()->carrier)->toBe('custom_carrier');
+    expect($rates[0]->carrier)->toBe('custom_carrier');
 });
 
 it('uses configured currency', function (): void {
@@ -384,7 +384,7 @@ it('uses configured currency', function (): void {
         ['owner_id' => 'test-owner-123', 'owner_type' => 'TestOwner'],
     );
 
-    expect($rates->first()->currency)->toBe('USD');
+    expect($rates[0]->currency)->toBe('USD');
 });
 
 it('returns empty rates for unmatched destination', function (): void {
@@ -542,7 +542,7 @@ it('applies rate calculation types correctly', function (): void {
     );
 
     expect($rates)->toHaveCount(1);
-    expect($rates->first()->rate)->toBe(1100); // 500 + (200 * 3) for ceil(3.5kg)
+    expect($rates[0]->rate)->toBe(1100); // 500 + (200 * 3) for ceil(3.5kg)
 });
 
 it('includes rate description as note', function (): void {
@@ -576,5 +576,5 @@ it('includes rate description as note', function (): void {
         ['owner_id' => 'test-owner-123', 'owner_type' => 'TestOwner'],
     );
 
-    expect($rates->first()->note)->toBe('Delivery within 3-5 business days');
+    expect($rates[0]->note)->toBe('Delivery within 3-5 business days');
 });

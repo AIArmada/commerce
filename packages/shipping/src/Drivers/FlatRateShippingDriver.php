@@ -17,7 +17,6 @@ use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 
 /**
  * Flat rate shipping driver with configurable rate tiers.
@@ -49,7 +48,7 @@ class FlatRateShippingDriver implements ShippingDriverInterface
         };
     }
 
-    public function getAvailableMethods(): Collection
+    public function getAvailableMethods(): array
     {
         $rates = $this->config['rates'] ?? [];
 
@@ -57,13 +56,19 @@ class FlatRateShippingDriver implements ShippingDriverInterface
             $rates = [];
         }
 
-        return collect($rates)->map(fn (array $rate, string $code) => new ShippingMethodData(
-            code: $code,
-            name: $rate['name'] ?? ucfirst($code),
-            minDays: $rate['estimated_days'] ?? 3,
-            maxDays: ($rate['estimated_days'] ?? 3) + 1,
-            trackingAvailable: false,
-        ));
+        $result = [];
+
+        foreach ($rates as $code => $rate) {
+            $result[] = new ShippingMethodData(
+                code: $code,
+                name: $rate['name'] ?? ucfirst($code),
+                minDays: $rate['estimated_days'] ?? 3,
+                maxDays: ($rate['estimated_days'] ?? 3) + 1,
+                trackingAvailable: false,
+            );
+        }
+
+        return $result;
     }
 
     public function getRates(
@@ -71,7 +76,7 @@ class FlatRateShippingDriver implements ShippingDriverInterface
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
+    ): array {
         $rates = $this->config['rates'] ?? [];
 
         if (! is_array($rates)) {
@@ -79,15 +84,21 @@ class FlatRateShippingDriver implements ShippingDriverInterface
         }
         $currency = $this->config['currency'] ?? 'MYR';
 
-        return collect($rates)->map(fn (array $rate, string $code) => new RateQuoteData(
-            carrier: 'flat_rate',
-            service: $code,
-            rate: $rate['rate'] ?? 0,
-            currency: $currency,
-            estimatedDays: $rate['estimated_days'] ?? 3,
-            serviceDescription: $rate['name'] ?? ucfirst($code),
-            calculatedLocally: true,
-        ));
+        $result = [];
+
+        foreach ($rates as $code => $rate) {
+            $result[] = new RateQuoteData(
+                carrier: 'flat_rate',
+                service: $code,
+                rate: $rate['rate'] ?? 0,
+                currency: $currency,
+                estimatedDays: $rate['estimated_days'] ?? 3,
+                serviceDescription: $rate['name'] ?? ucfirst($code),
+                calculatedLocally: true,
+            );
+        }
+
+        return $result;
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

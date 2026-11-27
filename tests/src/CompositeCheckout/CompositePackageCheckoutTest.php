@@ -33,7 +33,6 @@ use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
-use Illuminate\Support\Collection;
 use Mockery\CompositeExpectation;
 
 function bindCompositeCheckoutPayment(int $amount = 8800, bool $redirect = false): CompositeExpectation
@@ -231,11 +230,11 @@ it('ships the package and the standalone line as five units of the same stock id
     $driver = mock(ShippingDriverInterface::class);
     $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
     $driver->shouldReceive('getRates')->once()->andReturnUsing(
-        static function (AddressData $origin, AddressData $destination, array $packages): Collection {
+        static function (AddressData $origin, AddressData $destination, array $packages): array {
             expect(array_column($packages, 'weight'))->toBe([1000, 250])
                 ->and(array_column($packages, 'length'))->toBe([12, 12]);
 
-            return collect([new RateQuoteData('manual', 'standard', 1000, 'USD', 3)]);
+            return [new RateQuoteData('manual', 'standard', 1000, 'USD', 3)];
         },
     );
     $driver->shouldReceive('createShipment')->once()->andReturn(CarrierOperationResult::succeeded('COMPOSITE-TRACK'));

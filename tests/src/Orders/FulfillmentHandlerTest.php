@@ -112,7 +112,7 @@ it('maps the canonical shipping attachment into carrier rate requests', function
         ->andReturnTrue();
     $driver->shouldReceive('getRates')
         ->once()
-        ->andReturn(collect([
+        ->andReturn([
             new RateQuoteData(
                 carrier: 'manual',
                 service: 'standard',
@@ -120,7 +120,7 @@ it('maps the canonical shipping attachment into carrier rate requests', function
                 currency: 'MYR',
                 estimatedDays: 3,
             ),
-        ]));
+        ]);
     $shippingManager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
     $shippingManager->shouldReceive('driver')->with('manual')->once()->andReturn($driver);
 

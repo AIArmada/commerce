@@ -17,7 +17,6 @@ use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -48,9 +47,9 @@ class ManualShippingDriver implements ShippingDriverInterface
         return false;
     }
 
-    public function getAvailableMethods(): Collection
+    public function getAvailableMethods(): array
     {
-        return collect([
+        return [
             new ShippingMethodData(
                 code: 'standard',
                 name: 'Standard Shipping',
@@ -59,7 +58,7 @@ class ManualShippingDriver implements ShippingDriverInterface
                 maxDays: ($this->config['estimated_days'] ?? 3) + 2,
                 trackingAvailable: false,
             ),
-        ]);
+        ];
     }
 
     public function getRates(
@@ -67,7 +66,7 @@ class ManualShippingDriver implements ShippingDriverInterface
         AddressData $destination,
         array $packages,
         array $options = []
-    ): Collection {
+    ): array {
         $rate = $this->config['default_rate'] ?? 0;
 
         // Check for free shipping threshold
@@ -78,7 +77,7 @@ class ManualShippingDriver implements ShippingDriverInterface
             $rate = 0;
         }
 
-        return collect([
+        return [
             new RateQuoteData(
                 carrier: 'manual',
                 service: 'standard',
@@ -88,7 +87,7 @@ class ManualShippingDriver implements ShippingDriverInterface
                 serviceDescription: 'Manual fulfillment',
                 calculatedLocally: true,
             ),
-        ]);
+        ];
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

@@ -37,7 +37,7 @@ final class CalculateShippingRate implements CalculateRates
         if ($carrier !== null) {
             $driver = $this->shippingManager->driver($carrier);
 
-            return $driver->getRates($origin, $destination, $packages, $options)->values()->all();
+            return $driver->getRates($origin, $destination, $packages, $options);
         }
 
         // Get rates from all registered drivers (skip drivers that don't service destination)
