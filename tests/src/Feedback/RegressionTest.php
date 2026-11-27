@@ -151,8 +151,8 @@ it('aggregates per-question NPS and CSAT over answer scores', function (): void 
         isAnonymous: true,
     ));
 
-    $npsResult = app(FeedbackAnalyticsQuery::class)->nps($form, 'recommendation');
-    $csatResult = app(FeedbackAnalyticsQuery::class)->csat($form, 'satisfaction');
+    $npsResult = app(FeedbackAnalyticsQuery::class)->nps($form->id, 'recommendation');
+    $csatResult = app(FeedbackAnalyticsQuery::class)->csat($form->id, 'satisfaction');
 
     // Response total is 12 (promoter range); per-question aggregates must not see it.
     expect($npsResult->promoterCount)->toBe(1)
@@ -267,7 +267,7 @@ it('separates completed responses from pending review', function (): void {
         'feedback_form_id' => $form->id, 'status' => 'draft', 'is_anonymous' => true,
     ]);
 
-    $live = app(FeedbackAnalyticsQuery::class)->calculateLive($form);
+    $live = app(FeedbackAnalyticsQuery::class)->calculateLive($form->id);
 
     expect($live->totalResponses)->toBe(3)
         ->and($live->completedResponses)->toBe(2)
@@ -281,7 +281,7 @@ it('calculates live analytics in a single query', function (): void {
     DB::listen(function () use (&$queries): void {
         $queries++;
     });
-    app(FeedbackAnalyticsQuery::class)->calculateLive($form);
+    app(FeedbackAnalyticsQuery::class)->calculateLive($form->id);
 
     expect($queries)->toBe(1);
 });
@@ -538,8 +538,8 @@ it('throttles invitation resolution per client IP across tokens', function (): v
 it('returns calculated NPS and CSAT results from the analytics service', function (): void {
     $form = regressionPublishedForm('Service Results');
 
-    expect(app(FeedbackAnalyticsQuery::class)->nps($form))->toBeInstanceOf(NpsResultData::class)
-        ->and(app(FeedbackAnalyticsQuery::class)->csat($form))->toBeInstanceOf(CsatResultData::class);
+    expect(app(FeedbackAnalyticsQuery::class)->nps($form->id))->toBeInstanceOf(NpsResultData::class)
+        ->and(app(FeedbackAnalyticsQuery::class)->csat($form->id))->toBeInstanceOf(CsatResultData::class);
 });
 
 it('builds the dashboard response trend on sqlite', function (): void {

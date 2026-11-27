@@ -29,7 +29,7 @@ final readonly class RecalculateFeedbackFormAnalyticsAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $data = $this->calculate->execute($form);
+            $data = $this->calculate->execute($form->id);
             $analytics = FeedbackFormAnalytics::query()
                 ->where('feedback_form_id', $form->id)
                 ->first();

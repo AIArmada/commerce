@@ -178,14 +178,14 @@ $response = app(SubmitFeedbackResponseAction::class)->execute(
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
 
-$nps = app(FeedbackAnalyticsQuery::class)->nps($form);
-$csat = app(FeedbackAnalyticsQuery::class)->csat($form);
+$nps = app(FeedbackAnalyticsQuery::class)->nps($form->id);
+$csat = app(FeedbackAnalyticsQuery::class)->csat($form->id);
 
 // Per-question aggregates run over that question's answer scores.
-$npsForQuestion = app(FeedbackAnalyticsQuery::class)->nps($form, 'recommendation');
+$npsForQuestion = app(FeedbackAnalyticsQuery::class)->nps($form->id, 'recommendation');
 ```
 
-`FeedbackAnalyticsQuery::nps($form, $questionKey)` and `csat($form,
+`FeedbackAnalyticsQuery::nps($form->id, $questionKey)` and `csat($form->id,
 $questionKey)` return the calculated result objects directly.
 
 ## Testimonials
@@ -270,6 +270,6 @@ $invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToke
 ```php
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
-$data = app(FeedbackAnalyticsQuery::class)->summaryForForm($form);
+$data = app(FeedbackAnalyticsQuery::class)->summaryForForm($form->id);
 $dashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
 ```

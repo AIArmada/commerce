@@ -11,7 +11,6 @@ use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Data\NpsResultData;
 use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
 use AIArmada\Feedback\Features\Forms\Api\ReadsFormMetrics;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Api\ReadsResponseMetrics;
 use AIArmada\Feedback\Features\Testimonials\Api\ReadsTestimonialMetrics;
 
@@ -24,52 +23,52 @@ final class FeedbackAnalyticsQuery
         private readonly ReadsTestimonialMetrics $testimonialMetrics,
     ) {}
 
-    public function summaryForForm(FeedbackForm $form): FeedbackAnalyticsData
+    public function summaryForForm(string $formId): FeedbackAnalyticsData
     {
         $aggregate = FeedbackFormAnalytics::query()
-            ->where('feedback_form_id', $form->id)
+            ->where('feedback_form_id', $formId)
             ->first();
 
         if ($aggregate instanceof FeedbackFormAnalytics) {
             return $aggregate->toData();
         }
 
-        return $this->calculateLive($form);
+        return $this->calculateLive($formId);
     }
 
-    public function calculateLive(FeedbackForm $form): FeedbackAnalyticsData
+    public function calculateLive(string $formId): FeedbackAnalyticsData
     {
-        return $this->responseMetrics->summary($form->id);
+        return $this->responseMetrics->summary($formId);
     }
 
-    public function averageForQuestion(FeedbackForm $form, string $questionKey): ?float
+    public function averageForQuestion(string $formId, string $questionKey): ?float
     {
-        return $this->responseMetrics->average($form->id, $questionKey);
+        return $this->responseMetrics->average($formId, $questionKey);
     }
 
-    public function distributionForQuestion(FeedbackForm $form, string $questionKey): array
+    public function distributionForQuestion(string $formId, string $questionKey): array
     {
-        return $this->responseMetrics->distribution($form->id, $questionKey);
+        return $this->responseMetrics->distribution($formId, $questionKey);
     }
 
-    public function latestComments(FeedbackForm $form, int $limit = 10): array
+    public function latestComments(string $formId, int $limit = 10): array
     {
-        return $this->responseMetrics->latestComments($form->id, $limit);
+        return $this->responseMetrics->latestComments($formId, $limit);
     }
 
-    public function completionRate(FeedbackForm $form): float
+    public function completionRate(string $formId): float
     {
-        return $this->completionRate->calculate($form);
+        return $this->completionRate->calculate($formId);
     }
 
-    public function nps(FeedbackForm $form, ?string $questionKey = null): NpsResultData
+    public function nps(string $formId, ?string $questionKey = null): NpsResultData
     {
-        return $this->responseMetrics->nps($form->id, $questionKey);
+        return $this->responseMetrics->nps($formId, $questionKey);
     }
 
-    public function csat(FeedbackForm $form, ?string $questionKey = null): CsatResultData
+    public function csat(string $formId, ?string $questionKey = null): CsatResultData
     {
-        return $this->responseMetrics->csat($form->id, $questionKey);
+        return $this->responseMetrics->csat($formId, $questionKey);
     }
 
     /**

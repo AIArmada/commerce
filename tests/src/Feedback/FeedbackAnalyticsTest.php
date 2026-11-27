@@ -70,8 +70,8 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
     ]);
 
     $analytics = app(FeedbackAnalyticsQuery::class);
-    $nps = app(FeedbackAnalyticsQuery::class)->nps($npsForm);
-    $csat = app(FeedbackAnalyticsQuery::class)->csat($csatForm);
+    $nps = app(FeedbackAnalyticsQuery::class)->nps($npsForm->id);
+    $csat = app(FeedbackAnalyticsQuery::class)->csat($csatForm->id);
 
     expect($nps->score)->toBe(0)
         ->and($nps->promoterCount)->toBe(1)
@@ -79,9 +79,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
         ->and($nps->detractorCount)->toBe(1)
         ->and($csat->score)->toBe(33.33)
         ->and($csat->average)->toBe(3.33)
-        ->and($analytics->distributionForQuestion($csatForm, 'satisfaction'))
+        ->and($analytics->distributionForQuestion($csatForm->id, 'satisfaction'))
         ->toBe([2 => 1, 3 => 1, 5 => 1])
-        ->and($analytics->completionRate($csatForm))->toBe(75.0);
+        ->and($analytics->completionRate($csatForm->id))->toBe(75.0);
 });
 
 it('keys the dashboard cache by owner', function (): void {
@@ -146,7 +146,7 @@ it('excludes cross-owner joined answers from rating calculations', function (): 
 
     $distribution = OwnerContext::withOwner(
         $ownerA,
-        fn (): array => app(FeedbackAnalyticsQuery::class)->distributionForQuestion($form, 'rating'),
+        fn (): array => app(FeedbackAnalyticsQuery::class)->distributionForQuestion($form->id, 'rating'),
     );
 
     expect($distribution)->toBe([5 => 1]);
@@ -175,8 +175,8 @@ it('keeps reviewed responses in analytics and dashboard totals', function (): vo
     $analytics = app(FeedbackAnalyticsQuery::class);
     $dashboard = $analytics->dashboard();
 
-    expect($analytics->completionRate($form))->toBe(100.0)
-        ->and($analytics->distributionForQuestion($form, 'rating'))->toBe([5 => 1])
+    expect($analytics->completionRate($form->id))->toBe(100.0)
+        ->and($analytics->distributionForQuestion($form->id, 'rating'))->toBe([5 => 1])
         ->and($dashboard['overview']['submitted_responses'])->toBe(1)
         ->and(array_sum($dashboard['response_trend']))->toBe(1);
 });
@@ -206,10 +206,10 @@ it('returns only bounded comment projections without contact answers or response
     }
 
     $analytics = app(FeedbackAnalyticsQuery::class);
-    $comments = $analytics->latestComments($form);
+    $comments = $analytics->latestComments($form->id);
 
     expect($comments)->toHaveCount(1)
         ->and(array_keys($comments[0]))->toBe(['id', 'text_value'])
         ->and($comments[0]['text_value'])->toBe('Useful comment')
-        ->and($analytics->latestComments($form, 0))->toBe([]);
+        ->and($analytics->latestComments($form->id, 0))->toBe([]);
 });

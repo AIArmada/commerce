@@ -6,7 +6,6 @@ namespace AIArmada\Feedback\Features\Analytics\Actions;
 
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 
 final class CalculateFeedbackFormAnalyticsAction
 {
@@ -14,8 +13,8 @@ final class CalculateFeedbackFormAnalyticsAction
         private readonly FeedbackAnalyticsQuery $analytics,
     ) {}
 
-    public function execute(FeedbackForm $form): FeedbackAnalyticsData
+    public function execute(string $formId): FeedbackAnalyticsData
     {
-        return $this->analytics->calculateLive($form);
+        return $this->analytics->calculateLive($formId);
     }
 }

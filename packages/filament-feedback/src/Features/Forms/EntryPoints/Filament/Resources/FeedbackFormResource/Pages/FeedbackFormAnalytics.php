@@ -36,7 +36,7 @@ final class FeedbackFormAnalytics extends Page
 
     public function getAnalytics(): FeedbackAnalyticsData
     {
-        return app(FeedbackAnalyticsQuery::class)->summaryForForm($this->getForm());
+        return app(FeedbackAnalyticsQuery::class)->summaryForForm($this->getForm()->id);
     }
 
     /**
@@ -44,7 +44,7 @@ final class FeedbackFormAnalytics extends Page
      */
     public function getLatestComments(): array
     {
-        return app(FeedbackAnalyticsQuery::class)->latestComments($this->getForm());
+        return app(FeedbackAnalyticsQuery::class)->latestComments($this->getForm()->id);
     }
 
     private function getForm(): FeedbackForm
