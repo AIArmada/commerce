@@ -234,8 +234,8 @@ Enable detailed logging:
 ```php
 // In a service provider
 use Illuminate\Support\Facades\Log;
-use AIArmada\Shipping\Events\ShipmentCreated;
-use AIArmada\Shipping\Events\ShipmentStatusChanged;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCreated;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentStatusChanged;
 
 Event::listen(ShipmentCreated::class, function ($event) {
     Log::info('Shipment created', ['id' => $event->shipment->id]);

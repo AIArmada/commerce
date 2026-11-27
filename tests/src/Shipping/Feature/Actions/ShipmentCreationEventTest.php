@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Actions;
 
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Events\ShipmentCreated;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCreated;
 use AIArmada\Shipping\Features\Shipments\Actions\CreateShipment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;

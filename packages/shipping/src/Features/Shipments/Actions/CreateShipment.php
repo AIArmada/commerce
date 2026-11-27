@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Events\ShipmentCreated;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCreated;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use AIArmada\Shipping\States\Draft;

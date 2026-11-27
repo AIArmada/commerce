@@ -2,19 +2,24 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Events;
+namespace AIArmada\Shipping\Features\Shipments\Events;
 
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 
-class ShipmentCancelled
+class TrackingUpdated
 {
     use Dispatchable;
     use SerializesModels;
 
+    /**
+     * @param  Collection<int, ShipmentEvent>  $newEvents
+     */
     public function __construct(
         public readonly Shipment $shipment,
-        public readonly ?string $reason = null
+        public readonly Collection $newEvents
     ) {}
 }

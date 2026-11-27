@@ -11,7 +11,7 @@ use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
-use AIArmada\Shipping\Events\ShipmentShipped;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentShipped;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;

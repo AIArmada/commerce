@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
-use AIArmada\Shipping\Events\ShipmentCancelled;
-use AIArmada\Shipping\Events\ShipmentStatusChanged;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCancelled;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentStatusChanged;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
