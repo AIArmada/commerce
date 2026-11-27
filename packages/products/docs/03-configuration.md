@@ -123,7 +123,7 @@ use App\Services\CustomVariantGenerator;
 $this->app->bind(VariantGeneratorInterface::class, CustomVariantGenerator::class);
 ```
 
-The `GenerateVariants` action resolves the bound implementation and delegates generation to it.
+The contract receives a product ID and returns a list of persisted variant IDs in generation order (or an empty list for queued generation). The `GenerateVariants` action authorizes and locks the parent product, delegates generation, then resolves only variants belonging to that product.
 
 ### Media
 

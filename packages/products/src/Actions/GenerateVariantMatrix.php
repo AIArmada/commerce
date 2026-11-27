@@ -46,23 +46,26 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
     private const COLLISION_SUFFIX_RESERVE = 33;
 
     /**
-     * @return Collection<int, Variant>
+     * @return list<string>
      */
-    public function generate(Product $product): Collection
+    public function generate(string $productId): array
     {
-        return $this->generateForProduct($product, false);
+        return $this->generateForProduct($productId, false)
+            ->map(static fn (Variant $variant): string => (string) $variant->getKey())
+            ->values()
+            ->all();
     }
 
     /** @return Collection<int, Variant> */
     public function generateSynchronously(Product $product): Collection
     {
-        return $this->generateForProduct($product, true);
+        return $this->generateForProduct((string) $product->getKey(), true);
     }
 
     /** @return Collection<int, Variant> */
-    private function generateForProduct(Product $product, bool $synchronous): Collection
+    private function generateForProduct(string $productId, bool $synchronous): Collection
     {
-        $variants = DB::transaction(function () use ($product, $synchronous): Collection {
+        [$product, $variants] = DB::transaction(function () use ($productId, $synchronous): array {
             $query = Product::query();
 
             if (config('products.features.owner.enabled', false)) {
@@ -71,11 +74,11 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
                 $query->forOwner($owner, false);
             }
 
-            $locked = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
+            $locked = $query->whereKey($productId)->lockForUpdate()->firstOrFail();
             $options = $locked->options()->with('values.option')->get();
 
             if ($options->isEmpty()) {
-                return collect();
+                return [$locked, collect()];
             }
 
             $maximum = (int) config('products.features.variants.max_generated', 200);
@@ -95,10 +98,10 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
                     ownerIsGlobal: $locked->owner_type === null && $locked->owner_id === null,
                 )->afterCommit();
 
-                return collect();
+                return [$locked, collect()];
             }
 
-            return $this->generateCombinations($locked, $this->buildCombinations($options));
+            return [$locked, $this->generateCombinations($locked, $this->buildCombinations($options))];
         }, 3);
 
         if ($variants->isNotEmpty()) {

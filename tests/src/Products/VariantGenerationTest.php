@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Actions\GenerateVariants;
+use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
@@ -162,4 +163,28 @@ it('rejects synchronous variant generation for a product owned by another tenant
     });
 
     expect(Variant::query()->withoutOwnerScope()->where('product_id', $product->id)->count())->toBe(0);
+});
+
+it('rejects variant identifiers returned by a custom generator for another product', function (): void {
+    $owner = makeOwner('regen-custom-owner@example.com');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $first = Product::create(['name' => 'Custom Target', 'price' => 1000]);
+        $second = Product::create(['name' => 'Custom Other', 'price' => 1000]);
+        seedMatrix($second);
+
+        $variant = app(GenerateVariantMatrix::class)->generateSynchronously($second)->firstOrFail();
+
+        app()->instance(VariantGeneratorInterface::class, new class ((string) $variant->getKey()) implements VariantGeneratorInterface
+        {
+            public function __construct(private string $variantId) {}
+
+            public function generate(string $productId): array
+            {
+                return [$this->variantId];
+            }
+        });
+
+        expect(fn () => app(GenerateVariants::class)->execute($first))->toThrow(UnexpectedValueException::class);
+    });
 });
