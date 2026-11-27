@@ -12,7 +12,7 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
-use AIArmada\Products\Jobs\GenerateVariantsJob;
+use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;

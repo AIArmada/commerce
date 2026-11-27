@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Products\Jobs;
+namespace AIArmada\Products\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;

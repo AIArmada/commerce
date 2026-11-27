@@ -6,11 +6,10 @@ namespace AIArmada\Products\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Strategies\MatrixVariantGenerator;
 
 final readonly class GenerateQueuedVariants
 {
-    public function __construct(private MatrixVariantGenerator $generator) {}
+    public function __construct(private GenerateVariantMatrix $generator) {}
 
     public function execute(string $productId): void
     {

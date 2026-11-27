@@ -19,7 +19,7 @@ Use this package when you need the source-of-truth catalog domain: products, var
 - Config-driven table names and catalog feature flags
 - Action classes for product lifecycle (`CreateProduct`, `UpdateProduct`, `UpdateProductStatus`, `ApplyAttributeChanges`, `GenerateVariants`)
 - Composite package actions (`CreateCompositeProduct`, `ReplaceProductComponents`, `PublishCompositeProduct`) and domain services for package validation, pricing, availability, and canonical composition snapshots
-- A `VariantGeneratorInterface` contract and its `MatrixVariantGenerator` strategy
+- A `VariantGeneratorInterface` contract and its `GenerateVariantMatrix` strategy
 - `IsCatalogEntity` concern for shared catalog taxonomy model behavior
 - `HasComponents` concern for product models that participate in composite package composition
 
@@ -65,7 +65,7 @@ Use this package when you need the source-of-truth catalog domain: products, var
 
 ## Strategies
 
-- `MatrixVariantGenerator` — the default variant generator; builds a cartesian-product matrix from product options
+- `GenerateVariantMatrix` — the default variant generator; builds a cartesian-product matrix from product options
 
 ## Concerns
 

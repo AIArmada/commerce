@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Products\Strategies;
+namespace AIArmada\Products\Actions;
 
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Exceptions\VariantGenerationLimitExceeded;
-use AIArmada\Products\Jobs\GenerateVariantsJob;
+use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class MatrixVariantGenerator implements VariantGeneratorInterface
+final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
 {
     /**
      * The built-in pattern. Generation appends a deterministic suffix

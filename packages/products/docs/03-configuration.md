@@ -112,7 +112,7 @@ return [
 
 ### Variant generation
 
-Variant generation is driven by the `VariantGeneratorInterface` contract. The default implementation is `MatrixVariantGenerator`, which builds a cartesian-product matrix from a product's options.
+Variant generation is driven by the `VariantGeneratorInterface` contract. The default implementation is `GenerateVariantMatrix`, which builds a cartesian-product matrix from a product's options.
 
 To register a custom generator, bind your implementation in a service provider:
 
