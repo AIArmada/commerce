@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentCart\Listeners;
+namespace AIArmada\FilamentCart\EntryPoints\Listeners;
 
 use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\FilamentCart\Actions\NotifyAbandonedCart;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentCart\Jobs;
+namespace AIArmada\Cart\Features\Conditions\EntryPoints\Jobs;
 
 use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
@@ -35,16 +35,16 @@ final class RemoveConditionFromAllCartsJob implements OwnerScopedJob, ShouldQueu
         $ownerType = $condition->getAttribute('owner_type');
         $ownerId = $condition->getAttribute('owner_id');
 
-        $context = is_string($ownerType) && $ownerType !== '' && ($ownerId !== null && $ownerId !== '')
-            ? new OwnerJobContext(ownerType: $ownerType, ownerId: $ownerId)
-            : OwnerJobContext::explicitGlobal();
+        $context = $ownerType === null && $ownerId === null
+            ? OwnerJobContext::explicitGlobal()
+            : new OwnerJobContext(ownerType: $ownerType, ownerId: $ownerId);
 
         return new self((string) $condition->getKey(), $context);
     }
 
     protected function performJob(): void
     {
-        $condition = Condition::query()->find($this->conditionId);
+        $condition = Condition::query()->forOwner(includeGlobal: false)->find($this->conditionId);
 
         if (! $condition instanceof Condition) {
             Log::warning('RemoveConditionFromAllCartsJob skipped: condition no longer exists.', [

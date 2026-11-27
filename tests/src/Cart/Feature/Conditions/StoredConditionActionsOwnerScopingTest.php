@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
 use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
@@ -106,4 +109,31 @@ it('prevents cross-owner stored condition edits and deletes', function (): void 
     OwnerContext::withOwner($ownerB, function () use ($condition): void {
         expect($condition->fresh()->name)->not->toBe('tampered');
     });
+});
+
+it('clears the requested condition type from both cart and item levels', function (): void {
+    config(['cart.owner.enabled' => false, 'cart.events' => false]);
+
+    $snapshot = CartSnapshot::query()->create([
+        'identifier' => 'clear-condition-types',
+        'instance' => 'default',
+    ]);
+    $cart = Cart::getCartInstance('default', 'clear-condition-types');
+    $cart->add('sku-1', 'Product', 1000, 1);
+
+    $cart->addCondition(new CartCondition(
+        name: 'cart-discount', type: 'discount', target: 'cart@cart_subtotal/aggregate', value: '-10%',
+    ));
+    $cart->addItemCondition('sku-1', new CartCondition(
+        name: 'item-discount', type: 'discount', target: 'items@item_discount/per-item', value: '-5%',
+    ));
+    $cart->addItemCondition('sku-1', new CartCondition(
+        name: 'item-fee', type: 'fee', target: 'items@item_discount/per-item', value: '+1',
+    ));
+
+    app(RemoveStoredConditions::class)->clearByType((string) $snapshot->getKey(), 'discount');
+
+    expect($cart->getStoredConditions()->getCondition('cart-discount'))->toBeNull()
+        ->and($cart->get('sku-1')->getConditions()->getCondition('item-discount'))->toBeNull()
+        ->and($cart->get('sku-1')->getConditions()->getCondition('item-fee'))->not->toBeNull();
 });

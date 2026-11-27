@@ -8,7 +8,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
+use AIArmada\FilamentCart\EntryPoints\Listeners\SendCartAbandonedNotification;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;

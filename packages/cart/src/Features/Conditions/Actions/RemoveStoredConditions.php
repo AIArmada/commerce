@@ -148,6 +148,10 @@ final class RemoveStoredConditions
         $snapshot = $this->snapshots->requireOwnedSnapshot($snapshotId);
         $cart = $this->cartInstances->resolveForSnapshot($snapshot);
 
+        foreach ($cart->getDynamicConditions()->keys()->all() as $name) {
+            $cart->removeDynamicCondition((string) $name);
+        }
+
         $cart->clearConditions();
 
         foreach ($cart->getItems() as $item) {
@@ -166,7 +170,22 @@ final class RemoveStoredConditions
     {
         $snapshot = $this->snapshots->requireOwnedSnapshot($snapshotId);
         $cart = $this->cartInstances->resolveForSnapshot($snapshot);
+        foreach ($cart->getDynamicConditions()->all() as $condition) {
+            if ($condition->getType() === $type) {
+                $cart->removeDynamicCondition($condition->getName());
+            }
+        }
+
         $cart->removeConditionsByType($type);
+
+        foreach ($cart->getItems() as $item) {
+            foreach ($item->getConditions() as $condition) {
+                if ($condition->getType() === $type) {
+                    $cart->removeItemCondition($item->getId(), $condition->getName());
+                }
+            }
+        }
+
         $this->syncManager->sync($cart, force: true);
     }
 

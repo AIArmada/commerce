@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart;
 
 use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
-use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
+use AIArmada\FilamentCart\EntryPoints\Listeners\SendCartAbandonedNotification;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
