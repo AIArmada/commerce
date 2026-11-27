@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use AIArmada\FilamentGrowth\Actions\DeleteSelectedExperiments;
+use AIArmada\FilamentGrowth\Actions\DeleteSelectedVariants;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
@@ -447,10 +449,7 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
 
     [$ownedExperiment] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Experiment', 'O');
     [$globalExperiment] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Experiment', 'G');
-    $method = new ReflectionMethod(ExperimentsTable::class, 'deleteSelectedExperiments');
-    $method->setAccessible(true);
-
-    expect(fn (): mixed => $method->invoke(null, collect([$ownedExperiment, $globalExperiment])))
+    expect(fn () => app(DeleteSelectedExperiments::class)->handle(collect([$ownedExperiment, $globalExperiment])))
         ->toThrow(RuntimeException::class, 'Global growth experiments can only be deleted from explicit global context.');
 
     expect(Experiment::query()->withoutOwnerScope()->whereKey($ownedExperiment->getKey())->exists())->toBeTrue()
@@ -474,10 +473,7 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
 
     [, $ownedVariant] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Variant', 'O');
     [, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Variant', 'G');
-    $method = new ReflectionMethod(VariantsTable::class, 'deleteSelectedVariants');
-    $method->setAccessible(true);
-
-    expect(fn (): mixed => $method->invoke(null, collect([$ownedVariant, $globalVariant])))
+    expect(fn () => app(DeleteSelectedVariants::class)->handle(collect([$ownedVariant, $globalVariant])))
         ->toThrow(RuntimeException::class, 'Global growth variants can only be deleted from explicit global context.');
 
     expect(Variant::query()->withoutOwnerScope()->whereKey($ownedVariant->getKey())->exists())->toBeTrue()

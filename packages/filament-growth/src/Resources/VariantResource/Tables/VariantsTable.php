@@ -6,6 +6,7 @@ namespace AIArmada\FilamentGrowth\Resources\VariantResource\Tables;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentGrowth\Actions\DeleteSelectedVariants;
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Enums\VariantStatus;
 use AIArmada\Growth\Models\Experiment;
@@ -17,8 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use RuntimeException;
+use Illuminate\Support\Facades\Gate;
 
 class VariantsTable
 {
@@ -80,7 +80,7 @@ class VariantsTable
                         ->visible(fn (): bool => VariantsTable::canDeleteAnyVariant())
                         ->requiresConfirmation()
                         ->action(function (Collection $records): void {
-                            VariantsTable::deleteSelectedVariants($records);
+                            app(DeleteSelectedVariants::class)->handle($records);
                         }),
                 ]),
             ]);
@@ -97,27 +97,9 @@ class VariantsTable
         return $experiment instanceof Experiment ? (string) $experiment->name : '—';
     }
 
-    /**
-     * @param  Collection<int|string, Variant>  $records
-     */
-    private static function deleteSelectedVariants(Collection $records): void
-    {
-        DB::transaction(function () use ($records): void {
-            foreach ($records as $record) {
-                if (! $record instanceof Variant || ! ExperimentAccess::canMutateVariant($record)) {
-                    throw new RuntimeException('Global growth variants can only be deleted from explicit global context.');
-                }
-            }
-
-            foreach ($records as $record) {
-                $record->delete();
-            }
-        });
-    }
 
     private static function canDeleteAnyVariant(): bool
     {
-        return OwnerUiScope::canCreate(Variant::class)
-            && Variant::query()->exists();
+        return Gate::allows('deleteAny', Variant::class);
     }
 }
