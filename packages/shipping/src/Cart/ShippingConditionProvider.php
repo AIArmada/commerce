@@ -10,8 +10,8 @@ use AIArmada\Cart\Contracts\ConditionProviderInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
-use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
+use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
+use AIArmada\Shipping\Features\Rates\Api\ShopRates;
 use AIArmada\Shipping\Support\ComponentLines;
 
 /**
@@ -28,8 +28,8 @@ class ShippingConditionProvider implements ConditionProviderInterface
     private const string SELECTED_METHOD_KEY = 'selected_shipping_method';
 
     public function __construct(
-        protected readonly RateShoppingEngine $rateEngine,
-        protected readonly ?FreeShippingEvaluator $freeShippingEvaluator = null
+        protected readonly ShopRates $rateEngine,
+        protected readonly ?EvaluateFreeShipping $freeShippingEvaluator = null
     ) {}
 
     /**
@@ -102,7 +102,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
     {
         $selectedMethod = $cart->getMetadata(self::SELECTED_METHOD_KEY);
 
-        if (! is_array($selectedMethod)) {
+        if (! is_array($selectedMethod) || ! is_string($selectedMethod['carrier'] ?? null) || ! is_string($selectedMethod['service'] ?? null)) {
             $selectedMethod = null;
         }
 

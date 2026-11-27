@@ -12,6 +12,7 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Persistence\RateCache;
+use AIArmada\Shipping\Features\Rates\Api\ShopRates;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Strategies\CheapestRateStrategy;
 use AIArmada\Shipping\Strategies\FastestRateStrategy;
@@ -23,7 +24,7 @@ use Throwable;
 /**
  * Aggregates rates from multiple carriers and applies selection rules.
  */
-class RateShoppingEngine
+class RateShoppingEngine implements ShopRates
 {
     protected RateSelectionStrategyInterface $strategy;
 

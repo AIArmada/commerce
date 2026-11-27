@@ -15,6 +15,8 @@ use AIArmada\Shipping\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
+use AIArmada\Shipping\Features\Rates\Api\ShopRates;
+use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use AIArmada\Shipping\Contracts\ZoneRateReader;
@@ -117,8 +119,11 @@ final class ShippingServiceProvider extends PackageServiceProvider
             );
         });
 
+        $this->app->bind(ShopRates::class, fn (Application $app): ShopRates => $app->make(RateShoppingEngine::class));
+        $this->app->bind(EvaluateFreeShipping::class, fn (Application $app): EvaluateFreeShipping => $app->make(FreeShippingEvaluator::class));
+
         if (class_exists(ConditionProviderRegistry::class)) {
-            $this->app->singleton(ShippingConditionProvider::class);
+            $this->app->scoped(ShippingConditionProvider::class);
             $this->app->make(ConditionProviderRegistry::class)
                 ->register(ShippingConditionProvider::class);
         }

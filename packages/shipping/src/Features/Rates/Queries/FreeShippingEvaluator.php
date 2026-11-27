@@ -6,6 +6,7 @@ namespace AIArmada\Shipping\Features\Rates\Queries;
 
 use AIArmada\Shipping\Contracts\FreeShippingPolicyInterface;
 use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
+use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
 use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;
 use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
 
@@ -16,7 +17,7 @@ use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
  * FreeShippingPolicyInterface implementations. The default threshold-based
  * policy is registered automatically; merchants can add custom policies.
  */
-class FreeShippingEvaluator
+class FreeShippingEvaluator implements EvaluateFreeShipping
 {
     protected FreeShippingPolicyRegistry $registry;
 
