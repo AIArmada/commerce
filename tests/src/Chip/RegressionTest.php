@@ -290,7 +290,7 @@ describe('idempotency reservations expire', function (): void {
 });
 
 describe('sync runs under explicit context when scoped', function (): void {
-    it('records per-id failures instead of fataling without a console owner', function (): void {
+    it('records per-id failures under explicitly selected global console context', function (): void {
         config()->set('chip.owner.enabled', true);
         app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
@@ -298,7 +298,7 @@ describe('sync runs under explicit context when scoped', function (): void {
 
         $action = new SyncChipRecordsFromApiAction(new StoreChipWebhookPayload);
 
-        $summary = $action->handle(['purchase-missing-1']);
+        $summary = OwnerContext::withOwner(null, fn () => $action->handle(['purchase-missing-1']));
 
         expect($summary['processed'])->toBe(1)
             ->and($summary['failed'])->toBe(1);

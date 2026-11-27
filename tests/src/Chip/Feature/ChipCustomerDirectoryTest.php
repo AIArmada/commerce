@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -78,6 +80,7 @@ describe('ChipCustomerDirectory', function (): void {
 
 it('rejects a missing owner before linking any customer in owner mode', function (): void {
     config()->set('chip.owner.enabled', true);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
     $subject = User::query()->create(['name' => 'Subject', 'email' => 'missing-owner-subject@example.com', 'password' => 'secret']);
     $reference = new RecordReference($subject->getMorphClass(), (string) $subject->getKey());
 

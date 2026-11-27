@@ -36,6 +36,10 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function paymentMethods(): Collection
     {
+        if (! $this->exists || $this->getKey() === null) {
+            return collect();
+        }
+
         $paymentMethods = Cashier::paymentMethodStore()->allForBillable($this->paymentMethodSubject());
 
         if ($paymentMethods === [] && $this->hasChipId()) {
@@ -51,6 +55,10 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function findPaymentMethod(#[SensitiveParameter] string $paymentMethodId): ?PaymentMethod
     {
+        if (! $this->exists || $this->getKey() === null) {
+            return null;
+        }
+
         $paymentMethod = Cashier::paymentMethodStore()->findForBillable($this->paymentMethodSubject(), $paymentMethodId);
 
         if ($paymentMethod === null && $this->hasChipId()) {
@@ -73,6 +81,10 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function hasPaymentMethod(): bool
     {
+        if (! $this->exists || $this->getKey() === null) {
+            return false;
+        }
+
         if (! Cashier::paymentMethodStore()->hasAnyForBillable($this->paymentMethodSubject()) && $this->hasChipId()) {
             $this->syncPaymentMethodsFromChip();
         }
@@ -85,6 +97,10 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function defaultPaymentMethod(): ?PaymentMethod
     {
+        if (! $this->exists || $this->getKey() === null) {
+            return null;
+        }
+
         $paymentMethod = Cashier::paymentMethodStore()->defaultForBillable($this->paymentMethodSubject());
 
         if ($paymentMethod === null && $this->hasChipId()) {

@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Features\Collect\Api\PurchaseWebhookState;
-use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 /**
@@ -25,6 +25,9 @@ class WebhookEnricher
         $purchaseId = $parsed->purchaseId;
         $localPurchaseId = $purchaseId !== null && app(PurchaseWebhookState::class)->exists($purchaseId) ? $purchaseId : null;
 
-        return EnrichedWebhookPayload::fromPayload($event, $payload, $localPurchaseId, EloquentRecordReference::fromModel(OwnerContext::resolve()));
+        $owner = OwnerContext::resolve();
+        $ownerReference = $owner === null ? null : new RecordReference($owner->getMorphClass(), (string) $owner->getKey());
+
+        return EnrichedWebhookPayload::fromPayload($event, $payload, $localPurchaseId, $ownerReference);
     }
 }

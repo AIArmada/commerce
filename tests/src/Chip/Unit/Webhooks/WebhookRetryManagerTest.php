@@ -205,7 +205,7 @@ describe('WebhookRetryManager', function (): void {
     });
 
     it('does not dispatch the same failed delivery twice before the backoff elapses', function (): void {
-        $webhook = Webhook::query()->create([
+        $webhook = Webhook::forceCreate([
             'title' => 'Retry test',
             'event_type' => 'purchase.paid',
             'events' => ['purchase.paid'],

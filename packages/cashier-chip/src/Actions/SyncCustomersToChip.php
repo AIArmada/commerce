@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Actions;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -16,7 +16,7 @@ use Throwable;
 
 final readonly class SyncCustomersToChip
 {
-    public function __construct(private CustomerOwnerResolverInterface $ownerResolver, private DefaultCustomerOwnerResolver $defaultOwnerResolver) {}
+    public function __construct(private CustomerOwnerResolver $ownerResolver, private DefaultCustomerOwnerResolver $defaultOwnerResolver) {}
 
     /**
      * @return array{synced: int, skipped: int, failed: int}
