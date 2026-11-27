@@ -15,6 +15,16 @@ use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 
+function chipCollectWebhookRequest(array $payload): Request
+{
+    return Request::create(
+        uri: '/webhook',
+        method: 'POST',
+        server: ['CONTENT_TYPE' => 'application/json'],
+        content: json_encode($payload, JSON_THROW_ON_ERROR),
+    );
+}
+
 describe('WebhookController', function (): void {
     beforeEach(function (): void {
         // Disable listeners that require database
@@ -108,7 +118,7 @@ describe('WebhookController', function (): void {
             'is_test' => true,
         ];
 
-        $request = Request::create('/webhook', 'POST', $payload);
+        $request = chipCollectWebhookRequest($payload);
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
@@ -120,7 +130,7 @@ describe('WebhookController', function (): void {
 
         $payload = WebhookFactory::payoutSuccess(['id' => 'payout_test123']);
 
-        $request = Request::create('/webhook', 'POST', $payload);
+        $request = chipCollectWebhookRequest($payload);
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
@@ -136,7 +146,7 @@ describe('WebhookController', function (): void {
             'event_type' => 'unknown.event',
         ];
 
-        $request = Request::create('/webhook', 'POST', $payload);
+        $request = chipCollectWebhookRequest($payload);
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
@@ -146,7 +156,7 @@ describe('WebhookController', function (): void {
     it('handles missing event_type', function (): void {
         $controller = new WebhookController;
 
-        $request = Request::create('/webhook', 'POST', []);
+        $request = chipCollectWebhookRequest([]);
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
@@ -235,8 +245,8 @@ describe('WebhookController', function (): void {
             'is_test' => true,
         ];
 
-        $responseOne = $controller->handle(Request::create('/webhook', 'POST', $payload));
-        $responseTwo = $controller->handle(Request::create('/webhook', 'POST', $payload));
+        $responseOne = $controller->handle(chipCollectWebhookRequest($payload));
+        $responseTwo = $controller->handle(chipCollectWebhookRequest($payload));
 
         expect($responseOne->getStatusCode())->toBe(200)
             ->and($responseTwo->getStatusCode())->toBe(200)
