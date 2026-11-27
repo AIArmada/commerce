@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Pages;
 
-use AIArmada\FilamentGrowth\Actions\UpdateGrowthSettings;
+use AIArmada\Growth\Actions\UpdateGrowthSettings;
 use AIArmada\Growth\Queries\ExperimentMiddlewareEnabled;
 use BackedEnum;
 use Filament\Actions\Action;

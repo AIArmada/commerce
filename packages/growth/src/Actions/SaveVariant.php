@@ -56,6 +56,28 @@ final readonly class SaveVariant
         });
     }
 
+    /** @param list<string> $ids */
+    public function deleteMany(array $ids): void
+    {
+        (new Variant)->getConnection()->transaction(function () use ($ids): void {
+            $ids = array_values(array_unique($ids));
+            sort($ids, SORT_STRING);
+
+            $records = ExperimentOwnership::scopeVariants(Variant::query(), writable: true)
+                ->whereKey($ids)->orderBy('id')->lockForUpdate()->get();
+
+            if ($records->count() !== count($ids)) {
+                throw new AuthorizationException('One or more selected growth records are not writable.');
+            }
+
+            foreach ($records as $record) {
+                if ($record->delete() !== true) {
+                    throw new \RuntimeException('Growth record deletion failed.');
+                }
+            }
+        });
+    }
+
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */

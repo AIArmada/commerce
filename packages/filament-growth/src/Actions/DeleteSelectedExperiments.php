@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentGrowth\Actions;
 
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
+use AIArmada\Growth\Actions\SaveExperiment;
 use AIArmada\Growth\Models\Experiment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -28,9 +29,7 @@ final readonly class DeleteSelectedExperiments
                 Gate::authorize('delete', $record);
             }
 
-            foreach ($records as $record) {
-                $record->delete();
-            }
+            app(SaveExperiment::class)->deleteMany($records->map(static fn (Experiment $record): string => (string) $record->getKey())->values()->all());
         });
     }
 }

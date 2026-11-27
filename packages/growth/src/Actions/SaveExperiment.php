@@ -74,6 +74,48 @@ final readonly class SaveExperiment
         });
     }
 
+    public function setRunning(string $id, bool $running): bool
+    {
+        return (new Experiment)->getConnection()->transaction(function () use ($id, $running): bool {
+            $current = ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
+                ->whereKey($id)->lockForUpdate()->first();
+
+            if (! $current instanceof Experiment || in_array($current->status, [ExperimentStatus::Concluded, ExperimentStatus::Archived], true)) {
+                return false;
+            }
+
+            $status = $running ? ExperimentStatus::Active : ExperimentStatus::Paused;
+
+            if ($current->status !== $status) {
+                $current->transitionTo($status)->saveOrFail();
+            }
+
+            return $current->status === ExperimentStatus::Active;
+        });
+    }
+
+    /** @param list<string> $ids */
+    public function deleteMany(array $ids): void
+    {
+        (new Experiment)->getConnection()->transaction(function () use ($ids): void {
+            $ids = array_values(array_unique($ids));
+            sort($ids, SORT_STRING);
+
+            $records = ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
+                ->whereKey($ids)->orderBy('id')->lockForUpdate()->get();
+
+            if ($records->count() !== count($ids)) {
+                throw new AuthorizationException('One or more selected growth records are not writable.');
+            }
+
+            foreach ($records as $record) {
+                if ($record->delete() !== true) {
+                    throw new \RuntimeException('Growth record deletion failed.');
+                }
+            }
+        });
+    }
+
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */

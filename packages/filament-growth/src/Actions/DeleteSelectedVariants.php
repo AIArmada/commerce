@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentGrowth\Actions;
 
 use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
+use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\Growth\Models\Variant;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -28,9 +29,7 @@ final readonly class DeleteSelectedVariants
                 Gate::authorize('delete', $record);
             }
 
-            foreach ($records as $record) {
-                $record->delete();
-            }
+            app(SaveVariant::class)->deleteMany($records->map(static fn (Variant $record): string => (string) $record->getKey())->values()->all());
         });
     }
 }
