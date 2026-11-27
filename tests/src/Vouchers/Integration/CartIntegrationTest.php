@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -14,13 +14,12 @@ use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $manager = app(CartManager::class);
+    $manager = app(CartManagerInterface::class);
 
     if (! $manager instanceof CartManagerWithVouchers) {
         $proxy = CartManagerWithVouchers::fromCartManager($manager);
 
         app()->instance('cart', $proxy);
-        app()->instance(CartManager::class, $proxy);
         Cart::clearResolvedInstance('cart');
     }
 
@@ -107,8 +106,8 @@ test('voucher dynamic condition restores on new cart instance', function (): voi
     Cart::add('sku-restore', 'Test Product', 120);
     Cart::applyVoucher('RESTORE10');
 
-    /** @var CartManager $manager */
-    $manager = app(CartManager::class);
+    /** @var CartManagerInterface $manager */
+    $manager = app(CartManagerInterface::class);
     $newCart = $manager->getCartInstance('default');
 
     expect($newCart->getDynamicConditions()->has('voucher_RESTORE10'))->toBeTrue();

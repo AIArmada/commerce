@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
@@ -30,7 +30,7 @@ describe('Cart getById', function (): void {
         $cartId = Cart::getId();
         expect($cartId)->not->toBeNull();
 
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
 
         $first = $manager->getById($cartId);
         $second = $manager->getById($cartId);

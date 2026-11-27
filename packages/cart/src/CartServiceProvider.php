@@ -154,7 +154,6 @@ final class CartServiceProvider extends PackageServiceProvider
             );
         });
 
-        $this->app->alias('cart', CartManager::class);
         $this->app->alias('cart', CartManagerInterface::class);
     }
 

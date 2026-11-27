@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory;
 
-use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
@@ -198,7 +197,7 @@ final class InventoryServiceProvider extends PackageServiceProvider
         }
 
         // Check if cart package is installed
-        if (! class_exists(CartManager::class)) {
+        if (! interface_exists(CartManagerInterface::class)) {
             return;
         }
 
@@ -233,10 +232,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
             $proxy = CartManagerWithInventory::fromCartManager($manager);
             $proxy->setAllocationService($app->make(InventoryAllocationService::class));
-
-            // Update container bindings
-            $app->instance(CartManager::class, $proxy);
-            $app->instance(CartManagerInterface::class, $proxy);
 
             // Clear cached facade instance
             if (class_exists(Cart::class)) {

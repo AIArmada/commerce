@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
@@ -12,14 +12,13 @@ use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $manager = app(CartManager::class);
+    $manager = app(CartManagerInterface::class);
 
     if (! $manager instanceof CartManagerWithVouchers) {
         $proxy = CartManagerWithVouchers::fromCartManager($manager);
 
         Cart::swap($proxy);
         app()->instance('cart', $proxy);
-        app()->instance(CartManager::class, $proxy);
     }
 
     Cart::clear();

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Events\ItemConditionAdded;
@@ -15,7 +15,7 @@ use AIArmada\Cart\Models\CartItem;
 
 describe('ItemAdded Event', function (): void {
     it('creates event with item and cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $item = new CartItem('item-1', 'Test Item', 10.00, 1);
 
         $event = new ItemAdded($item, $cart);
@@ -26,7 +26,7 @@ describe('ItemAdded Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $item = new CartItem('item-1', 'Test Item', 10.00, 2);
 
         $event = new ItemAdded($item, $cart);
@@ -44,7 +44,7 @@ describe('ItemAdded Event', function (): void {
 
 describe('ItemRemoved Event', function (): void {
     it('creates event with item and cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $item = new CartItem('item-1', 'Test Item', 10.00, 1);
 
         $event = new ItemRemoved($item, $cart);
@@ -55,7 +55,7 @@ describe('ItemRemoved Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $item = new CartItem('item-1', 'Removed Item', 25.00, 3);
 
         $event = new ItemRemoved($item, $cart);
@@ -73,7 +73,7 @@ describe('ItemRemoved Event', function (): void {
 
 describe('ItemUpdated Event', function (): void {
     it('creates event with item and cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $item = new CartItem('item-1', 'Test Item', 10.00, 1);
 
         $event = new ItemUpdated($item, $cart);
@@ -84,7 +84,7 @@ describe('ItemUpdated Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $item = new CartItem('item-1', 'Updated Item', 15.00, 5);
 
         $event = new ItemUpdated($item, $cart);
@@ -102,7 +102,7 @@ describe('ItemUpdated Event', function (): void {
 
 describe('ItemConditionAdded Event', function (): void {
     it('creates event with condition, cart, and item ID', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
         $condition = new CartCondition('tax', 'percentage', 'cart@cart_subtotal/aggregate', '5.0');
@@ -116,7 +116,7 @@ describe('ItemConditionAdded Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
         $condition = new CartCondition('discount', 'percentage', 'cart@cart_subtotal/aggregate', '-10.0');
@@ -136,7 +136,7 @@ describe('ItemConditionAdded Event', function (): void {
     });
 
     it('calculates condition impact', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 2); // subtotal 200
 
         $condition = new CartCondition('discount', 'percentage', 'cart@cart_subtotal/aggregate', '-10.0');
@@ -150,7 +150,7 @@ describe('ItemConditionAdded Event', function (): void {
 
 describe('ItemConditionRemoved Event', function (): void {
     it('creates event with condition, cart, and item ID', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
         $condition = new CartCondition('tax', 'percentage', 'cart@cart_subtotal/aggregate', '5.0');
@@ -165,7 +165,7 @@ describe('ItemConditionRemoved Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
         $condition = new CartCondition('promo', 'fixed', 'cart@cart_subtotal/aggregate', '-5.0');
@@ -182,7 +182,7 @@ describe('ItemConditionRemoved Event', function (): void {
     });
 
     it('handles optional reason', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 50.00, 1);
 
         $condition = new CartCondition('discount', 'percentage', 'cart@cart_subtotal/aggregate', '-10.0');
@@ -195,7 +195,7 @@ describe('ItemConditionRemoved Event', function (): void {
 
 describe('MetadataAdded Event', function (): void {
     it('creates event with key, value, and cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
 
         $event = new MetadataAdded('customer_note', 'Please gift wrap', $cart);
 
@@ -206,7 +206,7 @@ describe('MetadataAdded Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
 
         $event = new MetadataAdded('promo_code', 'SAVE20', $cart);
         $array = $event->toArray();
@@ -221,7 +221,7 @@ describe('MetadataAdded Event', function (): void {
 
 describe('MetadataRemoved Event', function (): void {
     it('creates event with key and cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
 
         $event = new MetadataRemoved('customer_note', $cart);
 
@@ -231,7 +231,7 @@ describe('MetadataRemoved Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
 
         $event = new MetadataRemoved('promo_code', $cart);
         $array = $event->toArray();

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\CartDestroyed;
@@ -11,7 +11,7 @@ use AIArmada\Cart\Events\MetadataCleared;
 
 describe('CartCleared Event', function (): void {
     it('creates event with cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $event = new CartCleared($cart);
 
         expect($event)->toBeInstanceOf(CartCleared::class);
@@ -19,7 +19,7 @@ describe('CartCleared Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('test-item', 'Test Item', 10.00);
 
         $event = new CartCleared($cart);
@@ -35,7 +35,7 @@ describe('CartCleared Event', function (): void {
 
 describe('CartCreated Event', function (): void {
     it('creates event with cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $event = new CartCreated($cart);
 
         expect($event)->toBeInstanceOf(CartCreated::class);
@@ -43,7 +43,7 @@ describe('CartCreated Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $event = new CartCreated($cart);
         $array = $event->toArray();
 
@@ -94,7 +94,7 @@ describe('CartDestroyed Event', function (): void {
 
 describe('CartMerged Event', function (): void {
     it('creates event with source and target carts', function (): void {
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
         $sourceCart = $manager->getCartInstance('source', 'source-id');
         $targetCart = $manager->getCartInstance('target', 'target-id');
 
@@ -114,7 +114,7 @@ describe('CartMerged Event', function (): void {
     });
 
     it('stores merged items count', function (): void {
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
         $sourceCart = $manager->getCartInstance('source', 'source-id');
         $targetCart = $manager->getCartInstance('target', 'target-id');
 
@@ -135,7 +135,7 @@ describe('CartMerged Event', function (): void {
     });
 
     it('stores merge strategy', function (): void {
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
         $sourceCart = $manager->getCartInstance('source', 'source-id');
         $targetCart = $manager->getCartInstance('target', 'target-id');
 
@@ -154,7 +154,7 @@ describe('CartMerged Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
         $sourceCart = $manager->getCartInstance('source', 'source-id');
         $targetCart = $manager->getCartInstance('target', 'target-id');
 
@@ -179,7 +179,7 @@ describe('CartMerged Event', function (): void {
     });
 
     it('handles zero merged items', function (): void {
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
         $sourceCart = $manager->getCartInstance('source', 'source-id');
         $targetCart = $manager->getCartInstance('target', 'target-id');
 
@@ -197,7 +197,7 @@ describe('CartMerged Event', function (): void {
     });
 
     it('handles conflict flag', function (): void {
-        $manager = app(CartManager::class);
+        $manager = app(CartManagerInterface::class);
         $sourceCart = $manager->getCartInstance('source', 'source-id');
         $targetCart = $manager->getCartInstance('target', 'target-id');
 
@@ -227,7 +227,7 @@ describe('CartMerged Event', function (): void {
 
 describe('MetadataCleared Event', function (): void {
     it('creates event with cart', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $event = new MetadataCleared($cart);
 
         expect($event)->toBeInstanceOf(MetadataCleared::class);
@@ -235,7 +235,7 @@ describe('MetadataCleared Event', function (): void {
     });
 
     it('converts to array', function (): void {
-        $cart = app(CartManager::class)->getCurrentCart();
+        $cart = app(CartManagerInterface::class)->getCurrentCart();
         $cart->add('test-item', 'Test Item', 10.00);
 
         $event = new MetadataCleared($cart);
