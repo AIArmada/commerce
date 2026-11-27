@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Moderation\Actions\BlockEntityAction;
 use AIArmada\Moderation\Actions\RecordModerationAction;
-use AIArmada\Moderation\Contracts\BlocksEntity;
-use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use AIArmada\Moderation\Models\Block;
 use AIArmada\Moderation\Models\ModerationAction;
 use AIArmada\Moderation\ModerationServiceProvider;
@@ -58,16 +56,9 @@ test('service container registers actions as singletons', function (): void {
     expect(app(RecordModerationAction::class))->toBeInstanceOf(RecordModerationAction::class);
 });
 
-test('contracts resolve to their concrete implementations', function (): void {
-    expect(app(BlocksEntity::class))->toBeInstanceOf(BlockEntityAction::class);
-    expect(app(RecordsModerationAction::class))->toBeInstanceOf(RecordModerationAction::class);
-});
-
-test('contract and concrete resolve the same singleton', function (): void {
-    $contract = app(BlocksEntity::class);
-    $concrete = app(BlockEntityAction::class);
-
-    expect($contract)->toBe($concrete);
+test('concrete actions resolve consistently as singletons', function (): void {
+    expect(app(BlockEntityAction::class))->toBe(app(BlockEntityAction::class));
+    expect(app(RecordModerationAction::class))->toBe(app(RecordModerationAction::class));
 });
 
 test('helper functions config sources resolve correctly', function (): void {

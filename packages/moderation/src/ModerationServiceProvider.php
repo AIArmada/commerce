@@ -6,8 +6,6 @@ namespace AIArmada\Moderation;
 
 use AIArmada\Moderation\Actions\BlockEntityAction;
 use AIArmada\Moderation\Actions\RecordModerationAction;
-use AIArmada\Moderation\Contracts\BlocksEntity;
-use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -27,7 +25,5 @@ final class ModerationServiceProvider extends PackageServiceProvider
         $this->app->singleton(BlockEntityAction::class);
         $this->app->singleton(RecordModerationAction::class);
 
-        $this->app->bind(BlocksEntity::class, BlockEntityAction::class);
-        $this->app->bind(RecordsModerationAction::class, RecordModerationAction::class);
     }
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Traits;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Moderation\Actions\ExpireDeletedEntityBlocksAction;
-use AIArmada\Moderation\Contracts\BlocksEntity;
+use AIArmada\Moderation\Actions\BlockEntityAction;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Models\Block;
 use Carbon\CarbonImmutable;
@@ -14,7 +14,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 
 /** @mixin Model */
@@ -66,10 +65,9 @@ trait HasBlocks
         ?string $blockedById = null,
         ?string $blockedByType = null,
     ): Block {
-        $blockedBy = $this->resolveBlockedBy($blockedById, $blockedByType);
+        $blockedBy = app(ModerationModelGuard::class)->resolveActor($blockedById, $blockedByType);
 
-        /** @var BlocksEntity $action */
-        $action = app(BlocksEntity::class);
+        $action = app(BlockEntityAction::class);
 
         return $action->execute(
             blockable: $this,
@@ -86,41 +84,4 @@ trait HasBlocks
             ?? throw new InvalidArgumentException(sprintf('Unknown block reason [%s].', $reason));
     }
 
-    private function resolveBlockedBy(?string $id, ?string $type): ?Model
-    {
-        if ($id === null || $type === null) {
-            return null;
-        }
-
-        $class = (string) (Relation::morphMap()[$type] ?? $type);
-
-        if (! is_a($class, Model::class, true)) {
-            return null;
-        }
-
-        $this->assertResolvableBlockedByActor($class, $type);
-
-        if (method_exists($class, 'ownerScopeConfig') && $class::ownerScopeConfig()->enabled) {
-            return OwnerWriteGuard::findOrFailForOwner($class, $id);
-        }
-
-        /** @var Model|null $model */
-        $model = (new $class)->newQuery()->find($id);
-
-        return $model;
-    }
-
-    private function assertResolvableBlockedByActor(string $class, string $type): void
-    {
-        /** @var list<string> $allowed */
-        $allowed = config('moderation.actors.allowed_types', []);
-
-        if ($allowed === []) {
-            return;
-        }
-
-        if (! in_array($class, $allowed, true) && ! in_array($type, $allowed, true)) {
-            throw new InvalidArgumentException(sprintf('The actor type [%s] is not allowed to moderate.', $type));
-        }
-    }
 }

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Actions;
 
-use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final readonly class RecordModerationAction implements RecordsModerationAction
+final readonly class RecordModerationAction
 {
+    public function __construct(private ModerationModelGuard $guard) {}
+
     public function execute(
         Model $actionable,
         ModerationActionType $type,
@@ -42,10 +42,10 @@ final readonly class RecordModerationAction implements RecordsModerationAction
         }
 
         $this->assertMetadataWithinLimits($metadata);
-        $this->validateOwnerScopedModel($actionable);
+        $this->guard->validateTarget($actionable);
 
         if ($actionedBy !== null) {
-            $this->validateOwnerScopedModel($actionedBy);
+            $this->guard->validateActor($actionedBy);
         }
 
         return DB::transaction(function () use ($actionable, $actionedBy, $type, $reason, $notes, $metadata): ModerationAction {
@@ -82,22 +82,4 @@ final readonly class RecordModerationAction implements RecordsModerationAction
         }
     }
 
-    private function validateOwnerScopedModel(Model $model): void
-    {
-        if (! config('moderation.owner.enabled', true)) {
-            return;
-        }
-
-        if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
-            return;
-        }
-
-        // Non-owner-scoped models are intentionally actionable from any owner
-        // scope: a tenant moderates a shared identity without owning it.
-        if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
-            return;
-        }
-
-        OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
-    }
 }

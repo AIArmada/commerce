@@ -265,3 +265,23 @@ test('restricts actor types when an allowlist is configured', function (): void 
         blockedByType: Customer::class,
     ))->toThrow(InvalidArgumentException::class, 'not allowed to moderate');
 });
+
+test('direct moderation actions enforce the actor allowlist', function (): void {
+    $actor = User::create([
+        'name' => 'Unlisted Direct Actor',
+        'email' => 'unlisted-direct-actor@example.com',
+        'password' => 'secret',
+    ]);
+
+    config()->set('moderation.actors.allowed_types', [Customer::class]);
+
+    expect(fn () => app(BlockEntityAction::class)->execute($this->entity, blockedBy: $actor))
+        ->toThrow(InvalidArgumentException::class, 'not allowed to moderate');
+    expect(fn () => app(RecordModerationAction::class)->execute($this->entity, ModerationActionType::Warn, 'Review', actionedBy: $actor))
+        ->toThrow(InvalidArgumentException::class, 'not allowed to moderate');
+});
+
+test('rejects partial moderation actor references instead of dropping attribution', function (): void {
+    expect(fn () => $this->entity->block(blockedByType: User::class))
+        ->toThrow(InvalidArgumentException::class, 'Both moderation actor ID and type are required');
+});
