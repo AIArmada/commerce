@@ -16,19 +16,22 @@
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationFailureAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordDeliveryOutcome",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\CaptureNativeNotification",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ManageScheduledDeliveries"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ManageScheduledDeliveries",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents"
     ],
     "table:communication_attempts": [
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\CompleteDeliveryAttemptAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents"
     ],
     "table:communication_events": [
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordProviderEventAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ReplayWebhookEvent"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ReplayWebhookEvent",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents"
     ]
   },
   "extensions": {}

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery;
 
+use AIArmada\Communications\Features\Delivery\Actions\CleanupDeliveryDependents;
 use AIArmada\Communications\Features\Delivery\Actions\ManageScheduledDeliveries;
 use AIArmada\Communications\Features\Delivery\Actions\PruneDeliveryData;
 use AIArmada\Communications\Features\Delivery\Actions\ReplayWebhookEvent;
+use AIArmada\Communications\Features\Delivery\Api\DeliveryDependentsCleaner;
 use AIArmada\Communications\Features\Delivery\Api\DeliveryRetention;
 use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
 use AIArmada\Communications\Features\Delivery\Api\ScheduledDeliveryLifecycle;
@@ -17,6 +19,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(DeliveryDependentsCleaner::class, CleanupDeliveryDependents::class);
         $app->bind(DeliveryRetention::class, PruneDeliveryData::class);
         $app->bind(ScheduledDeliveryLifecycle::class, ManageScheduledDeliveries::class);
         $app->bind(WebhookReplay::class, ReplayWebhookEvent::class);

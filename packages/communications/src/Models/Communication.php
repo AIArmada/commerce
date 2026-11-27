@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Models;
 
+use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 
@@ -30,7 +31,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -229,26 +229,7 @@ final class Communication extends Model
     protected static function booted(): void
     {
         static::deleting(function (Communication $communication): void {
-            DB::transaction(function () use ($communication): void {
-                $communication->children()->update(['parent_id' => null]);
-
-                $communication->recipients()->delete();
-                $communication->contents()->delete();
-                $communication->events()->delete();
-                $communication->references()->delete();
-                $communication->attachments()->delete();
-
-                self::deleteRelatedModels($communication->deliveries());
-            });
-        });
-    }
-
-    private static function deleteRelatedModels(HasMany $relation): void
-    {
-        $relation->chunkById(100, static function (Collection $models): void {
-            $models->each(static function (Model $model): void {
-                $model->delete();
-            });
+            app(CommunicationDependentsCleaner::class)->cleanup((string) $communication->getKey());
         });
     }
 }

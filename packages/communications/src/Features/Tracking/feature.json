@@ -4,7 +4,8 @@
   "owns": {
     "table:communication_tracking_tokens": [
       "AIArmada\\Communications\\Features\\Tracking\\Actions\\CreateTrackingTokenAction",
-      "AIArmada\\Communications\\Features\\Tracking\\Actions\\RecordTrackingInteractionAction"
+      "AIArmada\\Communications\\Features\\Tracking\\Actions\\RecordTrackingInteractionAction",
+      "AIArmada\\Communications\\Features\\Tracking\\Actions\\DeleteDeliveryTrackingTokens"
     ]
   },
   "extensions": {}

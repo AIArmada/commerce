@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Models;
 
+use AIArmada\Communications\Features\Delivery\Api\DeliveryDependentsCleaner;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
 use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Models\Communication;
@@ -204,9 +205,7 @@ final class CommunicationDelivery extends Model
     protected static function booted(): void
     {
         static::deleting(function (CommunicationDelivery $delivery): void {
-            $delivery->attempts()->chunkById(200, fn (Collection $attempts) => $attempts->each->delete());
-            $delivery->events()->chunkById(200, fn (Collection $events) => $events->each->delete());
-            $delivery->trackingTokens()->chunkById(200, fn (Collection $tokens) => $tokens->each->delete());
+            app(DeliveryDependentsCleaner::class)->cleanup((string) $delivery->getKey());
         });
     }
 }
