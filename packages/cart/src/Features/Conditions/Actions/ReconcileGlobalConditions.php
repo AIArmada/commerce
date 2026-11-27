@@ -8,9 +8,8 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Queries\ActiveGlobalConditions;
 use AIArmada\Cart\Runtime\CartInstanceManager;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Context;
 use InvalidArgumentException;
 
@@ -32,13 +31,10 @@ final readonly class ReconcileGlobalConditions
         Context::scope(function () use ($cart): void {
             $cart = $this->cartInstances->prepare($cart);
 
-            $globalConditions = $this->globalConditionsQuery()
-                ->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END')
-                ->orderBy('id')
-                ->get()
-                ->unique('name');
-            $this->removeDeactivatedGlobalConditions($cart, $globalConditions->pluck('name')->all());
-            foreach ($globalConditions as $condition) {
+            $globalConditions = ActiveGlobalConditions::forCart($cart);
+            ActiveGlobalConditions::removeInactive($cart, $globalConditions);
+
+            foreach ($globalConditions->unique('name') as $condition) {
                 $this->reconcileCondition($cart, $condition);
             }
         }, hidden: [self::APPLYING_CONTEXT_KEY => true]);
@@ -117,29 +113,6 @@ final readonly class ReconcileGlobalConditions
     }
 
     /**
-     * Remove global conditions that have been deactivated.
-     * This ensures time-limited promotions are removed from active carts when they expire.
-     *
-     * @param  list<string>  $activeGlobalNames
-     */
-    private function removeDeactivatedGlobalConditions(Cart $cart, array $activeGlobalNames): void
-    {
-        $activeNames = array_fill_keys($activeGlobalNames, true);
-
-        foreach ($cart->getDynamicConditions() as $condition) {
-            if ($condition->getAttribute('is_global') === true && ! isset($activeNames[$condition->getName()])) {
-                $cart->removeDynamicCondition($condition->getName());
-            }
-        }
-
-        foreach ($cart->getStoredConditions() as $condition) {
-            if ($condition->getAttribute('is_global') === true && ! isset($activeNames[$condition->getName()])) {
-                $cart->removeCondition($condition->getName());
-            }
-        }
-    }
-
-    /**
      * @param  array<int, string>  $factoryKeys
      * @param  array<string, mixed>  $context
      * @return array<callable>
@@ -160,32 +133,5 @@ final readonly class ReconcileGlobalConditions
         }
 
         return $rules;
-    }
-
-    /**
-     * @return Builder<Condition>
-     */
-    private function globalConditionsQuery(): Builder
-    {
-        $query = Condition::query();
-
-        if (! Condition::ownerScopingEnabled()) {
-            return $query->global();
-        }
-
-        $owner = OwnerContext::resolve();
-
-        OwnerContext::assertResolvedOrExplicitGlobal(
-            $owner,
-            Condition::class . ' requires an owner context or explicit global context.',
-        );
-
-        if ($owner === null) {
-            return $query->globalOnly()->global();
-        }
-
-        return $query
-            ->forOwner($owner, (bool) config('cart.owner.include_global', false))
-            ->global();
     }
 }

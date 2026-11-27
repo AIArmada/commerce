@@ -51,6 +51,9 @@ entry point for admin and cross-tenant tooling.
 
 Concrete cart objects obtained from the manager keep the owner they were created
 with. The ambient manager itself never retains a previous owner selection.
+The container-resolved `CartFactory` uses the current owner for each new cart.
+Global condition reconciliation and validation require the owner context to
+match the cart's storage.
 
 When owner mode is enabled and no owner can be resolved, ambient entry points
 fail closed except inside `OwnerContext::withOwner(null, ...)` (explicit

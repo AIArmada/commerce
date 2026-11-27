@@ -27,7 +27,13 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Queue\Events\Looping;
 use Laravel\Octane\Events\RequestReceived;
+use Laravel\Octane\Events\RequestTerminated;
+use Laravel\Octane\Events\TaskReceived;
+use Laravel\Octane\Events\TaskTerminated;
+use Laravel\Octane\Events\TickReceived;
+use Laravel\Octane\Events\TickTerminated;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -170,7 +176,7 @@ final class CartServiceProvider extends PackageServiceProvider
     protected function registerFactories(): void
     {
         $this->app->scoped(CartFactory::class, fn ($app) => new CartFactory(
-            storage: $app->make('cart.storage'),
+            storage: static fn (): StorageInterface => $app->make('cart.storage'),
             conditionResolver: $app->make(CartConditionResolver::class),
             conditionProviderRegistry: $app->make(ConditionProviderRegistry::class),
             conditionTypeHandlerRegistry: $app->make(ConditionTypeHandlerRegistry::class),
@@ -201,17 +207,30 @@ final class CartServiceProvider extends PackageServiceProvider
 
     private function registerOctaneListeners(): void
     {
-        if (! class_exists(RequestReceived::class)) {
-            return;
-        }
-
-        $this->app['events']->listen(RequestReceived::class, static function (): void {
-            app()->forgetInstance('cart.storage');
-            app()->forgetInstance('cart');
-            Facades\Cart::clearResolvedInstance('cart');
-            app()->forgetInstance(CartFactory::class);
+        $restorePresets = static function (): void {
             ConditionPresets::restoreOctaneDefaults();
             RulePresets::restoreOctaneDefaults();
-        });
+        };
+        $this->app['events']->listen(Looping::class, $restorePresets);
+
+        foreach ([RequestReceived::class, TaskReceived::class, TickReceived::class] as $eventClass) {
+            if (class_exists($eventClass)) {
+                $this->app['events']->listen($eventClass, static function (object $event) use ($restorePresets): void {
+                    $application = $event->sandbox ?? app();
+                    $application->forgetInstance('cart.storage');
+                    $application->forgetInstance('cart');
+                    $application->forgetInstance(CartFactory::class);
+                    $application->forgetInstance(CartMigrationService::class);
+                    Facades\Cart::clearResolvedInstance('cart');
+                    $restorePresets();
+                });
+            }
+        }
+
+        foreach ([RequestTerminated::class, TaskTerminated::class, TickTerminated::class] as $eventClass) {
+            if (class_exists($eventClass)) {
+                $this->app['events']->listen($eventClass, $restorePresets);
+            }
+        }
     }
 }

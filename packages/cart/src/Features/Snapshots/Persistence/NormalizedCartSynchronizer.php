@@ -33,40 +33,49 @@ class NormalizedCartSynchronizer
 {
     public function syncFromCart(BaseCart $cart): void
     {
+        $owner = $this->resolveSourceOwner($cart);
         $cart->evaluateDynamicConditionsIfDirty();
 
         $storageSnapshot = $cart->storageSnapshot();
 
         if ($storageSnapshot === null) {
-            $this->deleteNormalizedCart($cart->getIdentifier(), $cart->instance());
+            $this->deleteSnapshotRow($cart->getIdentifier(), $cart->instance(), $owner);
 
             return;
         }
 
-        // Concurrent first-syncs race the snapshot unique key; the loser retries
-        // once in a fresh transaction, where firstOrNew() finds the winner's row.
+        $connection = (new CartSnapshot)->getConnection();
+        $sync = fn (): array => $this->syncFromCartInTransaction($cart, $storageSnapshot, $owner);
+
         try {
-            $events = (new CartSnapshot)->getConnection()->transaction(fn (): array => $this->syncFromCartInTransaction($cart, $storageSnapshot));
+            $events = $connection->transaction($sync);
         } catch (QueryException $exception) {
             if (! $this->isUniqueViolation($exception)) {
                 throw $exception;
             }
 
-            $events = (new CartSnapshot)->getConnection()->transaction(fn (): array => $this->syncFromCartInTransaction($cart, $storageSnapshot));
+            $events = $connection->transaction($sync);
         }
 
-        $this->dispatchSnapshotEvents($events);
+        if ($events['snapshot'] !== null || $events['highValue'] !== null) {
+            $ownerScoped = CartSnapshot::ownerScopingEnabled();
+            $connection->afterCommit(function () use ($events, $owner, $ownerScoped): void {
+                if ($ownerScoped) {
+                    OwnerContext::withOwner($owner, fn () => $this->dispatchSnapshotEvents($events));
+                } else {
+                    $this->dispatchSnapshotEvents($events);
+                }
+            });
+        }
     }
 
     /**
      * @return array{snapshot: ?CartSnapshotData, highValue: ?CartSnapshotData}
      */
-    private function syncFromCartInTransaction(BaseCart $cart, CartStorageSnapshot $storageSnapshot): array
+    private function syncFromCartInTransaction(BaseCart $cart, CartStorageSnapshot $storageSnapshot, ?EloquentModel $owner): array
     {
         $identifier = $cart->getIdentifier();
         $instance = $cart->instance();
-
-        $owner = $this->resolveSourceOwner($cart);
 
         $items = $cart->itemsFromStorageSnapshot($storageSnapshot);
         $conditions = $cart->conditionsFromStorageSnapshot($storageSnapshot);

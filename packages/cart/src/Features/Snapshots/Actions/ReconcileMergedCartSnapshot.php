@@ -9,8 +9,10 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 final readonly class ReconcileMergedCartSnapshot
@@ -23,12 +25,25 @@ final readonly class ReconcileMergedCartSnapshot
         $targetIdentifier = $event->originalTargetIdentifier ?? $event->targetCart->getIdentifier();
         $instance = $event->sourceCart->instance();
         $owner = CartSnapshot::resolveCurrentOwner();
+        $sourceOwner = null;
 
         if (CartSnapshot::ownerScopingEnabled()) {
             OwnerContext::assertResolvedOrExplicitGlobal(
                 $owner,
                 CartSnapshot::class . ' requires an owner context or explicit global context.',
             );
+
+            $storage = $event->sourceCart->storage();
+            $source = new CartOwnerIdentity($storage->getOwnerType(), $storage->getOwnerId());
+
+            if (! $source->isGlobal()) {
+                if ($owner?->getMorphClass() !== $source->ownerType
+                    || (string) $owner?->getKey() !== (string) $source->ownerId) {
+                    throw new AuthorizationException('The merge source must belong to the current owner or be a global guest cart.');
+                }
+
+                $sourceOwner = $owner;
+            }
         }
 
         $hasLiveTarget = $event->targetCart->storage()->getSnapshot($targetIdentifier, $instance) !== null;
@@ -37,15 +52,13 @@ final readonly class ReconcileMergedCartSnapshot
             $this->syncManager->sync($event->targetCart, force: true);
         }
 
-        (new CartSnapshot)->getConnection()->transaction(function () use ($sourceIdentifier, $targetIdentifier, $instance, $owner, $hasLiveTarget): void {
-            $source = $this->findSnapshot($sourceIdentifier, $instance, null)
-                ?? ($owner !== null ? $this->findSnapshot($sourceIdentifier, $instance, $owner) : null);
+        (new CartSnapshot)->getConnection()->transaction(function () use ($sourceIdentifier, $targetIdentifier, $instance, $sourceOwner, $owner, $hasLiveTarget): void {
+            $source = $this->findSnapshot($sourceIdentifier, $instance, $sourceOwner);
 
             if (! $source instanceof CartSnapshot) {
                 return;
             }
 
-            $sourceOwner = $this->snapshotOwner($source);
             $target = $this->findSnapshot($targetIdentifier, $instance, $owner);
 
             if ($target instanceof CartSnapshot && $source->is($target)) {
@@ -63,12 +76,10 @@ final readonly class ReconcileMergedCartSnapshot
             }
 
             if ($hasLiveTarget) {
-                $this->deleteSnapshot($source, $sourceOwner);
-
                 return;
             }
 
-            if ($this->sameOwner($sourceOwner, $owner)) {
+            if ($sourceOwner === $owner) {
                 $source->identifier = $targetIdentifier;
                 $this->withOwnerContext($sourceOwner, fn (): bool => $source->save());
 
@@ -89,26 +100,6 @@ final readonly class ReconcileMergedCartSnapshot
             ->where('instance', $instance)
             ->lockForUpdate()
             ->first());
-    }
-
-    private function snapshotOwner(CartSnapshot $snapshot): ?Model
-    {
-        $config = CartSnapshot::ownerScopeConfig();
-
-        return OwnerContext::fromTypeAndId(
-            $snapshot->getAttribute($config->ownerTypeColumn),
-            $snapshot->getAttribute($config->ownerIdColumn),
-        );
-    }
-
-    private function sameOwner(?Model $left, ?Model $right): bool
-    {
-        if ($left === null || $right === null) {
-            return $left === $right;
-        }
-
-        return $left->getMorphClass() === $right->getMorphClass()
-            && (string) $left->getKey() === (string) $right->getKey();
     }
 
     private function deleteSnapshot(CartSnapshot $source, ?Model $sourceOwner): void

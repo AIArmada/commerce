@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Features\Conditions\Actions\ValidateStoredCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Runtime\CartManagerInterface;
+use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartIdentifierResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config()->set('cart.owner.enabled', true);
@@ -34,6 +37,20 @@ beforeEach(function (): void {
 });
 
 describe('owner-scoped ambient cart manager', function (): void {
+    it('resolves newly created carts through the current owner even with a retained factory', function (): void {
+        $factory = app(CartFactory::class);
+        $cartA = $factory->make('shared-factory-cart');
+
+        OwnerContext::withOwner($this->ownerB, function () use ($factory, $cartA): void {
+            $cartB = $factory->make('shared-factory-cart');
+
+            expect((string) $cartB->storage()->getOwnerId())->toBe((string) $this->ownerB->getKey());
+            expect(fn () => (new ValidateStoredCondition)->handle($cartA))->toThrow(AuthorizationException::class);
+        });
+
+        expect((string) $factory->make('shared-factory-cart')->storage()->getOwnerId())->toBe((string) $this->ownerA->getKey());
+    });
+
     it('resolves ambient carts for the current owner and restores the previous owner state', function (): void {
         // Resolve the facade while owner A is ambient. This is the historical
         // bug window: the manager used to retain A's storage for the lifecycle.
@@ -216,7 +233,7 @@ describe('owner-scoped ambient cart manager', function (): void {
         $cartA->add('pinned-a', 'Pinned A', 1000, 1);
 
         $cartB = $manager->forOwner($this->ownerB);
-        $cartB->add('pinned-b', 'Pinned B', 2000, 1);
+        OwnerContext::withOwner($this->ownerB, fn () => $cartB->add('pinned-b', 'Pinned B', 2000, 1));
 
         $cartAAgain = $manager->forOwner($this->ownerA);
 

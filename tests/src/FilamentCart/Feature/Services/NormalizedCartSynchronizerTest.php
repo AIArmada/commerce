@@ -577,6 +577,28 @@ describe('NormalizedCartSynchronizer', function (): void {
         Event::assertDispatched(CartSnapshotSynced::class);
     });
 
+    it('defers snapshot events until the outer transaction commits', function (): void {
+        config(['cart.events' => false, 'cart.owner.enabled' => false]);
+
+        $connection = (new Cart)->getConnection();
+        $cart = new BaseCart(new DatabaseStorage($connection, 'carts'), 'outer-transaction-cart', null, 'default');
+        $cart->add('sku-1', 'Product', 1000, 1);
+        Event::fake([CartSnapshotSynced::class]);
+
+        $connection->beginTransaction();
+        $this->synchronizer->syncFromCart($cart);
+        Event::assertNotDispatched(CartSnapshotSynced::class);
+        $connection->rollBack();
+        Event::assertNotDispatched(CartSnapshotSynced::class);
+
+        $connection->beginTransaction();
+        $this->synchronizer->syncFromCart($cart);
+        Event::assertNotDispatched(CartSnapshotSynced::class);
+        $connection->commit();
+
+        Event::assertDispatchedTimes(CartSnapshotSynced::class, 1);
+    });
+
     it('emits snapshot and high-value events only when material fields change', function (): void {
         Event::fake([CartSnapshotSynced::class, HighValueCartDetected::class]);
 

@@ -353,7 +353,9 @@ $condition->isItemLevel();  // bool
 
 ### Transactional Sync
 
-All synchronization operations run in database transactions:
+Synchronization runs in a database transaction. Snapshot and high-value
+notifications are dispatched after the outermost transaction commits, under
+the owner context captured during synchronization.
 
 ```php
 DB::transaction(function () use ($cart): void {
