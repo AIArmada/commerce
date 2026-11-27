@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Actions\Waybills;
+namespace AIArmada\Jnt\Features\Orders\Actions;
 
+use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Services\JntExpressService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Print a waybill via JNT Express.
+ * Cancel a shipping order via JNT Express.
  */
-final class PrintWaybill
+final class CancelOrder
 {
     use AsAction;
 
@@ -19,15 +20,15 @@ final class PrintWaybill
     ) {}
 
     /**
-     * Print a waybill for an order.
+     * Cancel an existing order.
      *
      * @return array<string, mixed>
      */
     public function handle(
         string $orderId,
-        ?string $trackingNumber = null,
-        ?string $templateName = null
+        CancellationReason | string $reason,
+        ?string $trackingNumber = null
     ): array {
-        return $this->jntService->printOrder($orderId, $trackingNumber, $templateName);
+        return $this->jntService->cancelOrder($orderId, $reason, $trackingNumber);
     }
 }

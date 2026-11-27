@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Actions\Tracking\TrackParcel;
+use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
 use AIArmada\Jnt\Services\JntExpressService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;

@@ -65,7 +65,7 @@ packages/jnt/
 │   └── jnt.php                 # Configuration file
 ├── database/migrations/        # Database migrations
 ├── src/
-│   ├── Actions/               # Action classes (CreateOrder, CancelOrder, etc.)
+│   ├── Features/              # Orders, tracking, waybills and reporting
 │   ├── Builders/              # OrderBuilder for fluent order creation
 │   ├── Cart/                  # Cart shipping calculator integration
 │   ├── Drivers/               # API transport and shipping driver
@@ -85,7 +85,6 @@ packages/jnt/
 │   ├── Notifications/         # Notification classes
 │   ├── Rules/                 # Laravel validation rules
 │   ├── Services/              # Core service classes
-│   ├── Queries/               # Dashboard statistics
 │   ├── Support/               # Type transformers and utilities
 │   └── Webhooks/              # Signature, profile and response adapters
 └── docs/                      # Documentation

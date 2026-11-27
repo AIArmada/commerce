@@ -129,7 +129,7 @@ $result = $jntService->createOrder(
 The package provides action classes for dependency injection:
 
 ```php
-use AIArmada\Jnt\Actions\Orders\CreateOrder;
+use AIArmada\Jnt\Features\Orders\Actions\CreateOrder;
 
 class OrderController
 {

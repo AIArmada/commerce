@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Actions\Orders\CancelOrder;
-use AIArmada\Jnt\Actions\Orders\CreateOrder;
-use AIArmada\Jnt\Actions\Tracking\TrackParcel;
-use AIArmada\Jnt\Actions\Waybills\PrintWaybill;
+use AIArmada\Jnt\Features\Orders\Actions\CancelOrder;
+use AIArmada\Jnt\Features\Orders\Actions\CreateOrder;
+use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
+use AIArmada\Jnt\Features\Waybills\Actions\PrintWaybill;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;

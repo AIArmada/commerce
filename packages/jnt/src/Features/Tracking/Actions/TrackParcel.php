@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Actions\Tracking;
+namespace AIArmada\Jnt\Features\Tracking\Actions;
 
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Services\JntExpressService;
