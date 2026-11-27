@@ -9,7 +9,7 @@ use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Models\Attribute;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -105,7 +105,7 @@ class AttributesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteCatalogBulkAction::make(),
                 ]),
             ])
             ->reorderable('position');

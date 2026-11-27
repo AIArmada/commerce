@@ -8,7 +8,7 @@ use AIArmada\Products\Actions\RebuildCollectionMembership;
 use AIArmada\Products\Models\Collection;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -100,7 +100,7 @@ class CollectionsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteCatalogBulkAction::make(),
                 ]),
             ]);
     }

@@ -24,7 +24,7 @@ use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
@@ -284,7 +284,7 @@ class ProductsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
+                    DeleteCatalogBulkAction::make()
                         ->authorize(fn (): bool => FilamentPermission::hasAbility('product.delete')),
                     BulkAction::make('activate')
                         ->label('Activate')

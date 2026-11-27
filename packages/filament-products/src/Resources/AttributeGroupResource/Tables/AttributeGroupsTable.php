@@ -8,7 +8,7 @@ use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Models\AttributeGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -66,7 +66,7 @@ class AttributeGroupsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteCatalogBulkAction::make(),
                 ]),
             ])
             ->reorderable('position');
