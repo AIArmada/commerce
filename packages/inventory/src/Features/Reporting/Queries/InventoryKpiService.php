@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
+use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Valuation\Api\CostLayerValues;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -241,7 +243,7 @@ final class InventoryKpiService
      *     out_of_stock_items: int,
      * }
      */
-    public function getDashboardKpis(): array
+    public function getDashboardKpis(CostingMethod $method = CostingMethod::Fifo): array
     {
         $stockLevelsQuery = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()
@@ -253,24 +255,24 @@ final class InventoryKpiService
                 ->groupBy('inventoryable_type', 'inventoryable_id')
         );
 
-        $totalSkus = DB::query()->fromSub($stockLevelsQuery, 'grouped_skus')->count();
-        $totalValue = 0; // Value calculation requires cost layer integration
+        $totalSkus = DB::query()->fromSub($stockLevelsQuery->toBase(), 'grouped_skus')->count();
+        $totalValue = app(CostLayerValues::class)->total($method, (string) config('inventory.defaults.currency', 'MYR'));
 
         $lowStockQuery = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()->lowStock()
         );
 
-        $lowStockItems = (int) $lowStockQuery
-            ->selectRaw("COUNT(DISTINCT CONCAT(inventoryable_type, ':', inventoryable_id)) as aggregate")
-            ->value('aggregate');
+        $lowStockItems = DB::query()
+            ->fromSub($lowStockQuery->select('inventoryable_type', 'inventoryable_id')->distinct()->toBase(), 'low_stock_skus')
+            ->count();
 
         $outOfStockQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()->where('quantity_on_hand', '<=', 0)
+            InventoryLevel::query()->whereRaw('(quantity_on_hand - quantity_reserved) <= 0')
         );
 
-        $outOfStockItems = (int) $outOfStockQuery
-            ->selectRaw("COUNT(DISTINCT CONCAT(inventoryable_type, ':', inventoryable_id)) as aggregate")
-            ->value('aggregate');
+        $outOfStockItems = DB::query()
+            ->fromSub($outOfStockQuery->select('inventoryable_type', 'inventoryable_id')->distinct()->toBase(), 'out_of_stock_skus')
+            ->count();
 
         return [
             'total_sku_count' => $totalSkus,

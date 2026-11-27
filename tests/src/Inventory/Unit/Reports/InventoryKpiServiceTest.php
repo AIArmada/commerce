@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
@@ -263,7 +265,7 @@ describe('InventoryKpiService', function (): void {
                 'low_stock_items',
                 'out_of_stock_items',
             ]);
-        })->skip('Production code uses SQLite-incompatible SQL');
+        });
 
         it('counts SKUs correctly', function (): void {
             InventoryLevel::factory()->create([
@@ -276,7 +278,7 @@ describe('InventoryKpiService', function (): void {
             $kpis = $this->service->getDashboardKpis();
 
             expect($kpis['total_sku_count'])->toBe(1);
-        })->skip('Production code uses SQLite-incompatible SQL');
+        });
 
         it('counts out of stock items', function (): void {
             InventoryLevel::factory()->create([
@@ -288,8 +290,8 @@ describe('InventoryKpiService', function (): void {
 
             $kpis = $this->service->getDashboardKpis();
 
-            expect($kpis['out_of_stock_items'])->toBeInt();
-        })->skip('Production code uses SQLite-incompatible SQL');
+            expect($kpis['out_of_stock_items'])->toBe(1);
+        });
     });
 
     describe('getKpiTrends', function (): void {
@@ -320,4 +322,30 @@ describe('InventoryKpiService', function (): void {
             expect($dates)->toBe($sortedDates);
         });
     });
+});
+
+it('values only remaining layers in the selected costing method and currency', function (): void {
+    config(['inventory.defaults.currency' => 'MYR']);
+
+    foreach ([
+        [CostingMethod::Fifo, 'MYR', 4, 100],
+        [CostingMethod::Fifo, 'MYR', 0, 100],
+        [CostingMethod::Fifo, 'USD', 10, 100],
+        [CostingMethod::WeightedAverage, 'MYR', 4, 200],
+    ] as [$method, $currency, $remaining, $unitCost]) {
+        InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity' => 10,
+            'remaining_quantity' => $remaining,
+            'unit_cost_minor' => $unitCost,
+            'total_cost_minor' => 10 * $unitCost,
+            'costing_method' => $method,
+            'currency' => $currency,
+        ]);
+    }
+
+    expect($this->service->getDashboardKpis()['total_inventory_value'])->toBe(400)
+        ->and($this->service->getDashboardKpis(CostingMethod::WeightedAverage)['total_inventory_value'])->toBe(800);
 });

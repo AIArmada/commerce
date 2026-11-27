@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
+use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Replenishment\Api\ReorderSuggestionCounts;
 use AIArmada\Inventory\Features\Reservations\Api\ActiveAllocationCount;
@@ -11,6 +12,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Traceability\Api\BatchAging;
+use AIArmada\Inventory\Features\Valuation\Api\CostLayerValues;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -122,7 +124,7 @@ final class StockLevelReport
      *     out_of_stock_count: int,
      * }>
      */
-    public function getStockByLocation(): Collection
+    public function getStockByLocation(CostingMethod $method = CostingMethod::Fifo): Collection
     {
         $query = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()
@@ -137,6 +139,8 @@ final class StockLevelReport
                 ->groupBy('location_id')
         );
 
+        $values = app(CostLayerValues::class)->byLocation($method, (string) config('inventory.defaults.currency', 'MYR'));
+
         /** @var Collection<int, array{location_id: string, location_name: string, sku_count: int, total_quantity: int, total_value: int, low_stock_count: int, out_of_stock_count: int}> $stockByLocation */
         $stockByLocation = $query->get()
             ->map(fn ($row): array => [
@@ -144,7 +148,7 @@ final class StockLevelReport
                 'location_name' => (string) ($row->location?->name ?? 'Unknown'),
                 'sku_count' => (int) $row->sku_count,
                 'total_quantity' => (int) $row->total_quantity,
-                'total_value' => (int) 0, // Requires cost layer integration
+                'total_value' => $values[$row->location_id] ?? 0,
                 'low_stock_count' => (int) $row->getAttribute('low_stock_count'),
                 'out_of_stock_count' => (int) $row->getAttribute('out_of_stock_count'),
             ]);

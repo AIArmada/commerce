@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\AlertStatus;
+use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
@@ -11,6 +12,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -508,4 +510,36 @@ it('reports real available stock alert counts by location', function (): void {
         ->and($result['total_quantity'])->toBe(40)
         ->and($result['low_stock_count'])->toBe(1)
         ->and($result['out_of_stock_count'])->toBe(1);
+});
+
+it('reports remaining cost-layer value separately for each location', function (): void {
+    config(['inventory.defaults.currency' => 'MYR']);
+    $otherLocation = InventoryLocation::factory()->create();
+
+    foreach ([[$this->location, 3, 100], [$otherLocation, 2, 250]] as [$location, $quantity, $unitCost]) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $location->id,
+            'quantity_on_hand' => $quantity,
+            'quantity_reserved' => 0,
+        ]);
+
+        InventoryCostLayer::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $location->id,
+            'quantity' => $quantity,
+            'remaining_quantity' => $quantity,
+            'unit_cost_minor' => $unitCost,
+            'total_cost_minor' => $quantity * $unitCost,
+            'costing_method' => CostingMethod::Fifo,
+            'currency' => 'MYR',
+        ]);
+    }
+
+    $values = $this->report->getStockByLocation()->pluck('total_value', 'location_id');
+
+    expect($values->get($this->location->id))->toBe(300)
+        ->and($values->get($otherLocation->id))->toBe(500);
 });
