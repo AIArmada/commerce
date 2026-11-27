@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
-use AIArmada\Communications\Actions\CancelCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CancelCommunicationAction;
 use AIArmada\Communications\Features\Delivery\Actions\CancelCommunicationDeliveryAction;
 use AIArmada\Communications\Features\Delivery\Actions\CompleteDeliveryAttemptAction;
-use AIArmada\Communications\Actions\RecalculateCommunicationStatusAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
 use AIArmada\Communications\Actions\RecordNotificationSendingAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
-use AIArmada\Communications\Actions\RedactCommunicationPayloadAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;

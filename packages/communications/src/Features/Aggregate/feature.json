@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "name": "Aggregate",
+  "owns": {
+    "table:communications": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateCommunicationAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CancelCommunicationAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RecalculateCommunicationStatusAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ReceiveInboundCommunicationAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\DeleteCommunicationAggregateAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RedactCommunicationPayloadAction"
+    ],
+    "table:communication_recipients": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AddCommunicationRecipientAction"
+    ],
+    "table:communication_references": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AttachCommunicationReferenceAction"
+    ],
+    "table:communication_batches": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CreateCommunicationBatchAction"
+    ],
+    "table:communication_threads": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ResolveCommunicationThreadAction"
+    ],
+    "table:communication_contents": [
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RenderCommunicationContentAction"
+    ]
+  },
+  "extensions": {}
+}

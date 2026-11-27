@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Data\CommunicationContextData;

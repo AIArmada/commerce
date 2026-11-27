@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;

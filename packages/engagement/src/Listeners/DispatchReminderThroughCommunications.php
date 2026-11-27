@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
+use AIArmada\Communications\Features\Aggregate\Actions\AttachCommunicationReferenceAction;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;

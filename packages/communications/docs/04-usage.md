@@ -217,7 +217,7 @@ app(PublishTemplateAction::class)->handle((string) $version->id);
 Rendering a template into a content snapshot (`RenderedContentData`):
 
 ```php
-use AIArmada\Communications\Actions\RenderCommunicationContentAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RenderCommunicationContentAction;
 
 $rendered = app(RenderCommunicationContentAction::class)->handle(
     $template,
@@ -230,7 +230,7 @@ $rendered = app(RenderCommunicationContentAction::class)->handle(
 ## Creating a communication
 
 ```php
-use AIArmada\Communications\Actions\CreateCommunicationAction;
+use AIArmada\Communications\Features\Aggregate\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 
 $communication = app(CreateCommunicationAction::class)->handle(

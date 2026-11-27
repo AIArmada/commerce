@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Actions\RecalculateCommunicationStatusAction;
+use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;

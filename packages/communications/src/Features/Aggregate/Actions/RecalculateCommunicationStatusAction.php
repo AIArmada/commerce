@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\CommunicationStatus;
