@@ -30,7 +30,7 @@ Source: `packages/links/{CONTEXT.md,composer.json,docs/01-overview.md,config/lin
 - **Click row** (`src/Models/LinkClick.php`): one row per hit — link_id, subject copy,
   occurred_at, ip, raw UA + device/brand/model/browser/version/os/version, is_bot,
   referrer, utm_* columns, properties (ad click IDs inside).
-- **Redirect** (`src/Actions/RedirectToLink.php`): public lookup without owner scope
+- **Redirect** (`src/EntryPoints/Http/RedirectToLinkController.php`): public lookup without owner scope
   (404), per-link signature check (403), `ResolveLink::blockedReason` check
   (deactivated/expired/limit_reached/gate reason → `LinkExpired` / `LinkClickLimitReached` /
   `LinkBlocked` + 410), then `RecordLinkClick` in try/catch — tracking failures are

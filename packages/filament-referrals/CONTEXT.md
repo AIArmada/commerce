@@ -17,7 +17,7 @@ keywords:
 - Composer: aiarmada/filament-referrals
 - Role: Filament v5 adapter for aiarmada/referrals programs, invites, rewards, and owner-scoped statistics.
 - Triggers: referral admin, referral invite table, referral reward fulfilment, Filament referrals
-- Search first: src/Resources, src/Support, src/Widgets, config, docs
+- Search first: src/Resources, src/Persistence, src/Support, src/Widgets, config, docs
 - Related: referrals, commerce-support
 
 ## Read next
@@ -43,7 +43,8 @@ keywords:
 
 ## Key surfaces
 - Resources: ReferralProgramResource, ReferralInviteResource, ReferralRewardResource
-- Support: ReferralFilamentScope, ReferralAdminPresenter, ReferralProgramFormData
+- Persistence: ReferralFilamentScope
+- Support: ReferralAdminPresenter, ReferralProgramFormData
 - Widget: ReferralStatsWidget
-- Actions: core CreateReferralProgram, UpdateReferralProgram, RevokeReferralInvite, FulfillReferralReward, and ReverseReferralReward
+- Actions: core CreateReferralProgram, UpdateReferralProgram, TransitionReferralProgramStatus, RevokeReferralInvite, FulfillReferralReward, and ReverseReferralReward
 - Config: filament-referrals.php navigation group and sort positions

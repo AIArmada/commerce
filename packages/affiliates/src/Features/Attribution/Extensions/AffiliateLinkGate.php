@@ -9,25 +9,25 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Contracts\LinkGateInterface;
-use AIArmada\Links\Models\Link;
+use AIArmada\Links\Data\LinkGateContext;
 use Illuminate\Support\Str;
 
 final class AffiliateLinkGate implements LinkGateInterface
 {
-    public function blockedReason(Link $link): ?string
+    public function blockedReason(LinkGateContext $link): ?string
     {
-        if ($link->subject_type !== (new AffiliateLink)->getMorphClass()) {
+        if ($link->subjectType !== (new AffiliateLink)->getMorphClass()) {
             return null;
         }
 
-        if ($link->subject_id === null || ! Str::isUuid($link->subject_id)) {
+        if ($link->subjectId === null || ! Str::isUuid($link->subjectId)) {
             return 'link_unknown';
         }
 
         $affiliateLink = AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->find($link->subject_id);
+            ->find($link->subjectId);
 
-        if ($affiliateLink === null || ! $affiliateLink->trackedLink()->withoutGlobalScope(OwnerScope::class)->whereKey($link->getKey())->exists()) {
+        if ($affiliateLink === null || ! $affiliateLink->trackedLink()->withoutGlobalScope(OwnerScope::class)->whereKey($link->id)->exists()) {
             return 'link_unknown';
         }
 
