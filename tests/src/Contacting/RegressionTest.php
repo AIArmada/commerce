@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\ReplaceGeneralContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
@@ -437,4 +438,22 @@ it('rejects unsafe website links and credential-bearing URLs', function (): void
     expect($normalizer->normalize('javascript:alert(1).example.com'))->toBeNull()
         ->and($normalizer->normalize('https://example.com@evil.example'))->toBeNull()
         ->and($normalizer->normalize('https://EXAMPLE.COM/path?A=1'))->toBe('https://example.com/path?A=1');
+});
+
+it('preserves global contact methods during an owner-specific replacement', function (): void {
+    config(['contacting.features.owner.include_global' => true]);
+
+    $parent = RepairCascadeParent::query()->create([]);
+    $owner = User::factory()->create();
+    $global = OwnerContext::withOwner(null, fn () => $parent->addContactMethod(
+        ContactMethodData::email('global@example.com'),
+    ));
+    $local = OwnerContext::withOwner($owner, fn () => $parent->addContactMethod(
+        ContactMethodData::email('local@example.com'),
+    ));
+
+    OwnerContext::withOwner($owner, fn () => app(ReplaceGeneralContactMethods::class)->execute($parent, ['email' => null]));
+
+    expect(ContactMethod::withoutOwnerScope()->whereKey($global->id)->exists())->toBeTrue()
+        ->and(ContactMethod::withoutOwnerScope()->whereKey($local->id)->exists())->toBeFalse();
 });

@@ -19,14 +19,20 @@ final readonly class ModerationModelGuard
         }
 
         if (! config('moderation.owner.enabled', true)) {
+            $model->newQuery()->whereKey($model->getKey())->firstOrFail();
+
             return;
         }
 
         if ($model instanceof OwnerScopeConfigurable && ! $model::ownerScopeConfig()->enabled) {
+            $model->newQuery()->whereKey($model->getKey())->firstOrFail();
+
             return;
         }
 
         if (! $model instanceof OwnerScopeConfigurable && ! method_exists($model::class, 'ownerScopeConfig')) {
+            $model->newQuery()->whereKey($model->getKey())->firstOrFail();
+
             return;
         }
 
@@ -62,6 +68,27 @@ final readonly class ModerationModelGuard
         }
 
         return (new $class)->newQuery()->findOrFail($id);
+    }
+
+    public function validatePayload(?string $notes, ?array $metadata): void
+    {
+        if ($notes !== null && mb_strlen($notes) > 10000) {
+            throw new InvalidArgumentException('Moderation notes must not exceed 10000 characters.');
+        }
+
+        if ($metadata === null) {
+            return;
+        }
+
+        if (count($metadata) > 50) {
+            throw new InvalidArgumentException('Moderation metadata must not exceed 50 entries.');
+        }
+
+        $encoded = json_encode($metadata);
+
+        if ($encoded === false || strlen($encoded) > 65535) {
+            throw new InvalidArgumentException('Moderation metadata must not exceed 65535 bytes.');
+        }
     }
 
     private function assertAllowedActor(string $class, string $type): void

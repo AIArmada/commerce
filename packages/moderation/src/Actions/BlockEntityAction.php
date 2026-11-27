@@ -11,7 +11,7 @@ use AIArmada\Moderation\Support\ModerationModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use LogicException;
 
 final readonly class BlockEntityAction
 {
@@ -36,7 +36,15 @@ final readonly class BlockEntityAction
             $this->guard->validateActor($blockedBy);
         }
 
-        return DB::transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
+        $connection = (new Block)->getConnection();
+
+        if ($blockable->getConnection() !== $connection) {
+            throw new LogicException('Blocking requires a shared database connection with the target.');
+        }
+
+        $this->guard->validatePayload($notes, $metadata);
+
+        return $connection->transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
             $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->firstOrFail();
 
             $existing = Block::query()

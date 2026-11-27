@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -284,4 +285,22 @@ test('direct moderation actions enforce the actor allowlist', function (): void 
 test('rejects partial moderation actor references instead of dropping attribution', function (): void {
     expect(fn () => $this->entity->block(blockedByType: User::class))
         ->toThrow(InvalidArgumentException::class, 'Both moderation actor ID and type are required');
+});
+
+test('rejects stale moderation targets and actors that have been deleted', function (): void {
+    $deleted = RegressionBlockable::create(['name' => 'Deleted target']);
+    $stale = $deleted->fresh();
+    $deleted->delete();
+
+    expect(fn () => app(RecordModerationAction::class)->execute($stale, ModerationActionType::Warn, 'Review'))
+        ->toThrow(ModelNotFoundException::class)
+        ->and(fn () => app(BlockEntityAction::class)->execute($this->entity, blockedBy: $stale))
+        ->toThrow(ModelNotFoundException::class);
+});
+
+test('enforces moderation payload limits on blocks as well as action records', function (): void {
+    expect(fn () => app(BlockEntityAction::class)->execute($this->entity, notes: str_repeat('x', 10001)))
+        ->toThrow(InvalidArgumentException::class, 'must not exceed 10000 characters')
+        ->and(fn () => app(BlockEntityAction::class)->execute($this->entity, metadata: array_fill(0, 51, 'x')))
+        ->toThrow(InvalidArgumentException::class, 'must not exceed 50 entries');
 });

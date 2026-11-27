@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 use RuntimeException;
 
 final readonly class MoveContactMethodAction
@@ -27,6 +28,10 @@ final readonly class MoveContactMethodAction
             $target = $this->references->resolve($target->getMorphClass(), (string) $target->getKey());
             if (! $target instanceof Model) {
                 throw new RuntimeException('Contact target must exist.');
+            }
+
+            if ($target->getConnection() !== $record->getConnection()) {
+                throw new LogicException('Contact moves require a shared database connection.');
             }
 
             $target->newQuery()->whereKey($target->getKey())->lockForUpdate()->firstOrFail();

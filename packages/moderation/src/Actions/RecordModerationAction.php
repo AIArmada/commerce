@@ -8,8 +8,8 @@ use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
 use AIArmada\Moderation\Support\ModerationModelGuard;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use LogicException;
 
 final readonly class RecordModerationAction
 {
@@ -35,20 +35,24 @@ final readonly class RecordModerationAction
 
         if ($notes !== null) {
             $notes = mb_trim($notes);
-
-            if (mb_strlen($notes) > 10000) {
-                throw new InvalidArgumentException('Moderation notes must not exceed 10000 characters.');
-            }
         }
 
-        $this->assertMetadataWithinLimits($metadata);
+        $this->guard->validatePayload($notes, $metadata);
         $this->guard->validateTarget($actionable);
 
         if ($actionedBy !== null) {
             $this->guard->validateActor($actionedBy);
         }
 
-        return DB::transaction(function () use ($actionable, $actionedBy, $type, $reason, $notes, $metadata): ModerationAction {
+        $connection = (new ModerationAction)->getConnection();
+
+        if ($actionable->getConnection() !== $connection) {
+            throw new LogicException('Recording moderation requires a shared database connection with the target.');
+        }
+
+        return $connection->transaction(function () use ($actionable, $actionedBy, $type, $reason, $notes, $metadata): ModerationAction {
+            $actionable->newQuery()->whereKey($actionable->getKey())->lockForUpdate()->firstOrFail();
+
             return ModerationAction::create([
                 'actionable_type' => $actionable->getMorphClass(),
                 'actionable_id' => $actionable->getKey(),
@@ -62,23 +66,4 @@ final readonly class RecordModerationAction
         });
     }
 
-    /**
-     * @param  array<string, mixed>|null  $metadata
-     */
-    private function assertMetadataWithinLimits(?array $metadata): void
-    {
-        if ($metadata === null) {
-            return;
-        }
-
-        if (count($metadata) > 50) {
-            throw new InvalidArgumentException('Moderation metadata must not exceed 50 entries.');
-        }
-
-        $encoded = json_encode($metadata);
-
-        if ($encoded === false || mb_strlen($encoded) > 65535) {
-            throw new InvalidArgumentException('Moderation metadata must not exceed 65535 bytes.');
-        }
-    }
 }
