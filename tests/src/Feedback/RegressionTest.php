@@ -317,8 +317,8 @@ it('rejects choice values outside the defined options', function (): void {
         formId: $form->id,
         answers: [
             new SubmittedAnswerData($single->id, $single->key, 'hacker'),
-            new SubmittedAnswerData($multi->id, $multi->key, ['ok', 'hacker'],
-        ]),
+            new SubmittedAnswerData($multi->id, $multi->key, ['ok', 'hacker']),
+        ],
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'Validation failed');
 });
@@ -500,7 +500,7 @@ it('skips testimonial extraction for non-text answers and missing forms', functi
         'is_anonymous' => true,
     ]);
 
-    expect(app(ExtractFeedbackTestimonialAction::class)->execute($orphan))->toBeNull();
+    expect(app(ExtractFeedbackTestimonialAction::class)->execute($orphan->id))->toBeNull();
 });
 
 it('persists response metadata from the submission payload', function (): void {
