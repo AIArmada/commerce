@@ -90,7 +90,7 @@ Editing a program never rewrites a promise already made. A qualified invite keep
 
 ## Invite claims and privacy
 
-Contacts are trimmed; email addresses are lowercased and phone numbers are normalized to digits with an optional leading `+`. The normalized contact is SHA-256 hashed for duplicate claims and encrypted at rest for delivery workflows. The plaintext invite token is returned only in `ReferralInviteCreationResult`; never log or persist it in your own invite table.
+Contacts are trimmed; email addresses are lowercased and phone numbers are normalized to digits with an optional leading `+`. The normalized contact is SHA-256 hashed for duplicate claims and encrypted at rest for delivery workflows. The plaintext invite token is returned only in `AIArmada\Referrals\Actions\Results\ReferralInviteCreationResult`; never log or persist it in your own invite table.
 
 The host should pass a referrer's verified contact to `CreateReferralInvite` to enable self-invite rejection. Invitee acceptance must use the same contact that was addressed. Tokens and IDs are re-resolved within the current owner context on every action.
 
@@ -133,7 +133,7 @@ Every referral-issued voucher is **single-use and beneficiary-bound**: the adapt
 
 Install `aiarmada/affiliates`, enable the `affiliate_cash` driver, and configure an amount and currency. Bind `ReferralAffiliateResolver` to map an immutable `ReferralRewardContext` (not an Eloquent model) for a frozen beneficiary to an immutable `AIArmada\Affiliates\Data\AwardRecipient` snapshot containing the affiliate ID, morph type, database connection, and owner coordinates. The adapter calls `AwardPosting::post()` using an idempotency key derived from invite and side; `Replayed` is successful, while `Rejected` and `NoAffiliate` fail the referral reward. Reversal calls `AwardPosting::reverse()` with the stored conversion ID and original award key.
 
-Bind `ReferralAffiliateAwardPolicy` as the host's `AffiliateAwardPolicy` to authorize only matching pending referral rewards. Affiliates accepts one `AffiliateAwardPolicy` binding for all award callers. A host that also records non-referral awards must bind a prefix-dispatching composite that delegates `referrals:award:` keys to this policy and other keys to the host's other policy. The referral policy uses exact amount limits and rejects mismatched amount, currency, source, qualification key, or beneficiary mapping, including the recipient's database connection and owner coordinates.
+Bind `ReferralAffiliateAwardPolicy` as the host's `AffiliateAwardPolicy` to authorize only matching pending or retryable failed referral rewards. Affiliates accepts one `AffiliateAwardPolicy` binding for all award callers. A host that also records non-referral awards must bind a prefix-dispatching composite that delegates `referrals:award:` keys to this policy and other keys to the host's other policy. The referral policy uses exact amount limits and rejects mismatched amount, currency, source, qualification key, or beneficiary mapping, including the recipient's database connection and owner coordinates.
 
 ### Rewards points
 

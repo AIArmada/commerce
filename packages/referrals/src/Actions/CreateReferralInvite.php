@@ -85,7 +85,9 @@ final class CreateReferralInvite
                 ->lockForUpdate()
                 ->first();
 
-            if ($existing instanceof ReferralInvite && $existing->isExpiredAt($now)) {
+            if ($existing instanceof ReferralInvite
+                && in_array($existing->status, [ReferralInviteStatus::Pending, ReferralInviteStatus::Accepted], true)
+                && $existing->isExpiredAt($now)) {
                 $existing->status = ReferralInviteStatus::Expired;
                 $existing->save();
                 $existing = null;

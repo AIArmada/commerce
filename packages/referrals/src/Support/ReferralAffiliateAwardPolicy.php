@@ -36,11 +36,11 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
             try {
                 $reward = $this->guard->rewardForInviteSide($inviteId, $side, true);
             } catch (Throwable) {
-                return AffiliateAwardDecision::deny('No pending referral reward matches this award.');
+                return AffiliateAwardDecision::deny('No eligible referral reward matches this award.');
             }
 
             if ($reward->getConnection()->getName() !== $recipient->connectionName
-                || $reward->status !== ReferralRewardStatus::Pending
+                || ! in_array($reward->status, [ReferralRewardStatus::Pending, ReferralRewardStatus::Failed], true)
                 || $reward->driver !== 'affiliate_cash'
                 || $reward->amount_minor === null
                 || $reward->currency === null

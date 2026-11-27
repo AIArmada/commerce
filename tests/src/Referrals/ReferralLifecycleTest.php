@@ -1561,3 +1561,22 @@ it('locks program lifecycle transitions and rejects stale or illegal transitions
             ->toThrow(LogicException::class);
     });
 });
+
+it('does not expire an already qualified invite when its original claim deadline passes', function (): void {
+    $start = CarbonImmutable::parse('2026-02-01 12:00:00 UTC');
+    CarbonImmutable::setTestNow($start);
+    $owner = $this->newOwner();
+    $referrer = User::factory()->create();
+    $invitee = User::factory()->create(['email' => 'qualified-before-expiry@example.com']);
+    $program = $this->newProgram($owner, ['invite_expiry_days' => 1]);
+    $created = $this->newInvite($owner, $program, $referrer, $invitee->email);
+    $accepted = $this->acceptInvite($owner, (string) $created->token, $invitee, $invitee->email);
+    $qualified = OwnerContext::withOwner($owner, fn () => QualifyReferral::run($accepted, 'registration:qualified-before-expiry'));
+
+    CarbonImmutable::setTestNow($start->addDays(2));
+
+    $reissued = $this->newInvite($owner, $program, $referrer, $invitee->email);
+    expect($reissued->invite->id)->toBe($qualified->invite->id)
+        ->and($reissued->invite->status)->toBe(ReferralInviteStatus::Qualified)
+        ->and($reissued->token)->toBeNull();
+});

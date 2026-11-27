@@ -33,7 +33,8 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
             if (is_array($metadata)
                 && ($metadata[$marker] ?? null) === $reward->idempotencyKey
                 && $this->isSingleUse($existing)
-                && $this->isBoundToBeneficiary($existing, $reward)) {
+                && $this->isBoundToBeneficiary($existing, $reward)
+                && $this->matchesFrozenValue($existing, $reward)) {
                 return ReferralFulfillmentResult::fulfilled($code);
             }
 
@@ -45,12 +46,11 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
         $data['code'] = $code;
         $data['currency'] = $reward->currency ?? $data['currency'] ?? config('referrals.defaults.currency', 'MYR');
 
-        // Single use is a rail guarantee: force both alias spellings so a
-        // frozen legacy spec can never widen the limit.
+        // Explicit limits take precedence over submitted voucher settings.
         $data['usage_limit'] = 1;
-        $data['max_uses'] = 1;
+        unset($data['max_uses']);
         $data['usage_limit_per_user'] = 1;
-        $data['max_uses_per_user'] = 1;
+        unset($data['max_uses_per_user']);
 
         // The voucher is worth exactly the frozen promise.
         if ($reward->amountMinor !== null) {
@@ -112,6 +112,12 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
         return ($assignee['type'] ?? null) === (string) $reward->beneficiaryType
             && (string) ($assignee['id'] ?? '') === (string) $reward->beneficiaryId;
+    }
+
+    private function matchesFrozenValue(Model $voucher, ReferralRewardContext $reward): bool
+    {
+        return ($reward->amountMinor === null || (int) $voucher->getAttribute('value') === $reward->amountMinor)
+            && ($reward->currency === null || $voucher->getAttribute('currency') === $reward->currency);
     }
 
     public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult

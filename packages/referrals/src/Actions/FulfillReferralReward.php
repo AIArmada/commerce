@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Referrals\Actions;
 
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
+use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Events\ReferralRewardFulfilled;
@@ -47,9 +48,23 @@ final class FulfillReferralReward
                 throw new LogicException('A reversed referral reward cannot be fulfilled again.');
             }
 
+            $result = null;
+
             try {
-                $result = app(ReferralRewardFulfillment::class)->fulfill(ReferralRewardContextMapper::map($lockedReward, $invite->qualification_business_key));
+                $lockedReward->getConnection()->transaction(function () use ($lockedReward, $invite, &$result): void {
+                    $result = app(ReferralRewardFulfillment::class)->fulfill(ReferralRewardContextMapper::map($lockedReward, $invite->qualification_business_key));
+
+                    if (! $result->success) {
+                        throw new ReferralFulfillmentException($result->reason ?? 'The fulfilment adapter refused this reward.');
+                    }
+                });
             } catch (Throwable $exception) {
+                if ($result instanceof ReferralFulfillmentResult && ! $result->success) {
+                    $this->markFailed($lockedReward, $result->reason ?? 'The fulfilment adapter refused this reward.');
+
+                    return ['reward' => $lockedReward, 'fulfilled' => false];
+                }
+
                 $failure = $exception instanceof ReferralFulfillmentException
                     ? $exception
                     : new ReferralFulfillmentException('Referral reward fulfilment failed.', previous: $exception);
@@ -58,10 +73,8 @@ final class FulfillReferralReward
                 return ['reward' => $lockedReward, 'fulfilled' => false];
             }
 
-            if (! $result->success) {
-                $this->markFailed($lockedReward, $result->reason ?? 'The fulfilment adapter refused this reward.');
-
-                return ['reward' => $lockedReward, 'fulfilled' => false];
+            if (! $result instanceof ReferralFulfillmentResult) {
+                throw new LogicException('The fulfilment adapter returned no result.');
             }
 
             $metadata = array_replace($lockedReward->metadata ?? [], $result->metadata);
