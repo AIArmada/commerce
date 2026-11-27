@@ -8,6 +8,7 @@ use AIArmada\Chip\Actions\CreateBankAccount as CreateBankAccountAction;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 use Throwable;
@@ -48,9 +49,7 @@ final class CreateBankAccount extends CreateRecord
                 ->danger()
                 ->send();
 
-            $this->halt();
-
-            throw new \LogicException('Record creation halted.');
+            throw new Halt;
         }
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Schemas;
 
 use AIArmada\Chip\Models\BankAccount;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -23,7 +24,7 @@ final class SendInstructionForm
                             ->label('Bank Account')
                             ->options(function (): array {
                                 return BankAccount::query()
-                                    ->forOwner(\AIArmada\CommerceSupport\Support\OwnerContext::CURRENT, false)
+                                    ->forOwner(OwnerContext::CURRENT, false)
                                     ->where('status', 'verified')
                                     ->where('is_crediting_account', true)
                                     ->whereNull('deleted_at')

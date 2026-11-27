@@ -8,6 +8,7 @@ use AIArmada\Chip\Actions\CreateSendInstruction as CreateSendInstructionAction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 use Throwable;
@@ -49,9 +50,7 @@ final class CreateSendInstruction extends CreateRecord
                 ->danger()
                 ->send();
 
-            $this->halt();
-
-            throw new \LogicException('Record creation halted.');
+            throw new Halt;
         }
     }
 

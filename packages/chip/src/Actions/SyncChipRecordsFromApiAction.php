@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Actions;
 
 use AIArmada\Chip\Facades\Chip;
-use AIArmada\Chip\Actions\StoreChipWebhookPayload;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
-class SyncChipRecordsFromApiAction
+final class SyncChipRecordsFromApiAction
 {
     public function __construct(
         private readonly StoreChipWebhookPayload $storeWebhookData,

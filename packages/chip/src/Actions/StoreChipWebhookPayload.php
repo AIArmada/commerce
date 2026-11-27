@@ -284,6 +284,9 @@ final readonly class StoreChipWebhookPayload
             return null;
         }
 
-        return OwnerContext::resolve();
+        $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return $owner;
     }
 }

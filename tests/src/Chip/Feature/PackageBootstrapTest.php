@@ -3,11 +3,27 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\ChipServiceProvider;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
+use AIArmada\Chip\Contracts\ChipSendTransport;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Models\Webhook;
 use Illuminate\Support\Facades\Route;
 
 describe('Package bootstrap', function (): void {
+    it('resolves the CHIP transport contracts to the registered drivers', function (): void {
+        config([
+            'chip.collect.api_key' => 'test',
+            'chip.collect.brand_id' => 'test',
+            'chip.send.api_key' => 'test',
+            'chip.send.api_secret' => 'test',
+        ]);
+
+        expect(app(ChipCollectTransport::class))->toBeInstanceOf(ChipCollectClient::class)
+            ->and(app(ChipSendTransport::class))->toBeInstanceOf(ChipSendClient::class);
+    });
+
     it('configures the CHIP webhook row through its Webhook subclass', function (): void {
         $chipConfig = collect(config('webhook-client.configs'))
             ->firstWhere('name', Webhook::WEBHOOK_NAME);
