@@ -4,85 +4,86 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Billing\Coupon;
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
+use AIArmada\CashierChip\Exceptions\InvalidCoupon;
+use AIArmada\CashierChip\Features\Subscriptions\Api\CreateSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Api\SubscriptionDraft;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
-use Exception;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class CreateChipSubscription
+final class CreateChipSubscription implements CreateSubscription
 {
-    use AsAction;
-
-    /**
-     * @throws Exception
-     */
-    public function handle(SubscriptionBuilder $builder, ?string $recurringToken = null, array $options = []): Subscription
+    public function create(SubscriptionDraft $draft): RecordReference
     {
-        $items = $builder->getItems();
+        $items = $draft->items;
+        $owner = EloquentRecordReference::resolve($draft->billable);
 
-        if (empty($items)) {
-            throw new Exception('At least one price is required when starting subscriptions.');
+        if (! $owner instanceof Model || ! $owner instanceof BillableModel) {
+            throw new InvalidArgumentException('A persisted CHIP billable is required to create subscriptions.');
         }
 
-        $owner = $builder->getOwner();
-        $ownerAttributes = $builder->getTenantOwnerAttributes();
-
-        if (! $owner->exists || $owner->getKey() === null) {
-            throw new InvalidArgumentException('A persisted billable is required to create subscriptions.');
-        }
-
-        if (method_exists($owner, 'createOrGetChipCustomer') && ! $owner->hasChipId()) {
-            $owner->createOrGetChipCustomer();
-        }
-
-        $couponId = $builder->getCouponId() ?? $builder->getPromotionCodeId();
+        $ownerAttributes = $this->ownerAttributes($owner);
+        $couponId = $draft->couponId;
         $couponDiscount = 0;
         $couponDuration = null;
 
-        if ($couponId) {
-            $builder->assertCouponValidForSubscription($couponId);
+        if ($couponId !== null) {
+            $voucher = VoucherIntegration::service()->find($couponId);
 
-            $coupon = $builder->retrieveCoupon($couponId);
-
-            if ($coupon) {
-                if ($builder->hasUnknownPrices()) {
-                    throw new InvalidArgumentException('Cannot price a coupon against a subscription with unknown item prices. Provide unit_amount for every item.');
-                }
-
-                $totalAmount = $builder->getTotalAmount();
-                $couponDiscount = $coupon->calculateDiscount($totalAmount);
-                $couponDuration = $coupon->duration();
+            if ($voucher === null) {
+                throw InvalidCoupon::notFound($couponId);
             }
+
+            $coupon = new Coupon($voucher);
+
+            if (! $coupon->isValid()) {
+                throw InvalidCoupon::inactive($couponId);
+            }
+
+            if ($coupon->isForeverAmountOff()) {
+                throw InvalidCoupon::cannotApplyForeverAmountOffToSubscription($couponId);
+            }
+
+            if ($draft->hasUnknownPrices()) {
+                throw new InvalidArgumentException('Cannot price a coupon against a subscription with unknown item prices. Provide unit_amount for every item.');
+            }
+
+            $couponDiscount = $coupon->calculateDiscount($draft->totalAmount());
+            $couponDuration = $coupon->duration();
         }
 
-        $nextBillingAt = $builder->getNextBillingDate();
-        $trialExpires = $builder->getTrialEnd();
-        $skipTrial = $builder->getSkipTrial();
-        $trialEndsAt = ! $skipTrial ? $trialExpires : null;
-
-        if ($trialEndsAt) {
-            $nextBillingAt = Subscription::advanceBillingDate(
-                $trialEndsAt,
-                $builder->getBillingInterval(),
-                $builder->getBillingIntervalCount()
-            );
+        if (! $owner->hasChipId()) {
+            $owner->createOrGetChipCustomer();
         }
+
+        $trialEndsAt = $draft->trialEndsAt === null ? null : CarbonImmutable::instance($draft->trialEndsAt);
+        $nextBillingAt = $trialEndsAt !== null
+            ? $draft->cycle->advance($trialEndsAt)
+            : ($draft->billingCycleAnchor === null
+                ? $draft->cycle->advance(CarbonImmutable::now())
+                : CarbonImmutable::instance($draft->billingCycleAnchor));
 
         $status = $trialEndsAt ? SubscriptionStatus::Trialing : SubscriptionStatus::Active;
         $firstItem = Arr::first($items);
         $isSinglePrice = count($items) === 1;
 
-        return DB::transaction(function () use ($builder, $owner, $ownerAttributes, $status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): Subscription {
+        return DB::transaction(function () use ($draft, $owner, $ownerAttributes, $status, $trialEndsAt, $nextBillingAt, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): RecordReference {
             $model = Cashier::$subscriptionModel;
             $subscription = new $model;
 
@@ -93,15 +94,15 @@ final class CreateChipSubscription
                 ...$ownerAttributes,
                 'billable_type' => $owner->getMorphClass(),
                 'billable_id' => (string) $owner->getKey(),
-                'type' => $builder->getType(),
+                'type' => $draft->type,
                 'chip_id' => Str::uuid()->toString(),
                 'chip_status' => $status,
                 'chip_price' => $isSinglePrice ? ($firstItem['price'] ?? null) : null,
                 'quantity' => $isSinglePrice ? ($firstItem['quantity'] ?? 1) : null,
                 'trial_ends_at' => $trialEndsAt,
                 'next_billing_at' => $nextBillingAt,
-                'billing_interval' => $builder->getBillingInterval(),
-                'billing_interval_count' => $builder->getBillingIntervalCount(),
+                'billing_interval' => $draft->cycle->interval,
+                'billing_interval_count' => $draft->cycle->count,
                 'ends_at' => null,
                 'coupon_id' => $couponId,
                 'coupon_discount' => $couponDiscount,
@@ -109,7 +110,7 @@ final class CreateChipSubscription
                 'coupon_applied_at' => $couponId ? CarbonImmutable::now() : null,
             ]);
 
-            $effectiveRecurringToken = $recurringToken ?? $owner->defaultPaymentMethod()?->id();
+            $effectiveRecurringToken = $draft->recurringToken ?? $owner->defaultPaymentMethod()?->id();
 
             if (is_string($effectiveRecurringToken) && $effectiveRecurringToken !== '') {
                 $subscription->recurring_token = $effectiveRecurringToken;
@@ -135,10 +136,35 @@ final class CreateChipSubscription
                 $this->recordCouponUsage($couponId, $couponDiscount, $owner);
             }
 
-            SubscriptionCreated::dispatch(new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey()));
+            $reference = new RecordReference($subscription->getMorphClass(), (string) $subscription->getKey());
+            SubscriptionCreated::dispatch($reference);
 
-            return $subscription;
+            return $reference;
         });
+    }
+
+    /** @return array{owner_type?: string, owner_id?: string} */
+    private function ownerAttributes(Model $billable): array
+    {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
+            return [];
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            throw new AuthorizationException('Owner context is required to create subscriptions when owner scoping is enabled.');
+        }
+
+        if ((bool) config('cashier-chip.features.owner.validate_billable_owner', true)
+            && ! app(CustomerOwnerResolver::class)->canAccess($billable, $owner)) {
+            throw new AuthorizationException('Cross-tenant subscription write blocked.');
+        }
+
+        return [
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ];
     }
 
     private function recordCouponUsage(string $couponId, int $discountAmount, mixed $redeemedBy = null): void

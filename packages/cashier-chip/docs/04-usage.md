@@ -64,7 +64,6 @@ integration auto-detects that package by default and fails loudly if it is unava
 use AIArmada\CashierChip\Features\Subscriptions\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Actions\RefundChipPayment;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 
@@ -75,7 +74,7 @@ ChargeChipCustomer::run($user, 2500, $recurringToken, ['reference' => 'Order #12
 $purchase = RefundChipPayment::run($purchaseId, 1000); // partial refund in cents
 
 // Create a subscription from a builder
-$subscription = CreateChipSubscription::run($builder, $recurringToken);
+$subscription = $builder->create($recurringToken);
 
 // Cancel a subscription immediately
 CancelChipSubscription::run($subscription);

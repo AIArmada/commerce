@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Data\BillingCycle;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
@@ -327,11 +328,10 @@ final readonly class RenewSubscriptions
             }
 
             $nextBillingAt = $lockedSubscription->next_billing_at instanceof CarbonImmutable
-                ? Subscription::advanceBillingDate(
-                    $lockedSubscription->next_billing_at,
-                    $lockedSubscription->billing_interval,
-                    $lockedSubscription->billing_interval_count
-                )
+                ? (new BillingCycle(
+                    $lockedSubscription->billing_interval ?? 'month',
+                    (int) $lockedSubscription->billing_interval_count,
+                ))->advance($lockedSubscription->next_billing_at)
                 : null;
             $lockedSubscription->forceFill([
                 'chip_status' => in_array($lockedSubscription->chip_status, [SubscriptionStatus::Paused, SubscriptionStatus::Canceled], true) || $lockedSubscription->ended()

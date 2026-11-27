@@ -94,17 +94,10 @@ protected $listen = [
 
 ## Creating Subscriptions
 
-The canonical way to create a subscription is via the `CreateChipSubscription` Action.
-All `$builder->create()` calls delegate to it internally.
+Use `AIArmada\CashierChip\Billing\SubscriptionBuilder` for the Laravel-facing fluent API. The builder submits an immutable `SubscriptionDraft` to the `Features\Subscriptions\Api\CreateSubscription` contract; the feature owns persistence and returns a `RecordReference`.
 
 ```php
-use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
-
-$subscription = CreateChipSubscription::run(
-    builder: $builder,
-    recurringToken: $recurringToken,
-    options: [],
-);
+$subscription = $builder->create($recurringToken);
 ```
 
 ### Basic Subscription

@@ -8,10 +8,12 @@ use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\Discount;
+use AIArmada\CashierChip\Billing\SubscriptionRecord;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
+use AIArmada\CashierChip\Data\BillingCycle;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
@@ -86,7 +88,7 @@ use Throwable;
  * @method static \Illuminate\Database\Eloquent\Builder<static> whereNotOnTrial()
  * @method static \Illuminate\Database\Eloquent\Builder<static> whereOnGracePeriod()
  */
-class Subscription extends Model
+class Subscription extends Model implements SubscriptionRecord
 {
     use HandlesPaymentFailures;
 
@@ -102,13 +104,6 @@ class Subscription extends Model
     use Prorates;
 
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
-
-    /**
-     * Billing intervals accepted by Carbon date math across renewal paths.
-     *
-     * @var list<string>
-     */
-    public const BILLING_INTERVALS = ['day', 'week', 'month', 'year'];
 
     /**
      * @var list<string>
@@ -426,6 +421,11 @@ class Subscription extends Model
     /**
      * Determine if the subscription is within its trial period.
      */
+    public function trialEnd(): ?CarbonImmutable
+    {
+        return $this->trial_ends_at;
+    }
+
     public function onTrial(): bool
     {
         return $this->trial_ends_at && $this->trial_ends_at->isFuture();
@@ -732,8 +732,8 @@ class Subscription extends Model
         // Calculate the period start based on billing interval
         $interval = $this->billing_interval ?? 'month';
         $intervalCount = $this->billing_interval_count > 0 ? $this->billing_interval_count : 1;
-        self::assertValidBillingInterval($interval, $intervalCount);
-        $start = $this->next_billing_at->copy()->sub($interval, $intervalCount);
+        $cycle = new BillingCycle($interval, $intervalCount);
+        $start = $this->next_billing_at->copy()->sub($cycle->interval, $cycle->count);
 
         return $timezone ? $start->setTimezone($timezone) : $start;
     }
@@ -755,7 +755,7 @@ class Subscription extends Model
      *
      * @return Payment
      */
-    public function charge(?int $amount = null)
+    public function charge(?int $amount = null): Payment
     {
         $customer = $this->customer;
 
@@ -1211,40 +1211,6 @@ class Subscription extends Model
     }
 
     /**
-     * Validate a billing interval/count pair before Carbon date math.
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function assertValidBillingInterval(?string $interval, mixed $count = 1): void
-    {
-        $resolved = $interval ?? 'month';
-
-        if (! in_array($resolved, self::BILLING_INTERVALS, true)) {
-            throw new InvalidArgumentException(
-                'Billing interval must be one of: ' . implode(', ', self::BILLING_INTERVALS) . '.'
-            );
-        }
-
-        if ((int) $count < 1) {
-            throw new InvalidArgumentException('Billing interval count must be a positive integer.');
-        }
-    }
-
-    /**
-     * Advance a date by a validated billing interval/count pair.
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function advanceBillingDate(CarbonInterface $date, ?string $interval, mixed $count = 1): CarbonImmutable
-    {
-        $resolved = $interval ?? 'month';
-
-        self::assertValidBillingInterval($resolved, $count);
-
-        return CarbonImmutable::instance($date)->add($resolved, max(1, (int) $count));
-    }
-
-    /**
      * The "booted" method of the model.
      */
     protected static function booted(): void
@@ -1316,9 +1282,9 @@ class Subscription extends Model
         });
 
         static::saving(function (self $subscription): void {
-            self::assertValidBillingInterval(
+            new BillingCycle(
                 $subscription->billing_interval ?? 'month',
-                $subscription->billing_interval_count ?? 1
+                (int) ($subscription->billing_interval_count ?? 1),
             );
         });
 

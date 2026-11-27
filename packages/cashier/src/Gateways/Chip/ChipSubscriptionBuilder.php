@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Gateways\Chip;
 
+use AIArmada\CashierChip\Billing\BillableModel;
+use AIArmada\CashierChip\Billing\SubscriptionBuilder;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Support\PaymentOperationLimiter;
-use AIArmada\CashierChip\Billing\BillableModel;
-use AIArmada\CashierChip\Features\Subscriptions\Actions\SubscriptionBuilder;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;

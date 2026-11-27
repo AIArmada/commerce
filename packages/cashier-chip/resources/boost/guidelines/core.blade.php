@@ -14,3 +14,5 @@ $summary = app(RenewSubscriptions::class)->handle(dryRun: true, graceHours: 0);
 ```
 @endverbatim
 @endif
+
+Subscription creation uses `Billing\SubscriptionBuilder` or the pure `Features\Subscriptions\Api\CreateSubscription` contract with `SubscriptionDraft`. Feature persistence classes are internal; pass `RecordReference` across feature boundaries.

@@ -25,3 +25,5 @@ composer --working-dir=packages/cashier-chip arch:check
 ./vendor/bin/pint --test packages/cashier-chip
 ./vendor/bin/pest tests/src/CashierChip
 ```
+
+Subscription creation uses `Billing\SubscriptionBuilder` or the pure `Features\Subscriptions\Api\CreateSubscription` contract with `SubscriptionDraft`. Feature persistence classes are internal; pass `RecordReference` across feature boundaries.

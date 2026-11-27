@@ -2,24 +2,20 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
+namespace AIArmada\CashierChip\Billing;
 
-use AIArmada\CashierChip\Billing\BillableModel;
-use AIArmada\CashierChip\Billing\Checkout;
-use AIArmada\CashierChip\Billing\Coupon;
-use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
-use AIArmada\CashierChip\Exceptions\InvalidCoupon;
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CashierChip\Data\BillingCycle;
+use AIArmada\CashierChip\Features\Subscriptions\Api\CreateSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Api\SubscriptionDraft;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Exception;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Traits\Conditionable;
@@ -203,7 +199,7 @@ class SubscriptionBuilder
      */
     public function billingInterval(string $interval, int $count = 1)
     {
-        Subscription::assertValidBillingInterval($interval, $count);
+        new BillingCycle($interval, $count);
 
         $this->billingInterval = $interval;
         $this->billingIntervalCount = $count;
@@ -278,7 +274,7 @@ class SubscriptionBuilder
     /**
      * Add a new subscription without immediate payment.
      */
-    public function add(array $options = []): Subscription
+    public function add(array $options = []): Model & SubscriptionRecord
     {
         return $this->create(null, $options);
     }
@@ -295,30 +291,43 @@ class SubscriptionBuilder
      *
      * @throws Exception
      */
-    public function create(?string $recurringToken = null, array $options = []): Subscription
+    public function create(?string $recurringToken = null, array $options = []): Model & SubscriptionRecord
     {
-        return CreateChipSubscription::run($this, $recurringToken, $options);
-    }
-
-    /**
-     * @return array{owner_type?: string, owner_id?: string}
-     */
-    protected function resolveTenantOwnerAttributes(): array
-    {
-        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
-            return [];
+        if ($this->items === []) {
+            throw new InvalidArgumentException('At least one price is required when starting subscriptions.');
         }
 
-        $owner = OwnerContext::resolve();
+        $billable = EloquentRecordReference::fromModel($this->owner);
 
-        if ($owner === null) {
-            throw new AuthorizationException('Owner context is required to create subscriptions when owner scoping is enabled.');
+        if ($billable === null) {
+            throw new InvalidArgumentException('A persisted CHIP billable is required to create subscriptions.');
         }
 
-        return [
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => (string) $owner->getKey(),
-        ];
+        $draft = new SubscriptionDraft(
+            billable: $billable,
+            type: $this->type,
+            items: $this->items,
+            cycle: new BillingCycle($this->billingInterval, $this->billingIntervalCount),
+            trialEndsAt: $this->skipTrial || $this->trialExpires === null
+                ? null
+                : CarbonImmutable::instance($this->trialExpires),
+            billingCycleAnchor: $this->billingCycleAnchor === null
+                ? null
+                : CarbonImmutable::instance($this->billingCycleAnchor),
+            couponId: $this->couponId ?? $this->promotionCodeId,
+            recurringToken: $recurringToken,
+        );
+
+        $reference = app(CreateSubscription::class)->create($draft);
+        $subscription = $this->owner->subscriptions()->whereKey($reference->id)->firstOrFail();
+
+        if (! $subscription instanceof SubscriptionRecord || $subscription->getMorphClass() !== $reference->type) {
+            throw new InvalidArgumentException('The configured subscription model does not implement the subscription record contract.');
+        }
+
+        $subscription->setRelation('billable', $this->owner);
+
+        return $subscription;
     }
 
     /**
@@ -326,7 +335,7 @@ class SubscriptionBuilder
      *
      * @param  int  $amount  Amount in cents
      */
-    public function createAndCharge(?string $recurringToken = null, int $amount = 0, array $options = []): Subscription
+    public function createAndCharge(?string $recurringToken = null, int $amount = 0, array $options = []): Model & SubscriptionRecord
     {
         $subscription = $this->create($recurringToken, $options);
 
@@ -528,16 +537,6 @@ class SubscriptionBuilder
     }
 
     /**
-     * Get tenant owner attributes for subscription creation.
-     *
-     * @return array{owner_type?: string, owner_id?: string}
-     */
-    public function getTenantOwnerAttributes(): array
-    {
-        return $this->resolveTenantOwnerAttributes();
-    }
-
-    /**
      * Retrieve a coupon by its ID.
      */
     public function retrieveCoupon(string $couponId): ?Coupon
@@ -561,17 +560,7 @@ class SubscriptionBuilder
             return $this->billingCycleAnchor->copy();
         }
 
-        return Subscription::advanceBillingDate(CarbonImmutable::now(), $this->billingInterval, $this->billingIntervalCount);
-    }
-
-    /**
-     * Validate that a coupon can be applied to the subscription being built.
-     *
-     * @throws InvalidCoupon
-     */
-    public function assertCouponValidForSubscription(string $couponId): void
-    {
-        $this->validateCouponForSubscriptionApplication($couponId);
+        return (new BillingCycle($this->billingInterval, $this->billingIntervalCount))->advance(CarbonImmutable::now());
     }
 
     /**
@@ -579,8 +568,19 @@ class SubscriptionBuilder
      */
     protected function calculateTotalAmount(): int
     {
-        return collect($this->items)->sum(function ($item) {
-            return ($item['unit_amount'] ?? 0) * ($item['quantity'] ?? 1);
-        });
+        $total = 0;
+
+        foreach ($this->items as $item) {
+            $amount = $item['unit_amount'] ?? 0;
+            $quantity = $item['quantity'] ?? 1;
+
+            if ($amount > intdiv(PHP_INT_MAX - $total, $quantity)) {
+                throw new InvalidArgumentException('Subscription total exceeds the supported range.');
+            }
+
+            $total += $amount * $quantity;
+        }
+
+        return $total;
     }
 }

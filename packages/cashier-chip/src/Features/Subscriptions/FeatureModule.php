@@ -6,8 +6,10 @@ namespace AIArmada\CashierChip\Features\Subscriptions;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Api\CreateSubscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\CashierChip\Platform\FeatureModule as FeatureModuleContract;
@@ -20,6 +22,7 @@ final class FeatureModule implements FeatureModuleContract
         Cashier::useSubscriptionModel(Subscription::class);
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
+        $app->bind(CreateSubscription::class, CreateChipSubscription::class);
         $app->bind(ClaimRenewalAttempt::class);
         $app->bind(RenewSubscriptions::class);
         $app->bind(SyncChipPurchaseStatus::class);

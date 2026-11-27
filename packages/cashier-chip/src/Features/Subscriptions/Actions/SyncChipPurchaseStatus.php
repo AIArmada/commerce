@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Data\BillingCycle;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
@@ -190,11 +191,10 @@ final class SyncChipPurchaseStatus
 
                 $locked->forceFill([
                     'chip_status' => $locked->chip_status === SubscriptionStatus::Paused ? SubscriptionStatus::Paused : SubscriptionStatus::Active,
-                    'next_billing_at' => Subscription::advanceBillingDate(
-                        CarbonImmutable::now(),
-                        $locked->billing_interval,
-                        $locked->billing_interval_count
-                    ),
+                    'next_billing_at' => (new BillingCycle(
+                        $locked->billing_interval ?? 'month',
+                        (int) $locked->billing_interval_count,
+                    ))->advance(CarbonImmutable::now()),
                 ])->save();
 
                 $this->completeMatchingAttempt($expectedAttempt, $purchaseId, $actualAmount);
