@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

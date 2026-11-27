@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Traceability\Queries;
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

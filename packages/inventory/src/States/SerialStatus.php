@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\States;
 
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;

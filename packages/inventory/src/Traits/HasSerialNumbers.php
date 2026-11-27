@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Traits;
 
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use Carbon\CarbonImmutable;

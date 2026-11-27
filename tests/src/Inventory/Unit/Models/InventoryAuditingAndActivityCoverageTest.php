@@ -12,7 +12,7 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Models\InventoryStandardCost;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
