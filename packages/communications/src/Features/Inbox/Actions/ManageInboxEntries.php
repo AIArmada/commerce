@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Features\Inbox\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -11,16 +11,17 @@ use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\NotificationInbox;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-final class NotificationInboxService
+final class ManageInboxEntries
 {
     public function __construct(
         private readonly PayloadRedactor $redactor,
@@ -112,9 +113,9 @@ final class NotificationInboxService
             ->update(['read_at' => CarbonImmutable::now()]);
     }
 
-    public function markAllAsRead(MorphMany $recipient): void
+    public function markAllAsRead(MorphMany | Model $recipient): void
     {
-        $recipient->whereNull('read_at')->update(['read_at' => CarbonImmutable::now()]);
+        $this->recipientRelation($recipient)->whereNull('read_at')->update(['read_at' => CarbonImmutable::now()]);
     }
 
     public function archive(MorphMany | Model $recipient, string $id): void
@@ -125,14 +126,25 @@ final class NotificationInboxService
             ->update(['archived_at' => CarbonImmutable::now()]);
     }
 
+    public function archiveRead(MorphMany | Model $recipient): void
+    {
+        $this->recipientRelation($recipient)
+            ->whereNotNull('read_at')
+            ->whereNull('archived_at')
+            ->where('created_at', '<', CarbonImmutable::now()->subDays(30))
+            ->update(['archived_at' => CarbonImmutable::now()]);
+    }
+
     public function prune(?CarbonInterface $before = null): int
     {
         $pruned = 0;
 
-        $this->prunableQuery($before)->chunkById(500, function ($records) use (&$pruned): void {
+        $this->prunableQuery($before)->chunkById(500, function ($records) use (&$pruned, $before): void {
             $pruned += NotificationInbox::query()
                 ->withoutOwnerScope()
                 ->whereKey($records->modelKeys())
+                ->whereNotNull('archived_at')
+                ->where('archived_at', '<', $before ?? CarbonImmutable::now()->subDays(90))
                 ->delete();
         });
 
@@ -191,11 +203,15 @@ final class NotificationInboxService
 
     private function validateOwnedModel(Model $model): void
     {
+        if (! $model->exists || $model->getKey() === null) {
+            throw new InvalidArgumentException('Inbox references must be persisted.');
+        }
+
         if (! in_array(HasOwnerScopeConfig::class, class_uses_recursive($model), true)) {
             return;
         }
 
-        if (! (bool) config('communications.features.owner.enabled', false)) {
+        if (! $model::ownerScopeConfig()->enabled) {
             return;
         }
 

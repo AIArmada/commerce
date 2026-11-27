@@ -41,7 +41,7 @@ use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Models\CommunicationThread;
 use AIArmada\Communications\Policies\CommunicationPolicy;
 use AIArmada\Communications\Services\CommunicationManagerService;
-use AIArmada\Communications\Services\NotificationInboxService;
+use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -645,7 +645,7 @@ test('inbox service rejects cross-owner communications', function (): void {
         'password' => 'secret',
     ]);
 
-    expect(fn () => app(NotificationInboxService::class)->create(
+    expect(fn () => app(ManageInboxEntries::class)->create(
         recipient: $user,
         communication: $foreign,
         family: NotificationFamily::EventReminder,

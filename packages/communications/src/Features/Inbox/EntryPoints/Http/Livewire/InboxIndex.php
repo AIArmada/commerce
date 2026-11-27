@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\EntryPoints\Http\Livewire;
+namespace AIArmada\Communications\Features\Inbox\EntryPoints\Http\Livewire;
 
-use AIArmada\Communications\Models\NotificationInbox;
-use Carbon\CarbonImmutable;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,25 +40,29 @@ final class InboxIndex extends Component
 
     public function markAsRead(string $id): void
     {
-        $this->recipientQuery()
-            ->where('id', $id)
-            ->whereNull('read_at')
-            ->update(['read_at' => CarbonImmutable::now()]);
+        $recipient = Auth::user();
+
+        if ($recipient instanceof Model) {
+            app(ManageInboxEntries::class)->markAsRead($recipient, $id);
+        }
     }
 
     public function markAllAsRead(): void
     {
-        $this->recipientQuery()
-            ->whereNull('read_at')
-            ->update(['read_at' => CarbonImmutable::now()]);
+        $recipient = Auth::user();
+
+        if ($recipient instanceof Model) {
+            app(ManageInboxEntries::class)->markAllAsRead($recipient);
+        }
     }
 
     public function archive(string $id): void
     {
-        $this->recipientQuery()
-            ->where('id', $id)
-            ->whereNull('archived_at')
-            ->update(['archived_at' => CarbonImmutable::now()]);
+        $recipient = Auth::user();
+
+        if ($recipient instanceof Model) {
+            app(ManageInboxEntries::class)->archive($recipient, $id);
+        }
     }
 
     public function setFilter(string $filter): void

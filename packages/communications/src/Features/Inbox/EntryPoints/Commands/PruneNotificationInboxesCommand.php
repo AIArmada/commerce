@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\EntryPoints\Commands;
+namespace AIArmada\Communications\Features\Inbox\EntryPoints\Commands;
 
-use AIArmada\Communications\Services\NotificationInboxService;
+use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Throwable;
@@ -18,7 +18,7 @@ final class PruneNotificationInboxesCommand extends Command
     protected $description = 'Prune old archived notification inbox entries';
 
     public function __construct(
-        private readonly NotificationInboxService $inboxService,
+        private readonly ManageInboxEntries $inboxService,
     ) {
         parent::__construct();
     }

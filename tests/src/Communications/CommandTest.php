@@ -15,7 +15,7 @@ use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\NotificationInbox;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

@@ -84,7 +84,7 @@ serialization-safe for queued dispatch.
 ## Inbox notifications
 
 ```php
-use AIArmada\Communications\Actions\DispatchInboxNotificationAction;
+use AIArmada\Communications\Features\Inbox\Actions\DispatchInboxNotificationAction;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Inbox\Actions;
 
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -12,8 +12,8 @@ use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\NotificationInbox;
-use AIArmada\Communications\Services\NotificationInboxService;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
 final class DispatchInboxNotificationAction
 {
     public function __construct(
-        private readonly NotificationInboxService $inboxService,
+        private readonly ManageInboxEntries $inboxService,
     ) {}
 
     public function handle(

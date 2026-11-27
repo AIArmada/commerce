@@ -8,15 +8,15 @@ use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
-use AIArmada\Communications\Models\NotificationInbox;
-use AIArmada\Communications\Services\NotificationInboxService;
+use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
     config()->set('communications.features.owner.enabled', false);
 
-    $this->service = app(NotificationInboxService::class);
+    $this->service = app(ManageInboxEntries::class);
 
     $this->user = User::create([
         'name' => 'Service User',
