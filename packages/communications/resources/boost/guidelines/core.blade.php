@@ -20,3 +20,5 @@
 - Managed notification dispatch (`CommunicationManager::notify()` / `Communications::notify()`) accepts `CommunicationContextData` or null and returns the persisted communication ID as a string. Pass event morph type and ID in the context instead of passing an Eloquent model or an untyped array.
 
 - Use `Contracts\CommunicationReferenceWriter` for cross-feature reference attachment. Reference writes are serialized on the owning communication row and return a scalar reference ID.
+
+- Managed dispatch idempotency keys are scoped to the effective communication owner and hashed in a dedicated `managed:` namespace. Never pass raw managed keys to the cache lock contract.

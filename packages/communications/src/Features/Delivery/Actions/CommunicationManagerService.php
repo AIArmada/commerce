@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Contracts\CommunicationReferenceWriter;
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\IdempotencyLock;
@@ -40,25 +41,46 @@ final class CommunicationManagerService implements CommunicationManager
             return (string) $communication->getKey();
         }
 
+        $lockKey = $this->scopedLockKey($context->idempotencyKey);
         $acquired = $this->idempotencyLock->acquire(
-            $context->idempotencyKey,
-            (int) config('communications.cache.idempotency_ttl', 3600),
+            $lockKey,
+            max(1, (int) config('communications.cache.idempotency_ttl', 3600)),
         );
 
         if (! $acquired) {
-            throw new RuntimeException('Duplicate communication detected for idempotency key: ' . $context->idempotencyKey);
+            throw new RuntimeException('Duplicate communication detected for idempotency key.');
         }
 
         try {
             $communication = $this->dispatcher->handle($notifiable, $notification, $context);
             $this->attachEventReference($communication, $eventReference);
         } catch (Throwable $exception) {
-            $this->idempotencyLock->release($context->idempotencyKey);
+            $this->idempotencyLock->release($lockKey);
 
             throw $exception;
         }
 
         return (string) $communication->getKey();
+    }
+
+    private function scopedLockKey(string $key): string
+    {
+        $config = Communication::ownerScopeConfig();
+        $owner = $config->enabled ? OwnerContext::resolveConfigured($config) : null;
+
+        if ($config->enabled) {
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+        }
+
+        if (! $config->autoAssignOnCreate) {
+            $owner = null;
+        }
+
+        return 'managed:' . hash('sha256', json_encode([
+            $owner?->getMorphClass(),
+            $owner === null ? null : (string) $owner->getKey(),
+            $key,
+        ], JSON_THROW_ON_ERROR));
     }
 
     /**

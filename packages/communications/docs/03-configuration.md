@@ -233,3 +233,5 @@ from provider-specific payload fields. Return a `RecordReference` containing the
     'payload_retention_days' => 90,
 ],
 ```
+
+Managed notification idempotency locks are isolated by the communication's effective owner (or global scope) and hashed separately from webhook fingerprints. Reusing a key in another tenant does not block dispatch.

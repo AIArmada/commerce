@@ -16,7 +16,6 @@ use AIArmada\Communications\Features\Aggregate\Actions\ResolveCommunicationThrea
 use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\DestinationProtector;
-use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Data\CreatedTrackingTokenData;
 use AIArmada\Communications\Data\PlannedDeliveryData;
@@ -375,6 +374,28 @@ test('duplicate idempotency keys are rejected atomically', function (): void {
         ->toThrow(RuntimeException::class, 'Duplicate communication detected');
 });
 
+test('managed idempotency keys are isolated by tenant and global scope', function (): void {
+    Config::set('communications.features.owner.enabled', true);
+    Config::set('communications.features.owner.auto_assign_on_create', true);
+    Config::set('communications.cache.idempotency_store', 'array');
+
+    $firstOwner = User::create(['name' => 'First owner', 'email' => 'idempotency-first@example.com', 'password' => 'secret']);
+    $secondOwner = User::create(['name' => 'Second owner', 'email' => 'idempotency-second@example.com', 'password' => 'secret']);
+    $manager = app(CommunicationManager::class);
+    $context = new CommunicationContextData(purpose: 'tenant-idempotency', idempotencyKey: 'shared-key');
+    $notify = fn (): string => $manager->notify(new RepairQueueNotifiable, new RepairEmptyNotification, $context);
+
+    $first = OwnerContext::withOwner($firstOwner, $notify);
+    $second = OwnerContext::withOwner($secondOwner, $notify);
+    $global = OwnerContext::withOwner(null, $notify);
+
+    expect([$first, $second, $global])->toHaveCount(3)
+        ->and(array_unique([$first, $second, $global]))->toHaveCount(3)
+        ->and(fn () => OwnerContext::withOwner($firstOwner, $notify))->toThrow(RuntimeException::class, 'Duplicate communication detected')
+        ->and(fn () => OwnerContext::withOwner($secondOwner, $notify))->toThrow(RuntimeException::class, 'Duplicate communication detected')
+        ->and(fn () => OwnerContext::withOwner(null, $notify))->toThrow(RuntimeException::class, 'Duplicate communication detected');
+});
+
 test('failed dispatches release the idempotency lock', function (): void {
     $manager = app(CommunicationManager::class);
     $key = 'repair-idempotency-release-1';
@@ -386,7 +407,7 @@ test('failed dispatches release the idempotency lock', function (): void {
     expect(fn () => $manager->notify('not-a-notifiable', new RepairEmptyNotification, $context))
         ->toThrow(InvalidArgumentException::class);
 
-    expect(app(IdempotencyLock::class)->acquire($key, 60))->toBeTrue();
+    expect($manager->notify(new RepairQueueNotifiable, new RepairEmptyNotification, $context))->toBeString();
 });
 
 test('planning caps batch size and validates dates', function (): void {
