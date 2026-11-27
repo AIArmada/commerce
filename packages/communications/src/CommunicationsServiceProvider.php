@@ -31,6 +31,9 @@ use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAud
 use AIArmada\Communications\EntryPoints\Listeners\AutoCaptureNotificationListener;
 use AIArmada\Communications\EntryPoints\Listeners\RecordNativeNotificationSending;
 use AIArmada\Communications\EntryPoints\Listeners\RecordNativeNotificationSent;
+use AIArmada\Communications\Platform\ExtensionRegistry;
+use AIArmada\Communications\Platform\FeatureCatalog;
+use AIArmada\Communications\Platform\FeatureModule;
 use AIArmada\Communications\Services\CommunicationDestinationResolver;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Services\CommunicationRecorderService;
@@ -54,6 +57,7 @@ use Illuminate\Http\Request;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\RateLimiter as RateLimiterFacade;
+use InvalidArgumentException;
 use Livewire\Livewire;
 use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\LaravelPackageTools\Package;
@@ -61,6 +65,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class CommunicationsServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -128,6 +135,30 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 CommunicationAuditRecorder::class,
                 ActivitylogCommunicationAuditRecorder::class,
             );
+        }
+    }
+
+    public function packageRegistered(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid communications feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
         }
     }
 
