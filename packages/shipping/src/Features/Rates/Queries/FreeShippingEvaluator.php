@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Services;
+namespace AIArmada\Shipping\Features\Rates\Queries;
+
+use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
 
 use AIArmada\Shipping\Contracts\FreeShippingPolicyInterface;
 use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;

@@ -470,7 +470,7 @@ Register implementations via `FreeShippingPolicyRegistry`.
 namespace App\Shipping\Policies;
 
 use AIArmada\Shipping\Contracts\FreeShippingPolicyInterface;
-use AIArmada\Shipping\Services\FreeShippingResult;
+use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
 
 class MemberFreeShippingPolicy implements FreeShippingPolicyInterface
 {

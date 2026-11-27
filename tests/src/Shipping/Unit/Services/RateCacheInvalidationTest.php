@@ -7,7 +7,7 @@ namespace AIArmada\Commerce\Tests\Shipping\Unit\Services;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Services\RateShoppingEngine;
+use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Support\Facades\Cache;

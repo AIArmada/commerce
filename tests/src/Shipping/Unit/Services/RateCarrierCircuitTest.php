@@ -8,7 +8,7 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Services\RateShoppingEngine;
+use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Support\Facades\Concurrency;
 use Mockery;

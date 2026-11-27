@@ -6,7 +6,7 @@ namespace AIArmada\Shipping\Strategies;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Shipping\Contracts\FreeShippingPolicyInterface;
-use AIArmada\Shipping\Services\FreeShippingResult;
+use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
 use InvalidArgumentException;
 
 /**

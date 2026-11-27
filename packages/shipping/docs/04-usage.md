@@ -132,7 +132,7 @@ $rates = Shipping::driver('flat_rate')->getRates($origin, $destination, $package
 ### Rate Shopping (Best Rate)
 
 ```php
-use AIArmada\Shipping\Services\RateShoppingEngine;
+use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 
 $engine = app(RateShoppingEngine::class);
 
@@ -420,7 +420,7 @@ $rates = $zone?->rates()->active()->get();
 ## Free Shipping Evaluation
 
 ```php
-use AIArmada\Shipping\Services\FreeShippingEvaluator;
+use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 
 $evaluator = app(FreeShippingEvaluator::class);
 

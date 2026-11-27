@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Services;
+namespace AIArmada\Shipping\Features\Rates\Api;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 
