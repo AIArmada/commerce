@@ -288,5 +288,4 @@ final class LazyConditionPipeline
 
         return $this->memoizedAmounts[$phase->value] ?? $result->total();
     }
-
 }
