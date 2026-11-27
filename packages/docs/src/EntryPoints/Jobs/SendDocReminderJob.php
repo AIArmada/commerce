@@ -83,19 +83,9 @@ final class SendDocReminderJob implements ShouldQueue
             return;
         }
 
-        $dispatched = [];
-
         foreach ($owners as $ownerTuple) {
             $ownerType = $ownerTuple->owner_type;
             $ownerId = $ownerTuple->owner_id;
-            $key = ($ownerType ?? 'global') . '|' . ($ownerId ?? 'global');
-
-            if (isset($dispatched[$key])) {
-                continue;
-            }
-
-            $dispatched[$key] = true;
-
             self::dispatch(
                 docId: null,
                 daysBeforeDue: $this->daysBeforeDue,

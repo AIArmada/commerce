@@ -27,17 +27,20 @@ final class DueDocReminders
      */
     public function dueSoon(int $daysBeforeDue, int $limit = 500, ?bool $includeGlobal = null): EloquentCollection
     {
-        $dueDate = CarbonImmutable::now()->addDays($daysBeforeDue);
+        $today = CarbonImmutable::today();
+        $dueDate = $today->addDays($daysBeforeDue);
 
         return $this->forCurrentOwner($includeGlobal)
             ->whereIn('status', [Sent::value(), Pending::value()])
             ->whereNotNull('due_date')
+            ->whereDate('due_date', '>=', $today->toDateString())
             ->whereDate('due_date', '<=', $dueDate->toDateString())
             ->whereDoesntHave('emails', function (Builder $query): void {
                 $query->where('metadata->reminder_type', 'due_soon');
             })
             ->whereJsonContainsKey('customer_data->email')
             ->orderBy('due_date')
+            ->orderBy('id')
             ->limit(max(1, $limit))
             ->get();
     }
@@ -58,6 +61,7 @@ final class DueDocReminders
             })
             ->whereJsonContainsKey('customer_data->email')
             ->orderBy('due_date')
+            ->orderBy('id')
             ->limit(max(1, $limit))
             ->get();
     }
