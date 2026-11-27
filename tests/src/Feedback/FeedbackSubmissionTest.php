@@ -263,6 +263,34 @@ it('returns one submitted response when submissions race', function (): void {
     }
 });
 
+it('isolates anonymous drafts by invitation and never reuses an unbound anonymous draft', function (): void {
+    $form = publishedFeedbackForm('Anonymous Draft Isolation');
+    $start = app(StartFeedbackResponseAction::class);
+
+    $first = $start->execute(form: $form, isAnonymous: true);
+    $second = $start->execute(form: $form, isAnonymous: true);
+
+    expect($first->is($second))->toBeFalse();
+
+    $invitations = [];
+    foreach ([1, 2] as $index) {
+        $invitations[] = FeedbackInvitation::query()->create([
+            'feedback_form_id' => $form->id,
+            'token_hash' => hash('sha256', 'anonymous-draft-' . $index),
+            'status' => FeedbackInvitationStatus::Pending,
+        ]);
+    }
+
+    $draftA = $start->execute(form: $form, invitation: $invitations[0], isAnonymous: true);
+    $draftB = $start->execute(form: $form, invitation: $invitations[1], isAnonymous: true);
+    $repeat = $start->execute(form: $form, invitation: $invitations[0], isAnonymous: true);
+
+    expect($draftA->is($draftB))->toBeFalse()
+        ->and($draftA->feedback_invitation_id)->toBe($invitations[0]->id)
+        ->and($draftB->feedback_invitation_id)->toBe($invitations[1]->id)
+        ->and($repeat->is($draftA))->toBeTrue();
+});
+
 function publishedFeedbackForm(
     string $name,
     bool $isOneResponsePerRespondent = false,

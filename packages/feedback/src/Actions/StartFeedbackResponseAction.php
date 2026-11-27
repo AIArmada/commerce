@@ -26,6 +26,7 @@ final class StartFeedbackResponseAction
     public function __construct(
         private readonly FeedbackModelReferenceGuard $referenceGuard,
         private readonly FeedbackSubmissionGuard $submissionGuard,
+        private readonly ExpireFeedbackInvitationAction $expireInvitation,
     ) {}
 
     public function execute(
@@ -51,7 +52,7 @@ final class StartFeedbackResponseAction
                 fn (Throwable $exception): bool => $exception instanceof DeadlockException,
             );
         } catch (FeedbackInvitationExpiredException $exception) {
-            $this->markInvitationExpired($exception->invitationId);
+            $this->expireInvitation->execute($exception->invitationId);
 
             throw $exception;
         }
@@ -125,7 +126,11 @@ final class StartFeedbackResponseAction
                 $draftQuery->where('respondent_id', $respondentId);
             }
 
-            $existingDraft = $draftQuery->first();
+            $draftQuery->where('feedback_invitation_id', $invitation?->id);
+
+            $existingDraft = $invitation !== null || ($respondentType !== null && $respondentId !== null)
+                ? $draftQuery->first()
+                : null;
 
             if ($existingDraft !== null) {
                 return $existingDraft;
@@ -158,21 +163,4 @@ final class StartFeedbackResponseAction
         }, 5);
     }
 
-    private function markInvitationExpired(string $invitationId): void
-    {
-        DB::transaction(function () use ($invitationId): void {
-            $invitation = FeedbackInvitation::query()
-                ->lockForUpdate()
-                ->whereKey($invitationId)
-                ->first();
-
-            if ($invitation === null) {
-                return;
-            }
-
-            $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitation->id);
-
-            $guarded->forceFill(['status' => FeedbackInvitationStatus::Expired])->save();
-        });
-    }
 }
