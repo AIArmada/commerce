@@ -16,6 +16,9 @@ use AIArmada\Shipping\Features\Returns\Api\ReturnStatistics;
 use AIArmada\Shipping\Features\Returns\Queries\ReadReturnStatistics;
 use AIArmada\Shipping\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Gate;
+use AIArmada\Shipping\Features\Returns\Policies\ReturnAuthorizationPolicy;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -28,5 +31,8 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(RejectReturn::class, RejectReturnAuthorization::class);
     }
 
-    public function boot(Application $app): void {}
+    public function boot(Application $app): void
+    {
+        Gate::policy(ReturnAuthorization::class, ReturnAuthorizationPolicy::class);
+    }
 }

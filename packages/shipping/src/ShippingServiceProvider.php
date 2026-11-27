@@ -27,17 +27,12 @@ use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use AIArmada\Shipping\Platform\ExtensionRegistry;
 use AIArmada\Shipping\Platform\FeatureCatalog;
 use AIArmada\Shipping\Platform\FeatureModule;
-use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
-use AIArmada\Shipping\Policies\ShipmentPolicy;
-use AIArmada\Shipping\Policies\ShippingRatePolicy;
-use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
 use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;
 use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
 use AIArmada\Shipping\Support\ZoneResolutionStrategyRegistry;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -163,14 +158,6 @@ final class ShippingServiceProvider extends PackageServiceProvider
             }
         }
 
-        $this->registerPolicies();
     }
 
-    protected function registerPolicies(): void
-    {
-        Gate::policy(Shipment::class, ShipmentPolicy::class);
-        Gate::policy(ShippingZone::class, ShippingZonePolicy::class);
-        Gate::policy(ShippingRate::class, ShippingRatePolicy::class);
-        Gate::policy(ReturnAuthorization::class, ReturnAuthorizationPolicy::class);
-    }
 }

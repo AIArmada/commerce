@@ -10,7 +10,7 @@ use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use Illuminate\Auth\Access\AuthorizationException;
-use AIArmada\Shipping\Policies\ShippingZonePolicy;
+use AIArmada\Shipping\Features\Rates\Policies\ShippingZonePolicy;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 

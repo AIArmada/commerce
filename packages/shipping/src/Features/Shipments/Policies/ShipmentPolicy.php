@@ -2,192 +2,193 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Policies;
+namespace AIArmada\Shipping\Features\Shipments\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Policy for ReturnAuthorization model authorization.
+ * Policy for Shipment model authorization.
  *
- * Controls access to return merchandise authorization operations.
+ * Provides granular access control for shipment operations.
  */
-class ReturnAuthorizationPolicy
+class ShipmentPolicy
 {
     use HandlesAuthorization;
 
     /**
-     * Determine whether the user can view any return authorizations.
+     * Determine whether the user can view any shipments.
      */
     public function viewAny(Authenticatable $user): bool
     {
-        return $this->hasPermission($user, 'shipping.returns.view');
+        return $this->hasPermission($user, 'shipping.shipments.view');
     }
 
     /**
-     * Determine whether the user can view the return authorization.
+     * Determine whether the user can view the shipment.
      *
-     * Allows either a permissioned admin (with owner boundary when enabled)
-     * or the tenant owner of the RMA (customer self-service).
+     * Allows either a permissioned admin (with owner boundary when enabled) or
+     * the tenant owner of the shipment (customer self-service without admin permission).
      */
-    public function view(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function view(Authenticatable $user, Shipment $shipment): bool
     {
-        if ($this->hasPermission($user, 'shipping.returns.view')) {
+        if ($this->hasPermission($user, 'shipping.shipments.view')) {
             if ((bool) config('shipping.features.owner.enabled', false)) {
-                return $this->isOwner($user, $rma);
+                return $this->isOwner($user, $shipment);
             }
 
             return true;
         }
 
-        return $this->isOwner($user, $rma);
+        // Customer self-service fallback: owner can view their own shipment.
+        return $this->isOwner($user, $shipment);
     }
 
     /**
-     * Determine whether the user can create return authorizations.
+     * Determine whether the user can create shipments.
      */
     public function create(Authenticatable $user): bool
     {
-        return $this->hasPermission($user, 'shipping.returns.create');
+        return $this->hasPermission($user, 'shipping.shipments.create');
     }
 
     /**
-     * Determine whether the user can update the return authorization.
+     * Determine whether the user can update the shipment.
      *
      * When owner mode is enabled, permission is necessary but not sufficient — the
      * owner boundary must also pass to prevent cross-tenant IDOR.
      */
-    public function update(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function update(Authenticatable $user, Shipment $shipment): bool
     {
-        if ($rma->isCompleted() || $rma->isCancelled()) {
+        if ($shipment->isTerminal()) {
             return false;
         }
 
-        if (! $this->hasPermission($user, 'shipping.returns.update')) {
+        if (! $this->hasPermission($user, 'shipping.shipments.update')) {
             return false;
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return $this->isOwner($user, $shipment);
         }
 
         return true;
     }
 
     /**
-     * Determine whether the user can delete the return authorization.
+     * Determine whether the user can delete the shipment.
      *
      * When owner mode is enabled, permission is necessary but not sufficient — the
      * owner boundary must also pass to prevent cross-tenant IDOR.
      */
-    public function delete(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function delete(Authenticatable $user, Shipment $shipment): bool
     {
-        if (! $rma->isPending()) {
+        if (! $shipment->isCancellable()) {
             return false;
         }
 
-        if (! $this->hasPermission($user, 'shipping.returns.delete')) {
+        if (! $this->hasPermission($user, 'shipping.shipments.delete')) {
             return false;
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return $this->isOwner($user, $shipment);
         }
 
         return true;
     }
 
     /**
-     * Determine whether the user can approve the return authorization.
+     * Determine whether the user can ship the shipment.
      *
      * When owner mode is enabled, permission is necessary but not sufficient — the
      * owner boundary must also pass to prevent cross-tenant IDOR.
      */
-    public function approve(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function ship(Authenticatable $user, Shipment $shipment): bool
     {
-        if (! $rma->isPending()) {
+        if (! $shipment->isPending()) {
             return false;
         }
 
-        if (! $this->hasPermission($user, 'shipping.returns.approve')) {
+        if (! $this->hasPermission($user, 'shipping.shipments.ship')) {
             return false;
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return $this->isOwner($user, $shipment);
         }
 
         return true;
     }
 
     /**
-     * Determine whether the user can reject the return authorization.
+     * Determine whether the user can cancel the shipment.
      *
      * When owner mode is enabled, permission is necessary but not sufficient — the
      * owner boundary must also pass to prevent cross-tenant IDOR.
      */
-    public function reject(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function cancel(Authenticatable $user, Shipment $shipment): bool
     {
-        if (! $rma->isPending()) {
+        if (! $shipment->isCancellable()) {
             return false;
         }
 
-        if (! $this->hasPermission($user, 'shipping.returns.reject')) {
+        if (! $this->hasPermission($user, 'shipping.shipments.cancel')) {
             return false;
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return $this->isOwner($user, $shipment);
         }
 
         return true;
     }
 
     /**
-     * Determine whether the user can receive items for the return.
+     * Determine whether the user can print labels.
      *
      * When owner mode is enabled, permission is necessary but not sufficient — the
      * owner boundary must also pass to prevent cross-tenant IDOR.
      */
-    public function receive(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function printLabel(Authenticatable $user, Shipment $shipment): bool
     {
-        if (! $rma->isApproved()) {
+        if ($shipment->tracking_number === null) {
             return false;
         }
 
-        if (! $this->hasPermission($user, 'shipping.returns.receive')) {
+        if (! $this->hasPermission($user, 'shipping.shipments.print-label')) {
             return false;
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return $this->isOwner($user, $shipment);
         }
 
         return true;
     }
 
     /**
-     * Determine whether the user can complete the return process.
+     * Determine whether the user can sync tracking.
      *
      * When owner mode is enabled, permission is necessary but not sufficient — the
      * owner boundary must also pass to prevent cross-tenant IDOR.
      */
-    public function complete(Authenticatable $user, ReturnAuthorization $rma): bool
+    public function syncTracking(Authenticatable $user, Shipment $shipment): bool
     {
-        if (! $rma->isReceived()) {
+        if ($shipment->tracking_number === null) {
             return false;
         }
 
-        if (! $this->hasPermission($user, 'shipping.returns.complete')) {
+        if (! $this->hasPermission($user, 'shipping.shipments.sync-tracking')) {
             return false;
         }
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
-            return $this->isOwner($user, $rma);
+            return $this->isOwner($user, $shipment);
         }
 
         return true;
@@ -198,10 +199,12 @@ class ReturnAuthorizationPolicy
      */
     protected function hasPermission(Authenticatable $user, string $permission): bool
     {
+        // Check for Spatie permission
         if (method_exists($user, 'hasPermissionTo')) {
             return $user->hasPermissionTo($permission);
         }
 
+        // Check for can method
         if ($user instanceof Authorizable) {
             return $user->can($permission);
         }
@@ -210,9 +213,9 @@ class ReturnAuthorizationPolicy
     }
 
     /**
-     * Check if the user owns the return authorization.
+     * Check if the user owns the shipment.
      */
-    protected function isOwner(Authenticatable $user, ReturnAuthorization $rma): bool
+    protected function isOwner(Authenticatable $user, Shipment $shipment): bool
     {
         if (! (bool) config('shipping.features.owner.enabled', false)) {
             return false;
@@ -225,10 +228,10 @@ class ReturnAuthorizationPolicy
             return false;
         }
 
-        if ((bool) config('shipping.features.owner.include_global', false) && $rma->isGlobal()) {
+        if ((bool) config('shipping.features.owner.include_global', false) && $shipment->isGlobal()) {
             return true;
         }
 
-        return $rma->belongsToOwner($owner);
+        return $shipment->belongsToOwner($owner);
     }
 }

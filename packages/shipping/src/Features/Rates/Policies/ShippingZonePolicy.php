@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Policies;
+namespace AIArmada\Shipping\Features\Rates\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;

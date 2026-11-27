@@ -16,6 +16,9 @@ use AIArmada\Shipping\Features\Shipments\Api\ShipmentStatistics;
 use AIArmada\Shipping\Features\Shipments\Queries\ReadShipmentStatistics;
 use AIArmada\Shipping\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Gate;
+use AIArmada\Shipping\Features\Shipments\Policies\ShipmentPolicy;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -28,5 +31,8 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(PrintableLabel::class, IssuePrintableLabel::class);
     }
 
-    public function boot(Application $app): void {}
+    public function boot(Application $app): void
+    {
+        Gate::policy(Shipment::class, ShipmentPolicy::class);
+    }
 }
