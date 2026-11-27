@@ -6,11 +6,11 @@ namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Api\ActiveAllocationCount;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Api\BatchAging;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,9 +53,7 @@ final class StockLevelReport
                 ->count(),
             'total_on_hand' => (int) ($levelTotals->total_on_hand ?? 0),
             'total_reserved' => (int) ($levelTotals->total_reserved ?? 0),
-            'active_allocations' => InventoryOwnerScope::applyToLocationQuery(
-                InventoryAllocation::query()->active()
-            )->count(),
+            'active_allocations' => app(ActiveAllocationCount::class)->count(),
         ];
     }
 
@@ -221,57 +219,7 @@ final class StockLevelReport
      */
     public function getBatchAgingAnalysis(): Collection
     {
-        $now = CarbonImmutable::now();
-
-        $batchesQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryBatch::query()->whereNotNull('manufactured_at')
-        );
-
-        $ranges = [
-            '0-30 days' => [0, 30],
-            '31-60 days' => [31, 60],
-            '61-90 days' => [61, 90],
-            '91-180 days' => [91, 180],
-            '181-365 days' => [181, 365],
-            'Over 1 year' => [366, PHP_INT_MAX],
-        ];
-
-        $buckets = [];
-
-        foreach (array_keys($ranges) as $label) {
-            $buckets[$label] = [
-                'age_range' => (string) $label,
-                'batch_count' => 0,
-                'total_quantity' => 0,
-                'total_value' => 0,
-                'expiring_soon' => 0,
-            ];
-        }
-
-        // Stream batches in one pass instead of hydrating the table and
-        // re-filtering the full collection per bucket.
-        foreach ($batchesQuery->cursor() as $batch) {
-            $age = CarbonImmutable::parse($batch->manufactured_at)->diffInDays($now);
-
-            foreach ($ranges as $label => $range) {
-                if ($age < $range[0] || $age > $range[1]) {
-                    continue;
-                }
-
-                $buckets[$label]['batch_count']++;
-                $buckets[$label]['total_quantity'] += (int) $batch->quantity;
-                $buckets[$label]['total_value'] += ((int) $batch->quantity) * ((int) ($batch->unit_cost_minor ?? 0));
-
-                if ($batch->expires_at !== null
-                    && CarbonImmutable::parse($batch->expires_at)->diffInDays($now) <= 30) {
-                    $buckets[$label]['expiring_soon']++;
-                }
-
-                break;
-            }
-        }
-
-        return collect(array_values($buckets));
+        return collect(app(BatchAging::class)->summarize());
     }
 
     /**

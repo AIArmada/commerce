@@ -433,3 +433,27 @@ describe('StockLevelReport', function (): void {
         });
     });
 });
+
+it('reports on-hand batch value and excludes expired batches from upcoming expiry', function (): void {
+    $item = InventoryItem::create(['name' => 'Aging Item']);
+    $location = InventoryLocation::factory()->create();
+
+    foreach ([now()->subDay(), now()->addDays(20), now()->addDays(60)] as $expiry) {
+        InventoryBatch::factory()
+            ->forInventoryable($item->getMorphClass(), $item->getKey())
+            ->create([
+                'location_id' => $location->id,
+                'manufactured_at' => now()->subDays(15),
+                'expires_at' => $expiry,
+                'quantity_on_hand' => 10,
+                'unit_cost_minor' => 50,
+            ]);
+    }
+
+    $bucket = app(StockLevelReport::class)->getBatchAgingAnalysis()->firstWhere('age_range', '0-30 days');
+
+    expect($bucket['batch_count'])->toBe(3)
+        ->and($bucket['total_quantity'])->toBe(30)
+        ->and($bucket['total_value'])->toBe(1500)
+        ->and($bucket['expiring_soon'])->toBe(1);
+});

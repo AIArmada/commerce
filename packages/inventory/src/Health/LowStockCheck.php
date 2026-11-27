@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
-use AIArmada\Inventory\Features\Stock\Queries\StockHealthQuery;
+use AIArmada\Inventory\Features\Stock\Api\StockHealth;
 use InvalidArgumentException;
 use Spatie\Health\Checks\Result;
 
@@ -55,7 +55,7 @@ class LowStockCheck extends CommerceHealthCheck
      */
     protected function performCheck(): Result
     {
-        $counts = (new StockHealthQuery)->counts($this->threshold);
+        $counts = app(StockHealth::class)->counts($this->threshold);
         $lowStockCount = $counts['low_stock'];
         $outOfStockCount = $counts['out_of_stock'];
 

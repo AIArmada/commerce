@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Queries;
 
+use AIArmada\Inventory\Features\Stock\Api\StockHealth;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 
-final readonly class StockHealthQuery
+final readonly class StockHealthQuery implements StockHealth
 {
     /** @return array{low_stock: int, out_of_stock: int} */
     public function counts(int $threshold): array
