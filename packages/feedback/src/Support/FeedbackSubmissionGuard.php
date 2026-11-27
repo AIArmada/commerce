@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
-use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
 use RuntimeException;
 
@@ -41,26 +38,4 @@ final class FeedbackSubmissionGuard
         }
     }
 
-    public function assertInvitationValid(FeedbackInvitation $invitation, FeedbackForm $form): void
-    {
-        if ($invitation->feedback_form_id !== $form->id) {
-            throw new RuntimeException('This invitation does not belong to the selected form.');
-        }
-
-        if ($invitation->status === FeedbackInvitationStatus::Expired) {
-            throw new FeedbackInvitationExpiredException($invitation->id);
-        }
-
-        if ($invitation->status === FeedbackInvitationStatus::Cancelled) {
-            throw new RuntimeException('This invitation has been cancelled.');
-        }
-
-        if ($invitation->status === FeedbackInvitationStatus::Submitted) {
-            throw new RuntimeException('This invitation has already been used.');
-        }
-
-        if ($invitation->isExpired()) {
-            throw new FeedbackInvitationExpiredException($invitation->id);
-        }
-    }
 }

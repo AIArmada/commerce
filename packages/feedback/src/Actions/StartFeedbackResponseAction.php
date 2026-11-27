@@ -9,7 +9,6 @@ use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
@@ -17,7 +16,6 @@ use AIArmada\Feedback\Support\FeedbackSubmissionGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\DeadlockException;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -33,7 +31,7 @@ final class StartFeedbackResponseAction
         FeedbackForm $form,
         ?string $respondentType = null,
         ?string $respondentId = null,
-        ?FeedbackInvitation $invitation = null,
+        ?string $invitationId = null,
         bool $isAnonymous = false,
         ?array $metadata = null,
     ): FeedbackResponse {
@@ -44,7 +42,7 @@ final class StartFeedbackResponseAction
                     $form,
                     $respondentType,
                     $respondentId,
-                    $invitation,
+                    $invitationId,
                     $isAnonymous,
                     $metadata,
                 ),
@@ -62,7 +60,7 @@ final class StartFeedbackResponseAction
         FeedbackForm $form,
         ?string $respondentType,
         ?string $respondentId,
-        ?FeedbackInvitation $invitation,
+        ?string $invitationId,
         bool $isAnonymous,
         ?array $metadata,
     ): FeedbackResponse {
@@ -70,11 +68,13 @@ final class StartFeedbackResponseAction
             $form,
             $respondentType,
             $respondentId,
-            $invitation,
+            $invitationId,
             $isAnonymous,
             $metadata,
         ): FeedbackResponse {
-            $guardedForm = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+            $guardedForm = FeedbackForm::ownerScopeConfig()->enabled
+                ? OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id)
+                : FeedbackForm::query()->whereKey($form->id)->firstOrFail();
             $form = FeedbackForm::query()
                 ->lockForUpdate()
                 ->whereKey($guardedForm->getKey())
@@ -83,18 +83,8 @@ final class StartFeedbackResponseAction
             $this->submissionGuard->assertFormAcceptingSubmissions($form, $isAnonymous, $respondentType, $respondentId);
             $this->referenceGuard->resolveRespondent($respondentType, $respondentId);
 
-            if ($invitation !== null) {
-                $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitation->id);
-                $invitation = FeedbackInvitation::query()
-                    ->lockForUpdate()
-                    ->whereKey($guardedInvitation->getKey())
-                    ->firstOrFail();
-
-                if ($invitation->feedback_form_id !== $form->id) {
-                    throw new InvalidArgumentException('The feedback invitation does not belong to the selected form.');
-                }
-
-                $this->submissionGuard->assertInvitationValid($invitation, $form);
+            if ($invitationId !== null) {
+                $this->invitationLifecycle->assertUsable($invitationId, $form->id, $respondentType, $respondentId);
             }
 
             if ($form->is_one_response_per_respondent
@@ -126,9 +116,9 @@ final class StartFeedbackResponseAction
                 $draftQuery->where('respondent_id', $respondentId);
             }
 
-            $draftQuery->where('feedback_invitation_id', $invitation?->id);
+            $draftQuery->where('feedback_invitation_id', $invitationId);
 
-            $existingDraft = $invitation !== null || ($respondentType !== null && $respondentId !== null)
+            $existingDraft = $invitationId !== null || ($respondentType !== null && $respondentId !== null)
                 ? $draftQuery->first()
                 : null;
 
@@ -138,7 +128,7 @@ final class StartFeedbackResponseAction
 
             $response = FeedbackResponse::create([
                 'feedback_form_id' => $form->id,
-                'feedback_invitation_id' => $invitation?->id,
+                'feedback_invitation_id' => $invitationId,
                 'subject_type' => $form->subject_type,
                 'subject_id' => $form->subject_id,
                 'respondent_type' => $respondentType,
@@ -150,8 +140,8 @@ final class StartFeedbackResponseAction
                 'started_at' => CarbonImmutable::now(),
             ]);
 
-            if ($invitation !== null) {
-                $this->invitationLifecycle->start($invitation->id);
+            if ($invitationId !== null) {
+                $this->invitationLifecycle->start($invitationId);
             }
 
             FeedbackResponseStarted::dispatch($response);

@@ -70,10 +70,6 @@ final class FeedbackModelReferenceGuard
 
     public function validate(Model $model): void
     {
-        try {
-            OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
-        } catch (InvalidArgumentException) {
-            // Models without an enabled owner boundary are valid global references.
-        }
+        $this->resolve($model->getMorphClass(), (string) $model->getKey());
     }
 }

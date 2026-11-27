@@ -448,7 +448,7 @@ it('refuses to start responses on closed forms or invalid invitations', function
 
     expect(fn () => app(StartFeedbackResponseAction::class)->execute(
         form: $open,
-        invitation: $cancelled,
+        invitationId: $cancelled->id,
         isAnonymous: true,
     ))->toThrow(RuntimeException::class, 'cancelled');
 });

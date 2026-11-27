@@ -281,9 +281,9 @@ it('isolates anonymous drafts by invitation and never reuses an unbound anonymou
         ]);
     }
 
-    $draftA = $start->execute(form: $form, invitation: $invitations[0], isAnonymous: true);
-    $draftB = $start->execute(form: $form, invitation: $invitations[1], isAnonymous: true);
-    $repeat = $start->execute(form: $form, invitation: $invitations[0], isAnonymous: true);
+    $draftA = $start->execute(form: $form, invitationId: $invitations[0]->id, isAnonymous: true);
+    $draftB = $start->execute(form: $form, invitationId: $invitations[1]->id, isAnonymous: true);
+    $repeat = $start->execute(form: $form, invitationId: $invitations[0]->id, isAnonymous: true);
 
     expect($draftA->is($draftB))->toBeFalse()
         ->and($draftA->feedback_invitation_id)->toBe($invitations[0]->id)
@@ -459,3 +459,23 @@ function feedbackConcurrencyRestoreDatabase(string $databasePath, string $origin
         unlink($databasePath);
     }
 }
+
+it('rejects a targeted invitation used by a different respondent', function (): void {
+    $form = publishedFeedbackForm('Targeted Invitation');
+    $recipient = User::factory()->create();
+    $other = User::factory()->create();
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', 'targeted-recipient'),
+        'status' => FeedbackInvitationStatus::Pending,
+        'recipient_type' => $recipient->getMorphClass(),
+        'recipient_id' => $recipient->getKey(),
+    ]);
+
+    expect(fn () => app(StartFeedbackResponseAction::class)->execute(
+        form: $form,
+        respondentType: $other->getMorphClass(),
+        respondentId: (string) $other->getKey(),
+        invitationId: $invitation->id,
+    ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+});

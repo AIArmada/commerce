@@ -10,10 +10,10 @@ use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Support\FeedbackSubmissionGuard;
+use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\DeadlockException;
 use Illuminate\Database\QueryException;
@@ -31,6 +31,7 @@ final class SubmitFeedbackResponseAction
         private readonly CalculateFeedbackResponseScoreAction $calculateResponseScore,
         private readonly ExtractFeedbackTestimonialAction $extractTestimonial,
         private readonly FeedbackSubmissionGuard $submissionGuard,
+        private readonly FeedbackModelReferenceGuard $referenceGuard,
         private readonly ManagesInvitationLifecycle $invitationLifecycle,
     ) {}
 
@@ -53,7 +54,9 @@ final class SubmitFeedbackResponseAction
     private function executeWithinTransaction(SubmitFeedbackResponseData $data): FeedbackResponse
     {
         return DB::transaction(function () use ($data): FeedbackResponse {
-            $guardedForm = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $data->formId);
+            $guardedForm = FeedbackForm::ownerScopeConfig()->enabled
+                ? OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $data->formId)
+                : FeedbackForm::query()->whereKey($data->formId)->firstOrFail();
             $form = FeedbackForm::with('questions.options')
                 ->lockForUpdate()
                 ->whereKey($guardedForm->getKey())
@@ -67,32 +70,24 @@ final class SubmitFeedbackResponseAction
             );
             $this->assertSubmittedQuestionsBelongToForm($form, $data);
 
+            $this->referenceGuard->resolveRespondent($data->respondentType, $data->respondentId);
+            if ($data->invitationId !== null) {
+                $this->invitationLifecycle->assertUsable($data->invitationId, $form->id, $data->respondentType, $data->respondentId);
+            }
+
             $existingResponse = $this->findExistingSubmittedResponse($form, $data);
 
             if ($existingResponse !== null) {
                 return $existingResponse;
             }
 
-            $invitation = null;
-            if ($data->invitationId !== null) {
-                $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
-                    FeedbackInvitation::class,
-                    $data->invitationId,
-                );
-                $invitation = FeedbackInvitation::query()
-                    ->lockForUpdate()
-                    ->whereKey($guardedInvitation->getKey())
-                    ->firstOrFail();
-                $this->submissionGuard->assertInvitationValid($invitation, $form);
-            }
-
             try {
-                return DB::transaction(function () use ($form, $data, $invitation): FeedbackResponse {
+                return DB::transaction(function () use ($form, $data): FeedbackResponse {
                     $response = $this->startResponse->execute(
                         form: $form,
                         respondentType: $data->respondentType,
                         respondentId: $data->respondentId,
-                        invitation: $invitation,
+                        invitationId: $data->invitationId,
                         isAnonymous: $data->isAnonymous,
                         metadata: $data->metadata,
                     );
@@ -134,8 +129,8 @@ final class SubmitFeedbackResponseAction
                         'metadata' => $data->metadata,
                     ])->save();
 
-                    if (isset($invitation)) {
-                        $this->invitationLifecycle->submit($invitation->id);
+                    if ($data->invitationId !== null) {
+                        $this->invitationLifecycle->submit($data->invitationId);
                     }
 
                     $this->calculateResponseScore->execute($response);
