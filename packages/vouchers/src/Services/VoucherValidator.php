@@ -106,15 +106,22 @@ class VoucherValidator
             }
         }
 
-        // Check per-user usage limit
-        if (config('vouchers.validation.check_user_limit', true) && $voucher->usage_limit_per_user !== null) {
+        // Check per-user usage limit. Redemption requires an identified customer,
+        // so validation must not approve a customer-limited voucher for a guest.
+        if ($voucher->usage_limit_per_user !== null) {
+            $user = $this->getUser();
+
             if ($voucher->usage_limit_per_user === 0) {
                 return VoucherValidationResult::invalid('Voucher usage limit has been reached.');
             }
 
-            $user = $this->getUser();
-            if ($user) {
-                $usageCount = VoucherUsage::where('voucher_id', $voucher->id)
+            if ($user === null) {
+                return VoucherValidationResult::invalid('Sign in to use this voucher.');
+            }
+
+            if (config('vouchers.validation.check_user_limit', true)) {
+                $usageCount = VoucherUsage::query()
+                    ->where('voucher_id', $voucher->id)
                     ->where('redeemed_by_type', $user->getMorphClass())
                     ->where('redeemed_by_id', $user->getKey())
                     ->count();

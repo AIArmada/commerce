@@ -406,3 +406,22 @@ test('normalizes code without uppercase', function (): void {
 
     expect($result->isValid)->toBeTrue();
 });
+
+test('rejects customer-limited vouchers for an unidentified guest', function (): void {
+    Auth::shouldReceive('user')->andReturn(null);
+
+    $voucher = Voucher::create([
+        'code' => 'GUESTLIMIT',
+        'name' => 'Customer only',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit_per_user' => 1,
+    ]);
+
+    $result = app(VoucherValidator::class)->validate($voucher->code, ['total' => 1000]);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->reason)->toBe('Sign in to use this voucher.');
+});

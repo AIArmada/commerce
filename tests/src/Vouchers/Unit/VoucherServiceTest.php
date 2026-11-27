@@ -9,6 +9,7 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Database\Eloquent\Collection;
@@ -617,4 +618,25 @@ test('checkout enforces a voucher limit against the customer rather than individ
         ->toThrow(VoucherUsageLimitException::class);
 
     expect($voucher->usages()->sole()->redeemed_by_id)->toBe((string) $customer->getKey());
+});
+
+test('voucher deletion removes dependent usage and wallet rows through database constraints', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'CASCADEDELETE',
+        'name' => 'Cascade deletion',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $customer = User::factory()->create();
+    $service = app(VoucherService::class);
+    $service->recordUsage($voucher->code, \Akaunting\Money\Money::MYR(100), redeemedBy: $customer);
+    $wallet = $service->addToWallet($voucher->code, $customer);
+    $usageId = $voucher->usages()->sole()->getKey();
+
+    expect($service->delete($voucher->code))->toBeTrue()
+        ->and(VoucherUsage::query()->whereKey($usageId)->exists())->toBeFalse()
+        ->and(VoucherWallet::query()->whereKey($wallet->getKey())->exists())->toBeFalse();
 });
