@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPersons\Resources\PersonResource\Pages;
 
 use AIArmada\FilamentPersons\Resources\PersonResource;
-use AIArmada\Persons\Actions\ReorderFeaturedPersonsAction;
+use AIArmada\Persons\Features\Identity\Actions\ReorderFeaturedPersonsAction;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 

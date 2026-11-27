@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Actions;
+namespace AIArmada\Persons\Features\Identity\Actions;
 
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Support\ModelResolver;
 use InvalidArgumentException;
 
 final class CreatePersonAction
@@ -18,7 +19,7 @@ final class CreatePersonAction
     {
         $this->validate($attributes);
 
-        return Person::query()->create($attributes);
+        return ModelResolver::personClass()::query()->create($attributes);
     }
 
     /**

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "name": "Identity",
+  "owns": {
+    "table:persons": [
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\CreatePersonAction",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\ReorderFeaturedPersonsAction"
+    ]
+  },
+  "extensions": {}
+}

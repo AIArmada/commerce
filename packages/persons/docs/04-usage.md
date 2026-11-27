@@ -30,7 +30,7 @@ published_at timestamp.
 ## Lifecycle and assignment invariants
 
 ```php
-use AIArmada\Persons\Actions\CreatePersonAction;
+use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
 use AIArmada\Persons\Actions\ReorderTitleAction;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 

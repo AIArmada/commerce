@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Actions;
+namespace AIArmada\Persons\Features\Identity\Actions;
 
 use AIArmada\Persons\Models\Person;
 use Illuminate\Support\Facades\DB;

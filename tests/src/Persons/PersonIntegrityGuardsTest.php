@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Persons\Actions\AssignTitleAction;
-use AIArmada\Persons\Actions\CreatePersonAction;
+use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Enums\PersonNameType;
