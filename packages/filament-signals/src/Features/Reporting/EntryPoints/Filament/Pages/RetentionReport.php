@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
+use AIArmada\Signals\Features\Ingestion\Api\RetentionReportRead;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
@@ -60,7 +60,7 @@ final class RetentionReport extends ReportPage
         ];
 
         if ($this->reportCache === null || $this->reportCacheParameters !== $parameters) {
-            $this->reportCache = app(RetentionReportService::class)->report(...$parameters);
+            $this->reportCache = app(RetentionReportRead::class)->report(...$parameters);
             $this->reportCacheParameters = $parameters;
         }
 

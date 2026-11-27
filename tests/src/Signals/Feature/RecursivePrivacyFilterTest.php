@@ -237,3 +237,17 @@ it('keeps trusted recorder properties unfiltered by the recursive privacy filter
         'context' => ['email' => 'trusted@example.test', 'plan' => 'pro'],
     ]);
 });
+
+it('blocks personal keys regardless of case or separator spelling', function (): void {
+    config()->set('signals.features.privacy.property_allowlist', ['*']);
+
+    expect(sig01_filter()->filter([
+        'EMAIL' => 'private@example.test',
+        'context' => [
+            'customerEmail' => 'private@example.test',
+            'first-name' => 'Private',
+            'phone' => '123',
+            'plan' => 'pro',
+        ],
+    ]))->toBe(['context' => ['plan' => 'pro']]);
+});

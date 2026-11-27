@@ -10,8 +10,6 @@ use AIArmada\FilamentSignals\Contracts\PageMarkupFetcher;
 
 final readonly class PinnedPageMarkupFetcher implements PageMarkupFetcher
 {
-    public const int MAX_HTML_BYTES = 2_097_152;
-
     public function __construct(
         private PublicHttpUrlGuard $urlGuard,
         private PinnedHttpClient $httpClient,
