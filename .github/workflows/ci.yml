@@ -355,6 +355,8 @@ jobs:
       - name: Run tests (Pest)
         # Disable TIA explicitly because Pest's parallel test-discovery child
         # process does not inherit the `--ci` flag.
+        env:
+          EVENTS_POSTGRES_CONCURRENCY: 'true'
         run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20
 
       - name: Setup Node for real affiliate PDF verification
