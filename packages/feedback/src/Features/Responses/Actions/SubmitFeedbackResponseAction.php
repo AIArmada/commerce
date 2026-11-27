@@ -122,6 +122,7 @@ final class SubmitFeedbackResponseAction
 
                     $response->forceFill([
                         'status' => FeedbackResponseStatus::Submitted,
+                        'is_anonymous' => $data->isAnonymous,
                         'enforce_respondent_uniqueness' => $form->is_one_response_per_respondent,
                         'submitted_at' => CarbonImmutable::now(),
                         'ip_address' => $data->ipAddress !== null

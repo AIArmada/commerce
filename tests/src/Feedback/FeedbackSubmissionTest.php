@@ -18,6 +18,7 @@ use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -485,3 +486,45 @@ it('rejects invalid submission answer lists at the DTO boundary', function (): v
         ->and(fn () => new SubmitFeedbackResponseData('form-id', ['answer' => new SubmittedAnswerData('question-id', 'key', 'value')]))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('honors the submitted anonymity choice when reusing a draft and extracting a testimonial', function (bool $draftAnonymous, bool $submitAnonymous): void {
+    config()->set('feedback.features.testimonials', true);
+    $respondent = User::factory()->create();
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(
+        name: 'Testimonial Privacy',
+        purpose: 'testimonial_collection',
+        status: 'published',
+        visibility: 'public',
+        isAnonymityOptional: true,
+    ));
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'quote',
+        'type' => 'short_text',
+        'label' => 'Quote',
+    ]);
+
+    $draft = app(StartFeedbackResponseAction::class)->execute(
+        form: $form,
+        respondentType: $respondent->getMorphClass(),
+        respondentId: (string) $respondent->getKey(),
+        isAnonymous: $draftAnonymous,
+    );
+
+    $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
+        formId: $form->id,
+        answers: [new SubmittedAnswerData($question->id, $question->key, 'Useful feedback')],
+        respondentType: $respondent->getMorphClass(),
+        respondentId: (string) $respondent->getKey(),
+        isAnonymous: $submitAnonymous,
+    ));
+
+    $testimonial = FeedbackTestimonial::query()->where('feedback_response_id', $response->id)->firstOrFail();
+
+    expect($response->is($draft))->toBeTrue()
+        ->and($response->fresh()->is_anonymous)->toBe($submitAnonymous)
+        ->and($testimonial->respondent_type)->toBe($submitAnonymous ? null : $respondent->getMorphClass())
+        ->and($testimonial->respondent_id)->toBe($submitAnonymous ? null : (string) $respondent->getKey());
+})->with([
+    'anonymous at submission' => [false, true],
+    'identified at submission' => [true, false],
+]);
