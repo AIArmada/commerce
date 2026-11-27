@@ -8,7 +8,7 @@ use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Pages\ListReferr
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Pages\ViewReferralReward;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Schemas\ReferralRewardInfolist;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Tables\ReferralRewardsTable;
-use AIArmada\FilamentReferrals\Support\ReferralFilamentScope;
+use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\Referrals\Models\ReferralReward;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

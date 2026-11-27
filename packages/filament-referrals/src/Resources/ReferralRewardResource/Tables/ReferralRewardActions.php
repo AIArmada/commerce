@@ -8,7 +8,6 @@ use AIArmada\Referrals\Actions\FulfillReferralReward;
 use AIArmada\Referrals\Actions\ReverseReferralReward;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Models\ReferralReward;
-use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -30,8 +29,7 @@ class ReferralRewardActions
                 ))
                 ->action(function (ReferralReward $record): void {
                     try {
-                        $reward = app(ReferralProgramGuard::class)->reward($record);
-                        $result = FulfillReferralReward::run($reward);
+                        $result = FulfillReferralReward::run((string) $record->getKey());
                     } catch (Throwable $exception) {
                         Notification::make()
                             ->title('Referral reward fulfilment failed')
@@ -70,8 +68,7 @@ class ReferralRewardActions
                 ->visible(fn (ReferralReward $record): bool => $record->status === ReferralRewardStatus::Fulfilled)
                 ->action(function (ReferralReward $record, array $data): void {
                     try {
-                        $reward = app(ReferralProgramGuard::class)->reward($record);
-                        ReverseReferralReward::run($reward, (string) ($data['reason'] ?? ''));
+                        ReverseReferralReward::run((string) $record->getKey(), (string) ($data['reason'] ?? ''));
                     } catch (Throwable $exception) {
                         Notification::make()
                             ->title('Referral reward reversal failed')

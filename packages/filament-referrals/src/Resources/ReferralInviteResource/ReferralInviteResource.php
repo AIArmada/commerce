@@ -9,7 +9,7 @@ use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Pages\ViewReferr
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\RelationManagers\RewardsRelationManager;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Schemas\ReferralInviteInfolist;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Tables\ReferralInvitesTable;
-use AIArmada\FilamentReferrals\Support\ReferralFilamentScope;
+use AIArmada\FilamentReferrals\Persistence\ReferralFilamentScope;
 use AIArmada\Referrals\Models\ReferralInvite;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

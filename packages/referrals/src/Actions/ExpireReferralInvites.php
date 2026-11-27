@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Referrals\Console\Commands;
+namespace AIArmada\Referrals\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
@@ -11,27 +11,17 @@ use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Throwable;
 
-final class ExpireReferralInvitesCommand extends Command
+final readonly class ExpireReferralInvites
 {
-    protected $signature = 'referrals:expire-invites';
-
-    protected $description = 'Expire pending and accepted referral invites past their deadline.';
-
-    public function handle(): int
+    public function handle(CarbonImmutable $now): int
     {
-        $expiredCount = 0;
-        $now = CarbonImmutable::now();
-
         if (! (bool) config('referrals.owner.enabled', true)) {
-            $expiredCount = $this->expireCurrentOwner($now);
-            $this->info(sprintf('Expired %d referral invite(s).', $expiredCount));
-
-            return self::SUCCESS;
+            return $this->expireCurrentOwner($now);
         }
 
         $typeColumn = (string) config('referrals.owner.owner_type_column', 'owner_type');
@@ -55,13 +45,9 @@ final class ExpireReferralInvitesCommand extends Command
         // every pass on rows it can actually write, and removes any
         // dependence on the order the owner tuples happen to come back in.
         // Mirrors OwnerBatchRunner::collectForOwners().
-        $expiredCount = OwnerScopeOverride::withoutIncludeGlobal(
+        return OwnerScopeOverride::withoutIncludeGlobal(
             fn (): int => $this->expireEveryOwner($ownerTuples, $now),
         );
-
-        $this->info(sprintf('Expired %d referral invite(s).', $expiredCount));
-
-        return self::SUCCESS;
     }
 
     /**
@@ -82,7 +68,7 @@ final class ExpireReferralInvitesCommand extends Command
             }
 
             if (! is_string($ownerType) || (! is_string($ownerId) && ! is_int($ownerId))) {
-                $this->warn(sprintf('Skipped referral programs with invalid owner [%s:%s].', (string) $ownerType, (string) $ownerId));
+                report(new RuntimeException(sprintf('Skipped referral programs with invalid owner [%s:%s].', (string) $ownerType, (string) $ownerId)));
 
                 continue;
             }
@@ -90,7 +76,7 @@ final class ExpireReferralInvitesCommand extends Command
             try {
                 $owner = OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId);
             } catch (Throwable) {
-                $this->warn(sprintf('Skipped referral programs with unresolved owner [%s:%s].', $ownerType, (string) $ownerId));
+                report(new RuntimeException(sprintf('Skipped referral programs with unresolved owner [%s:%s].', $ownerType, (string) $ownerId)));
 
                 continue;
             }
@@ -117,8 +103,7 @@ final class ExpireReferralInvitesCommand extends Command
             ->whereIn('status', [ReferralInviteStatus::Pending->value, ReferralInviteStatus::Accepted->value])
             ->whereNotNull('expired_at')
             ->where('expired_at', '<=', $now)
-            ->orderBy('id')
-            ->get();
+            ->lazyById(500);
 
         $count = 0;
 

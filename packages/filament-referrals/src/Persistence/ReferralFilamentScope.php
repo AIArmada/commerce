@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentReferrals\Support;
+namespace AIArmada\FilamentReferrals\Persistence;
 
 use AIArmada\Referrals\Models\ReferralProgram;
 use Illuminate\Database\Eloquent\Builder;

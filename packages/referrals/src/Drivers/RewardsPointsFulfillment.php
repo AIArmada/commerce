@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Referrals\Fulfillment;
+namespace AIArmada\Referrals\Drivers;
 
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
