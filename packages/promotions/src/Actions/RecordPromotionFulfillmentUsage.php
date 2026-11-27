@@ -87,7 +87,14 @@ final readonly class RecordPromotionFulfillmentUsage
                 return;
             }
 
+            if ($this->resolveSessionId($lockedOrder) !== $this->resolveSessionId($order)) {
+                $this->skip('locked order checkout session does not match the event', ['order_id' => $lockedOrder->getKey()]);
+
+                return;
+            }
+
             $countedPromotionIds = $this->countedPromotionIds($lockedOrder);
+            $previousCount = count($countedPromotionIds);
 
             foreach ($allocations as $allocation) {
                 if (! is_array($allocation)) {
@@ -141,7 +148,9 @@ final readonly class RecordPromotionFulfillmentUsage
                 $countedPromotionIds[] = (string) $promotionId;
             }
 
-            $this->persistCountedPromotionIds($lockedOrder, $owner, $countedPromotionIds);
+            if (count($countedPromotionIds) > $previousCount) {
+                $this->persistCountedPromotionIds($lockedOrder, $owner, $countedPromotionIds);
+            }
         });
     }
 
@@ -209,7 +218,9 @@ final readonly class RecordPromotionFulfillmentUsage
             return null;
         }
 
-        return $metadata['checkout_session_id'] ?? null;
+        $sessionId = $metadata['checkout_session_id'] ?? null;
+
+        return is_string($sessionId) && $sessionId !== '' ? $sessionId : null;
     }
 
     /**

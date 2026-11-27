@@ -49,6 +49,17 @@ function guardVoucher(array $attributes = []): Voucher
 }
 
 describe('voucher update guards', function (): void {
+    it('rejects invalid updates without partially saving valid fields', function (): void {
+        $voucher = guardVoucher();
+        $service = app(VoucherService::class);
+
+        expect(fn () => $service->update($voucher->code, ['name' => 'Changed', 'value' => -100]))
+            ->toThrow(ValidationException::class);
+
+        expect($voucher->fresh()->name)->toBe('Guard Voucher')
+            ->and($voucher->fresh()->value)->toBe(500);
+    });
+
     it('ignores protected ownership, counter, and lifecycle keys', function (): void {
         $voucher = guardVoucher(['applied_count' => 7]);
 

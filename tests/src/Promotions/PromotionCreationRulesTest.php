@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Actions\CreatePromotion;
+use AIArmada\Promotions\Actions\UpdatePromotion;
 use AIArmada\Promotions\Models\Promotion;
 
 function validPromotionPayload(array $overrides = []): array
@@ -33,6 +34,7 @@ it('rejects invalid promotion input', function (array $overrides): void {
     'missing name' => [['name' => '']],
     'unknown type' => [['type' => 'bogus']],
     'percentage above 100' => [['discount_value' => 500]],
+    'fractional percentage' => [['discount_value' => 15.5]],
     'negative percentage' => [['discount_value' => -5]],
     'negative fixed' => [['type' => 'fixed', 'discount_value' => -1]],
     'negative usage limit' => [['usage_limit' => -1]],
@@ -86,4 +88,26 @@ it('requires an owner context or explicit global context when owner mode is on',
 
     expect($global->owner_type)->toBeNull()
         ->and($global->owner_id)->toBeNull();
+});
+
+it('validates edits without changing ownership or usage counters', function (): void {
+    $promotion = app(CreatePromotion::class)->handle(validPromotionPayload(['code' => 'EDIT-RULES-1']));
+    $action = app(UpdatePromotion::class);
+
+    expect(fn () => $action->handle($promotion, ['name' => 'Invalid edit', 'discount_value' => 101]))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($promotion->fresh()->name)->toBe('Creation Rules Promotion');
+
+    $updated = $action->handle($promotion, [
+        'name' => 'Valid edit',
+        'usage_count' => 999,
+        'owner_id' => 'forged',
+        'owner_type' => 'forged',
+    ]);
+
+    expect($updated->name)->toBe('Valid edit')
+        ->and($updated->usage_count)->toBe($promotion->usage_count)
+        ->and($updated->owner_id)->toBe($promotion->owner_id)
+        ->and($updated->owner_type)->toBe($promotion->owner_type);
 });
