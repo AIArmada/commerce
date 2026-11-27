@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Affiliations\Models;
 
+use AIArmada\Persons\Database\Factories\AffiliationFactory;
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
@@ -102,6 +103,11 @@ class Affiliation extends Model
             $this->getAttribute('institution_id'),
             'affiliation institution',
         );
+    }
+
+    protected static function newFactory(): AffiliationFactory
+    {
+        return AffiliationFactory::new();
     }
 
     public function getTable(): string

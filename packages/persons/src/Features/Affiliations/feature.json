@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Affiliations",
+  "owns": {
+    "table:affiliations": [
+      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\SaveAffiliation"
+    ]
+  },
+  "extensions": {}
+}

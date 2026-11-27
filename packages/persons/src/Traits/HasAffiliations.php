@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Traits;
 
-use AIArmada\Persons\Models\Affiliation;
+use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Affiliations\Models;
 
+use AIArmada\Persons\Database\Factories\AffiliationRoleFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,6 +35,11 @@ class AffiliationRole extends Model
         'end_date',
         'is_current',
     ];
+
+    protected static function newFactory(): AffiliationRoleFactory
+    {
+        return AffiliationRoleFactory::new();
+    }
 
     public function getTable(): string
     {

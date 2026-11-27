@@ -8,7 +8,8 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Persons\Models\Affiliation;
+use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
+use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Filament\Actions\CreateAction;
@@ -110,9 +111,12 @@ class AffiliationsRelationManager extends RelationManager
         if (method_exists($class, 'ownerScopeConfig') && $class::ownerScopeConfig()->enabled) {
             $config = $class::ownerScopeConfig();
 
+            $owner = OwnerContext::resolveConfigured($config);
+            OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
             return OwnerQuery::applyToEloquentBuilder(
                 $query->withoutGlobalScope(OwnerScope::class),
-                OwnerContext::resolve(),
+                $owner,
                 $config->includeGlobal,
                 $config->ownerTypeColumn,
                 $config->ownerIdColumn,
@@ -190,6 +194,7 @@ class AffiliationsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->using(fn (array $data): Affiliation => app(SaveAffiliation::class)->create($this->getOwnerRecord(), $data))
                     ->mutateFormDataUsing(function (array $data): array {
                         $this->assertInstitutionReference($data);
 
@@ -198,6 +203,7 @@ class AffiliationsRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
+                    ->using(fn (Affiliation $record, array $data): Affiliation => app(SaveAffiliation::class)->update($record, $data))
                     ->mutateFormDataUsing(function (array $data): array {
                         $this->assertInstitutionReference($data);
 

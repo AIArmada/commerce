@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Data;
 
-use AIArmada\Persons\Models\AffiliationRole;
+use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
 
