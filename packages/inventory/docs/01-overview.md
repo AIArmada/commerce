@@ -33,10 +33,9 @@ The `aiarmada/inventory` package owns stock state, warehouse structure, allocati
 
 - **Models** — `InventoryLocation`, `InventoryLevel`, `InventoryMovement`, `InventoryAllocation`, `InventoryBatch`, `InventorySerial`, `InventoryCostLayer`, `InventoryValuationSnapshot`, `InventoryBackorder`, `InventoryDemandHistory`, `InventorySupplierLeadtime`, `InventoryReorderSuggestion`
 - **Actions (16)** — `ReceiveInventory`, `ShipInventory`, `TransferInventory`, `AdjustInventory`, `AllocateStock`, `CommitStock`, `ReleaseStock`, `CreateBatch`, `RecordSerial`, `CreateBackorder`, `ResolveBackorder`, `ProcessExpiredBatches`, `CheckLowInventory`, `ApproveReorderSuggestion`, `RejectReorderSuggestion`, `CreateValuationSnapshot`
-- **Contracts** — `InventoryableInterface`, `CheckoutReservationServiceInterface`, `ProvidesInventoryCommitContext`, `ExportInterface`, `ReportInterface`
+- **Contracts** — `InventoryableInterface`, `CheckoutReservationServiceInterface`, `ProvidesInventoryCommitContext`, `ExportableInterface`, `ScopedCapacityReservationServiceInterface`
 - **Facades** — `Inventory`, `InventoryAllocation`
-- **Services** — reorganized into subdirectories: `Batch/`, `Costing/`, `Serial/`, `Stock/`
-- **Support registries** — `ExportRegistry`, `ReportRegistry`
+- **Features** — Stock, Reservations, Traceability, Valuation, Replenishment, Backorders, ScopedCapacity and Reporting
 
 ## Owner scoping and security notes
 
@@ -102,60 +101,20 @@ The `aiarmada/inventory` package owns stock state, warehouse structure, allocati
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Facades                                    │
-│    Inventory::receive()    InventoryAllocation::allocate()      │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│                   Contracts                                 │
-│  InventoryableInterface       CheckoutReservationServiceInterface │
-│  ProvidesInventoryCommitContext                                 │
-│  ExportInterface              ReportInterface                   │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│                 Actions (16, via AsAction)                       │
-│  ReceiveInventory  ShipInventory  TransferInventory             │
-│  AdjustInventory   AllocateStock   CommitStock                  │
-│  ReleaseStock      CreateBatch    RecordSerial                  │
-│  CreateBackorder   ResolveBackorder  ProcessExpiredBatches      │
-│  CheckLowInventory  ApproveReorderSuggestion                    │
-│  RejectReorderSuggestion  CreateValuationSnapshot               │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│                   Services (subdirectories)                      │
-│  Stock/                     Batch/                              │
-│    InventoryAllocationService   BatchService                    │
-│    BackorderService             BatchAllocationService          │
-│    ReplenishmentService         ExpiryMonitorService            │
-│    DemandForecastService                                        │
-│    StockThresholdService    Costing/                            │
-│    AlertDispatchService        FifoCostService                  │
-│    LocationTreeService         WeightedAverageCostService       │
-│                                StandardCostService              │
-│  Serial/                      ValuationService                  │
-│    SerialService                                                 │
-│    SerialLookupService    InventoryService (core ops)            │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│               Support Registries                                 │
-│  ExportRegistry              ReportRegistry                     │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────────┐
-│                        Models                                   │
-│  InventoryLocation     InventoryLevel      InventoryMovement    │
-│  InventoryAllocation   InventoryBatch      InventorySerial      │
-│  InventorySerialHistory InventoryCostLayer                      │
-│  InventoryStandardCost InventoryValuationSnapshot               │
-│  InventoryBackorder    InventoryDemandHistory                   │
-│  InventorySupplierLeadtime InventoryReorderSuggestion           │
-└─────────────────────────────────────────────────────────────────┘
-```
+Inventory uses a modular Laravel Dune layout. Each capability declares table ownership in its `feature.json` and registers its bindings through `FeatureModule`.
+
+| Feature | Responsibility |
+|---|---|
+| Stock | Locations, stock levels, movements, threshold monitoring |
+| Reservations | Cart allocations, checkout reservations, order operations |
+| Traceability | Batches, serial numbers, FEFO planning |
+| Valuation | Cost layers, standard costs, valuation snapshots |
+| Replenishment | Forecasting, supplier lead times and reorder suggestions |
+| Backorders | Backorder lifecycle |
+| ScopedCapacity | Scoped capacity reservations |
+| Reporting | Read models, analytics and exports |
+
+Use feature-owned actions for writes and named queries for reads. Implement `Contracts/ExportableInterface` to supply rows to the Reporting export action.
 
 ## Quick Example
 

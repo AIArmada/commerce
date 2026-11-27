@@ -19,3 +19,5 @@ Inventory exports use `Contracts/ExportableInterface`, `Features/Reporting/Queri
 Use the immutable `AIArmada\Inventory\Data\AllocationContext` for allocation strategy inputs. Fluent context methods return new instances.
 
 FEFO batch planning belongs to `Features/Traceability/Queries/FefoStrategy`; nearest-location planning belongs to `Features/Stock/Queries/NearestLocationStrategy`. Resolve FEFO through the container for the stock visibility dependency. These planners are read-only and do not reserve inventory.
+
+Reorder suggestion reporting uses `Features/Replenishment/Api/ReorderSuggestionCounts`; implement `Contracts/ExportableInterface` for custom export rows.

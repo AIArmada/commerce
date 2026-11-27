@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Api\ReorderSuggestionCounts;
 use AIArmada\Inventory\Features\Reservations\Api\ActiveAllocationCount;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -89,6 +89,7 @@ final class StockLevelReport
         return InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
             ->whereRaw('quantity_on_hand - quantity_reserved <= reorder_point')
             ->where('reorder_point', '>', 0)
+            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
             ->count();
     }
 
@@ -127,8 +128,10 @@ final class StockLevelReport
             InventoryLevel::query()
                 ->select([
                     'location_id',
-                    DB::raw('COUNT(DISTINCT CONCAT(inventoryable_type, inventoryable_id)) as sku_count'),
+                    DB::raw('COUNT(*) as sku_count'),
                     DB::raw('SUM(quantity_on_hand) as total_quantity'),
+                    DB::raw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved > 0 AND reorder_point > 0 AND quantity_on_hand - quantity_reserved <= reorder_point THEN 1 END) as low_stock_count'),
+                    DB::raw('COUNT(CASE WHEN quantity_on_hand - quantity_reserved <= 0 THEN 1 END) as out_of_stock_count'),
                 ])
                 ->with('location:id,name')
                 ->groupBy('location_id')
@@ -142,8 +145,8 @@ final class StockLevelReport
                 'sku_count' => (int) $row->sku_count,
                 'total_quantity' => (int) $row->total_quantity,
                 'total_value' => (int) 0, // Requires cost layer integration
-                'low_stock_count' => (int) 0,
-                'out_of_stock_count' => (int) 0,
+                'low_stock_count' => (int) $row->getAttribute('low_stock_count'),
+                'out_of_stock_count' => (int) $row->getAttribute('out_of_stock_count'),
             ]);
 
         return $stockByLocation;
@@ -237,62 +240,20 @@ final class StockLevelReport
     {
         $belowReorderPointQuery = InventoryOwnerScope::applyToLocationQuery(
             InventoryLevel::query()->needsReorder()
-        );
+        )->select('inventoryable_type', 'inventoryable_id')->distinct();
 
-        $belowReorderPoint = (int) $belowReorderPointQuery
-            ->selectRaw("COUNT(DISTINCT CONCAT(inventoryable_type, ':', inventoryable_id)) as aggregate")
-            ->value('aggregate');
+        $belowReorderPoint = DB::query()
+            ->fromSub($belowReorderPointQuery->toBase(), 'reorder_items')
+            ->count();
 
-        $pendingSuggestionsQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryReorderSuggestion::query()->pending()
-        );
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
-
-            if (! $includeNullLocation) {
-                $pendingSuggestionsQuery->whereNotNull('location_id');
-            }
-        }
-
-        $pendingSuggestions = $pendingSuggestionsQuery->count();
-
-        $approvedSuggestionsQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryReorderSuggestion::query()->where('status', 'approved')
-        );
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
-
-            if (! $includeNullLocation) {
-                $approvedSuggestionsQuery->whereNotNull('location_id');
-            }
-        }
-
-        $approvedSuggestions = $approvedSuggestionsQuery->count();
-
-        $suggestedValue = 0; // Requires cost integration
-
-        $urgentReordersQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryReorderSuggestion::query()->pending()->critical()
-        );
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $includeNullLocation = InventoryOwnerScope::includeGlobal() || InventoryOwnerScope::isCurrentContextGlobalOnly();
-
-            if (! $includeNullLocation) {
-                $urgentReordersQuery->whereNotNull('location_id');
-            }
-        }
-
-        $urgentReorders = $urgentReordersQuery->count();
+        $counts = app(ReorderSuggestionCounts::class)->counts();
 
         return [
             'items_below_reorder_point' => $belowReorderPoint,
-            'pending_suggestions' => $pendingSuggestions,
-            'approved_suggestions' => $approvedSuggestions,
-            'total_suggested_value' => $suggestedValue,
-            'urgent_reorders' => $urgentReorders,
+            'pending_suggestions' => $counts['pending'],
+            'approved_suggestions' => $counts['approved'],
+            'total_suggested_value' => 0,
+            'urgent_reorders' => $counts['urgent'],
         ];
     }
 
@@ -322,7 +283,7 @@ final class StockLevelReport
                     DB::raw('MIN(quantity_on_hand) as min_quantity'),
                 ])
                 ->groupBy('inventoryable_type', 'inventoryable_id')
-                ->having('location_count', '>', 1)
+                ->havingRaw('COUNT(DISTINCT location_id) > ?', [1])
                 ->orderByDesc('total_quantity')
                 ->limit($limit)
         );

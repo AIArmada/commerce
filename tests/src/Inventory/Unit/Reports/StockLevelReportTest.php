@@ -190,7 +190,7 @@ describe('StockLevelReport', function (): void {
                 'total_suggested_value',
                 'urgent_reorders',
             ]);
-        })->skip('Production code uses SQLite-incompatible SQL');
+        });
 
         it('counts items below reorder point', function (): void {
             InventoryLevel::factory()->create([
@@ -204,8 +204,8 @@ describe('StockLevelReport', function (): void {
 
             $result = $this->report->getReorderStatus();
 
-            expect($result['items_below_reorder_point'])->toBeInt();
-        })->skip('Production code uses SQLite-incompatible SQL');
+            expect($result['items_below_reorder_point'])->toBe(1);
+        });
 
         it('counts pending suggestions', function (): void {
             InventoryReorderSuggestion::factory()
@@ -218,7 +218,7 @@ describe('StockLevelReport', function (): void {
             $result = $this->report->getReorderStatus();
 
             expect($result['pending_suggestions'])->toBe(1);
-        })->skip('Production code uses SQLite-incompatible SQL');
+        });
     });
 
     describe('getStockDistribution', function (): void {
@@ -456,4 +456,56 @@ it('reports on-hand batch value and excludes expired batches from upcoming expir
         ->and($bucket['total_quantity'])->toBe(30)
         ->and($bucket['total_value'])->toBe(1500)
         ->and($bucket['expiring_soon'])->toBe(1);
+});
+
+it('counts distinct reorder items and aggregates suggestion statuses', function (): void {
+    $otherLocation = InventoryLocation::factory()->create();
+
+    foreach ([$this->location, $otherLocation] as $location) {
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $location->id,
+            'quantity_on_hand' => 3,
+            'quantity_reserved' => 0,
+            'reorder_point' => 10,
+            'alert_status' => AlertStatus::LowStock->value,
+        ]);
+    }
+
+    InventoryReorderSuggestion::factory()->forModel($this->item)->pending()->critical()->create([
+        'location_id' => $this->location->id,
+    ]);
+    InventoryReorderSuggestion::factory()->forModel($this->item)->approved()->critical()->create([
+        'location_id' => $otherLocation->id,
+    ]);
+
+    $result = $this->report->getReorderStatus();
+
+    expect($result['items_below_reorder_point'])->toBe(1)
+        ->and($result['pending_suggestions'])->toBe(1)
+        ->and($result['approved_suggestions'])->toBe(1)
+        ->and($result['urgent_reorders'])->toBe(1);
+});
+
+it('reports real available stock alert counts by location', function (): void {
+    foreach ([[10, 7, 5], [10, 10, 5], [20, 0, 5]] as [$onHand, $reserved, $reorderPoint]) {
+        $item = InventoryItem::create(['name' => 'Stock item']);
+
+        InventoryLevel::factory()->create([
+            'inventoryable_type' => $item->getMorphClass(),
+            'inventoryable_id' => $item->getKey(),
+            'location_id' => $this->location->id,
+            'quantity_on_hand' => $onHand,
+            'quantity_reserved' => $reserved,
+            'reorder_point' => $reorderPoint,
+        ]);
+    }
+
+    $result = $this->report->getStockByLocation()->first();
+
+    expect($result['sku_count'])->toBe(3)
+        ->and($result['total_quantity'])->toBe(40)
+        ->and($result['low_stock_count'])->toBe(1)
+        ->and($result['out_of_stock_count'])->toBe(1);
 });

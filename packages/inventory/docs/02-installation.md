@@ -128,31 +128,19 @@ Inventory::receive($product, $location->id, 100);
 echo $product->getTotalAvailable(); // 100
 ```
 
-## Extending Contracts and Registries
+## Extending Contracts
 
-The package defines **6 contracts** in `Contracts/` that you can implement to extend behaviour:
+Use the package's public contracts under `Contracts/`:
 
 | Contract | Purpose |
-|----------|---------|
-| `InventoryableInterface` | Scalar stock availability contract; use `HasInventory` for ORM relationships and location queries |
+|---|---|
+| `InventoryableInterface` | Scalar inventory availability |
 | `CheckoutReservationServiceInterface` | Checkout reservation groups |
 | `ProvidesInventoryCommitContext` | Cart/order context for payment commit listeners |
-| `ExportInterface` | Custom export formats |
-| `ReportInterface` | Custom report types |
+| `ScopedCapacityReservationServiceInterface` | Scoped capacity reservation lifecycle |
+| `ExportableInterface` | Export headers, rows and filename |
 
-Export and report implementations can be registered through the **Support registries** in `Support/`:
-
-```php
-use AIArmada\Inventory\Support\ExportRegistry;
-use AIArmada\Inventory\Support\ReportRegistry;
-```
-
-Costing adapters are named services under `Services/Costing/` and are wired directly into `ValuationService`. Adding a new costing method requires updating that service's explicit method map alongside its adapter.
-
-The export and report registries provide `register()` and `get()` methods, making those surfaces extensible without modifying core code.
-
-> **warning**
-> `CostingMethodRegistry` and `AllocationStrategyRegistry` are removed. Migrate costing integrations to `ValuationService` and keep custom costing adapters in its explicit method map; allocation uses the `AllocationStrategy` enum and service match directly.
+Pass an `ExportableInterface` implementation to `Features\\Reporting\\Actions\\ExportService`. Reporting queries live under `Features/Reporting/Queries`. Costing adapters belong to `Features/Valuation/Persistence`.
 
 ## Next Steps
 
