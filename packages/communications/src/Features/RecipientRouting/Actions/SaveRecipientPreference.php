@@ -63,13 +63,13 @@ final readonly class SaveRecipientPreference
 
     private function validate(CommunicationPreference $record): void
     {
-        if (mb_trim((string) $record->channel) === '') {
-            throw new InvalidArgumentException('Channel is required.');
+        if ($record->channel !== null && mb_trim($record->channel) === '') {
+            throw new InvalidArgumentException('Channel must be non-empty when specified.');
         }
+
         if (($record->scope_type === null) !== ($record->scope_key === null)) {
             throw new InvalidArgumentException('Scope type and key must both be present or both be null.');
         }
-
     }
 
     /** @param array<string, mixed> $attributes @return array<string, mixed> */

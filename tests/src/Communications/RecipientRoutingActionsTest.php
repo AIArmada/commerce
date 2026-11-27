@@ -35,7 +35,8 @@ it('routes to verified destinations ahead of unverified ones and protects recipi
         expect(fn () => $action->update($other, $verified, ['address' => 'forged@example.com']))
             ->toThrow(AuthorizationException::class);
 
-        $preference = app(SaveRecipientPreference::class)->create($recipient, ['channel' => 'mail']);
+        $preference = app(SaveRecipientPreference::class)->create($recipient, ['category' => 'marketing']);
+        expect($preference->channel)->toBeNull();
         expect(fn () => app(SaveRecipientPreference::class)->update($other, $preference, ['category' => 'marketing']))
             ->toThrow(AuthorizationException::class);
     });

@@ -8,6 +8,7 @@ use AIArmada\Persons\Features\Identity\Queries\PersonDataMapper;
 use AIArmada\Persons\Models\Person;
 
 it('maps person records into immutable framework-independent data', function (): void {
+    persons_register_morph_map('person');
     $person = Person::factory()->create(['name' => 'Mapped Person', 'status' => PersonStatus::Active]);
     $data = app(PersonDataMapper::class)->fromPerson($person);
 

@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $owner_id
  * @property string|null $recipient_type
  * @property string|null $recipient_id
- * @property string $channel
+ * @property string|null $channel
  * @property string|null $category
  * @property string|null $scope_type
  * @property string|null $scope_key
