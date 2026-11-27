@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Actions\UpdateCatalogProducts;
+use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;

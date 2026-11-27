@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\CreateCompositeProduct;
+use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
@@ -498,4 +499,27 @@ it('blocks retyping or disabling products and variants referenced by a package',
         ->toThrow(InvalidCompositePackageException::class, 'cannot be disabled');
 
     expect($variant->fresh()->is_enabled)->toBeTrue();
+});
+
+it('duplicates composite membership without copying publication state', function (): void {
+    $component = makeComponentProduct();
+    $source = app(CreateCompositeProduct::class)->handle([
+        'name' => 'Original Kit',
+        'sku' => 'ORIGINAL-KIT',
+        'status' => ProductStatus::Active,
+        'price' => 2500,
+    ], [
+        ['component_product_id' => $component->id, 'quantity' => 2],
+    ]);
+
+    $copy = app(DuplicateProduct::class)->execute($source);
+    $membership = $copy->components()->sole();
+
+    expect($copy->getKey())->not->toBe($source->getKey())
+        ->and($copy->status)->toBe(ProductStatus::Draft)
+        ->and($copy->published_at)->toBeNull()
+        ->and($copy->sku)->not->toBe($source->sku)
+        ->and($membership->component_product_id)->toBe($component->id)
+        ->and($membership->quantity)->toBe(2)
+        ->and($source->fresh()->status)->toBe(ProductStatus::Active);
 });

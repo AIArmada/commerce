@@ -123,5 +123,4 @@ final readonly class DuplicateProduct
 
         throw new RuntimeException("Unable to generate a unique {$column} for the duplicated product.");
     }
-
 }
