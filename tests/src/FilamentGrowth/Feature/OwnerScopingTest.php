@@ -16,7 +16,6 @@ use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
-use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;

@@ -1,0 +1,5 @@
+# Growth
+
+Growth owns the experiment aggregate (experiments, variants and assignments). Keep all durable writes in named Actions, including maintenance and deletion. Read-only builders belong in Queries; immutable scalar data belongs in Data. HTTP and Livewire adapters live in EntryPoints. Owner scoping must match Signals; never remove owner validation from assignment or property resolution.
+
+Use the `growth.experiment` middleware alias to resolve an experiment. Custom request subject resolvers implement `AIArmada\Growth\EntryPoints\Http\RequestExperimentSubjectResolver`. The context facade and helpers expose the current request's assignment. Use `AIArmada\Growth\Actions\ResolveExperimentAssignment` for explicit assignments and `AIArmada\Growth\Actions\AggregateExperimentMetrics` for analytics. Never add compatibility aliases for moved classes.

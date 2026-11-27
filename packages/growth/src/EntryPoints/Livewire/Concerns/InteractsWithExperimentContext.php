@@ -6,7 +6,6 @@ namespace AIArmada\Growth\EntryPoints\Livewire\Concerns;
 
 use AIArmada\Growth\Support\Context\ExperimentContext;
 
-/** @phpstan-ignore trait.unused */
 trait InteractsWithExperimentContext
 {
     public function experimentContext(): ?ExperimentContext
