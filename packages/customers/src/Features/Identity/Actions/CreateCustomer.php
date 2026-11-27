@@ -9,6 +9,7 @@ use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class CreateCustomer
 {
@@ -51,7 +52,11 @@ final class CreateCustomer
             $customer->forceFill([
                 'user_id' => $user?->getKey(),
                 'is_guest' => $isGuest,
-            ])->save();
+            ]);
+
+            if (! $customer->save()) {
+                throw new RuntimeException('Customer creation was cancelled.');
+            }
 
             if ($normalizedEmail !== null) {
                 $customer->addContactMethod(new ContactMethodData(

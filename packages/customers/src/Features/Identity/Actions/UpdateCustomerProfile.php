@@ -9,6 +9,7 @@ use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
+use RuntimeException;
 
 final class UpdateCustomerProfile
 {
@@ -58,8 +59,8 @@ final class UpdateCustomerProfile
             if ($updates !== []) {
                 $customer->fill($updates);
 
-                if ($customer->isDirty()) {
-                    $customer->save();
+                if ($customer->isDirty() && ! $customer->save()) {
+                    throw new RuntimeException('Customer profile update was cancelled.');
                 }
             }
 

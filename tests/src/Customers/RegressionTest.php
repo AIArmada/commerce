@@ -11,6 +11,8 @@ use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Actions\DeleteCustomer;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToPerson;
+use AIArmada\Customers\Features\Identity\Actions\LinkCustomerToUser;
 use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
@@ -779,6 +781,52 @@ describe('customer delete cascades', function (): void {
     });
 });
 
+it('rejects cancelled customer creation before writing contacts', function (): void {
+    Customer::saving(static fn (Customer $record): bool => $record->first_name !== 'VetoCreation');
+
+    expect(fn () => app(CreateCustomer::class)->execute(
+        'veto-creation@example.com',
+        ['first_name' => 'VetoCreation', 'last_name' => 'Customer'],
+        [],
+        null,
+        true,
+    ))->toThrow(RuntimeException::class, 'Customer creation was cancelled.');
+
+    expect(Customer::query()->where('first_name', 'VetoCreation')->exists())->toBeFalse();
+});
+
+it('rejects cancelled customer detail and profile updates', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Original', 'last_name' => 'Customer']);
+
+    Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+    expect(fn () => app(SaveCustomerDetails::class)->update($customer, ['first_name' => 'Changed']))
+        ->toThrow(RuntimeException::class, 'Customer details save was cancelled.');
+
+    expect(fn () => app(UpdateCustomerProfile::class)->execute(
+        $customer,
+        ['first_name' => 'Changed', 'last_name' => 'Customer', 'email' => 'veto-update@example.com'],
+        [],
+        null,
+    ))->toThrow(RuntimeException::class, 'Customer profile update was cancelled.');
+
+    expect($customer->fresh()->first_name)->toBe('Original')
+        ->and($customer->contactMethods()->exists())->toBeFalse();
+});
+
+it('rejects cancelled customer user linkage', function (): void {
+    $customer = createRegressionTestCustomer(['first_name' => 'Guest', 'last_name' => 'Customer', 'is_guest' => true]);
+    $user = User::factory()->create();
+
+    Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+    expect(fn () => app(LinkCustomerToUser::class)->execute($customer, $user))
+        ->toThrow(RuntimeException::class, 'Customer user link was cancelled.');
+
+    expect($customer->fresh()->user_id)->toBeNull()
+        ->and($customer->fresh()->is_guest)->toBeTrue();
+});
+
 describe('atomic person linkage', function (): void {
     beforeEach(function (): void {
         config()->set('persons.models.person', Person::class);
@@ -789,6 +837,19 @@ describe('atomic person linkage', function (): void {
             $table->uuid('id')->primary();
             $table->timestamps();
         });
+    });
+
+    it('rejects cancelled person linkage', function (): void {
+        $personId = (string) Str::uuid();
+        DB::table('persons')->insert(['id' => $personId]);
+        $customer = createRegressionTestCustomer(['first_name' => 'Person', 'last_name' => 'Veto']);
+
+        Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $customer->getKey());
+
+        expect(fn () => app(LinkCustomerToPerson::class)->executeByKey($customer, $personId))
+            ->toThrow(RuntimeException::class, 'Customer person link was cancelled.');
+
+        expect($customer->fresh()->person_id)->toBeNull();
     });
 
     it('rolls back customer creation when the person link fails', function (): void {

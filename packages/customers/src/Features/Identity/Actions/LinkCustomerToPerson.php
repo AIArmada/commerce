@@ -9,6 +9,7 @@ use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use LogicException;
+use RuntimeException;
 
 final class LinkCustomerToPerson
 {
@@ -28,12 +29,17 @@ final class LinkCustomerToPerson
             throw new InvalidArgumentException('The linked model must be a persisted configured person model.');
         }
 
-        /** @var Customer $ownedCustomer */
-        $ownedCustomer = OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
-        $ownedCustomer->forceFill(['person_id' => $person->getKey()]);
-        $ownedCustomer->save();
+        return $customer->getConnection()->transaction(function () use ($customer, $person): Customer {
+            OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
+            $ownedCustomer = $customer->newQuery()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
+            $ownedCustomer->forceFill(['person_id' => $person->getKey()]);
 
-        return $ownedCustomer->refresh();
+            if ($ownedCustomer->isDirty() && ! $ownedCustomer->save()) {
+                throw new RuntimeException('Customer person link was cancelled.');
+            }
+
+            return $ownedCustomer->refresh();
+        });
     }
 
     /**

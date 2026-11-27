@@ -9,6 +9,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class SaveCustomerDetails
 {
@@ -70,7 +71,9 @@ final readonly class SaveCustomerDetails
             }
         }
 
-        $customer->save();
+        if (! $customer->save()) {
+            throw new RuntimeException('Customer details save was cancelled.');
+        }
 
         return $customer;
     }

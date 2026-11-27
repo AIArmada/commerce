@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final readonly class LinkCustomerToUser
 {
@@ -30,8 +31,8 @@ final readonly class LinkCustomerToUser
 
             $locked->forceFill(['user_id' => $user->getKey(), 'is_guest' => false]);
 
-            if ($locked->isDirty()) {
-                $locked->save();
+            if ($locked->isDirty() && ! $locked->save()) {
+                throw new RuntimeException('Customer user link was cancelled.');
             }
 
             return $locked;
