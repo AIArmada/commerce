@@ -51,7 +51,7 @@ final class ShipShipment
             }
 
             if (! $shipment->isPending()) {
-                throw new ShipmentAlreadyShippedException($shipment);
+                throw new ShipmentAlreadyShippedException($shipment->reference);
             }
 
             $order = $shipment->shippable;

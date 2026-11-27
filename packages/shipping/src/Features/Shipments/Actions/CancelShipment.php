@@ -36,7 +36,7 @@ final class CancelShipment
         return Cache::lock($lockKey, 30)->block(30, function () use ($shipment, $reason): Shipment {
             $shipment->refresh();
             if (! $shipment->isCancellable()) {
-                throw new ShipmentNotCancellableException($shipment);
+                throw new ShipmentNotCancellableException($shipment->reference, $shipment->status->getValue());
             }
 
             if ($shipment->items()->whereNotNull('package_unit_ordinal')->exists()

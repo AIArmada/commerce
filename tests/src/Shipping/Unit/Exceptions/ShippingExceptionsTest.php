@@ -47,15 +47,11 @@ describe('InvalidStatusTransitionException', function (): void {
 
 describe('ShipmentAlreadyShippedException', function (): void {
     it('contains shipment reference in message', function (): void {
-        $shipment = Mockery::mock(Shipment::class);
-        $shipment->shouldReceive('getAttribute')->with('reference')->andReturn('TEST-001');
-        $shipment->shouldReceive('__get')->with('reference')->andReturn('TEST-001');
-
-        $exception = new ShipmentAlreadyShippedException($shipment);
+        $exception = new ShipmentAlreadyShippedException('TEST-001');
 
         expect($exception->getMessage())->toContain('TEST-001');
         expect($exception->getMessage())->toContain('already been shipped');
-        expect($exception->shipment)->toBe($shipment);
+        expect($exception->reference)->toBe('TEST-001');
     });
 });
 
@@ -78,17 +74,12 @@ describe('ShipmentCreationFailedException', function (): void {
 
 describe('ShipmentNotCancellableException', function (): void {
     it('contains shipment and status in message', function (): void {
-        $shipment = Mockery::mock(Shipment::class);
-        $shipment->shouldReceive('getAttribute')->with('reference')->andReturn('TEST-002');
-        $shipment->shouldReceive('getAttribute')->with('status')->andReturn(new Delivered($shipment));
-        $shipment->shouldReceive('__get')->with('reference')->andReturn('TEST-002');
-        $shipment->shouldReceive('__get')->with('status')->andReturn(new Delivered($shipment));
-
-        $exception = new ShipmentNotCancellableException($shipment);
+        $exception = new ShipmentNotCancellableException('TEST-002', 'delivered');
 
         expect($exception->getMessage())->toContain('TEST-002');
         expect($exception->getMessage())->toContain('delivered');
         expect($exception->getMessage())->toContain('cannot be cancelled');
-        expect($exception->shipment)->toBe($shipment);
+        expect($exception->reference)->toBe('TEST-002');
+        expect($exception->status)->toBe('delivered');
     });
 });
