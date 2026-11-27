@@ -6,7 +6,6 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 
 /**
  * Handles payment failures during subscription operations.
@@ -21,21 +20,20 @@ trait HandlesPaymentFailures
     /**
      * Handle a failed payment for the given subscription.
      *
+     * @param  callable(): ?Payment  $incompletePayment
      * @throws IncompletePayment
      *
      * @internal
      */
-    public function handlePaymentFailure(Subscription $subscription): void
+    public function handlePaymentFailure(callable $incompletePayment): void
     {
-        if ($this->validateIncompletePayment && $subscription->hasIncompletePayment()) {
-            $latestPayment = $subscription->latestPayment();
-
-            if ($latestPayment) {
-                $latestPayment->validate();
+        try {
+            if ($this->validateIncompletePayment) {
+                $incompletePayment()?->validate();
             }
+        } finally {
+            $this->validateIncompletePayment = true;
         }
-
-        $this->validateIncompletePayment = true;
     }
 
     /**

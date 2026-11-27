@@ -1108,7 +1108,7 @@ class Subscription extends Model
     public function guardAgainstIncomplete(): void
     {
         if ($this->incomplete()) {
-            throw SubscriptionUpdateFailure::incompleteSubscription($this);
+            throw SubscriptionUpdateFailure::incompleteSubscription((string) $this->getKey(), $this->type);
         }
     }
 

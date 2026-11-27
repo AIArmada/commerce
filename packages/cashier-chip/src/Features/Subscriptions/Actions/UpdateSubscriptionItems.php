@@ -112,7 +112,7 @@ final readonly class UpdateSubscriptionItems
             $subscription->loadMissing('items');
 
             if ($subscription->items->contains('chip_price', $price)) {
-                throw SubscriptionUpdateFailure::duplicatePrice($subscription, $price);
+                throw SubscriptionUpdateFailure::duplicatePrice((string) $subscription->getKey(), $subscription->type, $price);
             }
 
             $this->createTrustedSubscriptionItem($subscription, [
@@ -142,7 +142,7 @@ final readonly class UpdateSubscriptionItems
     {
         return $subscription->getConnection()->transaction(function () use ($subscription, $price): Subscription {
             if ($subscription->hasSinglePrice()) {
-                throw SubscriptionUpdateFailure::cannotDeleteLastPrice($subscription);
+                throw SubscriptionUpdateFailure::cannotDeleteLastPrice((string) $subscription->getKey(), $subscription->type);
             }
 
             $subscription->items()->where('chip_price', $price)->delete();
