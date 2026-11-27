@@ -11,7 +11,8 @@
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RedactCommunicationPayloadAction"
     ],
     "table:communication_recipients": [
-      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AddCommunicationRecipientAction"
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AddCommunicationRecipientAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CaptureRecipientContent"
     ],
     "table:communication_references": [
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\AttachCommunicationReferenceAction"
@@ -23,7 +24,8 @@
       "AIArmada\\Communications\\Features\\Aggregate\\Actions\\ResolveCommunicationThreadAction"
     ],
     "table:communication_contents": [
-      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RenderCommunicationContentAction"
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\RenderCommunicationContentAction",
+      "AIArmada\\Communications\\Features\\Aggregate\\Actions\\CaptureRecipientContent"
     ]
   },
   "extensions": {}

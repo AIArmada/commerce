@@ -4,22 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\EntryPoints\Listeners;
 
-use AIArmada\Communications\Contracts\CommunicationCreator;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
-use AIArmada\Communications\Contracts\ContentRenderer;
-use AIArmada\Communications\Contracts\DestinationResolver;
-use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
-use AIArmada\Communications\Data\CommunicationContextData;
-use AIArmada\Communications\Enums\DeliveryStatus;
+use AIArmada\Communications\Contracts\NativeNotificationCapture;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationTrigger;
-use AIArmada\Communications\Enums\RecipientRole;
-use AIArmada\Communications\Models\CommunicationContent;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Support\AutoCaptureState;
-use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
 
@@ -27,12 +16,8 @@ final class AutoCaptureNotificationListener
 {
     public function __construct(
         private readonly CommunicationRecorder $recorder,
-        private readonly CommunicationCreator $creator,
-        private readonly DestinationResolver $destinationResolver,
-        private readonly RecipientSnapshotResolver $recipientResolver,
-        private readonly ContentRenderer $contentRenderer,
+        private readonly NativeNotificationCapture $capture,
         private readonly AutoCaptureState $state,
-        private readonly PayloadRedactor $redactor,
     ) {}
 
     public function handleSending(NotificationSending $event): void
@@ -62,22 +47,18 @@ final class AutoCaptureNotificationListener
         try {
             $existing = $this->state->get($event->notification);
 
-            if ($existing !== null) {
-                $this->captureAdditionalChannel(
-                    communicationId: $existing['communicationId'],
-                    notifiable: $event->notifiable,
-                    notification: $event->notification,
-                    channel: $event->channel,
-                );
-
-                return;
-            }
-
-            $this->captureFirstChannel(
+            $captured = $this->capture->capture(
                 notifiable: $event->notifiable,
                 notification: $event->notification,
                 channel: $event->channel,
+                communicationId: $existing['communicationId'] ?? null,
             );
+
+            if ($existing === null) {
+                $this->state->register($event->notification, $captured->communicationId, [$event->channel => $captured->deliveryId]);
+            } else {
+                $this->state->addDelivery($event->notification, $event->channel, $captured->deliveryId);
+            }
         } finally {
             $this->state->leaveRecursion();
         }
@@ -174,109 +155,4 @@ final class AutoCaptureNotificationListener
         return false;
     }
 
-    private function captureFirstChannel(
-        mixed $notifiable,
-        object $notification,
-        string $channel,
-    ): void {
-        $communicationId = $this->creator->handle(
-            CommunicationContextData::from([
-                'direction' => 'outbound',
-                'category' => 'transactional',
-                'priority' => config('communications.defaults.priority', 'normal'),
-            ]),
-        );
-
-        $snapshot = $this->recipientResolver->resolve($notifiable);
-
-        $recipient = new CommunicationRecipient;
-        $recipient->communication_id = $communicationId;
-        $recipient->recipient_type = is_object($notifiable) ? $notifiable::class : null;
-        $recipient->recipient_id = is_object($notifiable) && method_exists($notifiable, 'getKey') ? $notifiable->getKey() : null;
-        $recipient->role = RecipientRole::To;
-        $recipient->display_name = $snapshot->displayName;
-        $recipient->locale = $snapshot->locale;
-        $recipient->timezone = $snapshot->timezone;
-        $recipient->snapshot = $this->redactor->redact($snapshot->extra);
-        $recipient->save();
-
-        $content = $this->createContent($communicationId, $recipient->id, $notifiable, $notification, $channel);
-
-        $delivery = $this->createDelivery($communicationId, $recipient->id, $content->id, $notifiable, $channel);
-
-        $this->state->register($notification, $communicationId, [$channel => $delivery->id]);
-    }
-
-    private function captureAdditionalChannel(
-        string $communicationId,
-        mixed $notifiable,
-        object $notification,
-        string $channel,
-    ): void {
-        $recipient = CommunicationRecipient::query()
-            ->where('communication_id', $communicationId)
-            ->first();
-
-        if ($recipient === null) {
-            return;
-        }
-
-        $content = $this->createContent($communicationId, $recipient->id, $notifiable, $notification, $channel);
-
-        $delivery = $this->createDelivery($communicationId, $recipient->id, $content->id, $notifiable, $channel);
-
-        $this->state->addDelivery($notification, $channel, $delivery->id);
-    }
-
-    private function createContent(
-        string $communicationId,
-        string $recipientId,
-        mixed $notifiable,
-        mixed $notification,
-        string $channel,
-    ): CommunicationContent {
-        $rendered = $this->contentRenderer->renderFromNotification($notifiable, $notification, $channel);
-
-        $content = new CommunicationContent;
-        $content->communication_id = $communicationId;
-        $content->recipient_id = $recipientId;
-        $content->channel = $channel;
-        $content->locale = $rendered->locale;
-        $content->subject = $this->redactor->redactText($rendered->subject);
-        $content->content_text = $this->redactor->redactText($rendered->contentText);
-        $content->content_html = $this->redactor->redactText($rendered->contentHtml);
-        $content->payload = $this->redactor->redact($rendered->payload);
-        $content->checksum = $rendered->checksum;
-        $content->rendered_at = CarbonImmutable::now();
-        $content->save();
-
-        return $content;
-    }
-
-    private function createDelivery(
-        string $communicationId,
-        string $recipientId,
-        string $contentId,
-        mixed $notifiable,
-        string $channel,
-    ): CommunicationDelivery {
-        $destination = $this->destinationResolver->resolve($notifiable, $channel);
-
-        $delivery = new CommunicationDelivery;
-        $delivery->communication_id = $communicationId;
-        $delivery->recipient_id = $recipientId;
-        $delivery->content_id = $contentId;
-        $delivery->channel = $channel;
-        $delivery->provider = $destination?->channel ?? $channel;
-        $delivery->destination_ciphertext = $destination?->ciphertext;
-        $delivery->destination_hash = $destination?->hash;
-        $delivery->destination_hint = $destination?->hint;
-        $delivery->status = DeliveryStatus::Queued;
-        $delivery->attempt_count = 0;
-        $delivery->max_attempts = config('communications.defaults.max_attempts', 3);
-        $delivery->queued_at = CarbonImmutable::now();
-        $delivery->save();
-
-        return $delivery;
-    }
 }
