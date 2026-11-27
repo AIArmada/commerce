@@ -13,6 +13,7 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Queries\AssignmentQuery;
 use AIArmada\Growth\Queries\ExperimentResolver;
+use AIArmada\Growth\Queries\ScopeSignalQueryToOwner;
 use AIArmada\Growth\Queries\VariantQuery;
 use AIArmada\Growth\Support\AnonymousSubjectKey;
 use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;

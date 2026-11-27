@@ -15,6 +15,7 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Queries\AssignmentQuery;
 use AIArmada\Growth\Queries\ExperimentResolver;
+use AIArmada\Growth\Queries\ScopeSignalQueryToOwner;
 use AIArmada\Growth\Queries\MetricsCalculator;
 use AIArmada\Growth\Queries\SignalEventQuery;
 use AIArmada\Growth\Queries\VariantQuery;
