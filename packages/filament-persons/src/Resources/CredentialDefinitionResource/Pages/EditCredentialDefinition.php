@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages;
 
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource;
 use AIArmada\Persons\Features\Credentials\Actions\SaveCredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -29,7 +30,8 @@ final class EditCredentialDefinition extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (CredentialDefinition $record): bool => app(DeleteCredentialDefinition::class)->execute($record)),
         ];
     }
 }

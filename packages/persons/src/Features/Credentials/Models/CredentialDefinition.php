@@ -6,12 +6,12 @@ namespace AIArmada\Persons\Features\Credentials\Models;
 
 use AIArmada\Persons\Database\Factories\CredentialDefinitionFactory;
 use AIArmada\Persons\Enums\CredentialType;
+use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -39,9 +39,7 @@ class CredentialDefinition extends Model
     protected static function booted(): void
     {
         static::deleting(function (CredentialDefinition $definition): void {
-            DB::transaction(static function () use ($definition): void {
-                $definition->assignments()->chunkById(500, static fn (Collection $assignments) => $assignments->each->delete());
-            });
+            app(DeleteCredentialDefinition::class)->deleteAssignments($definition);
         });
     }
 

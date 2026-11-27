@@ -8,13 +8,13 @@ use AIArmada\Persons\Database\Factories\TitleFactory;
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -57,9 +57,7 @@ class Title extends Model
         });
 
         static::deleting(function (Title $title): void {
-            DB::transaction(static function () use ($title): void {
-                $title->assignments()->chunkById(500, static fn (Collection $assignments) => $assignments->each->delete());
-            });
+            app(DeleteTitle::class)->deleteAssignments($title);
         });
     }
 

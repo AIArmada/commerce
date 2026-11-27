@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
+use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
+use AIArmada\Persons\Features\Credentials\Actions\DeleteCredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
 use AIArmada\Persons\Features\Identity\Actions\DeletePersonAction;
 use AIArmada\Persons\Enums\AssignmentStatus;
@@ -217,4 +220,41 @@ describe('person integrity guards', function (): void {
 
         expect($selects)->toBeEmpty();
     });
+});
+
+it('rolls back title deletion when the parent deletion is cancelled', function (): void {
+    $person = Person::create(['name' => 'Title Deletion Veto']);
+    $category = TitleCategory::create(['code' => 'title-veto', 'name' => 'Title Veto', 'sort_order' => 1]);
+    $title = Title::create([
+        'category_id' => $category->id,
+        'name' => 'Dr.',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $assignment = app(AssignTitleAction::class)->execute($person, $title->id);
+
+    Title::deleting(static fn (Title $record): bool => $record->id !== $title->id);
+
+    expect(fn () => app(DeleteTitle::class)->execute($title))
+        ->toThrow(RuntimeException::class, 'Title deletion was cancelled.');
+
+    expect(Title::query()->whereKey($title->id)->exists())->toBeTrue()
+        ->and(TitleAssignment::query()->whereKey($assignment->id)->exists())->toBeTrue();
+});
+
+it('rolls back credential definition deletion when an assignment vetoes deletion', function (): void {
+    $person = Person::create(['name' => 'Credential Deletion Veto']);
+    $definition = CredentialDefinition::create([
+        'name' => 'CPA',
+        'credential_type' => CredentialType::ProfessionalLicense,
+    ]);
+    $assignment = app(AssignCredentialAction::class)->execute($person, $definition->id);
+
+    CredentialAssignment::deleting(static fn (CredentialAssignment $record): bool => $record->id !== $assignment->id);
+
+    expect(fn () => app(DeleteCredentialDefinition::class)->execute($definition))
+        ->toThrow(RuntimeException::class, 'CredentialDefinition assignment deletion was cancelled.');
+
+    expect(CredentialDefinition::query()->whereKey($definition->id)->exists())->toBeTrue()
+        ->and(CredentialAssignment::query()->whereKey($assignment->id)->exists())->toBeTrue();
 });
