@@ -438,6 +438,42 @@ describe('ChipCollectClient Error Handling', function (): void {
     });
 });
 
+describe('ChipCollectClient Sensitive Logging', function (): void {
+    it('masks recurring credentials in request and response bodies and URLs', function (): void {
+        config([
+            'chip.http.rate_limit.enabled' => false,
+            'chip.logging.enabled' => true,
+            'chip.logging.log_requests' => true,
+            'chip.logging.log_responses' => true,
+            'chip.logging.mask_sensitive_data' => true,
+        ]);
+
+        $handler = new TestHandler;
+        Log::shouldReceive('channel')->andReturn(new Logger('test', [$handler]));
+
+        Http::fake(['*' => Http::response([
+            'client' => ['recurring_token' => 'response-secret'],
+            'token_id' => 'response-token-id',
+        ], 200)]);
+
+        $this->client->post('clients/client-1/recurring_tokens/path-secret/?email=buyer%40example.com', [
+            'recurring_token' => 'request-secret',
+        ]);
+
+        $records = $handler->getRecords();
+
+        expect($records)->toHaveCount(2)
+            ->and($records[0]->context['url'])->not->toContain('path-secret')
+            ->and($records[0]->context['url'])->not->toContain('buyer')
+            ->and($records[0]->context['data']['recurring_token'])->toBe('***MASKED***')
+            ->and($records[1]->context['data']['client']['recurring_token'])->toBe('***MASKED***')
+            ->and($records[1]->context['data']['token_id'])->toBe('***MASKED***');
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'path-secret')
+            && $request['recurring_token'] === 'request-secret');
+    });
+});
+
 describe('ChipCollectClient Rate Limit Logging', function (): void {
     it('logs a single masked warning on a server 429', function (): void {
         config(['chip.http.rate_limit.enabled' => false, 'chip.logging.enabled' => true, 'chip.logging.log_requests' => false, 'chip.logging.log_responses' => false]);
