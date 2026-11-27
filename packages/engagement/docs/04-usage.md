@@ -161,15 +161,15 @@ Common reaction types: `like`, `love`, `useful`, `support`, `insightful`, `funny
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Traits\CanSubscribe;
-use AIArmada\Engagement\Traits\HasSubscriptions;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Concerns\CanSubscribe;
+use AIArmada\Engagement\Features\Subscriptions\Concerns\HasSubscriptions;
 
 class User extends Model implements CanInteract { use CanSubscribe; }
 class Event extends Model implements Subscribable { use HasSubscriptions; }
 
 // Subscribe to all online events
-$subscription = app(SubscriptionManager::class)->subscribe(
+$subscription = app(ManageSubscriptionsAction::class)->subscribe(
     subscriber: $user,
     subject: null,              // null = global subscription
     subscriptionType: 'updates',
@@ -180,20 +180,20 @@ $subscription = app(SubscriptionManager::class)->subscribe(
 );
 
 // Subscribe to a specific event's updates
-$subscription = app(SubscriptionManager::class)->subscribe(
+$subscription = app(ManageSubscriptionsAction::class)->subscribe(
     subscriber: $user,
     subject: $event,
     subscriptionType: 'updates',
 );
 
 // Unsubscribe
-app(SubscriptionManager::class)->unsubscribe($user, $event);
+app(ManageSubscriptionsAction::class)->unsubscribe($user, $event);
 
 // Mute a subscription
-app(SubscriptionManager::class)->muteSubscription($subscription);
+app(ManageSubscriptionsAction::class)->muteSubscription($subscription);
 
 // Find subscriptions matching a subject (used by the matching engine)
-$subscriptions = app(SubscriptionManager::class)->matchingSubscriptions(
+$subscriptions = app(ManageSubscriptionsAction::class)->matchingSubscriptions(
     subject: $newEvent,
     trigger: 'event_published',
 );

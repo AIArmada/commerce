@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Models;
+namespace AIArmada\Engagement\Features\Subscriptions\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\SubscriptionFactory;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
-use AIArmada\Engagement\Support\SubscriptionCriteria;
+use AIArmada\Engagement\Features\Subscriptions\Support\SubscriptionCriteria;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

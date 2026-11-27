@@ -11,7 +11,7 @@ use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Remindable;
 use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Enums\ReminderStatus;
@@ -26,7 +26,7 @@ use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementContextSubject;
@@ -187,7 +187,7 @@ it('rejects providing both remind_at and offset_minutes', function (): void {
 });
 
 it('dedupes subscriptions by normalized criteria hash', function (): void {
-    $manager = app(SubscriptionManager::class);
+    $manager = app(ManageSubscriptionsAction::class);
 
     $first = $manager->subscribe($this->actor, $this->subject, 'updates', ['b' => 2, 'a' => 1]);
     $second = $manager->subscribe($this->actor, $this->subject, 'updates', ['a' => 1, 'b' => 2]);
@@ -435,7 +435,7 @@ it('authorizes share creation through the policy resolver', function (): void {
 it('returns bounded collections from the state resolver', function (): void {
     config()->set('engagement.state.result_limit', 2);
 
-    $subscriptions = app(SubscriptionManager::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
 
     foreach (['State One', 'State Two', 'State Three'] as $name) {
         $subscriptions->subscribe($this->actor, new EngagementSubject(['name' => $name]), 'updates');
@@ -470,7 +470,7 @@ it('rejects overlong free-form inputs at manager boundaries', function (): void 
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => $manager->share($this->actor, $this->subject, ['channel' => $long]))
         ->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(SubscriptionManager::class)->subscribe($this->actor, $this->subject, $long))
+        ->and(fn () => app(ManageSubscriptionsAction::class)->subscribe($this->actor, $this->subject, $long))
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, $long, ['remind_at' => CarbonImmutable::now()->addHour()]))
         ->toThrow(InvalidArgumentException::class)
@@ -498,8 +498,8 @@ it('matches subscriptions without exposing sensitive subject attributes', functi
         'password' => 'secret-protected',
     ]);
 
-    app(SubscriptionManager::class)->subscribe($this->actor, $subject, 'updates', ['password' => 'secret-protected']);
-    app(SubscriptionManager::class)->subscribe($this->actor, $subject, 'updates', []);
+    app(ManageSubscriptionsAction::class)->subscribe($this->actor, $subject, 'updates', ['password' => 'secret-protected']);
+    app(ManageSubscriptionsAction::class)->subscribe($this->actor, $subject, 'updates', []);
 
     Event::fake([SubscriptionMatched::class]);
 
@@ -519,7 +519,7 @@ it('exposes subject-approved match context via subscriptionMatchContext', functi
         'password' => 'secret',
     ]);
 
-    app(SubscriptionManager::class)->subscribe($this->actor, $subject, 'updates', ['tier' => 'gold']);
+    app(ManageSubscriptionsAction::class)->subscribe($this->actor, $subject, 'updates', ['tier' => 'gold']);
 
     Event::fake([SubscriptionMatched::class]);
 

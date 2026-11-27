@@ -7,7 +7,7 @@ use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 
 it('creates engagement models via factories', function (): void {
     $follow = Follow::factory()->create([

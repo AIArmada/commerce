@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Actions;
 
-use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
@@ -18,7 +18,7 @@ final class SubscribeAction
             ->icon('heroicon-o-bell')
             ->action(function ($livewire, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(SubscriptionManager::class)->subscribe(AuthenticatedUser::resolve(), $record);
+                app(ManageSubscriptionsAction::class)->subscribe(AuthenticatedUser::resolve(), $record);
             });
     }
 }

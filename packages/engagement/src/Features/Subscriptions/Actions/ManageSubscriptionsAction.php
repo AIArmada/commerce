@@ -2,22 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Services;
+namespace AIArmada\Engagement\Features\Subscriptions\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Events\SubscriptionCancelled;
 use AIArmada\Engagement\Events\SubscriptionCreated;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Events\SubscriptionMuted;
 use AIArmada\Engagement\Events\SubscriptionUnmuted;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Support\EngagementModelGuard;
-use AIArmada\Engagement\Support\SubscriptionCriteria;
+use AIArmada\Engagement\Features\Subscriptions\Support\SubscriptionCriteria;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
-final class DefaultSubscriptionManager implements SubscriptionManager
+final readonly class ManageSubscriptionsAction
 {
     public function __construct(
         private readonly EngagementPolicyResolver $policy,
@@ -67,6 +66,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
                         'unsubscribed_at' => null,
                         'muted_at' => null,
                         'subscribed_at' => CarbonImmutable::now(),
+                        'notification_level' => $notificationLevel,
                         'source' => $source,
                         'metadata' => $metadata,
                     ]);
@@ -165,6 +165,9 @@ final class DefaultSubscriptionManager implements SubscriptionManager
 
         $subscriptions = Subscription::query()
             ->where('status', 'active')
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
+            })
             ->where(function (Builder $query) use ($subjectType, $subjectId): void {
                 $query
                     ->where(function (Builder $q) use ($subjectType, $subjectId): void {

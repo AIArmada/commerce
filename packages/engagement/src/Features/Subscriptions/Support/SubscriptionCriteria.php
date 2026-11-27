@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Support;
+namespace AIArmada\Engagement\Features\Subscriptions\Support;
 
 use JsonException;
 

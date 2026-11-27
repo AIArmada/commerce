@@ -6,8 +6,8 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
@@ -86,20 +86,20 @@ final class SubscriptionResource extends Resource
                     ->action(function (Subscription $record): Subscription {
                         $record = ActionRecordResolver::resolve($record);
 
-                        return app(SubscriptionManager::class)->muteSubscription($record);
+                        return app(ManageSubscriptionsAction::class)->muteSubscription($record);
                     })
                     ->requiresConfirmation(),
                 Action::make('unmute')
                     ->action(function (Subscription $record): Subscription {
                         $record = ActionRecordResolver::resolve($record);
 
-                        return app(SubscriptionManager::class)->unmuteSubscription($record);
+                        return app(ManageSubscriptionsAction::class)->unmuteSubscription($record);
                     })
                     ->requiresConfirmation(),
                 Action::make('unsubscribe')
                     ->action(function (Subscription $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(SubscriptionManager::class)->unsubscribe(
+                        app(ManageSubscriptionsAction::class)->unsubscribe(
                             $record->subscriber,
                             $record->subscribable,
                             $record->subscription_type,

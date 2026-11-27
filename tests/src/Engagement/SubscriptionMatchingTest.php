@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
-    $this->manager = app(SubscriptionManager::class);
+    $this->manager = app(ManageSubscriptionsAction::class);
     $this->subscriber = new EngagementActor;
 });
 

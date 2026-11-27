@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Database\Factories;
 
 use AIArmada\Engagement\Enums\SubscriptionStatus;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\EntryPoints\Commands;
+namespace AIArmada\Engagement\Features\Subscriptions\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\HasSubscriptionMatchContext;
 use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -24,7 +24,7 @@ final class MatchSubscriptionsCommand extends Command
     protected $description = 'Match subscriptions to a subject';
 
     public function __construct(
-        private readonly SubscriptionManager $subscriptionManager,
+        private readonly ManageSubscriptionsAction $subscriptionManager,
     ) {
         parent::__construct();
     }

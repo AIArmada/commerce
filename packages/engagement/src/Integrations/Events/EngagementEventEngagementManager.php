@@ -14,7 +14,7 @@ use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
@@ -24,7 +24,7 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
 {
     public function __construct(
         private readonly EngagementManager $engagementManager,
-        private readonly SubscriptionManager $subscriptionManager,
+        private readonly ManageSubscriptionsAction $subscriptionManager,
         private readonly ReminderManager $reminderManager,
         private readonly EngagementStateResolver $stateResolver,
     ) {}
