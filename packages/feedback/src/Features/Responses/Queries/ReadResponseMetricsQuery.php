@@ -43,21 +43,16 @@ final class ReadResponseMetricsQuery implements ReadsResponseMetrics
 
     public function latestComments(?string $formId = null, int $limit = 10): array
     {
-        return FeedbackAnswer::query()
+        $query = FeedbackAnswer::query()
             ->whereHas('response', function (Builder $query) use ($formId): void {
                 $query->whereIn('status', ['submitted', 'reviewed']);
 
                 if ($formId !== null) {
                     $query->where('feedback_form_id', $formId);
                 }
-            })
-            ->whereHas('question', function (Builder $query) use ($formId): void {
-                $query->whereIn('type', ['short_text', 'long_text']);
+            });
 
-                if ($formId !== null) {
-                    $query->where('feedback_form_id', $formId);
-                }
-            })
+        return AnswerQuestionFilter::apply($query, $formId, types: ['short_text', 'long_text'])
             ->whereNotNull('text_value')
             ->where('text_value', '!=', '')
             ->orderByDesc('created_at')

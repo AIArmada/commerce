@@ -92,13 +92,7 @@ final class CsatCalculator
             }
         });
 
-        $query->whereHas('question', function (Builder $q) use ($formId, $questionKey): void {
-            $q->where('key', $questionKey);
-
-            if ($formId !== null) {
-                $q->where('feedback_form_id', $formId);
-            }
-        });
+        AnswerQuestionFilter::apply($query, $formId, $questionKey);
 
         return $query;
     }

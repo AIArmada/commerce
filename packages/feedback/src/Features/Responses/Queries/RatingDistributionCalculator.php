@@ -35,7 +35,7 @@ final class RatingDistributionCalculator
 
     private function baseQuery(?string $formId = null, ?string $questionKey = null): Builder
     {
-        return FeedbackAnswer::query()
+        $query = FeedbackAnswer::query()
             ->whereNotNull('number_value')
             ->whereHas('response', function (Builder $query) use ($formId): void {
                 $query->whereIn('status', ['submitted', 'reviewed']);
@@ -43,15 +43,8 @@ final class RatingDistributionCalculator
                 if ($formId !== null) {
                     $query->where('feedback_form_id', $formId);
                 }
-            })
-            ->whereHas('question', function (Builder $query) use ($formId, $questionKey): void {
-                if ($formId !== null) {
-                    $query->where('feedback_form_id', $formId);
-                }
-
-                if ($questionKey !== null) {
-                    $query->where('key', $questionKey);
-                }
             });
+
+        return AnswerQuestionFilter::apply($query, $formId, $questionKey);
     }
 }

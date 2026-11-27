@@ -12,7 +12,6 @@ use AIArmada\Feedback\Features\Responses\Api\ReadsTestimonialSource;
 use AIArmada\Feedback\Features\Responses\Api\TestimonialSource;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
-use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 
 final readonly class ReadTestimonialSourceQuery implements ReadsTestimonialSource
@@ -36,14 +35,12 @@ final readonly class ReadTestimonialSourceQuery implements ReadsTestimonialSourc
             return null;
         }
 
-        $answer = FeedbackAnswer::query()
+        $answers = FeedbackAnswer::query()
             ->where('feedback_response_id', $response->id)
             ->whereNotNull('text_value')
-            ->where('text_value', '!=', '')
-            ->whereHas('question', function (Builder $query) use ($response): void {
-                $query->where('feedback_form_id', $response->feedback_form_id)
-                    ->whereIn('type', ['long_text', 'short_text']);
-            })
+            ->where('text_value', '!=', '');
+
+        $answer = AnswerQuestionFilter::apply($answers, $response->feedback_form_id, types: ['long_text', 'short_text'])
             ->orderBy('created_at')
             ->orderBy('id')
             ->first(['id', 'text_value']);

@@ -15,13 +15,13 @@ final readonly class ReadSubjectFeedbackMetricsQuery implements ReadsSubjectFeed
     public function average(string $subjectType, string $subjectId, ?string $questionKey = null): ?float
     {
         if ($questionKey !== null) {
-            $average = FeedbackAnswer::query()
+            $answers = FeedbackAnswer::query()
                 ->whereHas('response', function (Builder $query) use ($subjectType, $subjectId): void {
                     $query->where('subject_type', $subjectType)
                         ->where('subject_id', $subjectId)
                         ->whereIn('status', [FeedbackResponseStatus::Submitted, FeedbackResponseStatus::Reviewed]);
-                })
-                ->whereHas('question', fn (Builder $query) => $query->where('key', $questionKey))
+                });
+            $average = AnswerQuestionFilter::apply($answers, questionKey: $questionKey)
                 ->whereNotNull('score')
                 ->avg('score');
         } else {
