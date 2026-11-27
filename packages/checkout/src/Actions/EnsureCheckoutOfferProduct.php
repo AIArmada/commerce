@@ -6,18 +6,22 @@ namespace AIArmada\Checkout\Actions;
 
 use AIArmada\Checkout\Data\CheckoutOfferProductData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Pricing\Models\Price;
-use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Inventory\Actions\BootstrapInventory;
+use AIArmada\Pricing\Actions\EnsureListPrice;
+use AIArmada\Pricing\Actions\EnsurePriceListBySlug;
+use AIArmada\Products\Actions\EnsureProductBySlug;
 use AIArmada\Products\Models\Product;
-use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
-use InvalidArgumentException;
+use Illuminate\Support\Facades\DB;
 
-final class EnsureCheckoutOfferProduct
+final readonly class EnsureCheckoutOfferProduct
 {
+    public function __construct(
+        private EnsureProductBySlug $ensureProduct,
+        private EnsurePriceListBySlug $ensurePriceList,
+        private EnsureListPrice $ensureListPrice,
+    ) {}
+
     public function handle(CheckoutOfferProductData $offer): Product
     {
         if (! OwnerContext::isExplicitGlobal()) {
@@ -26,146 +30,51 @@ final class EnsureCheckoutOfferProduct
             );
         }
 
-        try {
-            $product = Product::query()->createOrFirst(
-                ['slug' => $offer->productSlug],
-                ['name' => $offer->name],
-            );
-        } catch (InvalidArgumentException $exception) {
-            // Products raises a friendly domain exception (instead of a DB
-            // unique violation) when the slug visibly exists. Stay idempotent
-            // only when the row is really there; anything else still throws.
-            $product = Product::query()->where('slug', $offer->productSlug)->first();
-
-            if ($product === null) {
-                throw $exception;
-            }
-        }
-        $supportsVariants = $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault();
-        $tracksInventory = $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault();
-
-        $product->fill([
-            'name' => $offer->name,
-            'short_description' => $offer->shortDescription,
-            'description' => $offer->description,
-            'sku' => $offer->sku,
-            'type' => $offer->productType,
-            'status' => $offer->productStatus,
-            'visibility' => $offer->productVisibility,
-            'price' => $offer->priceAmount,
-            'compare_price' => $offer->compareAmount,
-            'currency' => $offer->currency,
-            'is_featured' => $offer->isFeatured,
-            'is_taxable' => $offer->isTaxable,
-            'requires_shipping' => $offer->requiresShipping,
-            'meta_title' => $offer->metaTitle,
-            'meta_description' => $offer->metaDescription,
-            'metadata' => $offer->metadata,
-        ]);
-
-        $product->supports_variants = $supportsVariants;
-        $product->tracks_inventory = $tracksInventory;
-
-        if ($product->wasRecentlyCreated && $product->published_at === null) {
-            $product->published_at = CarbonImmutable::now();
-        }
-
-        if ($product->isDirty()) {
-            $product->save();
-        }
-
-        $priceList = PriceList::query()->createOrFirst(
-            ['slug' => $offer->priceListSlug],
-            ['name' => $offer->priceListName],
-        );
-
-        $priceList->fill([
-            'name' => $offer->priceListName,
-            'description' => $offer->priceListDescription,
-            'currency' => $offer->currency,
-            'priority' => $offer->priceListPriority,
-            'is_default' => $offer->priceListIsDefault,
-            'is_active' => $offer->priceListIsActive,
-        ]);
-
-        if ($priceList->isDirty()) {
-            $priceList->save();
-        }
-
-        $price = Price::query()->createOrFirst(
-            [
-                'price_list_id' => $priceList->getKey(),
-                'priceable_type' => $product->getMorphClass(),
-                'priceable_id' => $product->getKey(),
-                'min_quantity' => 1,
-            ],
-            [
-                'amount' => $offer->priceAmount,
-                'compare_amount' => $offer->compareAmount,
+        return DB::transaction(function () use ($offer): Product {
+            $product = $this->ensureProduct->execute($offer->productSlug, [
+                'name' => $offer->name,
+                'short_description' => $offer->shortDescription,
+                'description' => $offer->description,
+                'sku' => $offer->sku,
+                'type' => $offer->productType,
+                'status' => $offer->productStatus,
+                'visibility' => $offer->productVisibility,
+                'price' => $offer->priceAmount,
+                'compare_price' => $offer->compareAmount,
                 'currency' => $offer->currency,
-            ],
-        );
+                'is_featured' => $offer->isFeatured,
+                'is_taxable' => $offer->isTaxable,
+                'requires_shipping' => $offer->requiresShipping,
+                'supports_variants' => $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault(),
+                'tracks_inventory' => $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault(),
+                'meta_title' => $offer->metaTitle,
+                'meta_description' => $offer->metaDescription,
+                'metadata' => $offer->metadata,
+            ]);
 
-        $price->fill([
-            'amount' => $offer->priceAmount,
-            'compare_amount' => $offer->compareAmount,
-            'currency' => $offer->currency,
-        ]);
+            $priceList = $this->ensurePriceList->execute($offer->priceListSlug, [
+                'name' => $offer->priceListName,
+                'description' => $offer->priceListDescription,
+                'currency' => $offer->currency,
+                'priority' => $offer->priceListPriority,
+                'is_default' => $offer->priceListIsDefault,
+                'is_active' => $offer->priceListIsActive,
+            ]);
 
-        if ($price->isDirty()) {
-            $price->save();
-        }
+            $this->ensureListPrice->execute(
+                $priceList,
+                $product->getMorphClass(),
+                (string) $product->getKey(),
+                $offer->priceAmount,
+                $offer->compareAmount,
+                $offer->currency,
+            );
 
-        $this->ensureInventory($product, $offer);
+            if (($offer->minimumOnHand ?? 0) > 0 && config('checkout.integrations.inventory.enabled', false) && class_exists(BootstrapInventory::class)) {
+                app(BootstrapInventory::class)->execute($product, $offer->minimumOnHand, $offer->inventoryReason, $offer->inventoryNote);
+            }
 
-        return $product->fresh() ?? $product;
-    }
-
-    private function ensureInventory(Product $product, CheckoutOfferProductData $offer): void
-    {
-        $minimumOnHand = max(0, $offer->minimumOnHand ?? 0);
-
-        if ($minimumOnHand < 1 || ! config('checkout.integrations.inventory.enabled', false)) {
-            return;
-        }
-
-        $inventoryLevelClass = 'AIArmada\\Inventory\\Models\\InventoryLevel';
-        $inventoryServiceClass = 'AIArmada\\Inventory\\Services\\InventoryService';
-
-        if (! class_exists($inventoryLevelClass) || ! class_exists($inventoryServiceClass)) {
-            return;
-        }
-
-        /** @var class-string<Model> $inventoryLevelClass */
-        /** @var InventoryService $inventoryService */
-        $inventoryService = app($inventoryServiceClass);
-
-        $inventoryLevelTable = (new $inventoryLevelClass)->getTable();
-
-        if (! Schema::hasTable($inventoryLevelTable)) {
-            return;
-        }
-
-        $hasInventoryLevels = $inventoryLevelClass::query()
-            ->where('inventoryable_type', $product->getMorphClass())
-            ->where('inventoryable_id', $product->getKey())
-            ->exists();
-
-        if ($hasInventoryLevels) {
-            return;
-        }
-
-        $currentOnHand = $inventoryService->getTotalOnHand($product);
-
-        if ($currentOnHand >= $minimumOnHand) {
-            return;
-        }
-
-        $inventoryService->receiveAtDefault(
-            model: $product,
-            quantity: $minimumOnHand - $currentOnHand,
-            reason: $offer->inventoryReason,
-            note: $offer->inventoryNote,
-        );
+            return $product->fresh() ?? $product;
+        });
     }
 }

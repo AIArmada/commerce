@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Inventory\Actions;
+
+use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+final readonly class BootstrapInventory
+{
+    public function __construct(private InventoryService $inventory) {}
+
+    public function execute(Model $model, int $minimumOnHand, ?string $reason = null, ?string $note = null): void
+    {
+        if ($minimumOnHand < 1 || ! Schema::hasTable((new InventoryLevel)->getTable())) {
+            return;
+        }
+
+        DB::transaction(function () use ($model, $minimumOnHand, $reason, $note): void {
+            $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
+
+            if (InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->exists()) {
+                return;
+            }
+
+            $currentOnHand = $this->inventory->getTotalOnHand($model);
+
+            if ($currentOnHand < $minimumOnHand) {
+                $this->inventory->receiveAtDefault($model, $minimumOnHand - $currentOnHand, $reason, $note);
+            }
+        });
+    }
+}

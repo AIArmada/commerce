@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -151,6 +152,7 @@ class Price extends Model implements Auditable
             }
 
             $type = $price->priceable_type;
+            $type = is_string($type) ? (Relation::getMorphedModel($type) ?? $type) : null;
 
             if ($owner !== null && is_string($type) && class_exists($type) && is_a($type, Model::class, true)) {
                 $usesHasOwner = in_array(HasOwner::class, class_uses_recursive($type), true);

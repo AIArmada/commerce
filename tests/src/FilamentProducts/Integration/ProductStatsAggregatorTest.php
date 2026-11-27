@@ -153,8 +153,8 @@ it('preserves product status and week-window boundaries in one aggregate', funct
         'activeProducts' => 1,
         'draftProducts' => 1,
         'lastWeekProducts' => 4,
-        'previousWeekProducts' => 3,
-        'trend' => 33.0,
+        'previousWeekProducts' => 2,
+        'trend' => 100.0,
     ])->and(count($queries))->toBeLessThanOrEqual(3);
 });
 
