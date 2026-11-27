@@ -21,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(CancelStoredOrder::class, CancelStoredJntOrder::class);
         $app->bind(DashboardStats::class, JntStatsAggregator::class);
+        $app->bind(\AIArmada\Jnt\Features\Orders\Api\ReadNotificationOrder::class, \AIArmada\Jnt\Features\Orders\Queries\FindNotificationOrder::class);
         $app->bind(ReadWaybillOrder::class, FindWaybillOrder::class);
         $app->bind(UpdateTrackingSnapshot::class, WriteTrackingSnapshot::class);
     }

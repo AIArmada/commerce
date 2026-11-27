@@ -271,10 +271,10 @@ describe('carrier safety guards', function (): void {
         $validEmail = new JntOrder;
         $validEmail->forceFill(['metadata' => ['notification_email' => 'ops@example.com']]);
 
-        $resolved = $method->invoke($listener, $validEmail);
+        $resolved = $method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, 'ops@example.com'), null);
 
-        expect($method->invoke($listener, $arrayEmail))->toBeNull()
-            ->and($method->invoke($listener, $invalidEmail))->toBeNull()
+        expect($method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, null), null))->toBeNull()
+            ->and($method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, 'not-an-email'), null))->toBeNull()
             ->and($resolved)->not->toBeNull()
             ->and(unserialize(serialize($resolved)))->toBeInstanceOf($resolved::class);
 
@@ -402,7 +402,7 @@ describe('carrier safety guards', function (): void {
         ]);
 
         $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
-        $listener->handle(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered));
+        $listener->handle(new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered));
 
         Notification::assertSentTimes(OrderDeliveredNotification::class, 1);
 

@@ -9,7 +9,7 @@ use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
 use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Notifications\OrderProblemNotification;
@@ -40,14 +40,18 @@ final class NotifyShipmentStatusChanged
 
         $owner = $event->owner();
 
-        OwnerContext::withOwner($owner, function () use ($event): void {
+        if (($event->ownerType !== null || $event->ownerId !== null) && $owner === null) {
+            return;
+        }
+
+        OwnerContext::withOwner($owner, function () use ($event, $owner): void {
             $order = $event->resolveOrder();
 
             if ($order === null) {
                 return;
             }
 
-            $notifiable = $this->resolveNotifiable($order);
+            $notifiable = $this->resolveNotifiable($order, $owner);
 
             if ($notifiable === null) {
                 return;
@@ -65,7 +69,7 @@ final class NotifyShipmentStatusChanged
 
                     Log::channel(config('jnt.logging.channel', 'stack'))
                         ->warning('J&T shipment notification skipped: unusable notifiable', [
-                            'order_id' => $order->order_id,
+                            'order_id' => $order->orderId,
                             'exception_type' => $e::class,
                         ]);
                 }
@@ -76,18 +80,16 @@ final class NotifyShipmentStatusChanged
     /**
      * Resolve the notifiable entity from the order.
      */
-    private function resolveNotifiable(JntOrder $order): ?object
+    private function resolveNotifiable(NotificationOrder $order, ?object $owner): ?object
     {
-        // Try owner relationship
-        $owner = $order->owner()->getResults();
 
         if ($owner !== null) {
             if (! in_array(Notifiable::class, class_uses_recursive($owner), true)
                 && ! method_exists($owner, 'routeNotificationForMail')) {
                 Log::channel(config('jnt.logging.channel', 'stack'))
                     ->warning('J&T shipment notification skipped: owner is not notifiable', [
-                        'order_id' => $order->order_id,
-                        'owner_type' => $order->owner_type,
+                        'order_id' => $order->orderId,
+                        'owner_type' => $order->ownerType,
                     ]);
 
                 return null;
@@ -96,9 +98,7 @@ final class NotifyShipmentStatusChanged
             return $owner;
         }
 
-        // Try to get notifiable from metadata
-        $metadata = $order->metadata ?? [];
-        $email = $metadata['notification_email'] ?? null;
+        $email = $order->notificationEmail;
 
         if (! is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             return null;
@@ -110,7 +110,7 @@ final class NotifyShipmentStatusChanged
     /**
      * Create the appropriate notification based on status change.
      */
-    private function createNotification(JntOrderStatusChanged $event, JntOrder $order): OrderShippedNotification | OrderDeliveredNotification | OrderProblemNotification | null
+    private function createNotification(JntOrderStatusChanged $event, NotificationOrder $order): OrderShippedNotification | OrderDeliveredNotification | OrderProblemNotification | null
     {
         $trackingData = $this->getTrackingData($order);
 
@@ -123,7 +123,7 @@ final class NotifyShipmentStatusChanged
             TrackingStatus::InTransit,
             TrackingStatus::AtHub => new OrderShippedNotification(
                 tracking: $trackingData,
-                estimatedDelivery: $this->getEstimatedDelivery($order)
+                estimatedDelivery: $this->getEstimatedDelivery()
             ),
             TrackingStatus::OutForDelivery => new OrderShippedNotification(
                 tracking: $trackingData,
@@ -146,12 +146,12 @@ final class NotifyShipmentStatusChanged
     /**
      * Get tracking data for the order.
      */
-    private function getTrackingData(JntOrder $order): ?TrackingData
+    private function getTrackingData(NotificationOrder $order): ?TrackingData
     {
         try {
             $result = $this->trackingService->track(
-                orderId: $order->order_id,
-                trackingNumber: $order->tracking_number
+                orderId: $order->orderId,
+                trackingNumber: $order->trackingNumber
             );
 
             $details = array_map(
@@ -172,7 +172,7 @@ final class NotifyShipmentStatusChanged
     /**
      * Get estimated delivery date for the order.
      */
-    private function getEstimatedDelivery(JntOrder $order): ?string
+    private function getEstimatedDelivery(): ?string
     {
         // Calculate from default days since JntOrder doesn't have estimated_delivery_at
         $days = config('jnt.shipping.default_estimated_days', 3);

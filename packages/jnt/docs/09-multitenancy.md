@@ -421,7 +421,7 @@ class HandleStatusChanged
         // Resolve owner model
         $owner = $event->owner();
         
-        // Resolve order with proper scoping
+        // Resolve immutable order snapshot with proper scoping
         $order = $event->resolveOrder();
 
         if ($owner !== null) {

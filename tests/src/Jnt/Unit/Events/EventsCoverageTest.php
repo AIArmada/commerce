@@ -17,7 +17,7 @@ describe('JntOrderStatusChanged event', function (): void {
             'tracking_number' => 'JNT123456',
         ]);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered);
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered);
 
         expect($event->orderKey)->toBe('test-uuid')
             ->and($event->orderReference)->toBe('ORDER123')
@@ -30,7 +30,7 @@ describe('JntOrderStatusChanged event', function (): void {
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-uuid', 'order_id' => 'ORDER123']);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::InTransit, 'pending');
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::InTransit, 'pending');
 
         expect($event->previousStatusCode)->toBe('pending');
     });
@@ -39,12 +39,12 @@ describe('JntOrderStatusChanged event', function (): void {
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-uuid', 'order_id' => 'ORDER123']);
 
-        expect(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered)->isDelivered())->toBeTrue()
-            ->and(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Exception)->hasException())->toBeTrue()
-            ->and(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Returned)->isReturning())->toBeTrue()
-            ->and(JntOrderStatusChanged::fromOrder($order, TrackingStatus::DeliveryAttempted)->requiresAttention())->toBeTrue()
-            ->and(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered)->isTerminal())->toBeTrue()
-            ->and(JntOrderStatusChanged::fromOrder($order, TrackingStatus::InTransit)->isTerminal())->toBeFalse();
+        expect((new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered))->isDelivered())->toBeTrue()
+            ->and((new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Exception))->hasException())->toBeTrue()
+            ->and((new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Returned))->isReturning())->toBeTrue()
+            ->and((new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::DeliveryAttempted))->requiresAttention())->toBeTrue()
+            ->and((new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered))->isTerminal())->toBeTrue()
+            ->and((new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::InTransit))->isTerminal())->toBeFalse();
     });
 
     it('returns the public order and tracking identifiers', function (): void {
@@ -55,7 +55,7 @@ describe('JntOrderStatusChanged event', function (): void {
             'tracking_number' => 'JNT123456',
         ]);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::PickedUp);
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::PickedUp);
 
         expect($event->getOrderId())->toBe('ORDER123')
             ->and($event->getTrackingNumber())->toBe('JNT123456');

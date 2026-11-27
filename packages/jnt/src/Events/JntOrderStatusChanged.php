@@ -6,7 +6,8 @@ namespace AIArmada\Jnt\Events;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingStatus;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
+use AIArmada\Jnt\Features\Orders\Api\ReadNotificationOrder;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -26,34 +27,14 @@ final class JntOrderStatusChanged
         public readonly ?string $previousStatusCode = null,
     ) {}
 
-    public static function fromOrder(JntOrder $order, TrackingStatus $currentStatus, ?string $previousStatusCode = null): self
-    {
-        return new self(
-            orderKey: (string) $order->getKey(),
-            orderReference: $order->order_id,
-            trackingNumber: $order->tracking_number,
-            ownerType: $order->owner_type,
-            ownerId: $order->owner_id,
-            currentStatus: $currentStatus,
-            previousStatusCode: $previousStatusCode,
-        );
-    }
-
     public function owner(): ?Model
     {
         return OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
     }
 
-    public function resolveOrder(): ?JntOrder
+    public function resolveOrder(): ?NotificationOrder
     {
-        if ($this->orderKey === '') {
-            return null;
-        }
-
-        return JntOrder::query()
-            ->forOwner($this->owner(), false)
-            ->whereKey($this->orderKey)
-            ->first();
+        return app(ReadNotificationOrder::class)->find($this->orderKey, $this->ownerType, $this->ownerId);
     }
 
     public function getOrderId(): string

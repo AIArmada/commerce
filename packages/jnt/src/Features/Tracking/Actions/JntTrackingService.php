@@ -196,7 +196,7 @@ class JntTrackingService implements TrackingReader
 
                 // Fire status changed event if status actually changed
                 if ($previousStatusCode !== $order->last_status_code) {
-                    DB::afterCommit(static fn () => event(JntOrderStatusChanged::fromOrder($order, $currentStatus, $previousStatusCode)));
+                    DB::afterCommit(static fn () => event(new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, $currentStatus, $previousStatusCode)));
                 }
 
                 return $order->fresh() ?? $order;

@@ -309,7 +309,7 @@ class OrderStatusListener
             $order = $event->resolveOrder();
 
             if ($order !== null) {
-                // $order has no `customer` relation; resolve your own order
+                // The immutable order snapshot has no customer relation; resolve your own order
                 // aggregate here and dispatch from it.
             }
         }

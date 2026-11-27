@@ -30,7 +30,7 @@ describe('SendShipmentNotifications listener', function (): void {
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-id', 'order_id' => 'ORDER123']);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered);
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered);
 
         config(['jnt.notifications.queue' => true]);
         expect($listener->shouldQueue($event))->toBeTrue();
@@ -49,7 +49,7 @@ describe('SendShipmentNotifications listener', function (): void {
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-id', 'order_id' => 'ORDER123']);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered);
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered);
 
         $listener->handle($event);
 
@@ -69,7 +69,7 @@ describe('SendShipmentNotifications listener', function (): void {
             'metadata' => ['notification_email' => 'test@example.com'],
         ]);
 
-        $listener->handle(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Pending));
+        $listener->handle(new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Pending));
 
         Notification::assertNothingSent();
     });
@@ -86,7 +86,7 @@ describe('SendShipmentNotifications listener', function (): void {
             'metadata' => [],
         ]);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::Delivered);
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::Delivered);
 
         $listener->handle($event);
 
@@ -107,7 +107,7 @@ describe('SendShipmentNotifications listener', function (): void {
             'metadata' => ['notification_email' => 'test@example.com'],
         ]);
 
-        $notifiable = $method->invoke($listener, $order);
+        $notifiable = $method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, 'test@example.com'), null);
 
         expect($notifiable)->not->toBeNull();
         expect($notifiable->email)->toBe('test@example.com');
@@ -130,9 +130,9 @@ describe('SendShipmentNotifications listener', function (): void {
             'tracking_number' => 'JNT123',
         ]);
 
-        $event = JntOrderStatusChanged::fromOrder($order, TrackingStatus::PickedUp);
+        $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::PickedUp);
 
-        $notification = $method->invoke($listener, $event, $order);
+        $notification = $method->invoke($listener, $event, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', 'JNT123', null, null));
 
         // Since tracking fails, notification will be null
         expect($notification)->toBeNull();
@@ -150,7 +150,7 @@ describe('SendShipmentNotifications listener', function (): void {
         $order = new JntOrder;
         $order->forceFill(['id' => 'test-id']);
 
-        $result = $method->invoke($listener, $order);
+        $result = $method->invoke($listener);
 
         expect($result)->toBe(now()->addDays(5)->format('Y-m-d'));
     });
