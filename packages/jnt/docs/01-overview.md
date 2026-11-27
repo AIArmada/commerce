@@ -68,13 +68,12 @@ packages/jnt/
 │   ├── Actions/               # Action classes (CreateOrder, CancelOrder, etc.)
 │   ├── Builders/              # OrderBuilder for fluent order creation
 │   ├── Cart/                  # Cart shipping calculator integration
-│   ├── Console/
-│   │   ├── JntCommand.php     # Base class for all commands (provides $this->client())
-│   │   └── Commands/
-│   │       ├── Health/        # Health check commands
-│   │       ├── Orders/        # Order management commands
-│   │       ├── Tracking/      # Tracking commands
-│   │       └── Webhooks/      # Webhook testing commands
+│   ├── Drivers/               # API transport and shipping driver
+│   ├── EntryPoints/
+│   │   ├── Commands/         # Artisan commands and JntCommand base
+│   │   ├── Http/Controllers/  # AWB and webhook endpoints
+│   │   ├── Jobs/              # Webhook processing
+│   │   └── Listeners/         # Shipment notifications
 │   ├── Contracts/             # Contracts and interfaces
 │   ├── Data/                  # Data Transfer Objects (Spatie Laravel Data)
 │   ├── Enums/                 # PHP 8.1+ enums for API values
@@ -82,15 +81,13 @@ packages/jnt/
 │   ├── Exceptions/            # Custom exception classes
 │   ├── Facades/               # JntExpress facade
 │   ├── Health/                # Health check support
-│   ├── Http/                  # HTTP client for API communication
-│   ├── Listeners/             # Event listeners
 │   ├── Models/                # Eloquent models
 │   ├── Notifications/         # Notification classes
 │   ├── Rules/                 # Laravel validation rules
 │   ├── Services/              # Core service classes
-│   ├── Shipping/              # Shipping driver implementation
+│   ├── Queries/               # Dashboard statistics
 │   ├── Support/               # Type transformers and utilities
-│   └── Webhooks/              # Webhook processing
+│   └── Webhooks/              # Signature, profile and response adapters
 └── docs/                      # Documentation
 ```
 
@@ -150,7 +147,7 @@ The package dispatches events at key lifecycle points:
 
 ## Artisan Commands
 
-All commands extend the abstract `JntCommand` base class (`Console/JntCommand.php`) which provides:
+All commands extend the abstract `JntCommand` base class (`EntryPoints/Commands/JntCommand.php`) which provides:
 - `$this->client()` — lazily resolved `JntClient` instance
 - `$this->withErrorHandling()` — wraps callbacks with exception handling
 - `$this->infoWithLabel()`, `$this->section()`, `$this->resultTable()` — output helpers

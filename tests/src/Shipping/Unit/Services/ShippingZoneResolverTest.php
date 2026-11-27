@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -605,6 +606,41 @@ describe('ShippingZoneResolver', function (): void {
             );
 
             expect($zones->pluck('name')->all())->toBe(['Owner A Explicit Zone']);
+        });
+    });
+
+    it('isolates cached zone resolution when global rows are suppressed', function (): void {
+        config()->set('shipping.features.owner.enabled', true);
+        config()->set('shipping.features.owner.include_global', true);
+
+        $owner = User::factory()->create();
+
+        OwnerContext::withOwner(null, fn () => ShippingZone::create([
+            'name' => 'Global US Zone',
+            'code' => 'global-scope-us',
+            'type' => 'country',
+            'countries' => ['US'],
+            'priority' => 10,
+            'active' => true,
+        ]));
+
+        $address = new AddressData(
+            name: 'Scoped recipient',
+            phone: '000',
+            line1: '1 Test Street',
+            postcode: '10000',
+            country: 'US',
+        );
+
+        OwnerContext::withOwner($owner, function () use ($address): void {
+            expect($this->resolver->resolve($address)?->name)->toBe('Global US Zone');
+
+            OwnerScopeOverride::withoutIncludeGlobal(function () use ($address): void {
+                expect($this->resolver->resolve($address))->toBeNull()
+                    ->and($this->resolver->resolveAll($address))->toBeEmpty();
+            });
+
+            expect($this->resolver->resolve($address)?->name)->toBe('Global US Zone');
         });
     });
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
@@ -179,7 +180,7 @@ class ShippingZoneResolver
 
         return $query->forOwner(
             $this->resolveOwner($ownerId, $ownerType),
-            includeGlobal: (bool) config('shipping.features.owner.include_global', false),
+            includeGlobal: $this->includesGlobal(),
         );
     }
 
@@ -204,7 +205,16 @@ class ShippingZoneResolver
             'postcode' => $address->postcode,
             'owner_id' => $ownerId,
             'owner_type' => $ownerType,
+            'owner_enabled' => (bool) config('shipping.features.owner.enabled', false),
+            'include_global' => $this->includesGlobal(),
+            'strategy' => config('shipping.zone_resolution.strategy', 'geo'),
         ]));
+    }
+
+    private function includesGlobal(): bool
+    {
+        return ! OwnerScopeOverride::suppressIncludeGlobal()
+            && (bool) config('shipping.features.owner.include_global', false);
     }
 
     private function assertCompleteOwnerTuple(?string $ownerId, ?string $ownerType): void
