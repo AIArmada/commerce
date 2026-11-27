@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Features\Forms\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestionOption;
 
@@ -20,6 +21,8 @@ final readonly class ReorderFeedbackQuestionOptionsAction
                 OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $questionId);
             }
 
+            $question = FeedbackQuestion::query()->whereKey($questionId)->firstOrFail();
+            FeedbackForm::query()->whereKey($question->feedback_form_id)->lockForUpdate()->firstOrFail();
             FeedbackQuestion::query()->whereKey($questionId)->lockForUpdate()->firstOrFail();
 
             foreach ($order as $id => $position) {

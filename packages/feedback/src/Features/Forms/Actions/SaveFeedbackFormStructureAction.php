@@ -34,12 +34,12 @@ final readonly class SaveFeedbackFormStructureAction
             $section ??= new FeedbackSection;
             $section->fill([
                 'feedback_form_id' => $formId,
-                'key' => $data['key'] ?? null,
+                'key' => (array_key_exists('key', $data) ? $data['key'] : ($section->key ?? null)),
                 'title' => $data['title'],
-                'description' => $data['description'] ?? null,
-                'order_column' => (int) ($data['order_column'] ?? 0),
-                'settings' => $data['settings'] ?? [],
-                'metadata' => $data['metadata'] ?? [],
+                'description' => (array_key_exists('description', $data) ? $data['description'] : ($section->description ?? null)),
+                'order_column' => (int) ((array_key_exists('order_column', $data) ? $data['order_column'] : ($section->order_column ?? 0))),
+                'settings' => (array_key_exists('settings', $data) ? $data['settings'] : ($section->settings ?? [])),
+                'metadata' => (array_key_exists('metadata', $data) ? $data['metadata'] : ($section->metadata ?? [])),
             ])->save();
 
             return $section;
@@ -86,7 +86,7 @@ final readonly class SaveFeedbackFormStructureAction
 
             $sectionId = array_key_exists('feedback_section_id', $data)
                 ? $data['feedback_section_id']
-                : null;
+                : $question?->feedback_section_id;
 
             if ($sectionId !== null) {
                 $section = $this->findOwned(FeedbackSection::class, (string) $sectionId);
@@ -103,17 +103,17 @@ final readonly class SaveFeedbackFormStructureAction
                 'key' => $data['key'],
                 'type' => $data['type'],
                 'label' => $data['label'],
-                'description' => $data['description'] ?? null,
-                'help_text' => $data['help_text'] ?? null,
-                'placeholder' => $data['placeholder'] ?? null,
-                'is_required' => (bool) ($data['is_required'] ?? false),
-                'is_scored' => (bool) ($data['is_scored'] ?? false),
-                'order_column' => (int) ($data['order_column'] ?? 0),
-                'validation_rules' => $data['validation_rules'] ?? [],
-                'visibility_rules' => $data['visibility_rules'] ?? [],
-                'scoring_rules' => $data['scoring_rules'] ?? [],
-                'settings' => $data['settings'] ?? [],
-                'metadata' => $data['metadata'] ?? [],
+                'description' => (array_key_exists('description', $data) ? $data['description'] : ($question->description ?? null)),
+                'help_text' => (array_key_exists('help_text', $data) ? $data['help_text'] : ($question->help_text ?? null)),
+                'placeholder' => (array_key_exists('placeholder', $data) ? $data['placeholder'] : ($question->placeholder ?? null)),
+                'is_required' => (bool) ((array_key_exists('is_required', $data) ? $data['is_required'] : ($question->is_required ?? false))),
+                'is_scored' => (bool) ((array_key_exists('is_scored', $data) ? $data['is_scored'] : ($question->is_scored ?? false))),
+                'order_column' => (int) ((array_key_exists('order_column', $data) ? $data['order_column'] : ($question->order_column ?? 0))),
+                'validation_rules' => (array_key_exists('validation_rules', $data) ? $data['validation_rules'] : ($question->validation_rules ?? [])),
+                'visibility_rules' => (array_key_exists('visibility_rules', $data) ? $data['visibility_rules'] : ($question->visibility_rules ?? [])),
+                'scoring_rules' => (array_key_exists('scoring_rules', $data) ? $data['scoring_rules'] : ($question->scoring_rules ?? [])),
+                'settings' => (array_key_exists('settings', $data) ? $data['settings'] : ($question->settings ?? [])),
+                'metadata' => (array_key_exists('metadata', $data) ? $data['metadata'] : ($question->metadata ?? [])),
             ])->save();
 
             return $question;
@@ -129,6 +129,8 @@ final readonly class SaveFeedbackFormStructureAction
         ?FeedbackQuestionOption $option = null,
     ): FeedbackQuestionOption {
         return (new FeedbackQuestion)->getConnection()->transaction(function () use ($questionId, $data, $option): FeedbackQuestionOption {
+            $question = $this->findOwned(FeedbackQuestion::class, $questionId);
+            $this->findOwned(FeedbackForm::class, $question->feedback_form_id, lock: true);
             $this->findOwned(FeedbackQuestion::class, $questionId, lock: true);
 
             if ($option !== null) {
@@ -144,9 +146,9 @@ final readonly class SaveFeedbackFormStructureAction
                 'feedback_question_id' => $questionId,
                 'label' => $data['label'],
                 'value' => $data['value'],
-                'score' => $data['score'] ?? null,
-                'order_column' => (int) ($data['order_column'] ?? 0),
-                'metadata' => $data['metadata'] ?? [],
+                'score' => (array_key_exists('score', $data) ? $data['score'] : ($option->score ?? null)),
+                'order_column' => (int) ((array_key_exists('order_column', $data) ? $data['order_column'] : ($option->order_column ?? 0))),
+                'metadata' => (array_key_exists('metadata', $data) ? $data['metadata'] : ($option->metadata ?? [])),
             ])->save();
 
             return $option;

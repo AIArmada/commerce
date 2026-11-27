@@ -82,3 +82,40 @@ it('supports template creation duplication and form lifecycle when owner scoping
         ->and($update->execute($copy, ['status' => 'closed'])->status)->toBe(FeedbackFormStatus::Closed)
         ->and($update->execute($copy, ['status' => 'archived'])->status)->toBe(FeedbackFormStatus::Archived);
 });
+
+it('preserves omitted form structure settings during edits and allows explicit clearing', function (): void {
+    $template = FeedbackTemplate::query()->create([
+        'name' => 'Partial Edit Template',
+        'slug' => 'partial-edit-template',
+        'purpose' => 'general',
+        'status' => 'published',
+        'definition' => [],
+    ]);
+    $form = app(CreateFeedbackFormFromTemplateAction::class)->execute($template);
+    $structure = app(SaveFeedbackFormStructureAction::class);
+    $section = $structure->saveSection($form->id, ['title' => 'Section', 'metadata' => ['source' => 'admin']]);
+    $question = $structure->saveQuestion($form->id, [
+        'key' => 'rating',
+        'type' => 'rating',
+        'label' => 'Rating',
+        'feedback_section_id' => $section->id,
+        'is_required' => true,
+        'metadata' => ['source' => 'admin'],
+        'scoring_rules' => ['weight' => 2],
+    ]);
+    $option = $structure->saveOption($question->id, ['label' => 'Good', 'value' => 'good', 'score' => 4, 'metadata' => ['source' => 'admin']]);
+    $section = $structure->saveSection($form->id, ['title' => 'Edited Section'], $section);
+    $question = $structure->saveQuestion($form->id, ['key' => 'rating', 'type' => 'rating', 'label' => 'Edited Rating'], $question);
+    $option = $structure->saveOption($question->id, ['label' => 'Edited Good', 'value' => 'good'], $option);
+
+    expect($section->metadata)->toBe(['source' => 'admin'])
+        ->and($question->feedback_section_id)->toBe($section->id)
+        ->and($question->is_required)->toBeTrue()
+        ->and($question->metadata)->toBe(['source' => 'admin'])
+        ->and($question->scoring_rules)->toBe(['weight' => 2])
+        ->and((float) $option->score)->toBe(4.0)
+        ->and($option->metadata)->toBe(['source' => 'admin']);
+
+    $question = $structure->saveQuestion($form->id, ['key' => 'rating', 'type' => 'rating', 'label' => 'Rating', 'feedback_section_id' => null, 'metadata' => []], $question);
+    expect($question->feedback_section_id)->toBeNull()->and($question->metadata)->toBe([]);
+});

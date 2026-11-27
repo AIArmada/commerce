@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Features\Forms\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackSection;
 
 final readonly class DeleteFeedbackSectionAction
@@ -16,6 +17,8 @@ final readonly class DeleteFeedbackSectionAction
                 OwnerWriteGuard::findOrFailForOwner(FeedbackSection::class, $section->id);
             }
 
+            $section = FeedbackSection::query()->whereKey($section->id)->firstOrFail();
+            FeedbackForm::query()->whereKey($section->feedback_form_id)->lockForUpdate()->firstOrFail();
             FeedbackSection::query()->whereKey($section->id)->lockForUpdate()->firstOrFail()->delete();
         });
     }
