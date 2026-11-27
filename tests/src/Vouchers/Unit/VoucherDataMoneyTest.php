@@ -29,7 +29,7 @@ it('rejects floats for every integer monetary or limit field at the DTO boundary
     }
 });
 
-it('rejects float aliases at the DTO boundary as well', function (): void {
+it('rejects noncanonical aliases at the DTO boundary', function (): void {
     expect(fn () => VoucherData::fromArray([
         'id' => 'voucher-id',
         'code' => 'FLOAT-ALIAS',
@@ -38,7 +38,7 @@ it('rejects float aliases at the DTO boundary as well', function (): void {
         'value' => 100,
         'currency' => 'MYR',
         'status' => 'active',
-        'minCartValue' => 100.5,
+        'minCartValue' => 100,
     ]))->toThrow(\InvalidArgumentException::class);
 });
 

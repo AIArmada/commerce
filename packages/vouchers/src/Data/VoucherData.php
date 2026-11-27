@@ -86,21 +86,21 @@ final readonly class VoucherData implements \JsonSerializable
      */
     public static function fromArray(array $data): self
     {
+        foreach (array_keys($data) as $key) {
+            if (is_string($key) && (preg_match('/[A-Z]/', $key) || in_array($key, ['max_uses', 'max_uses_per_user', 'min_order_value', 'max_discount_value'], true))) {
+                throw new \InvalidArgumentException("Unknown voucher snapshot field '{$key}'. Use canonical snake_case fields.");
+            }
+        }
+
         // Validate integer fields - prevent silent float truncation
         self::validateIntegerField($data, 'value', 'cents for fixed amounts or basis points for percentages');
         self::validateIntegerField($data, 'min_cart_value', 'cents');
-        self::validateIntegerField($data, 'minCartValue', 'cents');
         self::validateIntegerField($data, 'max_discount', 'cents');
-        self::validateIntegerField($data, 'maxDiscount', 'cents');
         self::validateIntegerField($data, 'credit_delay_hours', 'hours');
-        self::validateIntegerField($data, 'creditDelayHours', 'hours');
         self::validateIntegerField($data, 'usage_limit', 'uses');
-        self::validateIntegerField($data, 'usageLimit', 'uses');
         self::validateIntegerField($data, 'usage_limit_per_user', 'uses per user');
-        self::validateIntegerField($data, 'usageLimitPerUser', 'uses per user');
         self::validateIntegerField($data, 'affiliate_commission_value', 'basis points or cents');
-        self::validateIntegerField($data, 'affiliateCommissionValue', 'basis points or cents');
-        self::validateAffiliateUplineLevels($data['affiliate_upline_levels'] ?? $data['affiliateUplineLevels'] ?? null);
+        self::validateAffiliateUplineLevels($data['affiliate_upline_levels'] ?? null);
 
         // Normalize enums if passed as strings
         $type = $data['type'] ?? VoucherType::Fixed;
@@ -115,12 +115,12 @@ final readonly class VoucherData implements \JsonSerializable
         $currency = $data['currency'] ?? (string) config('vouchers.default_currency', 'MYR');
 
         // Convert date strings to DateTime objects
-        $startsAt = $data['starts_at'] ?? $data['startsAt'] ?? null;
+        $startsAt = $data['starts_at'] ?? null;
         if (is_string($startsAt)) {
             $startsAt = new DateTimeImmutable($startsAt);
         }
 
-        $expiresAt = $data['expires_at'] ?? $data['expiresAt'] ?? null;
+        $expiresAt = $data['expires_at'] ?? null;
         if (is_string($expiresAt)) {
             $expiresAt = new DateTimeImmutable($expiresAt);
         }
@@ -132,34 +132,34 @@ final readonly class VoucherData implements \JsonSerializable
             description: $data['description'] ?? null,
             type: $type,
             value: (int) ($data['value'] ?? 0),
-            valueConfig: $data['value_config'] ?? $data['valueConfig'] ?? null,
-            creditDestination: $data['credit_destination'] ?? $data['creditDestination'] ?? null,
-            creditDelayHours: (int) ($data['credit_delay_hours'] ?? $data['creditDelayHours'] ?? 0),
+            valueConfig: $data['value_config'] ?? null,
+            creditDestination: $data['credit_destination'] ?? null,
+            creditDelayHours: (int) ($data['credit_delay_hours'] ?? 0),
             currency: $currency,
-            minCartValue: isset($data['min_cart_value']) || isset($data['minCartValue'])
-                ? (int) ($data['min_cart_value'] ?? $data['minCartValue'])
+            minCartValue: isset($data['min_cart_value'])
+                ? (int) ($data['min_cart_value'])
                 : null,
-            maxDiscount: isset($data['max_discount']) || isset($data['maxDiscount'])
-                ? (int) ($data['max_discount'] ?? $data['maxDiscount'])
+            maxDiscount: isset($data['max_discount'])
+                ? (int) ($data['max_discount'])
                 : null,
-            usageLimit: isset($data['usage_limit']) || isset($data['usageLimit']) ? (int) ($data['usage_limit'] ?? $data['usageLimit']) : null,
-            usageLimitPerUser: isset($data['usage_limit_per_user']) || isset($data['usageLimitPerUser']) ? (int) ($data['usage_limit_per_user'] ?? $data['usageLimitPerUser']) : null,
-            allowsManualRedemption: (bool) ($data['allows_manual_redemption'] ?? $data['allowsManualRedemption'] ?? false),
-            ownerId: $data['owner_id'] ?? $data['ownerId'] ?? null,
-            ownerType: $data['owner_type'] ?? $data['ownerType'] ?? null,
+            usageLimit: isset($data['usage_limit']) ? (int) ($data['usage_limit']) : null,
+            usageLimitPerUser: isset($data['usage_limit_per_user']) ? (int) ($data['usage_limit_per_user']) : null,
+            allowsManualRedemption: (bool) ($data['allows_manual_redemption'] ?? false),
+            ownerId: $data['owner_id'] ?? null,
+            ownerType: $data['owner_type'] ?? null,
             startsAt: $startsAt,
             expiresAt: $expiresAt,
             status: $status,
-            targetDefinition: $data['target_definition'] ?? $data['targetDefinition'] ?? null,
+            targetDefinition: $data['target_definition'] ?? null,
             metadata: $data['metadata'] ?? null,
-            promotionId: $data['promotion_id'] ?? $data['promotionId'] ?? null,
+            promotionId: $data['promotion_id'] ?? null,
             affiliateCommissionType: self::normalizeAffiliateCommissionType(
-                $data['affiliate_commission_type'] ?? $data['affiliateCommissionType'] ?? null
+                $data['affiliate_commission_type'] ?? null
             ),
-            affiliateCommissionValue: isset($data['affiliate_commission_value']) || isset($data['affiliateCommissionValue']) ? (int) ($data['affiliate_commission_value'] ?? $data['affiliateCommissionValue']) : null,
-            affiliateId: $data['affiliate_id'] ?? $data['affiliateId'] ?? null,
-            affiliateProgramId: $data['affiliate_program_id'] ?? $data['affiliateProgramId'] ?? null,
-            affiliateUplineLevels: $data['affiliate_upline_levels'] ?? $data['affiliateUplineLevels'] ?? null,
+            affiliateCommissionValue: isset($data['affiliate_commission_value']) ? (int) ($data['affiliate_commission_value']) : null,
+            affiliateId: $data['affiliate_id'] ?? null,
+            affiliateProgramId: $data['affiliate_program_id'] ?? null,
+            affiliateUplineLevels: $data['affiliate_upline_levels'] ?? null,
         );
     }
 

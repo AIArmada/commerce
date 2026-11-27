@@ -16,8 +16,8 @@ final class VoucherAffiliateOwnershipGuard
      */
     public static function sanitize(array $data): array
     {
-        $data = self::sanitizeRelation($data, 'affiliate_id', 'affiliateId', AffiliateReferenceReader::class);
-        $data = self::sanitizeRelation($data, 'affiliate_program_id', 'affiliateProgramId', ProgramReferenceReader::class);
+        $data = self::sanitizeRelation($data, 'affiliate_id', AffiliateReferenceReader::class);
+        $data = self::sanitizeRelation($data, 'affiliate_program_id', ProgramReferenceReader::class);
 
         return $data;
     }
@@ -27,18 +27,13 @@ final class VoucherAffiliateOwnershipGuard
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private static function sanitizeRelation(array $data, string $snakeKey, string $camelKey, string $readerClass): array
+    private static function sanitizeRelation(array $data, string $snakeKey, string $readerClass): array
     {
-        $hasSnakeKey = array_key_exists($snakeKey, $data);
-        $hasCamelKey = array_key_exists($camelKey, $data);
-
-        if (! $hasSnakeKey && ! $hasCamelKey) {
+        if (! array_key_exists($snakeKey, $data)) {
             return $data;
         }
 
-        $value = $hasSnakeKey ? $data[$snakeKey] : $data[$camelKey];
-
-        unset($data[$camelKey]);
+        $value = $data[$snakeKey];
 
         if ($value === null || $value === '') {
             $data[$snakeKey] = null;

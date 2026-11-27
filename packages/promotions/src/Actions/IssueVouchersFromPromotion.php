@@ -56,7 +56,6 @@ final class IssueVouchersFromPromotion
                     $overrides,
                 );
 
-                unset($payload['promotionId']);
                 $payload['promotion_id'] = $promotion->id;
                 $payload['owner_type'] = $promotion->owner_type;
                 $payload['owner_id'] = $promotion->owner_id;

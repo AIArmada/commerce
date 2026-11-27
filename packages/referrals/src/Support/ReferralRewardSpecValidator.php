@@ -96,9 +96,14 @@ final class ReferralRewardSpecValidator
 
             // Single use is a rail guarantee, not a preference: the adapter
             // forces 1/1 at issuance, and a spec asking for anything else is
-            // a promise the rail will not keep. Both alias spellings are
-            // accepted by the vouchers create action.
-            foreach (['usage_limit', 'max_uses', 'usage_limit_per_user', 'max_uses_per_user'] as $limitKey) {
+            // a promise the rail will not keep.
+            foreach (['max_uses', 'max_uses_per_user', 'min_order_value', 'max_discount_value'] as $key) {
+                if (array_key_exists($key, $voucher)) {
+                    throw new InvalidArgumentException("Referral voucher rewards require canonical single-use voucher fields; {$key} is unsupported.");
+                }
+            }
+
+            foreach (['usage_limit', 'usage_limit_per_user'] as $limitKey) {
                 if (! array_key_exists($limitKey, $voucher) || $voucher[$limitKey] === null) {
                     continue;
                 }

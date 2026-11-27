@@ -45,12 +45,9 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
         $data['code'] = $code;
         $data['currency'] = $reward->currency ?? $data['currency'] ?? config('referrals.defaults.currency', 'MYR');
 
-        // Single use is a rail guarantee: force both alias spellings so a
-        // frozen legacy spec can never widen the limit.
+        // Single use is a rail guarantee.
         $data['usage_limit'] = 1;
-        $data['max_uses'] = 1;
         $data['usage_limit_per_user'] = 1;
-        $data['max_uses_per_user'] = 1;
 
         // The voucher is worth exactly the frozen promise.
         if ($reward->amount_minor !== null) {

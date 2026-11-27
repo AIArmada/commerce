@@ -22,6 +22,12 @@ final readonly class VoucherInputValidator
         /** @var array<string, string> $errors */
         $errors = [];
 
+        foreach (array_keys($data) as $key) {
+            if (is_string($key) && (preg_match('/[A-Z]/', $key) || in_array($key, ['max_uses', 'max_uses_per_user', 'min_order_value', 'max_discount_value'], true))) {
+                $errors[$key] = 'Use the canonical snake_case voucher field.';
+            }
+        }
+
         $type = $data['type'] ?? null;
 
         if ($type instanceof VoucherType) {
@@ -51,7 +57,7 @@ final readonly class VoucherInputValidator
             }
         }
 
-        foreach (['usage_limit', 'max_uses', 'usage_limit_per_user', 'max_uses_per_user'] as $key) {
+        foreach (['usage_limit', 'usage_limit_per_user'] as $key) {
             if (! array_key_exists($key, $data) || $data[$key] === null) {
                 continue;
             }
@@ -63,7 +69,7 @@ final readonly class VoucherInputValidator
             }
         }
 
-        foreach (['min_order_value', 'min_cart_value', 'max_discount_value', 'max_discount', 'credit_delay_hours', 'creditDelayHours'] as $key) {
+        foreach (['min_cart_value', 'max_discount', 'credit_delay_hours'] as $key) {
             if (! array_key_exists($key, $data) || $data[$key] === null) {
                 continue;
             }

@@ -122,7 +122,7 @@ describe('voucher creation validation', function (): void {
         expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'currency' => 'TOOLONG']))
             ->toThrow(ValidationException::class);
 
-        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'max_uses' => -1]))
+        expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'usage_limit' => -1]))
             ->toThrow(ValidationException::class);
 
         expect(fn (): Voucher => CreateVoucher::run(['type' => 'fixed', 'value' => 100, 'usage_limit_per_user' => -2]))
@@ -291,5 +291,12 @@ it('rejects new usage for paused and future vouchers', function (): void {
     foreach ([$paused, $future] as $voucher) {
         expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100)))
             ->toThrow(\AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+    }
+});
+
+it('rejects noncanonical voucher input fields', function (): void {
+    foreach (['max_uses' => 1, 'minCartValue' => 100] as $field => $value) {
+        expect(fn () => CreateVoucher::run(['type' => 'fixed', 'value' => 100, $field => $value]))
+            ->toThrow(ValidationException::class);
     }
 });
