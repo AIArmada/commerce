@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
 uses(CashierChipTestCase::class);
 
@@ -41,7 +42,7 @@ describe('ManagesPaymentMethods', function (): void {
 
     it('delete payment methods', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_default', [
+        Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_default', [
             'type' => 'card',
             'brand' => 'Visa',
             'last_four' => '4242',
@@ -74,7 +75,7 @@ describe('ManagesPaymentMethods', function (): void {
 
     it('default payment method prefers saved default payment method', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_456']);
-        Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_preferred', [
+        Cashier::paymentMethodStore()->saveForBillable(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_preferred', [
             'type' => 'card',
             'brand' => 'Visa',
         ], true);

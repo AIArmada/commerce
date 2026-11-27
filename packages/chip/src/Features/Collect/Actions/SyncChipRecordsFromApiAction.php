@@ -10,6 +10,7 @@ use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
+use UnexpectedValueException;
 
 final readonly class SyncChipRecordsFromApiAction
 {
@@ -86,7 +87,7 @@ final readonly class SyncChipRecordsFromApiAction
                 $remotePurchase = Chip::getPurchase($purchaseId);
                 $payload = $this->toPayload($remotePurchase);
                 if (($payload['id'] ?? null) !== $purchaseId) {
-                    throw new \UnexpectedValueException('CHIP returned a different purchase identifier.');
+                    throw new UnexpectedValueException('CHIP returned a different purchase identifier.');
                 }
 
                 $remoteStatus = mb_strtolower((string) ($payload['status'] ?? ''));

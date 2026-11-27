@@ -400,10 +400,10 @@ final readonly class RenewSubscriptions
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')->orWhere('ends_at', '>', CarbonImmutable::now());
                     })->update([
-                    'chip_status' => SubscriptionStatus::PastDue,
-                    'past_due_at' => CarbonImmutable::now(),
-                    'updated_at' => CarbonImmutable::now(),
-                ]);
+                        'chip_status' => SubscriptionStatus::PastDue,
+                        'past_due_at' => CarbonImmutable::now(),
+                        'updated_at' => CarbonImmutable::now(),
+                    ]);
             }
 
             return true;

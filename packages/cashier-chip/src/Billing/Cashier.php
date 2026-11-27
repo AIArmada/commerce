@@ -128,6 +128,7 @@ final class Cashier
     private static function resolveBillable(string $chipId, ?Model $owner = null): ?Model
     {
         $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, EloquentRecordReference::fromModel($owner));
+
         try {
             $subject = EloquentRecordReference::resolve($link?->subject);
         } catch (ModelNotFoundException) {

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Features\Collect\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\Facades\Chip;
+use AIArmada\Chip\Features\Collect\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
 
 describe('SyncChipRecordsFromApiCommand', function (): void {
     it('runs with explicit purchase ids in dry-run mode', function (): void {

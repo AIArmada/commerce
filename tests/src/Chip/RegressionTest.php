@@ -21,8 +21,12 @@ use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
 use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
 use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Payment;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Features\Collect\Persistence\ChipCustomerDirectory;
 use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\Chip\Features\Payouts\Models\SendLimit;
@@ -32,13 +36,10 @@ use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
-use AIArmada\Chip\Features\Collect\Models\Client;
-use AIArmada\Chip\Features\Collect\Models\Payment;
-use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
+use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -46,8 +47,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -716,7 +719,7 @@ describe('paid handler refreshes denormalized columns', function (): void {
             'purchase' => ['total' => 10000, 'currency' => 'MYR'],
         ]);
 
-        $enriched = app(\AIArmada\Chip\Webhooks\WebhookEnricher::class)->enrich('purchase.paid', [
+        $enriched = app(WebhookEnricher::class)->enrich('purchase.paid', [
             'id' => $purchase->id,
             'type' => 'purchase',
             'status' => 'paid',
@@ -783,10 +786,10 @@ it('enforces a unique durable purchase reservation even without a shared cache l
     expect($reservation->getAttribute('idempotency_scope_hash'))->toBeString();
 
     $duplicate = $reservation->replicate();
-    $duplicate->setAttribute('id', (string) \Illuminate\Support\Str::uuid());
+    $duplicate->setAttribute('id', (string) Str::uuid());
 
-    expect(fn () => \Illuminate\Support\Facades\DB::transaction(fn () => Purchase::withoutEvents(fn () => $duplicate->save())))
-        ->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    expect(fn () => DB::transaction(fn () => Purchase::withoutEvents(fn () => $duplicate->save())))
+        ->toThrow(UniqueConstraintViolationException::class);
 });
 
 it('persists a refund identity and prevents duplicate increments even without the webhook mirror listener', function (): void {

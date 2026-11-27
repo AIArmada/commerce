@@ -11,7 +11,8 @@ final readonly class StoredPaymentMethodData
     /** @param array<string, mixed> $metadata */
     public function __construct(
         public string $id,
-        #[SensitiveParameter] private string $token,
+        #[SensitiveParameter]
+        private string $token,
         public ?string $type,
         public ?string $brand,
         public ?string $last_four,
