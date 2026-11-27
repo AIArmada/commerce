@@ -16,7 +16,7 @@ use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\SnapshotPayment;
 use AIArmada\Cashier\Support\SnapshotSubscription;
 use AIArmada\Cashier\Support\UnifiedInvoice;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscriptionModel;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscriptionModel;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Akaunting\Money\Money;

@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Billing;
 
-use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipClient;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 
 /**
  * Main Cashier class for CHIP payment gateway.
- *
- * Can be referenced as either `Cashier` or `CashierChip` for compatibility.
  */
 final class Cashier
 {
@@ -51,14 +48,18 @@ final class Cashier
     public static string $customerModel = Model::class;
 
     /**
-     * The subscription model class name.
+     * The subscription model class name, registered by the Subscriptions feature.
+     *
+     * @var class-string<Model>
      */
-    public static string $subscriptionModel = Subscription::class;
+    public static string $subscriptionModel = Model::class;
 
     /**
-     * The subscription item model class name.
+     * The subscription item model class name, registered by the Subscriptions feature.
+     *
+     * @var class-string<Model>
      */
-    public static string $subscriptionItemModel = SubscriptionItem::class;
+    public static string $subscriptionItemModel = Model::class;
 
     /**
      * The fake CHIP service for testing.
@@ -91,8 +92,8 @@ final class Cashier
         'deactivatePastDue' => true,
         'deactivateIncomplete' => true,
         'customerModel' => Model::class,
-        'subscriptionModel' => Subscription::class,
-        'subscriptionItemModel' => SubscriptionItem::class,
+        'subscriptionModel' => Model::class,
+        'subscriptionItemModel' => Model::class,
         'fakeChip' => null,
         'isFake' => false,
     ];
@@ -100,7 +101,7 @@ final class Cashier
     /**
      * Get the customer instance by its CHIP ID.
      *
-     * @return (Model&BillableContract)|null
+     * @return (Model&BillableModel)|null
      */
     public static function findBillable(?string $chipId): ?Model
     {
@@ -121,14 +122,19 @@ final class Cashier
     }
 
     /**
-     * @return (Model&BillableContract)|null
+     * @return (Model&BillableModel)|null
      */
     private static function resolveBillable(string $chipId, ?Model $owner = null): ?Model
     {
-        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, $owner);
-        $subject = $link?->subject;
+        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, EloquentRecordReference::fromModel($owner));
 
-        /** @var (Model&BillableContract)|null $billable */
+        try {
+            $subject = EloquentRecordReference::resolve($link?->subject);
+        } catch (ModelNotFoundException) {
+            return null;
+        }
+
+        /** @var (Model&BillableModel)|null $billable */
         $billable = $subject instanceof Model && static::isBillableModel($subject)
             ? $subject
             : null;
@@ -142,7 +148,7 @@ final class Cashier
      * In owner mode this fails closed when owner context is missing and, when enabled,
      * validates the resolved billable against the active owner boundary.
      *
-     * @return (Model&BillableContract)|null
+     * @return (Model&BillableModel)|null
      */
     public static function findBillableForWebhook(?string $chipId): ?Model
     {
@@ -171,25 +177,11 @@ final class Cashier
 
     private static function isBillableModel(Model $subject): bool
     {
-        if ($subject instanceof BillableContract) {
+        if ($subject instanceof BillableModel) {
             return true;
         }
 
         return in_array(Billable::class, class_uses_recursive($subject), true);
-    }
-
-    public static function findSubscriptionForWebhook(Model $billable, string $subscriptionType): ?Subscription
-    {
-        $query = Subscription::query()
-            ->where('billable_type', $billable->getMorphClass())
-            ->where('billable_id', (string) $billable->getKey())
-            ->where('type', $subscriptionType);
-
-        if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
-            return null;
-        }
-
-        return $query->first();
     }
 
     /**

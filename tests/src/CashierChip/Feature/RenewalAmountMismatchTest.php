@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict;
-use AIArmada\CashierChip\Subscription\RenewalAttempt;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;

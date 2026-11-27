@@ -4,61 +4,47 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Data\Casts\MoneyCast;
-use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Attributes\WithTransformer;
 
-final class PaymentData extends ChipData
+final readonly class PaymentData
 {
     public function __construct(
-        public readonly bool $is_outgoing,
-        public readonly string $payment_type,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $amount,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $net_amount,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $fee_amount,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $pending_amount,
-        public readonly ?int $pending_unfreeze_on,
-        public readonly ?string $description,
-        public readonly ?int $paid_on,
-        public readonly ?int $remote_paid_on,
-        public readonly ?string $type = null,
-        public readonly ?string $id = null,
-        public readonly ?int $created_on = null,
-        public readonly ?int $updated_on = null,
-        public readonly ?ClientDetailsData $client = null,
+        public bool $is_outgoing,
+        public string $payment_type,
+        public Money $amount,
+        public Money $net_amount,
+        public Money $fee_amount,
+        public Money $pending_amount,
+        public ?int $pending_unfreeze_on,
+        public ?string $description,
+        public ?int $paid_on,
+        public ?int $remote_paid_on,
+        public ?string $type = null,
+        public ?string $id = null,
+        public ?int $created_on = null,
+        public ?int $updated_on = null,
+        public ?ClientDetailsData $client = null,
         /** @var array<string, mixed> */
-        public readonly array $transaction_data = [],
-        public readonly ?RelatedObjectData $related_to = null,
-        public readonly ?string $reference_generated = null,
-        public readonly ?string $reference = null,
-        public readonly ?string $account_id = null,
-        public readonly ?string $company_id = null,
-        public readonly ?bool $is_test = null,
-        public readonly ?string $user_id = null,
-        public readonly ?string $brand_id = null,
+        public array $transaction_data = [],
+        public ?RelatedObjectData $related_to = null,
+        public ?string $reference_generated = null,
+        public ?string $reference = null,
+        public ?string $account_id = null,
+        public ?string $company_id = null,
+        public ?bool $is_test = null,
+        public ?string $user_id = null,
+        public ?string $brand_id = null,
     ) {}
 
     /**
      * Create a Payment from array data (typically from CHIP API response).
      * Amounts in the array are expected to be in cents (minor units).
      *
-     * @param  array<string, mixed>|self  ...$payloads
+     * @param  array<string, mixed>  $data
      */
-    public static function from(mixed ...$payloads): static
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         $paymentPayload = $data;
 
         if (isset($data['payment']) && is_array($data['payment'])) {

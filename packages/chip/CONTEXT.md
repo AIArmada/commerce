@@ -43,7 +43,7 @@ keywords:
 - Owner/security: Owner-scoped base models.
 
 ## Key surfaces
-- Models: `BankAccount`, `ChipCustomerLink`, `ChipIntegerModel`, `ChipModel`, `Client`, `CompanyStatement`, `Payment`, `Purchase`, `SendInstruction`, `SendLimit`
+- Models: `BankAccount`, `Features/Collect/Models/ChipCustomerLink`, `ChipIntegerModel`, `ChipModel`, `Client`, `CompanyStatement`, `Payment`, `Purchase`, `SendInstruction`, `SendLimit`
 - Actions/Services: `Actions/DispatchChipWebhookAction`, `Actions/Purchases/CancelPurchase`, `Actions/Purchases/CapturePurchase`, `Actions/Purchases/ChargePurchase`, `Actions/Purchases/CreatePurchase`, `Actions/Purchases/RefundPurchase`, `Actions/Purchases/SyncPurchaseRefundState`
 - Config `chip.php`: `database`, `table_prefix`, `json_column_type`, `environment`, `collect`, `base_url`, `api_key`, `brand_id`, `public_key`, `send`
 

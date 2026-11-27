@@ -17,7 +17,7 @@ use AIArmada\Chip\Services\ChipCollectService;
  * @see InteractsWithPaymentBehavior for subscription payment
  * behavior workflow settings.
  */
-trait InteractsWithChip // @phpstan-ignore trait.unused
+trait InteractsWithChip
 {
     public static function chip(): ChipCollectService | FakeChipCollectService
     {

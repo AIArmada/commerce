@@ -46,7 +46,7 @@ FilamentChipPlugin::make()
 ```php
 // 1. Check owner context
 // In a tinker session:
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 Purchase::withoutOwnerScope()->count();  // Should show total
 
 // 2. Verify data exists

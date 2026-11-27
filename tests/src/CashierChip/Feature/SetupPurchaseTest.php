@@ -54,11 +54,18 @@ describe('createSetupPurchase', function (): void {
         // We can verify the purchase was created with correct parameters
         $purchase = $this->user->createSetupPurchase([
             'idempotency_key' => 'setup-attempt-3',
+            'chip' => [
+                'skip_capture' => false,
+                'force_recurring' => false,
+            ],
         ]);
 
-        // The purchase should be created with preauthorization settings
+        $stored = $this->fakeChip->getFakeClient()->getPurchase($purchase->id);
+
         expect($purchase->id)->not->toBeEmpty();
         expect($purchase->status)->toBe('created');
+        expect($stored['skip_capture'])->toBeTrue()
+            ->and($stored['force_recurring'])->toBeTrue();
     });
 });
 

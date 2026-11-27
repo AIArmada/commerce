@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Enums\SendInstructionState;
+use AIArmada\Chip\Contracts\SendInstructionState;
 
 describe('SendInstructionState Enum', function (): void {
     it('correctly identifies which instructions can be deleted', function (): void {

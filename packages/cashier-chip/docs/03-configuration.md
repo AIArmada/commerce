@@ -45,7 +45,7 @@ The owner-scope settings mirror the multitenancy contract from `commerce-support
 | `features.owner.include_global` | Include global rows when owner mode is enabled |
 | `features.owner.auto_assign_on_create` | Auto-assign the current owner on create |
 | `features.owner.validate_billable_owner` | Re-validate billable ownership on write flows |
-| `features.owner.customer_resolver` | Custom `CustomerOwnerResolverInterface` class for customer scoping (`null` uses the default) |
+| `features.owner.customer_resolver` | Custom `CustomerOwnerResolver` class for customer scoping (`null` uses the default) |
 
 When owner scoping is enabled, `RenewalAttempt` records inherit `owner_type` and `owner_id` from
 their parent subscription. Direct renewal-attempt queries and writes therefore require the same
@@ -61,7 +61,7 @@ context sees global-only rows on tuple models and all rows on billables without 
 
 > **warning**: `features.owner.customer_resolver` is present in the shipped config but is not
 > consulted by the code. The built-in `DefaultCustomerOwnerResolver` is always used. To change
-> customer-to-owner mapping, bind `AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface`
+> customer-to-owner mapping, bind `AIArmada\CashierChip\Billing\CustomerOwnerResolver`
 > in a service provider rather than setting this key.
 
 ## Rate limits

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Actions;
 
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Filament-only exporter — depends on Filament\Actions\Exports\Exporter.
@@ -53,6 +55,23 @@ class SendInstructionExporter extends Exporter
             ExportColumn::make('created_at')
                 ->label('Created'),
         ];
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function modifyQuery(Builder $query): Builder
+    {
+        $model = $query->getModel();
+
+        if (method_exists($model, 'scopeForOwner')) {
+            return $model->scopeForOwner($query);
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
     public static function getCompletedNotificationBody(Export $export): string

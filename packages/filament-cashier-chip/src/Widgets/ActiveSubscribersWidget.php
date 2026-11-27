@@ -50,7 +50,7 @@ final class ActiveSubscribersWidget extends BaseWidget
     {
         return $this->rememberWidgetValue(
             'subscribers.active',
-            fn (): int => $this->subscriptionQuery()->whereActive()->count(),
+            fn (): int => $this->subscriptionQuery()->whereActive()->whereNotOnTrial()->count(),
         );
     }
 

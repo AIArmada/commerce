@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\CarbonImmutable;
 
-final class ClientData extends ChipData
+final readonly class ClientData
 {
     /**
      * @param  array<int, mixed>  $cc
@@ -15,38 +15,38 @@ final class ClientData extends ChipData
      * @param  array<string, mixed>|null  $address_data
      */
     public function __construct(
-        public readonly string $id,
-        public readonly string $type,
-        public readonly int $created_on,
-        public readonly int $updated_on,
-        public readonly ?string $client_type,
-        public readonly ?string $bank_account,
-        public readonly ?string $bank_code,
-        public readonly ?string $email,
-        public readonly ?string $phone,
-        public readonly ?string $full_name,
-        public readonly ?string $personal_code,
-        public readonly ?string $street_address,
-        public readonly ?string $country,
-        public readonly ?string $city,
-        public readonly ?string $zip_code,
-        public readonly ?string $state,
-        public readonly ?string $shipping_street_address,
-        public readonly ?string $shipping_country,
-        public readonly ?string $shipping_city,
-        public readonly ?string $shipping_zip_code,
-        public readonly ?string $shipping_state,
-        public readonly array $cc,
-        public readonly array $bcc,
-        public readonly array $delivery_methods,
-        public readonly ?string $legal_name,
-        public readonly ?string $brand_name,
-        public readonly ?string $registration_number,
-        public readonly ?string $tax_number,
+        public string $id,
+        public string $type,
+        public int $created_on,
+        public int $updated_on,
+        public ?string $client_type,
+        public ?string $bank_account,
+        public ?string $bank_code,
+        public ?string $email,
+        public ?string $phone,
+        public ?string $full_name,
+        public ?string $personal_code,
+        public ?string $street_address,
+        public ?string $country,
+        public ?string $city,
+        public ?string $zip_code,
+        public ?string $state,
+        public ?string $shipping_street_address,
+        public ?string $shipping_country,
+        public ?string $shipping_city,
+        public ?string $shipping_zip_code,
+        public ?string $shipping_state,
+        public array $cc,
+        public array $bcc,
+        public array $delivery_methods,
+        public ?string $legal_name,
+        public ?string $brand_name,
+        public ?string $registration_number,
+        public ?string $tax_number,
         // Private properties for API response handling
-        private readonly ?array $address_data = null,
-        private readonly ?string $identity_type = null,
-        private readonly ?string $identity_number = null,
+        private ?array $address_data = null,
+        private ?string $identity_type = null,
+        private ?string $identity_number = null,
     ) {}
 
     /**
@@ -81,10 +81,9 @@ final class ClientData extends ChipData
         return in_array($name, ['fullName', 'personalCode', 'streetAddress', 'zipCode', 'legalName', 'brandName', 'registrationNumber', 'taxNumber', 'address', 'identityType', 'identityNumber']);
     }
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         return new self(
             id: $data['id'],
             type: $data['type'] ?? 'client',

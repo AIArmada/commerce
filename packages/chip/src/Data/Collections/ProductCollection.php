@@ -6,68 +6,64 @@ namespace AIArmada\Chip\Data\Collections;
 
 use AIArmada\Chip\Data\ProductData;
 use Akaunting\Money\Money;
-use Spatie\LaravelData\DataCollection;
+use Countable;
+use InvalidArgumentException;
 
-/**
- * Type-safe collection of ProductData objects.
- *
- * @extends DataCollection<int, ProductData>
- */
-final class ProductCollection extends DataCollection
+final readonly class ProductCollection implements Countable
 {
-    public function __construct(
-        iterable $items = [],
-    ) {
-        parent::__construct(ProductData::class, $items);
-    }
+    /** @var list<ProductData> */
+    private array $items;
 
-    /**
-     * Calculate the total price of all products in the collection.
-     */
-    public function getTotalPrice(string $currency = 'MYR'): Money
+    /** @param iterable<ProductData> $items */
+    public function __construct(iterable $items = [])
     {
-        $totalCents = 0;
+        $products = [];
 
-        foreach ($this->items as $product) {
-            $totalCents += $product->getTotalPriceInCents();
+        foreach ($items as $product) {
+            if (! $product instanceof ProductData) {
+                throw new InvalidArgumentException('Every item must be a CHIP product.');
+            }
+
+            $products[] = $product;
         }
 
-        return Money::{$currency}($totalCents);
+        $this->items = $products;
     }
 
-    /**
-     * Calculate the total price in cents for API communication.
-     */
+    public function count(): int
+    {
+        return count($this->items);
+    }
+
+    public function getTotalPrice(string $currency = 'MYR'): Money
+    {
+        return Money::{$currency}($this->getTotalPriceInCents());
+    }
+
     public function getTotalPriceInCents(): int
     {
-        return (int) array_reduce(
-            iterator_to_array($this->items),
-            fn (int $carry, ProductData $product) => $carry + $product->getTotalPriceInCents(),
-            0
+        return array_reduce(
+            $this->items,
+            static fn (int $carry, ProductData $product): int => $carry + $product->getTotalPriceInCents(),
+            0,
         );
     }
 
-    /**
-     * Get the subtotal (sum of all product prices × quantities) in cents.
-     */
     public function getSubtotalInCents(): int
     {
-        return (int) array_reduce(
-            iterator_to_array($this->items),
-            fn (int $carry, ProductData $product) => $carry + $product->getSubtotalInCents(),
-            0
+        return array_reduce(
+            $this->items,
+            static fn (int $carry, ProductData $product): int => $carry + $product->getSubtotalInCents(),
+            0,
         );
     }
 
-    /**
-     * Get the total discount in cents.
-     */
     public function getTotalDiscountInCents(): int
     {
-        return (int) array_reduce(
-            iterator_to_array($this->items),
-            fn (int $carry, ProductData $product) => $carry + $product->getDiscountTotalInCents(),
-            0
+        return array_reduce(
+            $this->items,
+            static fn (int $carry, ProductData $product): int => $carry + $product->getDiscountTotalInCents(),
+            0,
         );
     }
 }

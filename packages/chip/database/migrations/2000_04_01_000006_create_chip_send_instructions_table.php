@@ -27,7 +27,7 @@ return new class extends Migration
             // Status tracking - exact states from API
             $table->string('state', 24)
                 ->default('received')
-                ->comment('Backed by AIArmada\\Chip\\Enums\\SendInstructionState enum.');
+                ->comment('Backed by AIArmada\\Chip\\Contracts\\SendInstructionState enum.');
 
             // Generated fields from API response
             $table->string('receipt_url')->nullable(); // Generated receipt URL

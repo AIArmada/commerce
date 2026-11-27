@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Builder;
 
 final class BankAccountStatusWidget extends ChartWidget
 {
+    use RequiresChipOwnerContext;
+
     protected ?string $heading = 'Bank Account Status';
 
     protected ?string $description = 'Distribution of bank account statuses';

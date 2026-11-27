@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Services\LocalAnalyticsService;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
@@ -14,6 +14,10 @@ beforeEach(function (): void {
 
 function createPurchase(array $attributes): Purchase
 {
+    if (isset($attributes['created_at']) && ! array_key_exists('created_on', $attributes)) {
+        $attributes['created_on'] = $attributes['created_at']->timestamp;
+    }
+
     $purchase = new Purchase;
     $purchase->forceFill(array_merge([
         'id' => uniqid('p-'),
@@ -70,11 +74,11 @@ it('calculates revenue metrics', function (): void {
 
     $metrics = $this->service->getRevenueMetrics($now->copy()->subDays(5), $now->copy()->addDay());
 
-    expect($metrics->grossRevenue)->toBe(17000);
+    expect($metrics->grossRevenue)->toBe(22000);
     expect($metrics->refunds)->toBe(7000);
-    expect($metrics->netRevenue)->toBe(10000);
-    expect($metrics->transactionCount)->toBe(2);
-    expect($metrics->averageTransaction)->toBe(8500.0);
+    expect($metrics->netRevenue)->toBe(15000);
+    expect($metrics->transactionCount)->toBe(3);
+    expect($metrics->averageTransaction)->toEqualWithDelta(22000 / 3, 0.01);
 });
 
 it('calculates transaction metrics', function (): void {
@@ -127,6 +131,27 @@ it('calculates payment method breakdown', function (): void {
     expect($fpx['successful'])->toBe(2);
     expect($fpx['revenue'])->toBe(4000);
     expect($fpx['success_rate'])->toBe(100.0);
+});
+
+it('uses provider created_on timestamps rather than local ingestion timestamps', function (): void {
+    $now = CarbonImmutable::now();
+
+    createPurchase([
+        'status' => 'paid',
+        'created_at' => $now,
+        'created_on' => $now->subDays(10)->timestamp,
+    ]);
+
+    createPurchase([
+        'status' => 'paid',
+        'created_at' => $now->subDays(10),
+        'created_on' => $now->timestamp,
+    ]);
+
+    $metrics = $this->service->getTransactionMetrics($now->copy()->subDay(), $now->copy()->addDay());
+
+    expect($metrics->total)->toBe(1)
+        ->and($metrics->successful)->toBe(1);
 });
 
 it('includes partial refunds in revenue trends using CHIP amount fields', function (): void {

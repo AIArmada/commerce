@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 
 describe('PurchaseStatus Enum', function (): void {
     it('correctly identifies which purchases can be cancelled', function (): void {

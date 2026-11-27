@@ -27,14 +27,23 @@ explicitly included.
 ## Renewal idempotency
 
 Renewal charges carry an idempotency key derived from the attempt id (`renewal-{attempt_id}`),
-so transport retries cannot double-charge the same attempt. Attempts stuck in `unknown` are
-reconciled on the next run: attempts with a `purchase_id` are resolved via `getPurchase`, and
-attempts without one are retried under the same attempt id (same idempotency key). Webhook
+so transport retries cannot double-charge the same attempt. Renewal selects
+`Subscription::recurringToken()` first and falls back to the customer's default payment method
+only when the subscription has no token of its own.
+
+The provider purchase ID is persisted on the attempt immediately after the purchase is created
+and before the recurring-token charge is sent. If the charge transport fails, the attempt stays
+`unknown` with that purchase ID, and the next run resolves the purchase via `getPurchase` instead
+of reissuing a possibly accepted mutation. A renewal whose durable idempotency reservation cannot
+be resolved fails closed as `IDEMPOTENCY_RECONCILIATION_REQUIRED` rather than looping. Webhook
 deliveries are deduplicated by `purchase_id`, and webhooks never resurrect canceled
 subscriptions. Renewals charge `renewalAmount()` (items minus any in-window coupon discount);
 fully-discounted ($0) renewals auto-complete locally — no charge is attempted, no payment
 method is required, the billing date advances, and `SubscriptionRenewed` is dispatched
-with a `null` payment.
+with a `null` purchase ID.
+
+Successful settlement advances from the existing `next_billing_at` anchor, not from the
+webhook arrival time, so late payments do not drift the billing calendar.
 
 Renewal claims that expire without an outcome fail closed instead of wedging the
 subscription: the attempt is marked failed with `last_error_code = CLAIM_EXPIRED`, the
@@ -52,7 +61,11 @@ webhook path, and the claim-level guard means an expired claim is never re-execu
 ## Settled-period reconciliation hook
 
 When a second *distinct* purchase arrives for an already-settled billing period, the
-settle transaction rolls back without extending the subscription. This is safe against
+settle transaction rolls back without extending the subscription. A paid event that matches a
+period held only by a terminal `failed` or `skipped` renewal attempt settles normally: the paid
+purchase is recorded as a completed attempt with a null period key (the unique allows multiple
+nulls) and the failed audit row is preserved. Live `claimed`/`unknown` claims and completed or
+mismatched holders still produce the conflict hook. This is safe against
 gateway double-charges, but the money still needs host reconciliation (refund, credit,
 or manual extension).
 
@@ -75,7 +88,7 @@ from the subscription's current renewal amount. A price change after a claim the
 does not change the amount that claim authorizes.
 
 Hosts should listen for `AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict`,
-which carries the subscription, the `purchaseId` requiring reconciliation, and the
+which carries the subscription `RecordReference`, the `purchaseId` requiring reconciliation, and the
 `periodKey`. For amount or currency mismatches it additionally carries
 `expectedAmountMinor`, `actualAmountMinor`, `expectedCurrency`, and `actualCurrency`
 (`null` for distinct-purchase collisions). A warning is also logged with the same
@@ -94,17 +107,10 @@ protected $listen = [
 
 ## Creating Subscriptions
 
-The canonical way to create a subscription is via the `CreateChipSubscription` Action.
-All `$builder->create()` calls delegate to it internally.
+Use `AIArmada\CashierChip\Billing\SubscriptionBuilder` for the Laravel-facing fluent API. The builder submits an immutable `SubscriptionDraft` to the `Features\Subscriptions\Api\CreateSubscription` contract; the feature owns persistence and returns a `RecordReference`.
 
 ```php
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
-
-$subscription = CreateChipSubscription::run(
-    builder: $builder,
-    recurringToken: $recurringToken,
-    options: [],
-);
+$subscription = $builder->create($recurringToken);
 ```
 
 ### Basic Subscription
@@ -284,7 +290,7 @@ The canonical way to cancel a subscription is via the `CancelChipSubscription` A
 All `$subscription->cancel()` and `$subscription->cancelNow()` calls delegate to it internally.
 
 ```php
-use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CancelChipSubscription;
 
 // Cancel immediately
 CancelChipSubscription::run($subscription);
@@ -521,7 +527,7 @@ There is no `SubscriptionPaymentFailed` event — renewal failures dispatch
 Query subscriptions efficiently:
 
 ```php
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 
 // Active subscriptions
 $active = Subscription::active()->get();
@@ -558,7 +564,7 @@ $ended = Subscription::ended()->get();
 | `next_billing_at` | timestamp | Next charge date |
 | `billing_interval` | string | Interval (day, week, month, year) |
 | `billing_interval_count` | int | Interval multiplier (default 1) |
-| `recurring_token` | text nullable | Payment method |
+| `recurring_token` | text nullable | Payment method (encrypted at rest and hidden from default model serialization) |
 
 ### cashier_chip_subscription_items
 

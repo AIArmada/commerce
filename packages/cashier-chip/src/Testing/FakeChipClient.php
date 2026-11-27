@@ -9,6 +9,7 @@ use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Support\TaxPercent;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * Fake CHIP client for testing CHIP API calls directly.
@@ -149,6 +150,7 @@ class FakeChipClient
             'payment_method_whitelist' => $data['payment_method_whitelist'] ?? null,
             'is_recurring_token' => $data['is_recurring_token'] ?? false,
             'skip_capture' => $data['skip_capture'] ?? false,
+            'force_recurring' => $data['force_recurring'] ?? false,
             'client' => $data['client'] ?? null,
             'checkout_url' => 'https://gate.chip-in.asia/checkout/' . $id,
             'direct_post_url' => 'https://gate.chip-in.asia/direct-post/' . $id,
@@ -611,7 +613,11 @@ class FakeChipClient
 
             // Over-gross discounts throw from the primitive, mirroring
             // the server's 400 product_subtotal_negative.
-            $total += ProductData::lineTotalMinorUnits($price, $quantity, $discount, $taxPercent, $totalPriceOverride);
+            try {
+                $total += ProductData::lineTotalMinorUnits($price, $quantity, $discount, $taxPercent, $totalPriceOverride);
+            } catch (InvalidArgumentException $exception) {
+                throw new ChipValidationException($exception->getMessage());
+            }
         }
 
         return $total;

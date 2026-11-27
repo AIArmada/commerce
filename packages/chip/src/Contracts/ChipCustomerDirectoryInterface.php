@@ -4,26 +4,28 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Contracts;
 
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Data\CustomerLinkData;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
 interface ChipCustomerDirectoryInterface
 {
-    public function findForSubject(Model $subject): ?ChipCustomerLink;
+    public function findForSubject(RecordReference $subject): ?CustomerLinkData;
 
-    public function findByChipCustomerId(string $chipCustomerId, ?Model $owner = null): ?ChipCustomerLink;
+    public function findByChipCustomerId(string $chipCustomerId, ?RecordReference $owner = null): ?CustomerLinkData;
 
-    public function getChipCustomerId(Model $subject): ?string;
+    public function getChipCustomerId(RecordReference $subject): ?string;
 
-    public function hasChipCustomerId(Model $subject): bool;
+    public function hasChipCustomerId(RecordReference $subject): bool;
+
+    public function assertCanCreate(RecordReference $subject): void;
 
     /**
      * @param  array<string, mixed>  $metadata
      */
-    public function link(Model $subject, string $chipCustomerId, array $metadata = []): ChipCustomerLink;
+    public function link(RecordReference $subject, string $chipCustomerId, array $metadata = []): CustomerLinkData;
 
-    public function ensureForSubject(Model $subject, CustomerInterface $customer): ChipCustomerLink;
+    public function ensureForSubject(RecordReference $subject, CustomerInterface $customer): CustomerLinkData;
 
-    public function syncForSubject(Model $subject, CustomerInterface $customer): ChipCustomerLink;
+    public function syncForSubject(RecordReference $subject, CustomerInterface $customer): CustomerLinkData;
 }

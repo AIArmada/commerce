@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
@@ -14,6 +15,8 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 final class RecentPayoutsWidget extends BaseWidget
 {
+    use RequiresChipOwnerContext;
+
     protected static ?int $sort = 12;
 
     protected int | string | array $columnSpan = 'full';

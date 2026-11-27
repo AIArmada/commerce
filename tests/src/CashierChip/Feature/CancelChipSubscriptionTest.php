@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
-use AIArmada\CashierChip\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
 

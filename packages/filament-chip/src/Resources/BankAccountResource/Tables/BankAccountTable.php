@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Tables;
 
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\Chip\Features\Payouts\Actions\DeleteBankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
@@ -126,28 +126,18 @@ final class BankAccountTable
                         ->modalHeading('Delete Bank Account')
                         ->modalDescription('This will delete the bank account from CHIP Send. This cannot be undone.')
                         ->action(function (BankAccount $record): void {
-                            $service = app(ChipSendService::class);
-                            $scopedRecord = self::resolveScopedBankAccount($record);
-
-                            if ($scopedRecord === null) {
-                                Notification::make()
-                                    ->title('Bank account is outside your owner scope')
-                                    ->danger()
-                                    ->send();
-
-                                return;
-                            }
-
                             try {
-                                $service->deleteBankAccount((int) $scopedRecord->getKey());
+                                app(DeleteBankAccount::class)->handle((int) $record->getKey());
                                 Notification::make()
                                     ->title('Bank account deleted')
                                     ->success()
                                     ->send();
                             } catch (Throwable $e) {
+                                report($e);
+
                                 Notification::make()
                                     ->title('Failed to delete account')
-                                    ->body($e->getMessage())
+                                    ->body('The operation could not be completed. Verify its status before retrying.')
                                     ->danger()
                                     ->send();
                             }
@@ -162,13 +152,5 @@ final class BankAccountTable
             ->emptyStateDescription('Register bank accounts to send payouts via CHIP Send.')
             ->emptyStateIcon(Heroicon::OutlinedBuildingLibrary)
             ->poll('30s');
-    }
-
-    private static function resolveScopedBankAccount(BankAccount $record): ?BankAccount
-    {
-        return BankAccount::query()
-            ->forOwner()
-            ->whereKey($record->getKey())
-            ->first();
     }
 }

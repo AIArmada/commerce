@@ -82,9 +82,18 @@ return [
 
 ```php
 'default_currency' => 'MYR',
+
+'widgets' => [
+    'balance_cache_ttl' => 60,
+    'turnover_cache_ttl' => 3600,
+    'turnover_current_bucket_ttl' => 60,
+],
 ```
 
 - `default_currency` is the fallback currency used by UI formatting helpers.
+- `widgets.balance_cache_ttl` caches the company account balance.
+- `widgets.turnover_cache_ttl` caches completed account-turnover days.
+- `widgets.turnover_current_bucket_ttl` keeps the current day's turnover bucket fresh.
 - Owner scoping is configured via `config/chip.php` (`chip.owner.enabled`).
 
 ## Resource Navigation Sort
