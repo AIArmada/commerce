@@ -23,9 +23,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class ResolveExperimentAssignment
@@ -64,7 +63,9 @@ final class ResolveExperimentAssignment
             throw new InvalidArgumentException('A signal identity, signal session, or anonymous id is required to resolve an assignment.');
         }
 
-        return DB::transaction(function () use ($candidateKeys, $experiment, $identity, $session): Assignment {
+        unset($this->activeVariantCache[$this->runCacheKey((string) $experiment->getKey())]);
+
+        return $experiment->getConnection()->transaction(function () use ($candidateKeys, $experiment, $identity, $session): Assignment {
             $matchingAssignments = $this->matchingAssignments($experiment, $identity, $session, $candidateKeys);
 
             if ($matchingAssignments->isNotEmpty()) {
@@ -162,22 +163,24 @@ final class ResolveExperimentAssignment
         $latestSeenAt = $this->latestTimestamp($matchingAssignments, ['last_seen_at', 'first_exposed_at', 'assigned_at']) ?? $lastSeenAt;
 
         try {
-            $duplicateAssignments->each(static fn (Assignment $duplicate): bool => (bool) $duplicate->delete());
+            $assignment->getConnection()->transaction(function () use ($assignment, $duplicateAssignments, $resolvedIdentityId, $resolvedSessionId, $earliestAssignedAt, $earliestFirstExposedAt, $lastSeenAt, $latestSeenAt): void {
+                $duplicateAssignments->each(static fn (Assignment $duplicate): bool => (bool) $duplicate->delete());
 
-            if ($resolvedIdentityId !== null && $assignment->signal_identity_id === null) {
-                $assignment->signal_identity_id = $resolvedIdentityId;
-            }
+                if ($resolvedIdentityId !== null && $assignment->signal_identity_id === null) {
+                    $assignment->signal_identity_id = $resolvedIdentityId;
+                }
 
-            if ($resolvedSessionId !== null && $assignment->signal_session_id === null) {
-                $assignment->signal_session_id = $resolvedSessionId;
-            }
+                if ($resolvedSessionId !== null && $assignment->signal_session_id === null) {
+                    $assignment->signal_session_id = $resolvedSessionId;
+                }
 
-            $assignment->assigned_at = $earliestAssignedAt ?? $assignment->assigned_at ?? $lastSeenAt;
-            $assignment->first_exposed_at = $earliestFirstExposedAt ?? $assignment->first_exposed_at ?? $assignment->assigned_at;
-            $assignment->last_seen_at = $latestSeenAt->greaterThan($lastSeenAt) ? $latestSeenAt : $lastSeenAt;
-            $assignment->save();
-        } catch (QueryException $exception) {
-            if (! $retryOnConflict || ! $this->isUniqueConstraintViolation($exception)) {
+                $assignment->assigned_at = $earliestAssignedAt ?? $assignment->assigned_at ?? $lastSeenAt;
+                $assignment->first_exposed_at = $earliestFirstExposedAt ?? $assignment->first_exposed_at ?? $assignment->assigned_at;
+                $assignment->last_seen_at = $latestSeenAt->greaterThan($lastSeenAt) ? $latestSeenAt : $lastSeenAt;
+                $assignment->save();
+            });
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! $retryOnConflict) {
                 throw $exception;
             }
 
@@ -221,12 +224,8 @@ final class ResolveExperimentAssignment
         ]);
 
         try {
-            $assignment->save();
-        } catch (QueryException $exception) {
-            if (! $this->isUniqueConstraintViolation($exception)) {
-                throw $exception;
-            }
-
+            $assignment->getConnection()->transaction(fn (): bool => $assignment->save());
+        } catch (UniqueConstraintViolationException $exception) {
             $matchingAssignments = $this->matchingAssignments($experiment, $identity, $session, $candidateKeys);
 
             if ($matchingAssignments->isEmpty()) {
@@ -278,6 +277,7 @@ final class ResolveExperimentAssignment
                 ->where('traffic_percentage', '>', 0)
                 ->orderBy('position')
                 ->orderBy('created_at')
+                ->orderBy('id')
                 ->get();
         }
 
@@ -423,20 +423,6 @@ final class ResolveExperimentAssignment
         $timestamp = $timestamps->first();
 
         return $timestamp instanceof CarbonImmutable ? $timestamp : null;
-    }
-
-    private function isUniqueConstraintViolation(QueryException $exception): bool
-    {
-        $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
-
-        if (in_array($sqlState, ['23000', '23505'], true)) {
-            return true;
-        }
-
-        $message = mb_strtolower($exception->getMessage());
-
-        return str_contains($message, 'duplicate')
-            || str_contains($message, 'unique constraint');
     }
 
     /**
