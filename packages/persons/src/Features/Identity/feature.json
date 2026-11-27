@@ -5,7 +5,8 @@
     "table:persons": [
       "AIArmada\\Persons\\Features\\Identity\\Actions\\CreatePersonAction",
       "AIArmada\\Persons\\Features\\Identity\\Actions\\ReorderFeaturedPersonsAction",
-      "AIArmada\\Persons\\Features\\Identity\\Actions\\UpdatePersonAction"
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\UpdatePersonAction",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName"
     ],
     "table:person_names": [
       "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName"

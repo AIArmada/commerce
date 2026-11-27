@@ -56,22 +56,22 @@ $title = app(ReorderTitleAction::class)->create([
 
 ```php
 use AIArmada\Persons\Enums\PersonNameType;
-use AIArmada\Persons\Features\Identity\Models\PersonName;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 
-$person->names()->create([
+app(SavePersonName::class)->create($person, [
     'name_type' => PersonNameType::Display,
     'full_name' => 'Ahmad Rahman',
     'language_code' => 'en',
     'is_primary' => true,
 ]);
 
-$person->names()->create([
+app(SavePersonName::class)->create($person, [
     'name_type' => PersonNameType::Religious,
     'full_name' => 'أحمد بن عبد الرحمن',
     'language_code' => 'ar',
 ]);
 
-$person->names()->create([
+app(SavePersonName::class)->create($person, [
     'name_type' => PersonNameType::Nickname,
     'full_name' => 'Mat',
     'language_code' => 'ms',
@@ -166,7 +166,7 @@ $affiliation->roles()->create([
 
 `PersonName::is_primary` is exclusive within `(person_id, name_type,
 language_code)`. `Affiliation::is_primary` is exclusive within its affiliatable
-target. Saving a primary record locks the parent and clears the matching
+target. The owning Actions lock the parent and clear the matching
 siblings, including writes made through Filament relation managers. The
 database backstops are the driver-compatible unique indexes
 `person_names_primary_unique` and `affiliations_primary_unique`. PostgreSQL

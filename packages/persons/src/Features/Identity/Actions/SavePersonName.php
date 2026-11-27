@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Persons\Features\Identity\Actions;
 
 use AIArmada\Persons\Features\Identity\Models\PersonName;
+use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
@@ -16,7 +17,8 @@ final readonly class SavePersonName
     {
         return $person->getConnection()->transaction(function () use ($person, $attributes): PersonName {
             $locked = $this->lockPerson($person);
-            $name = $locked->names()->create($this->attributes($attributes));
+            $name = $locked->names()->make($this->attributes($attributes));
+            $this->persist($locked, $name);
             $locked->unsetRelation('names')->save();
 
             return $name;
@@ -29,7 +31,8 @@ final readonly class SavePersonName
         return $person->getConnection()->transaction(function () use ($person, $name, $attributes): PersonName {
             $locked = $this->lockPerson($person);
             $record = $this->lockName($locked, $name);
-            $record->fill($this->attributes($attributes))->save();
+            $record->fill($this->attributes($attributes));
+            $this->persist($locked, $record);
             $locked->unsetRelation('names')->save();
 
             return $record;
@@ -46,6 +49,31 @@ final readonly class SavePersonName
 
             return $deleted;
         });
+    }
+
+    private function persist(Person $person, PersonName $name): void
+    {
+        $name->full_name = mb_trim((string) $name->full_name);
+        $name->language_code = mb_strtolower(mb_trim((string) $name->language_code));
+
+        if ($name->full_name === '' || $name->language_code === '' || ! $name->name_type instanceof PersonNameType) {
+            throw new InvalidArgumentException('A name, language code and valid name type are required.');
+        }
+
+        if ($name->is_primary) {
+            $siblings = $person->names()
+                ->where('name_type', $name->name_type->value)
+                ->where('language_code', $name->language_code)
+                ->where('is_primary', true);
+
+            if ($name->exists) {
+                $siblings->whereKeyNot($name->getKey());
+            }
+
+            $siblings->update(['is_primary' => false]);
+        }
+
+        $name->save();
     }
 
     private function lockPerson(Person $person): Person

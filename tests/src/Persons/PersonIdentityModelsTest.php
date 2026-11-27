@@ -66,23 +66,20 @@ describe('person identity models', function (): void {
     it('creates a person with multi-context names', function (): void {
         $person = Person::factory()->create();
 
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Ahmad Rahman',
             'language_code' => 'en',
             'is_primary' => true,
         ]);
 
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Religious,
             'full_name' => 'أحمد بن عبد الرحمن',
             'language_code' => 'ar',
         ]);
 
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Nickname,
             'full_name' => 'Mat',
             'language_code' => 'ms',
@@ -124,16 +121,14 @@ describe('person identity models', function (): void {
     it('keeps only one primary name per person and name scope', function (): void {
         $person = Person::factory()->create();
 
-        $first = PersonName::create([
-            'person_id' => $person->id,
+        $first = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'First Name',
             'language_code' => 'en',
             'is_primary' => true,
         ]);
 
-        $second = PersonName::create([
-            'person_id' => $person->id,
+        $second = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Second Name',
             'language_code' => 'en',
@@ -147,16 +142,14 @@ describe('person identity models', function (): void {
     it('allows one primary name for each name type and language scope', function (): void {
         $person = Person::factory()->create();
 
-        $display = PersonName::create([
-            'person_id' => $person->id,
+        $display = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Display Name',
             'language_code' => 'en',
             'is_primary' => true,
         ]);
 
-        $nickname = PersonName::create([
-            'person_id' => $person->id,
+        $nickname = app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Nickname,
             'full_name' => 'Nickname',
             'language_code' => 'en',

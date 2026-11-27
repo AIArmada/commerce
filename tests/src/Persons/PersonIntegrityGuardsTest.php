@@ -12,6 +12,7 @@ use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
@@ -133,8 +134,7 @@ describe('person integrity guards', function (): void {
 
     it('deletes a person with all children atomically', function (): void {
         $person = Person::create(['name' => 'Cascade Delete']);
-        PersonName::create([
-            'person_id' => $person->id,
+        app(SavePersonName::class)->create($person, [
             'name_type' => PersonNameType::Display,
             'full_name' => 'Cascade Delete',
             'language_code' => 'en',

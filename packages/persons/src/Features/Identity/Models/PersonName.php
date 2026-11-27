@@ -46,47 +46,6 @@ class PersonName extends Model
         });
     }
 
-    /**
-     * Save a primary name while serializing primary replacement per person.
-     * The parent and sibling locks are the application-level race backstop;
-     * the partial unique index is the database-level invariant.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
-    {
-        $this->normalizeForSave();
-
-        $needsPrimarySync = $this->is_primary
-            && (! $this->exists
-                || $this->isDirty('is_primary')
-                || $this->isDirty('person_id')
-                || $this->isDirty('name_type')
-                || $this->isDirty('language_code'));
-
-        if (! $needsPrimarySync) {
-            return parent::save($options);
-        }
-
-        return $this->getConnection()->transaction(function () use ($options): bool {
-            $this->person()->lockForUpdate()->firstOrFail();
-
-            static::query()
-                ->where('person_id', $this->person_id)
-                ->where('name_type', $this->name_type instanceof PersonNameType
-                    ? $this->name_type->value
-                    : (string) $this->getAttribute('name_type'))
-                ->where('language_code', $this->language_code)
-                ->whereKeyNot($this->getKey())
-                ->lockForUpdate()
-                ->update(['is_primary' => false]);
-
-            $saved = parent::save($options);
-
-            return $saved;
-        });
-    }
-
     private function normalizeForSave(): void
     {
         $this->full_name = mb_trim($this->full_name);
