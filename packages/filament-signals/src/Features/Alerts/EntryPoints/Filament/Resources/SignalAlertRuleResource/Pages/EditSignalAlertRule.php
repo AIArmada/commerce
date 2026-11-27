@@ -14,6 +14,15 @@ final class EditSignalAlertRule extends EditRecord
 {
     protected static string $resource = SignalAlertRuleResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        if ((bool) config('signals.features.alerts.allow_inline_destinations', false)) {
+            $data['inline_destinations'] = $this->getRecord()->getAttribute('inline_destinations');
+        }
+
+        return $data;
+    }
+
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         app(AlertRuleAdministration::class)->update((string) $record->getKey(), $data);

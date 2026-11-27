@@ -26,6 +26,11 @@ final class PendingSignalAlertsWidget extends BaseWidget
         'xl' => 2,
     ];
 
+    public static function canView(): bool
+    {
+        return SignalAlertLogResource::canViewAny();
+    }
+
     public function table(Table $table): Table
     {
         return $table

@@ -31,7 +31,8 @@ final class DispatchSignalAlertDelivery implements OwnerScopedJob, ShouldQueue
         public string | int | null $ownerId,
         public bool $ownerIsGlobal = false,
     ) {
-        $this->tries = max(1, (int) config('signals.features.alerts.delivery.max_attempts', 5)) + 1;
+        $transportAttempts = max(1, (int) config('signals.features.alerts.delivery.max_attempts', 5));
+        $this->tries = (2 * $transportAttempts) + 1;
     }
 
     /** @return list<int> */
@@ -53,10 +54,8 @@ final class DispatchSignalAlertDelivery implements OwnerScopedJob, ShouldQueue
     {
         $retryAfter = app(ProcessAlertDelivery::class)->run($this->deliveryId);
 
-        if ($retryAfter !== null) {
-            if ($this->job !== null) {
-                $this->release($retryAfter);
-            }
+        if ($retryAfter !== null && $this->job !== null) {
+            $this->release($retryAfter);
         }
     }
 

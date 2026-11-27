@@ -78,7 +78,7 @@ final class SignalAlertDelivery extends Model
     protected function casts(): array
     {
         return [
-            'destination' => 'array',
+            'destination' => 'encrypted:array',
             'attempt_count' => 'integer',
             'max_attempts' => 'integer',
             'available_at' => 'immutable_datetime',

@@ -15,6 +15,7 @@ use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 uses(SignalsTestCase::class);
 
@@ -219,4 +220,28 @@ it('keeps repeated daily rollups idempotent for the same property and date', fun
     expect($second->id)->toBe($first->id)
         ->and($second->events)->toBe(1)
         ->and(SignalDailyMetric::query()->where('tracked_property_id', $property->id)->where('date', '2026-03-11')->count())->toBe(1);
+});
+
+it('persists a full property batch in one rollup write', function (): void {
+    foreach (range(1, 100) as $number) {
+        TrackedProperty::query()->create([
+            'name' => "Rollup property {$number}",
+            'slug' => "rollup-property-{$number}",
+        ]);
+    }
+
+    $date = CarbonImmutable::parse('2026-03-11');
+    DB::enableQueryLog();
+
+    try {
+        $count = app(AggregateDailyMetrics::class)->aggregateRange($date, $date);
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($count)->toBe(100)
+        ->and(count($queries))->toBeLessThanOrEqual(6)
+        ->and(SignalDailyMetric::query()->count())->toBe(100);
 });

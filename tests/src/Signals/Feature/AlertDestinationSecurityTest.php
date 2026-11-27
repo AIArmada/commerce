@@ -97,8 +97,9 @@ it('keeps inline destination secrets out of serialization and audit storage', fu
 
     expect($rule->toArray())->not->toHaveKey('inline_destinations')
         ->and(json_encode($rule->toArray(), JSON_THROW_ON_ERROR))->not->toContain('secret-token-value')
-        ->and(DB::table('audits')->where('new_values', 'like', '%secret-token-value%')->exists())->toBeFalse()
-        ->and(DB::table($activityTable)->where('properties', 'like', '%secret-token-value%')->exists())->toBeFalse();
+        ->and(DB::table($rule->getTable())->where('id', $ruleId)->value('inline_destinations'))->not->toContain('secret-token-value')
+        ->and(DB::table('audits')->whereRaw('CAST(new_values AS TEXT) LIKE ?', ['%secret-token-value%'])->exists())->toBeFalse()
+        ->and(DB::table($activityTable)->whereRaw('CAST(properties AS TEXT) LIKE ?', ['%secret-token-value%'])->exists())->toBeFalse();
 });
 
 it('does not dispatch named destinations for tenant rules even when configured', function (): void {

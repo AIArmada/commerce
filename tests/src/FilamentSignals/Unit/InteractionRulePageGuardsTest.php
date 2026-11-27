@@ -19,6 +19,7 @@ use Filament\Panel;
 use Filament\PanelRegistry;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 uses(FilamentSignalsTestCase::class);
 
@@ -125,7 +126,7 @@ it('allocates scanned slugs in one pass and skips overlong selectors', function 
 
         $candidates = [];
 
-        for ($index = 0; $index < 20; $index++) {
+        for ($index = 0; $index < 499; $index++) {
             $candidates[] = [
                 'name' => 'Repeated Call To Action',
                 'selector' => '#repeat-' . $index,
@@ -137,21 +138,31 @@ it('allocates scanned slugs in one pass and skips overlong selectors', function 
             'selector' => '#' . str_repeat('a', 255),
         ];
 
-        $created = app(InteractionRuleAdministration::class)->createScanned(
-            (string) $property->getKey(),
-            'click',
-            'cta.click',
-            null,
-            false,
-            $candidates,
-        );
+        DB::enableQueryLog();
+
+        try {
+            $created = app(InteractionRuleAdministration::class)->createScanned(
+                (string) $property->getKey(),
+                'click',
+                'cta.click',
+                null,
+                false,
+                $candidates,
+            );
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
 
         $slugs = SignalInteractionRule::query()->orderBy('slug')->pluck('slug');
 
-        expect($created)->toBe(20)
-            ->and($slugs)->toHaveCount(20)
-            ->and($slugs->unique())->toHaveCount(20)
-            ->and($slugs->contains('repeated-call-to-action-20'))->toBeTrue()
+        expect($created)->toBe(499)
+            ->and(count($queries))->toBeLessThan(2100)
+            ->and(collect($queries)->filter(fn (array $query): bool => str_contains($query['query'], '"slug" like')))->toHaveCount(1)
+            ->and($slugs)->toHaveCount(499)
+            ->and($slugs->unique())->toHaveCount(499)
+            ->and($slugs->contains('repeated-call-to-action-499'))->toBeTrue()
             ->and(SignalInteractionRule::query()->where('name', 'Overlong Selector')->exists())->toBeFalse();
     });
 });

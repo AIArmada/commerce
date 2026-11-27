@@ -237,10 +237,6 @@ final class PinnedHttpClient
                 throw new InvalidArgumentException('Too many or empty redirects from remote host.');
             }
 
-            if ($response->status() === 303) {
-                $headers = [];
-            }
-
             $location = mb_trim((string) $response->header('Location'));
 
             if ($location === '') {

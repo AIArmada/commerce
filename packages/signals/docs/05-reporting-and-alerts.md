@@ -97,7 +97,7 @@ Supported dispatch channels:
 - webhook,
 - Slack-compatible webhook.
 
-Named destinations from config are preferred. Inline destinations are ignored unless explicitly enabled. When owner scoping is enabled, configured named destinations are only available to global rules; tenant rules use inline destinations. Inline destination payloads are encrypted at rest and excluded from audits, activity logs, and model serialization. Each inline entry declares its channel and destination fields:
+Named destinations from config are preferred. Inline destinations are ignored unless explicitly enabled. With owner scoping enabled, global rules can use named destinations and tenant rules can use inline destinations. Inline rule destinations and queued delivery destinations are encrypted at rest. Inline rule destinations are excluded from audits, activity logs, and model serialization. Each inline entry declares its channel and destination fields.
 
 ```php
 'inline_destinations' => [

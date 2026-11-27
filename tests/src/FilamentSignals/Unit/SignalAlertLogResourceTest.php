@@ -14,6 +14,8 @@ use AIArmada\Signals\Features\Alerts\Api\AlertLogAdministration;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use Filament\Panel;
+use Filament\PanelRegistry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
@@ -21,6 +23,17 @@ uses(FilamentSignalsTestCase::class);
 
 it('registers the alert log policy', function (): void {
     expect(Gate::getPolicyFor(SignalAlertLog::class))->toBeInstanceOf(SignalAlertLogPolicy::class);
+});
+
+it('requires alert log view permission to mount the pending alerts widget', function (): void {
+    app(PanelRegistry::class)->register(Panel::make()->default()->id('admin')->path('admin'));
+    $this->actingAs(User::factory()->create());
+
+    expect(PendingSignalAlertsWidget::canView())->toBeFalse();
+
+    Gate::define('signal-alert-log.viewAny', fn (): bool => true);
+
+    expect(PendingSignalAlertsWidget::canView())->toBeTrue();
 });
 
 it('scopes signal alert logs to the current owner', function (): void {

@@ -86,24 +86,12 @@ final readonly class AggregateDailyMetrics
             ];
         }
 
-        $existing = SignalDailyMetric::query()->forOwner()
-            ->where(function ($query) use ($byKey): void {
-                foreach (array_keys($byKey) as $key) {
-                    [$propertyId, $date] = explode('|', $key, 2);
-                    $query->orWhere(function ($query) use ($propertyId, $date): void {
-                        $query->where('tracked_property_id', $propertyId)->where('date', $date);
-                    });
-                }
-            })
-            ->get(['id', 'tracked_property_id', 'date'])
-            ->keyBy(static fn (SignalDailyMetric $metric): string => $metric->tracked_property_id . '|' . (string) $metric->getAttribute('date'));
-
         $now = CarbonImmutable::now();
         $values = [];
 
-        foreach ($byKey as $key => $row) {
+        foreach ($byKey as $row) {
             $values[] = [
-                'id' => $existing->get($key)?->getKey() ?? (string) Str::uuid(),
+                'id' => (string) Str::uuid(),
                 ...$row,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -113,7 +101,7 @@ final readonly class AggregateDailyMetrics
         SignalDailyMetric::query()->upsert(
             $values,
             ['tracked_property_id', 'date'],
-            ['owner_type', 'owner_id', 'unique_identities', 'sessions', 'bounced_sessions', 'page_views', 'events', 'conversions', 'revenue_minor', 'currency', 'updated_at'],
+            ['unique_identities', 'sessions', 'bounced_sessions', 'page_views', 'events', 'conversions', 'revenue_minor', 'currency', 'updated_at'],
         );
     }
 

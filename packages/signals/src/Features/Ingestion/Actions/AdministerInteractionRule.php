@@ -14,11 +14,10 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use RuntimeException;
 
 final readonly class AdministerInteractionRule implements InteractionRuleAdministration
 {
-    private const int MAX_SLUG_CONFLICTS = 10;
+    private const int MAX_SCAN_ATTEMPTS = 3;
 
     public function create(array $data): string
     {
@@ -58,7 +57,8 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
 
         $prepared = $this->prepareCandidates($candidates);
 
-        return (new SignalInteractionRule)->getConnection()->transaction(function () use ($propertyId, $triggerType, $eventName, $eventCategory, $isActive, $prepared): int {
+        $connection = (new SignalInteractionRule)->getConnection();
+        $persist = function () use ($propertyId, $triggerType, $eventName, $eventCategory, $isActive, $prepared): int {
             $query = SignalInteractionRule::query();
             $properties = TrackedProperty::query();
             $owner = null;
@@ -79,7 +79,7 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
             foreach ($prepared as $candidate) {
                 $base = $candidate['base'];
                 $slug = $this->nextSlug($base, $existingSlugs, $nextSuffixes);
-                $attributes = [
+                $record = new SignalInteractionRule([
                     'tracked_property_id' => $propertyId,
                     'name' => $candidate['name'],
                     'slug' => $slug,
@@ -91,37 +91,28 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
                     'settings' => $candidate['settings'],
                     'sort_order' => ++$sortOrder,
                     'is_active' => $isActive,
-                ];
+                ]);
 
-                for ($conflict = 0; $conflict < self::MAX_SLUG_CONFLICTS; $conflict++) {
-                    try {
-                        $record = new SignalInteractionRule($attributes);
-
-                        if ($owner !== null) {
-                            $record->owner()->associate($owner);
-                        }
-
-                        $record->save();
-                        $created++;
-
-                        break;
-                    } catch (QueryException $exception) {
-                        if (! DuplicateKeyViolation::is($exception) || ! $this->slugExistsAfterConflict($query, $slug)) {
-                            throw $exception;
-                        }
-
-                        $slug = $this->nextSlug($base, $existingSlugs, $nextSuffixes);
-                        $attributes['slug'] = $slug;
-                    }
+                if ($owner !== null) {
+                    $record->owner()->associate($owner);
                 }
 
-                if ($conflict === self::MAX_SLUG_CONFLICTS) {
-                    throw new RuntimeException('Unable to allocate a unique interaction rule slug.');
-                }
+                $record->save();
+                $created++;
             }
 
             return $created;
-        }, attempts: 3);
+        };
+
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                return $connection->transaction($persist, attempts: 3);
+            } catch (QueryException $exception) {
+                if ($attempt >= self::MAX_SCAN_ATTEMPTS || ! DuplicateKeyViolation::is($exception)) {
+                    throw $exception;
+                }
+            }
+        }
     }
 
     public function update(string $id, array $data): void
@@ -215,12 +206,6 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
         $existingSlugs[$slug] = true;
 
         return $slug;
-    }
-
-    /** @param Builder<SignalInteractionRule> $query */
-    private function slugExistsAfterConflict(Builder $query, string $slug): bool
-    {
-        return (clone $query)->where('slug', $slug)->exists();
     }
 
     private function lockRecord(string $id): SignalInteractionRule

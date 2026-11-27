@@ -11,6 +11,7 @@ use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use RuntimeException;
 use Throwable;
 
@@ -60,11 +61,19 @@ final readonly class ProcessAlertDelivery
                 return;
             }
 
+            $now = CarbonImmutable::now();
+
+            if ($exception instanceof MaxAttemptsExceededException && $this->leaseRetryDelay($delivery, $now) !== null) {
+                return;
+            }
+
+            $errorCode = $this->safeErrorCode($exception);
+
             $delivery->forceFill([
                 'status' => 'dead',
-                'dead_at' => CarbonImmutable::now(),
+                'dead_at' => $now,
                 'leased_at' => null,
-                'last_error_code' => $this->safeErrorCode($exception),
+                'last_error_code' => $errorCode === 'transport_error' ? ($delivery->last_error_code ?? $errorCode) : $errorCode,
             ])->save();
             $this->refreshLog($delivery);
         });
@@ -138,13 +147,11 @@ final readonly class ProcessAlertDelivery
                 return ['delivery' => null, 'retry_after' => null];
             }
 
-            $leaseSeconds = max(30, (int) config('signals.features.alerts.delivery.lease_seconds', 120));
             $now = CarbonImmutable::now();
+            $retryAfter = $this->leaseRetryDelay($delivery, $now);
 
-            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter($now->subSeconds($leaseSeconds))) {
-                $retryAfter = (int) ceil($now->diffInSeconds($delivery->leased_at->addSeconds($leaseSeconds), false));
-
-                return ['delivery' => null, 'retry_after' => max(1, $retryAfter)];
+            if ($retryAfter !== null) {
+                return ['delivery' => null, 'retry_after' => $retryAfter];
             }
 
             if ($delivery->attempt_count >= $delivery->max_attempts) {
@@ -230,6 +237,18 @@ final readonly class ProcessAlertDelivery
     private function parentExists(SignalAlertDelivery $delivery): bool
     {
         return SignalAlertLog::query()->whereKey($delivery->signal_alert_log_id)->exists();
+    }
+
+    private function leaseRetryDelay(SignalAlertDelivery $delivery, CarbonImmutable $now): ?int
+    {
+        if ($delivery->status !== 'processing' || $delivery->leased_at === null) {
+            return null;
+        }
+
+        $leaseSeconds = max(30, (int) config('signals.features.alerts.delivery.lease_seconds', 120));
+        $expiry = $delivery->leased_at->addSeconds($leaseSeconds);
+
+        return $expiry->isAfter($now) ? (int) ceil($now->diffInSeconds($expiry)) : null;
     }
 
     private function connection(): ConnectionInterface

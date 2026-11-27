@@ -16,6 +16,7 @@ use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
@@ -222,6 +223,9 @@ it('reports a retry delay while another worker holds an active lease', function 
     ])->save());
 
     $retryAfter = OwnerContext::withOwner($owner, fn (): ?int => app(ProcessAlertDelivery::class)->run((string) $delivery->id));
+
+    (new DispatchSignalAlertDelivery($delivery->id, $delivery->owner_type, $delivery->owner_id))
+        ->failed(new MaxAttemptsExceededException);
 
     expect($retryAfter)->toBeInt()
         ->and($retryAfter)->toBeGreaterThan(0)
