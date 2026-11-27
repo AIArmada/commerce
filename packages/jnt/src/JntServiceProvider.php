@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Contracts\TrackingReader;
+use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
 use AIArmada\Jnt\Contracts\WaybillWriter;
 use AIArmada\Jnt\Drivers\HttpCarrierTransportFactory;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
@@ -233,6 +234,7 @@ class JntServiceProvider extends PackageServiceProvider
         // Register status mapper service
         $this->app->singleton(JntStatusMapper::class, fn (): JntStatusMapper => new JntStatusMapper);
         $this->app->alias(JntStatusMapper::class, 'jnt.status-mapper');
+        $this->app->bind(StatusMappingStrategyInterface::class, fn (Application $app): StatusMappingStrategyInterface => $app->make(JntStatusMapper::class));
 
         // Register status mapping strategy registry and register JNT's strategy
         $this->app->singleton(StatusMappingStrategyRegistry::class, function (): StatusMappingStrategyRegistry {

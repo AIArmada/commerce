@@ -11,6 +11,7 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Services\JntExpressService;
@@ -170,7 +171,8 @@ class JntTrackingService implements TrackingReader
                 }
             }
 
-            $order->save();
+            app(UpdateTrackingSnapshot::class)->handle((string) $order->getKey(), $order->getDirty());
+            $order->refresh();
 
             // Fire status changed event if status actually changed
             if ($previousStatusCode !== $order->last_status_code) {

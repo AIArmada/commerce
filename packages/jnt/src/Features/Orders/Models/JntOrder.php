@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
-use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -256,7 +256,7 @@ final class JntOrder extends Model implements Auditable
         if ($this->last_status_code === null && $this->last_status === null) {
             $status = TrackingStatus::Pending;
         } else {
-            $status = app(JntStatusMapper::class)->resolve(
+            $status = app(StatusMappingStrategyInterface::class)->resolve(
                 scanTypeCode: $this->last_status_code,
                 statusDescription: $this->last_status,
             );

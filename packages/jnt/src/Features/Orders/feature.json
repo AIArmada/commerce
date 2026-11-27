@@ -3,7 +3,8 @@
   "name": "Orders",
   "owns": {
     "table:jnt_orders": [
-      "AIArmada\\Jnt\\Features\\Orders\\Actions\\CancelStoredJntOrder"
+      "AIArmada\\Jnt\\Features\\Orders\\Actions\\CancelStoredJntOrder",
+      "AIArmada\\Jnt\\Features\\Orders\\Actions\\WriteTrackingSnapshot"
     ],
     "table:jnt_order_items": [
       "AIArmada\\Jnt\\Features\\Orders\\Persistence\\DeleteOrderChildren"

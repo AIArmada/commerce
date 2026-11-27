@@ -10,6 +10,7 @@ use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
 use AIArmada\Jnt\Features\Tracking\Persistence\WebhookLogWriter;
@@ -174,12 +175,12 @@ final class ProcessTrackingWebhook
             $attributes['owner_id'] = $shipment->owner_id;
         }
 
-        app(WebhookLogWriter::class)->update((string) $this->webhookCall->getKey(), $attributes);
+        app(WebhookLogWriter::class)->update($this->webhookCall->getKey(), $attributes);
     }
 
     private function markWebhookLogAsFailed(string $error): void
     {
-        app(WebhookLogWriter::class)->update((string) $this->webhookCall->getKey(), [
+        app(WebhookLogWriter::class)->update($this->webhookCall->getKey(), [
                 'digest' => $this->extractDigest(),
                 'processing_status' => JntWebhookLog::STATUS_FAILED,
                 'processing_error' => $error,
@@ -413,8 +414,7 @@ final class ProcessTrackingWebhook
             }
         }
 
-        $shipment->fill($updates);
-        $shipment->save();
+        app(UpdateTrackingSnapshot::class)->handle((string) $shipment->getKey(), $updates);
     }
 
     /**
