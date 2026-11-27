@@ -6,6 +6,8 @@ namespace AIArmada\Jnt\Features\Orders;
 
 use AIArmada\Jnt\Features\Orders\Actions\CancelStoredJntOrder;
 use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
+use AIArmada\Jnt\Features\Orders\Api\DashboardStats;
+use AIArmada\Jnt\Features\Orders\Queries\JntStatsAggregator;
 use AIArmada\Jnt\Features\Orders\Api\ReadWaybillOrder;
 use AIArmada\Jnt\Features\Orders\Queries\FindWaybillOrder;
 use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
@@ -18,6 +20,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(CancelStoredOrder::class, CancelStoredJntOrder::class);
+        $app->bind(DashboardStats::class, JntStatsAggregator::class);
         $app->bind(ReadWaybillOrder::class, FindWaybillOrder::class);
         $app->bind(UpdateTrackingSnapshot::class, WriteTrackingSnapshot::class);
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Widgets;
 
-use AIArmada\Jnt\Features\Reporting\Api\DashboardStats;
+use AIArmada\Jnt\Features\Orders\Api\DashboardStats;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;

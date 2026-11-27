@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Features\Reporting\Queries;
+namespace AIArmada\Jnt\Features\Orders\Queries;
 
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Features\Reporting\Api\DashboardStats;
+use AIArmada\Jnt\Features\Orders\Api\DashboardStats;
 
 final readonly class JntStatsAggregator implements DashboardStats
 {
@@ -14,9 +14,8 @@ final readonly class JntStatsAggregator implements DashboardStats
      */
     public function calculateOrderStats(): array
     {
-        $query = JntOrder::query();
+        $query = JntOrder::query()->toBase();
 
-        /** @var JntOrder|null $row */
         $row = $query
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered')
@@ -27,12 +26,12 @@ final readonly class JntStatsAggregator implements DashboardStats
             ->first();
 
         return [
-            'total' => (int) ($row?->getAttribute('total') ?? 0),
-            'delivered' => (int) ($row?->getAttribute('delivered') ?? 0),
-            'in_transit' => (int) ($row?->getAttribute('in_transit') ?? 0),
-            'problems' => (int) ($row?->getAttribute('problems') ?? 0),
-            'pending' => (int) ($row?->getAttribute('pending') ?? 0),
-            'returns' => (int) ($row?->getAttribute('returns') ?? 0),
+            'total' => (int) ($row?->total ?? 0),
+            'delivered' => (int) ($row?->delivered ?? 0),
+            'in_transit' => (int) ($row?->in_transit ?? 0),
+            'problems' => (int) ($row?->problems ?? 0),
+            'pending' => (int) ($row?->pending ?? 0),
+            'returns' => (int) ($row?->returns ?? 0),
         ];
     }
 }

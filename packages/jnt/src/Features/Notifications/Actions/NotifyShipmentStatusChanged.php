@@ -34,7 +34,7 @@ final class NotifyShipmentStatusChanged
      */
     public function execute(JntOrderStatusChanged $event): void
     {
-        if (! config('jnt.notifications.enabled', true)) {
+        if (! config('jnt.notifications.enabled', true) || $event->currentStatus === TrackingStatus::Pending) {
             return;
         }
 
@@ -66,7 +66,7 @@ final class NotifyShipmentStatusChanged
                     Log::channel(config('jnt.logging.channel', 'stack'))
                         ->warning('J&T shipment notification skipped: unusable notifiable', [
                             'order_id' => $order->order_id,
-                            'error' => $e->getMessage(),
+                            'exception_type' => $e::class,
                         ]);
                 }
             }

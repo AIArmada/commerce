@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Features\Reporting\Api;
+namespace AIArmada\Jnt\Features\Orders\Api;
 
 interface DashboardStats
 {

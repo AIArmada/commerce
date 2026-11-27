@@ -56,6 +56,24 @@ describe('SendShipmentNotifications listener', function (): void {
         Notification::assertNothingSent();
     });
 
+    it('does not query carrier tracking for pending status notifications', function (): void {
+        Notification::fake();
+
+        $trackingService = Mockery::mock(JntTrackingService::class);
+        $trackingService->shouldNotReceive('track');
+        $listener = new SendShipmentNotifications(new NotifyShipmentStatusChanged($trackingService));
+
+        $order = JntOrder::query()->create([
+            'order_id' => 'ORDER-PENDING',
+            'customer_code' => 'CUST',
+            'metadata' => ['notification_email' => 'test@example.com'],
+        ]);
+
+        $listener->handle(JntOrderStatusChanged::fromOrder($order, TrackingStatus::Pending));
+
+        Notification::assertNothingSent();
+    });
+
     it('skips processing when notifiable cannot be resolved', function (): void {
         Notification::fake();
 
