@@ -9,6 +9,7 @@ use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 final readonly class ReplayWebhookEvent implements WebhookReplay
@@ -17,9 +18,49 @@ final readonly class ReplayWebhookEvent implements WebhookReplay
         private CommunicationAuditRecorder $auditRecorder,
     ) {}
 
+    public function count(bool $force, ?string $provider, ?string $communicationId, ?string $deliveryId): int
+    {
+        return $this->query($force, $provider, $communicationId, $deliveryId)->count();
+    }
+
+    public function ids(bool $force, ?string $provider, ?string $communicationId, ?string $deliveryId, int $batchSize): iterable
+    {
+        foreach ($this->query($force, $provider, $communicationId, $deliveryId)->select('id')->lazyById(max(1, $batchSize)) as $event) {
+            yield $event->id;
+        }
+    }
+
+    /** @return Builder<CommunicationEvent> */
+    private function query(bool $force, ?string $provider, ?string $communicationId, ?string $deliveryId): Builder
+    {
+        $query = CommunicationEvent::query()->whereNotNull('delivery_id');
+
+        if (! $force) {
+            $query->whereNull('processed_at');
+        }
+
+        if ($provider !== null && $provider !== '') {
+            $query->where('provider', $provider);
+        }
+
+        if ($communicationId !== null && $communicationId !== '') {
+            $query->where('communication_id', $communicationId);
+        }
+
+        if ($deliveryId !== null && $deliveryId !== '') {
+            $query->where('delivery_id', $deliveryId);
+        }
+
+        return $query;
+    }
+
     public function replay(string $eventId, bool $force): string
     {
-        $event = CommunicationEvent::query()->findOrFail($eventId);
+        $event = CommunicationEvent::query()->find($eventId);
+
+        if ($event === null) {
+            return 'skipped';
+        }
 
         if (! $force && $event->processed_at !== null) {
             return 'skipped';

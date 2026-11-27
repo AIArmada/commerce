@@ -6,7 +6,6 @@ namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -57,26 +56,12 @@ final class ReplayWebhookEventsCommand extends Command
 
     private function process(): int
     {
-        $query = CommunicationEvent::query()
-            ->whereNotNull('delivery_id');
-
-        if (! $this->option('force')) {
-            $query->whereNull('processed_at');
-        }
-
-        if ($provider = $this->option('provider')) {
-            $query->where('provider', $provider);
-        }
-
-        if ($communicationId = $this->option('communication')) {
-            $query->where('communication_id', $communicationId);
-        }
-
-        if ($deliveryId = $this->option('delivery')) {
-            $query->where('delivery_id', $deliveryId);
-        }
-
-        $count = $query->count();
+        $replay = app(WebhookReplay::class);
+        $force = (bool) $this->option('force');
+        $provider = $this->option('provider');
+        $communicationId = $this->option('communication');
+        $deliveryId = $this->option('delivery');
+        $count = $replay->count($force, $provider, $communicationId, $deliveryId);
 
         if ($count === 0) {
             $this->info('No webhook events to replay.');
@@ -98,18 +83,14 @@ final class ReplayWebhookEventsCommand extends Command
         $bar = $this->output->createProgressBar($count);
         $bar->start();
 
-        $query->chunkById(max(1, (int) $this->option('batch')), function ($events) use (&$replayed, &$skipped, &$failed, $bar): void {
-            foreach ($events as $event) {
-                $result = app(WebhookReplay::class)->replay($event->id, (bool) $this->option('force'));
-                match ($result) {
-                    'replayed' => $replayed++,
-                    'skipped' => $skipped++,
-                    'failed' => $failed++,
-                    default => null,
-                };
-                $bar->advance();
-            }
-        });
+        foreach ($replay->ids($force, $provider, $communicationId, $deliveryId, max(1, (int) $this->option('batch'))) as $eventId) {
+            match ($replay->replay($eventId, $force)) {
+                'replayed' => $replayed++,
+                'skipped' => $skipped++,
+                'failed' => $failed++,
+            };
+            $bar->advance();
+        }
 
         $bar->finish();
         $this->newLine();
@@ -118,5 +99,4 @@ final class ReplayWebhookEventsCommand extends Command
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
-
 }

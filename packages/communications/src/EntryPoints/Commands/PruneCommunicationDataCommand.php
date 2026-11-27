@@ -83,5 +83,4 @@ final class PruneCommunicationDataCommand extends Command
 
         return self::SUCCESS;
     }
-
 }
