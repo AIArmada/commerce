@@ -33,7 +33,7 @@ class JntWebhookProfile extends CommerceWebhookProfile
         $decoded = json_decode($bizContent, true);
 
         if (! is_array($decoded)) {
-            throw JntValidationException::invalidFormat('bizContent', 'valid JSON', $bizContent);
+            throw JntValidationException::invalidFormat('bizContent', 'valid JSON');
         }
 
         if (! isset($decoded['billCode']) || ! is_string($decoded['billCode']) || $decoded['billCode'] === '') {

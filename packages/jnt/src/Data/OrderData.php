@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use AIArmada\Jnt\Exceptions\JntValidationException;
+use InvalidArgumentException;
 
 /**
  * Order data from JNT Express API.
@@ -31,7 +31,19 @@ final readonly class OrderData
     public static function fromApiArray(array $data): self
     {
         if (! isset($data['txlogisticId']) || ! is_string($data['txlogisticId']) || $data['txlogisticId'] === '') {
-            throw JntValidationException::requiredFieldMissing('txlogisticId');
+            throw new InvalidArgumentException('Missing or invalid txlogisticId.');
+        }
+
+        foreach (['billCode', 'sortingCode', 'thirdSortingCode', 'packageChargeWeight'] as $field) {
+            if (isset($data[$field]) && ! is_string($data[$field])) {
+                throw new InvalidArgumentException("Invalid {$field}: expected a string.");
+            }
+        }
+
+        $numbers = $data['multipleVoteBillCodes'] ?? null;
+
+        if ($numbers !== null && (! is_array($numbers) || ! array_is_list($numbers) || array_any($numbers, static fn (mixed $number): bool => ! is_string($number)))) {
+            throw new InvalidArgumentException('Invalid multipleVoteBillCodes: expected a list of strings.');
         }
 
         return new self(

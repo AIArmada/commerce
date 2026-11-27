@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use AIArmada\Jnt\Exceptions\JntValidationException;
+use InvalidArgumentException;
 
 /**
  * Tracking detail data from JNT Express API.
@@ -60,7 +60,7 @@ final readonly class TrackingDetailData
     {
         foreach (['scanTime', 'desc', 'scanTypeCode', 'scanTypeName', 'scanType'] as $key) {
             if (! isset($data[$key]) || ! is_scalar($data[$key])) {
-                throw JntValidationException::requiredFieldMissing($key);
+                throw new InvalidArgumentException("Missing or invalid {$key}.");
             }
         }
 
@@ -70,35 +70,35 @@ final readonly class TrackingDetailData
             scanTypeCode: (string) $data['scanTypeCode'],
             scanTypeName: (string) $data['scanTypeName'],
             scanType: (string) $data['scanType'],
-            actualWeight: $data['realWeight'] ?? null,
-            scanNetworkTypeName: $data['scanNetworkTypeName'] ?? null,
-            scanNetworkName: $data['scanNetworkName'] ?? null,
-            staffName: $data['staffName'] ?? null,
-            staffContact: $data['staffContact'] ?? null,
-            scanNetworkContact: $data['scanNetworkContact'] ?? null,
-            scanNetworkProvince: $data['scanNetworkProvince'] ?? null,
-            scanNetworkCity: $data['scanNetworkCity'] ?? null,
-            scanNetworkArea: $data['scanNetworkArea'] ?? null,
-            signaturePictureUrl: $data['sigPicUrl'] ?? null,
-            longitude: $data['longitude'] ?? null,
-            latitude: $data['latitude'] ?? null,
-            timeZone: $data['timeZone'] ?? null,
-            otp: $data['otp'] ?? null,
-            secondLevelTypeCode: $data['secondLevelTypeCode'] ?? null,
-            wcTraceFlag: $data['wcTraceFlag'] ?? null,
-            postCode: $data['postCode'] ?? null,
-            paymentStatus: $data['paymentStatus'] ?? null,
-            paymentMethod: $data['paymentMethod'] ?? null,
-            nextStopName: $data['nextStopName'] ?? null,
-            remark: $data['remark'] ?? null,
-            nextNetworkProvinceName: $data['nextNetworkProvinceName'] ?? null,
-            nextNetworkCityName: $data['nextNetworkCityName'] ?? null,
-            nextNetworkAreaName: $data['nextNetworkAreaName'] ?? null,
-            problemType: $data['problemType'] ?? null,
-            signUrl: $data['signUrl'] ?? null,
-            electronicSignaturePicUrl: $data['electronicSignaturePicUrl'] ?? null,
-            scanNetworkId: isset($data['scanNetworkId']) ? (int) $data['scanNetworkId'] : null,
-            scanNetworkCountry: $data['scanNetworkCountray'] ?? null, // API has typo
+            actualWeight: self::optionalString($data, 'realWeight'),
+            scanNetworkTypeName: self::optionalString($data, 'scanNetworkTypeName'),
+            scanNetworkName: self::optionalString($data, 'scanNetworkName'),
+            staffName: self::optionalString($data, 'staffName'),
+            staffContact: self::optionalString($data, 'staffContact'),
+            scanNetworkContact: self::optionalString($data, 'scanNetworkContact'),
+            scanNetworkProvince: self::optionalString($data, 'scanNetworkProvince'),
+            scanNetworkCity: self::optionalString($data, 'scanNetworkCity'),
+            scanNetworkArea: self::optionalString($data, 'scanNetworkArea'),
+            signaturePictureUrl: self::optionalString($data, 'sigPicUrl'),
+            longitude: self::optionalString($data, 'longitude'),
+            latitude: self::optionalString($data, 'latitude'),
+            timeZone: self::optionalString($data, 'timeZone'),
+            otp: self::optionalString($data, 'otp'),
+            secondLevelTypeCode: self::optionalString($data, 'secondLevelTypeCode'),
+            wcTraceFlag: self::optionalString($data, 'wcTraceFlag'),
+            postCode: self::optionalString($data, 'postCode'),
+            paymentStatus: self::optionalString($data, 'paymentStatus'),
+            paymentMethod: self::optionalString($data, 'paymentMethod'),
+            nextStopName: self::optionalString($data, 'nextStopName'),
+            remark: self::optionalString($data, 'remark'),
+            nextNetworkProvinceName: self::optionalString($data, 'nextNetworkProvinceName'),
+            nextNetworkCityName: self::optionalString($data, 'nextNetworkCityName'),
+            nextNetworkAreaName: self::optionalString($data, 'nextNetworkAreaName'),
+            problemType: self::optionalString($data, 'problemType'),
+            signUrl: self::optionalString($data, 'signUrl'),
+            electronicSignaturePicUrl: self::optionalString($data, 'electronicSignaturePicUrl'),
+            scanNetworkId: self::optionalNetworkId($data),
+            scanNetworkCountry: self::optionalString($data, 'scanNetworkCountray'), // API has typo
         );
     }
 
@@ -145,6 +145,40 @@ final readonly class TrackingDetailData
             'scanNetworkId' => $this->scanNetworkId,
             'scanNetworkCountray' => $this->scanNetworkCountry, // API has typo
         ], fn (string | int | null $value): bool => $value !== null);
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function optionalString(array $data, string $field): ?string
+    {
+        $value = $data[$field] ?? null;
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (! is_string($value) && ! is_int($value) && ! is_float($value)) {
+            throw new InvalidArgumentException("Invalid {$field}: expected a scalar string or number.");
+        }
+
+        return (string) $value;
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function optionalNetworkId(array $data): ?int
+    {
+        $value = $data['scanNetworkId'] ?? null;
+
+        if ($value === null) {
+            return null;
+        }
+
+        $id = filter_var($value, FILTER_VALIDATE_INT);
+
+        if ($id === false || is_bool($value) || ! is_scalar($value)) {
+            throw new InvalidArgumentException('Invalid scanNetworkId: expected an integer.');
+        }
+
+        return $id;
     }
 
     public function getLocation(): string

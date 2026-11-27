@@ -18,6 +18,7 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
+use InvalidArgumentException;
 use AIArmada\Jnt\Support\FieldNameConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Concurrency;
@@ -98,7 +99,11 @@ class JntExpressService
     {
         $response = $this->getClient()->post('/api/order/addOrder', $orderData);
 
-        return OrderData::fromApiArray($response['data']);
+        try {
+            return OrderData::fromApiArray($this->responseData($response));
+        } catch (InvalidArgumentException $e) {
+            throw JntApiException::invalidApiResponse('/api/order/addOrder', $e->getMessage());
+        }
     }
 
     /**
@@ -215,7 +220,11 @@ class JntExpressService
 
         $response = $this->getClient()->post('/api/logistics/trace', $payload);
 
-        $trackingData = TrackingData::fromApiArray($response['data']);
+        try {
+            $trackingData = TrackingData::fromApiArray($this->responseData($response));
+        } catch (InvalidArgumentException $e) {
+            throw JntApiException::invalidApiResponse('/api/logistics/trace', $e->getMessage());
+        }
 
         $this->cacheTrackingData($trackingData, $orderId, $trackingNumber);
 
@@ -572,6 +581,21 @@ class JntExpressService
     /**
      * Lazy load the HTTP client only when needed
      */
+    /**
+     * @param array<string, mixed> $response
+     * @return array<string, mixed>
+     */
+    private function responseData(array $response): array
+    {
+        $data = $response['data'] ?? null;
+
+        if (! is_array($data)) {
+            throw new InvalidArgumentException('Missing or invalid response data.');
+        }
+
+        return $data;
+    }
+
     protected function getClient(): CarrierTransport
     {
         return $this->client ??= $this->transportFactory->create($this->config);

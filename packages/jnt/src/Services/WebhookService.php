@@ -10,6 +10,7 @@ use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -103,7 +104,7 @@ class WebhookService
         $bizContent = json_decode($rawBizContent, true);
 
         if (! is_array($bizContent)) {
-            throw JntValidationException::invalidFormat('bizContent', 'valid JSON', $validated['bizContent']);
+            throw JntValidationException::invalidFormat('bizContent', 'valid JSON');
         }
 
         // Validate bizContent structure
@@ -132,7 +133,11 @@ class WebhookService
                     throw JntValidationException::invalidFieldValue('details.*', $detail, 'array');
                 }
 
-                return TrackingDetailData::fromApiArray($detail);
+                try {
+                    return TrackingDetailData::fromApiArray($detail);
+                } catch (InvalidArgumentException $e) {
+                    throw JntValidationException::fieldValidationFailed('details.*', $e->getMessage());
+                }
             },
             $bizContent['details']
         );
@@ -250,7 +255,11 @@ class WebhookService
                     throw JntValidationException::invalidFieldValue('bizContent.*', $item, 'array');
                 }
 
-                return TrackingData::fromApiArray($item);
+                try {
+                    return TrackingData::fromApiArray($item);
+                } catch (InvalidArgumentException $e) {
+                    throw JntValidationException::fieldValidationFailed('bizContent.*', $e->getMessage());
+                }
             },
             $items
         );

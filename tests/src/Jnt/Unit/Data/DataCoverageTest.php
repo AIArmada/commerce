@@ -306,3 +306,11 @@ describe('TrackingDetailData', function (): void {
         expect($notInTransit->isInTransit())->toBeFalse();
     });
 });
+
+
+it('rejects malformed carrier data without exposing raw payload values', function (): void {
+    expect(fn () => \AIArmada\Jnt\Data\OrderData::fromApiArray(['txlogisticId' => 'ORDER', 'multipleVoteBillCodes' => ['ok', ['invalid']]]))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => \AIArmada\Jnt\Data\TrackingData::fromApiArray(['billCode' => 'TRACK', 'txlogisticId' => ['invalid']]))
+        ->toThrow(InvalidArgumentException::class);
+});

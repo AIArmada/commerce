@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use AIArmada\Jnt\Exceptions\JntValidationException;
+use InvalidArgumentException;
 use Carbon\CarbonImmutable;
 use Throwable;
 
@@ -45,19 +45,23 @@ final readonly class TrackingData
     public static function fromApiArray(array $data): self
     {
         if (! isset($data['billCode']) || ! is_string($data['billCode']) || $data['billCode'] === '') {
-            throw JntValidationException::requiredFieldMissing('billCode');
+            throw new InvalidArgumentException('Missing or invalid billCode.');
+        }
+
+        if (isset($data['txlogisticId']) && ! is_string($data['txlogisticId'])) {
+            throw new InvalidArgumentException('Invalid txlogisticId: expected a string.');
         }
 
         $rawDetails = $data['details'] ?? [];
 
         if (! is_array($rawDetails)) {
-            throw JntValidationException::invalidFieldValue('details', $rawDetails, 'array');
+            throw new InvalidArgumentException('Invalid details: expected an array.');
         }
 
         $details = array_map(
             static function (mixed $detail): TrackingDetailData {
                 if (! is_array($detail)) {
-                    throw JntValidationException::invalidFieldValue('details.*', $detail, 'array');
+                    throw new InvalidArgumentException('Invalid tracking detail: expected an array.');
                 }
 
                 return TrackingDetailData::fromApiArray($detail);
