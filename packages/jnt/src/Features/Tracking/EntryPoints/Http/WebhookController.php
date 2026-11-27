@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\EntryPoints\Http\Controllers;
+namespace AIArmada\Jnt\Features\Tracking\EntryPoints\Http;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -65,7 +65,6 @@ class WebhookController
                 } catch (Throwable $e) {
                     Log::warning('J&T webhook logging skipped (invalid payload)', [
                         'exception' => $e::class,
-                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -84,7 +83,6 @@ class WebhookController
         } catch (JntValidationException $e) {
             // Invalid bizContent
             Log::warning('J&T webhook processing failed', [
-                'error' => $e->getMessage(),
                 'field' => $e->field ?? 'unknown',
             ]);
 
@@ -95,7 +93,7 @@ class WebhookController
             Log::warning('J&T webhook signature verification failed', [
                 'ip' => $request->ip(),
                 'digest_present' => $request->header('digest') !== null,
-                'bizContent_present' => (string) $request->input('bizContent', '') !== '',
+                'bizContent_present' => $request->filled('bizContent'),
             ]);
 
             $response = $this->webhookService->failureResponse('Invalid signature');
@@ -109,7 +107,6 @@ class WebhookController
             // Unexpected error
             Log::error('J&T webhook processing error', [
                 'exception' => $e::class,
-                'error' => $e->getMessage(),
             ]);
 
             $response = $this->webhookService->failureResponse('Internal server error');

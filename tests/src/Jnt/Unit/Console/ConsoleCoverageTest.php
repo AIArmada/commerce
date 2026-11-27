@@ -7,7 +7,7 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Support\Facades\Http;
 
 describe('OrderCancelCommand', function (): void {

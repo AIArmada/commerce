@@ -8,7 +8,7 @@ use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Spatie\WebhookClient\Models\WebhookCall;

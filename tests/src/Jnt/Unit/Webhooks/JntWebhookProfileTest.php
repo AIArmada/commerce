@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Webhooks\JntWebhookProfile;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookProfile;
 use Illuminate\Http\Request;
 
 describe('JntWebhookProfile', function (): void {
@@ -84,4 +84,13 @@ describe('JntWebhookProfile', function (): void {
 
         $profile->shouldProcess($request);
     })->throws(JntValidationException::class);
+    it('rejects blank tracking identifiers and non-object tracking details', function (array $payload): void {
+        $request = Request::create('/webhook', 'POST', ['bizContent' => json_encode($payload)]);
+
+        expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);
+    })->with([
+        'blank identifier' => [['billCode' => '   ', 'details' => []]],
+        'scalar detail' => [['billCode' => 'JNT123', 'details' => ['malformed']]],
+        'list detail' => [['billCode' => 'JNT123', 'details' => [['malformed']]]],
+    ]);
 });

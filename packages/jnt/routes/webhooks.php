@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\EntryPoints\Http\Controllers\WebhookController;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Http\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\EntryPoints\Commands\Webhooks;
+namespace AIArmada\Jnt\Features\Tracking\EntryPoints\Commands;
 
 use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 
@@ -43,6 +43,8 @@ class WebhookTestCommand extends JntCommand
                         [
                             'scanTime' => CarbonImmutable::now()->toIso8601String(),
                             'scanType' => 'collect',
+                            'scanTypeCode' => '301',
+                            'scanTypeName' => 'Collection',
                             'desc' => 'Package collected - Test webhook',
                         ],
                     ],
@@ -53,7 +55,7 @@ class WebhookTestCommand extends JntCommand
 
             $this->line('Sending test webhook...');
 
-            $response = Http::withHeaders(['digest' => $signature])
+            $response = Http::withHeaders(['digest' => $signature])->withoutRedirecting()
                 ->post($url, $samplePayload);
 
             $this->info('Status: ' . $response->status());

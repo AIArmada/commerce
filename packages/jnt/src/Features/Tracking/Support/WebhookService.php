@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Services;
+namespace AIArmada\Jnt\Features\Tracking\Support;
 
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
@@ -52,6 +52,10 @@ class WebhookService
             return false;
         }
 
+        if (strlen($bizContent) > max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576))) {
+            return false;
+        }
+
         $expected = $this->generateSignature($bizContent);
 
         // Use timing-safe comparison to prevent timing attacks
@@ -92,38 +96,7 @@ class WebhookService
             'bizContent' => ['required', 'string'],
         ]);
 
-        $rawBizContent = (string) $validated['bizContent'];
-        $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
-
-        if (strlen($rawBizContent) > $maxBytes) {
-            throw JntValidationException::fieldTooLong('bizContent', $maxBytes, strlen($rawBizContent));
-        }
-
-        // Parse bizContent JSON
-        $bizContent = json_decode($rawBizContent, true);
-
-        if (! is_array($bizContent)) {
-            throw JntValidationException::invalidFormat('bizContent', 'valid JSON');
-        }
-
-        // Validate bizContent structure
-        if (! isset($bizContent['billCode']) || ! is_string($bizContent['billCode']) || $bizContent['billCode'] === '') {
-            throw JntValidationException::requiredFieldMissing('billCode');
-        }
-
-        if (! isset($bizContent['details']) || ! is_array($bizContent['details']) || ! array_is_list($bizContent['details'])) {
-            throw JntValidationException::invalidFieldValue('details', $bizContent['details'] ?? null, 'array');
-        }
-
-        $maxDetails = max(1, (int) config('jnt.webhooks.max_details', 500));
-
-        if (count($bizContent['details']) > $maxDetails) {
-            throw JntValidationException::fieldTooLong('details', $maxDetails, count($bizContent['details']));
-        }
-
-        if (isset($bizContent['txlogisticId']) && ! is_string($bizContent['txlogisticId'])) {
-            throw JntValidationException::invalidFieldValue('txlogisticId', $bizContent['txlogisticId'], 'string');
-        }
+        $bizContent = WebhookPayload::decode($validated['bizContent']);
 
         // Parse tracking details
         $details = array_map(

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Webhooks;
+namespace AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks;
 
 use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceSignatureValidator;
 use Illuminate\Http\Request;
@@ -40,7 +40,8 @@ final class JntSpatieSignatureValidator extends CommerceSignatureValidator
 
         $bizContent = $this->getPayloadForSigning($request);
 
-        if ($bizContent === '' || $bizContent === '0') {
+        if ($bizContent === '' || $bizContent === '0'
+            || strlen($bizContent) > max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576))) {
             return false;
         }
 

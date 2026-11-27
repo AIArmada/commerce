@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Webhooks;
+namespace AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks;
 
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Http\Request;
 use Spatie\WebhookClient\WebhookConfig;
 use Spatie\WebhookClient\WebhookResponse\RespondsToWebhook;

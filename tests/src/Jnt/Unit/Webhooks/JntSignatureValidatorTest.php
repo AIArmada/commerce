@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
-use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
-use AIArmada\Jnt\Webhooks\JntWebhookProfile;
-use AIArmada\Jnt\Webhooks\JntWebhookResponse;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntSpatieSignatureValidator;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookProfile;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookResponse;
 use Illuminate\Http\Request;
 use Spatie\WebhookClient\Models\WebhookCall;
 use Spatie\WebhookClient\WebhookConfig;
