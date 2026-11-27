@@ -16,7 +16,7 @@ use AIArmada\Communications\Models\CommunicationAttempt;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

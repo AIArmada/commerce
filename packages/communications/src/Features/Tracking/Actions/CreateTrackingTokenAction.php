@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Tracking\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CreatedTrackingTokenData;
 use AIArmada\Communications\Models\CommunicationDelivery;
-use AIArmada\Communications\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -29,11 +29,9 @@ final class CreateTrackingTokenAction
         ?string $expiresAt = null,
         ?array $metadata = null,
     ): CreatedTrackingTokenData {
-        $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
-
-        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
-        }
+        $delivery = CommunicationDelivery::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId)
+            : CommunicationDelivery::query()->findOrFail($deliveryId);
 
         $token = Str::random(64);
         $tokenHash = hash('sha256', $token);
@@ -59,10 +57,18 @@ final class CreateTrackingTokenAction
 
     private function validatedTargetUrl(string $targetUrl): string
     {
+        if (preg_match('/[\\x00-\\x20\\x7f]/', $targetUrl) === 1 || str_contains($targetUrl, '\\\\')) {
+            throw new InvalidArgumentException('Tracking target URL contains invalid characters.');
+        }
+
         $parts = parse_url($targetUrl);
 
         if ($parts === false || ! isset($parts['scheme'], $parts['host']) || ! is_string($parts['host']) || $parts['host'] === '') {
             throw new InvalidArgumentException('Tracking target URL must be an absolute URL with a host.');
+        }
+
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            throw new InvalidArgumentException('Tracking target URL must not contain user information.');
         }
 
         if (! in_array(mb_strtolower((string) $parts['scheme']), ['http', 'https'], true)) {

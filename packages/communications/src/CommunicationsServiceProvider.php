@@ -99,8 +99,8 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 '2000_01_01_000013_create_communication_attachments_table',
                 '2000_01_01_000014_create_communication_references_table',
                 '2000_01_01_000015_create_communication_tracking_tokens_table',
-                '2000_01_01_000016_create_notification_inboxes_table',
-                '2000_01_01_000019_create_communication_destinations_table',
+                '2000_01_01_000016_create_communication_notification_inboxes_table',
+                '2000_01_01_000017_create_communication_destinations_table',
             ]);
     }
 

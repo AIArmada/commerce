@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Data;
 
-use AIArmada\Communications\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 
 final readonly class CreatedTrackingTokenData
 {

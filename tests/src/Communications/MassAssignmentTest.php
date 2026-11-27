@@ -21,7 +21,7 @@ use AIArmada\Communications\Models\CommunicationReference;
 use AIArmada\Communications\Models\CommunicationTemplate;
 use AIArmada\Communications\Models\CommunicationTemplateVersion;
 use AIArmada\Communications\Models\CommunicationThread;
-use AIArmada\Communications\Models\CommunicationTrackingToken;
+use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\Communications\Models\NotificationInbox;
 
 test('communications models do not mass assign owner columns', function (string $modelClass): void {

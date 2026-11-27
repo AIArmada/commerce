@@ -288,8 +288,8 @@ Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMA
 ## Tracking tokens
 
 ```php
-use AIArmada\Communications\Actions\CreateTrackingTokenAction;
-use AIArmada\Communications\Actions\RecordTrackingInteractionAction;
+use AIArmada\Communications\Features\Tracking\Actions\CreateTrackingTokenAction;
+use AIArmada\Communications\Features\Tracking\Actions\RecordTrackingInteractionAction;
 use AIArmada\Communications\Enums\TrackingInteractionType;
 
 $created = app(CreateTrackingTokenAction::class)->handle(

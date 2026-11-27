@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Models;
+namespace AIArmada\Communications\Features\Tracking\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -52,6 +53,8 @@ final class CommunicationTrackingToken extends Model
         'revoked_at',
         'metadata',
     ];
+
+    protected $hidden = ['token_hash', 'target_url_ciphertext', 'metadata'];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 
