@@ -9,7 +9,6 @@ use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
-use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
@@ -112,51 +111,6 @@ final class VariantResource extends Resource
             && Gate::allows('deleteAny', static::getModel());
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    public static function normalizeFormData(array $data): array
-    {
-        $data['settings'] = static::normalizeSettingsForExperiment(
-            $data['experiment_id'] ?? null,
-            $data['settings'] ?? null,
-        );
-
-        return $data;
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $settings
-     * @return array<string, mixed>|null
-     */
-    private static function normalizeSettingsForExperiment(mixed $experimentId, mixed $settings): ?array
-    {
-        $moduleType = VariantForm::selectedExperimentModuleType($experimentId);
-        $existingSettings = is_array($settings) ? $settings : [];
-        $allowedKeys = match ($moduleType) {
-            ExperimentModuleType::SalesPageTest->value => ['destination_url', 'headline', 'cta_copy'],
-            ExperimentModuleType::FunnelTest->value => ['entry_path', 'step_key', 'offer_label'],
-            ExperimentModuleType::PricingTest->value => ['price_label', 'price_minor', 'currency'],
-            default => [],
-        };
-
-        if ($allowedKeys === []) {
-            return null;
-        }
-
-        $normalizedSettings = [];
-
-        foreach ($allowedKeys as $allowedKey) {
-            if (! array_key_exists($allowedKey, $existingSettings)) {
-                continue;
-            }
-
-            $normalizedSettings[$allowedKey] = $existingSettings[$allowedKey];
-        }
-
-        return $normalizedSettings === [] ? null : $normalizedSettings;
-    }
 
     public static function getPages(): array
     {

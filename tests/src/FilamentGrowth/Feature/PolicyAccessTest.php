@@ -7,6 +7,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentGrowth\Actions\SaveExperiment;
+use AIArmada\FilamentGrowth\Actions\SaveVariant;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\GrowthDashboard;
 use AIArmada\FilamentGrowth\Policies\ExperimentPolicy;
@@ -328,5 +330,37 @@ it('denies direct gate access to experiments and variants when the tracked prope
         expect(Gate::forUser($actor)->allows('deleteAny', Experiment::class))->toBeFalse()
             ->and(Gate::forUser($actor)->allows('deleteAny', Variant::class))->toBeFalse()
             ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeFalse();
+    });
+});
+
+it('retains variant settings on update without a submitted parent field', function (): void {
+    $owner = filamentGrowthPolicyUser();
+    filamentGrowthBindOwner($owner);
+    [$experiment, $variant] = filamentGrowthCreateOwnedExperiment($owner);
+    $this->actingAs($owner);
+
+    OwnerContext::withOwner($owner, function () use ($experiment, $variant): void {
+        $experiment->module_type = 'pricing_test';
+        $experiment->save();
+
+        $saved = app(SaveVariant::class)->update((string) $variant->getKey(), [
+            'settings' => ['price_label' => 'Premium', 'price_minor' => 1200, 'headline' => 'discard'],
+        ]);
+
+        expect($saved->settings)->toBe(['price_label' => 'Premium', 'price_minor' => 1200]);
+    });
+});
+
+it('does not reopen an archived experiment through a direct administrative update', function (): void {
+    $owner = filamentGrowthPolicyUser();
+    filamentGrowthBindOwner($owner);
+    [$experiment] = filamentGrowthCreateOwnedExperiment($owner);
+    $this->actingAs($owner);
+
+    OwnerContext::withOwner($owner, function () use ($experiment): void {
+        $experiment->transitionTo(\AIArmada\Growth\Enums\ExperimentStatus::Archived)->save();
+
+        expect(fn () => app(SaveExperiment::class)->update((string) $experiment->getKey(), ['status' => 'active']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
     });
 });

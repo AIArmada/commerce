@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentGrowth\Resources\ExperimentResource\Pages;
 
+use AIArmada\FilamentGrowth\Actions\SaveExperiment;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateExperiment extends CreateRecord
 {
     protected static string $resource = ExperimentResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        if (! is_string($data['slug'] ?? null) || $data['slug'] === '') {
-            $data['slug'] = Str::slug((string) ($data['name'] ?? 'experiment'));
-        }
-
-        return $data;
+        return app(SaveExperiment::class)->create($data);
     }
 
     protected function getRedirectUrl(): string
