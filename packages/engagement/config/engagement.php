@@ -1,13 +1,13 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
-use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 
 $tablePrefix = env('ENGAGEMENT_TABLE_PREFIX', 'engagement_');

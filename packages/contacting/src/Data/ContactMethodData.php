@@ -73,8 +73,8 @@ final readonly class ContactMethodData
     {
         $arguments = [];
 
-        foreach (['id','type','purpose','label','value','displayValue','countryCode','isPrimary','isPublic','isVerified','verifiedAt','metadata','validFrom','validUntil','sortOrder'] as $key) {
-            $snake = strtolower((string) preg_replace('/[A-Z]/', '_$0', $key));
+        foreach (['id', 'type', 'purpose', 'label', 'value', 'displayValue', 'countryCode', 'isPrimary', 'isPublic', 'isVerified', 'verifiedAt', 'metadata', 'validFrom', 'validUntil', 'sortOrder'] as $key) {
+            $snake = mb_strtolower((string) preg_replace('/[A-Z]/', '_$0', $key));
 
             if (array_key_exists($snake, $values)) {
                 $arguments[$key] = $values[$snake];

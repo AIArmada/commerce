@@ -37,5 +37,4 @@ trait InteractsWithEngagement
     {
         return app(ReminderManager::class);
     }
-
 }

@@ -32,8 +32,8 @@ final readonly class SocialProfileData
     {
         $arguments = [];
 
-        foreach (['id','platform','purpose','label','handle','url','displayName','externalId','isPrimary','isPublic','isVerified','verifiedAt','metadata','validFrom','validUntil','sortOrder'] as $key) {
-            $snake = strtolower((string) preg_replace('/[A-Z]/', '_$0', $key));
+        foreach (['id', 'platform', 'purpose', 'label', 'handle', 'url', 'displayName', 'externalId', 'isPrimary', 'isPublic', 'isVerified', 'verifiedAt', 'metadata', 'validFrom', 'validUntil', 'sortOrder'] as $key) {
+            $snake = mb_strtolower((string) preg_replace('/[A-Z]/', '_$0', $key));
 
             if (array_key_exists($snake, $values)) {
                 $arguments[$key] = $values[$snake];

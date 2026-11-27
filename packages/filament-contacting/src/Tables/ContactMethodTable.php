@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Tables;
 
 use AIArmada\Contacting\Enums\ContactMethodType;
-use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
-use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\Contacting\Features\ContactMethods\Actions\DeleteContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\FilamentContacting\Resources\ContactMethodResource;
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
+use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
+use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
-use AIArmada\FilamentContacting\Resources\ContactMethodResource;
-use Illuminate\Support\Collection;
-use Illuminate\Support\LazyCollection;
-use Throwable;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 
 final class ContactMethodTable
 {

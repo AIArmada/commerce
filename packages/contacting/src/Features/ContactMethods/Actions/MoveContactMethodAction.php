@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 

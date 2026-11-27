@@ -7,10 +7,10 @@ namespace AIArmada\Contacting\Features\SocialProfiles\Queries;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\Contacting\Data\ContactSnapshotSourceData;
 use AIArmada\Contacting\Features\SocialProfiles\Api\ReadsSocialProfileSnapshotSources;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use Illuminate\Auth\Access\AuthorizationException;
 
 final readonly class ReadSocialProfileSnapshotSourcesQuery implements ReadsSocialProfileSnapshotSources
 {
@@ -48,19 +48,19 @@ final readonly class ReadSocialProfileSnapshotSourcesQuery implements ReadsSocia
                 }
 
                 $sources[] = new ContactSnapshotSourceData(
-                id: $source->id,
-                type: $source->getMorphClass(),
-                snapshotType: 'social_profile',
-                ownerType: $source->owner_type,
-                ownerId: $source->owner_id,
-                label: $source->label,
-                channel: $source->platform,
-                value: $source->handle ?? $source->url,
-                normalizedValue: $source->normalized_url,
-                url: $source->url,
-                displayValue: $source->display_name ?? $source->handle,
-                isPublic: $source->is_public,
-                payload: $source->attributesToArray(),
+                    id: $source->id,
+                    type: $source->getMorphClass(),
+                    snapshotType: 'social_profile',
+                    ownerType: $source->owner_type,
+                    ownerId: $source->owner_id,
+                    label: $source->label,
+                    channel: $source->platform,
+                    value: $source->handle ?? $source->url,
+                    normalizedValue: $source->normalized_url,
+                    url: $source->url,
+                    displayValue: $source->display_name ?? $source->handle,
+                    isPublic: $source->is_public,
+                    payload: $source->attributesToArray(),
                 );
             }
         }

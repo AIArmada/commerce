@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Data;
 
-
 final readonly class ContactLinksData
 {
     public function __construct(

@@ -13,6 +13,7 @@ use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
+use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
@@ -21,7 +22,6 @@ use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
-use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use Illuminate\Auth\Access\AuthorizationException;
 
 it('isolates bookmark collections by owner', function (): void {

@@ -5,24 +5,24 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Tables;
 
 use AIArmada\Contacting\Enums\SocialPlatform;
-use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
-use AIArmada\FilamentContacting\Support\ContactingLinks;
-use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\DeleteSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\UpdateSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use AIArmada\FilamentContacting\Resources\SocialProfileResource;
 use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
+use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
+use AIArmada\FilamentContacting\Support\ContactingLinks;
+use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
-use AIArmada\FilamentContacting\Resources\SocialProfileResource;
+use Filament\Tables;
+use Filament\Tables\Table;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 use Throwable;
-use Filament\Tables;
-use Filament\Tables\Table;
 
 final class SocialProfileTable
 {

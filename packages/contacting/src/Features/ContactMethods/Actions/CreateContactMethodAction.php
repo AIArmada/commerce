@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
-use AIArmada\Contacting\Data\MissingValue;
+use RuntimeException;
 
 final class CreateContactMethodAction
 {
@@ -70,7 +71,7 @@ final class CreateContactMethodAction
 
         $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
             if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
-                throw new \RuntimeException('The contact write was cancelled.');
+                throw new RuntimeException('The contact write was cancelled.');
             }
         });
 

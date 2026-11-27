@@ -6,6 +6,7 @@ namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use RuntimeException;
 
 final class SetPrimaryContactMethodAction
 {
@@ -18,7 +19,7 @@ final class SetPrimaryContactMethodAction
         $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
             $contactMethod->is_primary = true;
             if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
-                throw new \RuntimeException('The contact write was cancelled.');
+                throw new RuntimeException('The contact write was cancelled.');
             }
         });
 

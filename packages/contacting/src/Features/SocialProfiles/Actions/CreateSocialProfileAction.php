@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
+use AIArmada\Contacting\Data\MissingValue;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
-use AIArmada\Contacting\Data\MissingValue;
+use RuntimeException;
 
 final class CreateSocialProfileAction
 {
@@ -60,7 +61,7 @@ final class CreateSocialProfileAction
 
         $profile->getConnection()->transaction(function () use ($profile): void {
             if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
-                throw new \RuntimeException('The contact write was cancelled.');
+                throw new RuntimeException('The contact write was cancelled.');
             }
         });
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
