@@ -17,11 +17,11 @@ final class ResolveLink
     {
         $link = $this->findBySlug($slug);
 
-        if (! $link instanceof Link || ! $link->isActive()) {
+        if (! $link instanceof Link) {
             return null;
         }
 
-        if (app(LinkGateInterface::class)->blockedReason(new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id)) !== null) {
+        if ($this->blockedReasonFor($link) !== null) {
             return null;
         }
 
@@ -42,6 +42,11 @@ final class ResolveLink
             return null;
         }
 
+        return $this->blockedReasonFor($link);
+    }
+
+    public function blockedReasonFor(Link $link): ?string
+    {
         if ($link->deactivated_at !== null) {
             return 'deactivated';
         }

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Links\Actions\CreateLink;
-use AIArmada\Links\Actions\RedirectToLink;
+use AIArmada\Links\EntryPoints\Http\RedirectToLinkController;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Http\Request;
@@ -118,7 +118,7 @@ test('redirect ignores malformed UTM keys and values', function (array $query): 
     ]);
     $request = Request::create('/go/malformed-campaign', 'GET', $query);
 
-    $response = app(RedirectToLink::class)->asController($request, $link->slug);
+    $response = app(RedirectToLinkController::class)->redirect($request, $link->slug);
     expect($response->getTargetUrl())->toBe('https://merchant.example/offer?utm_creative=destination');
 })->with([
     'empty key' => [['' => 'value']],

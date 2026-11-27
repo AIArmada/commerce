@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Contracts\BotDetectorInterface;
 use AIArmada\Links\Contracts\UserAgentParserInterface;
 use AIArmada\Links\Events\LinkClicked;
+use AIArmada\Links\Exceptions\LinkUnavailableException;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use AIArmada\Links\Support\LinkAttributes;
@@ -66,7 +67,26 @@ final class RecordLinkClick
 
         OwnerContext::withOwner($owner, static function () use ($click, $link, $isBot): void {
             $link->getConnection()->transaction(static function () use ($click, $link, $isBot): void {
-                $locked = Link::query()->withoutOwnerScope()->whereKey($link->getKey())->lockForUpdate()->firstOrFail();
+                $locked = $link->newQuery()->withoutOwnerScope()->whereKey($link->getKey())->lockForUpdate()->firstOrFail();
+
+                if ($locked->owner_type !== $link->owner_type || $locked->owner_id !== $link->owner_id) {
+                    throw new LinkUnavailableException('owner_changed');
+                }
+
+                $reason = match (true) {
+                    $locked->deactivated_at !== null => 'deactivated',
+                    $locked->isExpired() => 'expired',
+                    $locked->hasReachedClickLimit() => 'limit_reached',
+                    default => null,
+                };
+
+                if ($reason !== null) {
+                    throw new LinkUnavailableException($reason);
+                }
+
+                $click->subject_type = $locked->subject_type;
+                $click->subject_id = $locked->subject_id;
+                $click->setConnection($locked->getConnectionName());
                 $click->save();
 
                 $locked->total_clicks++;
@@ -146,7 +166,7 @@ final class RecordLinkClick
         $explicit = $this->stringValue($context[$key] ?? null);
 
         if ($explicit !== null) {
-            return $explicit;
+            return mb_substr($explicit, 0, 255);
         }
 
         if (! in_array($key, LinkAttributes::UTM_KEYS, true)) {
@@ -157,7 +177,7 @@ final class RecordLinkClick
             $fromRequest = request()->query($key);
 
             if (is_string($fromRequest) && $fromRequest !== '') {
-                return $fromRequest;
+                return mb_substr($fromRequest, 0, 255);
             }
         }
 
@@ -248,7 +268,7 @@ final class RecordLinkClick
             if (app()->bound('request')) {
                 $fromRequest = request()->query($key);
 
-                if (is_string($fromRequest) && $fromRequest !== '') {
+                if (is_string($fromRequest) && $fromRequest !== '' && mb_strlen($fromRequest) <= 255) {
                     $ids[$key] = $fromRequest;
                 }
             }

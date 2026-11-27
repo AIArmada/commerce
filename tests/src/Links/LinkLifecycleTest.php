@@ -8,6 +8,7 @@ use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Actions\RecordLinkClick;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
+use AIArmada\Links\Exceptions\LinkUnavailableException;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use Carbon\CarbonImmutable;
@@ -109,4 +110,21 @@ test('recording clicks from stale link instances preserves counters and first cl
         ->and($link->human_clicks)->toBe(2)
         ->and($link->first_clicked_at->equalTo($first->occurred_at))->toBeTrue()
         ->and(LinkClick::query()->where('link_id', $link->id)->count())->toBe(2);
+});
+
+test('stale link instances cannot exceed the click limit', function (): void {
+    $link = CreateLink::run([
+        'name' => 'Limited stale link',
+        'slug' => 'limited-stale-link',
+        'destination_url' => 'https://merchant.example/limited',
+        'max_clicks' => 1,
+    ]);
+
+    $stale = $link->fresh();
+    RecordLinkClick::run($link, ['user_agent' => LINKS_LIFECYCLE_UA]);
+
+    expect(fn () => RecordLinkClick::run($stale, ['user_agent' => LINKS_LIFECYCLE_UA]))
+        ->toThrow(LinkUnavailableException::class);
+    expect($link->fresh()->human_clicks)->toBe(1)
+        ->and(LinkClick::query()->where('link_id', $link->id)->count())->toBe(1);
 });

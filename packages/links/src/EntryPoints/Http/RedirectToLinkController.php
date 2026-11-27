@@ -2,32 +2,33 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Links\Actions;
+namespace AIArmada\Links\EntryPoints\Http;
 
+use AIArmada\Links\Actions\RecordLinkClick;
+use AIArmada\Links\Actions\ResolveLink;
 use AIArmada\Links\Contracts\FallbackRedirectGateInterface;
 use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
+use AIArmada\Links\Exceptions\LinkUnavailableException;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Support\LinkAttributes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-final class RedirectToLink
+final class RedirectToLinkController
 {
-    use AsAction;
 
-    public function asBrandedController(Request $request, string $prefix, string $slug): RedirectResponse
+    public function branded(Request $request, string $prefix, string $slug): RedirectResponse
     {
-        return $this->asController($request, $slug);
+        return $this->redirect($request, $slug);
     }
 
-    public function asController(Request $request, string $slug): RedirectResponse
+    public function redirect(Request $request, string $slug): RedirectResponse
     {
         $slug = mb_trim($slug);
         $link = Link::query()->withoutOwnerScope()->where('slug', $slug)->first();
@@ -40,34 +41,45 @@ final class RedirectToLink
             abort(403, 'Invalid or expired signed URL.');
         }
 
-        $reason = app(ResolveLink::class)->blockedReason($slug);
+        $reason = app(ResolveLink::class)->blockedReasonFor($link);
 
         if ($reason !== null) {
-            $this->fireBlockedEvent($link, $reason);
-
-            $gate = app(LinkGateInterface::class);
-
-            if ($gate instanceof FallbackRedirectGateInterface) {
-                $fallback = $gate->fallbackUrl(new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id), $reason);
-
-                if (is_string($fallback) && $fallback !== '') {
-                    return redirect()->to($fallback, (int) config('links.defaults.redirect_status', 302));
-                }
-            }
-
-            abort(410, 'Link is no longer available.');
+            return $this->blockedResponse($link, $reason);
         }
 
         try {
             app(RecordLinkClick::class)->handle($link);
+        } catch (LinkUnavailableException $exception) {
+            return $this->blockedResponse($link, $exception->reason);
         } catch (Throwable $exception) {
             report($exception);
+        }
+
+        if ($link->require_signature && ! URL::hasValidSignature($request)) {
+            abort(403, 'Invalid or expired signed URL.');
         }
 
         return redirect()->to(
             $this->destinationWithParams($link, $request),
             (int) config('links.defaults.redirect_status', 302),
         );
+    }
+
+    private function blockedResponse(Link $link, string $reason): RedirectResponse
+    {
+        $this->fireBlockedEvent($link, $reason);
+
+        $gate = app(LinkGateInterface::class);
+
+        if ($gate instanceof FallbackRedirectGateInterface) {
+            $fallback = $gate->fallbackUrl(new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id), $reason);
+
+            if (is_string($fallback) && $fallback !== '') {
+                return redirect()->to($fallback, (int) config('links.defaults.redirect_status', 302));
+            }
+        }
+
+        abort(410, 'Link is no longer available.');
     }
 
     private function fireBlockedEvent(Link $link, string $reason): void
@@ -115,7 +127,7 @@ final class RedirectToLink
         foreach (LinkAttributes::CLICK_ID_KEYS as $key) {
             $incoming = $request->query($key);
 
-            if (is_string($incoming) && $incoming !== '') {
+            if (is_string($incoming) && $incoming !== '' && mb_strlen($incoming) <= 500) {
                 $query[$key] = $incoming;
             }
         }
