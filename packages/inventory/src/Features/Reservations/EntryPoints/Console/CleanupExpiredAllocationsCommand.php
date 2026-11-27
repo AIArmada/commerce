@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\EntryPoints\Console;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Queries\ExpiredReservations;
-use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Queries\ExpiredReservations;
+use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

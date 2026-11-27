@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Queries;
+namespace AIArmada\Inventory\Features\Reservations\Queries;
 
-use AIArmada\Inventory\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

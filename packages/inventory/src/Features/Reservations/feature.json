@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "Reservations",
+  "owns": {
+    "table:inventory_reservations": [
+      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\CheckoutReservationService"
+    ],
+    "table:inventory_operations": [
+      "AIArmada\\Inventory\\Features\\Reservations\\Actions\\DeductOrderInventory",
+      "AIArmada\\Inventory\\Features\\Reservations\\Actions\\ReleaseOrderInventory"
+    ]
+  },
+  "extensions": {}
+}

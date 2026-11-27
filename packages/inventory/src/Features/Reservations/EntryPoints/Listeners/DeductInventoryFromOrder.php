@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\EntryPoints\Listeners;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners;
 
-use AIArmada\Inventory\Actions\DeductOrderInventory;
+use AIArmada\Inventory\Features\Reservations\Actions\DeductOrderInventory;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 
 final readonly class DeductInventoryFromOrder

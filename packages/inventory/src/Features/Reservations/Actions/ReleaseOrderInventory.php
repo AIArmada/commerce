@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Models\InventoryOperation;
-use AIArmada\Inventory\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Events\InventoryReleaseRequired;

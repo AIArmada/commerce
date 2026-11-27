@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Reservations\Persistence;
+
+use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
@@ -12,8 +14,8 @@ use AIArmada\Inventory\Data\ReservationOutcome;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Exceptions\ReservationReferenceConflict;
 use AIArmada\Inventory\Models\InventoryAllocation;
-use AIArmada\Inventory\Models\InventoryReservation;
-use AIArmada\Inventory\Queries\ExpiredReservations;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Reservations\Queries\ExpiredReservations;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;

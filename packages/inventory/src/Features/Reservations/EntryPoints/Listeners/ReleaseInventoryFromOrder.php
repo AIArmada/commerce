@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\EntryPoints\Listeners;
+namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners;
 
-use AIArmada\Inventory\Actions\ReleaseOrderInventory;
+use AIArmada\Inventory\Features\Reservations\Actions\ReleaseOrderInventory;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 
 final readonly class ReleaseInventoryFromOrder

@@ -12,15 +12,13 @@ use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\EntryPoints\Listeners\ValidateInventoryOnAdd;
-use AIArmada\Inventory\EntryPoints\Console\CleanupExpiredAllocationsCommand;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredAllocationsCommand;
 use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Exports\ExportService;
 use AIArmada\Inventory\Integrations\FulfillmentLocationService;
 use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
-use AIArmada\Inventory\EntryPoints\Listeners\DeductInventoryFromOrder;
-use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
 use AIArmada\Inventory\Reports\InventoryKpiService;
 use AIArmada\Inventory\Reports\InventoryReconciliationReport;
@@ -35,15 +33,13 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
-use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 use AIArmada\Inventory\Platform\ExtensionRegistry;
 use AIArmada\Inventory\Platform\FeatureCatalog;
 use AIArmada\Inventory\Platform\FeatureModule;
-use AIArmada\Orders\Events\InventoryDeductionRequired;
-use AIArmada\Orders\Events\InventoryReleaseRequired;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -79,7 +75,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     {
         $this->registerCartIntegration();
         $this->registerPaymentIntegration();
-        $this->registerOrdersIntegration();
 
         foreach ($this->modules as $module) {
             $module->boot($this->app);
@@ -149,9 +144,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(FulfillmentLocationService::class);
 
-        // Checkout reservation group service
-        $this->app->singleton(CheckoutReservationService::class);
-        $this->app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
     }
 
     private function registerFeatureModules(): void
@@ -261,29 +253,4 @@ final class InventoryServiceProvider extends PackageServiceProvider
         }
     }
 
-    /**
-     * Register orders package integration if available.
-     */
-    private function registerOrdersIntegration(): void
-    {
-        if (! config('inventory.orders.enabled', true)) {
-            return;
-        }
-
-        // Inventory deduction on payment confirmation
-        if (class_exists(InventoryDeductionRequired::class)) {
-            Event::listen(
-                InventoryDeductionRequired::class,
-                DeductInventoryFromOrder::class
-            );
-        }
-
-        // Inventory release on order cancellation
-        if (class_exists(InventoryReleaseRequired::class)) {
-            Event::listen(
-                InventoryReleaseRequired::class,
-                ReleaseInventoryFromOrder::class
-            );
-        }
-    }
 }

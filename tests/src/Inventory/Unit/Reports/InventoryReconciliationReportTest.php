@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryOperation;
-use AIArmada\Inventory\Models\InventoryReservation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Reports\InventoryReconciliationReport;
 use Carbon\CarbonImmutable;
 
