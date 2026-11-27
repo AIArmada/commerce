@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Actions;
+namespace AIArmada\Feedback\Features\Analytics\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackFormAnalytics;
+use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;

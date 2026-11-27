@@ -12,7 +12,7 @@ use AIArmada\Feedback\Data\NpsResultData;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackFormAnalytics;
+use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Builder;

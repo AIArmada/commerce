@@ -6,12 +6,6 @@ namespace AIArmada\Feedback;
 
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
-use AIArmada\Feedback\Events\FeedbackResponseMarkedSpam;
-use AIArmada\Feedback\Events\FeedbackResponseRejected;
-use AIArmada\Feedback\Events\FeedbackResponseReviewed;
-use AIArmada\Feedback\Events\FeedbackResponseStarted;
-use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\EntryPoints\Listeners\QueueFeedbackAnalyticsRecalculation;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;
@@ -51,16 +45,4 @@ final class FeedbackServiceProvider extends PackageServiceProvider
         $this->app->bind(AnswerNormalizer::class, AnswerValueNormalizer::class);
     }
 
-    public function bootingPackage(): void
-    {
-        foreach ([
-            FeedbackResponseStarted::class,
-            FeedbackResponseSubmitted::class,
-            FeedbackResponseReviewed::class,
-            FeedbackResponseRejected::class,
-            FeedbackResponseMarkedSpam::class,
-        ] as $eventClass) {
-            $this->app['events']->listen($eventClass, QueueFeedbackAnalyticsRecalculation::class);
-        }
-    }
 }

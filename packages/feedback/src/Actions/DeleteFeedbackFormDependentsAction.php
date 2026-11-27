@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Features\Analytics\Api\DeletesFormAnalytics;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteFeedbackFormDependentsAction
 {
+    public function __construct(private DeletesFormAnalytics $deleteAnalytics) {}
+
     public function execute(FeedbackForm $form): void
     {
         OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
@@ -41,7 +44,7 @@ final readonly class DeleteFeedbackFormDependentsAction
 
             $form->questions()->delete();
             $form->sections()->delete();
-            $form->analytics()->delete();
+            $this->deleteAnalytics->execute($formId);
         });
     }
 }

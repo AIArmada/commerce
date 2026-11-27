@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -52,7 +51,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read Collection<int, FeedbackQuestion> $questions
  * @property-read Collection<int, FeedbackResponse> $responses
  * @property-read Collection<int, FeedbackInvitation> $invitations
- * @property-read FeedbackFormAnalytics|null $analytics
  */
 final class FeedbackForm extends Model
 {
@@ -121,14 +119,6 @@ final class FeedbackForm extends Model
     public function responses(): HasMany
     {
         return $this->hasMany(FeedbackResponse::class, 'feedback_form_id');
-    }
-
-    /**
-     * @return HasOne<FeedbackFormAnalytics, FeedbackForm>
-     */
-    public function analytics(): HasOne
-    {
-        return $this->hasOne(FeedbackFormAnalytics::class, 'feedback_form_id');
     }
 
     public function invitations(): HasMany
