@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle;
 
 use AIArmada\Vouchers\Events\VoucherApplied;
+use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
+use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\GenerateVoucherBatch;
 use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\ChangeVoucherAvailability;
@@ -32,6 +34,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(VoucherUsageRecorder::class, RecordVoucherUsage::class);
         $app->bind(VoucherCreator::class, CreateVoucher::class);
+        $app->singleton(VoucherLookup::class, VoucherLookupCache::class);
         $app->bind(VoucherBatchIssuer::class, GenerateVoucherBatch::class);
         $app->bind(VoucherAvailability::class, ChangeVoucherAvailability::class);
         $app->bind(VoucherExpiry::class, ExpireVoucher::class);

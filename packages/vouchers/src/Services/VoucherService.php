@@ -24,7 +24,7 @@ use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\Support\VoucherLookupCache;
+use AIArmada\Vouchers\Runtime\VoucherLookup;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -37,7 +37,7 @@ class VoucherService implements VoucherServiceInterface
 
     public function __construct(
         protected VoucherValidator $validator,
-        private readonly VoucherLookupCache $lookupCache,
+        private readonly VoucherLookup $lookupCache,
     ) {}
 
     public function find(string $code): ?VoucherData
@@ -84,9 +84,6 @@ class VoucherService implements VoucherServiceInterface
         }
 
         $data['status'] ??= Active::class;
-
-        // Owner auto-assignment is handled inside CreateVoucher Action.
-        // Do NOT duplicate it here to keep a single source of truth.
 
         /** @var VoucherModel $voucher */
         $voucher = app(VoucherCreator::class)->handle($data);

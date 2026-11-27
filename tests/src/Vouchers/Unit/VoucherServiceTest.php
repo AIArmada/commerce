@@ -9,7 +9,7 @@ use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Support\VoucherLookupCache;
+use AIArmada\Vouchers\Runtime\VoucherLookup;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -68,7 +68,7 @@ test('voucher lookup can be refreshed after an out-of-band provider update', fun
 });
 
 test('voucher lookup cache keeps owner and global scopes separate', function (): void {
-    $cache = app(VoucherLookupCache::class);
+    $cache = app(VoucherLookup::class);
     $ownerA = new class extends Model
     {
         public function getMorphClass(): string

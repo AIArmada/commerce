@@ -12,6 +12,7 @@ use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherExpired;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Depleted;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -36,7 +37,7 @@ final class ExpireVoucher implements VoucherExpiry
                 OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey());
             }
 
-            if ($voucher->status instanceof Expired) {
+            if ($voucher->status instanceof Expired || $voucher->status instanceof Depleted) {
                 return;
             }
 

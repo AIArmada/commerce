@@ -16,7 +16,7 @@ use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\States\VoucherStatus;
-use AIArmada\Vouchers\Support\VoucherLookupCache;
+use AIArmada\Vouchers\Runtime\VoucherLookup;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -584,7 +584,7 @@ class Voucher extends Model implements Auditable
     {
         self::saving(function (Voucher $voucher): void {
             if ($voucher->exists && $voucher->isDirty('code')) {
-                app(VoucherLookupCache::class)->forgetForVoucher(
+                app(VoucherLookup::class)->forgetForVoucher(
                     $voucher,
                     (string) $voucher->getRawOriginal('code'),
                 );
@@ -608,7 +608,7 @@ class Voucher extends Model implements Auditable
         });
 
         self::saved(function (Voucher $voucher): void {
-            app(VoucherLookupCache::class)->forgetForVoucher($voucher);
+            app(VoucherLookup::class)->forgetForVoucher($voucher);
         });
 
         self::creating(function (Voucher $voucher): void {
@@ -618,7 +618,7 @@ class Voucher extends Model implements Auditable
         });
 
         self::deleting(function (Voucher $voucher): void {
-            app(VoucherLookupCache::class)->forgetForVoucher($voucher);
+            app(VoucherLookup::class)->forgetForVoucher($voucher);
             app(\AIArmada\Vouchers\Runtime\VoucherDeletion::class)->deleteDependents($voucher);
         });
     }

@@ -48,12 +48,13 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
         ?VoucherModel $voucherModel = null
     ): VoucherUsage {
         return (new VoucherModel)->getConnection()->transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherModel): VoucherUsage {
-            /** @var VoucherModel|null $lockedVoucher */
-            $lockedVoucher = $this->voucherQuery()
-                ->where('code', $this->normalizeCode($code))
-                ->when($voucherModel !== null, fn ($query) => $query->whereKey($voucherModel?->getKey()))
-                ->lockForUpdate()
-                ->first();
+            $query = $this->voucherQuery()->where('code', $this->normalizeCode($code));
+
+            if ($voucherModel !== null) {
+                $query->whereKey($voucherModel->getKey());
+            }
+
+            $lockedVoucher = $query->lockForUpdate()->first();
 
             if (! $lockedVoucher) {
                 throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");

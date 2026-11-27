@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\Lifecycle\Persistence;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Runtime\VoucherLookup;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -20,7 +21,7 @@ use InvalidArgumentException;
  * Integrations that write outside Eloquent must call VoucherService::invalidate()
  * after their write; until then, a cached lookup remains stale by contract.
  */
-final class VoucherLookupCache
+final class VoucherLookupCache implements VoucherLookup
 {
     use NormalizesVoucherCodes;
 
@@ -75,7 +76,15 @@ final class VoucherLookupCache
             return;
         }
 
-        OwnerCache::forget($this->ownerFromVoucher($voucher), $this->logicalKey($code));
+        $owner = $this->ownerFromVoucher($voucher);
+        $key = $this->logicalKey($code);
+        OwnerCache::forget($owner, $key);
+
+        $connection = $voucher->getConnection();
+
+        if ($connection->transactionLevel() > 0) {
+            $connection->afterCommit(static fn () => OwnerCache::forget($owner, $key));
+        }
     }
 
     private function logicalKey(string $code): string
