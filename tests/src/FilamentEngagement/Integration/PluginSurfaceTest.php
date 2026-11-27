@@ -7,14 +7,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
 use AIArmada\FilamentEngagement\FilamentEngagementPlugin;
-use AIArmada\FilamentEngagement\Resources\BookmarkCollectionResource;
-use AIArmada\FilamentEngagement\Resources\BookmarkResource;
-use AIArmada\FilamentEngagement\Resources\FollowResource;
-use AIArmada\FilamentEngagement\Resources\ReactionResource;
-use AIArmada\FilamentEngagement\Resources\ReminderResource;
-use AIArmada\FilamentEngagement\Resources\ResponseResource;
-use AIArmada\FilamentEngagement\Resources\SubscriptionResource;
-use AIArmada\FilamentEngagement\Widgets\EngagementOverviewWidget;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkCollectionResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\BookmarkResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\FollowResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ReactionResource;
+use AIArmada\FilamentEngagement\Features\Reminders\EntryPoints\Filament\Resources\ReminderResource;
+use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Resources\ResponseResource;
+use AIArmada\FilamentEngagement\Features\Subscriptions\EntryPoints\Filament\Resources\SubscriptionResource;
+use AIArmada\FilamentEngagement\Features\Overview\EntryPoints\Filament\Widgets\EngagementOverviewWidget;
 
 it('exposes the plugin resources and widget', function (): void {
     $plugin = FilamentEngagementPlugin::make();
