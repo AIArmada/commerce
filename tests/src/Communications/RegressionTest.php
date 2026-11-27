@@ -738,6 +738,10 @@ test('attachment storage fields are validated server-side', function (): void {
         ->toThrow(InvalidArgumentException::class, 'without traversal');
     expect(fn () => $make(['storage_path' => '/etc/passwd'])->save())
         ->toThrow(InvalidArgumentException::class, 'without traversal');
+    expect(fn () => $make(['storage_path' => '\\server\share\invoice.pdf'])->save())
+        ->toThrow(InvalidArgumentException::class, 'without traversal');
+    expect(fn () => $make(['storage_path' => "attachments/invoice\0.pdf"])->save())
+        ->toThrow(InvalidArgumentException::class, 'without traversal');
     expect(fn () => $make(['mime_type' => 'not-a-mime'])->save())
         ->toThrow(InvalidArgumentException::class, 'type/subtype');
     expect(fn () => $make(['size_bytes' => -5])->save())

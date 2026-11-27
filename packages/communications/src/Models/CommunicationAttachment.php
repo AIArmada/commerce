@@ -133,6 +133,8 @@ final class CommunicationAttachment extends Model
             if (
                 str_contains($attachment->storage_path, '..')
                 || str_starts_with($attachment->storage_path, '/')
+                || str_starts_with($attachment->storage_path, '\\')
+                || preg_match('/[\x00-\x1F\x7F]/', $attachment->storage_path) === 1
                 || (bool) preg_match('/^[A-Za-z]:[\\\\\/]/', $attachment->storage_path)
                 || str_contains($attachment->storage_path, '://')
             ) {
