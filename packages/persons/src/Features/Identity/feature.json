@@ -7,7 +7,8 @@
       "AIArmada\\Persons\\Features\\Identity\\Actions\\ReorderFeaturedPersonsAction",
       "AIArmada\\Persons\\Features\\Identity\\Actions\\UpdatePersonAction",
       "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName",
-      "AIArmada\\Persons\\Features\\Identity\\Actions\\PersistPerson"
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\PersistPerson",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\DeletePersonAction"
     ],
     "table:person_names": [
       "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName",

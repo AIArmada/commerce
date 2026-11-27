@@ -6,6 +6,7 @@ namespace AIArmada\Persons\Features\Affiliations\Models;
 
 use AIArmada\Persons\Database\Factories\AffiliationFactory;
 use AIArmada\Persons\Enums\AffiliationType;
+use AIArmada\Persons\Features\Affiliations\Actions\DeleteAffiliationRoles;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Carbon\CarbonImmutable;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -55,9 +55,7 @@ class Affiliation extends Model
         });
 
         static::deleting(function (Affiliation $affiliation): void {
-            DB::transaction(static function () use ($affiliation): void {
-                $affiliation->roles()->chunkById(500, static fn (Collection $roles) => $roles->each->delete());
-            });
+            app(DeleteAffiliationRoles::class)->execute((string) $affiliation->getKey());
         });
 
     }
