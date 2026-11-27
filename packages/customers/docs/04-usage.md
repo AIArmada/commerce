@@ -367,19 +367,20 @@ $activeSubscribers = Customer::active()
 ### Add Note
 
 ```php
-$note = $customer->notes()->create([
+use AIArmada\Customers\Features\Identity\Actions\ManageCustomerNote;
+
+$note = app(ManageCustomerNote::class)->create($customer, [
     'content' => 'Customer called about delivery',
-    'created_by' => auth()->id(),
     'is_internal' => true, // Staff only
     'is_pinned' => false,
-]);
+], auth()->id());
 ```
 
 ### Pin Important Notes
 
 ```php
-$note->pin();   // Pin to top
-$note->unpin(); // Unpin
+app(ManageCustomerNote::class)->update($customer, $note, ['is_pinned' => true]);
+app(ManageCustomerNote::class)->update($customer, $note, ['is_pinned' => false]);
 ```
 
 ### Query Notes

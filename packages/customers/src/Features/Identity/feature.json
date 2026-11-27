@@ -8,6 +8,10 @@
       "AIArmada\\Customers\\Features\\Identity\\Actions\\LinkCustomerToPerson",
       "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers",
       "AIArmada\\Customers\\Features\\Identity\\Actions\\SaveCustomerDetails"
+    ],
+    "table:customer_notes": [
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\ManageCustomerNote",
+      "AIArmada\\Customers\\Features\\Identity\\Actions\\MergeCustomers"
     ]
   },
   "extensions": {}

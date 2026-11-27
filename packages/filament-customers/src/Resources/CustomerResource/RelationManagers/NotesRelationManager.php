@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Customers\Features\Identity\Actions\ManageCustomerNote;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -18,8 +20,8 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 
 class NotesRelationManager extends RelationManager
 {
@@ -94,10 +96,15 @@ class NotesRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $data['created_by'] = Auth::user()?->getAuthIdentifier();
+                    ->using(function (array $data): CustomerNote {
+                        $user = Filament::auth()->user();
+                        abort_if($user === null, 403);
 
-                        return $data;
+                        return app(ManageCustomerNote::class)->create(
+                            $this->customer(),
+                            $data,
+                            (string) $user->getAuthIdentifier(),
+                        );
                     }),
             ])
             ->actions([
@@ -112,7 +119,7 @@ class NotesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        $record->pin();
+                        app(ManageCustomerNote::class)->update($this->customer(), $record, ['is_pinned' => true]);
                     })
                     ->visible(fn ($record) => ! $record->is_pinned),
                 Action::make('unpin')
@@ -127,16 +134,29 @@ class NotesRelationManager extends RelationManager
 
                         Gate::forUser($user)->authorize('update', $record);
 
-                        $record->unpin();
+                        app(ManageCustomerNote::class)->update($this->customer(), $record, ['is_pinned' => false]);
                     })
                     ->visible(fn ($record) => $record->is_pinned),
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->using(fn (CustomerNote $record, array $data): CustomerNote => app(ManageCustomerNote::class)->update($this->customer(), $record, $data)),
+                DeleteAction::make()
+                    ->using(fn (CustomerNote $record): bool => app(ManageCustomerNote::class)->delete($this->customer(), $record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private function customer(): Customer
+    {
+        $record = $this->getOwnerRecord();
+
+        if (! $record instanceof Customer) {
+            throw new InvalidArgumentException('Invalid customer record.');
+        }
+
+        return $record;
     }
 }

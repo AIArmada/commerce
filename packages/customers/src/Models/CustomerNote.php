@@ -122,22 +122,6 @@ class CustomerNote extends Model
         return ! $this->is_internal;
     }
 
-    /**
-     * Pin this note.
-     */
-    public function pin(): void
-    {
-        $this->update(['is_pinned' => true]);
-    }
-
-    /**
-     * Unpin this note.
-     */
-    public function unpin(): void
-    {
-        $this->update(['is_pinned' => false]);
-    }
-
     // =========================================================================
     // SCOPES
     // =========================================================================
@@ -169,5 +153,4 @@ class CustomerNote extends Model
         return $query->where('is_pinned', true);
     }
 
-    protected static function booted(): void {}
 }
