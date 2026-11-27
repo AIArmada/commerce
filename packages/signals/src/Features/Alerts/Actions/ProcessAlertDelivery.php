@@ -6,10 +6,11 @@ namespace AIArmada\Signals\Features\Alerts\Actions;
 
 use AIArmada\Signals\Contracts\AlertTransport;
 use AIArmada\Signals\Data\AlertDeliveryMessage;
+use AIArmada\Signals\Features\Alerts\Exceptions\AlertLogMissing;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\ConnectionInterface;
 use RuntimeException;
 use Throwable;
 
@@ -20,12 +21,12 @@ final readonly class ProcessAlertDelivery
         private SignalAlertDispatcher $dispatcher,
     ) {}
 
-    public function run(string $deliveryId): void
+    public function run(string $deliveryId): ?int
     {
-        $delivery = $this->claim($deliveryId);
+        ['delivery' => $delivery, 'retry_after' => $retryAfter] = $this->claim($deliveryId);
 
         if (! $delivery instanceof SignalAlertDelivery) {
-            return;
+            return $retryAfter;
         }
 
         $claimedAttempt = $delivery->attempt_count;
@@ -33,19 +34,29 @@ final readonly class ProcessAlertDelivery
         try {
             $status = $this->deliver($delivery);
             $this->finalizeAttempt($deliveryId, $claimedAttempt, $status, null);
+        } catch (AlertLogMissing) {
+            $this->deleteOrphan($deliveryId, $claimedAttempt);
         } catch (Throwable $exception) {
             $this->finalizeAttempt($deliveryId, $claimedAttempt, null, $exception);
 
             throw new RuntimeException('Signals alert delivery failed.', previous: $exception);
         }
+
+        return null;
     }
 
     public function fail(string $deliveryId, Throwable $exception): void
     {
-        DB::transaction(function () use ($deliveryId, $exception): void {
+        $this->connection()->transaction(function () use ($deliveryId, $exception): void {
             $delivery = SignalAlertDelivery::query()->lockForUpdate()->find($deliveryId);
 
             if (! $delivery instanceof SignalAlertDelivery || in_array($delivery->status, ['sent', 'dead'], true)) {
+                return;
+            }
+
+            if (! $this->parentExists($delivery)) {
+                $delivery->delete();
+
                 return;
             }
 
@@ -68,7 +79,7 @@ final readonly class ProcessAlertDelivery
      */
     private function finalizeAttempt(string $deliveryId, int $claimedAttempt, ?int $status, ?Throwable $error): void
     {
-        DB::transaction(function () use ($deliveryId, $claimedAttempt, $status, $error): void {
+        $this->connection()->transaction(function () use ($deliveryId, $claimedAttempt, $status, $error): void {
             $delivery = SignalAlertDelivery::query()->lockForUpdate()->find($deliveryId);
 
             if (! $delivery instanceof SignalAlertDelivery) {
@@ -80,6 +91,12 @@ final readonly class ProcessAlertDelivery
             }
 
             if ($delivery->attempt_count !== $claimedAttempt) {
+                return;
+            }
+
+            if (! $this->parentExists($delivery)) {
+                $delivery->delete();
+
                 return;
             }
 
@@ -103,42 +120,71 @@ final readonly class ProcessAlertDelivery
         });
     }
 
-    private function claim(string $deliveryId): ?SignalAlertDelivery
+    /**
+     * @return array{delivery: SignalAlertDelivery|null, retry_after: int|null}
+     */
+    private function claim(string $deliveryId): array
     {
-        return DB::transaction(function () use ($deliveryId): ?SignalAlertDelivery {
+        return $this->connection()->transaction(function () use ($deliveryId): array {
             $delivery = SignalAlertDelivery::query()->lockForUpdate()->find($deliveryId);
 
             if (! $delivery instanceof SignalAlertDelivery || in_array($delivery->status, ['sent', 'dead'], true)) {
-                return null;
+                return ['delivery' => null, 'retry_after' => null];
+            }
+
+            if (! $this->parentExists($delivery)) {
+                $delivery->delete();
+
+                return ['delivery' => null, 'retry_after' => null];
             }
 
             $leaseSeconds = max(30, (int) config('signals.features.alerts.delivery.lease_seconds', 120));
+            $now = CarbonImmutable::now();
 
-            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter(CarbonImmutable::now()->subSeconds($leaseSeconds))) {
-                return null;
+            if ($delivery->status === 'processing' && $delivery->leased_at?->isAfter($now->subSeconds($leaseSeconds))) {
+                $retryAfter = (int) ceil($now->diffInSeconds($delivery->leased_at->addSeconds($leaseSeconds), false));
+
+                return ['delivery' => null, 'retry_after' => max(1, $retryAfter)];
             }
 
             if ($delivery->attempt_count >= $delivery->max_attempts) {
-                $delivery->forceFill(['status' => 'dead', 'dead_at' => CarbonImmutable::now(), 'leased_at' => null])->save();
+                $delivery->forceFill(['status' => 'dead', 'dead_at' => $now, 'leased_at' => null])->save();
                 $this->refreshLog($delivery);
 
-                return null;
+                return ['delivery' => null, 'retry_after' => null];
             }
 
             $delivery->forceFill([
                 'status' => 'processing',
                 'attempt_count' => $delivery->attempt_count + 1,
-                'leased_at' => CarbonImmutable::now(),
-                'last_attempt_at' => CarbonImmutable::now(),
+                'leased_at' => $now,
+                'last_attempt_at' => $now,
             ])->save();
 
-            return $delivery;
+            return ['delivery' => $delivery, 'retry_after' => null];
+        });
+    }
+
+    private function deleteOrphan(string $deliveryId, int $claimedAttempt): void
+    {
+        $this->connection()->transaction(function () use ($deliveryId, $claimedAttempt): void {
+            $delivery = SignalAlertDelivery::query()->lockForUpdate()->find($deliveryId);
+
+            if (! $delivery instanceof SignalAlertDelivery || $delivery->attempt_count !== $claimedAttempt) {
+                return;
+            }
+
+            $delivery->delete();
         });
     }
 
     private function deliver(SignalAlertDelivery $delivery): ?int
     {
-        $log = $delivery->alertLog()->firstOrFail();
+        $log = $delivery->alertLog()->first();
+
+        if (! $log instanceof SignalAlertLog) {
+            throw new AlertLogMissing('Signal alert log no longer exists.');
+        }
 
         return $this->transport->send($delivery->channel, $delivery->destination ?? [], new AlertDeliveryMessage(
             ruleId: $log->signal_alert_rule_id,
@@ -153,16 +199,23 @@ final readonly class ProcessAlertDelivery
 
     private function safeErrorCode(Throwable $exception): string
     {
-        $message = mb_strtolower($exception->getMessage());
+        for ($current = $exception; $current instanceof Throwable; $current = $current->getPrevious()) {
+            $message = mb_strtolower($current->getMessage());
+            $code = match (true) {
+                preg_match('/\bhttp_[1-5][0-9]{2}\b/', $message, $matches) === 1 => $matches[0],
+                str_contains($message, 'invalid_destination') => 'invalid_destination',
+                str_contains($message, 'unsupported_channel') => 'unsupported_channel',
+                str_contains($message, 'timed out'), str_contains($message, 'timeout') => 'timeout',
+                str_contains($message, 'resolve'), str_contains($message, 'public') => 'unsafe_destination',
+                default => null,
+            };
 
-        return match (true) {
-            preg_match('/\bhttp_[1-5][0-9]{2}\b/', $message, $matches) === 1 => $matches[0],
-            str_contains($message, 'invalid_destination') => 'invalid_destination',
-            str_contains($message, 'unsupported_channel') => 'unsupported_channel',
-            str_contains($message, 'timed out'), str_contains($message, 'timeout') => 'timeout',
-            str_contains($message, 'resolve'), str_contains($message, 'public') => 'unsafe_destination',
-            default => 'transport_error',
-        };
+            if ($code !== null) {
+                return $code;
+            }
+        }
+
+        return 'transport_error';
     }
 
     private function refreshLog(SignalAlertDelivery $delivery): void
@@ -172,5 +225,15 @@ final readonly class ProcessAlertDelivery
         if ($log instanceof SignalAlertLog) {
             $this->dispatcher->refreshLogSummary($log);
         }
+    }
+
+    private function parentExists(SignalAlertDelivery $delivery): bool
+    {
+        return SignalAlertLog::query()->whereKey($delivery->signal_alert_log_id)->exists();
+    }
+
+    private function connection(): ConnectionInterface
+    {
+        return (new SignalAlertDelivery)->getConnection();
     }
 }

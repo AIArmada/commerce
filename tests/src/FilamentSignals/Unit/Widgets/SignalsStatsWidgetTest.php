@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets\PendingSignalAlertsWidget;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\SignalsDashboard;
@@ -18,7 +19,6 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 
 uses(FilamentSignalsTestCase::class);
 
@@ -261,11 +261,11 @@ it('registers the pending alerts widget on the dashboard', function (): void {
         ->toContain(PendingSignalAlertsWidget::class);
 });
 
-it('builds pending alerts table when no owner is resolved', function (): void {
+it('refuses to build the pending alerts table without owner context', function (): void {
     app()->forgetInstance(OwnerResolverInterface::class);
 
     $widget = app(PendingSignalAlertsWidget::class);
-    $query = filamentSignals_invokeProtected($widget, 'getPendingAlertsQuery');
 
-    expect($query)->toBeInstanceOf(Builder::class);
+    expect(fn () => filamentSignals_invokeProtected($widget, 'getPendingAlertsQuery'))
+        ->toThrow(NoCurrentOwnerException::class);
 });

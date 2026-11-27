@@ -8,12 +8,15 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Api\DetachPropertyAlerts;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 
 final readonly class DetachAlertsFromProperty implements DetachPropertyAlerts
 {
     public function detach(string $trackedPropertyId): void
     {
-        (new SignalAlertRule)->getConnection()->transaction(function () use ($trackedPropertyId): void {
+        $connection = (new SignalAlertRule)->getConnection();
+
+        $connection->transaction(function () use ($trackedPropertyId): void {
             $rules = SignalAlertRule::query()->where('tracked_property_id', $trackedPropertyId);
             $logs = SignalAlertLog::query()->where('tracked_property_id', $trackedPropertyId);
 
@@ -24,7 +27,23 @@ final readonly class DetachAlertsFromProperty implements DetachPropertyAlerts
                 $logs->forOwner($owner, includeGlobal: false);
             }
 
-            $rules->update(['tracked_property_id' => null]);
+            $propertyCurrency = app(TelemetryRead::class)->propertyCurrency($trackedPropertyId);
+
+            foreach ($rules->lockForUpdate()->get(['id', 'metric_key', 'event_filters']) as $rule) {
+                $attributes = [
+                    'tracked_property_id' => null,
+                    'is_active' => false,
+                ];
+
+                if ($rule->metric_key === 'revenue_minor' && $propertyCurrency !== null) {
+                    $filters = is_array($rule->event_filters) ? $rule->event_filters : [];
+                    $filters['currency'] = $propertyCurrency;
+                    $attributes['event_filters'] = $filters;
+                }
+
+                SignalAlertRule::query()->whereKey($rule->getKey())->update($attributes);
+            }
+
             $logs->update(['tracked_property_id' => null]);
         });
     }

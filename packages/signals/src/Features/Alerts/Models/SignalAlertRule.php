@@ -7,6 +7,7 @@ namespace AIArmada\Signals\Features\Alerts\Models;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\SensitiveAttributes;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
@@ -62,6 +63,7 @@ final class SignalAlertRule extends Model implements Auditable
     /** @var list<string> */
     protected $hidden = [
         'owner_scope',
+        'inline_destinations',
     ];
 
     /** @var list<string> */
@@ -100,7 +102,6 @@ final class SignalAlertRule extends Model implements Auditable
             'event_filters',
             'channels',
             'destination_keys',
-            'inline_destinations',
             'timeframe_minutes',
             'cooldown_minutes',
             'severity',
@@ -159,7 +160,7 @@ final class SignalAlertRule extends Model implements Auditable
         }
 
         if (filled($this->tracked_property_id)) {
-            return app(TelemetryRead::class)->requirePropertyCurrency((string) $this->tracked_property_id);
+            return app(TelemetryRead::class)->propertyCurrency((string) $this->tracked_property_id);
         }
 
         return SignalCurrency::normalize($this->event_filters['currency'] ?? null);
@@ -216,7 +217,7 @@ final class SignalAlertRule extends Model implements Auditable
             'event_filters' => 'array',
             'channels' => 'array',
             'destination_keys' => 'array',
-            'inline_destinations' => 'array',
+            'inline_destinations' => 'encrypted:array',
             'timeframe_minutes' => 'integer',
             'cooldown_minutes' => 'integer',
             'priority' => 'integer',
@@ -228,5 +229,16 @@ final class SignalAlertRule extends Model implements Auditable
     protected function getActivityLogName(): string
     {
         return 'signals';
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return array_values(array_diff(
+            SensitiveAttributes::exclude($this->fillable),
+            ['inline_destinations'],
+        ));
     }
 }

@@ -14,9 +14,12 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class AdministerInteractionRule implements InteractionRuleAdministration
 {
+    private const int MAX_SLUG_CONFLICTS = 10;
+
     public function create(array $data): string
     {
         return (new SignalInteractionRule)->getConnection()->transaction(function () use ($data): string {
@@ -43,9 +46,22 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
             throw new InvalidArgumentException('Invalid interaction rule scan.');
         }
 
-        return (new SignalInteractionRule)->getConnection()->transaction(function () use ($propertyId, $triggerType, $eventName, $eventCategory, $isActive, $candidates): int {
+        $eventName = mb_trim($eventName);
+
+        if (mb_strlen($eventName, '8bit') > 255) {
+            throw new InvalidArgumentException('Interaction rule event name is too long.');
+        }
+
+        if ($eventCategory !== null && mb_strlen($eventCategory, '8bit') > 100) {
+            throw new InvalidArgumentException('Interaction rule event category is too long.');
+        }
+
+        $prepared = $this->prepareCandidates($candidates);
+
+        return (new SignalInteractionRule)->getConnection()->transaction(function () use ($propertyId, $triggerType, $eventName, $eventCategory, $isActive, $prepared): int {
             $query = SignalInteractionRule::query();
             $properties = TrackedProperty::query();
+            $owner = null;
 
             if (SignalInteractionRule::ownerScopeConfig()->enabled) {
                 $owner = OwnerContext::resolveConfigured(SignalInteractionRule::ownerScopeConfig());
@@ -56,42 +72,36 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
 
             $properties->lockForUpdate()->findOrFail($propertyId);
             $sortOrder = (int) (clone $query)->max('sort_order');
+            $existingSlugs = $this->existingSlugs($query, $prepared);
+            $nextSuffixes = [];
             $created = 0;
 
-            foreach ($candidates as $candidate) {
-                $name = mb_trim((string) ($candidate['name'] ?? ''));
-
-                if ($name === '') {
-                    throw new InvalidArgumentException('A scanned interaction rule requires a name.');
-                }
-
-                $base = mb_substr(Str::slug($name) ?: 'interaction-rule', 0, 220);
-                $settings = is_array($candidate['settings'] ?? null) ? $candidate['settings'] : [];
-                $settings['scanner_confidence'] = $candidate['confidence'] ?? null;
-                $settings['scanner_confidence_note'] = $candidate['confidence_note'] ?? null;
+            foreach ($prepared as $candidate) {
+                $base = $candidate['base'];
+                $slug = $this->nextSlug($base, $existingSlugs, $nextSuffixes);
                 $attributes = [
                     'tracked_property_id' => $propertyId,
-                    'name' => mb_substr($name, 0, 255),
+                    'name' => $candidate['name'],
+                    'slug' => $slug,
                     'trigger_type' => $triggerType,
                     'event_name' => $eventName,
                     'event_category' => $eventCategory,
-                    'selector' => is_string($candidate['selector'] ?? null) ? $candidate['selector'] : null,
-                    'page_pattern' => is_string($candidate['page_pattern'] ?? null) ? $candidate['page_pattern'] : null,
-                    'settings' => $settings,
+                    'selector' => $candidate['selector'],
+                    'page_pattern' => $candidate['page_pattern'],
+                    'settings' => $candidate['settings'],
                     'sort_order' => ++$sortOrder,
                     'is_active' => $isActive,
                 ];
 
-                // The nested create transaction provides a savepoint on PostgreSQL.
-                for ($suffix = 1; ; $suffix++) {
-                    $slug = $suffix === 1 ? $base : $base . '-' . $suffix;
-
-                    if ((clone $query)->where('slug', $slug)->exists()) {
-                        continue;
-                    }
-
+                for ($conflict = 0; $conflict < self::MAX_SLUG_CONFLICTS; $conflict++) {
                     try {
-                        $this->create([...$attributes, 'slug' => $slug]);
+                        $record = new SignalInteractionRule($attributes);
+
+                        if ($owner !== null) {
+                            $record->owner()->associate($owner);
+                        }
+
+                        $record->save();
                         $created++;
 
                         break;
@@ -99,7 +109,14 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
                         if (! DuplicateKeyViolation::is($exception) || ! $this->slugExistsAfterConflict($query, $slug)) {
                             throw $exception;
                         }
+
+                        $slug = $this->nextSlug($base, $existingSlugs, $nextSuffixes);
+                        $attributes['slug'] = $slug;
                     }
+                }
+
+                if ($conflict === self::MAX_SLUG_CONFLICTS) {
+                    throw new RuntimeException('Unable to allocate a unique interaction rule slug.');
                 }
             }
 
@@ -120,6 +137,84 @@ final readonly class AdministerInteractionRule implements InteractionRuleAdminis
             fn (): bool => $this->lockRecord($id)->delete() === true,
             attempts: 3,
         );
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $candidates
+     * @return list<array{base:string,name:string,selector:string|null,page_pattern:string|null,settings:array<string,mixed>}>
+     */
+    private function prepareCandidates(array $candidates): array
+    {
+        $prepared = [];
+
+        foreach ($candidates as $candidate) {
+            $name = mb_trim((string) ($candidate['name'] ?? ''));
+
+            if ($name === '') {
+                throw new InvalidArgumentException('A scanned interaction rule requires a name.');
+            }
+
+            $selector = is_string($candidate['selector'] ?? null) ? $candidate['selector'] : null;
+            $pagePattern = is_string($candidate['page_pattern'] ?? null) ? $candidate['page_pattern'] : null;
+
+            if (($selector !== null && mb_strlen($selector, '8bit') > 255)
+                || ($pagePattern !== null && mb_strlen($pagePattern, '8bit') > 255)) {
+                continue;
+            }
+
+            $settings = is_array($candidate['settings'] ?? null) ? $candidate['settings'] : [];
+            $settings['scanner_confidence'] = $candidate['confidence'] ?? null;
+            $settings['scanner_confidence_note'] = $candidate['confidence_note'] ?? null;
+
+            $prepared[] = [
+                'base' => mb_substr(Str::slug($name) ?: 'interaction-rule', 0, 220),
+                'name' => mb_substr($name, 0, 255),
+                'selector' => $selector,
+                'page_pattern' => $pagePattern,
+                'settings' => $settings,
+            ];
+        }
+
+        return $prepared;
+    }
+
+    /** @param Builder<SignalInteractionRule> $query
+     * @param  list<array{base:string,name:string,selector:string|null,page_pattern:string|null,settings:array<string,mixed>}>  $prepared
+     * @return array<string, true>
+     */
+    private function existingSlugs(Builder $query, array $prepared): array
+    {
+        $bases = array_values(array_unique(array_column($prepared, 'base')));
+
+        if ($bases === []) {
+            return [];
+        }
+
+        $slugs = (clone $query)->where(function (Builder $query) use ($bases): void {
+            foreach ($bases as $base) {
+                $query->orWhere('slug', $base)->orWhere('slug', 'like', $base . '-%');
+            }
+        })->pluck('slug')->all();
+
+        return array_fill_keys(array_map('strval', $slugs), true);
+    }
+
+    /** @param array<string, true> $existingSlugs
+     * @param  array<string, int>  $nextSuffixes
+     */
+    private function nextSlug(string $base, array &$existingSlugs, array &$nextSuffixes): string
+    {
+        $suffix = $nextSuffixes[$base] ?? 1;
+
+        do {
+            $slug = $suffix === 1 ? $base : $base . '-' . $suffix;
+            $suffix++;
+        } while (isset($existingSlugs[$slug]));
+
+        $nextSuffixes[$base] = $suffix;
+        $existingSlugs[$slug] = true;
+
+        return $slug;
     }
 
     /** @param Builder<SignalInteractionRule> $query */

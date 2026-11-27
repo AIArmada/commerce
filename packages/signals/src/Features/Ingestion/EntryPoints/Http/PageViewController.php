@@ -52,12 +52,12 @@ final readonly class PageViewController
             'properties' => ['nullable', 'array'],
         ]);
 
-        $trackedProperty = $this->requestValidator->resolveTrackedProperty($request, (string) $payload['write_key']);
         $this->requestValidator->assertBrowserPayload(
             request: $request,
             writeKey: (string) $payload['write_key'],
             eventName: (string) config('signals.defaults.page_view_event_name', 'page_view'),
         );
+        $trackedProperty = $this->requestValidator->resolveTrackedProperty($request, (string) $payload['write_key']);
         $event = $this->action->handle($trackedProperty, $payload);
 
         return response()->json([

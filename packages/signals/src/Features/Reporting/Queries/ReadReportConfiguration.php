@@ -45,7 +45,7 @@ final readonly class ReadReportConfiguration implements ReportConfiguration, Seg
 
     public function getSegmentOptions(): array
     {
-        return SignalSegment::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all();
+        return SignalSegment::query()->forOwner()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all();
     }
 
     public function segment(?string $id): ?SegmentDefinition
@@ -54,7 +54,7 @@ final readonly class ReadReportConfiguration implements ReportConfiguration, Seg
             return null;
         }
 
-        $segment = SignalSegment::query()->where('is_active', true)->whereKey($id)->first();
+        $segment = SignalSegment::query()->forOwner()->where('is_active', true)->whereKey($id)->first();
 
         return $segment === null ? null : new SegmentDefinition($segment->conditions, $segment->match_type);
     }
@@ -75,7 +75,15 @@ final readonly class ReadReportConfiguration implements ReportConfiguration, Seg
         $goals = SignalGoal::query()->where('is_active', true)->whereIn('slug', $slugs)
             ->when(filled($propertyId), fn (Builder $query): Builder => $query->where(function (Builder $query) use ($propertyId): void {
                 $query->where('tracked_property_id', $propertyId)->orWhereNull('tracked_property_id');
-            }))->get();
+            }))->orderBy('id')->get()
+            ->sortBy(static function (SignalGoal $goal): int {
+                if ($goal->owner_type === null && $goal->owner_id === null) {
+                    return 0;
+                }
+
+                return $goal->tracked_property_id === null ? 1 : 2;
+            })
+            ->values();
 
         $result = [];
 

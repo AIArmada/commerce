@@ -43,6 +43,18 @@ it('caps the number of files a local scan touches', function (): void {
     expect($candidates)->toHaveCount(InteractionRuleScanner::MAX_SCAN_FILES);
 });
 
+it('deduplicates overlapping local scan roots', function (): void {
+    $dir = scannerBladeDir('overlap');
+
+    file_put_contents($dir . '/view.blade.php', "<button data-track=\"once\">Track</button>\n");
+
+    $candidates = app(InteractionRuleScanner::class)
+        ->scanLocalSource('click', null, 100, [$dir, $dir]);
+
+    expect($candidates)->toHaveCount(1)
+        ->and($candidates[0]['selector'])->toBe('[data-track="once"]');
+});
+
 it('skips oversized views instead of loading them fully', function (): void {
     $dir = scannerBladeDir('huge');
 

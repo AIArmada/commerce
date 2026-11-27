@@ -7,14 +7,24 @@ namespace AIArmada\Signals\Features\Alerts\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Api\AlertRuleAdministration;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Support\AlertDestinationPolicy;
 use Illuminate\Support\Arr;
 
 final readonly class AdministerAlertRule implements AlertRuleAdministration
 {
+    public function __construct(private AlertDestinationPolicy $destinations) {}
+
     public function create(array $data): string
     {
         return (new SignalAlertRule)->getConnection()->transaction(function () use ($data): string {
-            $record = new SignalAlertRule($this->attributes($data));
+            $attributes = $this->attributes($data);
+            $this->destinations->assertWritable(
+                OwnerContext::resolve(),
+                $this->channels($attributes),
+                $this->keys($attributes),
+            );
+
+            $record = new SignalAlertRule($attributes);
 
             if (SignalAlertRule::ownerScopeConfig()->enabled) {
                 $owner = OwnerContext::resolveConfigured(SignalAlertRule::ownerScopeConfig());
@@ -34,7 +44,15 @@ final readonly class AdministerAlertRule implements AlertRuleAdministration
     public function update(string $id, array $data): void
     {
         (new SignalAlertRule)->getConnection()->transaction(function () use ($id, $data): void {
-            $this->lockRecord($id)->update($this->attributes($data));
+            $record = $this->lockRecord($id);
+            $attributes = $this->attributes($data);
+            $this->destinations->assertWritable(
+                OwnerContext::resolve(),
+                $this->channels($attributes, $record),
+                $this->keys($attributes, $record),
+            );
+
+            $record->update($attributes);
         }, attempts: 3);
     }
 
@@ -73,5 +91,35 @@ final readonly class AdministerAlertRule implements AlertRuleAdministration
             'channels', 'destination_keys', 'inline_destinations', 'timeframe_minutes',
             'cooldown_minutes', 'severity', 'priority', 'is_active',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<int, mixed>
+     */
+    private function channels(array $attributes, ?SignalAlertRule $record = null): array
+    {
+        $channels = array_key_exists('channels', $attributes)
+            ? $attributes['channels']
+            : $record?->channels;
+
+        if (! is_array($channels) || $channels === []) {
+            $channels = config('signals.features.alerts.default_channels', ['database']);
+        }
+
+        return is_array($channels) ? $channels : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<int, mixed>
+     */
+    private function keys(array $attributes, ?SignalAlertRule $record = null): array
+    {
+        $keys = array_key_exists('destination_keys', $attributes)
+            ? $attributes['destination_keys']
+            : $record?->destination_keys;
+
+        return is_array($keys) ? $keys : [];
     }
 }

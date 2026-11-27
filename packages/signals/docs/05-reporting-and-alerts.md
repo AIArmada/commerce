@@ -97,7 +97,16 @@ Supported dispatch channels:
 - webhook,
 - Slack-compatible webhook.
 
-Named destinations from config are preferred. Inline destinations are ignored unless explicitly enabled.
+Named destinations from config are preferred. Inline destinations are ignored unless explicitly enabled. When owner scoping is enabled, configured named destinations are only available to global rules; tenant rules use inline destinations. Inline destination payloads are encrypted at rest and excluded from audits, activity logs, and model serialization. Each inline entry declares its channel and destination fields:
+
+```php
+'inline_destinations' => [
+    ['channel' => 'email', 'destination' => ['to' => 'ops@example.com']],
+    ['channel' => 'slack', 'destination' => ['webhook_url' => 'https://hooks.slack.com/services/...']],
+],
+```
+
+Delivery retries retain the specific sanitized failure code (`http_5xx`, `timeout`, `invalid_destination`, `unsafe_destination`, `unsupported_channel`). A worker that finds an active lease releases the queued job until the lease expires instead of acknowledging it, and a delivery whose alert log was already deleted is removed rather than retried.
 
 ## Evaluation strategy
 

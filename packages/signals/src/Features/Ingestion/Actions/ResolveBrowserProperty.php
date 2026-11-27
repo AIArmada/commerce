@@ -17,7 +17,7 @@ final readonly class ResolveBrowserProperty implements BrowserPropertyResolver
     {
         $owner = OwnerContext::resolve();
 
-        if ((bool) config('signals.owner.enabled', true) && ! $owner instanceof Model && ! OwnerContext::isExplicitGlobal()) {
+        if ((bool) config('signals.owner.enabled', false) && ! $owner instanceof Model && ! OwnerContext::isExplicitGlobal()) {
             return null;
         }
 

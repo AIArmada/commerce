@@ -98,7 +98,7 @@ final class SigengBlockingHttpClient
 function engineDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string $suffix): array
 {
     Queue::fake();
-    config()->set('signals.features.alerts.destinations.email.ops', ['to' => 'ops@example.com']);
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
 
     return OwnerContext::withOwner($owner, function () use ($test, $suffix): array {
         $property = $test->engineProperty('Engine Delivery ' . $suffix);
@@ -114,7 +114,10 @@ function engineDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string
             'cooldown_minutes' => 0,
             'severity' => 'warning',
             'channels' => ['email'],
-            'destination_keys' => ['ops'],
+            'destination_keys' => [],
+            'inline_destinations' => [
+                ['channel' => 'email', 'destination' => ['to' => 'ops@example.com']],
+            ],
         ]);
 
         $log = app(SignalAlertDispatcher::class)->dispatch($rule, 2.0);
@@ -132,7 +135,7 @@ function engineDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string
 function engineWebhookDeliveryDispatch(SignalsEngineTestCase $test, User $owner, string $suffix): array
 {
     Queue::fake();
-    config()->set('signals.features.alerts.destinations.webhook.ops', ['url' => 'https://alerts.example.test/hook']);
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
 
     return OwnerContext::withOwner($owner, function () use ($test, $suffix): array {
         $property = $test->engineProperty('Engine Webhook ' . $suffix);
@@ -148,7 +151,10 @@ function engineWebhookDeliveryDispatch(SignalsEngineTestCase $test, User $owner,
             'cooldown_minutes' => 0,
             'severity' => 'warning',
             'channels' => ['webhook'],
-            'destination_keys' => ['ops'],
+            'destination_keys' => [],
+            'inline_destinations' => [
+                ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/hook']],
+            ],
         ]);
 
         $log = app(SignalAlertDispatcher::class)->dispatch($rule, 2.0);

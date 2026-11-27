@@ -22,6 +22,17 @@ final class GoalsReport extends ReportPage
 
     protected string $view = 'filament-signals::pages.goals-report';
 
+    /**
+     * @var array{
+     *     summary: array{goals:int,goal_hits:int,visitors:int,avg_goal_rate:float,revenue_minor?:int,currency?:string,revenue?:array<string, int>},
+     *     rows: list<array{id:string,name:string,goal_type:string,event_name:string,event_category:?string,tracked_property_name:?string,goal_hits:int,visitors:int,goal_rate:float,last_hit_at:?string,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>
+     * }|null
+     */
+    private ?array $reportCache = null;
+
+    /** @var list<string|null> */
+    private array $reportCacheParameters = [];
+
     public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.goals_report', 22);
@@ -38,12 +49,7 @@ final class GoalsReport extends ReportPage
      */
     public function getSummary(): array
     {
-        return app(GoalsReportService::class)->summary(
-            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
-            $this->dateFrom,
-            $this->dateTo,
-            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
-        );
+        return $this->report()['summary'];
     }
 
     /**
@@ -51,12 +57,30 @@ final class GoalsReport extends ReportPage
      */
     public function getRows(): array
     {
-        return app(GoalsReportService::class)->rows(
+        return $this->report()['rows'];
+    }
+
+    /**
+     * @return array{
+     *     summary: array{goals:int,goal_hits:int,visitors:int,avg_goal_rate:float,revenue_minor?:int,currency?:string,revenue?:array<string, int>},
+     *     rows: list<array{id:string,name:string,goal_type:string,event_name:string,event_category:?string,tracked_property_name:?string,goal_hits:int,visitors:int,goal_rate:float,last_hit_at:?string,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>
+     * }
+     */
+    private function report(): array
+    {
+        $parameters = [
             $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
             $this->dateFrom,
             $this->dateTo,
             $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
-        );
+        ];
+
+        if ($this->reportCache === null || $this->reportCacheParameters !== $parameters) {
+            $this->reportCache = app(GoalsReportService::class)->report(...$parameters);
+            $this->reportCacheParameters = $parameters;
+        }
+
+        return $this->reportCache;
     }
 
     protected function getHeaderActions(): array

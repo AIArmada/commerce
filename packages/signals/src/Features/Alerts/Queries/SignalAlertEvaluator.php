@@ -16,14 +16,16 @@ final readonly class SignalAlertEvaluator implements AlertEvaluator
     /**
      * @return array{matched: bool, metric_value: float, context: array<string, mixed>}
      */
-    public function evaluate(SignalAlertRule $rule): array
+    public function evaluate(SignalAlertRule $rule, ?string $revenueCurrency = null): array
     {
         $metricValue = $this->metrics->value(new EventMetric(
             metricKey: $rule->metric_key,
             trackedPropertyId: $rule->tracked_property_id,
             timeframeMinutes: $rule->timeframe_minutes,
             eventFilters: $rule->event_filters ?? [],
-            revenueCurrency: $rule->revenueCurrency(),
+            revenueCurrency: $rule->metric_key === 'revenue_minor'
+                ? ($revenueCurrency ?? $rule->revenueCurrency())
+                : null,
         ));
 
         return [
@@ -45,7 +47,7 @@ final readonly class SignalAlertEvaluator implements AlertEvaluator
             '>=' , 'gte' => $actual >= $expected,
             '<', 'lt' => $actual < $expected,
             '<=', 'lte' => $actual <= $expected,
-            '!=', '<>' => $actual !== $expected,
+            '!=', '<>', 'not_eq' => $actual !== $expected,
             '=', '==', 'eq' => $actual === $expected,
             default => $actual === $expected,
         };

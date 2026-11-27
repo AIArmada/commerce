@@ -19,8 +19,12 @@ use Illuminate\Support\Facades\Queue;
 
 uses(SignalsTestCase::class);
 
-function createAlertDeliveryRule(array $channels = ['database', 'webhook']): SignalAlertRule
+function createAlertDeliveryRule(array $channels = ['database', 'webhook'], array $inlineDestinations = [
+    ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/primary']],
+]): SignalAlertRule
 {
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
+
     /** @var User $owner */
     $owner = User::query()->create([
         'name' => 'Alert Delivery Owner',
@@ -46,7 +50,8 @@ function createAlertDeliveryRule(array $channels = ['database', 'webhook']): Sig
         'cooldown_minutes' => 1,
         'severity' => 'critical',
         'channels' => $channels,
-        'destination_keys' => ['ops', 'backup'],
+        'destination_keys' => [],
+        'inline_destinations' => $inlineDestinations,
     ]);
 }
 
@@ -57,7 +62,10 @@ it('persists per-destination deliveries and queues them without doing network wo
         'backup' => ['url' => 'https://alerts.example.test/backup'],
     ]);
 
-    $rule = createAlertDeliveryRule();
+    $rule = createAlertDeliveryRule(inlineDestinations: [
+        ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/primary']],
+        ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/backup']],
+    ]);
     $log = app(SignalAlertDispatcher::class)->dispatch($rule, 2.0);
 
     expect($log->deliveries()->count())->toBe(2)
@@ -110,7 +118,10 @@ it('represents partial destination success independently', function (): void {
     app()->forgetInstance(SignalAlertDispatcher::class);
     Queue::fake();
 
-    $rule = createAlertDeliveryRule();
+    $rule = createAlertDeliveryRule(['database', 'webhook'], [
+        ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/primary']],
+        ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/backup']],
+    ]);
     $log = app(SignalAlertDispatcher::class)->dispatch($rule, 2.0);
     $deliveries = SignalAlertDelivery::query()->withoutOwnerScope()
         ->where('signal_alert_log_id', $log->id)
@@ -136,7 +147,10 @@ it('rejects a stale second dispatch during the rule cooldown and removes deliver
         'backup' => ['url' => 'https://alerts.example.test/backup'],
     ]);
 
-    $rule = createAlertDeliveryRule();
+    $rule = createAlertDeliveryRule(inlineDestinations: [
+        ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/primary']],
+        ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/backup']],
+    ]);
     $staleRule = SignalAlertRule::query()->findOrFail($rule->id);
     $dispatcher = app(SignalAlertDispatcher::class);
 

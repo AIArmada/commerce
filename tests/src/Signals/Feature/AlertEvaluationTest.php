@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Signals\Features\Alerts\Actions\EvaluateAlertRules;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
@@ -99,6 +101,57 @@ it('evaluates conversion rates through filtered streaming', function (): void {
 
     expect($result['matched'])->toBeTrue()
         ->and($result['metric_value'])->toBe(50.0);
+});
+
+it('honors numeric not-equals and numeric-string contains filters', function (): void {
+    $property = createAlertStreamProperty('operators');
+
+    createAlertStreamEvent($property, 'cart.snapshot.synced', 'cart', ['cart_total_minor' => 1000, 'reference' => '12345']);
+    createAlertStreamEvent($property, 'cart.snapshot.synced', 'cart', ['cart_total_minor' => 500, 'reference' => '99999']);
+
+    $notEquals = createAlertStreamRule($property, 'events', [
+        'properties' => [
+            ['key' => 'cart_total_minor', 'operator' => 'not_eq', 'value' => '500'],
+        ],
+    ]);
+    $contains = createAlertStreamRule($property, 'events', [
+        'properties' => [
+            ['key' => 'reference', 'operator' => 'contains', 'value' => '23'],
+        ],
+    ]);
+
+    expect(app(SignalAlertEvaluator::class)->evaluate($notEquals)['metric_value'])->toBe(1.0)
+        ->and(app(SignalAlertEvaluator::class)->evaluate($contains)['metric_value'])->toBe(1.0);
+});
+
+it('deactivates detached rules and preserves their revenue currency', function (): void {
+    $property = createAlertStreamProperty('detach');
+    $owner = OwnerContext::resolve();
+    $revenueRule = createAlertStreamRule($property, 'revenue_minor');
+    $eventsRule = createAlertStreamRule($property, 'events');
+
+    OwnerContext::withOwner($owner, fn (): bool => $property->delete());
+
+    $revenueRule->refresh();
+    $eventsRule->refresh();
+
+    expect($revenueRule->tracked_property_id)->toBeNull()
+        ->and($revenueRule->is_active)->toBeFalse()
+        ->and($revenueRule->event_filters['currency'] ?? null)->toBe('MYR')
+        ->and($revenueRule->revenueCurrency())->toBe('MYR')
+        ->and($eventsRule->tracked_property_id)->toBeNull()
+        ->and($eventsRule->is_active)->toBeFalse()
+        ->and($revenueRule->save())->toBeTrue();
+});
+
+it('skips rules whose property disappeared during evaluation', function (): void {
+    $property = createAlertStreamProperty('concurrent-delete');
+    createAlertStreamRule($property, 'revenue_minor');
+    TrackedProperty::query()->withoutOwnerScope()->whereKey($property->id)->delete();
+
+    $result = app(EvaluateAlertRules::class)->handle();
+
+    expect($result)->toMatchArray(['processed' => 0, 'skipped' => 1, 'dispatched' => 0]);
 });
 
 it('cascades tracked property deletion to telemetry records', function (): void {

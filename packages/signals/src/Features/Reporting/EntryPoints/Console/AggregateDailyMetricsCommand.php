@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Reporting\EntryPoints\Console;
 
 use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 
 final class AggregateDailyMetricsCommand extends Command
 {
@@ -33,22 +33,22 @@ final class AggregateDailyMetricsCommand extends Command
         $days = (int) $this->option('days');
 
         if (is_string($date) && $date !== '') {
-            $day = Carbon::parse($date);
-            $count = $aggregator->aggregateForOwners($day->copy(), $day->copy());
+            $day = CarbonImmutable::parse($date);
+            $count = $aggregator->aggregateForOwners($day, $day);
             $this->info("Aggregated {$count} daily metric rows for {$date}.");
 
             return;
         }
 
         if (is_string($from) && is_string($to) && $from !== '' && $to !== '') {
-            $count = $aggregator->aggregateForOwners(Carbon::parse($from), Carbon::parse($to));
+            $count = $aggregator->aggregateForOwners(CarbonImmutable::parse($from), CarbonImmutable::parse($to));
             $this->info("Aggregated {$count} daily metric rows from {$from} to {$to}.");
 
             return;
         }
 
-        $end = Carbon::today();
-        $start = $end->copy()->subDays(max($days - 1, 0));
+        $end = CarbonImmutable::today();
+        $start = $end->subDays(max($days - 1, 0));
         $count = $aggregator->aggregateForOwners($start, $end);
 
         $this->info("Aggregated {$count} daily metric rows from {$start->toDateString()} to {$end->toDateString()}.");

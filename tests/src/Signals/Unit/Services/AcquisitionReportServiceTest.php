@@ -347,3 +347,60 @@ it('uses the configured primary outcome event when acquisition settings omit one
         ->and($summary['conversions'])->toBe(1)
         ->and($summary['campaigns'])->toBe(1);
 });
+
+it('searches the attributed campaign for first and last touch models', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Attribution Search Property',
+        'slug' => 'attribution-search-property',
+        'write_key' => 'attribution-search-key',
+    ]);
+    $identity = SignalIdentity::query()->create([
+        'tracked_property_id' => $property->id,
+        'external_id' => 'attribution-search-identity',
+    ]);
+
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'signal_identity_id' => $identity->id,
+        'occurred_at' => CarbonImmutable::parse('2026-03-10 09:00:00'),
+        'event_name' => 'page_view',
+        'event_category' => 'page_view',
+        'campaign' => 'first-campaign',
+    ]);
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'signal_identity_id' => $identity->id,
+        'occurred_at' => CarbonImmutable::parse('2026-03-10 09:20:00'),
+        'event_name' => 'page_view',
+        'event_category' => 'page_view',
+        'campaign' => 'last-campaign',
+    ]);
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'signal_identity_id' => $identity->id,
+        'occurred_at' => CarbonImmutable::parse('2026-03-10 09:30:00'),
+        'event_name' => 'conversion.completed',
+        'event_category' => 'conversion',
+        'source' => 'community',
+        'medium' => 'referral',
+    ]);
+
+    $service = app(AcquisitionReportService::class);
+
+    $firstTouch = $service->applyCampaignSearch(
+        $service->getTableQuery($property->id, '2026-03-10', '2026-03-10', attributionModel: SavedSignalReportDefinition::ATTRIBUTION_MODEL_FIRST_TOUCH),
+        'first-campaign',
+        SavedSignalReportDefinition::ATTRIBUTION_MODEL_FIRST_TOUCH,
+    )->get();
+
+    $lastTouch = $service->applyCampaignSearch(
+        $service->getTableQuery($property->id, '2026-03-10', '2026-03-10', attributionModel: SavedSignalReportDefinition::ATTRIBUTION_MODEL_LAST_TOUCH),
+        'last-campaign',
+        SavedSignalReportDefinition::ATTRIBUTION_MODEL_LAST_TOUCH,
+    )->get();
+
+    expect($firstTouch)->toHaveCount(1)
+        ->and($firstTouch->first()?->acquisition_campaign)->toBe('first-campaign')
+        ->and($lastTouch)->toHaveCount(1)
+        ->and($lastTouch->first()?->acquisition_campaign)->toBe('last-campaign');
+});

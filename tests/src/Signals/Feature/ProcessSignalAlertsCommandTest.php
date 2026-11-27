@@ -298,6 +298,8 @@ it('dispatches signal alerts to named webhook destinations', function (): void {
         'write_key' => 'webhook-alert-property-key',
     ]);
 
+    config()->set('signals.features.alerts.allow_inline_destinations', true);
+
     SignalAlertRule::query()->create([
         'tracked_property_id' => $property->id,
         'name' => 'Webhook Alert',
@@ -309,7 +311,10 @@ it('dispatches signal alerts to named webhook destinations', function (): void {
         'cooldown_minutes' => 30,
         'severity' => 'warning',
         'channels' => ['database', 'webhook'],
-        'destination_keys' => ['ops'],
+        'destination_keys' => [],
+        'inline_destinations' => [
+            ['channel' => 'webhook', 'destination' => ['url' => 'https://alerts.example.test/hook']],
+        ],
     ]);
 
     SignalEvent::query()->create([

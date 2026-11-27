@@ -9,5 +9,5 @@ use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 interface AlertEvaluator
 {
     /** @return array{matched: bool, metric_value: float, context: array<string, mixed>} */
-    public function evaluate(SignalAlertRule $rule): array;
+    public function evaluate(SignalAlertRule $rule, ?string $revenueCurrency = null): array;
 }

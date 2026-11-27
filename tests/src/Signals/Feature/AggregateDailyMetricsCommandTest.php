@@ -15,7 +15,6 @@ use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Carbon;
 
 uses(SignalsTestCase::class);
 
@@ -197,6 +196,27 @@ it('rejects daily aggregation of a property outside the current owner', function
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
     expect(fn () => app(AggregateDailyMetrics::class)
-        ->aggregateForDate(Carbon::parse('2026-03-10'), $property->id))
+        ->aggregateForDate(CarbonImmutable::parse('2026-03-10'), $property->id))
         ->toThrow(ModelNotFoundException::class);
+});
+
+it('keeps repeated daily rollups idempotent for the same property and date', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Idempotent rollup property',
+        'slug' => 'idempotent-rollup-property',
+        'write_key' => 'idempotent-rollup-key',
+    ]);
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::parse('2026-03-11 08:00:00'),
+        'event_name' => 'page_view',
+        'event_category' => 'page_view',
+    ]);
+
+    $first = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::parse('2026-03-11'), $property->id);
+    $second = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::parse('2026-03-11'), $property->id);
+
+    expect($second->id)->toBe($first->id)
+        ->and($second->events)->toBe(1)
+        ->and(SignalDailyMetric::query()->where('tracked_property_id', $property->id)->where('date', '2026-03-11')->count())->toBe(1);
 });

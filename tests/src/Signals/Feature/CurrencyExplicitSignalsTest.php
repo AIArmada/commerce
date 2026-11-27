@@ -23,7 +23,6 @@ use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -199,7 +198,7 @@ it('stamps daily metrics with the property currency and rejects direct mismatche
         'revenue_minor' => 4000,
     ], trusted: true);
 
-    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::parse('2026-10-17'), $property->id);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::parse('2026-10-17'), $property->id);
 
     expect($metric->currency)->toBe('MYR')
         ->and($metric->revenue_minor)->toBe(4000);
@@ -245,14 +244,14 @@ it('keeps single and batch rollups equivalent and ignores legacy foreign-currenc
     ]);
 
     $aggregator = app(AggregateDailyMetrics::class);
-    $single = $aggregator->aggregateForDate(Carbon::parse('2026-10-17'), $property->id);
+    $single = $aggregator->aggregateForDate(CarbonImmutable::parse('2026-10-17'), $property->id);
 
     expect($single->revenue_minor)->toBe(15000)
         ->and($single->currency)->toBe('MYR')
         ->and($single->events)->toBe(3);
 
     SignalDailyMetric::query()->where('tracked_property_id', $property->id)->delete();
-    $aggregator->aggregateRange(Carbon::parse('2026-10-17'), Carbon::parse('2026-10-17'));
+    $aggregator->aggregateRange(CarbonImmutable::parse('2026-10-17'), CarbonImmutable::parse('2026-10-17'));
 
     $batch = SignalDailyMetric::query()
         ->where('tracked_property_id', $property->id)

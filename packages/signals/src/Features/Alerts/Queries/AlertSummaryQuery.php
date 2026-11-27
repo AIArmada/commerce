@@ -17,10 +17,10 @@ final readonly class AlertSummaryQuery implements AlertSummary
         $logs = SignalAlertLog::query()->whereNull('read_at');
 
         if (SignalAlertRule::ownerScopingEnabled()) {
-            $owner = OwnerContext::resolve();
-            OwnerContext::assertResolvedOrExplicitGlobal($owner, 'Alert summary requires owner context.');
-            $rules->forOwner($owner, includeGlobal: false);
-            $logs->forOwner($owner, includeGlobal: false);
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                OwnerContext::resolve(),
+                'Alert summary requires owner context.',
+            );
         }
 
         if ($trackedPropertyId !== null) {

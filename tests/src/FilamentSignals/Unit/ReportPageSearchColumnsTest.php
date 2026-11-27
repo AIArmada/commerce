@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 
 uses(FilamentSignalsTestCase::class);
 
-it('searches acquisition campaign by the underlying campaign column', function (): void {
+it('searches acquisition campaign through the attributed campaign expression', function (): void {
     config()->set('filament-signals.resources.labels.outcomes', 'Registrations');
     config()->set('filament-signals.resources.labels.monetary_value', 'Donations');
 
@@ -24,7 +24,7 @@ it('searches acquisition campaign by the underlying campaign column', function (
     $monetaryValueColumn = $table->getColumn('revenue_minor');
 
     expect($column)->not()->toBeNull()
-        ->and($column?->getSearchColumns(new SignalEvent))->toBe(['campaign'])
+        ->and($column?->isSearchable())->toBeTrue()
         ->and($outcomesColumn?->getLabel())->toBe('Registrations')
         ->and($monetaryValueColumn?->getLabel())->toBe('Donations');
 });
@@ -53,7 +53,8 @@ it('uses the configured monetary value label on live activity tables', function 
     $column = $table->getColumn('revenue_minor');
 
     expect($column)->not()->toBeNull()
-        ->and($column?->getLabel())->toBe('Donations');
+        ->and($column?->getLabel())->toBe('Donations')
+        ->and($table->getColumn('session.country_code'))->not()->toBeNull();
 });
 
 it('searches journey breakdowns by the underlying session columns', function (): void {

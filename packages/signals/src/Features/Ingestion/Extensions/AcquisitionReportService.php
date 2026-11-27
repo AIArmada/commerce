@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
@@ -56,6 +58,22 @@ final class AcquisitionReportService implements ReportInterface
                 ->count(DB::raw($campaignExpression)),
             ...SignalReportRevenue::shape($context['tracked_property_id'], SignalReportRevenue::byCurrency(clone $query)),
         ];
+    }
+
+    /**
+     * @param  Builder<SignalEvent>  $query
+     * @return Builder<SignalEvent>
+     */
+    public function applyCampaignSearch(Builder $query, string $search, ?string $attributionModel = null, ?string $savedReportId = null): Builder
+    {
+        $context = $this->resolveReportContext(null, null, null, null, $attributionModel, $savedReportId);
+        $expression = $this->dimensionExpression($query, 'campaign', $context['attribution_model'], $context['conversion_event_name']);
+        $operator = ConnectionDriver::name($query->getConnection()) === 'pgsql' ? 'ILIKE' : 'LIKE';
+
+        return $query->whereRaw(
+            "({$expression}) {$operator} ? " . LikeSearch::escapeClause($query),
+            [LikeSearch::contains($search)],
+        );
     }
 
     /**

@@ -176,9 +176,22 @@ final class SignalAlertRuleForm
                         ->label('Destination keys')
                         ->placeholder('ops'),
 
-                    Forms\Components\KeyValue::make('inline_destinations')
+                    Forms\Components\Repeater::make('inline_destinations')
                         ->label('Inline destinations')
-                        ->helperText('Only used when signals.features.alerts.allow_inline_destinations is enabled.')
+                        ->schema([
+                            Forms\Components\Select::make('channel')
+                                ->options([
+                                    'email' => 'Email',
+                                    'webhook' => 'Webhook',
+                                    'slack' => 'Slack',
+                                ])
+                                ->required(),
+                            Forms\Components\KeyValue::make('destination')
+                                ->label('Destination fields')
+                                ->required(),
+                        ])
+                        ->addActionLabel('Add inline destination')
+                        ->visible(fn (): bool => (bool) config('signals.features.alerts.allow_inline_destinations', false))
                         ->columnSpanFull(),
                 ])
                 ->columns(2),

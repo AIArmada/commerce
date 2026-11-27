@@ -137,6 +137,8 @@ final class InteractionRuleScanner
         /** @var array<string, array{name: string, selector: string|null, page_pattern: string|null, settings: array<string, mixed>|null, confidence: int, confidence_note: string}> $candidatesByKey */
         $candidatesByKey = [];
         $scannedFiles = 0;
+        $visitedFiles = [];
+        $candidateLimit = min(self::MAX_SCAN_FILES, max(1, $maxCandidates));
 
         foreach ($paths as $path) {
             if (! is_string($path) || $path === '' || ! $this->filesystem->isDirectory($path)) {
@@ -150,6 +152,13 @@ final class InteractionRuleScanner
                     break 2;
                 }
 
+                $realPath = $file->getRealPath();
+
+                if ($realPath === false || isset($visitedFiles[$realPath])) {
+                    continue;
+                }
+
+                $visitedFiles[$realPath] = true;
                 $scannedFiles++;
 
                 if ($file->isLink() || ! $file->isFile()) {
@@ -169,7 +178,7 @@ final class InteractionRuleScanner
                 $relativePath = str_replace(base_path() . DIRECTORY_SEPARATOR, '', $file->getPathname());
                 $source = file_get_contents($file->getPathname(), false, null, 0, self::MAX_SCAN_FILE_BYTES + 1);
 
-                if ($source === false || mb_strlen($source) > self::MAX_SCAN_FILE_BYTES) {
+                if ($source === false || mb_strlen($source, '8bit') > self::MAX_SCAN_FILE_BYTES) {
                     continue;
                 }
 
@@ -196,7 +205,7 @@ final class InteractionRuleScanner
 
                     $candidatesByKey[$key] = $candidate;
 
-                    if (count($candidatesByKey) >= max(1, $maxCandidates)) {
+                    if (count($candidatesByKey) >= $candidateLimit) {
                         break 3;
                     }
                 }
@@ -211,23 +220,29 @@ final class InteractionRuleScanner
      */
     public function defaultSourcePaths(): array
     {
-        $paths = [
+        $paths = array_values(array_filter([
             base_path('resources/views'),
             base_path('app/Livewire'),
             base_path('app/Livewire/Volt'),
-        ];
+        ], static fn (string $path): bool => $path !== ''));
+
+        usort($paths, static fn (string $left, string $right): int => mb_strlen($left) <=> mb_strlen($right));
 
         $unique = [];
 
         foreach ($paths as $path) {
-            if ($path === '') {
-                continue;
+            $normalized = mb_rtrim($path, DIRECTORY_SEPARATOR);
+
+            foreach ($unique as $existing) {
+                if ($normalized === $existing || str_starts_with($normalized, $existing . DIRECTORY_SEPARATOR)) {
+                    continue 2;
+                }
             }
 
-            $unique[$path] = $path;
+            $unique[] = $normalized;
         }
 
-        return array_values($unique);
+        return $unique;
     }
 
     /**

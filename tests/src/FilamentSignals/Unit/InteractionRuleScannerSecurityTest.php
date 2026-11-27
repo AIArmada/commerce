@@ -40,3 +40,20 @@ it('does not follow redirects while scanning public pages', function (): void {
 
     Http::assertSentCount(1);
 });
+
+it('rejects markup that exceeds the delivered byte cap', function (): void {
+    Http::fake([
+        'https://public.example/page' => Http::response(
+            str_repeat('a', PinnedPageMarkupFetcher::MAX_HTML_BYTES + 1),
+            200,
+            ['Content-Type' => 'text/html'],
+        ),
+    ]);
+
+    $scanner = new InteractionRuleScanner(
+        new Filesystem,
+        new PinnedPageMarkupFetcher(new PublicHttpUrlGuard(static fn (string $host): array => $host === 'public.example' ? ['93.184.216.34'] : []), new PinnedHttpClient),
+    );
+
+    expect($scanner->scan('https://public.example/page', 'click'))->toBe([]);
+});

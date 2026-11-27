@@ -20,6 +20,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Throwable;
 
 final class PageViewsReport extends ReportPage implements HasTable
 {
@@ -49,7 +50,12 @@ final class PageViewsReport extends ReportPage implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(app(PageViewReportService::class)->getTableQuery())
+            ->query(app(PageViewReportService::class)->getTableQuery(
+                $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
+                $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
+                $this->parseFilterDate($this->dateFrom),
+                $this->parseFilterDate($this->dateTo),
+            ))
             ->defaultSort('views', 'desc')
             ->defaultKeySort(false)
             ->columns([
@@ -99,25 +105,34 @@ final class PageViewsReport extends ReportPage implements HasTable
                         DatePicker::make('until'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
+                        $from = $this->parseFilterDate($data['from'] ?? null);
+                        $until = $this->parseFilterDate($data['until'] ?? null);
+
+                        if ($from !== null && $until !== null && $from->isAfter($until)) {
+                            [$from, $until] = [$until, $from];
+                        }
+
                         return $query
                             ->when(
-                                filled($data['from'] ?? null),
-                                fn (Builder $query): Builder => $query->whereDate('occurred_at', '>=', (string) $data['from'])
+                                $from instanceof CarbonImmutable,
+                                fn (Builder $query): Builder => $query->where('occurred_at', '>=', $from->startOfDay())
                             )
                             ->when(
-                                filled($data['until'] ?? null),
-                                fn (Builder $query): Builder => $query->whereDate('occurred_at', '<=', (string) $data['until'])
+                                $until instanceof CarbonImmutable,
+                                fn (Builder $query): Builder => $query->where('occurred_at', '<', $until->startOfDay()->addDay())
                             );
                     })
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
+                        $from = $this->parseFilterDate($data['from'] ?? null);
+                        $until = $this->parseFilterDate($data['until'] ?? null);
 
-                        if (filled($data['from'] ?? null)) {
-                            $indicators[] = 'From ' . CarbonImmutable::parse((string) $data['from'])->toFormattedDateString();
+                        if ($from instanceof CarbonImmutable) {
+                            $indicators[] = 'From ' . $from->toFormattedDateString();
                         }
 
-                        if (filled($data['until'] ?? null)) {
-                            $indicators[] = 'Until ' . CarbonImmutable::parse((string) $data['until'])->toFormattedDateString();
+                        if ($until instanceof CarbonImmutable) {
+                            $indicators[] = 'Until ' . $until->toFormattedDateString();
                         }
 
                         return $indicators;
@@ -132,5 +147,20 @@ final class PageViewsReport extends ReportPage implements HasTable
             ])
             ->emptyStateHeading('No page views recorded yet')
             ->emptyStateDescription('Pageview data will appear here once the tracker starts sending events.');
+    }
+
+    private function parseFilterDate(mixed $value): ?CarbonImmutable
+    {
+        if (! is_string($value) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return null;
+        }
+
+        try {
+            $date = CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $date->format('Y-m-d') === $value ? $date : null;
     }
 }

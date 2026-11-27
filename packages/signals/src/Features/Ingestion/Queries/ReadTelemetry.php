@@ -17,7 +17,7 @@ final readonly class ReadTelemetry implements TelemetryRead
 {
     public function propertyOptions(): array
     {
-        return TrackedProperty::query()->orderBy('name')->pluck('name', 'id')->all();
+        return TrackedProperty::query()->forOwner()->orderBy('name')->pluck('name', 'id')->all();
     }
 
     public function searchPropertyOptions(string $search): array

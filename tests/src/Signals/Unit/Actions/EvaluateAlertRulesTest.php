@@ -131,3 +131,38 @@ it('respects dry run mode', function (): void {
         ->and($result)->toHaveKey('dispatched', 0)
         ->and(SignalAlertLog::query()->count())->toBe(0);
 });
+
+it('limits explicit global owner runs to global rules', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Tenant Rule Property',
+        'slug' => 'tenant-rule-property',
+        'write_key' => 'tenant-rule-key',
+    ]);
+
+    SignalAlertRule::query()->create([
+        'tracked_property_id' => $property->id,
+        'name' => 'Tenant Rule',
+        'slug' => 'explicit-global-tenant-rule',
+        'metric_key' => 'events',
+        'operator' => '>=',
+        'threshold' => 1,
+        'timeframe_minutes' => 60,
+        'cooldown_minutes' => 30,
+        'severity' => 'warning',
+    ]);
+
+    OwnerContext::withOwner(null, fn (): SignalAlertRule => SignalAlertRule::query()->create([
+        'name' => 'Global Rule',
+        'slug' => 'explicit-global-global-rule',
+        'metric_key' => 'events',
+        'operator' => '>=',
+        'threshold' => 1,
+        'timeframe_minutes' => 60,
+        'cooldown_minutes' => 30,
+        'severity' => 'warning',
+    ]));
+
+    $result = OwnerContext::withOwner(null, fn (): array => app(EvaluateAlertRules::class)->forOwners(null, true));
+
+    expect($result)->toMatchArray(['processed' => 1, 'skipped' => 0, 'dispatched' => 0]);
+});

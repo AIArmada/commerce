@@ -351,7 +351,7 @@ function enableThrowingSyncAlertEvaluation(): void
 
     app()->instance(AlertEvaluator::class, new class implements AlertEvaluator
     {
-        public function evaluate(SignalAlertRule $rule): array
+        public function evaluate(SignalAlertRule $rule, ?string $revenueCurrency = null): array
         {
             throw new RuntimeException('alert evaluator boom');
         }

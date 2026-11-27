@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
@@ -58,12 +58,14 @@ final class PendingSignalAlertsWidget extends BaseWidget
                 Actions\Action::make('markRead')
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
+                    ->authorize('update')
                     ->action(fn (SignalAlertLog $record) => app(AlertReadState::class)->set([$record->id], true)),
             ])
             ->bulkActions([
                 Actions\BulkAction::make('markAllRead')
                     ->label('Mark as Read')
                     ->icon('heroicon-o-check')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('signal-alert-log.update'))
                     ->action(fn (Collection $records) => app(AlertReadState::class)->set($records->modelKeys(), true)),
             ])
             ->emptyStateHeading('No pending alerts')
@@ -77,20 +79,9 @@ final class PendingSignalAlertsWidget extends BaseWidget
      */
     protected function getPendingAlertsQuery(): Builder
     {
-        $queryFactory = function (): Builder {
-            return SignalAlertLogResource::getEloquentQuery()
-                ->whereNull('read_at')
-                ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
-                ->orderByDesc('created_at');
-        };
-
-        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
-            return $queryFactory();
-        }
-
-        /** @var Builder<SignalAlertLog> $query */
-        $query = OwnerContext::withOwner(null, $queryFactory);
-
-        return $query;
+        return SignalAlertLogResource::getEloquentQuery()
+            ->whereNull('read_at')
+            ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
+            ->orderByDesc('created_at');
     }
 }

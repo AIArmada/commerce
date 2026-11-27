@@ -12,6 +12,7 @@ use AIArmada\Signals\Features\Ingestion\Actions\Recorders\OrderSignalRecorder;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -140,7 +141,7 @@ it('does not recognize abandoned checkout value as revenue', function (): void {
         ->and($event->revenue_minor)->toBe(0)
         ->and($event->properties['total_minor'] ?? null)->toBe(10000);
 
-    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::now(), $property->id);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::now(), $property->id);
 
     expect($metric->revenue_minor)->toBe(0);
 });
@@ -162,7 +163,7 @@ it('recognizes the paid amount once across started, completed, and paid', functi
         ->and($paid->properties['order_total_minor'] ?? null)->toBe(24900)
         ->and($paid->properties['paid_amount_minor'] ?? null)->toBe(24900);
 
-    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::now(), $property->id);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::now(), $property->id);
 
     expect($metric->revenue_minor)->toBe(24900)
         ->and(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(3);
@@ -185,7 +186,7 @@ it('totals two partial payments at actual amounts while retries deduplicate', fu
         ->and($first->revenue_minor)->toBe(10000)
         ->and($second->revenue_minor)->toBe(14900);
 
-    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::now(), $property->id);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::now(), $property->id);
 
     expect($metric->revenue_minor)->toBe(34900)
         ->and(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(3);
@@ -205,7 +206,7 @@ it('records refunds with zero recognized revenue and a refund amount property', 
         ->and($refund->properties['refund_id'] ?? null)->toBe('refund-revenue-1')
         ->and($refund->properties['order_total_minor'] ?? null)->toBe(24900);
 
-    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(Carbon::now(), $property->id);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::now(), $property->id);
 
     expect($metric->revenue_minor)->toBe(24900);
 });

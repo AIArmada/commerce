@@ -125,7 +125,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
                     ->label('IP Address')
                     ->visible((bool) config('signals.features.ip_tracking.enabled', true))
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('session.country')
+                TextColumn::make('session.country_code')
                     ->label('Country')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('session.country_source')

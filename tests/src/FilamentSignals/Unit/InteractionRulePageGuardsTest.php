@@ -113,6 +113,49 @@ it('derives a fresh slug when the base slug is taken', function (): void {
         ->and(SignalInteractionRule::query()->where('slug', 'track-signup-2')->exists())->toBeTrue();
 });
 
+it('allocates scanned slugs in one pass and skips overlong selectors', function (): void {
+    $owner = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function (): void {
+        $property = TrackedProperty::query()->create([
+            'name' => 'Scanned Property',
+            'slug' => 'scanned-property',
+            'write_key' => 'scanned-property-key',
+        ]);
+
+        $candidates = [];
+
+        for ($index = 0; $index < 20; $index++) {
+            $candidates[] = [
+                'name' => 'Repeated Call To Action',
+                'selector' => '#repeat-' . $index,
+            ];
+        }
+
+        $candidates[] = [
+            'name' => 'Overlong Selector',
+            'selector' => '#' . str_repeat('a', 255),
+        ];
+
+        $created = app(InteractionRuleAdministration::class)->createScanned(
+            (string) $property->getKey(),
+            'click',
+            'cta.click',
+            null,
+            false,
+            $candidates,
+        );
+
+        $slugs = SignalInteractionRule::query()->orderBy('slug')->pluck('slug');
+
+        expect($created)->toBe(20)
+            ->and($slugs)->toHaveCount(20)
+            ->and($slugs->unique())->toHaveCount(20)
+            ->and($slugs->contains('repeated-call-to-action-20'))->toBeTrue()
+            ->and(SignalInteractionRule::query()->where('name', 'Overlong Selector')->exists())->toBeFalse();
+    });
+});
+
 it('isolates scan previews by authenticated operator and owner', function (): void {
     $operatorA = User::factory()->create();
     $operatorB = User::factory()->create();

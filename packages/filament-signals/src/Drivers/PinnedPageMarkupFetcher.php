@@ -19,17 +19,17 @@ final readonly class PinnedPageMarkupFetcher implements PageMarkupFetcher
 
     public function fetch(string $pageUrl): ?string
     {
-        $target = $this->urlGuard->validate($pageUrl);
-        $response = $this->httpClient->send(
-            method: 'GET',
-            target: $target,
-            options: defined('CURLOPT_MAXFILESIZE') ? ['curl' => [CURLOPT_MAXFILESIZE => self::MAX_HTML_BYTES]] : [],
+        $response = $this->httpClient->downloadToLimit(
+            guard: $this->urlGuard,
+            url: $pageUrl,
+            maxBytes: self::MAX_HTML_BYTES,
             headers: ['Accept' => 'text/html'],
+            maxRedirects: 0,
             connectTimeout: 3,
             timeout: 15,
         );
 
-        if (! $response->successful()) {
+        if ($response === null || ! $response->successful()) {
             return null;
         }
 
@@ -39,8 +39,6 @@ final readonly class PinnedPageMarkupFetcher implements PageMarkupFetcher
             return null;
         }
 
-        $body = $response->body();
-
-        return mb_strlen($body) <= self::MAX_HTML_BYTES ? $body : null;
+        return $this->httpClient->readBoundedBody($response, self::MAX_HTML_BYTES);
     }
 }

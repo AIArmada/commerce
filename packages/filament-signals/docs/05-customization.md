@@ -60,6 +60,8 @@ The following policies gate resource access:
 | Policy | Model |
 |--------|-------|
 | `SignalAlertRulePolicy` | Signal alert rules |
+| `SignalAlertLogPolicy` | Signal alert logs |
+| `SavedSignalReportPolicy` | Saved signal reports |
 | `SignalGoalPolicy` | Signal goals |
 | `SignalInteractionRulePolicy` | Signal interaction rules |
 | `SignalSegmentPolicy` | Signal segments |

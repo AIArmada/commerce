@@ -8,10 +8,13 @@ use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\DispatchSignalAlertDeliver
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Support\AlertDestinationPolicy;
 use Carbon\CarbonImmutable;
 
 final readonly class SignalAlertDispatcher
 {
+    public function __construct(private AlertDestinationPolicy $destinations) {}
+
     /**
      * @param  array<string, mixed>  $context
      */
@@ -166,18 +169,25 @@ final readonly class SignalAlertDispatcher
         $keys = is_array($rule->destination_keys) ? $rule->destination_keys : [];
         $destinations = [];
 
-        foreach ($keys as $key) {
-            if (is_string($key) && is_array($configured[$key] ?? null)) {
-                $destinations[] = ['key' => $key, 'destination' => $configured[$key]];
+        if ($this->destinations->configuredDestinationsAllowedForRule($rule)) {
+            foreach ($keys as $key) {
+                if (is_string($key) && is_array($configured[$key] ?? null)) {
+                    $destinations[] = ['key' => $key, 'destination' => $configured[$key]];
+                }
             }
         }
 
         if ((bool) config('signals.features.alerts.allow_inline_destinations', false)) {
-            $inline = is_array($rule->inline_destinations) ? ($rule->inline_destinations[$channel] ?? []) : [];
-            $inline = is_array($inline) ? (array_is_list($inline) ? $inline : [$inline]) : [];
+            $inline = is_array($rule->inline_destinations) ? $rule->inline_destinations : [];
 
-            foreach ($inline as $destination) {
-                if (! is_array($destination)) {
+            foreach ($inline as $entry) {
+                if (! is_array($entry) || ($entry['channel'] ?? null) !== $channel) {
+                    continue;
+                }
+
+                $destination = $entry['destination'] ?? null;
+
+                if (! is_array($destination) || $destination === []) {
                     continue;
                 }
 

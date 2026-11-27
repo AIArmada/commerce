@@ -7,6 +7,7 @@ namespace AIArmada\Signals\Features\Ingestion\Extensions;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -27,8 +28,12 @@ final class PageViewReportService implements ReportInterface
     /**
      * @return Builder<SignalEvent>
      */
-    public function getTableQuery(?string $signalSegmentId = null): Builder
-    {
+    public function getTableQuery(
+        ?string $signalSegmentId = null,
+        ?string $trackedPropertyId = null,
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $until = null,
+    ): Builder {
         return $this->segmentReportFilter->applyToEventQuery(SignalEvent::query(), $signalSegmentId)
             ->select('tracked_property_id')
             ->selectRaw('MIN(CAST(id AS text)) as id')
@@ -39,6 +44,18 @@ final class PageViewReportService implements ReportInterface
             ->selectRaw('MIN(occurred_at) as first_seen_at')
             ->selectRaw('MAX(occurred_at) as last_seen_at')
             ->where('event_category', 'page_view')
+            ->when(
+                filled($trackedPropertyId),
+                fn (Builder $query): Builder => $query->where('tracked_property_id', $trackedPropertyId)
+            )
+            ->when(
+                $from instanceof CarbonImmutable,
+                fn (Builder $query): Builder => $query->where('occurred_at', '>=', $from->startOfDay())
+            )
+            ->when(
+                $until instanceof CarbonImmutable,
+                fn (Builder $query): Builder => $query->where('occurred_at', '<', $until->startOfDay()->addDay())
+            )
             ->with('trackedProperty')
             ->groupBy('tracked_property_id')
             ->groupBy('path');

@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Alerts\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
 use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
 
 final readonly class EvaluateAlertRules
 {
     public function __construct(
         private AlertEvaluator $evaluator,
         private SignalAlertDispatcher $dispatcher,
+        private TelemetryRead $telemetry,
     ) {}
 
     /**
@@ -36,7 +39,8 @@ final readonly class EvaluateAlertRules
                         });
                     },
                 )
-                ->orderByDesc('priority'),
+                ->orderByDesc('priority')
+                ->orderBy('id'),
             $dryRun,
         );
     }
@@ -44,6 +48,10 @@ final readonly class EvaluateAlertRules
     /** @return array{processed: int, skipped: int, dispatched: int} */
     public function forOwners(?string $ruleId, bool $dryRun): array
     {
+        if (OwnerContext::isExplicitGlobal()) {
+            return $this->handle(dryRun: $dryRun, ruleId: $ruleId);
+        }
+
         $runner = new OwnerBatchRunner(SignalAlertRule::class, ['enabled' => 'signals.owner.enabled']);
 
         return $runner->run(fn (): array => $this->handle(dryRun: $dryRun, ruleId: $ruleId))
@@ -51,6 +59,7 @@ final readonly class EvaluateAlertRules
     }
 
     /**
+     * @param  Builder<SignalAlertRule>  $query
      * @return array{processed: int, skipped: int, dispatched: int}
      */
     private function processRules(Builder $query, bool $dryRun): array
@@ -59,31 +68,47 @@ final readonly class EvaluateAlertRules
         $skipped = 0;
         $dispatched = 0;
 
-        $query->each(function (Model $model) use ($dryRun, &$processed, &$skipped, &$dispatched): void {
-            $rule = $model instanceof SignalAlertRule ? $model : null;
+        $query->chunk(100, function (Collection $rules) use ($dryRun, &$processed, &$skipped, &$dispatched): void {
+            $currencyIds = $rules
+                ->filter(static fn (SignalAlertRule $rule): bool => $rule->metric_key === 'revenue_minor' && filled($rule->tracked_property_id))
+                ->map(static fn (SignalAlertRule $rule): string => (string) $rule->tracked_property_id)
+                ->unique()
+                ->values()
+                ->all();
+            $currencies = $this->telemetry->propertyDetails($currencyIds);
 
-            if ($rule === null) {
-                return;
-            }
-
-            if ($rule->isInCooldown()) {
-                $skipped++;
-
-                return;
-            }
-
-            $result = $this->evaluator->evaluate($rule);
-            $processed++;
-
-            if (! $result['matched']) {
-                return;
-            }
-
-            if (! $dryRun) {
-                if ($this->dispatcher->dispatch($rule, $result['metric_value'], $result['context']) !== null) {
-                    $dispatched++;
-                } else {
+            foreach ($rules as $rule) {
+                if ($rule->isInCooldown()) {
                     $skipped++;
+
+                    continue;
+                }
+
+                $revenueCurrency = null;
+
+                if ($rule->metric_key === 'revenue_minor' && filled($rule->tracked_property_id)) {
+                    $revenueCurrency = $currencies[(string) $rule->tracked_property_id]->currency ?? null;
+
+                    if ($revenueCurrency === null) {
+                        $skipped++;
+
+                        continue;
+                    }
+                }
+
+                $result = $this->evaluator->evaluate($rule, $revenueCurrency);
+                $processed++;
+
+                if (! $result['matched']) {
+                    continue;
+                }
+
+                if (! $dryRun) {
+                    if ($this->dispatcher->dispatch($rule, $result['metric_value'], $result['context']) !== null) {
+                        $dispatched++;
+                    } else {
+                        $skipped++;
+                    }
                 }
             }
         });

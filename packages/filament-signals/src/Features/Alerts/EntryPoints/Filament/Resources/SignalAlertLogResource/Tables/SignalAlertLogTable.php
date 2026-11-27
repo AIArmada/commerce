@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource\Tables;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentSignals\Features\Alerts\EntryPoints\Filament\Resources\SignalAlertLogResource;
+use AIArmada\Signals\Features\Alerts\Api\AlertLogAdministration;
 use AIArmada\Signals\Features\Alerts\Api\AlertReadState;
 use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
 use Filament\Actions\Action;
@@ -13,6 +16,9 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 
 final class SignalAlertLogTable
 {
@@ -75,17 +81,32 @@ final class SignalAlertLogTable
                 Action::make('mark_read')
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
+                    ->authorize('update')
                     ->visible(fn (SignalAlertLog $record): bool => $record->read_at === null)
                     ->action(fn (SignalAlertLog $record) => app(AlertReadState::class)->set([$record->id], true)),
                 Action::make('mark_unread')
                     ->label('Mark Unread')
                     ->icon('heroicon-o-arrow-uturn-left')
+                    ->authorize('update')
                     ->visible(fn (SignalAlertLog $record): bool => $record->read_at !== null)
                     ->action(fn (SignalAlertLog $record) => app(AlertReadState::class)->set([$record->id], false)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('signal-alert-log.delete'))
+                        ->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                            foreach ($records as $record) {
+                                try {
+                                    if (! SignalAlertLogResource::canDelete($record) || ! app(AlertLogAdministration::class)->delete((string) $record->getKey())) {
+                                        $action->reportBulkProcessingFailure();
+                                    }
+                                } catch (Throwable $exception) {
+                                    $action->reportBulkProcessingFailure();
+                                    report($exception);
+                                }
+                            }
+                        }),
                 ]),
             ]);
     }

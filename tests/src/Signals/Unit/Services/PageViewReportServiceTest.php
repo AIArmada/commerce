@@ -136,3 +136,30 @@ it('returns aggregated page views for the current owner only', function (): void
         ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Property']);
 });
+
+it('bounds the page view table to the requested day range', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Bounded Page View Property',
+        'slug' => 'bounded-page-view-property',
+        'write_key' => 'bounded-page-view-key',
+    ]);
+
+    foreach (['2026-01-01 10:00:00', '2026-01-02 10:00:00'] as $occurredAt) {
+        SignalEvent::query()->create([
+            'tracked_property_id' => $property->id,
+            'occurred_at' => CarbonImmutable::parse($occurredAt),
+            'event_name' => 'page_view',
+            'event_category' => 'page_view',
+            'path' => '/pricing',
+            'url' => 'https://bounded.test/pricing',
+        ]);
+    }
+
+    $row = app(PageViewReportService::class)
+        ->getTableQuery(from: CarbonImmutable::parse('2026-01-01'), until: CarbonImmutable::parse('2026-01-01'))
+        ->first();
+
+    expect($row)->not->toBeNull()
+        ->and((int) $row?->views)->toBe(1)
+        ->and($row?->last_seen_at)->toContain('2026-01-01');
+});

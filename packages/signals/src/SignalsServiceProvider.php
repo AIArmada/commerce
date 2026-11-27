@@ -85,10 +85,11 @@ final class SignalsServiceProvider extends PackageServiceProvider
     {
         RateLimiter::for('signals-collect', static function (Request $request): array {
             $limit = max(1, (int) config('signals.ingestion.browser.rate_limit_per_minute', 120));
+            $propertyLimit = max(1, (int) config('signals.ingestion.browser.property_rate_limit_per_minute', 120));
 
             return [
                 Limit::perMinute($limit)->by('signals:collect:ip:' . ($request->ip() ?? 'unknown')),
-                Limit::perMinute($limit)->by('signals:collect:write-key:' . hash('sha256', (string) $request->input('write_key', ''))),
+                Limit::perMinute($propertyLimit)->by('signals:collect:write-key:' . hash('sha256', (string) $request->input('write_key', ''))),
             ];
         });
     }

@@ -247,14 +247,20 @@ final readonly class CalculateEventMetric implements EventMetricQuery
 
     private function compareProperty(mixed $actual, string $operator, mixed $expected): bool
     {
+        if ($operator === 'in') {
+            return is_array($expected) && in_array($actual, $expected, true);
+        }
+
+        if ($operator === 'contains') {
+            return is_string($actual) && is_string($expected) && str_contains($actual, $expected);
+        }
+
         if (is_numeric($actual) && is_numeric($expected)) {
             return $this->compare((float) $actual, $operator, (float) $expected);
         }
 
         return match ($operator) {
             '!=', '<>', 'not_eq' => $actual !== $expected,
-            'contains' => is_string($actual) && is_string($expected) && str_contains($actual, $expected),
-            'in' => is_array($expected) && in_array($actual, $expected, true),
             default => $actual === $expected,
         };
     }
@@ -266,7 +272,7 @@ final readonly class CalculateEventMetric implements EventMetricQuery
             '>=' , 'gte' => $actual >= $expected,
             '<', 'lt' => $actual < $expected,
             '<=', 'lte' => $actual <= $expected,
-            '!=', '<>' => $actual !== $expected,
+            '!=', '<>', 'not_eq' => $actual !== $expected,
             '=', '==', 'eq' => $actual === $expected,
             default => $actual === $expected,
         };
