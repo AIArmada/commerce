@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Subscriptions\EntryPoints\Commands;
 
-use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\HasSubscriptionMatchContext;
-use AIArmada\Engagement\Contracts\Subscribable;
-use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
-use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
+use AIArmada\Engagement\Features\Subscriptions\Actions\MatchSubscriptionsAction;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use InvalidArgumentException;
 
 final class MatchSubscriptionsCommand extends Command
 {
@@ -23,70 +17,20 @@ final class MatchSubscriptionsCommand extends Command
 
     protected $description = 'Match subscriptions to a subject';
 
-    public function __construct(
-        private readonly ManageSubscriptionsAction $subscriptionManager,
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(MatchSubscriptionsAction $action): int
     {
         $trigger = $this->option('trigger');
 
-        if ($trigger === null) {
+        if (! is_string($trigger) || $trigger === '') {
             $this->error('The --trigger option is required.');
 
             return self::FAILURE;
         }
 
-        $subjectType = (string) $this->argument('subjectType');
-        $subjectId = (string) $this->argument('subjectId');
-        $modelClass = Relation::getMorphedModel($subjectType) ?? $subjectType;
-
-        if (! class_exists($modelClass) || ! is_a($modelClass, Model::class, true)) {
-            $this->error("Subject type [{$subjectType}] does not resolve to a model class.");
-
-            return self::FAILURE;
-        }
-
-        if (! is_a($modelClass, Subscribable::class, true)) {
-            $this->error("Subject type [{$subjectType}] must implement " . Subscribable::class . '.');
-
-            return self::FAILURE;
-        }
-
-        $found = false;
-        $runner = new OwnerBatchRunner(
-            Subscription::class,
-            [
-                'enabled' => 'engagement.owner.enabled',
-                'include_global' => 'engagement.owner.include_global',
-            ],
-        );
-
-        $processed = OwnerContext::withOwner(null, function () use ($runner, $modelClass, $subjectId, $trigger, &$found): int {
-            return (int) $runner->forEach(function () use ($modelClass, $subjectId, $trigger, &$found): int {
-                /** @var Model|null $model */
-                $model = $modelClass::query()->find($subjectId);
-
-                if (! $model instanceof Model) {
-                    return 0;
-                }
-
-                $found = true;
-                $context = $this->buildMatchContext($model);
-                $matches = 0;
-
-                foreach ($this->subscriptionManager->matchingSubscriptions($model, $trigger, $context) as $_subscription) {
-                    $matches++;
-                }
-
-                return $matches;
-            })->sum();
-        });
-
-        if (! $found) {
-            $this->error("Subject not found for type [{$subjectType}] with ID [{$subjectId}].");
+        try {
+            $processed = $action->execute((string) $this->argument('subjectType'), (string) $this->argument('subjectId'), $trigger);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
 
             return self::FAILURE;
         }
@@ -94,26 +38,5 @@ final class MatchSubscriptionsCommand extends Command
         $this->info("Processed {$processed} subscription matches for trigger: {$trigger}");
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Match context is a whitelist: subject identity plus whatever the
-     * subject explicitly opts in via HasSubscriptionMatchContext. Raw model
-     * attributes are never exposed to criteria matching.
-     *
-     * @return array<string, mixed>
-     */
-    private function buildMatchContext(Model $model): array
-    {
-        $context = [
-            'subject_type' => $model->getMorphClass(),
-            'subject_id' => (string) $model->getKey(),
-        ];
-
-        if ($model instanceof HasSubscriptionMatchContext) {
-            return array_merge($model->subscriptionMatchContext(), $context);
-        }
-
-        return $context;
     }
 }
