@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
+use AIArmada\Shipping\Features\Returns\States\RmaDraft;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;

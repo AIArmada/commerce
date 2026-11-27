@@ -144,6 +144,7 @@ class Shipment extends Model implements Auditable
         return $this->hasMany(ShipmentLabel::class);
     }
 
+    /** @return HasMany<ShipmentOperation, $this> */
     public function operations(): HasMany
     {
         return $this->hasMany(ShipmentOperation::class);

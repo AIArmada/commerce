@@ -30,7 +30,7 @@ final class ReconcileShipmentOperation
 
         // Tracking confirms existence, not cancellation. No normalized tracking
         // status establishes that a carrier accepted a cancellation.
-        if ($operation->operation_type !== 'create') {
+        if ($operation->getAttribute('operation_type') !== 'create') {
             return CarrierOperationResult::unknown('Carrier confirmation is required to reconcile this operation.');
         }
 

@@ -41,6 +41,7 @@ final class ShipmentOperation extends Model
         return config('shipping.database.tables.shipment_operations', 'shipment_operations');
     }
 
+    /** @return BelongsTo<Shipment, $this> */
     public function shipment(): BelongsTo
     {
         return $this->belongsTo(Shipment::class);

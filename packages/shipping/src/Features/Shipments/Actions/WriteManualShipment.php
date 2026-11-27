@@ -6,7 +6,7 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Shipping\Events\ShipmentCreated;
+use AIArmada\Shipping\Features\Shipments\Events\ShipmentCreated;
 use AIArmada\Shipping\Features\Shipments\Api\ManageManualShipment;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Draft;
