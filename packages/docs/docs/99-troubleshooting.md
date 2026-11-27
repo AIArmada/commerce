@@ -260,8 +260,8 @@ The package queues mail when `docs.email.queue_enabled` is true and sends immedi
 
 2. **Check allowed actions**
    ```php
-   $shareLink->allows(\AIArmada\Docs\Enums\ShareLinkAction::View);
-   $shareLink->allows(\AIArmada\Docs\Enums\ShareLinkAction::Pdf);
+   $shareLink->allows(\AIArmada\Docs\Data\ShareLinkAction::View);
+   $shareLink->allows(\AIArmada\Docs\Data\ShareLinkAction::Pdf);
    ```
 
 3. **Check owner context on the linked document**

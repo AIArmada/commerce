@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Pages;
 
 use AIArmada\Docs\Data\ShareLinkData;
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;

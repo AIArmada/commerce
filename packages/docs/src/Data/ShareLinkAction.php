@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Enums;
+namespace AIArmada\Docs\Data;
 
 enum ShareLinkAction: string
 {

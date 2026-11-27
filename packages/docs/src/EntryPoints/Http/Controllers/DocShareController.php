@@ -6,7 +6,7 @@ namespace AIArmada\Docs\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\RenderAudience;
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Services\DocRenderService;
 use Symfony\Component\HttpFoundation\Response;
 

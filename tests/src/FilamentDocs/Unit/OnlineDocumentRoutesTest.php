@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Data\ShareLinkData;
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Support\DocRichContentStorage;

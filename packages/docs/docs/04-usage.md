@@ -207,7 +207,7 @@ Payment recording is transactional, locks the document inside its owner scope, r
 ```php
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\RenderAudience;
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Services\DocRenderService;
 
 $renderer = app(DocRenderService::class);

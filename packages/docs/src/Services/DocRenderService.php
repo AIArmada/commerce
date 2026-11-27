@@ -11,7 +11,7 @@ use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
-use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocShareLink;
 use AIArmada\Docs\Models\DocTemplate;

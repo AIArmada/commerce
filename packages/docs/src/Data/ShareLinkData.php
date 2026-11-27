@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Data;
 
-use AIArmada\Docs\Enums\ShareLinkAction;
+use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
 
 final readonly class ShareLinkData
 {
+    public ?DateTimeImmutable $expiresAt;
+
     /**
      * @param  array<ShareLinkAction|string>  $allowedActions
      */
     public function __construct(
         public array $allowedActions = [ShareLinkAction::View],
-        public ?DateTimeInterface $expiresAt = null,
-    ) {}
+        ?DateTimeInterface $expiresAt = null,
+    ) {
+        $this->expiresAt = $expiresAt === null ? null : DateTimeImmutable::createFromInterface($expiresAt);
+    }
 
     /**
      * @return array<string>
