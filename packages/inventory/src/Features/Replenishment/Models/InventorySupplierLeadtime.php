@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Replenishment\Models;
+
+use AIArmada\Inventory\Database\Factories\InventorySupplierLeadtimeFactory;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -275,5 +277,10 @@ final class InventorySupplierLeadtime extends Model implements Auditable
     protected function getActivityLogName(): string
     {
         return 'inventory';
+    }
+
+    protected static function newFactory(): InventorySupplierLeadtimeFactory
+    {
+        return InventorySupplierLeadtimeFactory::new();
     }
 }

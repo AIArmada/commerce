@@ -180,8 +180,8 @@ ResolveBackorder::make()->autoFulfill($product, $availableQuantity);
 ### Reorder Suggestions
 
 ```php
-use AIArmada\Inventory\Actions\ApproveReorderSuggestion;
-use AIArmada\Inventory\Actions\RejectReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\ApproveReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Actions\RejectReorderSuggestion;
 
 ApproveReorderSuggestion::run($suggestion, userId: auth()->id());
 
@@ -548,7 +548,7 @@ $snapshots = $valuationService->getSnapshotsForRange(CostingMethod::Fifo, $from,
 ## Demand Forecasting
 
 ```php
-use AIArmada\Inventory\Services\Stock\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
 
 $forecast = app(DemandForecastService::class);
 
@@ -569,7 +569,7 @@ $trend = $forecast->calculateTrend($product); // positive = increasing, negative
 ## Replenishment
 
 ```php
-use AIArmada\Inventory\Services\Stock\ReplenishmentService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 
 $replenishment = app(ReplenishmentService::class);
 

@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Replenishment\Models;
+
+use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Database\Factories\InventoryReorderSuggestionFactory;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -351,5 +354,10 @@ final class InventoryReorderSuggestion extends Model implements Auditable
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
+    }
+
+    protected static function newFactory(): InventoryReorderSuggestionFactory
+    {
+        return InventoryReorderSuggestionFactory::new();
     }
 }

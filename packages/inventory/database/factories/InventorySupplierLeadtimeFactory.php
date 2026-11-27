@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Database\Factories;
 
-use AIArmada\Inventory\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 

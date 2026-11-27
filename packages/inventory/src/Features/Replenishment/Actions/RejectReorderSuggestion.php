@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Replenishment\Actions;
 
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**

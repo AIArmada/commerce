@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Replenishment\Persistence;
 
 use AIArmada\Inventory\Enums\DemandPeriodType;
-use AIArmada\Inventory\Models\InventoryDemandHistory;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryDemandHistory;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

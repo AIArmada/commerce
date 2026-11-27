@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Replenishment\Models;
+
+use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Database\Factories\InventoryDemandHistoryFactory;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -204,5 +207,10 @@ final class InventoryDemandHistory extends Model
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
+    }
+
+    protected static function newFactory(): InventoryDemandHistoryFactory
+    {
+        return InventoryDemandHistoryFactory::new();
     }
 }

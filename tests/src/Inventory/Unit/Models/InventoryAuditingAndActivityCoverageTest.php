@@ -11,10 +11,10 @@ use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
-use AIArmada\Inventory\Models\InventorySupplierLeadtime;
+use AIArmada\Inventory\Features\Replenishment\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use OwenIt\Auditing\Contracts\Auditable;
 

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "Replenishment",
+  "owns": {
+    "table:inventory_demand_history": [
+      "AIArmada\\Inventory\\Features\\Replenishment\\Persistence\\DemandForecastService"
+    ],
+    "table:inventory_supplier_leadtimes": [
+      "AIArmada\\Inventory\\Features\\Replenishment\\Persistence\\ReplenishmentService"
+    ],
+    "table:inventory_reorder_suggestions": [
+      "AIArmada\\Inventory\\Features\\Replenishment\\Persistence\\ReplenishmentService",
+      "AIArmada\\Inventory\\Features\\Replenishment\\Actions\\ApproveReorderSuggestion",
+      "AIArmada\\Inventory\\Features\\Replenishment\\Actions\\RejectReorderSuggestion"
+    ]
+  },
+  "extensions": {}
+}

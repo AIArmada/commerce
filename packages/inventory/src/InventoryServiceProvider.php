@@ -36,9 +36,9 @@ use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\Services\Stock\BackorderService;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
-use AIArmada\Inventory\Services\Stock\DemandForecastService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
-use AIArmada\Inventory\Services\Stock\ReplenishmentService;
+use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 use AIArmada\Inventory\Platform\ExtensionRegistry;
 use AIArmada\Inventory\Platform\FeatureCatalog;
 use AIArmada\Inventory\Platform\FeatureModule;
@@ -71,7 +71,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     {
         $this->registerCoreServices();
         $this->registerAllocationServices();
-        $this->registerReplenishmentServices();
         $this->registerReportServices();
         $this->registerIntegrationServices();
         $this->registerFeatureModules();
@@ -138,15 +137,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     private function registerAllocationServices(): void
     {
         $this->app->singleton(BackorderService::class);
-    }
-
-    /**
-     * Register demand forecasting and replenishment services.
-     */
-    private function registerReplenishmentServices(): void
-    {
-        $this->app->singleton(DemandForecastService::class);
-        $this->app->singleton(ReplenishmentService::class);
     }
 
     /**
