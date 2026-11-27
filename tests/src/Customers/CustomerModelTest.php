@@ -134,7 +134,7 @@ describe('Customer Model', function (): void {
 
             app(AssignCustomerToSegment::class)->execute($inSegment, $segment);
 
-            $matchedIds = Customer::query()->inSegment($segment)->pluck('id')->all();
+            $matchedIds = Customer::query()->inSegment($segment->id)->pluck('id')->all();
 
             expect($matchedIds)
                 ->toContain($inSegment->id)

@@ -12,7 +12,7 @@ use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
-use AIArmada\Customers\Concerns\HasCustomerProfile;
+use AIArmada\Customers\Features\Identity\Traits\HasCustomerProfile;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;

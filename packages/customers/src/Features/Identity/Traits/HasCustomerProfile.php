@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Concerns;
+namespace AIArmada\Customers\Features\Identity\Traits;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Models\Customer;

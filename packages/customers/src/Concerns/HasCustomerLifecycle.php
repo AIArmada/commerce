@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Concerns;
 
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Illuminate\Database\Eloquent\Builder;
 
 trait HasCustomerLifecycle
@@ -62,10 +61,8 @@ trait HasCustomerLifecycle
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeInSegment(Builder $query, string | Segment $segment): Builder
+    public function scopeInSegment(Builder $query, string $segmentId): Builder
     {
-        $segmentId = $segment instanceof Segment ? $segment->id : $segment;
-
         return $query->whereHas('segments', fn (Builder $segmentQuery): Builder => $segmentQuery->whereKey($segmentId));
     }
 }

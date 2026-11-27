@@ -423,7 +423,7 @@ app(\AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMembershi
 $vipCustomers = Customer::inSegment('vip-segment-id')->get();
 
 // Or by segment model
-$vipCustomers = Customer::inSegment($vipSegment)->get();
+$vipCustomers = Customer::inSegment($vipSegment->id)->get();
 ```
 
 ### Using Segmentation Service
