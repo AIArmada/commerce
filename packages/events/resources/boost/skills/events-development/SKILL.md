@@ -51,7 +51,21 @@ under `packages/events/`.
   record change logs and dispatch domain events.
 - Owner scoping: run event writes in `OwnerContext::withOwner(...)`; catalog
   writes (venues, taxonomy) run in explicit global context
-  (`OwnerContext::withOwner(null, …)`).
+  (`OwnerContext::withOwner(null, …)`). `CatalogApi::describeScope()` and
+  `RegistrationsApi::lock()` honor the active owner context by default.
+- Record privacy: registration and submission policies allow managers and the
+  polymorphic record owner, not unrelated viewers of a public event.
+  `requestRefund` and `manageAdmissions` are explicit deny-by-default
+  abilities; `EventRegistrationPolicy::requestRefund()` also allows the
+  registrant.
+- Check-in requires a `check_in_allowed_statuses` registration, valid passes,
+  and a check-in-accepting occurrence (explicit or inferred).
+- Pass issuance locks the parent scope chain then the registration, aggregates
+  all item quantities per ticket type, and skips terminal statuses outside
+  `events.lifecycle.registration.pass_issuance_statuses`.
+- Mode inheritance is session → occurrence → event for `pricing_mode`,
+  `registration_mode`, and nullable `issue_passes_for_free`; explicit `false`
+  must survive create, clone, and template flows.
 
 ## Testing
 

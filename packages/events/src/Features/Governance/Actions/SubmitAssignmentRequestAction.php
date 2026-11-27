@@ -19,13 +19,17 @@ final class SubmitAssignmentRequestAction
         ?string $requestedRole = null,
     ): EventManagementAssignmentRequest {
         return DB::transaction(function () use ($manageable, $requestor, $justification, $requestedRole): EventManagementAssignmentRequest {
+            $manageable::query()
+                ->whereKey($manageable->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $existing = EventManagementAssignmentRequest::query()
                 ->where('manageable_type', $manageable->getMorphClass())
                 ->where('manageable_id', $manageable->getKey())
                 ->where('requestor_type', $requestor->getMorphClass())
                 ->where('requestor_id', $requestor->getKey())
                 ->where('status', AssignmentRequestStatus::Pending)
-                ->lockForUpdate()
                 ->first();
 
             if ($existing !== null) {

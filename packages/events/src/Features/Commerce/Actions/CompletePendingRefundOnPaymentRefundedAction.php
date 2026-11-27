@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Commerce\Actions;
 
 use AIArmada\CommerceSupport\Events\PaymentRefunded;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventOrderDriver;
 use AIArmada\Events\Platform\CommerceIntegration;
 use Illuminate\Support\Facades\Log;
@@ -57,12 +58,16 @@ final readonly class CompletePendingRefundOnPaymentRefundedAction
             return;
         }
 
-        if (! $this->orders->correlateRefundProviderReference($match->refundId, $event->paymentId, $event->relatedPaymentId)) {
-            return;
-        }
+        $refundId = $match->refundId;
 
         try {
-            $this->orders->completeRefund($match->refundId, $event->paymentId ?? $event->reference);
+            $owner = OwnerContext::fromTypeAndIdOrFail($match->ownerType, $match->ownerId);
+
+            OwnerContext::withOwner($owner, function () use ($event, $refundId): void {
+                if ($this->orders->correlateRefundProviderReference($refundId, $event->paymentId, $event->relatedPaymentId)) {
+                    $this->orders->completeRefund($refundId, $event->paymentId ?? $event->reference);
+                }
+            });
         } catch (Throwable $exception) {
             Log::error('Remote payment refund was confirmed but could not be recorded locally', [
                 'provider' => $event->provider,

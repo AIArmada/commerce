@@ -12,6 +12,7 @@ use AIArmada\Events\Data\EventRefundResultData;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
 use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
 use AIArmada\Events\Platform\CommerceIntegration;
+use AIArmada\Events\Platform\EventOwnerResolver;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use RuntimeException;
@@ -80,6 +81,7 @@ final readonly class ProcessEventRegistrationRefundAction
             throw new InvalidArgumentException('This order has no completed payment to refund.');
         }
 
+        $owner = EventOwnerResolver::resolve($eventId);
         $mode = $organizerOverride ? 'organizer_approved' : 'self_service';
         $refundId = $this->orders->refundIdForRegistration($orderId, $registrationId);
 
@@ -95,7 +97,7 @@ final readonly class ProcessEventRegistrationRefundAction
                     return new EventRefundResultData(status: 'completed', refundId: $refundId);
                 }
 
-                $this->markRegistrationRefundPending($registrationId);
+                $this->markRegistrationRefundPending($registrationId, $owner);
 
                 if ($state->providerSubmissionStarted) {
                     return new EventRefundResultData(status: 'pending', refundId: $refundId);
@@ -120,7 +122,7 @@ final readonly class ProcessEventRegistrationRefundAction
             );
         }
 
-        $this->markRegistrationRefundPending($registrationId);
+        $this->markRegistrationRefundPending($registrationId, $owner);
 
         if (! $this->orders->claimRefund($refundId)) {
             return new EventRefundResultData(status: 'pending', refundId: $refundId);
@@ -157,9 +159,9 @@ final readonly class ProcessEventRegistrationRefundAction
         );
     }
 
-    private function markRegistrationRefundPending(string $registrationId): void
+    private function markRegistrationRefundPending(string $registrationId, ?Model $owner): void
     {
-        OwnerContext::withOwner(null, function () use ($registrationId): void {
+        OwnerContext::withOwner($owner, function () use ($registrationId): void {
             $this->registrations->markRefundPending(
                 $registrationId,
                 'Refund is awaiting payment provider confirmation.',

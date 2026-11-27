@@ -45,24 +45,31 @@ final class CreateEventSessionAction
             : (string) $attributes['slug'];
 
         return DB::transaction(function () use ($occurrence, $attributes, $title, $startsAt, $endsAt, $slugBase): EventSession {
-            $event = $this->resolveEventForWrite($occurrence->event_id);
+            /** @var EventOccurrence $occurrence */
+            $occurrence = $occurrence->newQuery()
+                ->withoutOwnerScope()
+                ->whereKey($occurrence->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $event = $this->resolveEventForWrite((string) $occurrence->getAttribute('event_id'));
 
             $event::query()
                 ->whereKey($event->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $slug = $this->uniqueSlugInEvent((string) $occurrence->event_id, $slugBase);
+            $slug = $this->uniqueSlugInEvent((string) $event->getKey(), $slugBase);
 
             $sortOrder = blank($attributes['sort_order'] ?? null)
                 ? (int) EventSession::query()
-                    ->where('event_occurrence_id', $occurrence->id)
+                    ->where('event_occurrence_id', $occurrence->getKey())
                     ->max('sort_order') + 1
                 : (int) $attributes['sort_order'];
 
             $session = EventSession::query()->create([
-                'event_id' => $occurrence->event_id,
-                'event_occurrence_id' => $occurrence->id,
+                'event_id' => $event->getKey(),
+                'event_occurrence_id' => $occurrence->getKey(),
                 'title' => $title,
                 'slug' => $slug,
                 'summary' => $this->contentNormalizer->normalizeSummary(
@@ -86,6 +93,9 @@ final class CreateEventSessionAction
                 'capacity' => blank($attributes['capacity'] ?? null)
                     ? null
                     : (int) $attributes['capacity'],
+                'pricing_mode' => $attributes['pricing_mode'] ?? null,
+                'registration_mode' => $attributes['registration_mode'] ?? null,
+                'issue_passes_for_free' => $attributes['issue_passes_for_free'] ?? null,
                 'sort_order' => $sortOrder,
                 'metadata' => $attributes['metadata'] ?? null,
             ]);

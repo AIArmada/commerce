@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Attendance\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Data\AttendanceRecord;
 use AIArmada\Events\Data\EventCheckInResult;
 use AIArmada\Events\Events\EventAttendanceCheckedIn;
 use AIArmada\Events\Events\EventAttendanceCheckedOut;
+use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Features\Attendance\Models\EventAttendanceLog;
 use AIArmada\Events\Features\Registrations\Api\EventRegistrationParticipantData;
 use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
 use AIArmada\Events\Features\Registrations\Api\RegistrationSummary;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\LifecyclePolicy;
 use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
@@ -29,6 +32,7 @@ final class DefaultEventCheckInService implements EventCheckInService
 {
     public function __construct(
         private readonly RegistrationsApi $registrations,
+        private readonly LifecyclePolicy $lifecycle,
     ) {}
 
     public function checkIn(array $data): AttendanceRecord
@@ -57,7 +61,38 @@ final class DefaultEventCheckInService implements EventCheckInService
             }
         }
 
+        if ($registration !== null && ! $this->lifecycle->canCheckInRegistration($registration->status)) {
+            throw new InvalidArgumentException(sprintf(
+                'Registration status [%s] is not eligible for check-in.',
+                $registration->status,
+            ));
+        }
+
         $pass = $this->resolvePass($eventId, $data['pass_id'] ?? null, $registration);
+        $registrationType = $this->registrations->registrationMorphClass();
+
+        if ($registration === null
+            && $pass !== null
+            && $pass->registration_type === $registrationType
+            && $pass->registration_id !== null) {
+            $registration = $this->registrations->summarize((string) $pass->registration_id);
+
+            if ($registration === null || $registration->eventId !== $eventId) {
+                throw new InvalidArgumentException('The selected pass does not belong to the selected event.');
+            }
+
+            if (! $this->lifecycle->canCheckInRegistration($registration->status)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Registration status [%s] is not eligible for check-in.',
+                    $registration->status,
+                ));
+            }
+        }
+
+        if ($pass !== null && ! $pass->isValid()) {
+            throw new InvalidArgumentException('The selected pass is not valid for check-in.');
+        }
+
         $session = $this->resolveSession($eventId, $data['event_session_id'] ?? null);
 
         $occurrenceId = $data['event_occurrence_id']
@@ -82,8 +117,6 @@ final class DefaultEventCheckInService implements EventCheckInService
             throw new InvalidArgumentException('The selected pass does not belong to the selected event occurrence.');
         }
 
-        $registrationType = $this->registrations->registrationMorphClass();
-
         if ($pass !== null
             && $registration !== null
             && ($pass->registration_type !== $registrationType
@@ -100,7 +133,13 @@ final class DefaultEventCheckInService implements EventCheckInService
             $registration,
             $session,
         ): array {
-            $this->lockCheckInIdentity($pass, $participant, $registration);
+            $this->lockCheckInIdentity(
+                $pass,
+                $participant,
+                $registration,
+                $data['attendee_type'] ?? null,
+                $data['attendee_id'] ?? null,
+            );
 
             $existing = $this->findActiveAttendance(
                 eventId: $eventId,
@@ -149,11 +188,23 @@ final class DefaultEventCheckInService implements EventCheckInService
             return [$attendance, true];
         });
 
+        $record = $this->record($attendance);
+
         if ($wasCreated) {
-            event(new EventAttendanceCheckedIn($this->record($attendance)));
+            $owner = OwnerContext::resolve();
+
+            DB::afterCommit(static function () use ($owner, $record): void {
+                OwnerContext::withOwner($owner, static function () use ($record): void {
+                    event(new EventAttendanceCheckedIn($record));
+
+                    if ($record->registrationId !== null) {
+                        event(new RegistrationCheckedIn($record));
+                    }
+                });
+            });
         }
 
-        return new EventCheckInResult($this->record($attendance), $wasCreated);
+        return new EventCheckInResult($record, $wasCreated);
     }
 
     public function checkOut(string $attendanceId, mixed $actor = null): void
@@ -324,6 +375,8 @@ final class DefaultEventCheckInService implements EventCheckInService
         ?Pass $pass,
         ?EventRegistrationParticipantData $participant,
         ?RegistrationSummary $registration,
+        mixed $attendeeType = null,
+        mixed $attendeeId = null,
     ): void {
         if ($pass !== null) {
             Pass::query()->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
@@ -341,6 +394,13 @@ final class DefaultEventCheckInService implements EventCheckInService
         if ($registration !== null) {
             $registrationClass = ModelResolver::registrationClass();
             $registrationClass::query()->whereKey($registration->id)->lockForUpdate()->firstOrFail();
+
+            return;
+        }
+
+        if (is_string($attendeeType) && $attendeeType !== '' && $attendeeId !== null) {
+            $attendeeClass = $this->resolveModelClass($attendeeType, 'attendee_type');
+            $attendeeClass::query()->whereKey($attendeeId)->lockForUpdate()->firstOrFail();
         }
     }
 
@@ -354,6 +414,14 @@ final class DefaultEventCheckInService implements EventCheckInService
         mixed $attendeeType,
         mixed $attendeeId,
     ): ?Model {
+        if ($registrationId === null
+            && $participantId === null
+            && $passId === null
+            && $attendeeType === null
+            && $attendeeId === null) {
+            return null;
+        }
+
         $attendanceClass = ModelResolver::attendanceClass();
 
         /** @var Model|null $attendance */
@@ -399,16 +467,30 @@ final class DefaultEventCheckInService implements EventCheckInService
             return (string) $occurrence->getKey();
         }
 
-        $exists = $occurrenceClass::query()
+        /** @var Model|null $occurrence */
+        $occurrence = $occurrenceClass::query()
             ->whereKey($occurrenceId)
             ->where('event_id', $eventId)
-            ->exists();
+            ->first();
 
-        if (! $exists) {
+        if (! $occurrence instanceof Model) {
             throw new InvalidArgumentException('The selected occurrence does not belong to the selected event.');
         }
 
+        if (! $this->lifecycle->canCheckIn($this->statusValue($occurrence))) {
+            throw new InvalidArgumentException('The selected occurrence is not accepting check-ins.');
+        }
+
         return $occurrenceId;
+    }
+
+    private function statusValue(Model $model): string
+    {
+        $status = $model->getAttribute('status');
+
+        return is_object($status) && method_exists($status, 'getValue')
+            ? (string) $status->getValue()
+            : (string) $status;
     }
 
     private function resolveSession(string $eventId, mixed $sessionId): ?Model

@@ -75,6 +75,23 @@ it('updates occurrence content and schedule through the package action', functio
     Illuminate\Support\Facades\Event::assertDispatched(EventOccurrenceUpdated::class);
 });
 
+it('rolls back occurrence changes when the status transition fails', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'completed',
+        'title' => 'Original title',
+    ]);
+
+    expect(fn () => app(UpdateEventOccurrenceAction::class)->handle($occurrence, [
+        'title' => 'Should roll back',
+        'status' => 'scheduled',
+    ]))->toThrow(Exception::class);
+
+    expect($occurrence->fresh()?->title)->toBe('Original title')
+        ->and($occurrence->fresh()?->status->getValue())->toBe('completed');
+});
+
 it('rejects an occurrence update with an invalid time range', function (): void {
     $event = Event::factory()->create();
     $occurrence = app(CreateEventOccurrenceAction::class)->handle($event, [

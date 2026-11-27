@@ -38,7 +38,9 @@ final class DispatchEventChangeChainAction
     ): void {
         $event = EventWriteGuard::findOrFail($eventId);
 
-        OwnerContext::withOwner($event->getRelationValue('owner'), function () use (
+        $owner = $event->getRelationValue('owner');
+
+        OwnerContext::withOwner($owner, function () use (
             $changeCategory,
             $changeType,
             $eventId,
@@ -46,6 +48,7 @@ final class DispatchEventChangeChainAction
             $newValue,
             $occurrenceId,
             $oldValue,
+            $owner,
             $reason,
             $requiresNotification,
             $sessionId,
@@ -70,7 +73,7 @@ final class DispatchEventChangeChainAction
                 }
             }
 
-            DB::transaction(function () use (
+            [$changeLogId, $updateId] = DB::transaction(function () use (
                 $changeCategory,
                 $changeType,
                 $eventId,
@@ -81,7 +84,7 @@ final class DispatchEventChangeChainAction
                 $reason,
                 $requiresNotification,
                 $sessionId,
-            ): void {
+            ): array {
                 $this->catalog->lockEvent($eventId);
 
                 $subjectType = $sessionId !== null ? 'event_session' : ($occurrenceId !== null ? 'event_occurrence' : 'event');
@@ -105,14 +108,19 @@ final class DispatchEventChangeChainAction
 
                 $update = $this->createEventUpdateIfNeeded($changeLog, $changeType, $impactLevel, $reason, $oldValue, $newValue);
 
-                if ($requiresNotification) {
-                    event(new EventChangeNoticePublished(
-                        (string) $changeLog->getKey(),
-                        $eventId,
-                        $update !== null ? (string) $update->getKey() : null,
-                    ));
-                }
+                return [
+                    (string) $changeLog->getKey(),
+                    $update !== null ? (string) $update->getKey() : null,
+                ];
             });
+
+            if ($requiresNotification) {
+                DB::afterCommit(function () use ($changeLogId, $eventId, $owner, $updateId): void {
+                    OwnerContext::withOwner($owner, function () use ($changeLogId, $eventId, $updateId): void {
+                        event(new EventChangeNoticePublished($changeLogId, $eventId, $updateId));
+                    });
+                });
+            }
         });
     }
 
@@ -186,7 +194,10 @@ final class DispatchEventChangeChainAction
         ]);
 
         if ($oldValue !== [] || $newValue !== []) {
-            foreach ($oldValue as $key => $old) {
+            $keys = array_keys($oldValue + $newValue);
+
+            foreach ($keys as $key) {
+                $old = $oldValue[$key] ?? null;
                 $new = $newValue[$key] ?? null;
 
                 if ($old === $new) {
@@ -195,8 +206,8 @@ final class DispatchEventChangeChainAction
 
                 $update->items()->create([
                     'field_key' => $key,
-                    'old_value' => is_string($old) ? $old : json_encode($old),
-                    'new_value' => is_string($new) ? $new : json_encode($new),
+                    'old_value' => $old,
+                    'new_value' => $new,
                 ]);
             }
         }

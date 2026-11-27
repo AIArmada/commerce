@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Events\Platform;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -50,7 +52,8 @@ final class EventSubmissionOwnerScope implements Scope
                         ->where($model->qualifyColumn('target_type'), $owner->getMorphClass())
                         ->where($model->qualifyColumn('target_id'), $owner->getKey());
 
-                    if ((bool) config('events.features.owner.include_global', false)) {
+                    if (! OwnerScopeOverride::suppressIncludeGlobal()
+                        && (bool) config('events.features.owner.include_global', false)) {
                         $ownerQuery->orWhere(function (Builder $globalQuery) use ($model): void {
                             $globalQuery
                                 ->whereNull($model->qualifyColumn('target_type'))
@@ -106,6 +109,12 @@ final class EventSubmissionOwnerScope implements Scope
             throw new InvalidArgumentException('Event submissions must set event_id when linking an occurrence or session.');
         }
 
+        $originalEventId = $model->exists ? $model->getRawOriginal('event_id') : null;
+
+        if ($originalEventId !== null) {
+            EventWriteGuard::findOrFail((string) $originalEventId);
+        }
+
         if ($eventId !== null) {
             EventWriteGuard::findOrFail((string) $eventId);
             self::guardGraphIntegrity((string) $eventId, $occurrenceId, $sessionId);
@@ -122,22 +131,8 @@ final class EventSubmissionOwnerScope implements Scope
             'Event submissions require an owner context or explicit global context.',
         );
 
-        if ($eventId !== null) {
-            return;
-        }
-
-        if ($targetType === null && $targetId === null) {
-            if (! OwnerContext::isExplicitGlobal()) {
-                throw new AuthorizationException('Explicit global owner context is required for global event submissions.');
-            }
-
-            return;
-        }
-
-        if (! $owner instanceof Model
-            || $targetType !== $owner->getMorphClass()
-            || (string) $targetId !== (string) $owner->getKey()) {
-            throw new AuthorizationException('Cross-owner event submission write blocked.');
+        if ($eventId === null || ($model->exists && $originalEventId === null)) {
+            self::assertSubmissionTargetOwner($targetType, $targetId);
         }
     }
 
@@ -147,27 +142,23 @@ final class EventSubmissionOwnerScope implements Scope
             return;
         }
 
-        $eventId = $model->getAttribute('event_id');
+        $eventId = $model->getRawOriginal('event_id');
 
         if ($eventId !== null) {
             $eventClass = ModelResolver::eventClass();
-            $exists = $eventClass::query()->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)->whereKey($eventId)->exists();
+            $exists = $eventClass::query()->withoutGlobalScope(OwnerScope::class)->whereKey($eventId)->exists();
 
-            if (! $exists) {
-                self::assertSubmissionTargetOwner($model);
+            if ($exists) {
+                EventWriteGuard::findOrFail((string) $eventId);
 
                 return;
             }
-
-            EventWriteGuard::findOrFail((string) $eventId);
-
-            return;
         }
 
-        self::assertSubmissionTargetOwner($model);
+        self::assertSubmissionTargetOwner($model->getRawOriginal('target_type'), $model->getRawOriginal('target_id'));
     }
 
-    private static function assertSubmissionTargetOwner(Model $model): void
+    private static function assertSubmissionTargetOwner(mixed $targetType, mixed $targetId): void
     {
         $owner = OwnerContext::resolve();
 
@@ -175,9 +166,6 @@ final class EventSubmissionOwnerScope implements Scope
             $owner,
             'Event submissions require an owner context or explicit global context.',
         );
-
-        $targetType = $model->getAttribute('target_type');
-        $targetId = $model->getAttribute('target_id');
 
         if ($targetType === null && $targetId === null) {
             if (! OwnerContext::isExplicitGlobal()) {

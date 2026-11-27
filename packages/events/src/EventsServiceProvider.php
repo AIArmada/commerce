@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events;
 
+use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Events\Contracts\EventAuthzDriver;
 use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
@@ -38,6 +39,7 @@ use AIArmada\Events\Platform\ExtensionRegistry;
 use AIArmada\Events\Platform\FeatureCatalog;
 use AIArmada\Events\Platform\FeatureModule;
 use AIArmada\Events\Platform\ModelResolver;
+use AIArmada\Orders\Contracts\OrderServiceInterface;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use RuntimeException;
@@ -124,7 +126,10 @@ final class EventsServiceProvider extends PackageServiceProvider
     {
         $this->app->bind(EventTicketingDriver::class, TicketingDriver::class);
         $this->app->bind(EventSeatingDriver::class, SeatingDriver::class);
-        $this->app->bind(EventOrderDriver::class, OrdersDriver::class);
+        $this->app->bind(EventOrderDriver::class, static fn (Application $app): OrdersDriver => new OrdersDriver(
+            orders: $app->bound(OrderServiceInterface::class) ? $app->make(OrderServiceInterface::class) : null,
+            gateways: $app->bound(PaymentGatewayResolverInterface::class) ? $app->make(PaymentGatewayResolverInterface::class) : null,
+        ));
         $this->app->bind(EventCartDriver::class, CartCheckoutDriver::class);
         $this->app->bind(EventAuthzDriver::class, AuthzDriver::class);
 

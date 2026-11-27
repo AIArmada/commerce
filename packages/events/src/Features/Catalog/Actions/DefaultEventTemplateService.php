@@ -28,12 +28,14 @@ final class DefaultEventTemplateService implements EventTemplateService
 
     private const array OCCURRENCE_OVERRIDES = [
         'title', 'slug', 'starts_at', 'ends_at', 'timezone', 'visibility',
-        'delivery_mode', 'capacity', 'metadata',
+        'delivery_mode', 'capacity', 'pricing_mode', 'registration_mode',
+        'issue_passes_for_free', 'metadata',
     ];
 
     private const array SESSION_OVERRIDES = [
         'title', 'slug', 'summary', 'description', 'starts_at', 'ends_at',
-        'timezone', 'visibility', 'delivery_mode', 'capacity', 'sort_order', 'metadata',
+        'timezone', 'visibility', 'delivery_mode', 'capacity', 'sort_order',
+        'pricing_mode', 'registration_mode', 'issue_passes_for_free', 'metadata',
     ];
 
     private const array GUARDED_OVERRIDES = [
@@ -85,7 +87,7 @@ final class DefaultEventTemplateService implements EventTemplateService
                 'timezone' => $payload['timezone'] ?? config('events.defaults.timezone', 'UTC'),
                 'pricing_mode' => $payload['pricing_mode'] ?? null,
                 'registration_mode' => $payload['registration_mode'] ?? null,
-                'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? false,
+                'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
                 'metadata' => $payload['metadata'] ?? null,
             ])->save();
 
@@ -126,6 +128,9 @@ final class DefaultEventTemplateService implements EventTemplateService
                 'visibility' => $payload['visibility'] ?? null,
                 'delivery_mode' => $payload['delivery_mode'] ?? null,
                 'capacity' => $payload['capacity'] ?? null,
+                'pricing_mode' => $payload['pricing_mode'] ?? null,
+                'registration_mode' => $payload['registration_mode'] ?? null,
+                'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
                 'metadata' => $payload['metadata'] ?? null,
             ]);
 
@@ -164,6 +169,9 @@ final class DefaultEventTemplateService implements EventTemplateService
             'visibility' => $payload['visibility'] ?? null,
             'delivery_mode' => $payload['delivery_mode'] ?? null,
             'capacity' => $payload['capacity'] ?? null,
+            'pricing_mode' => $payload['pricing_mode'] ?? null,
+            'registration_mode' => $payload['registration_mode'] ?? null,
+            'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
             'metadata' => $payload['metadata'] ?? null,
         ]));
     }
@@ -186,6 +194,9 @@ final class DefaultEventTemplateService implements EventTemplateService
                     'visibility' => $payload['visibility'] ?? null,
                     'delivery_mode' => $payload['delivery_mode'] ?? null,
                     'capacity' => $payload['capacity'] ?? null,
+                    'pricing_mode' => $payload['pricing_mode'] ?? null,
+                    'registration_mode' => $payload['registration_mode'] ?? null,
+                    'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
                     'metadata' => $payload['metadata'] ?? null,
                 ]);
 
@@ -210,6 +221,9 @@ final class DefaultEventTemplateService implements EventTemplateService
                     'visibility' => $payload['visibility'] ?? null,
                     'delivery_mode' => $payload['delivery_mode'] ?? null,
                     'capacity' => $payload['capacity'] ?? null,
+                    'pricing_mode' => $payload['pricing_mode'] ?? null,
+                    'registration_mode' => $payload['registration_mode'] ?? null,
+                    'issue_passes_for_free' => $payload['issue_passes_for_free'] ?? null,
                     'metadata' => $payload['metadata'] ?? null,
                 ]);
 

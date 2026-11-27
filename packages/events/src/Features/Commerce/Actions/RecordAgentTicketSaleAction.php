@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Commerce\Actions;
 
 use AIArmada\Events\Contracts\EventPassIssuanceService;
+use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\EventTicketingDriver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
@@ -23,6 +24,7 @@ final class RecordAgentTicketSaleAction
         private readonly RegistrationServiceInterface $registrations,
         private readonly RegistrationsApi $registrationsApi,
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly EventRegistrationEligibility $eligibility,
         private readonly EventTicketingDriver $ticketing,
         private readonly EventPassIssuanceService $passes,
     ) {}
@@ -62,6 +64,7 @@ final class RecordAgentTicketSaleAction
         }
 
         $scope = $this->scopeResolver->resolve($scopeRef['type'], $scopeRef['id']);
+        $this->eligibility->ensureEligible($scope);
         $scopeData = $scope->toRegistrationData();
 
         return DB::transaction(function () use ($agent, $customerData, $quantity, $scope, $scopeData, $scopeRef, $ticketType): array {
@@ -80,7 +83,6 @@ final class RecordAgentTicketSaleAction
                     'total_participants' => 1,
                     'total_amount' => $ticketType->price,
                     'currency' => $ticketType->currency,
-                    'is_bundle_root' => true,
                     'items' => [[
                         'ticket_type_id' => $ticketType->getKey(),
                         'quantity' => 1,
@@ -93,8 +95,13 @@ final class RecordAgentTicketSaleAction
                 ]));
             }
 
+            $issuedRegistrations = $ids;
+
             foreach ($ids as $registrationId) {
-                $this->registrationsApi->expandComponents($registrationId);
+                $issuedRegistrations = array_values(array_unique(array_merge(
+                    $issuedRegistrations,
+                    $this->registrationsApi->expandComponents($registrationId),
+                )));
             }
 
             $this->ticketing->shipInventory(
@@ -104,7 +111,7 @@ final class RecordAgentTicketSaleAction
                 reference: 'agent:' . ($agent?->getKey() ?? 'unknown'),
             );
 
-            foreach ($ids as $registrationId) {
+            foreach ($issuedRegistrations as $registrationId) {
                 $this->passes->issueForRegistration($registrationId);
             }
 

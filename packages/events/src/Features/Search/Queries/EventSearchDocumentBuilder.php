@@ -48,6 +48,8 @@ final class EventSearchDocumentBuilder implements EventSearchDocumentBuilderCont
      */
     public function buildForTarget(Model $target, string $documentType): array
     {
+        $target->loadMissing($this->relationProvider->relations());
+
         $base = [
             'searchable_type' => $target->getMorphClass(),
             'searchable_id' => (string) $target->getKey(),

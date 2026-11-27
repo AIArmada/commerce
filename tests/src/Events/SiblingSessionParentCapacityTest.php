@@ -16,7 +16,6 @@ use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use AIArmada\Ticketing\Models\Pass;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
@@ -319,7 +318,7 @@ it('rejects cross-owner session registration without writing', function (): void
         $scope = app(EventRegistrationScopeResolver::class)->resolve('session', (string) $session->getKey());
 
         DB::transaction(fn () => app(LockEventRegistrationScopeAction::class)->handle($scope));
-    }))->toThrow(ModelNotFoundException::class);
+    }))->toThrow(AuthorizationException::class);
 
     $count = OwnerContext::withOwner($ownerA, function () use ($event): int {
         return EventRegistration::query()->where('event_id', $event->id)->count();

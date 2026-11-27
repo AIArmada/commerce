@@ -7,6 +7,7 @@ namespace AIArmada\Events\Features\Search\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
+use AIArmada\Events\Contracts\EventSearchRelationProvider;
 use AIArmada\Events\Features\Search\Actions\DeleteEventSearchDocumentAction;
 use AIArmada\Events\Features\Search\Actions\UpsertEventSearchDocumentAction;
 use AIArmada\Events\Platform\ModelResolver;
@@ -70,7 +71,9 @@ final class BuildEventSearchDocumentJob implements OwnerScopedJob, ShouldBeUniqu
             return;
         }
 
-        $target = $targetClass::query()->find($this->targetId);
+        $target = $targetClass::query()
+            ->with(app(EventSearchRelationProvider::class)->relations())
+            ->find($this->targetId);
 
         if (! $target instanceof Model) {
             app(DeleteEventSearchDocumentAction::class)->handle($targetClass, $this->targetId);
@@ -78,7 +81,7 @@ final class BuildEventSearchDocumentJob implements OwnerScopedJob, ShouldBeUniqu
             return;
         }
 
-        app(UpsertEventSearchDocumentAction::class)->handle($targetClass, $this->targetId);
+        app(UpsertEventSearchDocumentAction::class)->handleTarget($target, $targetClass);
     }
 
     public function failed(?Throwable $exception): void

@@ -12,10 +12,12 @@ use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Events\Features\Search\EntryPoints\Jobs\BuildEventSearchDocumentJob;
 use AIArmada\Events\Features\Search\EntryPoints\Observers\EventAttributeObserver;
 use AIArmada\Events\Features\Search\EntryPoints\Observers\EventAudienceObserver;
+use AIArmada\Events\Features\Search\EntryPoints\Observers\EventClassificationObserver;
 use AIArmada\Events\Features\Search\EntryPoints\Observers\EventObserver;
 use AIArmada\Events\Features\Search\EntryPoints\Observers\EventOccurrenceObserver;
 use AIArmada\Events\Features\Search\EntryPoints\Observers\EventSessionObserver;
 use AIArmada\Events\Features\Search\Models\EventSearchDocument;
+use AIArmada\Events\Features\Taxonomy\Models\EventClassification;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {
@@ -116,6 +118,46 @@ it('does not index children of hidden events', function (): void {
     $builder->index($occurrence->fresh());
 
     expect(EventSearchDocument::where('event_occurrence_id', $occurrence->id)->exists())->toBeFalse();
+});
+
+it('does not index sessions whose occurrence is hidden', function (): void {
+    $event = createIndexedSearchEvent();
+    $occurrence = OwnerContext::withOwner(null, fn () => EventOccurrence::query()->create([
+        'event_id' => $event->id,
+        'title' => 'Hidden Occurrence',
+        'starts_at' => now()->addDay(),
+        'ends_at' => now()->addDay()->addHours(2),
+        'timezone' => 'Asia/Kuala_Lumpur',
+        'status' => 'scheduled',
+        'visibility' => 'hidden',
+        'delivery_mode' => 'physical',
+    ]));
+    $session = createIndexedSession($occurrence);
+
+    app(EventSearchIndexer::class)->index($session->fresh());
+
+    expect(EventSearchDocument::where('event_session_id', $session->id)->exists())->toBeFalse();
+});
+
+it('clears classification facets when the last classification is removed', function (): void {
+    config()->set('events.sync.classifications_to_facets', true);
+
+    $event = createIndexedSearchEvent();
+    $classification = EventClassification::factory()->create([
+        'event_id' => $event->id,
+        'taxonomy_code' => 'topic',
+        'term_code' => 'ai',
+    ]);
+
+    $indexer = app(EventSearchIndexer::class);
+    $indexer->index($event);
+
+    expect(EventSearchDocument::where('event_id', $event->id)->first()?->facets)->toHaveKey('_classifications');
+
+    $classification->delete();
+    (new EventClassificationObserver($indexer))->deleted($classification);
+
+    expect(EventSearchDocument::where('event_id', $event->id)->first()?->facets)->not->toHaveKey('_classifications');
 });
 
 it('removes search documents after an owned event has been deleted', function (): void {

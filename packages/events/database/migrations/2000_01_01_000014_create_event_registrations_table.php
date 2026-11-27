@@ -29,6 +29,10 @@ return new class extends Migration
             $table->string('currency')->nullable();
             $table->string('external_order_id')->nullable()->index();
             $table->string('external_order_type')->nullable()->index();
+            $table->index(
+                ['external_order_type', 'external_order_id'],
+                'event_registrations_external_order_index',
+            );
             $table->string('payment_status')->nullable()->index();
             $table->timestampTz('registered_at')->index();
             $table->timestampTz('approved_at')->nullable();
@@ -49,6 +53,10 @@ return new class extends Migration
             $table->boolean('is_bundle_root')->default(false)->index();
             $table->{$jsonType}('pass_entitlements')->nullable();
             $table->string('idempotency_key')->nullable()->index();
+            $table->index(
+                ['event_id', 'idempotency_key'],
+                'event_registrations_event_idempotency_index',
+            );
             $table->index(
                 ['event_occurrence_id', 'status'],
                 'event_registrations_occurrence_status_index',

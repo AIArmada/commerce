@@ -90,13 +90,16 @@ final class TicketingDriver implements EventTicketingDriver
             ->where('registration_id', $registrationId)
             ->get();
 
+        $revoked = 0;
+
         foreach ($passes as $pass) {
             if ($pass->isValid()) {
                 $pass->markRevoked($reason ?? 'Registration terminal');
+                $revoked++;
             }
         }
 
-        return $passes->count();
+        return $revoked;
     }
 
     public function revokePassesByIds(array $passIds, string $reason): int
@@ -159,73 +162,6 @@ final class TicketingDriver implements EventTicketingDriver
         $this->inventory->shipFromDefault($ticketType, $quantity, $reason, $reference);
     }
 
-    public function restoreRefundedInventory(
-        string $orderId,
-        ?string $orderNumber,
-        string $ticketTypeId,
-        int $quantity,
-        string $reason,
-    ): void {
-        $ticketType = TicketType::query()->findOrFail($ticketTypeId);
-        $morphType = $ticketType->getMorphClass();
-
-        $restored = (int) InventoryMovement::query()
-            ->where('type', MovementType::Receipt->value)
-            ->where('reason', $reason)
-            ->where('inventoryable_type', $morphType)
-            ->where('inventoryable_id', $ticketType->getKey())
-            ->sum('quantity');
-
-        $remaining = max(0, $quantity - $restored);
-
-        if ($remaining === 0) {
-            return;
-        }
-
-        $references = array_values(array_filter(
-            [$orderId, $orderNumber],
-            static fn (?string $value): bool => $value !== null && $value !== '',
-        ));
-
-        $shipments = InventoryMovement::query()
-            ->where('type', MovementType::Shipment->value)
-            ->whereIn('reference', $references)
-            ->where('inventoryable_type', $morphType)
-            ->where('inventoryable_id', $ticketType->getKey())
-            ->orderBy('created_at')
-            ->get();
-
-        foreach ($shipments as $shipment) {
-            if ($remaining === 0 || ! $shipment instanceof InventoryMovement || $shipment->from_location_id === null) {
-                continue;
-            }
-
-            $restorable = min($remaining, (int) $shipment->quantity);
-
-            if ($restorable < 1) {
-                continue;
-            }
-
-            $this->inventory->receive(
-                model: $ticketType,
-                locationId: (string) $shipment->from_location_id,
-                quantity: $restorable,
-                reason: $reason,
-                note: sprintf('Restored refunded event ticket inventory for order %s', $orderId),
-            );
-
-            $remaining -= $restorable;
-        }
-
-        if ($remaining > 0) {
-            Log::warning('Could not restore all ticket inventory for the refunded order.', [
-                'order_id' => $orderId,
-                'ticket_type_id' => $ticketTypeId,
-                'quantity_remaining' => $remaining,
-            ]);
-        }
-    }
-
     public function restoreRefundedRegistrationItemInventory(
         string $orderId,
         ?string $orderNumber,
@@ -237,8 +173,10 @@ final class TicketingDriver implements EventTicketingDriver
             return;
         }
 
-        $ticketType = TicketType::query()->findOrFail($ticketTypeId);
         $reason = 'event_registration_item_refunded:' . $registrationItemId;
+        $note = sprintf('Restored from refunded event registration item %s', $registrationItemId);
+
+        $ticketType = TicketType::query()->findOrFail($ticketTypeId);
         $morphType = $ticketType->getMorphClass();
 
         $restored = (int) InventoryMovement::query()
@@ -253,6 +191,17 @@ final class TicketingDriver implements EventTicketingDriver
         if ($remaining === 0) {
             return;
         }
+
+        $restoredByLocation = InventoryMovement::query()
+            ->where('type', MovementType::Receipt->value)
+            ->where('reason', $reason)
+            ->where('inventoryable_type', $morphType)
+            ->where('inventoryable_id', $ticketType->getKey())
+            ->whereNotNull('to_location_id')
+            ->selectRaw('to_location_id, SUM(quantity) as restored_quantity')
+            ->groupBy('to_location_id')
+            ->pluck('restored_quantity', 'to_location_id')
+            ->all();
 
         $references = array_values(array_filter(
             [$orderId, $orderNumber],
@@ -272,7 +221,9 @@ final class TicketingDriver implements EventTicketingDriver
                 continue;
             }
 
-            $restorable = min($remaining, (int) $shipment->quantity);
+            $locationId = (string) $shipment->from_location_id;
+            $alreadyRestored = (int) ($restoredByLocation[$locationId] ?? 0);
+            $restorable = min($remaining, max(0, (int) $shipment->quantity - $alreadyRestored));
 
             if ($restorable < 1) {
                 continue;
@@ -280,21 +231,22 @@ final class TicketingDriver implements EventTicketingDriver
 
             $this->inventory->receive(
                 model: $ticketType,
-                locationId: (string) $shipment->from_location_id,
+                locationId: $locationId,
                 quantity: $restorable,
                 reason: $reason,
-                note: sprintf('Restored from refunded event registration item %s', $registrationItemId),
+                note: $note,
             );
 
+            $restoredByLocation[$locationId] = $alreadyRestored + $restorable;
             $remaining -= $restorable;
         }
 
         if ($remaining > 0) {
             Log::warning('Could not restore all ticket inventory for the refunded registration item.', [
                 'order_id' => $orderId,
-                'registration_item_id' => $registrationItemId,
                 'ticket_type_id' => $ticketTypeId,
                 'quantity_remaining' => $remaining,
+                'registration_item_id' => $registrationItemId,
             ]);
         }
     }
