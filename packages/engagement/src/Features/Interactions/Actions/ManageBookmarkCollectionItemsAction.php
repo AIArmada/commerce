@@ -47,7 +47,12 @@ final readonly class ManageBookmarkCollectionItemsAction
                             'added_at' => CarbonImmutable::now(),
                             'notes' => $notes ?? $item->notes,
                         ]);
-                        event(new BookmarkAddedToCollection($bookmark, $collection));
+                        event(new BookmarkAddedToCollection(
+                            $bookmark->id,
+                            $collection->id,
+                            $collection->owner_type,
+                            $collection->owner_id,
+                        ));
                     }
 
                     return;
@@ -60,7 +65,12 @@ final readonly class ManageBookmarkCollectionItemsAction
                     'notes' => $notes,
                 ]);
 
-                event(new BookmarkAddedToCollection($bookmark, $collection));
+                event(new BookmarkAddedToCollection(
+                    $bookmark->id,
+                    $collection->id,
+                    $collection->owner_type,
+                    $collection->owner_id,
+                ));
             });
         } catch (QueryException $exception) {
             if (! $this->isUniqueConstraintViolation($exception)) {
@@ -98,7 +108,12 @@ final readonly class ManageBookmarkCollectionItemsAction
 
             if ($item) {
                 $item->update(['removed_at' => CarbonImmutable::now()]);
-                event(new BookmarkRemovedFromCollection($bookmark, $collection));
+                event(new BookmarkRemovedFromCollection(
+                    $bookmark->id,
+                    $collection->id,
+                    $collection->owner_type,
+                    $collection->owner_id,
+                ));
             }
         });
     }

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
-use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
-
-final class BookmarkAddedToCollection
+final readonly class BookmarkAddedToCollection
 {
-    public function __construct(public Bookmark $bookmark, public BookmarkCollection $collection) {}
+    public function __construct(
+        public string $bookmarkId,
+        public string $collectionId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+    ) {}
 }

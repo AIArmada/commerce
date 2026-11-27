@@ -57,7 +57,16 @@ final readonly class CreateShareAction
                 'metadata' => $metadata,
             ]);
 
-            event(new ShareCreated($share));
+            event(new ShareCreated(
+                $share->id,
+                $share->sharer_type,
+                $share->sharer_id,
+                $share->shareable_type,
+                $share->shareable_id,
+                $share->owner_type,
+                $share->owner_id,
+                $share->channel,
+            ));
 
             if ($options['complete'] ?? true) {
                 $shareUrl = $this->shareUrlGenerator->generateShareUrl($subject, array_merge($options, ['token' => $token]));
@@ -66,7 +75,16 @@ final readonly class CreateShareAction
                     'status' => ShareStatus::Shared,
                     'shared_at' => CarbonImmutable::now(),
                 ]);
-                event(new ShareCompleted($share));
+                event(new ShareCompleted(
+                    $share->id,
+                    $share->sharer_type,
+                    $share->sharer_id,
+                    $share->shareable_type,
+                    $share->shareable_id,
+                    $share->owner_type,
+                    $share->owner_id,
+                    $share->channel,
+                ));
             }
 
             return $share;

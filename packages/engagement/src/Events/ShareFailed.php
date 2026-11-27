@@ -4,9 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Features\Interactions\Models\Share;
-
-final class ShareFailed
+final readonly class ShareFailed
 {
-    public function __construct(public Share $share, public string $reason) {}
+    public function __construct(
+        public string $shareId,
+        public ?string $actorType,
+        public ?string $actorId,
+        public string $subjectType,
+        public string $subjectId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+        public ?string $channel,
+        public string $reason,
+    ) {}
 }

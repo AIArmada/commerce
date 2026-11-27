@@ -373,7 +373,8 @@ Use `engagement:match-subscriptions` explicitly for content-based matching. The 
 // Sharing a compatible event subject persists a Share record via ManageInteractionsAction
 app(ManageInteractionsAction::class)->share($user, $event, ['channel' => 'twitter']);
 // → Share record created with status 'created', then 'shared'
-// → ShareCreated and ShareCompleted dispatched
+// → ShareCreated and ShareCompleted dispatched with immutable identity payloads
+// → Share tokens, URLs and destination details are not included in these events
 ```
 
 The `stateFor()` method includes a `share` key with the active share's `id`, `share_url`, `share_token`, `channel`, `status`, and `shared_at`.
