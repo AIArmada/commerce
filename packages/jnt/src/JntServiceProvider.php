@@ -7,7 +7,7 @@ namespace AIArmada\Jnt;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
-use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
 use AIArmada\Jnt\Contracts\TrackingReader;

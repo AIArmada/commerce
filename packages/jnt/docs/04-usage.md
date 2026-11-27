@@ -501,7 +501,7 @@ php artisan jnt:webhook:test --url=https://example.test/webhooks/jnt/status
 Subscribe to `TrackingUpdatedEvent` and rate carts through `JntShippingCalculator`:
 
 ```php
-use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 
 final class RecordTrackingUpdate

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Cart;
+namespace AIArmada\Jnt\EntryPoints\Cart;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
@@ -24,8 +24,6 @@ final class JntShippingCalculator implements ConditionProviderInterface
     private const string CONDITION_TYPE = 'shipping';
 
     private const string SHIPPING_ADDRESS_KEY = 'jnt_shipping_address';
-
-    private const string SHIPPING_QUOTE_KEY = 'jnt_shipping_quote';
 
     private const int PRIORITY = 75;
 
@@ -84,15 +82,8 @@ final class JntShippingCalculator implements ConditionProviderInterface
         /** @var array<string, mixed>|null $shippingAddress */
         $shippingAddress = $cart->getMetadata(self::SHIPPING_ADDRESS_KEY);
 
-        if ($shippingAddress === null) {
+        if (! is_array($shippingAddress)) {
             return [];
-        }
-
-        /** @var array<string, mixed>|null $cachedQuote */
-        $cachedQuote = $cart->getMetadata(self::SHIPPING_QUOTE_KEY);
-
-        if ($cachedQuote !== null && $this->isQuoteValid($cachedQuote, $cart)) {
-            return [$this->createConditionFromQuote($cachedQuote)];
         }
 
         $quote = $this->calculateShipping($cart, AddressData::fromApiArray($shippingAddress));
@@ -100,8 +91,6 @@ final class JntShippingCalculator implements ConditionProviderInterface
         if ($quote === null) {
             return [];
         }
-
-        $cart->setMetadata(self::SHIPPING_QUOTE_KEY, $quote);
 
         return [$this->createConditionFromQuote($quote)];
     }
@@ -112,7 +101,7 @@ final class JntShippingCalculator implements ConditionProviderInterface
             return true;
         }
 
-        return $cart->getMetadata(self::SHIPPING_ADDRESS_KEY) !== null;
+        return is_array($cart->getMetadata(self::SHIPPING_ADDRESS_KEY));
     }
 
     public function getType(): string
@@ -254,25 +243,4 @@ final class JntShippingCalculator implements ConditionProviderInterface
         ];
     }
 
-    /**
-     * @param  array<string, mixed>  $quote
-     */
-    private function isQuoteValid(array $quote, Cart $cart): bool
-    {
-        $calculatedAt = $quote['calculated_at'] ?? null;
-        $ttlMinutes = (int) config('jnt.cart.quote_ttl_minutes', 30);
-
-        if ($calculatedAt !== null) {
-            $expiresAt = CarbonImmutable::parse((string) $calculatedAt)->addMinutes($ttlMinutes);
-
-            if (CarbonImmutable::now()->isAfter($expiresAt)) {
-                return false;
-            }
-        }
-
-        $quotedWeight = $quote['cart_weight'] ?? null;
-        $currentWeight = $this->getCartWeight($cart);
-
-        return $quotedWeight === null || $quotedWeight === $currentWeight;
-    }
 }

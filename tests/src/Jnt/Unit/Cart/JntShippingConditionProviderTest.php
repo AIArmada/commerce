@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
-use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Jnt\EntryPoints\Cart\JntShippingCalculator;
 use Illuminate\Support\Facades\DB;
 
 function createConditionTestCart(string $identifier = 'condition-test'): Cart
@@ -43,7 +43,6 @@ function createTestCondition(string $type = 'shipping'): CartCondition
 describe('JntShippingCalculator condition provider', function (): void {
     beforeEach(function (): void {
         config([
-            'jnt.cart.quote_ttl_minutes' => 30,
             'jnt.shipping.origin' => [
                 'name' => 'Test',
                 'phone' => '0123456789',
@@ -159,7 +158,7 @@ describe('JntShippingCalculator condition provider', function (): void {
         expect($conditions)->toBeEmpty();
     });
 
-    it('uses cached quote when valid', function (): void {
+    it('does not charge an empty cart from persisted quote metadata', function (): void {
         $cart = createConditionTestCart('cached-quote');
         $cart->setMetadata('jnt_shipping_address', [
             'name' => 'Test',
@@ -178,8 +177,36 @@ describe('JntShippingCalculator condition provider', function (): void {
         $provider = createRealCalculator();
         $conditions = $provider->getConditionsFor($cart);
 
-        expect($conditions)->toHaveCount(1);
-        expect($conditions[0]->getValue())->toBe('999');
+        expect($conditions)->toBeEmpty();
+    });
+
+    it('recalculates when destination or rate configuration changes without changing weight', function (): void {
+        $cart = createConditionTestCart('destination-changed');
+        $address = [
+            'name' => 'Test',
+            'phone' => '0123456789',
+            'address' => 'Test',
+            'postCode' => '50000',
+            'prov' => 'Kuala Lumpur',
+        ];
+        config(['jnt.shipping.region_multipliers_bp' => ['sabah' => 20000]]);
+        $cart->setMetadata('jnt_shipping_address', $address);
+        $cart->add([
+            'id' => 'item',
+            'name' => 'Weighted Item',
+            'price' => 100,
+            'quantity' => 1,
+            'attributes' => ['weight' => 1000],
+        ]);
+        $provider = createRealCalculator();
+
+        expect($provider->getConditionsFor($cart)[0]->getValue())->toBe('800');
+
+        $cart->setMetadata('jnt_shipping_address', array_replace($address, ['prov' => 'Sabah', 'postCode' => '88000']));
+        expect($provider->getConditionsFor($cart)[0]->getValue())->toBe('1600');
+
+        config(['jnt.shipping.base_rate' => 1000]);
+        expect($provider->getConditionsFor($cart)[0]->getValue())->toBe('2000');
     });
 
     it('recalculates when cart weight changes', function (): void {
