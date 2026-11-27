@@ -17,6 +17,7 @@ use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\CashierChip\Invoice\Invoice;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -156,7 +157,7 @@ describe('RepairRegression money lifecycle', function (): void {
         $purchases = $this->fakeChip->getFakeClient()->getPurchases();
 
         expect(collect($purchases)->last()['recurring_token'])->toBe('tok_subscription_specific')
-            ->and($payment)->toBeInstanceOf(\AIArmada\CashierChip\Payment\Payment::class);
+            ->and($payment)->toBeInstanceOf(Payment::class);
     });
 
     it('rejects a subscription charge without a recurring payment token', function (): void {
