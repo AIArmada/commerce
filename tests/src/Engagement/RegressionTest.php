@@ -546,3 +546,21 @@ it('dedupes identical pending reminders', function (): void {
 
     expect(Reminder::query()->count())->toBe(2);
 });
+
+it('places share tokens before URL fragments and preserves existing query parameters', function (): void {
+    $subject = new class
+    {
+        public function shareUrl(): string
+        {
+            return 'https://example.test/event?source=feed#details';
+        }
+    };
+
+    $url = app(\AIArmada\Engagement\Contracts\ShareUrlGenerator::class)
+        ->generateShareUrl($subject, ['token' => 'a+b']);
+
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+    expect($query)->toBe(['source' => 'feed', 'share' => 'a+b'])
+        ->and(parse_url($url, PHP_URL_FRAGMENT))->toBe('details');
+});
