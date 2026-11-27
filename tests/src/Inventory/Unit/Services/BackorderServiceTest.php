@@ -20,6 +20,23 @@ describe('BackorderService', function (): void {
         $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     });
 
+    it('rejects invalid backorder quantities', function (): void {
+        expect(fn () => $this->service->create($this->item, 0, $this->location->id))->toThrow(InvalidArgumentException::class);
+        $backorder = $this->service->create($this->item, 10, $this->location->id);
+        expect(fn () => $this->service->fulfill($backorder, -1))->toThrow(InvalidArgumentException::class)
+            ->and(fn () => $this->service->cancel($backorder, 0))->toThrow(InvalidArgumentException::class)
+            ->and($backorder->fresh()->quantityRemaining())->toBe(10);
+    });
+
+    it('uses current persisted quantities when fulfilling a stale backorder', function (): void {
+        $backorder = $this->service->create($this->item, 10, $this->location->id);
+        $stale = $backorder->fresh();
+
+        expect($this->service->fulfill($backorder, 8))->toBeTrue()
+            ->and($this->service->fulfill($stale, 8))->toBeTrue()
+            ->and($backorder->fresh()->quantity_fulfilled)->toBe(10);
+    });
+
     it('create backorder', function (): void {
         $backorder = $this->service->create(
             $this->item,

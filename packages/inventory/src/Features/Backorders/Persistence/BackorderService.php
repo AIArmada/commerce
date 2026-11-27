@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Backorders\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLevel;
@@ -32,8 +33,14 @@ final class BackorderService
         ?CarbonImmutable $promisedAt = null,
         ?string $notes = null
     ): InventoryBackorder {
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Backorder quantity must be positive.');
+        }
+
+        $this->assertOwnerContext();
+
         if ($locationId !== null && InventoryOwnerScope::isEnabled()) {
-            $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($locationId))->exists();
+            $isAllowed = InventoryLocation::query()->forOwner(InventoryOwnerScope::resolveOwner(), false)->whereKey($locationId)->exists();
 
             if (! $isAllowed) {
                 throw new InvalidArgumentException('Invalid location for current owner');
@@ -62,7 +69,11 @@ final class BackorderService
      */
     public function fulfill(InventoryBackorder $backorder, int $quantity): bool
     {
-        return $backorder->fulfill($quantity);
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Fulfillment quantity must be positive.');
+        }
+
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->fulfill($quantity));
     }
 
     /**
@@ -70,7 +81,11 @@ final class BackorderService
      */
     public function cancel(InventoryBackorder $backorder, ?int $quantity = null, ?string $reason = null): bool
     {
-        return $backorder->cancel($quantity, $reason);
+        if ($quantity !== null && $quantity <= 0) {
+            throw new InvalidArgumentException('Cancellation quantity must be positive.');
+        }
+
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->cancel($quantity, $reason));
     }
 
     /**
@@ -147,6 +162,12 @@ final class BackorderService
      */
     public function autoFulfill(Model $model, int $availableQuantity, ?string $locationId = null): array
     {
+        $this->assertOwnerContext();
+
+        if ($availableQuantity < 0) {
+            throw new InvalidArgumentException('Available quantity cannot be negative.');
+        }
+
         return DB::transaction(function () use ($model, $availableQuantity, $locationId): array {
             $query = InventoryBackorder::query()
                 ->forModel($model)
@@ -154,11 +175,13 @@ final class BackorderService
                 ->byPriority()
                 ->orderBy('requested_at');
 
-            $this->applyOwnerScopeToBackorderQuery($query);
+            if (InventoryOwnerScope::isEnabled()) {
+                $query->forOwner(InventoryOwnerScope::resolveOwner(), false);
+            }
 
             if ($locationId !== null) {
                 if (InventoryOwnerScope::isEnabled()) {
-                    $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($locationId))->exists();
+                    $isAllowed = InventoryLocation::query()->forOwner(InventoryOwnerScope::resolveOwner(), false)->whereKey($locationId)->exists();
 
                     if (! $isAllowed) {
                         throw new InvalidArgumentException('Invalid location for current owner');
@@ -171,7 +194,7 @@ final class BackorderService
                 });
             }
 
-            $backorders = $query->get();
+            $backorders = $query->orderBy('id')->lockForUpdate()->get();
 
             $totalFulfilled = 0;
             $backordersUpdated = 0;
@@ -208,8 +231,7 @@ final class BackorderService
         $escalated = 0;
 
         foreach ($overdue as $backorder) {
-            if ($backorder->priority !== BackorderPriority::Urgent) {
-                $backorder->escalate();
+            if ($this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->isOverdue() && $locked->priority !== BackorderPriority::Urgent && $locked->escalate())) {
                 $escalated++;
             }
         }
@@ -235,7 +257,7 @@ final class BackorderService
         $expired = 0;
 
         foreach ($oldBackorders as $backorder) {
-            if ($backorder->expire()) {
+            if ($this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->requested_at < $cutoff && $locked->expire())) {
                 $expired++;
             }
         }
@@ -309,7 +331,7 @@ final class BackorderService
      */
     public function updatePromisedDate(InventoryBackorder $backorder, CarbonImmutable $promisedAt): bool
     {
-        return $backorder->update(['promised_at' => $promisedAt]);
+        return $this->mutate($backorder, fn (InventoryBackorder $locked): bool => $locked->update(['promised_at' => $promisedAt]));
     }
 
     /**
@@ -325,6 +347,29 @@ final class BackorderService
         $this->applyOwnerScopeToBackorderQuery($query);
 
         return (int) $query->value('total');
+    }
+
+    /** @param callable(InventoryBackorder): bool $operation */
+    private function mutate(InventoryBackorder $backorder, callable $operation): bool
+    {
+        $this->assertOwnerContext();
+
+        return DB::transaction(function () use ($backorder, $operation): bool {
+            $query = InventoryBackorder::query()->whereKey($backorder->getKey());
+
+            if (InventoryOwnerScope::isEnabled()) {
+                $query->forOwner(InventoryOwnerScope::resolveOwner(), false);
+            }
+
+            return $operation($query->lockForUpdate()->firstOrFail());
+        });
+    }
+
+    private function assertOwnerContext(): void
+    {
+        if (InventoryOwnerScope::isEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(InventoryOwnerScope::resolveOwner());
+        }
     }
 
     /**
