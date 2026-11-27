@@ -13,14 +13,14 @@ use AIArmada\Shipping\Strategies\PreferredCarrierStrategy;
 // ============================================
 
 describe('CheapestRateStrategy', function (): void {
-    it('selects the cheapest rate from collection', function (): void {
+    it('selects the cheapest rate from list', function (): void {
         $strategy = new CheapestRateStrategy;
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'carrier_b', service: 'standard', rate: 800, currency: 'MYR', estimatedDays: 3),
             new RateQuoteData(carrier: 'carrier_c', service: 'economy', rate: 1200, currency: 'MYR', estimatedDays: 5),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -28,10 +28,10 @@ describe('CheapestRateStrategy', function (): void {
         expect($selected->rate)->toBe(800);
     });
 
-    it('returns null for empty collection', function (): void {
+    it('returns null for empty list', function (): void {
         $strategy = new CheapestRateStrategy;
 
-        $selected = $strategy->select(collect());
+        $selected = $strategy->select([]);
 
         expect($selected)->toBeNull();
     });
@@ -43,14 +43,14 @@ describe('CheapestRateStrategy', function (): void {
 // ============================================
 
 describe('FastestRateStrategy', function (): void {
-    it('selects the fastest rate from collection', function (): void {
+    it('selects the fastest rate from list', function (): void {
         $strategy = new FastestRateStrategy;
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'carrier_b', service: 'standard', rate: 800, currency: 'MYR', estimatedDays: 3),
             new RateQuoteData(carrier: 'carrier_c', service: 'economy', rate: 600, currency: 'MYR', estimatedDays: 5),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -58,10 +58,10 @@ describe('FastestRateStrategy', function (): void {
         expect($selected->estimatedDays)->toBe(1);
     });
 
-    it('returns null for empty collection', function (): void {
+    it('returns null for empty list', function (): void {
         $strategy = new FastestRateStrategy;
 
-        $selected = $strategy->select(collect());
+        $selected = $strategy->select([]);
 
         expect($selected)->toBeNull();
     });
@@ -80,11 +80,11 @@ describe('PreferredCarrierStrategy', function (): void {
             'carrier_c' => 3,
         ]);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'carrier_b', service: 'standard', rate: 1200, currency: 'MYR', estimatedDays: 3),
             new RateQuoteData(carrier: 'carrier_c', service: 'economy', rate: 600, currency: 'MYR', estimatedDays: 5),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -97,10 +97,10 @@ describe('PreferredCarrierStrategy', function (): void {
             'carrier_a' => 2,
         ]);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'carrier_b', service: 'standard', rate: 800, currency: 'MYR', estimatedDays: 3),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -113,10 +113,10 @@ describe('PreferredCarrierStrategy', function (): void {
             'carrier_y' => 2,
         ]);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'carrier_b', service: 'standard', rate: 800, currency: 'MYR', estimatedDays: 3),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -126,10 +126,10 @@ describe('PreferredCarrierStrategy', function (): void {
     it('falls back to cheapest when no priorities configured', function (): void {
         $strategy = new PreferredCarrierStrategy([]);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'carrier_b', service: 'standard', rate: 800, currency: 'MYR', estimatedDays: 3),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -146,11 +146,11 @@ describe('BalancedRateStrategy', function (): void {
     it('balances between speed and cost', function (): void {
         $strategy = new BalancedRateStrategy(speedWeight: 0.5, costWeight: 0.5);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fast_expensive', service: 'express', rate: 2000, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'balanced', service: 'standard', rate: 1000, currency: 'MYR', estimatedDays: 2),
             new RateQuoteData(carrier: 'slow_cheap', service: 'economy', rate: 500, currency: 'MYR', estimatedDays: 7),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -161,11 +161,11 @@ describe('BalancedRateStrategy', function (): void {
     it('prefers speed when speed weight is higher', function (): void {
         $strategy = new BalancedRateStrategy(speedWeight: 0.8, costWeight: 0.2);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fast_expensive', service: 'express', rate: 2000, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'balanced', service: 'standard', rate: 1000, currency: 'MYR', estimatedDays: 3),
             new RateQuoteData(carrier: 'slow_cheap', service: 'economy', rate: 500, currency: 'MYR', estimatedDays: 7),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
@@ -175,21 +175,21 @@ describe('BalancedRateStrategy', function (): void {
     it('prefers cost when cost weight is higher', function (): void {
         $strategy = new BalancedRateStrategy(speedWeight: 0.2, costWeight: 0.8);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fast_expensive', service: 'express', rate: 2000, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'balanced', service: 'standard', rate: 1000, currency: 'MYR', estimatedDays: 3),
             new RateQuoteData(carrier: 'slow_cheap', service: 'economy', rate: 500, currency: 'MYR', estimatedDays: 7),
-        ]);
+        ];
 
         $selected = $strategy->select($rates);
 
         expect($selected->carrier)->toBe('slow_cheap');
     });
 
-    it('returns null for empty collection', function (): void {
+    it('returns null for empty list', function (): void {
         $strategy = new BalancedRateStrategy;
 
-        $selected = $strategy->select(collect());
+        $selected = $strategy->select([]);
 
         expect($selected)->toBeNull();
     });
@@ -197,10 +197,10 @@ describe('BalancedRateStrategy', function (): void {
     it('can override weights via options', function (): void {
         $strategy = new BalancedRateStrategy(speedWeight: 0.5, costWeight: 0.5);
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fast', service: 'express', rate: 2000, currency: 'MYR', estimatedDays: 1),
             new RateQuoteData(carrier: 'slow', service: 'economy', rate: 500, currency: 'MYR', estimatedDays: 7),
-        ]);
+        ];
 
         // Override via options to prefer speed
         $selected = $strategy->select($rates, ['speed_weight' => 0.9, 'cost_weight' => 0.1]);

@@ -6,7 +6,6 @@ namespace AIArmada\Shipping\Strategies;
 
 use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Data\RateQuoteData;
-use Illuminate\Support\Collection;
 
 /**
  * Selects rates from preferred carriers first.
@@ -20,31 +19,26 @@ class PreferredCarrierStrategy implements RateSelectionStrategyInterface
         protected readonly array $priority = []
     ) {}
 
-    public function select(Collection $rates, array $options = []): ?RateQuoteData
+    public function select(array $rates, array $options = []): ?RateQuoteData
     {
-        if ($rates->isEmpty()) {
-            return null;
-        }
+        $best = null;
+        $preferred = null;
+        $bestPriority = PHP_INT_MAX;
 
-        // If no priority configured, fall back to cheapest
-        if (empty($this->priority)) {
-            return $rates->sortBy('rate')->first();
-        }
+        foreach ($rates as $rate) {
+            if ($best === null || $rate->rate < $best->rate) {
+                $best = $rate;
+            }
 
-        // Try each preferred carrier in priority order
-        $sortedPriority = $this->priority;
-        asort($sortedPriority);
+            $priority = $this->priority[$rate->carrier] ?? null;
 
-        foreach (array_keys($sortedPriority) as $carrier) {
-            $rate = $rates->firstWhere('carrier', $carrier);
-
-            if ($rate !== null) {
-                return $rate;
+            if ($priority !== null && ($preferred === null || $priority < $bestPriority)) {
+                $preferred = $rate;
+                $bestPriority = $priority;
             }
         }
 
-        // Fallback to cheapest if no preferred carrier available
-        return $rates->sortBy('rate')->first();
+        return $preferred ?? $best;
     }
 
     public function getStrategyName(): string

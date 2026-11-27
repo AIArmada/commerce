@@ -6,20 +6,23 @@ namespace AIArmada\Shipping\Strategies;
 
 use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Data\RateQuoteData;
-use Illuminate\Support\Collection;
 
 /**
  * Selects the cheapest rate.
  */
 class CheapestRateStrategy implements RateSelectionStrategyInterface
 {
-    public function select(Collection $rates, array $options = []): ?RateQuoteData
+    public function select(array $rates, array $options = []): ?RateQuoteData
     {
-        if ($rates->isEmpty()) {
-            return null;
+        $best = null;
+
+        foreach ($rates as $rate) {
+            if ($best === null || $rate->rate < $best->rate) {
+                $best = $rate;
+            }
         }
 
-        return $rates->sortBy('rate')->first();
+        return $best;
     }
 
     public function getStrategyName(): string

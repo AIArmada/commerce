@@ -30,35 +30,19 @@ final class TrackingUpdatedEvent
 
     public function getLatestStatus(): ?string
     {
-        if (count($this->tracking->details) === 0) {
-            return null;
-        }
-
-        $latest = $this->tracking->details[array_key_last($this->tracking->details)];
-
-        return $latest instanceof TrackingDetailData ? $latest->scanType : null;
+        return $this->tracking->getLatestDetail()?->scanType;
     }
 
     public function getLatestDescription(): ?string
     {
-        if (count($this->tracking->details) === 0) {
-            return null;
-        }
-
-        $latest = $this->tracking->details[array_key_last($this->tracking->details)];
-
-        return $latest instanceof TrackingDetailData ? $latest->description : null;
+        return $this->tracking->getLatestDetail()?->description;
     }
 
     public function getLatestLocation(): ?string
     {
-        if (count($this->tracking->details) === 0) {
-            return null;
-        }
+        $latest = $this->tracking->getLatestDetail();
 
-        $latest = $this->tracking->details[array_key_last($this->tracking->details)];
-
-        if (! ($latest instanceof TrackingDetailData)) {
+        if ($latest === null) {
             return null;
         }
 

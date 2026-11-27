@@ -104,7 +104,7 @@ class RateShoppingEngine
             return $this->getFallbackRate($destination, $packages);
         }
 
-        return $this->strategy->select($allRates, $options);
+        return $this->strategy->select($allRates->values()->all(), $options);
     }
 
     /**

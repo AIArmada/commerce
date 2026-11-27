@@ -6,7 +6,6 @@ namespace AIArmada\Shipping\Strategies;
 
 use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Data\RateQuoteData;
-use Illuminate\Support\Collection;
 
 /**
  * Balances speed and cost using weighted scoring.
@@ -18,30 +17,37 @@ class BalancedRateStrategy implements RateSelectionStrategyInterface
         protected readonly float $costWeight = 0.5
     ) {}
 
-    public function select(Collection $rates, array $options = []): ?RateQuoteData
+    public function select(array $rates, array $options = []): ?RateQuoteData
     {
-        if ($rates->isEmpty()) {
+        if ($rates === []) {
             return null;
         }
 
         $speedWeight = $options['speed_weight'] ?? $this->speedWeight;
         $costWeight = $options['cost_weight'] ?? $this->costWeight;
 
-        $maxRate = $rates->max('rate') ?: 1;
-        $maxDays = $rates->max('estimatedDays') ?: 1;
+        $maxRate = 1;
+        $maxDays = 1;
 
-        $scored = $rates->map(function (RateQuoteData $rate) use ($maxRate, $maxDays, $speedWeight, $costWeight) {
-            // Higher score = better
-            $speedScore = 1 - ($rate->estimatedDays / $maxDays);
-            $costScore = 1 - ($rate->rate / $maxRate);
-            $totalScore = ($speedWeight * $speedScore) + ($costWeight * $costScore);
+        foreach ($rates as $rate) {
+            $maxRate = max($maxRate, $rate->rate);
+            $maxDays = max($maxDays, $rate->estimatedDays);
+        }
 
-            return ['rate' => $rate, 'score' => $totalScore];
-        });
+        $best = null;
+        $bestScore = -INF;
 
-        $best = $scored->sortByDesc('score')->first();
+        foreach ($rates as $rate) {
+            $score = ($speedWeight * (1 - $rate->estimatedDays / $maxDays))
+                + ($costWeight * (1 - $rate->rate / $maxRate));
 
-        return $best['rate'] ?? null;
+            if ($score > $bestScore) {
+                $best = $rate;
+                $bestScore = $score;
+            }
+        }
+
+        return $best;
     }
 
     public function getStrategyName(): string
