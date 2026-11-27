@@ -12,17 +12,18 @@ final class SetPrimaryContactMethodAction
 {
     public function execute(ContactMethod $contactMethod): ContactMethod
     {
-        $contactMethod = ContactMethod::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey())
-            : ContactMethod::query()->whereKey($contactMethod->getKey())->firstOrFail();
+        return $contactMethod->getConnection()->transaction(function () use ($contactMethod): ContactMethod {
+            if (ContactMethod::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey());
+            }
 
-        $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
+            $contactMethod = ContactMethod::query()->whereKey($contactMethod->getKey())->lockForUpdate()->firstOrFail();
             $contactMethod->is_primary = true;
             if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
                 throw new RuntimeException('The contact write was cancelled.');
             }
-        });
 
-        return $contactMethod->refresh();
+            return $contactMethod->refresh();
+        }, attempts: 3);
     }
 }

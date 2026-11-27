@@ -12,17 +12,18 @@ final class SetPrimarySocialProfileAction
 {
     public function execute(SocialProfile $profile): SocialProfile
     {
-        $profile = SocialProfile::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey())
-            : SocialProfile::query()->whereKey($profile->getKey())->firstOrFail();
+        return $profile->getConnection()->transaction(function () use ($profile): SocialProfile {
+            if (SocialProfile::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
+            }
 
-        $profile->getConnection()->transaction(function () use ($profile): void {
+            $profile = SocialProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
             $profile->is_primary = true;
             if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new RuntimeException('The contact write was cancelled.');
             }
-        });
 
-        return $profile->refresh();
+            return $profile->refresh();
+        }, attempts: 3);
     }
 }

@@ -29,19 +29,21 @@ final class UpdateSocialProfileAction
 
     public function execute(SocialProfile $profile, SocialProfileData | array $data): SocialProfile
     {
-        $profile = SocialProfile::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey())
-            : SocialProfile::query()->whereKey($profile->getKey())->firstOrFail();
-
         $data = app(ValidateSocialProfileData::class)->execute($data);
 
-        $result = $this->normalizer->execute(
-            $data->platform,
-            $data->handle instanceof MissingValue ? $profile->handle : $data->handle,
-            $data->url instanceof MissingValue ? $profile->url : $data->url,
-        );
+        return $profile->getConnection()->transaction(function () use ($profile, $data): SocialProfile {
+            if (SocialProfile::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
+            }
 
-        $profile->getConnection()->transaction(function () use ($profile, $data, $result): void {
+            $profile = SocialProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
+
+            $result = $this->normalizer->execute(
+                $data->platform,
+                $data->handle instanceof MissingValue ? $profile->handle : $data->handle,
+                $data->url instanceof MissingValue ? $profile->url : $data->url,
+            );
+
             $profile->platform = $data->platform;
 
             if (! $data->purpose instanceof MissingValue) {
@@ -88,8 +90,7 @@ final class UpdateSocialProfileAction
             if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new RuntimeException('The contact write was cancelled.');
             }
-        });
-
-        return $profile->refresh();
+            return $profile->refresh();
+        }, attempts: 3);
     }
 }

@@ -65,5 +65,4 @@ final readonly class RecordModerationAction
             ]);
         });
     }
-
 }

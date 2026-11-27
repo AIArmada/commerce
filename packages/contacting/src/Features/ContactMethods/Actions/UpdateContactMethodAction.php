@@ -30,29 +30,31 @@ final class UpdateContactMethodAction
 
     public function execute(ContactMethod $contactMethod, ContactMethodData | array $data): ContactMethod
     {
-        $contactMethod = ContactMethod::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey())
-            : ContactMethod::query()->whereKey($contactMethod->getKey())->firstOrFail();
-
         $data = app(ValidateContactMethodData::class)->execute($data);
 
-        $countryCode = $data->countryCode instanceof MissingValue
-            ? $contactMethod->country_code
-            : $data->countryCode;
+        return $contactMethod->getConnection()->transaction(function () use ($contactMethod, $data): ContactMethod {
+            if (ContactMethod::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey());
+            }
 
-        $result = $this->normalizer->execute(
-            $data->type,
-            $data->value,
-            $countryCode ?? $contactMethod->country_code ?? config('contacting.defaults.country_code'),
-        );
+            $contactMethod = ContactMethod::query()->whereKey($contactMethod->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($data->type === 'email' && $result['normalized_value'] === null) {
-            throw ValidationException::withMessages([
-                'value' => 'The value must be a valid email address for the email type.',
-            ]);
-        }
+            $countryCode = $data->countryCode instanceof MissingValue
+                ? $contactMethod->country_code
+                : $data->countryCode;
 
-        $contactMethod->getConnection()->transaction(function () use ($contactMethod, $data, $result, $countryCode): void {
+            $result = $this->normalizer->execute(
+                $data->type,
+                $data->value,
+                $countryCode ?? $contactMethod->country_code ?? config('contacting.defaults.country_code'),
+            );
+
+            if ($data->type === 'email' && $result['normalized_value'] === null) {
+                throw ValidationException::withMessages([
+                    'value' => 'The value must be a valid email address for the email type.',
+                ]);
+            }
+
             $contactMethod->type = $data->type;
 
             if (! $data->purpose instanceof MissingValue) {
@@ -103,8 +105,7 @@ final class UpdateContactMethodAction
             if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
                 throw new RuntimeException('The contact write was cancelled.');
             }
-        });
-
-        return $contactMethod->refresh();
+            return $contactMethod->refresh();
+        }, attempts: 3);
     }
 }
