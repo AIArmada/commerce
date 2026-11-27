@@ -57,7 +57,7 @@ final class CreateTrackingTokenAction
 
     private function validatedTargetUrl(string $targetUrl): string
     {
-        if (preg_match('/[\\x00-\\x20\\x7f]/', $targetUrl) === 1 || str_contains($targetUrl, '\\\\')) {
+        if (preg_match('/[\\x00-\\x20\\x7f]/', $targetUrl) === 1 || str_contains($targetUrl, '\\')) {
             throw new InvalidArgumentException('Tracking target URL contains invalid characters.');
         }
 
