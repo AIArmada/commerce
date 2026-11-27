@@ -8,11 +8,9 @@ use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
-use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Identity\Api\PersonDependentsCleaner;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
-use AIArmada\Persons\Features\Titles\Models\Title;
-use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Runtime\PersonTitleFormatting;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use AIArmada\Persons\Traits\HasAffiliations;
@@ -273,55 +271,7 @@ class Person extends Model implements Sortable
      */
     public function getFormattedNameAttribute(): string
     {
-        if ($this->relationLoaded('titleAssignments')) {
-            /** @var EloquentCollection<int, TitleAssignment> $loadedAssignments */
-            $loadedAssignments = $this->getRelation('titleAssignments');
-
-            $hasCompleteTitleGraph = ! $loadedAssignments->contains(
-                static fn (TitleAssignment $assignment): bool => ! $assignment->relationLoaded('title')
-                    || (($title = $assignment->getRelationValue('title')) instanceof Title
-                        && ! $title->relationLoaded('category')),
-            );
-
-            if ($hasCompleteTitleGraph) {
-                $assignments = $loadedAssignments;
-            } else {
-                $assignments = $this->titleAssignments()
-                    ->where('status', AssignmentStatus::Active)
-                    ->with('title.category')
-                    ->get();
-            }
-        } else {
-            $assignments = $this->titleAssignments()
-                ->where('status', AssignmentStatus::Active)
-                ->with('title.category')
-                ->get();
-        }
-
-        /** @var EloquentCollection<int, TitleAssignment> $assignments */
-        $assignments = $assignments
-            ->filter(fn (TitleAssignment $assignment): bool => $assignment->status === AssignmentStatus::Active
-                && $assignment->title !== null
-                && $assignment->title->category !== null)
-            ->values();
-
-        $before = $assignments
-            ->filter(fn (TitleAssignment $a) => $a->title->usage_position === TitleUsagePosition::BeforeName)
-            ->sort($this->compareTitleAssignments(...))
-            ->map(fn (TitleAssignment $a) => $a->title->short_form ?? $a->title->name);
-
-        $after = $assignments
-            ->filter(fn (TitleAssignment $a) => $a->title->usage_position === TitleUsagePosition::AfterName)
-            ->sort($this->compareTitleAssignments(...))
-            ->map(fn (TitleAssignment $a) => $a->title->short_form ?? $a->title->name);
-
-        $name = mb_trim(implode(' ', $before->all()) . ' ' . $this->name);
-
-        if ($after->isNotEmpty()) {
-            $name .= ', ' . implode(', ', $after->all());
-        }
-
-        return mb_trim($name);
+        return app(PersonTitleFormatting::class)->format($this);
     }
 
     /**
@@ -391,18 +341,4 @@ class Person extends Model implements Sortable
         }
     }
 
-    private function compareTitleAssignments(TitleAssignment $left, TitleAssignment $right): int
-    {
-        $categoryOrder = $left->title->category->sort_order <=> $right->title->category->sort_order;
-
-        if ($categoryOrder !== 0) {
-            return $categoryOrder;
-        }
-
-        $titleOrder = $left->title->sort_order <=> $right->title->sort_order;
-
-        return $titleOrder !== 0
-            ? $titleOrder
-            : ((string) $left->title->getKey() <=> (string) $right->title->getKey());
-    }
 }
