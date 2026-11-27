@@ -12,7 +12,7 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderPrintCommand;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Commands\WebhookTestCommand;
-use AIArmada\Jnt\EntryPoints\Http\Controllers\AwbController;
+use AIArmada\Jnt\Features\Waybills\EntryPoints\Http\AwbController;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
 use AIArmada\Jnt\Data\TrackingStatus;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\EntryPoints\Http\Controllers;
+namespace AIArmada\Jnt\Features\Waybills\EntryPoints\Http;
 
 use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
@@ -22,7 +22,7 @@ final class AwbController
         /** @var array<string, mixed>|null $data */
         $data = app(SignedDownloadApi::class)->payloadFromToken($request->query(SignedDownloadApi::TOKEN_QUERY_PARAM), 'jnt_awb');
 
-        if ($data === null || ! isset($data['content']) || $data['content'] === false) {
+        if ($data === null || ! is_string($data['content'] ?? null) || $data['content'] === '') {
             abort(404, 'AWB not found or expired.');
         }
 
@@ -36,9 +36,11 @@ final class AwbController
             abort(403, 'Unauthorized AWB access.');
         }
 
-        $format = in_array($data['format'] ?? 'pdf', ['pdf', 'png', 'zpl'], true)
-            ? (string) $data['format']
-            : 'pdf';
+        $format = $data['format'] ?? null;
+
+        if (! in_array($format, ['pdf', 'png', 'zpl'], true)) {
+            abort(404, 'Unsupported AWB format.');
+        }
 
         $mimeType = match ($format) {
             'png' => 'image/png',
@@ -54,6 +56,7 @@ final class AwbController
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
             'Expires' => '0',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

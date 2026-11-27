@@ -39,7 +39,6 @@ final class ShippingServiceProvider extends PackageServiceProvider
         $package
             ->name('shipping')
             ->hasConfigFile()
-            ->hasRoute('web')
             ->runsMigrations()
             ->discoversMigrations();
     }
@@ -146,6 +145,8 @@ final class ShippingServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        $this->loadRoutesFrom(__DIR__ . '/Features/Shipments/EntryPoints/Routes/web.php');
+
         foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {
             $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
 

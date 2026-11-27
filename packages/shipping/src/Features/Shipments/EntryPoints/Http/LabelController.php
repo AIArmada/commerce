@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\EntryPoints\Http\Controllers;
+namespace AIArmada\Shipping\Features\Shipments\EntryPoints\Http;
 
 use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
