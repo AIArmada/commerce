@@ -8,7 +8,7 @@ use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Support\MoneyInput;
 use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;
 use AIArmada\Shipping\States\Pending;

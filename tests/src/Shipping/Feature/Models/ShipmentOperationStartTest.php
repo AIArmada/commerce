@@ -6,8 +6,8 @@ namespace AIArmada\Commerce\Tests\Shipping\Feature\Models;
 
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use InvalidArgumentException;
 
 function operationTestShipment(): Shipment

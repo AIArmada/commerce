@@ -31,7 +31,7 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Support\Collection;
 use Mockery\CompositeExpectation;

@@ -123,7 +123,7 @@ Once a shipment is Shipped or beyond, it cannot be cancelled through the UI.
 
 Debug:
 ```php
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Pending;
 
 // Check data exists

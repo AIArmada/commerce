@@ -203,7 +203,7 @@ echo $shipment->tracking_number; // "JT1234567890"
 ### Creating Shipment for an Order
 
 ```php
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Draft;
 use AIArmada\Orders\Models\Order;
 

@@ -6,7 +6,7 @@ namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
 use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 use DomainException;

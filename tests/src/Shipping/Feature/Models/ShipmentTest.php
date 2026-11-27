@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentEvent;
-use AIArmada\Shipping\Models\ShipmentItem;
-use AIArmada\Shipping\Models\ShipmentLabel;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
 use AIArmada\Shipping\States\Draft;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\ShipmentStatus;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use Filament\Actions\Action;

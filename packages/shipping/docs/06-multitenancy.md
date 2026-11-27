@@ -83,7 +83,7 @@ $platformZones = ShippingZone::globalOnly()->get();
 ## Querying with Owner Scope
 
 ```php
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\States\Shipped;
 

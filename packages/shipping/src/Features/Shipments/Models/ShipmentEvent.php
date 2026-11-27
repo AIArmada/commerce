@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Models;
+namespace AIArmada\Shipping\Features\Shipments\Models;
 
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\Shipping\Enums\TrackingStatus;

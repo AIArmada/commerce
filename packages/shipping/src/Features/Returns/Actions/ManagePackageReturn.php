@@ -7,7 +7,7 @@ namespace AIArmada\Shipping\Features\Returns\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 
 final readonly class ManagePackageReturn implements PackageReturnWorkflow
 {

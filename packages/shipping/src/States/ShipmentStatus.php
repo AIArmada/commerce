@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\States;
 
 use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;

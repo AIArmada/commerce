@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Data\CarrierOperationResult;
-use AIArmada\Shipping\Models\ShipmentOperation;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use AIArmada\Shipping\ShippingManager;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;

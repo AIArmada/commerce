@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Actions;
 
 use AIArmada\Shipping\Features\Shipments\Actions\RecalculateShipmentWeight;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Illuminate\Support\Facades\DB;
 
 function weightedShipment(): Shipment

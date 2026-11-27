@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentEvent;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
 
 describe('ShipmentEvent Model', function (): void {
     it('can create a shipment event with required fields', function (): void {

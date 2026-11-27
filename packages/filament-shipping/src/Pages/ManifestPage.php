@@ -6,7 +6,7 @@ namespace AIArmada\FilamentShipping\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\ShipmentStatus;
 use AIArmada\Shipping\States\Shipped;

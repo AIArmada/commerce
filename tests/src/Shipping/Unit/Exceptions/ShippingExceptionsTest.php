@@ -6,7 +6,7 @@ use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Cancelled;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\InTransit;

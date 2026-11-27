@@ -10,7 +10,7 @@ use AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\Schemas\ShipmentForm;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\Tables\ShipmentsTable;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use BackedEnum;
 use Filament\Resources\Resource;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;

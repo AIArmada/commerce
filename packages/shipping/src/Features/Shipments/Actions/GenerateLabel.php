@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments\Actions;
 
-use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Models\ShipmentLabel;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
 use AIArmada\Shipping\ShippingManager;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;

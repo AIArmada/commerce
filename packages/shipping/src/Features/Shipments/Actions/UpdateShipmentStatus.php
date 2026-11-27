@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
 use AIArmada\Shipping\States\Shipped;

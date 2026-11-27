@@ -12,7 +12,7 @@ use AIArmada\FilamentShipping\Widgets\PendingActionsWidget;
 use AIArmada\FilamentShipping\Widgets\PendingShipmentsWidget;
 use AIArmada\FilamentShipping\Widgets\ShippingDashboardWidget;
 use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
-use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;
 use AIArmada\Shipping\States\Pending;
