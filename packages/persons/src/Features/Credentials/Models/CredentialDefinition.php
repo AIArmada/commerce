@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Credentials\Models;
 
+use AIArmada\Persons\Database\Factories\CredentialDefinitionFactory;
 use AIArmada\Persons\Enums\CredentialType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -42,6 +43,11 @@ class CredentialDefinition extends Model
                 $definition->assignments()->chunkById(500, static fn (Collection $assignments) => $assignments->each->delete());
             });
         });
+    }
+
+    protected static function newFactory(): CredentialDefinitionFactory
+    {
+        return CredentialDefinitionFactory::new();
     }
 
     public function getTable(): string

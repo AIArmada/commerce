@@ -83,7 +83,7 @@ $person->names()->create([
 For reusable orchestration, use the additive core assignment actions:
 
 ```php
-use AIArmada\Persons\Actions\AssignCredentialAction;
+use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
 use AIArmada\Persons\Actions\AssignTitleAction;
 
 $titleAssignment = app(AssignTitleAction::class)->execute($person, $prof->id);
@@ -129,7 +129,7 @@ class Institution extends Model
 ## Credentials
 
 ```php
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 
 $phd = CredentialDefinition::firstOrCreate([
     'name' => 'Doctor of Philosophy',

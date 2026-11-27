@@ -9,7 +9,7 @@ use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\Create
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\EditCredentialDefinition;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\ListCredentialDefinitions;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource\Pages\ViewCredentialDefinition;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Select;

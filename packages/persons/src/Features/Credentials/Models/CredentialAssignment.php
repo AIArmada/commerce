@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Models;
+namespace AIArmada\Persons\Features\Credentials\Models;
 
+use AIArmada\Persons\Database\Factories\CredentialAssignmentFactory;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
@@ -44,6 +45,11 @@ class CredentialAssignment extends Model
         'date_expired',
         'status',
     ];
+
+    protected static function newFactory(): CredentialAssignmentFactory
+    {
+        return CredentialAssignmentFactory::new();
+    }
 
     public function getTable(): string
     {

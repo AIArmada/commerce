@@ -15,8 +15,8 @@ use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\CreateTitleIssu
 use AIArmada\FilamentPersons\Resources\TitleIssuerResource\Pages\EditTitleIssuer;
 use AIArmada\FilamentPersons\Resources\TitleResource;
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\CredentialAssignment;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Models\Person;
 use AIArmada\Persons\Models\Title;
 use AIArmada\Persons\Models\TitleAssignment;

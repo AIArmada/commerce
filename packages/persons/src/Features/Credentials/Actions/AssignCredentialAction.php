@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Persons\Actions;
+namespace AIArmada\Persons\Features\Credentials\Actions;
 
 use AIArmada\Persons\Enums\AssignmentStatus;
-use AIArmada\Persons\Models\CredentialAssignment;
-use AIArmada\Persons\Models\CredentialDefinition;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
 
 final class AssignCredentialAction
@@ -45,12 +45,8 @@ final class AssignCredentialAction
         $assignment->credentialable()->associate($credentialable);
 
         try {
-            $assignment->save();
-        } catch (QueryException $exception) {
-            if ($exception->getCode() !== '23000') {
-                throw $exception;
-            }
-
+            $assignment->getConnection()->transaction(fn (): bool => $assignment->save());
+        } catch (UniqueConstraintViolationException $exception) {
             $raced = CredentialAssignment::query()
                 ->where('credentialable_type', $credentialable->getMorphClass())
                 ->where('credentialable_id', $credentialable->getKey())

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Traits;
 
-use AIArmada\Persons\Models\CredentialAssignment;
+use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
