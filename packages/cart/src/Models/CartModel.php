@@ -7,7 +7,6 @@ namespace AIArmada\Cart\Models;
 use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -154,66 +153,6 @@ class CartModel extends Model implements Auditable
     public function isMerged(): bool
     {
         return $this->merged_into_id !== null;
-    }
-
-    /**
-     * Mark cart as converted (checked out).
-     *
-     * Idempotent: a second call is a no-op. The transition is applied with a
-     * version-checked atomic update so concurrent checkouts cannot both win.
-     */
-    public function markAsConverted(): void
-    {
-        if ($this->checked_out_at !== null) {
-            return;
-        }
-
-        if (! $this->exists) {
-            $this->checked_out_at = CarbonImmutable::now();
-            $this->save();
-
-            return;
-        }
-
-        if ($this->version === null) {
-            $this->refresh();
-
-            if ($this->checked_out_at !== null) {
-                return;
-            }
-        }
-
-        $attemptedVersion = (int) $this->version;
-        $now = CarbonImmutable::now();
-
-        $updated = static::query()
-            ->whereKey($this->getKey())
-            ->where('version', $attemptedVersion)
-            ->whereNull('checked_out_at')
-            ->update([
-                'checked_out_at' => $now,
-                'version' => $attemptedVersion + 1,
-                'updated_at' => $now,
-            ]);
-
-        if ($updated > 0) {
-            $this->checked_out_at = $now;
-            $this->version = $attemptedVersion + 1;
-
-            return;
-        }
-
-        $this->refresh();
-
-        if ($this->checked_out_at !== null) {
-            return;
-        }
-
-        throw new CartConflictException(
-            'Cart was modified by another request during conversion',
-            $attemptedVersion,
-            (int) $this->version,
-        );
     }
 
     /**

@@ -49,7 +49,7 @@ final class CartServiceProvider extends PackageServiceProvider
             ->runsMigrations()
             ->discoversMigrations()
             ->hasCommands([
-                Console\Commands\ClearAbandonedCartsCommand::class,
+                EntryPoints\Commands\ClearAbandonedCartsCommand::class,
             ]);
     }
 

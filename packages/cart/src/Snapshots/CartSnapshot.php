@@ -6,8 +6,6 @@ namespace AIArmada\Cart\Snapshots;
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Database\Factories\CartSnapshotFactory;
-use AIArmada\Cart\Events\CartAbandoned;
-use AIArmada\Cart\Events\CartCheckoutStarted;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -387,50 +385,4 @@ class CartSnapshot extends Model
         return Attribute::get(fn (): string => $this->formatMoney($this->savings));
     }
 
-    /**
-     * Mark that checkout has started for this cart.
-     */
-    public function markCheckoutStarted(): static
-    {
-        if ($this->checkout_started_at === null) {
-            $this->update([
-                'checkout_started_at' => CarbonImmutable::now(),
-                'last_activity_at' => CarbonImmutable::now(),
-            ]);
-
-            event(CartCheckoutStarted::fromCart($this));
-        } else {
-            $this->update([
-                'last_activity_at' => CarbonImmutable::now(),
-            ]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Mark this cart as abandoned.
-     */
-    public function markAsAbandoned(): static
-    {
-        if ($this->checkout_abandoned_at === null) {
-            $this->update([
-                'checkout_abandoned_at' => CarbonImmutable::now(),
-            ]);
-
-            event(CartAbandoned::fromCart($this));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Update last activity timestamp.
-     */
-    public function touchActivity(): static
-    {
-        $this->update(['last_activity_at' => CarbonImmutable::now()]);
-
-        return $this;
-    }
 }

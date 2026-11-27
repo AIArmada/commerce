@@ -6,6 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Features\LiveCart\Actions\MarkCartConverted;
 use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -74,10 +75,10 @@ it('marks carts converted exactly once', function (): void {
         'instance' => 'default',
     ]);
 
-    $cart->markAsConverted();
+    app(MarkCartConverted::class)->execute($cart);
     $first = $cart->refresh()->checked_out_at;
 
-    $cart->markAsConverted();
+    app(MarkCartConverted::class)->execute($cart);
 
     expect($cart->refresh()->checked_out_at)->toEqual($first);
 });

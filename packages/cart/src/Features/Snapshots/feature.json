@@ -4,7 +4,10 @@
   "owns": {
     "table:cart_snapshots": [
       "AIArmada\\Cart\\Features\\Snapshots\\Persistence\\NormalizedCartSynchronizer",
-      "AIArmada\\Cart\\Features\\Snapshots\\Actions\\ReconcileMergedCartSnapshot"
+      "AIArmada\\Cart\\Features\\Snapshots\\Actions\\ReconcileMergedCartSnapshot",
+      "AIArmada\\Cart\\Features\\Snapshots\\Actions\\StartCartCheckout",
+      "AIArmada\\Cart\\Features\\Snapshots\\Actions\\MarkCartAbandoned",
+      "AIArmada\\Cart\\Features\\Snapshots\\Actions\\TouchCartActivity"
     ],
     "table:cart_snapshot_items": [
       "AIArmada\\Cart\\Features\\Snapshots\\Persistence\\NormalizedCartSynchronizer",

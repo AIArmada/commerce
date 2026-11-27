@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Console\Commands;
+namespace AIArmada\Cart\EntryPoints\Commands;
 
+use AIArmada\Cart\Features\LiveCart\Actions\DeleteAbandonedCarts;
+use AIArmada\Cart\Features\Snapshots\Actions\MarkCartAbandoned;
 use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Snapshots\CartSnapshot;
-use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 final class ClearAbandonedCartsCommand extends Command
@@ -280,11 +280,14 @@ final class ClearAbandonedCartsCommand extends Command
         }
 
         $marked = 0;
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
+        $action = app(MarkCartAbandoned::class);
 
-        $this->abandonedSnapshotsQuery($minutes)->chunkById(500, function ($snapshots) use (&$marked): void {
+        $this->abandonedSnapshotsQuery($minutes)->chunkById(500, function ($snapshots) use (&$marked, $action, $cutoff): void {
             foreach ($snapshots as $snapshot) {
-                $snapshot->markAsAbandoned();
-                $marked++;
+                if ($action->execute($snapshot, $cutoff)) {
+                    $marked++;
+                }
             }
         });
 
@@ -531,10 +534,7 @@ final class ClearAbandonedCartsCommand extends Command
         string | int | null $ownerId,
         bool $deleteMode = false,
     ): int {
-        $query = $this->baseQuery($table, $useExpired, $days, $now, $deleteMode);
-        CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
-
-        return $query->count();
+        return app(DeleteAbandonedCarts::class)->count($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
     }
 
     private function processForOwner(
@@ -552,56 +552,6 @@ final class ClearAbandonedCartsCommand extends Command
             return $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
         }
 
-        $processedCount = 0;
-
-        // Delete in id-ordered batches: only one batch of ids is ever held in
-        // memory, so --batch-size genuinely bounds memory on large tables.
-        while (true) {
-            $query = $this->baseQuery($table, $useExpired, $days, $now, $deleteMode);
-            CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
-
-            $ids = $query->orderBy('id')->limit($batchSize)->pluck('id');
-
-            if ($ids->isEmpty()) {
-                break;
-            }
-
-            $deleteQuery = DB::table($table)->whereIn('id', $ids->toArray());
-            CartOwnerScope::applyForOwner($deleteQuery, $ownerType, $ownerId);
-
-            if ($deleteMode) {
-                $deleteQuery->whereNotNull('abandoned_at');
-            }
-
-            $processed = $deleteQuery->delete();
-            $processedCount += $processed;
-
-            if ($processed < $ids->count()) {
-                break;
-            }
-        }
-
-        return $processedCount;
-    }
-
-    private function baseQuery(string $table, bool $useExpired, int $days, CarbonInterface $now, bool $deleteMode = false): Builder
-    {
-        if ($deleteMode) {
-            return DB::table($table)
-                ->whereNotNull('abandoned_at');
-        }
-
-        if ($useExpired) {
-            return DB::table($table)
-                ->whereNull('expired_at')
-                ->whereNotNull('expires_at')
-                ->where('expires_at', '<', $now);
-        }
-
-        $cutoffDate = $now->subDays($days);
-
-        return DB::table($table)
-            ->whereNull('abandoned_at')
-            ->where('updated_at', '<', $cutoffDate);
+        return app(DeleteAbandonedCarts::class)->execute($table, $useExpired, $days, $now, $batchSize, $ownerType, $ownerId, $deleteMode);
     }
 }

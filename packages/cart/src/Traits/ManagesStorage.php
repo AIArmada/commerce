@@ -155,8 +155,6 @@ trait ManagesStorage
                 if ($attempt >= self::MAX_MUTATION_ATTEMPTS) {
                     throw $exception;
                 }
-
-                usleep(25000 * $attempt);
             }
         }
     }
@@ -197,8 +195,6 @@ trait ManagesStorage
                 if ($attempt >= self::MAX_MUTATION_ATTEMPTS) {
                     throw $exception;
                 }
-
-                usleep(25000 * $attempt);
             }
         }
     }
