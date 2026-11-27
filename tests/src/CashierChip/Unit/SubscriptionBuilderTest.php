@@ -46,6 +46,21 @@ describe('SubscriptionBuilder', function (): void {
         $this->assertSame($builder, $result);
     });
 
+    it('preserves product identity and unit price when updating quantity', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
+        $builder->price(['price' => 'price_123', 'product' => 'prod_123', 'unit_amount' => 1500]);
+
+        $builder->quantity(3);
+
+        expect($builder->getItems()['price_123'])->toBe([
+            'price' => 'price_123',
+            'product' => 'prod_123',
+            'unit_amount' => 1500,
+            'quantity' => 3,
+        ])->and($builder->getTotalAmount())->toBe(4500);
+    });
+
     it('trial days', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default', 'price_123');

@@ -129,11 +129,7 @@ class SubscriptionBuilder
             throw new InvalidArgumentException('A non-empty price identifier is required.');
         }
 
-        if (isset($options['price'])) {
-            $this->items[$options['price']] = $options;
-        } else {
-            $this->items[] = $options;
-        }
+        $this->items[$options['price']] = $options;
 
         return $this;
     }
@@ -157,7 +153,10 @@ class SubscriptionBuilder
             $price = Arr::first($this->items)['price'];
         }
 
-        return $this->price($price, $quantity);
+        $item = $this->items[$price] ?? ['price' => $price];
+        $item['quantity'] = $quantity;
+
+        return $this->price($item, $quantity);
     }
 
     /**

@@ -6,7 +6,6 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Data\StoredPaymentMethodData;
-use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
@@ -20,11 +19,14 @@ use SensitiveParameter;
 trait ManagesPaymentMethods
 {
     /**
-     * @return MorphMany<StoredPaymentMethod, $this>
+     * @return MorphMany<\AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod, $this>
      */
     public function storedPaymentMethods(): MorphMany
     {
-        return $this->morphMany(StoredPaymentMethod::class, 'billable')
+        /** @var class-string<\AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod> $model */
+        $model = app('cashier-chip.models.stored-payment-method');
+
+        return $this->morphMany($model, 'billable')
             ->orderByDesc('is_default')
             ->orderByDesc('created_at');
     }

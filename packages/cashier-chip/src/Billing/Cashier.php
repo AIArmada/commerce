@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Billing;
 
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
-use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
-use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipClient;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
@@ -19,8 +17,6 @@ use InvalidArgumentException;
 
 /**
  * Main Cashier class for CHIP payment gateway.
- *
- * Can be referenced as either `Cashier` or `CashierChip` for compatibility.
  */
 final class Cashier
 {
@@ -52,14 +48,18 @@ final class Cashier
     public static string $customerModel = Model::class;
 
     /**
-     * The subscription model class name.
+     * The subscription model class name, registered by the Subscriptions feature.
+     *
+     * @var class-string<Model>
      */
-    public static string $subscriptionModel = Subscription::class;
+    public static string $subscriptionModel = Model::class;
 
     /**
-     * The subscription item model class name.
+     * The subscription item model class name, registered by the Subscriptions feature.
+     *
+     * @var class-string<Model>
      */
-    public static string $subscriptionItemModel = SubscriptionItem::class;
+    public static string $subscriptionItemModel = Model::class;
 
     /**
      * The fake CHIP service for testing.
@@ -92,8 +92,8 @@ final class Cashier
         'deactivatePastDue' => true,
         'deactivateIncomplete' => true,
         'customerModel' => Model::class,
-        'subscriptionModel' => Subscription::class,
-        'subscriptionItemModel' => SubscriptionItem::class,
+        'subscriptionModel' => Model::class,
+        'subscriptionItemModel' => Model::class,
         'fakeChip' => null,
         'isFake' => false,
     ];

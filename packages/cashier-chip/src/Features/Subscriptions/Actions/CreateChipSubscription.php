@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\VoucherIntegration;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
@@ -34,6 +35,11 @@ final class CreateChipSubscription
         }
 
         $owner = $builder->getOwner();
+        $ownerAttributes = $builder->getTenantOwnerAttributes();
+
+        if (! $owner->exists || $owner->getKey() === null) {
+            throw new InvalidArgumentException('A persisted billable is required to create subscriptions.');
+        }
 
         if (method_exists($owner, 'createOrGetChipCustomer') && ! $owner->hasChipId()) {
             $owner->createOrGetChipCustomer();
@@ -76,10 +82,13 @@ final class CreateChipSubscription
         $firstItem = Arr::first($items);
         $isSinglePrice = count($items) === 1;
 
-        return DB::transaction(function () use ($builder, $owner, $status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): Subscription {
-            $ownerAttributes = $builder->getTenantOwnerAttributes();
+        return DB::transaction(function () use ($builder, $owner, $ownerAttributes, $status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice, $items, $couponId, $couponDiscount, $couponDuration): Subscription {
+            $model = Cashier::$subscriptionModel;
+            $subscription = new $model;
 
-            $subscription = new Subscription;
+            if (! $subscription instanceof Subscription) {
+                throw new InvalidArgumentException('Configured subscription model must extend the CHIP subscription model.');
+            }
             $subscription->forceFill([
                 ...$ownerAttributes,
                 'billable_type' => $owner->getMorphClass(),
