@@ -71,3 +71,28 @@ it('resolves one canonical active tier matrix', function (): void {
             'price_list_id' => $priceList->id,
         ])?->price)->toBe(800);
 });
+
+it('ignores tiers belonging to inactive price lists', function (): void {
+    config(['pricing.features.owner.enabled' => false]);
+
+    $list = PriceList::create([
+        'name' => 'Inactive tier list',
+        'slug' => 'inactive-tier-list',
+        'currency' => 'MYR',
+        'is_active' => false,
+    ]);
+
+    PriceTier::create([
+        'price_list_id' => $list->id,
+        'tierable_type' => 'TestProduct',
+        'tierable_id' => 'inactive-list-item',
+        'min_quantity' => 2,
+        'amount' => 100,
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+
+    expect((new TierResolver)->resolve('TestProduct', 'inactive-list-item', 2, [
+        'price_list_id' => $list->id,
+    ]))->toBeNull();
+});

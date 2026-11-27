@@ -32,33 +32,21 @@ final class SegmentPriceResolver implements SegmentPriceResolverInterface
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->where('currency', $currency)
-            ->whereNull('deactivated_at')
+            ->active($effectiveAt)
             ->forQuantity($quantity)
-            ->where(function ($q) use ($effectiveAt): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
-            })
-            ->where(function ($q) use ($effectiveAt): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $effectiveAt);
-            })
             ->whereIn(
                 'price_list_id',
                 PriceList::query()
-                    ->where('is_active', true)
-                    ->whereNull('deactivated_at')
+                    ->active($effectiveAt)
                     ->where('currency', $currency)
-                    ->where(function ($q) use ($effectiveAt): void {
-                        $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);
-                    })
-                    ->where(function ($q) use ($effectiveAt): void {
-                        $q->whereNull('ends_at')->orWhere('ends_at', '>=', $effectiveAt);
-                    })
                     ->whereIn('segment_id', $segmentIds)
                     ->select('id')
             )
             ->orderBy('amount', 'asc')
             ->orderByDesc('min_quantity')
-            ->first();
+            ->orderBy('id')
+            ->value('amount');
 
-        return $price?->amount;
+        return $price === null ? null : (int) $price;
     }
 }

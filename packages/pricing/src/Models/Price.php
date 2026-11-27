@@ -201,9 +201,9 @@ class Price extends Model implements Auditable
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive(Builder $query, ?CarbonImmutable $now = null): Builder
     {
-        $now = CarbonImmutable::now();
+        $now ??= CarbonImmutable::now();
 
         return $query
             ->whereNull('deactivated_at')

@@ -18,7 +18,6 @@ use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use AIArmada\Pricing\Support\ResolvesCurrency;
 use AIArmada\Pricing\Support\ResolvesEffectiveAt;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
@@ -35,41 +34,6 @@ final class PriceCalculator implements PriceCalculatorInterface
     ) {}
 
     /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    protected function applyPriceListActiveAt(Builder $query, CarbonImmutable $at): Builder
-    {
-        return $query->where('is_active', true)
-            ->whereNull('deactivated_at')
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
-            })
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
-            });
-    }
-
-    /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    protected function applyPriceActiveAt(Builder $query, CarbonImmutable $at): Builder
-    {
-        return $query->whereNull('deactivated_at')
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
-            })
-            ->where(function ($q) use ($at): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
-            });
-    }
-
-    /**
      * Calculate prices for many lines at once, resolving the default price
      * list a single time instead of once per line.
      *
@@ -79,6 +43,7 @@ final class PriceCalculator implements PriceCalculatorInterface
      */
     public function calculateMany(array $lines, array $context = []): array
     {
+        $context['effective_at'] = $this->resolveEffectiveAt($context);
         $shareDefault = Arr::get($context, 'price_list_id') === null;
         $defaultList = $shareDefault ? $this->resolveDefaultPriceList($context) : null;
 
@@ -99,6 +64,7 @@ final class PriceCalculator implements PriceCalculatorInterface
     private function calculateWithList(Priceable $item, int $quantity, array $context, ?PriceList $defaultList, bool $shareDefault): PriceResultData
     {
         $effectiveAt = $this->resolveEffectiveAt($context);
+        $context['effective_at'] = $effectiveAt;
 
         $quantity = max(1, $quantity);
         $basePrice = MoneyNormalizer::toCents($item->getBasePrice());
@@ -211,7 +177,7 @@ final class PriceCalculator implements PriceCalculatorInterface
         $priceListId = Arr::get($context, 'price_list_id');
 
         if (is_string($priceListId) && $priceListId !== '') {
-            $priceList = $this->applyPriceListActiveAt(PriceList::query(), $effectiveAt)
+            $priceList = PriceList::query()->active($effectiveAt)
                 ->where('currency', $currency)
                 ->whereKey($priceListId)
                 ->first();
@@ -225,13 +191,14 @@ final class PriceCalculator implements PriceCalculatorInterface
             return null;
         }
 
-        $price = $this->applyPriceActiveAt(Price::query(), $effectiveAt)
+        $price = Price::query()->active($effectiveAt)
             ->where('price_list_id', $priceList->id)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->where('currency', $currency)
             ->forQuantity($quantity)
             ->orderByDesc('min_quantity')
+            ->orderBy('id')
             ->first();
 
         if (! $price) {
@@ -251,7 +218,7 @@ final class PriceCalculator implements PriceCalculatorInterface
     {
         $effectiveAt = $this->resolveEffectiveAt($context);
 
-        return $this->applyPriceListActiveAt(PriceList::query(), $effectiveAt)
+        return PriceList::query()->active($effectiveAt)
             ->where('currency', $this->resolveCurrency($context))
             ->default()
             ->orderByDesc('priority')

@@ -7,12 +7,14 @@ namespace AIArmada\Pricing\Support;
 use AIArmada\Pricing\Contracts\TierResolverInterface;
 use AIArmada\Pricing\Data\TierPriceResultData;
 use AIArmada\Pricing\Events\TierApplied;
+use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use Illuminate\Support\Arr;
 
 final class TierResolver implements TierResolverInterface
 {
     use ResolvesCurrency;
+    use ResolvesEffectiveAt;
 
     public function resolve(string $tierableType, string $tierableId, int $quantity, array $context): ?TierPriceResultData
     {
@@ -21,12 +23,21 @@ final class TierResolver implements TierResolverInterface
         }
 
         $priceListId = Arr::get($context, 'price_list_id');
+        $currency = $this->resolveCurrency($context);
+
+        if (is_string($priceListId) && $priceListId !== '' && ! PriceList::query()
+            ->active($this->resolveEffectiveAt($context))
+            ->where('currency', $currency)
+            ->whereKey($priceListId)
+            ->exists()) {
+            $priceListId = null;
+        }
 
         $query = PriceTier::query()
             ->where('tierable_type', $tierableType)
             ->where('tierable_id', $tierableId)
             ->where('is_active', true)
-            ->where('currency', $this->resolveCurrency($context))
+            ->where('currency', $currency)
             ->forQuantity($quantity)
             ->when(is_string($priceListId) && $priceListId !== '', function ($q) use ($priceListId): void {
                 $q->where(function ($inner) use ($priceListId): void {
@@ -36,7 +47,7 @@ final class TierResolver implements TierResolverInterface
                 $q->whereNull('price_list_id');
             });
 
-        $tier = $query->orderBy('min_quantity', 'desc')->first();
+        $tier = $query->orderByDesc('min_quantity')->orderBy('id')->first();
 
         if (! $tier) {
             return null;

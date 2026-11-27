@@ -5,12 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\Pages;
 
 use AIArmada\FilamentPricing\Resources\PriceListResource;
+use AIArmada\Pricing\Actions\UpdatePriceList;
+use AIArmada\Pricing\Models\PriceList;
 use Filament\Actions;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Resources\Pages\EditRecord;
 
 final class EditPriceList extends EditRecord
 {
     protected static string $resource = PriceListResource::class;
+
+    protected function handleRecordUpdate(Model $record, array $data): PriceList
+    {
+        abort_unless($record instanceof PriceList, 404);
+
+        return app(UpdatePriceList::class)->execute($record, $data);
+    }
 
     protected function getHeaderActions(): array
     {
