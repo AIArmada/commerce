@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Support;
+namespace AIArmada\Vouchers\Features\Lifecycle\EntryPoints;
 
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateVoucherProvisioning;
-use AIArmada\Vouchers\Actions\IssueAffiliateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\IssueAffiliateVoucher;
 use Illuminate\Contracts\Events\Dispatcher;
 
 final class AffiliateIntegrationRegistrar

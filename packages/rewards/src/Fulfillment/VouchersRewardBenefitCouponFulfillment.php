@@ -132,7 +132,7 @@ final class VouchersRewardBenefitCouponFulfillment implements RewardBenefitCoupo
     {
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
         $usageClass = 'AIArmada\\Vouchers\\Models\\VoucherUsage';
-        $expireActionClass = 'AIArmada\\Vouchers\\Actions\\ExpireVoucher';
+        $expireActionClass = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher';
 
         if (! class_exists($voucherClass) || ! class_exists($usageClass) || ! class_exists($expireActionClass)) {
             throw new InvalidArgumentException('The vouchers package public API is unavailable.');

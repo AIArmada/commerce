@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Models\Voucher;
@@ -29,6 +29,7 @@ final readonly class ChangeVoucherAvailability
 
             $locked->status->transitionTo($target);
             $locked->save();
+            $voucher->setRawAttributes($locked->getAttributes(), true);
         });
     }
 }

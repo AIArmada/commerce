@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherExpired;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
@@ -30,7 +32,15 @@ final class ExpireVoucher
                 throw VoucherNotFoundException::withCode($code);
             }
 
-            if ($voucher->expires_at === null) {
+            if (config('vouchers.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(Voucher::class, $voucher->getKey());
+            }
+
+            if ($voucher->status instanceof Expired) {
+                return;
+            }
+
+            if ($voucher->expires_at === null || $voucher->expires_at->isFuture()) {
                 $voucher->expires_at = CarbonImmutable::now();
             }
 

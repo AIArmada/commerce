@@ -15,7 +15,7 @@ use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVou
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;

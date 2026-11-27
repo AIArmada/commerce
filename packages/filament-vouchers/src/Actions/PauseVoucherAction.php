@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\Vouchers\Actions\ChangeVoucherAvailability;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\ChangeVoucherAvailability;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use Filament\Actions\Action;

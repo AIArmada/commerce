@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;

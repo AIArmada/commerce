@@ -116,7 +116,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
     public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
     {
-        $expireAction = 'AIArmada\\Vouchers\\Actions\\ExpireVoucher';
+        $expireAction = 'AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\ExpireVoucher';
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
         $code = $reward->external_reference;
 
