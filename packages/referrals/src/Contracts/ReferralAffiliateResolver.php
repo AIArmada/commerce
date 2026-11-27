@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Referrals\Contracts;
 
 use AIArmada\Affiliates\Data\AwardRecipient;
-use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Data\ReferralRewardContext;
 
 interface ReferralAffiliateResolver
 {
-    public function resolve(ReferralReward $reward): ?AwardRecipient;
+    public function resolve(ReferralRewardContext $reward): ?AwardRecipient;
 }

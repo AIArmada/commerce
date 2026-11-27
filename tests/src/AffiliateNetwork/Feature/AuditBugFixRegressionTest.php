@@ -24,6 +24,7 @@ use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Actions\ResolveLink;
+use AIArmada\Links\Data\LinkGateContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -120,7 +121,7 @@ it('blocks a redirect when the offer site becomes suspended and returns no fallb
     $blocked = app(ResolveLink::class)->blockedReason($link->link->slug);
 
     expect($blocked)->toBe('site_unverified')
-        ->and($gate->fallbackUrl($link->link, 'site_unverified'))->toBeNull();
+        ->and($gate->fallbackUrl(new LinkGateContext((string) $link->link->getKey(), $link->link->slug, $link->link->subject_type, $link->link->subject_id), 'site_unverified'))->toBeNull();
 });
 
 it('returns a 302 fallback for an inactive offer when a fallback url exists', function (): void {
@@ -131,10 +132,10 @@ it('returns a 302 fallback for an inactive offer when a fallback url exists', fu
     $offer->update(['ends_at' => now()->subDay()]);
 
     $gate = app(OfferLinkGate::class);
-    $reason = $gate->blockedReason($link->link);
+    $reason = $gate->blockedReason(new LinkGateContext((string) $link->link->getKey(), $link->link->slug, $link->link->subject_type, $link->link->subject_id));
 
     expect($reason)->toBe('offer_inactive')
-        ->and($gate->fallbackUrl($link->link, (string) $reason))->toBe('https://fallback.example/promo');
+        ->and($gate->fallbackUrl(new LinkGateContext((string) $link->link->getKey(), $link->link->slug, $link->link->subject_type, $link->link->subject_id), (string) $reason))->toBe('https://fallback.example/promo');
 });
 
 it('dispatches NetworkConversionRecorded exactly once after automatic fulfillment', function (): void {

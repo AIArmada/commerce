@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Tables;
 
-use AIArmada\Chip\Models\SendInstruction;
-use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\Chip\Features\Payouts\Actions\ResendPayoutWebhook;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -107,28 +107,19 @@ final class SendInstructionTable
                     ->icon(Heroicon::ArrowPath)
                     ->color('gray')
                     ->action(function (SendInstruction $record): void {
-                        $scopedRecord = self::resolveScopedSendInstruction($record);
-
-                        if ($scopedRecord === null) {
-                            Notification::make()
-                                ->title('Payout is outside your owner scope')
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
                         try {
-                            app(ChipSendService::class)->resendSendInstructionWebhook((int) $scopedRecord->id);
+                            app(ResendPayoutWebhook::class)->handle((int) $record->getKey());
 
                             Notification::make()
                                 ->title('Webhook resent')
                                 ->success()
                                 ->send();
                         } catch (Throwable $e) {
+                            report($e);
+
                             Notification::make()
                                 ->title('Failed to resend webhook')
-                                ->body($e->getMessage())
+                                ->body('The operation could not be completed. Verify its status before retrying.')
                                 ->danger()
                                 ->send();
                         }
@@ -138,13 +129,5 @@ final class SendInstructionTable
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->poll(config('filament-chip.polling_interval', '45s'));
-    }
-
-    private static function resolveScopedSendInstruction(SendInstruction $record): ?SendInstruction
-    {
-        return SendInstruction::query()
-            ->forOwner()
-            ->whereKey($record->getKey())
-            ->first();
     }
 }

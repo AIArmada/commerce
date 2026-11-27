@@ -2,6 +2,9 @@ providers:
   - Laravel\Boost\BoostServiceProvider
   - AIArmada\CommerceSupport\SupportServiceProvider
   - AIArmada\Affiliates\AffiliatesServiceProvider
+  - AIArmada\Signals\SignalsServiceProvider
+  - AIArmada\Growth\GrowthServiceProvider
+  - AIArmada\FilamentGrowth\FilamentGrowthServiceProvider
   - AIArmada\Cart\CartServiceProvider
   - AIArmada\Chip\ChipServiceProvider
   - AIArmada\CashierChip\CashierChipServiceProvider
@@ -40,6 +43,8 @@ env:
 
 migrations:
   - packages/affiliates/database/migrations
+  - packages/signals/database/migrations
+  - packages/growth/database/migrations
   - packages/cart/database/migrations
   - packages/cashier-chip/database/migrations
   - packages/chip/database/migrations

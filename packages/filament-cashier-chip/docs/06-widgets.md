@@ -18,8 +18,7 @@ Monthly Recurring Revenue with trend analysis.
 - 6-month sparkline chart
 
 **Calculation:**
-- Sums `unit_amount` across a subscription's items (`withSum('items', 'unit_amount')`), multiplied
-  by the subscription `quantity`
+- Sums each item's own `unit_amount × quantity` from the loaded `items` relation
 - Normalizes to monthly (day × 30, week × 4.33, month ÷ 1, year ÷ 12, each further ÷ the interval count)
 - Subtracts the coupon discount, normalized the same way
 - Never returns a negative value
@@ -27,11 +26,15 @@ Monthly Recurring Revenue with trend analysis.
 ```php
 // MRR calculation (inside the widget)
 $monthlyAmount = $this->normalizeToMonthly(
-    (int) $subscription->items_sum_unit_amount * (int) $subscription->quantity,
+    $subscription->items->sum(fn ($item): int => $item->totalAmount()),
     $subscription->billing_interval ?? 'month',
     $subscription->billing_interval_count ?? 1,
 );
 ```
+
+The subscription-level `quantity` is not multiplied again: item quantities already carry the
+tier quantity. The 6-month chart loads one active-subscription dataset and filters it per month
+instead of issuing one query per month.
 
 > **warning**
 > Amounts stay in integer minor units. The 6-month sparkline in `getMRRChart()` is the one place that
@@ -48,10 +51,11 @@ Total count of active subscribers.
 - 6-month sparkline
 
 **Counts subscriptions with status:**
-- Active (`scopeWhereActive`)
+- Active and not currently trialing (`scopeWhereActive` + `scopeWhereNotOnTrial`)
 - Trialing (`scopeWhereOnTrial`)
 
-Past Due subscriptions are **not** counted.
+Trialing subscriptions are counted once, not once as active and again as trialing. Past Due
+subscriptions are **not** counted.
 
 ### ChurnRateWidget
 
@@ -108,6 +112,8 @@ Revenue trend visualization over time.
 - Line chart (`getType()` returns `'line'`)
 - Two datasets: `MRR` and `New Revenue`
 - 12 months of history, `columnSpan = 'full'`, `pollingInterval = '120s'`
+- Loads one active-subscription dataset and one new-subscription dataset, then buckets by month
+  in PHP (`<= 4` queries cold on SQLite) instead of two queries per month
 
 ### SubscriptionDistributionWidget
 
@@ -218,7 +224,7 @@ protected int | string | array $columnSpan = 1;      // SubscriptionDistribution
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -230,9 +236,11 @@ class TargetWidget extends StatsOverviewWidget
     {
         $mrr = Subscription::query()
             ->whereActive()
-            ->withSum('items', 'unit_amount')
+            ->with('items:id,subscription_id,unit_amount,quantity')
             ->get()
-            ->sum(fn (Subscription $s): int => (int) ($s->items_sum_unit_amount ?? 0) * (int) ($s->quantity ?? 1));
+            ->sum(fn (Subscription $s): int => $s->items->sum(
+                fn ($item): int => $item->totalAmount(),
+            ));
 
         return [
             Stat::make('MRR vs Target', $mrr)
@@ -243,10 +251,11 @@ class TargetWidget extends StatsOverviewWidget
 ```
 
 > **warning**
-> There is no `monthly_amount` column. MRR is the `withSum('items', 'unit_amount')` sub-select times
-> `quantity`, normalized per `billing_interval` and `billing_interval_count`, minus the normalized
-> coupon discount. Copy the real `MRRWidget::monthlyNetAmount()` logic rather than summing a
-> non-existent column. `whereActive()` is a valid `scopeWhereActive` call, not a macro.
+> There is no `monthly_amount` column. MRR is the sum of each item's
+> `unit_amount × quantity`, normalized per `billing_interval` and `billing_interval_count`, minus
+> the normalized coupon discount. Do not multiply the subscription-level `quantity` on top of item
+> quantities. Copy the real `MRRWidget::monthlyNetAmount()` logic rather than summing a non-existent
+> column. `whereActive()` is a valid `scopeWhereActive` call, not a macro.
 
 `AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData` is the reusable piece:
 `subscriptionQuery()` (owner-scoped), `normalizeToMonthly()`, `formatCurrency()`, and

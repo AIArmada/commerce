@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Tables;
 
+use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\ReferralInviteResource;
 use AIArmada\FilamentReferrals\Support\ReferralAdminPresenter;
 use AIArmada\Referrals\Actions\RevokeReferralInvite;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
-use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
@@ -76,17 +76,19 @@ class ReferralInvitesTable
                         [ReferralInviteStatus::Pending, ReferralInviteStatus::Accepted],
                         true,
                     ))
+                    ->authorize(fn (ReferralInvite $record): bool => ReferralInviteResource::canEdit($record))
                     ->action(function (ReferralInvite $record, array $data): void {
                         try {
-                            $invite = app(ReferralProgramGuard::class)->invite($record);
                             RevokeReferralInvite::run(
-                                $invite,
+                                (string) $record->getKey(),
                                 is_string($data['reason'] ?? null) ? $data['reason'] : null,
                             );
                         } catch (Throwable $exception) {
+                            report($exception);
+
                             Notification::make()
                                 ->title('Referral invite could not be revoked')
-                                ->body($exception->getMessage())
+                                ->body('The operation could not be completed. Check the application logs.')
                                 ->danger()
                                 ->send();
 

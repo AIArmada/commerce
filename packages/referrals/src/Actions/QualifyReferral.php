@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Referrals\Actions;
 
-use AIArmada\Referrals\Data\ReferralQualificationResult;
+use AIArmada\Referrals\Actions\Results\ReferralQualificationResult;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralRewardSide;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -12,11 +12,11 @@ use AIArmada\Referrals\Events\ReferralQualified;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use AIArmada\Referrals\Support\ReferralRewardSpecValidator;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -42,7 +42,7 @@ final class QualifyReferral
             ? (string) $inviteOrToken->getKey()
             : null;
 
-        $result = DB::transaction(function () use ($inviteOrToken, $businessKey, $at, $guard, $inviteId): array {
+        $result = ReferralDatabase::connection()->transaction(function () use ($inviteOrToken, $businessKey, $at, $guard, $inviteId): array {
             $resolvedInvite = $inviteId !== null
                 ? $guard->invite($inviteId)
                 : $guard->inviteFromIdOrToken((string) $inviteOrToken);

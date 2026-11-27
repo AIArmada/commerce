@@ -4,36 +4,37 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Contracts;
 
-use AIArmada\CashierChip\Payment\StoredPaymentMethod;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
+use AIArmada\CashierChip\Data\StoredPaymentMethodData;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
 interface PaymentMethodStoreInterface
 {
     /**
-     * @return Collection<int, StoredPaymentMethod>
+     * @return list<StoredPaymentMethodData>
      */
-    public function allForBillable(Model $billable): Collection;
+    public function allForBillable(RecordReference $billable): array;
 
-    public function findForBillable(Model $billable, string $recurringToken): ?StoredPaymentMethod;
+    public function findForBillable(RecordReference $billable, string $recurringToken): ?StoredPaymentMethodData;
 
-    public function defaultForBillable(Model $billable): ?StoredPaymentMethod;
+    public function defaultForBillable(RecordReference $billable): ?StoredPaymentMethodData;
 
-    public function hasAnyForBillable(Model $billable): bool;
+    public function hasAnyForBillable(RecordReference $billable): bool;
 
     /**
      * @param  array<string, mixed>  $attributes
      */
     public function saveForBillable(
-        Model $billable,
+        RecordReference $billable,
         string $recurringToken,
         array $attributes = [],
         bool $makeDefault = false,
-    ): StoredPaymentMethod;
+    ): StoredPaymentMethodData;
 
-    public function setDefaultForBillable(Model $billable, string $recurringToken): ?StoredPaymentMethod;
+    public function setDefaultForBillable(RecordReference $billable, string $recurringToken): ?StoredPaymentMethodData;
 
-    public function deleteForBillable(Model $billable, string $recurringToken): void;
+    public function assertBillableAccess(RecordReference $billable): void;
 
-    public function deleteAllForBillable(Model $billable): void;
+    public function deleteForBillable(RecordReference $billable, string $recurringToken): void;
+
+    public function deleteAllForBillable(RecordReference $billable): void;
 }

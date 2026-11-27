@@ -57,15 +57,14 @@ Key options in `config/filament-chip.php`:
 
 A customer-facing billing portal for managing subscriptions and payment methods.
 
-**Requires:** `aiarmada/cashier-chip`
+**Requires:** `aiarmada/filament-cashier-chip`
 
-Register the billing panel provider:
+Register the billing panel provider in `bootstrap/providers.php`:
 
 ```php
-// config/app.php
-'providers' => [
-    AIArmada\FilamentChip\BillingPanelProvider::class,
-],
+return [
+    AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider::class,
+];
 ```
 
 Access at `/billing` with pages for:

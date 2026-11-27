@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;

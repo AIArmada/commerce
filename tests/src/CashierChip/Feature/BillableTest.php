@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Carbon\Carbon;
 
 uses(CashierChipTestCase::class);
@@ -33,7 +34,7 @@ it('can get chip id', function (): void {
 it('can check if has default payment method', function (): void {
     expect($this->user->hasDefaultPaymentMethod())->toBeFalse();
 
-    Cashier::paymentMethodStore()->saveForBillable($this->user, 'tok_default_card', [
+    Cashier::paymentMethodStore()->saveForBillable(new RecordReference($this->user->getMorphClass(), (string) $this->user->getKey()), 'tok_default_card', [
         'type' => 'card',
         'brand' => 'Visa',
         'last_four' => '4242',

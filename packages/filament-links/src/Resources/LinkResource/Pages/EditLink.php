@@ -6,6 +6,7 @@ namespace AIArmada\FilamentLinks\Resources\LinkResource\Pages;
 
 use AIArmada\FilamentLinks\Resources\LinkResource;
 use AIArmada\FilamentLinks\Resources\LinkResource\Schemas\LinkForm;
+use AIArmada\Links\Actions\DeleteLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\UpdateLink as UpdateLinkAction;
 use AIArmada\Links\Models\Link;
@@ -28,7 +29,8 @@ final class EditLink extends EditRecord
 
             Actions\DeleteAction::make()
                 ->authorize(fn (Link $record): bool => LinkResource::canDelete($record))
-                ->visible(fn (Link $record): bool => LinkResource::canDelete($record)),
+                ->visible(fn (Link $record): bool => LinkResource::canDelete($record))
+                ->using(fn (Link $record): bool => app(DeleteLink::class)->handle($record)),
         ];
     }
 
@@ -36,7 +38,7 @@ final class EditLink extends EditRecord
     {
         /** @var Link $record */
         if (LinkForm::isProtectedSubject($record)) {
-            unset($data['slug'], $data['destination_url'], $data['parameters'], $data['utm_defaults'], $data['require_signature']);
+            unset($data['slug_prefix'], $data['slug'], $data['destination_url'], $data['parameters'], $data['utm_defaults'], $data['require_signature'], $data['deactivated_at']);
         }
 
         return UpdateLinkAction::run($record, $data);

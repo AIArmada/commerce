@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use AIArmada\CashierChip\Billing\SubscriptionBuilder;
+use AIArmada\CashierChip\Billing\SubscriptionRecord;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-trait ManagesSubscriptions // @phpstan-ignore trait.unused
+trait ManagesSubscriptions
 {
     /**
      * Get the model-level generic trial end timestamp, if the billable model supports it.
@@ -143,7 +144,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
         }
 
         if ($subscription = $this->subscription($type)) {
-            return $subscription->trial_ends_at;
+            return $subscription->trialEnd();
         }
 
         return $genericTrialEndsAt;
@@ -166,13 +167,13 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
     /**
      * Get a subscription instance by $type.
      */
-    public function subscription(string $type = 'default'): ?Subscription
+    public function subscription(string $type = 'default'): (Model & SubscriptionRecord) | null
     {
-        if ($this->relationLoaded('subscriptions')) {
-            return $this->subscriptions->where('type', $type)->first();
-        }
+        $subscription = $this->relationLoaded('subscriptions')
+            ? $this->subscriptions->where('type', $type)->first()
+            : $this->subscriptions()->where('type', $type)->with('items')->first();
 
-        return $this->subscriptions()->where('type', $type)->with('items')->first();
+        return $subscription instanceof Model && $subscription instanceof SubscriptionRecord ? $subscription : null;
     }
 
     /**
@@ -246,7 +247,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
     {
         $this->loadMissing('subscriptions.items', 'subscriptions.billable');
 
-        return ! is_null($this->subscriptions->first(function (Subscription $subscription) use ($product) {
+        return ! is_null($this->subscriptions->first(function (SubscriptionRecord $subscription) use ($product) {
             return $subscription->valid() && $subscription->hasProduct($product);
         }));
     }
@@ -258,7 +259,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
     {
         $this->loadMissing('subscriptions.items', 'subscriptions.billable');
 
-        return ! is_null($this->subscriptions->first(function (Subscription $subscription) use ($price) {
+        return ! is_null($this->subscriptions->first(function (SubscriptionRecord $subscription) use ($price) {
             return $subscription->valid() && $subscription->hasPrice($price);
         }));
     }

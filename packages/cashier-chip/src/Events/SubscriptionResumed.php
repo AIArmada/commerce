@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Events;
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-class SubscriptionResumed
+final class SubscriptionResumed
 {
     use Dispatchable;
-    use SerializesModels;
 
-    public Subscription $subscription;
+    public readonly RecordReference $subscription;
 
-    public function __construct(Subscription $subscription)
+    public function __construct(RecordReference $subscription)
     {
         $this->subscription = $subscription;
     }

@@ -1,0 +1,588 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\CashierChip\Billing;
+
+use AIArmada\CashierChip\Concerns\AllowsCoupons;
+use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
+use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
+use AIArmada\CashierChip\Concerns\Prorates;
+use AIArmada\CashierChip\Data\BillingCycle;
+use AIArmada\CashierChip\Features\Subscriptions\Api\CreateSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Api\SubscriptionDraft;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use DateTimeInterface;
+use Exception;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Traits\Conditionable;
+use InvalidArgumentException;
+
+class SubscriptionBuilder
+{
+    use AllowsCoupons;
+    use Conditionable;
+    use HandlesPaymentFailures;
+    use InteractsWithPaymentBehavior;
+    use Prorates;
+
+    /**
+     * The model that is subscribing.
+     */
+    /**
+     * @phpstan-var Model&BillableModel
+     */
+    /** @var Model&BillableModel */
+    protected Model $owner;
+
+    /**
+     * The type of the subscription.
+     */
+    protected string $type;
+
+    /**
+     * The prices the customer is being subscribed to.
+     */
+    protected array $items = [];
+
+    /**
+     * The date and time the trial will expire.
+     */
+    protected ?CarbonInterface $trialExpires = null;
+
+    /**
+     * Indicates that the trial should end immediately.
+     */
+    protected bool $skipTrial = false;
+
+    /**
+     * The billing interval (day, week, month, year).
+     */
+    protected string $billingInterval = 'month';
+
+    /**
+     * The billing interval count.
+     */
+    protected int $billingIntervalCount = 1;
+
+    /**
+     * The date on which the billing cycle should be anchored.
+     */
+    protected ?CarbonInterface $billingCycleAnchor = null;
+
+    /**
+     * The metadata to apply to the subscription.
+     */
+    protected array $metadata = [];
+
+    /**
+     * Create a new subscription builder instance.
+     *
+     * @param  string|string[]|array[]  $prices
+     */
+    /**
+     * @phpstan-param Model&BillableModel $owner
+     */
+    public function __construct(Model $owner, string $type, string | array $prices = [])
+    {
+        $this->type = $type;
+        $this->owner = $owner;
+
+        foreach ((array) $prices as $price) {
+            $this->price($price);
+        }
+    }
+
+    /**
+     * Set a price on the subscription builder.
+     *
+     * @return $this
+     */
+    public function price(string | array $price, ?int $quantity = 1)
+    {
+        $options = is_array($price) ? $price : ['price' => $price];
+
+        $resolvedQuantity = $options['quantity'] ?? $quantity;
+
+        if ($resolvedQuantity !== null) {
+            $options['quantity'] = max(1, (int) $resolvedQuantity);
+        }
+
+        if (isset($options['unit_amount'])) {
+            $unitAmount = (int) $options['unit_amount'];
+
+            if ($unitAmount < 0) {
+                throw new InvalidArgumentException('Subscription item unit amount must be a non-negative integer.');
+            }
+
+            $options['unit_amount'] = $unitAmount;
+        }
+
+        if (! isset($options['price']) || ! is_string($options['price']) || $options['price'] === '') {
+            throw new InvalidArgumentException('A non-empty price identifier is required.');
+        }
+
+        $this->items[$options['price']] = $options;
+
+        return $this;
+    }
+
+    /**
+     * Specify the quantity of a subscription item.
+     *
+     * @return $this
+     */
+    public function quantity(?int $quantity, ?string $price = null)
+    {
+        if (is_null($price)) {
+            if (empty($this->items)) {
+                throw new InvalidArgumentException('No price specified for quantity update.');
+            }
+
+            if (count($this->items) > 1) {
+                throw new InvalidArgumentException('Price is required when creating subscriptions with multiple prices.');
+            }
+
+            $price = Arr::first($this->items)['price'];
+        }
+
+        $item = $this->items[$price] ?? ['price' => $price];
+        $item['quantity'] = $quantity;
+
+        return $this->price($item, $quantity);
+    }
+
+    /**
+     * Specify the number of days of the trial.
+     *
+     * @return $this
+     */
+    public function trialDays(int $trialDays)
+    {
+        $this->trialExpires = CarbonImmutable::now()->addDays($trialDays);
+
+        return $this;
+    }
+
+    /**
+     * Specify the ending date of the trial.
+     *
+     * @return $this
+     */
+    public function trialUntil(CarbonInterface $trialUntil)
+    {
+        $this->trialExpires = $trialUntil;
+
+        return $this;
+    }
+
+    /**
+     * Force the trial to end immediately.
+     *
+     * @return $this
+     */
+    public function skipTrial()
+    {
+        $this->skipTrial = true;
+
+        return $this;
+    }
+
+    /**
+     * Set the billing interval.
+     *
+     * @param  string  $interval  (day, week, month, year)
+     * @return $this
+     */
+    public function billingInterval(string $interval, int $count = 1)
+    {
+        new BillingCycle($interval, $count);
+
+        $this->billingInterval = $interval;
+        $this->billingIntervalCount = $count;
+
+        return $this;
+    }
+
+    /**
+     * Set monthly billing.
+     *
+     * @return $this
+     */
+    public function monthly(int $count = 1)
+    {
+        return $this->billingInterval('month', $count);
+    }
+
+    /**
+     * Set yearly billing.
+     *
+     * @return $this
+     */
+    public function yearly(int $count = 1)
+    {
+        return $this->billingInterval('year', $count);
+    }
+
+    /**
+     * Set weekly billing.
+     *
+     * @return $this
+     */
+    public function weekly(int $count = 1)
+    {
+        return $this->billingInterval('week', $count);
+    }
+
+    /**
+     * Set daily billing.
+     *
+     * @return $this
+     */
+    public function daily(int $count = 1)
+    {
+        return $this->billingInterval('day', $count);
+    }
+
+    /**
+     * Change the billing cycle anchor on a subscription creation.
+     *
+     * @return $this
+     */
+    public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date)
+    {
+        $this->billingCycleAnchor = CarbonImmutable::instance($date);
+
+        return $this;
+    }
+
+    /**
+     * The metadata to apply to a new subscription.
+     *
+     * @return $this
+     */
+    public function withMetadata(array $metadata)
+    {
+        $this->metadata = (array) $metadata;
+
+        return $this;
+    }
+
+    /**
+     * Add a new subscription without immediate payment.
+     */
+    public function add(array $options = []): Model & SubscriptionRecord
+    {
+        return $this->create(null, $options);
+    }
+
+    /**
+     * Create a new subscription.
+     *
+     * Since CHIP doesn't have native subscriptions, we:
+     * 1. Ensure the customer exists in CHIP
+     * 2. Create local subscription record
+     * 3. Optionally charge immediately or wait for first billing date
+     *
+     * @param  string|null  $recurringToken  The CHIP recurring token for payments
+     *
+     * @throws Exception
+     */
+    public function create(?string $recurringToken = null, array $options = []): Model & SubscriptionRecord
+    {
+        if ($this->items === []) {
+            throw new InvalidArgumentException('At least one price is required when starting subscriptions.');
+        }
+
+        $billable = EloquentRecordReference::fromModel($this->owner);
+
+        if ($billable === null) {
+            throw new InvalidArgumentException('A persisted CHIP billable is required to create subscriptions.');
+        }
+
+        $draft = new SubscriptionDraft(
+            billable: $billable,
+            type: $this->type,
+            items: $this->items,
+            cycle: new BillingCycle($this->billingInterval, $this->billingIntervalCount),
+            trialEndsAt: $this->skipTrial || $this->trialExpires === null
+                ? null
+                : CarbonImmutable::instance($this->trialExpires),
+            billingCycleAnchor: $this->billingCycleAnchor === null
+                ? null
+                : CarbonImmutable::instance($this->billingCycleAnchor),
+            couponId: $this->couponId ?? $this->promotionCodeId,
+            recurringToken: $recurringToken,
+        );
+
+        $reference = app(CreateSubscription::class)->create($draft);
+        $model = Cashier::$subscriptionModel;
+        $subscription = (new $model)->newQuery()
+            ->where('billable_type', $billable->type)
+            ->where('billable_id', $billable->id)
+            ->whereKey($reference->id)
+            ->firstOrFail();
+
+        if (! $subscription instanceof SubscriptionRecord || $subscription->getMorphClass() !== $reference->type) {
+            throw new InvalidArgumentException('The configured subscription model does not implement the subscription record contract.');
+        }
+
+        $subscription->setRelation('billable', $this->owner);
+
+        return $subscription;
+    }
+
+    /**
+     * Create a new subscription and charge immediately.
+     *
+     * @param  int  $amount  Amount in cents
+     */
+    public function createAndCharge(?string $recurringToken = null, int $amount = 0, array $options = []): Model & SubscriptionRecord
+    {
+        $subscription = $this->create($recurringToken, $options);
+
+        // If not on trial, charge immediately
+        if (! $subscription->onTrial() && $amount > 0) {
+            $subscription->charge($amount);
+        }
+
+        return $subscription;
+    }
+
+    /**
+     * Begin a new Checkout Session for the subscription.
+     *
+     * @return Checkout
+     */
+    public function checkout(array $sessionOptions = [])
+    {
+        if (empty($this->items)) {
+            throw new Exception('At least one price is required when starting subscriptions.');
+        }
+
+        if ($this->hasUnknownPrices()) {
+            throw new InvalidArgumentException('Cannot checkout a subscription with unknown item prices. Provide unit_amount for every item.');
+        }
+
+        // Calculate the total amount from items
+        $amount = $this->calculateTotalAmount();
+
+        $couponId = $this->couponId ?? $this->promotionCodeId;
+
+        if (isset($sessionOptions['products'])) {
+            throw new InvalidArgumentException('Subscription checkout products must be defined by subscription prices.');
+        }
+
+        $sessionMetadata = is_array($sessionOptions['metadata'] ?? null) ? $sessionOptions['metadata'] : [];
+        unset($sessionOptions['metadata'], $sessionOptions['recurring'], $sessionOptions['products']);
+
+        // Build the checkout session
+        $metadata = array_merge($this->metadata, $sessionMetadata, [
+            'subscription_type' => $this->type,
+            'billing_interval' => $this->billingInterval,
+            'billing_interval_count' => $this->billingIntervalCount,
+            'items' => json_encode($this->items),
+        ]);
+
+        unset($metadata['trial_ends_at'], $metadata['coupon_id'], $metadata['coupon_discount']);
+
+        if (! $this->skipTrial && $this->trialExpires) {
+            $metadata['trial_ends_at'] = $this->trialExpires->toIso8601String();
+        }
+
+        if ($couponId) {
+            $metadata['coupon_id'] = $couponId;
+        }
+
+        $checkout = Checkout::customer($this->owner)
+            ->recurring()
+            ->withMetadata($metadata);
+
+        // Pass coupon settings to checkout
+        if ($this->couponId) {
+            $checkout->withCoupon($this->couponId);
+        }
+
+        if ($this->promotionCodeId) {
+            $checkout->withPromotionCode($this->promotionCodeId);
+        }
+
+        if ($this->allowPromotionCodes) {
+            $checkout->allowPromotionCodes();
+        }
+
+        return $checkout->create(
+            $amount,
+            array_merge([
+                'reference' => "Subscription: {$this->type}",
+            ], $sessionOptions)
+        );
+    }
+
+    /**
+     * Get the items set on the subscription builder.
+     */
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    /**
+     * Get the subscription type.
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
+     * Get the trial end date.
+     */
+    public function getTrialEnd(): ?CarbonInterface
+    {
+        return $this->trialExpires;
+    }
+
+    /**
+     * Check if the trial will be skipped.
+     */
+    public function getSkipTrial(): bool
+    {
+        return $this->skipTrial;
+    }
+
+    /**
+     * Get the billing interval.
+     */
+    public function getBillingInterval(): string
+    {
+        return $this->billingInterval;
+    }
+
+    /**
+     * Get the billing interval count.
+     */
+    public function getBillingIntervalCount(): int
+    {
+        return $this->billingIntervalCount;
+    }
+
+    /**
+     * Get the billing cycle anchor.
+     */
+    public function getBillingCycleAnchor(): ?CarbonInterface
+    {
+        return $this->billingCycleAnchor;
+    }
+
+    /**
+     * Get the metadata.
+     */
+    public function getMetadata(): array
+    {
+        return $this->metadata;
+    }
+
+    /**
+     * Get the owner (billable) model.
+     *
+     * @return Model&BillableModel
+     */
+    public function getOwner(): Model
+    {
+        return $this->owner;
+    }
+
+    /**
+     * Get the coupon ID.
+     */
+    public function getCouponId(): ?string
+    {
+        return $this->couponId;
+    }
+
+    /**
+     * Get the promotion code ID.
+     */
+    public function getPromotionCodeId(): ?string
+    {
+        return $this->promotionCodeId;
+    }
+
+    /**
+     * Get the total amount calculated from all items.
+     */
+    public function getTotalAmount(): int
+    {
+        return $this->calculateTotalAmount();
+    }
+
+    /**
+     * Whether any builder item has an unknown price.
+     */
+    public function hasUnknownPrices(): bool
+    {
+        return collect($this->items)->contains(
+            fn ($item): bool => ($item['unit_amount'] ?? null) === null
+        );
+    }
+
+    /**
+     * Get the next billing date.
+     */
+    public function getNextBillingDate(): CarbonInterface
+    {
+        return $this->calculateNextBillingDate();
+    }
+
+    /**
+     * Retrieve a coupon by its ID.
+     */
+    public function retrieveCoupon(string $couponId): ?Coupon
+    {
+        $service = VoucherIntegration::service();
+        $voucherData = $service->find($couponId);
+
+        if (! $voucherData) {
+            return null;
+        }
+
+        return new Coupon($voucherData);
+    }
+
+    /**
+     * Calculate the next billing date.
+     */
+    protected function calculateNextBillingDate(): CarbonInterface
+    {
+        if ($this->billingCycleAnchor) {
+            return $this->billingCycleAnchor->copy();
+        }
+
+        return (new BillingCycle($this->billingInterval, $this->billingIntervalCount))->advance(CarbonImmutable::now());
+    }
+
+    /**
+     * Calculate the total amount from all items.
+     */
+    protected function calculateTotalAmount(): int
+    {
+        $total = 0;
+
+        foreach ($this->items as $item) {
+            $amount = $item['unit_amount'] ?? 0;
+            $quantity = $item['quantity'] ?? 1;
+
+            if ($amount > intdiv(PHP_INT_MAX - $total, $quantity)) {
+                throw new InvalidArgumentException('Subscription total exceeds the supported range.');
+            }
+
+            $total += $amount * $quantity;
+        }
+
+        return $total;
+    }
+}

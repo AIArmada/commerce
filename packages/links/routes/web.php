@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Links\Actions\RedirectToLink;
+use AIArmada\Links\EntryPoints\Http\RedirectToLinkController;
 use Illuminate\Support\Facades\Route;
 
 $attributes = [
@@ -17,12 +17,12 @@ if (is_string($domain) && $domain !== '') {
 }
 
 Route::group($attributes, function (): void {
-    Route::get('/{prefix}/{slug}', [RedirectToLink::class, 'asBrandedController'])
+    Route::get('/{prefix}/{slug}', [RedirectToLinkController::class, 'branded'])
         ->where('prefix', '[a-z0-9]+(?:[-_][a-z0-9]+)*')
         ->where('slug', '[A-Za-z0-9_-]+')
         ->name(config('links.routing.name', 'links.redirect') . '.branded');
 
-    Route::get('/{slug}', [RedirectToLink::class, 'asController'])
+    Route::get('/{slug}', [RedirectToLinkController::class, 'redirect'])
         ->where('slug', '[A-Za-z0-9_-]+')
         ->name(config('links.routing.name', 'links.redirect'));
 });

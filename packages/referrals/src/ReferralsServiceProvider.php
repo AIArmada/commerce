@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Referrals;
 
-use AIArmada\Referrals\Console\Commands\ExpireReferralInvitesCommand;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
-use AIArmada\Referrals\Fulfillment\AffiliatesCashFulfillment;
-use AIArmada\Referrals\Fulfillment\ManualReferralFulfillment;
-use AIArmada\Referrals\Fulfillment\ReferralRewardFulfillmentRouter;
-use AIArmada\Referrals\Fulfillment\RewardsPointsFulfillment;
-use AIArmada\Referrals\Fulfillment\VouchersReferralFulfillment;
+use AIArmada\Referrals\Drivers\AffiliatesCashFulfillment;
+use AIArmada\Referrals\Drivers\ManualReferralFulfillment;
+use AIArmada\Referrals\Drivers\ReferralRewardFulfillmentRouter;
+use AIArmada\Referrals\Drivers\RewardsPointsFulfillment;
+use AIArmada\Referrals\Drivers\VouchersReferralFulfillment;
+use AIArmada\Referrals\EntryPoints\Commands\ExpireReferralInvitesCommand;
 use AIArmada\Referrals\Support\NullReferralAffiliateResolver;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;

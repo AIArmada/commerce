@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class PaymentMethodsWidget extends BaseWidget
 {
+    use RequiresChipOwnerContext;
+
     protected static ?int $sort = 3;
 
     protected ?string $pollingInterval = '60s';
@@ -54,6 +57,10 @@ final class PaymentMethodsWidget extends BaseWidget
      */
     private function getPaymentMethodBreakdown(): array
     {
+        if (! static::canView()) {
+            return [];
+        }
+
         /** @var array<string, array{count: int, amount: int}> $breakdown */
         $breakdown = OwnerCache::remember(
             OwnerContext::resolve(),

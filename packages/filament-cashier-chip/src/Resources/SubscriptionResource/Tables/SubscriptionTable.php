@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Tables;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 use Carbon\CarbonImmutable;
 use Filament\Actions\ViewAction;

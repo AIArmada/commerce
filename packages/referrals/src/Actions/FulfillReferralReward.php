@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Referrals\Actions;
 
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
+use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Events\ReferralRewardFulfilled;
 use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Persistence\ReferralRewardContextMapper;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -21,16 +23,22 @@ final class FulfillReferralReward
 {
     use AsAction;
 
-    public function handle(ReferralReward | string $reward): ReferralReward
+    public function handle(ReferralReward | string $reward, ?string $manualReference = null): ReferralReward
     {
         $rewardId = $reward instanceof ReferralReward ? (string) $reward->getKey() : $reward;
         $failure = null;
 
         /** @var array{reward: ReferralReward, fulfilled: bool} $outcome */
-        $outcome = DB::transaction(function () use ($rewardId, &$failure): array {
+        $outcome = ReferralDatabase::connection()->transaction(function () use ($rewardId, $manualReference, &$failure): array {
             $guard = app(ReferralProgramGuard::class);
             $scopedReward = $guard->reward($rewardId);
             $invite = $guard->invite((string) $scopedReward->invite_id, true);
+
+            if ($scopedReward->getConnection() !== ReferralDatabase::connection()
+                || $invite->getConnection() !== ReferralDatabase::connection()) {
+                throw new LogicException('Referral fulfilment requires one shared database connection.');
+            }
+
             $lockedReward = ReferralReward::query()
                 ->where('program_id', $invite->program_id)
                 ->where('invite_id', $invite->getKey())
@@ -38,7 +46,15 @@ final class FulfillReferralReward
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if ($manualReference !== null && $lockedReward->driver !== 'manual') {
+                throw new LogicException('Only manual referral rewards accept a fulfilment reference.');
+            }
+
             if ($lockedReward->status === ReferralRewardStatus::Fulfilled) {
+                if ($manualReference !== null && mb_trim($manualReference) !== $lockedReward->external_reference) {
+                    throw new LogicException('The manual fulfilment reference cannot be replaced.');
+                }
+
                 return ['reward' => $lockedReward, 'fulfilled' => false];
             }
 
@@ -46,23 +62,39 @@ final class FulfillReferralReward
                 throw new LogicException('A reversed referral reward cannot be fulfilled again.');
             }
 
+            $result = null;
+
             try {
-                $result = app(ReferralRewardFulfillment::class)->fulfill($lockedReward);
+                $lockedReward->getConnection()->transaction(function () use ($lockedReward, $invite, $manualReference, &$result): void {
+                    $result = app(ReferralRewardFulfillment::class)->fulfill(ReferralRewardContextMapper::map($lockedReward, $invite->qualification_business_key, $manualReference));
+
+                    if (! $result->success) {
+                        throw new ReferralFulfillmentException($result->reason ?? 'The fulfilment adapter refused this reward.');
+                    }
+                });
             } catch (Throwable $exception) {
+                if ($result instanceof ReferralFulfillmentResult && ! $result->success) {
+                    $this->markFailed($lockedReward, $result->reason ?? 'The fulfilment adapter refused this reward.');
+
+                    return ['reward' => $lockedReward, 'fulfilled' => false];
+                }
+
                 $failure = $exception instanceof ReferralFulfillmentException
                     ? $exception
                     : new ReferralFulfillmentException('Referral reward fulfilment failed.', previous: $exception);
-                $this->markFailed($lockedReward, $exception->getMessage());
+                report($exception);
+                $this->markFailed($lockedReward, 'The fulfilment adapter encountered an error.');
 
                 return ['reward' => $lockedReward, 'fulfilled' => false];
             }
 
-            if (! $result->success) {
-                $this->markFailed($lockedReward, $result->reason ?? 'The fulfilment adapter refused this reward.');
-
-                return ['reward' => $lockedReward, 'fulfilled' => false];
+            if (! $result instanceof ReferralFulfillmentResult) {
+                throw new LogicException('The fulfilment adapter returned no result.');
             }
 
+            $metadata = array_replace($lockedReward->metadata ?? [], $result->metadata);
+            unset($metadata['fulfillment_failure']);
+            $lockedReward->metadata = $metadata;
             $lockedReward->status = ReferralRewardStatus::Fulfilled;
             $lockedReward->fulfilled_at ??= CarbonImmutable::now();
 

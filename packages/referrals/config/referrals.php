@@ -34,7 +34,6 @@ return [
         'drivers' => [
             'manual' => [
                 'enabled' => true,
-                'reference_metadata_key' => 'external_reference',
             ],
             'voucher' => [
                 'enabled' => true,

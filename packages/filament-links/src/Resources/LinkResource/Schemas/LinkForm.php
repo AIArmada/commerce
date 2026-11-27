@@ -26,7 +26,7 @@ final class LinkForm
         $configuredTypes = config('filament-links.protected_subject_types');
         $subjectTypes = is_array($configuredTypes)
             ? $configuredTypes
-            : ['affiliate_link'];
+            : ['affiliate_link', 'affiliate_offer_link'];
 
         foreach ($subjectTypes as $subjectType) {
             if (! is_string($subjectType) || $subjectType === '') {

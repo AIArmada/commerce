@@ -119,6 +119,7 @@ return [
 
         'collect' => [
             'webhook_keys' => $collectWebhookKeys,
+            'brand_keys' => [],
         ],
 
         'send' => [

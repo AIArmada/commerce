@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Schemas\BankAccountForm;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Schemas\BankAccountInfolist;
