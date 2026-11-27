@@ -149,6 +149,7 @@ class FakeChipClient
             'payment_method_whitelist' => $data['payment_method_whitelist'] ?? null,
             'is_recurring_token' => $data['is_recurring_token'] ?? false,
             'skip_capture' => $data['skip_capture'] ?? false,
+            'force_recurring' => $data['force_recurring'] ?? false,
             'client' => $data['client'] ?? null,
             'checkout_url' => 'https://gate.chip-in.asia/checkout/' . $id,
             'direct_post_url' => 'https://gate.chip-in.asia/direct-post/' . $id,
