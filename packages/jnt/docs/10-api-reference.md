@@ -197,7 +197,7 @@ $order->chargeableWeight;  // Billable weight
 ```php
 $tracking->trackingNumber;        // J&T tracking number
 $tracking->orderId;               // Your order reference
-$tracking->details;               // DataCollection of TrackingDetailData
+$tracking->details;               // List of TrackingDetailData
 $tracking->getLatestDetail();     // Most recent TrackingDetailData, or null
 $tracking->getLatestStatus();     // Latest scan type, e.g. "SIGN"
 $tracking->getLatestLocation();   // Latest network name

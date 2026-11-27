@@ -59,7 +59,7 @@ class WebhookController
                     Log::info('J&T webhook received', [
                         'billCode' => $webhookData->billCode,
                         'txlogisticId' => $webhookData->txlogisticId,
-                        'detailsCount' => $webhookData->details->count(),
+                        'detailsCount' => count($webhookData->details),
                         'latestStatus' => $webhookData->getLatestDetail()?->scanType ?? 'unknown',
                     ]);
                 } catch (Throwable $e) {

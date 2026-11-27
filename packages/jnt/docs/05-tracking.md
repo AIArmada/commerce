@@ -48,7 +48,7 @@ $tracking = JntExpress::trackParcel(orderId: 'ORDER-2024-001');
 // Main properties
 $tracking->trackingNumber;  // J&T tracking number
 $tracking->orderId;         // Your order reference
-$tracking->details;         // DataCollection of TrackingDetailData
+$tracking->details;         // List of TrackingDetailData
 
 // Helper methods
 $tracking->getLatestDetail();   // Most recent event

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Services;
 
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
@@ -76,7 +77,6 @@ class WebhookService
     /**
      * Parse a webhook request into a WebhookData object.
      *
-     * This method delegates to WebhookData for actual parsing and validation.
      * The request should have already been verified using verifySignature()
      * before calling this method.
      *
@@ -87,7 +87,61 @@ class WebhookService
      */
     public function parseWebhook(Request $request): WebhookData
     {
-        return WebhookData::fromRequest($request);
+        // Validate request has required fields
+        $validated = $request->validate([
+            'bizContent' => ['required', 'string'],
+        ]);
+
+        $rawBizContent = (string) $validated['bizContent'];
+        $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
+
+        if (strlen($rawBizContent) > $maxBytes) {
+            throw JntValidationException::fieldTooLong('bizContent', $maxBytes, strlen($rawBizContent));
+        }
+
+        // Parse bizContent JSON
+        $bizContent = json_decode($rawBizContent, true);
+
+        if (! is_array($bizContent)) {
+            throw JntValidationException::invalidFormat('bizContent', 'valid JSON', $validated['bizContent']);
+        }
+
+        // Validate bizContent structure
+        if (! isset($bizContent['billCode']) || ! is_string($bizContent['billCode']) || $bizContent['billCode'] === '') {
+            throw JntValidationException::requiredFieldMissing('billCode');
+        }
+
+        if (! isset($bizContent['details']) || ! is_array($bizContent['details']) || ! array_is_list($bizContent['details'])) {
+            throw JntValidationException::invalidFieldValue('details', $bizContent['details'] ?? null, 'array');
+        }
+
+        $maxDetails = max(1, (int) config('jnt.webhooks.max_details', 500));
+
+        if (count($bizContent['details']) > $maxDetails) {
+            throw JntValidationException::fieldTooLong('details', $maxDetails, count($bizContent['details']));
+        }
+
+        if (isset($bizContent['txlogisticId']) && ! is_string($bizContent['txlogisticId'])) {
+            throw JntValidationException::invalidFieldValue('txlogisticId', $bizContent['txlogisticId'], 'string');
+        }
+
+        // Parse tracking details
+        $details = array_map(
+            static function (mixed $detail): TrackingDetailData {
+                if (! is_array($detail)) {
+                    throw JntValidationException::invalidFieldValue('details.*', $detail, 'array');
+                }
+
+                return TrackingDetailData::fromApiArray($detail);
+            },
+            $bizContent['details']
+        );
+
+        return new WebhookData(
+            billCode: $bizContent['billCode'],
+            txlogisticId: $bizContent['txlogisticId'] ?? null,
+            details: $details,
+        );
     }
 
     /**
@@ -155,7 +209,11 @@ class WebhookService
     public function verifyAndParse(Request $request): ?WebhookData
     {
         $digest = $this->extractDigest($request);
-        $bizContent = (string) $request->input('bizContent', '');
+        $bizContent = $request->input('bizContent', '');
+
+        if (! is_string($bizContent)) {
+            return null;
+        }
 
         if (! $this->verifySignature($digest, $bizContent)) {
             return null;

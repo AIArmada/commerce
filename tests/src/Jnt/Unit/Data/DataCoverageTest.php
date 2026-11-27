@@ -163,6 +163,24 @@ describe('ItemData', function (): void {
     });
 });
 
+it('round-trips cached carrier tracking data using the carrier field names', function (): void {
+    $tracking = \AIArmada\Jnt\Data\TrackingData::fromApiArray([
+        'billCode' => 'JT123',
+        'details' => [[
+            'scanTime' => '2024-01-01 12:00:00',
+            'desc' => 'Delivered',
+            'scanTypeCode' => '1',
+            'scanTypeName' => 'Delivery',
+            'scanType' => 'SIGN',
+        ]],
+    ]);
+
+    $restored = \AIArmada\Jnt\Data\TrackingData::fromApiArray($tracking->toApiArray());
+
+    expect($restored->details[0]->description)->toBe('Delivered')
+        ->and($restored->isDelivered())->toBeTrue();
+});
+
 describe('TrackingDetailData', function (): void {
     it('creates from API array', function (): void {
         $apiData = [
