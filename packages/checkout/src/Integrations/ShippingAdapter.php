@@ -6,10 +6,10 @@ namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
-use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ComponentLines;
 

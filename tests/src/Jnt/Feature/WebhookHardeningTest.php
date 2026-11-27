@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
+use AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Spatie\WebhookClient\Models\WebhookCall;
@@ -314,13 +316,13 @@ describe('webhook payload hardening', function (): void {
             'customer_code' => 'CUST',
         ]);
 
-        $reader = app(\AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder::class);
+        $reader = app(ReadWebhookOrder::class);
         $snapshot = $reader->findByTrackingNumber('JNT-IDENTITY');
         expect($snapshot)->not->toBeNull();
 
         $order->update(['tracking_number' => 'JNT-CHANGED']);
 
-        expect(fn () => \Illuminate\Support\Facades\DB::transaction(fn () => $reader->lockForUpdate($snapshot)))
+        expect(fn () => DB::transaction(fn () => $reader->lockForUpdate($snapshot)))
             ->toThrow(DomainException::class, 'The tracked order changed');
     });
 });

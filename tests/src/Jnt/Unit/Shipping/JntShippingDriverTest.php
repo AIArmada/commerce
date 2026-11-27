@@ -12,9 +12,9 @@ use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Data\DriverCapability;
 
 // ============================================
 // JntShippingDriver Tests

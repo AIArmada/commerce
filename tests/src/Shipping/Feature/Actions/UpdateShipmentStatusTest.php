@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\TrackingStatus;
-use AIArmada\Shipping\Features\Shipments\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Features\Shipments\Actions\UpdateShipmentStatus;
+use AIArmada\Shipping\Features\Shipments\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
 use AIArmada\Shipping\Features\Shipments\States\Delivered;

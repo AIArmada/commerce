@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\EntryPoints\Commands\Orders;
 
 use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\Data\GoodsType;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
-use AIArmada\Jnt\Data\GoodsType;
 use AIArmada\Jnt\Services\JntExpressService;
 
 use function Laravel\Prompts\text;

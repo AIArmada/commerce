@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
+use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use Illuminate\Support\Facades\Notification;
@@ -107,7 +108,7 @@ describe('SendShipmentNotifications listener', function (): void {
             'metadata' => ['notification_email' => 'test@example.com'],
         ]);
 
-        $notifiable = $method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, 'test@example.com'), null);
+        $notifiable = $method->invoke($listener, new NotificationOrder('ORDER123', null, null, 'test@example.com'), null);
 
         expect($notifiable)->not->toBeNull();
         expect($notifiable->email)->toBe('test@example.com');
@@ -132,7 +133,7 @@ describe('SendShipmentNotifications listener', function (): void {
 
         $event = new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, TrackingStatus::PickedUp);
 
-        $notification = $method->invoke($listener, $event, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', 'JNT123', null, null));
+        $notification = $method->invoke($listener, $event, new NotificationOrder('ORDER123', 'JNT123', null, null));
 
         // Since tracking fails, notification will be null
         expect($notification)->toBeNull();

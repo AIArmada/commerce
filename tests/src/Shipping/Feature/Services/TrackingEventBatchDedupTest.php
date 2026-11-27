@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Shipping\Feature\Services;
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Features\Shipments\States\InTransit;
+use AIArmada\Shipping\ShippingManager;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Mockery;

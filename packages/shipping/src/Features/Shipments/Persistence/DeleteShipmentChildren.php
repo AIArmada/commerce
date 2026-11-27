@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Persistence;
 
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
+use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use Illuminate\Database\Eloquent\Collection;

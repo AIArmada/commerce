@@ -11,9 +11,9 @@ use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipShipment;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
-use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Features\Shipments\States\Pending;
 use AIArmada\Shipping\Features\Shipments\States\Shipped;
+use AIArmada\Shipping\ShippingManager;
 
 describe('ShipShipment Action', function (): void {
     it('ships a pending shipment via driver', function (): void {

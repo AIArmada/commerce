@@ -8,10 +8,10 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Features\Shipments\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
-use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Features\Shipments\States\Draft;
 use AIArmada\Shipping\Features\Shipments\States\Pending;
 use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus as ShipmentStatusState;
+use AIArmada\Shipping\ShippingManager;
 
 class ShipmentService
 {

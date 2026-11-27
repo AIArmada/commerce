@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\AddressValidationResult;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
-use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\TrackingStatus;
+use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;

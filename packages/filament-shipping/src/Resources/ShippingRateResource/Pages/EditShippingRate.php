@@ -7,6 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ShippingRateResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource;
 use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,7 +18,7 @@ class EditShippingRate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->using(fn (ShippingRate $record): bool => app(ManageRateConfiguration::class)->deleteRate((string) $record->getKey())),
         ];
     }

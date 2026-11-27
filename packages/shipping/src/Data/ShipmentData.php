@@ -21,9 +21,9 @@ final readonly class ShipmentData
     }
 
     /**
-     * @param list<ShipmentItemData> $items
-     * @param list<PackageData> $packages
-     * @param array<string, mixed> $metadata
+     * @param  list<ShipmentItemData>  $items
+     * @param  list<PackageData>  $packages
+     * @param  array<string, mixed>  $metadata
      */
     public function __construct(
         public string $reference,

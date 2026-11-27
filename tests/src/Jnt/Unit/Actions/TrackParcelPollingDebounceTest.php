@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 

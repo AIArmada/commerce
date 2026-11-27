@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-
 /**
  * Package info data for JNT Express shipments.
  *

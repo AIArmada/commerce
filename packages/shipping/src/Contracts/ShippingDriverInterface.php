@@ -6,13 +6,13 @@ namespace AIArmada\Shipping\Contracts;
 
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\CarrierOperationResult;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
-use AIArmada\Shipping\Data\DriverCapability;
 
 /**
  * Contract for shipping carrier drivers.

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Tracking\Support;
 
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
-use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Data\TrackingStatus as NormalizedTrackingStatus;
 

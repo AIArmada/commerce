@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Features\Returns\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use Carbon\CarbonImmutable;
 use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
+use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

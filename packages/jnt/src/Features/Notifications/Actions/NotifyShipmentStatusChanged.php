@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Notifications\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
-use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Notifications\OrderProblemNotification;
 use AIArmada\Jnt\Notifications\OrderShippedNotification;

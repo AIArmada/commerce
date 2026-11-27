@@ -10,6 +10,7 @@ use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use InvalidArgumentException;
+use RuntimeException;
 
 function operationTestShipment(): Shipment
 {
@@ -56,7 +57,7 @@ describe('Shipment operation start records', function (): void {
             ->and($second->wasRecentlyCreated)->toBeFalse()
             ->and($shipment->operations()->count())->toBe(1);
 
-        expect(fn () => $writer->start($shipment, 'cancel'))->toThrow(\RuntimeException::class);
+        expect(fn () => $writer->start($shipment, 'cancel'))->toThrow(RuntimeException::class);
     })->with([
         'success' => [CarrierOperationResult::succeeded()],
         'unknown' => [CarrierOperationResult::unknown()],

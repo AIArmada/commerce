@@ -6,8 +6,10 @@ namespace AIArmada\Shipping\Drivers;
 
 use AIArmada\Shipping\Contracts\AddressValidationResult;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\CarrierOperationResult;
+use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -15,9 +17,7 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
-use AIArmada\Shipping\Data\DriverCapability;
 use AIArmada\Shipping\Data\TrackingStatus;
-use AIArmada\Shipping\Contracts\ZoneRateReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 

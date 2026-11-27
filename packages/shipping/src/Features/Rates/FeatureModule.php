@@ -6,15 +6,15 @@ namespace AIArmada\Shipping\Features\Rates;
 
 use AIArmada\Shipping\Features\Rates\Actions\CalculateShippingRate;
 use AIArmada\Shipping\Features\Rates\Actions\WriteRateConfiguration;
-use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
+use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
+use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
+use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
+use AIArmada\Shipping\Features\Rates\Policies\ShippingRatePolicy;
+use AIArmada\Shipping\Features\Rates\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
-use AIArmada\Shipping\Features\Rates\Policies\ShippingRatePolicy;
-use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
-use AIArmada\Shipping\Features\Rates\Policies\ShippingZonePolicy;
-use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 
 final class FeatureModule implements FeatureModuleContract
 {

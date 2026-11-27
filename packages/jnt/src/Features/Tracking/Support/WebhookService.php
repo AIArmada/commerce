@@ -52,7 +52,7 @@ class WebhookService
             return false;
         }
 
-        if (strlen($bizContent) > max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576))) {
+        if (mb_strlen($bizContent) > max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576))) {
             return false;
         }
 

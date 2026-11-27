@@ -23,7 +23,6 @@ final readonly class WebhookData
     public function __construct(
         public string $billCode,
         public ?string $txlogisticId,
-
         public array $details,
     ) {}
 

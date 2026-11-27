@@ -6,34 +6,36 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
+use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderPrintCommand;
-use AIArmada\Jnt\Features\Tracking\EntryPoints\Commands\WebhookTestCommand;
-use AIArmada\Jnt\Features\Waybills\EntryPoints\Http\AwbController;
-use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
-use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
-use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
+use AIArmada\Jnt\Features\Notifications\EntryPoints\Listeners\SendShipmentNotifications;
+use AIArmada\Jnt\Features\Orders\Api\NotificationOrder;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
 use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
-use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
-use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
-use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
-use AIArmada\Jnt\JntServiceProvider;
-use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
-use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Contracts\CarrierTransportFactory;
-use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
-use AIArmada\Jnt\Support\TrackingEventHash;
+use AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Commands\WebhookTestCommand;
+use AIArmada\Jnt\Features\Tracking\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntSpatieSignatureValidator;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookProfile;
 use AIArmada\Jnt\Features\Tracking\EntryPoints\Webhooks\JntWebhookResponse;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
+use AIArmada\Jnt\Features\Waybills\EntryPoints\Http\AwbController;
+use AIArmada\Jnt\JntServiceProvider;
+use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
+use AIArmada\Jnt\Services\JntExpressService;
+use AIArmada\Jnt\Support\TrackingEventHash;
 use AIArmada\Shipping\Data\AddressData;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -222,7 +224,7 @@ describe('carrier safety guards', function (): void {
         }
 
         DB::enableQueryLog();
-        $latest = app(\AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan::class)->forOrder($order->id, $order->owner_type, $order->owner_id);
+        $latest = app(ReadLatestTrackingScan::class)->forOrder($order->id, $order->owner_type, $order->owner_id);
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
@@ -269,10 +271,10 @@ describe('carrier safety guards', function (): void {
         $validEmail = new JntOrder;
         $validEmail->forceFill(['metadata' => ['notification_email' => 'ops@example.com']]);
 
-        $resolved = $method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, 'ops@example.com'), null);
+        $resolved = $method->invoke($listener, new NotificationOrder('ORDER123', null, null, 'ops@example.com'), null);
 
-        expect($method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, null), null))->toBeNull()
-            ->and($method->invoke($listener, new \AIArmada\Jnt\Features\Orders\Api\NotificationOrder('ORDER123', null, null, 'not-an-email'), null))->toBeNull()
+        expect($method->invoke($listener, new NotificationOrder('ORDER123', null, null, null), null))->toBeNull()
+            ->and($method->invoke($listener, new NotificationOrder('ORDER123', null, null, 'not-an-email'), null))->toBeNull()
             ->and($resolved)->not->toBeNull()
             ->and(unserialize(serialize($resolved)))->toBeInstanceOf($resolved::class);
 

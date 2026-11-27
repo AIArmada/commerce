@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping;
 
-use AIArmada\Shipping\Drivers\NullShippingDriver;
-use AIArmada\Shipping\Drivers\ManualShippingDriver;
-use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
-use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
+use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
+use AIArmada\Shipping\Drivers\ManualShippingDriver;
+use AIArmada\Shipping\Drivers\NullShippingDriver;
+use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
+use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
+use AIArmada\Shipping\Features\Rates\Api\ShopRates;
 use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
-use AIArmada\Shipping\Features\Rates\Api\ShopRates;
-use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
-use AIArmada\Shipping\Contracts\ZoneRateReader;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\Platform\ExtensionRegistry;
 use AIArmada\Shipping\Platform\FeatureCatalog;
 use AIArmada\Shipping\Platform\FeatureModule;
-use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
 use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;
 use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
@@ -156,5 +156,4 @@ final class ShippingServiceProvider extends PackageServiceProvider
         }
 
     }
-
 }

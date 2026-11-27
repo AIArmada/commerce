@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Enums\ExpressType;
 use AIArmada\Jnt\Data\GoodsType;
+use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Enums\ExpressType;
 use AIArmada\Jnt\Enums\PaymentType;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\ServiceType;
-use AIArmada\Jnt\Data\TrackingStatus;
 
 describe('ExpressType enum', function (): void {
     it('has expected cases', function (): void {

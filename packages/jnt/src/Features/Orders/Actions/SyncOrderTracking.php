@@ -6,12 +6,12 @@ namespace AIArmada\Jnt\Features\Orders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
 use AIArmada\Jnt\Features\Tracking\Api\StoreTrackingEvents;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Support\TrackingEventHash;
@@ -298,5 +298,4 @@ class SyncOrderTracking
 
         app(StoreTrackingEvents::class)->insertMissing($rows);
     }
-
 }

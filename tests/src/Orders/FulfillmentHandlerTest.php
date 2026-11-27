@@ -10,9 +10,9 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 
 it('exposes the carrier discovery seam on the fulfillment contract', function (): void {

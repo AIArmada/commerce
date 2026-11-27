@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Rates\Models;
 
-use AIArmada\Shipping\Features\Rates\Persistence\DeleteZoneRates;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -12,6 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ZoneCandidateData;
+use AIArmada\Shipping\Features\Rates\Persistence\DeleteZoneRates;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

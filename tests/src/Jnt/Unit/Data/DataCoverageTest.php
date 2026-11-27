@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Data\ItemData;
-use AIArmada\Jnt\Data\PackageInfoData;
-use AIArmada\Jnt\Data\TrackingDetailData;
+use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\GoodsType;
+use AIArmada\Jnt\Data\ItemData;
+use AIArmada\Jnt\Data\OrderData;
+use AIArmada\Jnt\Data\PackageInfoData;
+use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
 
 describe('PackageInfoData', function (): void {
     it('creates from API array', function (): void {
@@ -135,10 +138,10 @@ describe('PackageInfoData', function (): void {
 
 it('exposes immutable J&T request and order DTOs', function (): void {
     foreach ([
-        \AIArmada\Jnt\Data\AddressData::class,
+        AddressData::class,
         ItemData::class,
         PackageInfoData::class,
-        \AIArmada\Jnt\Data\OrderData::class,
+        OrderData::class,
     ] as $class) {
         $reflection = new ReflectionClass($class);
 
@@ -164,7 +167,7 @@ describe('ItemData', function (): void {
 });
 
 it('round-trips cached carrier tracking data using the carrier field names', function (): void {
-    $tracking = \AIArmada\Jnt\Data\TrackingData::fromApiArray([
+    $tracking = TrackingData::fromApiArray([
         'billCode' => 'JT123',
         'details' => [[
             'scanTime' => '2024-01-01 12:00:00',
@@ -175,7 +178,7 @@ it('round-trips cached carrier tracking data using the carrier field names', fun
         ]],
     ]);
 
-    $restored = \AIArmada\Jnt\Data\TrackingData::fromApiArray($tracking->toApiArray());
+    $restored = TrackingData::fromApiArray($tracking->toApiArray());
 
     expect($restored->details[0]->description)->toBe('Delivered')
         ->and($restored->isDelivered())->toBeTrue();
@@ -307,10 +310,9 @@ describe('TrackingDetailData', function (): void {
     });
 });
 
-
 it('rejects malformed carrier data without exposing raw payload values', function (): void {
-    expect(fn () => \AIArmada\Jnt\Data\OrderData::fromApiArray(['txlogisticId' => 'ORDER', 'multipleVoteBillCodes' => ['ok', ['invalid']]]))
+    expect(fn () => OrderData::fromApiArray(['txlogisticId' => 'ORDER', 'multipleVoteBillCodes' => ['ok', ['invalid']]]))
         ->toThrow(InvalidArgumentException::class)
-        ->and(fn () => \AIArmada\Jnt\Data\TrackingData::fromApiArray(['billCode' => 'TRACK', 'txlogisticId' => ['invalid']]))
+        ->and(fn () => TrackingData::fromApiArray(['billCode' => 'TRACK', 'txlogisticId' => ['invalid']]))
         ->toThrow(InvalidArgumentException::class);
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 it('creates pending returns and ignores injected lifecycle and owner fields', function (): void {
     config(['shipping.features.owner.enabled' => false]);
@@ -23,7 +24,7 @@ it('restricts item mutations to their owning return and validates quantities', f
     $item = $api->createItem($first, ['name' => 'Item', 'quantity_requested' => 2]);
 
     expect(fn () => $api->updateItem($second, $item, ['quantity_requested' => 1]))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class)
+        ->toThrow(ModelNotFoundException::class)
         ->and(fn () => $api->updateItem($first, $item, ['quantity_requested' => 0]))
         ->toThrow(DomainException::class);
 });

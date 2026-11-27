@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\States\RmaDraft;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,6 +17,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use LogicException;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -108,7 +109,7 @@ class ItemsRelationManager extends RelationManager
                         $owner = $this->getOwnerRecord();
 
                         if (! $owner instanceof ReturnAuthorization) {
-                            throw new \LogicException('Return authorization is required.');
+                            throw new LogicException('Return authorization is required.');
                         }
 
                         $id = app(ManageReturnAuthorization::class)->createItem((string) $owner->getKey(), $data);

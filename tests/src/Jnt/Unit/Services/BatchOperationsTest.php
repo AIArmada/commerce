@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Facades\Http;
 

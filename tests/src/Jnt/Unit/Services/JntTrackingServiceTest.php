@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
@@ -295,7 +296,7 @@ describe('JntTrackingService', function (): void {
 
         $statusMapper = Mockery::mock(JntStatusMapper::class);
 
-        $service = new \AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking($expressService, new JntTrackingService($expressService, $statusMapper));
+        $service = new SyncOrderTracking($expressService, new JntTrackingService($expressService, $statusMapper));
 
         $order1 = new JntOrder;
         $order1->forceFill(['id' => 'test-id', 'tracking_number' => 'JNT001']);
@@ -324,7 +325,7 @@ describe('JntTrackingService', function (): void {
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
 
-        $service = new \AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking($expressService, new JntTrackingService($expressService, $statusMapper));
+        $service = new SyncOrderTracking($expressService, new JntTrackingService($expressService, $statusMapper));
 
         expect(fn (): Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
             ->toThrow(AuthorizationException::class);

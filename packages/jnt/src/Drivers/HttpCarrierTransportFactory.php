@@ -27,11 +27,11 @@ final class HttpCarrierTransportFactory implements CarrierTransportFactory
             throw JntConfigurationException::invalidValue('jnt.base_urls', 'Missing API base URL.');
         }
 
-        if (! is_string($account) || trim($account) === '') {
+        if (! is_string($account) || mb_trim($account) === '') {
             throw JntConfigurationException::missingApiAccount();
         }
 
-        if (! is_string($key) || trim($key) === '') {
+        if (! is_string($key) || mb_trim($key) === '') {
             throw JntConfigurationException::missingPrivateKey();
         }
 

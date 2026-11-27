@@ -151,7 +151,7 @@ class JntClient implements CarrierTransport
             }
         } else {
             $body = $response->body();
-            $payload['body_length'] = strlen($body);
+            $payload['body_length'] = mb_strlen($body);
             $payload['body_sha256'] = hash('sha256', $body);
         }
 

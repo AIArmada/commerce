@@ -7,6 +7,7 @@ namespace AIArmada\Jnt\Builders;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
+use AIArmada\Jnt\Data\TypeTransformer;
 use AIArmada\Jnt\Enums\ExpressType;
 use AIArmada\Jnt\Enums\PaymentType;
 use AIArmada\Jnt\Enums\ServiceType;
@@ -18,7 +19,6 @@ use AIArmada\Jnt\Rules\MonetaryValue;
 use AIArmada\Jnt\Rules\PhoneNumber;
 use AIArmada\Jnt\Rules\WeightInGrams;
 use AIArmada\Jnt\Rules\WeightInKilograms;
-use AIArmada\Jnt\Data\TypeTransformer;
 use Illuminate\Support\Facades\Validator;
 
 class OrderBuilder

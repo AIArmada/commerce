@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Data\TrackingStatus as NormalizedTrackingStatus;

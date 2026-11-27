@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
@@ -9,7 +10,6 @@ use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
-use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {

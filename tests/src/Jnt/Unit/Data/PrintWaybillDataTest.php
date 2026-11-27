@@ -352,7 +352,7 @@ describe('PrintWaybillData', function (): void {
     it('counts binary bytes rather than characters', function (): void {
         $data = new PrintWaybillData(orderId: 'ORDER-123', base64Content: base64_encode("%PDF-1.4 \xC3\xA9"));
 
-        expect($data->getPdfSize())->toBe(strlen("%PDF-1.4 \xC3\xA9"));
+        expect($data->getPdfSize())->toBe(mb_strlen("%PDF-1.4 \xC3\xA9"));
     });
 
     it('rejects non-PDF content without creating a file', function (): void {

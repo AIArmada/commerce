@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Shipments\Models;
 
-use AIArmada\Shipping\Features\Shipments\Persistence\DeleteShipmentChildren;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Shipping\Features\Shipments\Persistence\DeleteShipmentChildren;
 use AIArmada\Shipping\Features\Shipments\States\ShipmentStatus;
 use Carbon\CarbonInterface;
 use DomainException;

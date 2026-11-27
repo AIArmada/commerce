@@ -9,10 +9,10 @@ use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
-use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Features\Shipments\States\Cancelled;
 use AIArmada\Shipping\Features\Shipments\States\Pending;
 use AIArmada\Shipping\Features\Shipments\States\Shipped;
+use AIArmada\Shipping\ShippingManager;
 
 describe('CancelShipment Action', function (): void {
     it('cancels a cancellable shipment', function (): void {

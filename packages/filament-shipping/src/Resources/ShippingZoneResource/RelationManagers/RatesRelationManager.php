@@ -6,13 +6,13 @@ namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManag
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
 use AIArmada\FilamentShipping\Support\MoneyInput;
 use AIArmada\Shipping\Features\Rates\Api\ManageRateConfiguration;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use AIArmada\FilamentShipping\Actions\DeleteRateConfigurationBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;

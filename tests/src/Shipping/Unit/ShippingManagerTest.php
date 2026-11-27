@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
+use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
-use AIArmada\Shipping\Data\TrackingStatus;
 use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingManager;
 

@@ -13,8 +13,8 @@ final readonly class WebhookPayload
     {
         $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
 
-        if (strlen($content) > $maxBytes) {
-            throw JntValidationException::fieldTooLong('bizContent', $maxBytes, strlen($content));
+        if (mb_strlen($content) > $maxBytes) {
+            throw JntValidationException::fieldTooLong('bizContent', $maxBytes, mb_strlen($content));
         }
 
         $decoded = json_decode($content, true);

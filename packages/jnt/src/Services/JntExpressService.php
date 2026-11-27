@@ -7,22 +7,22 @@ namespace AIArmada\Jnt\Services;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Builders\OrderBuilder;
+use AIArmada\Jnt\Contracts\CarrierTransport;
+use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingData;
-use AIArmada\Jnt\Contracts\CarrierTransport;
-use AIArmada\Jnt\Contracts\CarrierTransportFactory;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use InvalidArgumentException;
 use AIArmada\Jnt\Support\FieldNameConverter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Throwable;
 
 class JntExpressService
@@ -442,9 +442,9 @@ class JntExpressService
             $tasks["order:{$index}:{$orderId}"] = $inOwnerContext
                 ? fn (): array => self::executeTrackingTask($orderId, null, $this)
                 : static fn (): array => self::executeTrackingTask(
-                orderId: $orderId,
-                trackingNumber: null,
-            );
+                    orderId: $orderId,
+                    trackingNumber: null,
+                );
         }
 
         // Tasks for tracking numbers
@@ -452,9 +452,9 @@ class JntExpressService
             $tasks["tracking:{$index}:{$trackingNumber}"] = $inOwnerContext
                 ? fn (): array => self::executeTrackingTask(null, $trackingNumber, $this)
                 : static fn (): array => self::executeTrackingTask(
-                orderId: null,
-                trackingNumber: $trackingNumber,
-            );
+                    orderId: null,
+                    trackingNumber: $trackingNumber,
+                );
         }
 
         // If no tasks, return early
@@ -610,7 +610,7 @@ class JntExpressService
      * Lazy load the HTTP client only when needed
      */
     /**
-     * @param array<string, mixed> $response
+     * @param  array<string, mixed>  $response
      * @return array<string, mixed>
      */
     private function responseData(array $response, string $endpoint): array

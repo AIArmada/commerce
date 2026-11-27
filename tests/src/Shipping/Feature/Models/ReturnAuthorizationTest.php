@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
-use AIArmada\Shipping\Features\Shipments\Models\Shipment;
-use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
 use AIArmada\Shipping\Features\Returns\States\RmaApproved;
 use AIArmada\Shipping\Features\Returns\States\RmaDraft;
 use AIArmada\Shipping\Features\Returns\States\RmaPending;
+use AIArmada\Shipping\Features\Shipments\Api\ReadReturnShipment;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('ReturnAuthorization Model', function (): void {

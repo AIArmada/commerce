@@ -6,19 +6,19 @@ namespace AIArmada\Jnt\Features\Tracking\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
-use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Orders\Api\ReadWebhookOrder;
-use AIArmada\Jnt\Features\Orders\Api\WebhookOrder;
-use DomainException;
 use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
+use AIArmada\Jnt\Features\Orders\Api\WebhookOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
 use AIArmada\Jnt\Features\Tracking\Persistence\WebhookLogWriter;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use Carbon\CarbonImmutable;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -203,11 +203,11 @@ final class ProcessTrackingWebhook
     private function markWebhookLogAsFailed(string $error): void
     {
         app(WebhookLogWriter::class)->update($this->webhookCall->getKey(), [
-                'digest' => $this->extractDigest(),
-                'processing_status' => JntWebhookLog::STATUS_FAILED,
-                'processing_error' => $error,
-                'processed_at' => CarbonImmutable::now(),
-            ]);
+            'digest' => $this->extractDigest(),
+            'processing_status' => JntWebhookLog::STATUS_FAILED,
+            'processing_error' => $error,
+            'processed_at' => CarbonImmutable::now(),
+        ]);
     }
 
     /**

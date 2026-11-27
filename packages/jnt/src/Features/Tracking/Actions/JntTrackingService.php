@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Tracking\Actions;
 
 use AIArmada\Jnt\Contracts\TrackingReader;
-use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\TrackingStatus;
+use AIArmada\Jnt\Features\Tracking\Api\ReadTrackingStatus;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Services\JntExpressService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class JntTrackingService implements TrackingReader, ReadTrackingStatus
+class JntTrackingService implements ReadTrackingStatus, TrackingReader
 {
     public function __construct(
         private readonly JntExpressService $expressService,

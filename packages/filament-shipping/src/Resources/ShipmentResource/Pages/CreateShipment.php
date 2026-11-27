@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use Filament\Resources\Pages\CreateRecord;
 use AIArmada\Shipping\Features\Shipments\Api\ManageManualShipment;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
 class CreateShipment extends CreateRecord

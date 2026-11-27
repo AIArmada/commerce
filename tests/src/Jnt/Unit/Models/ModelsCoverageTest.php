@@ -89,10 +89,6 @@ describe('JntOrder model', function (): void {
         expect($relation->getRelated())->toBeInstanceOf(JntOrderParcel::class);
     });
 
-
-
-
-
     it('applies owner scope when disabled', function (): void {
         config(['jnt.owner.enabled' => false]);
         $order = new JntOrder;
@@ -314,7 +310,6 @@ describe('JntTrackingEvent model', function (): void {
         expect($event->getLocation())->toBe('City B, Country D');
     });
 
-
 });
 
 describe('JntWebhookLog model', function (): void {
@@ -378,6 +373,5 @@ describe('JntWebhookLog model', function (): void {
         expect(JntWebhookLog::STATUS_PROCESSED)->toBe('processed');
         expect(JntWebhookLog::STATUS_FAILED)->toBe('failed');
     });
-
 
 });

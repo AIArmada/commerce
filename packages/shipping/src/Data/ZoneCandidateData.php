@@ -7,9 +7,9 @@ namespace AIArmada\Shipping\Data;
 final readonly class ZoneCandidateData
 {
     /**
-     * @param array<string>|null $countries
-     * @param array<string>|null $states
-     * @param array<array{from?: string, to?: string}>|null $postcodeRanges
+     * @param  array<string>|null  $countries
+     * @param  array<string>|null  $states
+     * @param  array<array{from?: string, to?: string}>|null  $postcodeRanges
      */
     public function __construct(
         public string $id,
@@ -56,10 +56,10 @@ final readonly class ZoneCandidateData
             return true; // If no states specified, match entire country
         }
 
-        $addressState = mb_strtolower(trim($address->state ?? ''));
+        $addressState = mb_strtolower(mb_trim($address->state ?? ''));
 
         foreach ($this->states as $state) {
-            if ($addressState !== '' && $addressState === mb_strtolower(trim($state))) {
+            if ($addressState !== '' && $addressState === mb_strtolower(mb_trim($state))) {
                 return true;
             }
         }
@@ -141,5 +141,4 @@ final readonly class ZoneCandidateData
 
         return $earthRadius * $c;
     }
-
 }

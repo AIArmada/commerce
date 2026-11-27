@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\ShippingManager;
 
 describe('CalculateShippingRate Action', function (): void {

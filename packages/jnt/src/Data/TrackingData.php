@@ -16,7 +16,6 @@ final readonly class TrackingData
      */
     public function __construct(
         public string $trackingNumber,
-
         public array $details,
         public ?string $orderId = null,
     ) {}

@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Features\Rates\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
-use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Contracts\ZoneRateReader;
+use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;

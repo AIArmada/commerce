@@ -7,6 +7,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill;
 use AIArmada\Jnt\Services\JntExpressService;
 use Livewire\Component;
 use Mockery\MockInterface;
@@ -130,7 +131,7 @@ it('rejects non-http waybill URLs at the domain boundary', function (): void {
     ]);
     app()->instance(JntExpressService::class, $carrier);
 
-    expect(app(\AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
+    expect(app(PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
 });
 
 it('rejects waybills with mismatched order identities or unsafe carrier payloads', function (array $payload): void {
@@ -144,7 +145,7 @@ it('rejects waybills with mismatched order identities or unsafe carrier payloads
     $carrier->shouldReceive('printOrder')->once()->andReturn($payload);
     app()->instance(JntExpressService::class, $carrier);
 
-    expect(app(\AIArmada\Jnt\Features\Waybills\Api\PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
+    expect(app(PrintableWaybill::class)->url($order->id, 'test-user'))->toBeNull();
 })->with([
     'different order' => [['txlogisticId' => 'OTHER-ORDER', 'urlContent' => 'https://example.test/label.pdf']],
     'malformed URL' => [['urlContent' => ['https://example.test/label.pdf']]],

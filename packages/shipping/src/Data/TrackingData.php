@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Data;
 
-use AIArmada\Shipping\Data\TrackingStatus;
 use DateTimeInterface;
 
 /**

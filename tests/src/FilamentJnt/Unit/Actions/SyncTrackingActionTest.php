@@ -6,8 +6,9 @@ use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking;
 use AIArmada\Jnt\Features\Orders\Api\SyncStoredTracking;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Illuminate\Support\Facades\Gate;
 
 uses(FilamentJntTestCase::class);
@@ -180,9 +181,9 @@ it('rejects synchronization without a tracking number at the domain boundary', f
         'tracking_number' => null,
     ]);
 
-    $service = Mockery::mock(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class);
+    $service = Mockery::mock(SyncOrderTracking::class);
     $service->shouldNotReceive('syncOrderTracking');
-    app()->instance(\AIArmada\Jnt\Features\Orders\Actions\SyncOrderTracking::class, $service);
+    app()->instance(SyncOrderTracking::class, $service);
 
     expect(fn () => app(SyncStoredTracking::class)->execute($order->id))
         ->toThrow(DomainException::class);

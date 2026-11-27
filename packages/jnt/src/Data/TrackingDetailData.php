@@ -11,8 +11,6 @@ use Throwable;
 /**
  * Tracking detail data from JNT Express API.
  */
-
-
 final readonly class TrackingDetailData
 {
     public function __construct(

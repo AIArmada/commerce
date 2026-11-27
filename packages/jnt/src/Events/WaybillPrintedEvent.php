@@ -61,5 +61,4 @@ final class WaybillPrintedEvent
     {
         return $this->waybill->getFormattedSize();
     }
-
 }
