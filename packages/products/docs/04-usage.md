@@ -409,8 +409,8 @@ app(\AIArmada\Products\Actions\RebuildCollectionMembership::class)->execute($col
 ## Use custom attributes
 
 ```php
-$product->setCustomAttribute('material', 'Cotton');
-$product->setCustomAttribute('care_instructions', 'Cold wash only');
+app(CustomAttributeValues::class)->set($product, 'material', 'Cotton');
+app(CustomAttributeValues::class)->set($product, 'care_instructions', 'Cold wash only');
 
 $material = $product->getCustomAttribute('material');
 $attributes = $product->getCustomAttributesArray();

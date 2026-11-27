@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 use AIArmada\Products\Enums\AttributeType;
@@ -19,8 +20,8 @@ it('serializes values through the attribute type when applying changes', functio
     Attribute::create(['code' => 'applied_tags', 'name' => 'Tags', 'type' => AttributeType::Multiselect]);
     Attribute::create(['code' => 'applied_flag', 'name' => 'Flag', 'type' => AttributeType::Boolean]);
 
-    $product->setCustomAttribute('applied_tags', ['a']);
-    $product->setCustomAttribute('applied_flag', false);
+    app(CustomAttributeValues::class)->set($product, 'applied_tags', ['a']);
+    app(CustomAttributeValues::class)->set($product, 'applied_flag', false);
 
     $result = app(ApplyAttributeChanges::class)->execute($product, [
         'applied_tags' => ['a', 'b'],
@@ -65,7 +66,7 @@ it('applies serialized changes to variants', function (): void {
     $variant = Variant::create(['product_id' => $product->id, 'name' => 'V1', 'sku' => 'VATTR-1']);
 
     Attribute::create(['code' => 'variant_note', 'name' => 'Note', 'type' => AttributeType::Text]);
-    $variant->setCustomAttribute('variant_note', 'old');
+    app(CustomAttributeValues::class)->set($variant, 'variant_note', 'old');
 
     $result = app(ApplyAttributeChanges::class)->forVariant($variant, ['variant_note' => 'new']);
 

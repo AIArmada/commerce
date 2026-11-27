@@ -6,6 +6,7 @@ namespace AIArmada\Products\Actions;
 
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Support\Facades\DB;
 
 final class ApplyAttributeChanges
@@ -44,7 +45,7 @@ final class ApplyAttributeChanges
     {
         return DB::transaction(function () use ($product, $attributes): Product {
             foreach ($attributes as $attributeCode => $value) {
-                $product->setCustomAttribute($attributeCode, $value);
+                app(CustomAttributeValues::class)->set($product, $attributeCode, $value);
             }
 
             return $product->fresh() ?? $product;
@@ -58,7 +59,7 @@ final class ApplyAttributeChanges
     {
         return DB::transaction(function () use ($variant, $attributes): Variant {
             foreach ($attributes as $attributeCode => $value) {
-                $variant->setCustomAttribute($attributeCode, $value);
+                app(CustomAttributeValues::class)->set($variant, $attributeCode, $value);
             }
 
             return $variant->fresh() ?? $variant;

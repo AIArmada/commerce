@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Actions\GenerateVariants;
@@ -246,7 +247,7 @@ describe('ApplyAttributeChanges Action', function (): void {
             'type' => AttributeType::Text,
         ]);
 
-        $product->setCustomAttribute('test_color', 'Red');
+        app(CustomAttributeValues::class)->set($product, 'test_color', 'Red');
 
         $result = app(ApplyAttributeChanges::class)->execute($product, ['test_color' => 'Blue']);
 
@@ -262,7 +263,7 @@ describe('ApplyAttributeChanges Action', function (): void {
             'type' => AttributeType::Text,
         ]);
 
-        $product->setCustomAttribute('test_invoke', 'Old');
+        app(CustomAttributeValues::class)->set($product, 'test_invoke', 'Old');
 
         $action = app(ApplyAttributeChanges::class);
         $result = $action($product, ['test_invoke' => 'New']);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -197,7 +198,7 @@ it('rejects a package that was archived after checkout started', function (): vo
     [$cart, $package, , $manager] = revalidatorScenario();
     $session = revalidatorSession($cart);
 
-    $package->archive();
+    $package = app(UpdateProductStatus::class)->execute($package, ProductStatus::Archived);
 
     expect((new CompositeCartRevalidator($manager))->validate($session))
         ->toBe([CompositeCartRevalidator::ERROR_KEY => CompositeCartRevalidator::CONTENTS_CHANGED]);

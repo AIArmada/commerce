@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Attribute;
@@ -23,7 +24,7 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $attributeValue = $product->setCustomAttribute('brand', 'Nike');
+            $attributeValue = app(CustomAttributeValues::class)->set($product, 'brand', 'Nike');
 
             expect($attributeValue)->toBeInstanceOf(AttributeValue::class)
                 ->and($attributeValue->value)->toBe('Nike');
@@ -42,7 +43,7 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('material', 'Cotton');
+            app(CustomAttributeValues::class)->set($product, 'material', 'Cotton');
 
             $value = $product->getCustomAttribute('material');
 
@@ -80,7 +81,7 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttributes([
+            app(CustomAttributeValues::class)->setMany($product, [
                 'brand_multi' => 'Adidas',
                 'color_multi' => 'Blue',
             ]);
@@ -108,8 +109,8 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('size_arr', 'Large');
-            $product->setCustomAttribute('weight_arr', '100');
+            app(CustomAttributeValues::class)->set($product, 'size_arr', 'Large');
+            app(CustomAttributeValues::class)->set($product, 'weight_arr', '100');
 
             $attributes = $product->getCustomAttributesArray();
 
@@ -132,7 +133,7 @@ describe('HasAttributes Trait', function (): void {
 
             expect($product->hasCustomAttribute('has_check'))->toBeFalse();
 
-            $product->setCustomAttribute('has_check', 'Yes');
+            app(CustomAttributeValues::class)->set($product, 'has_check', 'Yes');
 
             expect($product->hasCustomAttribute('has_check'))->toBeTrue();
         });
@@ -150,10 +151,10 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('removable', 'To Be Removed');
+            app(CustomAttributeValues::class)->set($product, 'removable', 'To Be Removed');
             expect($product->hasCustomAttribute('removable'))->toBeTrue();
 
-            $result = $product->removeCustomAttribute('removable');
+            $result = app(CustomAttributeValues::class)->remove($product, 'removable');
 
             expect($result)->toBeTrue()
                 ->and($product->hasCustomAttribute('removable'))->toBeFalse();
@@ -178,10 +179,10 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('clear1', 'Value 1');
-            $product->setCustomAttribute('clear2', 'Value 2');
+            app(CustomAttributeValues::class)->set($product, 'clear1', 'Value 1');
+            app(CustomAttributeValues::class)->set($product, 'clear2', 'Value 2');
 
-            $deleted = $product->clearCustomAttributes();
+            $deleted = app(CustomAttributeValues::class)->clear($product);
 
             expect($deleted)->toBe(2)
                 ->and($product->attributeValues()->count())->toBe(0);
@@ -202,8 +203,8 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('description_locale', 'English Description', 'en');
-            $product->setCustomAttribute('description_locale', 'Malay Description', 'ms');
+            app(CustomAttributeValues::class)->set($product, 'description_locale', 'English Description', 'en');
+            app(CustomAttributeValues::class)->set($product, 'description_locale', 'Malay Description', 'ms');
 
             expect($product->getCustomAttribute('description_locale', 'en'))->toBe('English Description')
                 ->and($product->getCustomAttribute('description_locale', 'ms'))->toBe('Malay Description');
@@ -222,7 +223,7 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('title_locale', 'English Title', 'en');
+            app(CustomAttributeValues::class)->set($product, 'title_locale', 'English Title', 'en');
 
             $attributes = $product->getCustomAttributesArray('en');
 
@@ -253,8 +254,8 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('filterable_attr', 'Yes');
-            $product->setCustomAttribute('non_filterable_attr', 'No');
+            app(CustomAttributeValues::class)->set($product, 'filterable_attr', 'Yes');
+            app(CustomAttributeValues::class)->set($product, 'non_filterable_attr', 'No');
 
             $filterableAttributes = $product->getFilterableCustomAttributes();
 
@@ -285,8 +286,8 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('visible_attr', 'Show');
-            $product->setCustomAttribute('hidden_attr', 'Hide');
+            app(CustomAttributeValues::class)->set($product, 'visible_attr', 'Show');
+            app(CustomAttributeValues::class)->set($product, 'hidden_attr', 'Hide');
 
             $visibleAttributes = $product->getVisibleCustomAttributes();
 
@@ -317,8 +318,8 @@ describe('HasAttributes Trait', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('comparable_attr', 'Compare Me');
-            $product->setCustomAttribute('non_comparable_attr', 'Dont Compare');
+            app(CustomAttributeValues::class)->set($product, 'comparable_attr', 'Compare Me');
+            app(CustomAttributeValues::class)->set($product, 'non_comparable_attr', 'Dont Compare');
 
             $comparableAttributes = $product->getComparableCustomAttributes();
 
@@ -342,14 +343,14 @@ describe('HasAttributes Trait', function (): void {
                 'price' => 14000,
                 'status' => ProductStatus::Active,
             ]);
-            $redProduct->setCustomAttribute('scope_color', 'red');
+            app(CustomAttributeValues::class)->set($redProduct, 'scope_color', 'red');
 
             $blueProduct = Product::create([
                 'name' => 'Blue Product',
                 'price' => 14000,
                 'status' => ProductStatus::Active,
             ]);
-            $blueProduct->setCustomAttribute('scope_color', 'blue');
+            app(CustomAttributeValues::class)->set($blueProduct, 'scope_color', 'blue');
 
             $redProducts = Product::whereCustomAttribute('scope_color', 'red')->get();
 
@@ -375,16 +376,16 @@ describe('HasAttributes Trait', function (): void {
                 'price' => 15000,
                 'status' => ProductStatus::Active,
             ]);
-            $product1->setCustomAttribute('multi_scope_color', 'red');
-            $product1->setCustomAttribute('multi_scope_size', 'large');
+            app(CustomAttributeValues::class)->set($product1, 'multi_scope_color', 'red');
+            app(CustomAttributeValues::class)->set($product1, 'multi_scope_size', 'large');
 
             $product2 = Product::create([
                 'name' => 'Red Small',
                 'price' => 15000,
                 'status' => ProductStatus::Active,
             ]);
-            $product2->setCustomAttribute('multi_scope_color', 'red');
-            $product2->setCustomAttribute('multi_scope_size', 'small');
+            app(CustomAttributeValues::class)->set($product2, 'multi_scope_color', 'red');
+            app(CustomAttributeValues::class)->set($product2, 'multi_scope_size', 'small');
 
             $filteredProducts = Product::whereCustomAttributes([
                 'multi_scope_color' => 'red',
@@ -407,21 +408,21 @@ describe('HasAttributes Trait', function (): void {
                 'price' => 16000,
                 'status' => ProductStatus::Active,
             ]);
-            $newProduct->setCustomAttribute('array_filter', 'new');
+            app(CustomAttributeValues::class)->set($newProduct, 'array_filter', 'new');
 
             $saleProduct = Product::create([
                 'name' => 'Sale Item',
                 'price' => 16000,
                 'status' => ProductStatus::Active,
             ]);
-            $saleProduct->setCustomAttribute('array_filter', 'sale');
+            app(CustomAttributeValues::class)->set($saleProduct, 'array_filter', 'sale');
 
             $oldProduct = Product::create([
                 'name' => 'Old Item',
                 'price' => 16000,
                 'status' => ProductStatus::Active,
             ]);
-            $oldProduct->setCustomAttribute('array_filter', 'old');
+            app(CustomAttributeValues::class)->set($oldProduct, 'array_filter', 'old');
 
             $filteredProducts = Product::whereCustomAttribute('array_filter', ['new', 'sale'])->get();
 
@@ -445,7 +446,7 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $attributeValue = $product->setCustomAttribute('attr_rel', 'Test Value');
+            $attributeValue = app(CustomAttributeValues::class)->set($product, 'attr_rel', 'Test Value');
 
             expect($attributeValue->attribute->id)->toBe($attribute->id);
         });
@@ -463,7 +464,7 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $attributeValue = $product->setCustomAttribute('morph_attr', 'Morph Value');
+            $attributeValue = app(CustomAttributeValues::class)->set($product, 'morph_attr', 'Morph Value');
 
             expect($attributeValue->attributable)->toBeInstanceOf(Product::class)
                 ->and($attributeValue->attributable->id)->toBe($product->id);
@@ -484,7 +485,7 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $attributeValue = $product->setCustomAttribute('typed_text', 'Hello World');
+            $attributeValue = app(CustomAttributeValues::class)->set($product, 'typed_text', 'Hello World');
 
             expect($attributeValue->typed_value)->toBe('Hello World');
         });
@@ -502,7 +503,7 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $attributeValue = $product->setCustomAttribute('typed_number', 42);
+            $attributeValue = app(CustomAttributeValues::class)->set($product, 'typed_number', 42);
 
             expect($attributeValue->typed_value)->toBe(42.0); // Numbers are cast to float
         });
@@ -520,7 +521,7 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $attributeValue = $product->setCustomAttribute('typed_bool', true);
+            $attributeValue = app(CustomAttributeValues::class)->set($product, 'typed_bool', true);
 
             expect($attributeValue->typed_value)->toBeTrue();
         });
@@ -564,8 +565,8 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('locale_scope', 'English', 'en');
-            $product->setCustomAttribute('locale_scope', 'Malay', 'ms');
+            app(CustomAttributeValues::class)->set($product, 'locale_scope', 'English', 'en');
+            app(CustomAttributeValues::class)->set($product, 'locale_scope', 'Malay', 'ms');
 
             $englishValues = AttributeValue::forLocale('en')->get();
             $malayValues = AttributeValue::forLocale('ms')->get();
@@ -593,8 +594,8 @@ describe('AttributeValue Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->setCustomAttribute('attr_code_scope1', 'Value 1');
-            $product->setCustomAttribute('attr_code_scope2', 'Value 2');
+            app(CustomAttributeValues::class)->set($product, 'attr_code_scope1', 'Value 1');
+            app(CustomAttributeValues::class)->set($product, 'attr_code_scope2', 'Value 2');
 
             $filteredValues = AttributeValue::forAttribute('attr_code_scope1')->get();
 

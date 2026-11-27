@@ -474,37 +474,6 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         return $this->status->isPurchasable();
     }
 
-    public function activate(): self
-    {
-        $this->status = ProductStatus::Active;
-        $this->published_at ??= CarbonImmutable::now();
-        $this->deactivated_at = null;
-        $this->archived_at = null;
-        $this->save();
-
-        return $this;
-    }
-
-    public function archive(): self
-    {
-        $this->status = ProductStatus::Archived;
-        $this->archived_at = CarbonImmutable::now();
-        $this->deactivated_at = null;
-        $this->save();
-
-        return $this;
-    }
-
-    public function disable(): self
-    {
-        $this->status = ProductStatus::Disabled;
-        $this->deactivated_at = CarbonImmutable::now();
-        $this->archived_at = null;
-        $this->save();
-
-        return $this;
-    }
-
     // =========================================================================
     // TYPE HELPERS
     // =========================================================================

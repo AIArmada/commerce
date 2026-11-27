@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -121,7 +122,7 @@ describe('Product Model', function (): void {
                 'status' => ProductStatus::Draft,
             ]);
 
-            $product->activate();
+            $product = app(UpdateProductStatus::class)->execute($product, ProductStatus::Active);
 
             expect($product->status)->toBe(ProductStatus::Active)
                 ->and($product->published_at)->not->toBeNull();
@@ -137,7 +138,7 @@ describe('Product Model', function (): void {
                 'published_at' => $publishedAt,
             ]);
 
-            $product->activate();
+            $product = app(UpdateProductStatus::class)->execute($product, ProductStatus::Active);
 
             expect($product->published_at->format('Y-m-d'))->toBe($publishedAt->format('Y-m-d'));
         });
@@ -149,7 +150,7 @@ describe('Product Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            $product->archive();
+            $product = app(UpdateProductStatus::class)->execute($product, ProductStatus::Archived);
 
             expect($product->status)->toBe(ProductStatus::Archived);
         });

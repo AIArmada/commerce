@@ -61,9 +61,9 @@ the lifecycle timestamps in sync:
 - `hasDiscount()`
 - `getDiscountPercentage()`
 - `getProfitMargin()`
-- `activate()`
-- `disable()`
-- `archive()`
+- `UpdateProductStatus` (Active)
+- `UpdateProductStatus` (Disabled)
+- `UpdateProductStatus` (Archived)
 - `hasVariants()`
 - `supportsVariants()`
 - `isPhysical()` / `isDigital()` / `isService()` / `isSubscription()`
@@ -219,12 +219,12 @@ These models are owner-aware and use config-driven table resolution like the res
 Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:
 
 - `getCustomAttribute()`
-- `setCustomAttribute()`
-- `setCustomAttributes()`
+- `CustomAttributeValues::set()`
+- `CustomAttributeValues::setMany()`
 - `getCustomAttributesArray()`
 - `hasCustomAttribute()`
-- `removeCustomAttribute()`
-- `clearCustomAttributes()`
+- `CustomAttributeValues::remove()`
+- `CustomAttributeValues::clear()`
 - `getFilterableCustomAttributes()`
 - `getVisibleCustomAttributes()`
 - `getComparableCustomAttributes()`
