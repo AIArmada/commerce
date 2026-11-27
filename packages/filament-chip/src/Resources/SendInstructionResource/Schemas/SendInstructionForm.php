@@ -23,9 +23,11 @@ final class SendInstructionForm
                             ->label('Bank Account')
                             ->options(function (): array {
                                 return BankAccount::query()
-                                    ->forOwner()
+                                    ->forOwner(\AIArmada\CommerceSupport\Support\OwnerContext::CURRENT, false)
                                     ->where('status', 'verified')
-                                    ->get()
+                                    ->where('is_crediting_account', true)
+                                    ->whereNull('deleted_at')
+                                    ->get(['id', 'name', 'account_number', 'bank_code'])
                                     ->mapWithKeys(fn (BankAccount $account): array => [
                                         $account->id => sprintf(
                                             '%s - %s (%s)',
