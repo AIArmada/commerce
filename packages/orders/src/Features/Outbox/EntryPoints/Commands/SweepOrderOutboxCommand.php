@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\EntryPoints\Commands;
+namespace AIArmada\Orders\Features\Outbox\EntryPoints\Commands;
 
-use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
+use AIArmada\Orders\Features\Outbox\Actions\SweepOrderOutbox;
 use Illuminate\Console\Command;
 
 final class SweepOrderOutboxCommand extends Command

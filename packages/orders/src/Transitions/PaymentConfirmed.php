@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;
@@ -12,7 +13,6 @@ use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Processing;
-use AIArmada\Orders\Support\OrderOutbox;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -130,8 +130,8 @@ final class PaymentConfirmed extends Transition
             // full settlement.
             $outboxIds = $isSettlingPayment
                 ? [
-                    OrderOutbox::stage($this->order, OrderProcessingStarted::class, $this->transactionId, $this->gateway),
-                    OrderOutbox::stage($this->order, OrderFulfillmentRequired::class, $this->transactionId, $this->gateway),
+                    app(OrderOutboxWriter::class)->stage((string) $this->order->getKey(), OrderProcessingStarted::class, $this->transactionId, $this->gateway),
+                    app(OrderOutboxWriter::class)->stage((string) $this->order->getKey(), OrderFulfillmentRequired::class, $this->transactionId, $this->gateway),
                 ]
                 : [];
 
@@ -151,7 +151,7 @@ final class PaymentConfirmed extends Transition
                     return;
                 }
 
-                OrderOutbox::dispatchReplayable($order, $outboxIds, static function () use ($order, $transactionId, $gateway): void {
+                app(OrderOutboxWriter::class)->dispatchReplayable((string) $order->getKey(), $outboxIds, static function () use ($order, $transactionId, $gateway): void {
                     event(new OrderProcessingStarted($order, $transactionId, $gateway));
                     event(new OrderFulfillmentRequired($order, $transactionId, $gateway));
                 });

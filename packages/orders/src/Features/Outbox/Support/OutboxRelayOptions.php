@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Support;
+namespace AIArmada\Orders\Features\Outbox\Support;
 
 /**
  * Retry tuning for the outbox relay, read once per run so the

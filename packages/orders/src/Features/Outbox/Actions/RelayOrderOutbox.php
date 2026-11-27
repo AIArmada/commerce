@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions\Outbox;
+namespace AIArmada\Orders\Features\Outbox\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Enums\OutboxStatus;
+use AIArmada\Orders\Data\OutboxStatus;
+use AIArmada\Orders\Features\Outbox\Models\OrderOutboxMessage;
+use AIArmada\Orders\Features\Outbox\Support\OutboxRelayOptions;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderOutboxMessage;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
-use AIArmada\Orders\Support\OutboxRelayOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -140,8 +140,8 @@ final readonly class RelayOrderOutbox
                     return 'suppressed';
                 }
 
-                OwnerContext::withOwner($order->owner, static function () use ($eventClass, $order, $row): void {
-                    event(new $eventClass($order, $row->transaction_id, $row->gateway));
+                OwnerContext::withOwner($locked->owner, static function () use ($eventClass, $locked, $row): void {
+                    event(new $eventClass($locked, $row->transaction_id, $row->gateway));
                 });
 
                 return null;

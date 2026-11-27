@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Models;
+namespace AIArmada\Orders\Features\Outbox\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Orders\Enums\OutboxStatus;
+use AIArmada\Orders\Data\OutboxStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use Carbon\CarbonImmutable;

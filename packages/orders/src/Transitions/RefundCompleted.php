@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Refunded;
-use AIArmada\Orders\Support\OrderOutbox;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -115,7 +115,7 @@ final class RefundCompleted extends Transition
                 // A fully refunded order unwinds: fulfillment staged but
                 // never relayed must not dispatch after the fact. Partial
                 // refunds leave the status (and staged rows) untouched.
-                OrderOutbox::suppressForOrder($lockedOrder->getKey(), 'Order fully refunded; fulfillment suppressed.');
+                app(OrderOutboxWriter::class)->suppressForOrder((string) $lockedOrder->getKey(), 'Order fully refunded; fulfillment suppressed.');
             }
 
             $lockedOrder->save();

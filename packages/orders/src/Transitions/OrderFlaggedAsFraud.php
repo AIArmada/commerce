@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderFlaggedAsFraud as OrderFlaggedAsFraudEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Fraud;
-use AIArmada\Orders\Support\OrderOutbox;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Spatie\ModelStates\Transition;
@@ -50,7 +50,7 @@ final class OrderFlaggedAsFraud extends Transition
 
             // An order under investigation must not fulfill: suppress
             // unrelayed rows atomically with the flagging.
-            OrderOutbox::suppressForOrder($this->order->getKey(), 'Order flagged as fraud; fulfillment suppressed.');
+            app(OrderOutboxWriter::class)->suppressForOrder((string) $this->order->getKey(), 'Order flagged as fraud; fulfillment suppressed.');
 
             $order = $this->order;
             $reason = $this->reason;

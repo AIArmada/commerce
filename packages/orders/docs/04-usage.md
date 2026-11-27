@@ -380,8 +380,8 @@ Run the relay frequently (every minute) and the sweep less often (hourly):
 
 ```php
 // routes/console.php
-use AIArmada\Orders\EntryPoints\Commands\RelayOrderOutboxCommand;
-use AIArmada\Orders\EntryPoints\Commands\SweepOrderOutboxCommand;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\SweepOrderOutboxCommand;
 
 Schedule::command(RelayOrderOutboxCommand::class)->everyMinute();
 Schedule::command(SweepOrderOutboxCommand::class)->hourly();
@@ -394,7 +394,7 @@ php artisan orders:outbox-relay --limit=100
 php artisan orders:outbox-sweep
 ```
 
-Commands delegate to the concrete `Actions\\Outbox\\RelayOrderOutbox::execute()` and `Actions\\Outbox\\SweepOrderOutbox::execute()` actions. Resolve these actions through the container to use them from code.
+Commands delegate to the concrete `Features\\Outbox\\Actions\\RelayOrderOutbox::execute()` and `Features\\Outbox\\Actions\\SweepOrderOutbox::execute()` actions. Resolve these actions through the container to use them from code.
 
 The sweep requeues rows stuck in `relaying` past the claim timeout, purges `relayed` history past retention, and reports `dead` rows. Dead rows need operator review — the sweep never repairs or invents rows.
 

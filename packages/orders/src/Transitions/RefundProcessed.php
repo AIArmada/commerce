@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Transitions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Refunded;
-use AIArmada\Orders\Support\OrderOutbox;
 use AIArmada\Orders\Support\RefundAllocationValidator;
 use AIArmada\Orders\Support\RefundAllocator;
 use Carbon\CarbonImmutable;
@@ -114,7 +114,7 @@ final class RefundProcessed extends Transition
                 // Same terminal marking as cancel and completed refunds:
                 // unrelayed fulfillment must not dispatch after a full
                 // refund. Partial refunds leave staged rows untouched.
-                OrderOutbox::suppressForOrder($this->order->getKey(), 'Order fully refunded; fulfillment suppressed.');
+                app(OrderOutboxWriter::class)->suppressForOrder((string) $this->order->getKey(), 'Order fully refunded; fulfillment suppressed.');
             }
 
             $this->order->save();

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Actions\Outbox;
+namespace AIArmada\Orders\Features\Outbox\Actions;
 
-use AIArmada\Orders\Enums\OutboxStatus;
-use AIArmada\Orders\Models\OrderOutboxMessage;
+use AIArmada\Orders\Data\OutboxStatus;
+use AIArmada\Orders\Features\Outbox\Models\OrderOutboxMessage;
 use Carbon\CarbonImmutable;
 
 /**

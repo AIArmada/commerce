@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Transitions;
 
 use AIArmada\Orders\Actions\RegisterOrderRefund;
-use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
 use AIArmada\Orders\Events\OrderCancelInitiated;
+use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
-use AIArmada\Orders\Support\OrderOutbox;
 use AIArmada\Shipping\Integrations\OrderShipmentUnits;
 use Carbon\CarbonImmutable;
 use DomainException;
@@ -71,7 +71,7 @@ final class OrderCanceled extends Transition
             // cancellation. Rows the relay already claimed are
             // re-validated against the order lifecycle under lock before
             // dispatch (see RelayOrderOutbox).
-            OrderOutbox::suppressForOrder($this->order->getKey(), 'Order cancelled; fulfillment suppressed.');
+            app(OrderOutboxWriter::class)->suppressForOrder((string) $this->order->getKey(), 'Order cancelled; fulfillment suppressed.');
 
             $order = $this->order;
             $reason = $this->reason;

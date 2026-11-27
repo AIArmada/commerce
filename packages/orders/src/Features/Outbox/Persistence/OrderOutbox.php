@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Support;
+namespace AIArmada\Orders\Features\Outbox\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Orders\Enums\OutboxStatus;
+use AIArmada\Orders\Contracts\OrderOutboxWriter;
+use AIArmada\Orders\Data\OutboxStatus;
+use AIArmada\Orders\Features\Outbox\Models\OrderOutboxMessage;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderOutboxMessage;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
@@ -20,7 +21,7 @@ use InvalidArgumentException;
 /**
  * In-transaction staging for the order outbox.
  */
-final class OrderOutbox
+final readonly class OrderOutbox implements OrderOutboxWriter
 {
     /**
      * Stage one replayable event row. Call inside the caller's transaction
@@ -28,7 +29,7 @@ final class OrderOutbox
      *
      * @return string|null The staged row id, or null when the outbox is disabled.
      */
-    public static function stage(Order $order, string $eventClass, string $transactionId, string $gateway): ?string
+    public function stage(string $orderId, string $eventClass, string $transactionId, string $gateway): ?string
     {
         if (! config('orders.outbox.enabled', true)) {
             return null;
@@ -37,6 +38,8 @@ final class OrderOutbox
         if (! in_array($eventClass, OrderOutboxMessage::REPLAYABLE_EVENTS, true)) {
             throw new InvalidArgumentException("Event class is not replayable through the order outbox: {$eventClass}.");
         }
+
+        $order = Order::query()->withoutOwnerScope()->findOrFail($orderId);
 
         // The row belongs to the order's owner, not to whoever happens to
         // hold the ambient context (webhook, console, queue).
@@ -58,7 +61,7 @@ final class OrderOutbox
      * claim only picks up pending/failed rows, so a suppressed row can
      * never dispatch after cleanup ran.
      */
-    public static function suppressForOrder(mixed $orderId, string $reason): int
+    public function suppressForOrder(string $orderId, string $reason): int
     {
         return OrderOutboxMessage::query()
             ->withoutGlobalScope(OwnerScope::class)
@@ -84,12 +87,12 @@ final class OrderOutbox
      *
      * @param  list<string|null>  $ids
      */
-    public static function dispatchReplayable(Order $order, array $ids, Closure $dispatch): void
+    public function dispatchReplayable(string $orderId, array $ids, Closure $dispatch): void
     {
-        DB::transaction(function () use ($order, $ids, $dispatch): void {
+        DB::transaction(function () use ($orderId, $ids, $dispatch): void {
             $locked = Order::query()
                 ->withoutGlobalScope(OwnerScope::class)
-                ->whereKey($order->getKey())
+                ->whereKey($orderId)
                 ->lockForUpdate()
                 ->first();
 
@@ -100,8 +103,8 @@ final class OrderOutbox
                 return;
             }
 
-            $dispatch();
-            self::markRelayed($ids);
+            OwnerContext::withOwner($locked->owner, $dispatch);
+            $this->markRelayed($ids);
         });
     }
 
@@ -111,7 +114,7 @@ final class OrderOutbox
      *
      * @param  list<string|null>  $ids
      */
-    public static function markRelayed(array $ids): void
+    private function markRelayed(array $ids): void
     {
         $ids = array_values(array_filter($ids));
 

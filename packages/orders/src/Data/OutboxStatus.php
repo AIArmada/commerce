@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Enums;
+namespace AIArmada\Orders\Data;
 
 /**
  * Relay lifecycle for an order outbox message.

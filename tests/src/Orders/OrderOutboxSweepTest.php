@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
-use AIArmada\Orders\Enums\OutboxStatus;
+use AIArmada\Orders\Data\OutboxStatus;
 use AIArmada\Orders\Events\OrderProcessingStarted;
+use AIArmada\Orders\Features\Outbox\Actions\SweepOrderOutbox;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\PendingPayment;

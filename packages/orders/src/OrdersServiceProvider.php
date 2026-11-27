@@ -6,8 +6,8 @@ namespace AIArmada\Orders;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
-use AIArmada\Orders\EntryPoints\Commands\RelayOrderOutboxCommand;
-use AIArmada\Orders\EntryPoints\Commands\SweepOrderOutboxCommand;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\RelayOrderOutboxCommand;
+use AIArmada\Orders\Features\Outbox\EntryPoints\Commands\SweepOrderOutboxCommand;
 use AIArmada\Orders\Notifications\PaymentConfirmationNotification;
 use AIArmada\Orders\Platform\ExtensionRegistry;
 use AIArmada\Orders\Platform\FeatureCatalog;

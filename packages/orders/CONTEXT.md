@@ -41,7 +41,8 @@ keywords:
 - Owner/security: Owner-scoped (all 6 models).
 
 ## Key surfaces
-- Models: `Order`, `OrderItem`, `OrderNote`, `OrderOutboxMessage`, `OrderPayment`, `OrderRefund`
+- Outbox feature: `Features/Outbox` owns `order_outbox_messages`; lifecycle callers use `Contracts/OrderOutboxWriter`.
+- Models: `Order`, `OrderItem`, `OrderNote`, `OrderPayment`, `OrderRefund`
 - Actions/Services: `Actions/CancelOrder`, `Actions/CompleteOrder`, `Actions/Concerns/AssertsOrderOwnerBoundary`, `Actions/Concerns/BuildsOrderDocs`, `Actions/Concerns/BuildsOrderPdf`, `Actions/CreateOrder`, `Actions/CreateOrderFromCart`, `Actions/CreateOrderInvoiceDoc`
 - Config `orders.php`: `database`, `currency`, `company`, `owner`, `address_snapshots`, `order_number`, `invoice`, `integrations`, `audit`, `notifications`, `outbox`
 
