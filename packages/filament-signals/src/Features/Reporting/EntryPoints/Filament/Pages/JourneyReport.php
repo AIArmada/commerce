@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
+use AIArmada\Signals\Features\Ingestion\Api\JourneyReportRead;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\JourneyReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
@@ -64,7 +65,7 @@ final class JourneyReport extends ReportPage implements HasTable
      */
     public function getSummary(): array
     {
-        return app(JourneyReportService::class)->summary(
+        return app(JourneyReportRead::class)->summary(
             $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
             $this->dateFrom,
             $this->dateTo,
@@ -76,7 +77,7 @@ final class JourneyReport extends ReportPage implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(app(JourneyReportService::class)->getTableQuery(
+            ->query(SignalSession::journeyRows(
                 $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
                 $this->dateFrom,
                 $this->dateTo,
@@ -90,7 +91,7 @@ final class JourneyReport extends ReportPage implements HasTable
                     ->label('Property')
                     ->toggleable(),
                 TextColumn::make('journey_breakdown_value')
-                    ->label(app(JourneyReportService::class)->getBreakdownLabel($this->savedReportId !== '' ? $this->savedReportId : null))
+                    ->label(app(JourneyReportRead::class)->getBreakdownLabel($this->savedReportId !== '' ? $this->savedReportId : null))
                     ->formatStateUsing(function (mixed $state, mixed $record): string {
                         if (($record->journey_breakdown_label ?? null) === 'Path Pair') {
                             return sprintf('%s -> %s', (string) ($record->journey_entry_path ?? '(unknown)'), (string) ($record->journey_exit_path ?? '(unknown)'));

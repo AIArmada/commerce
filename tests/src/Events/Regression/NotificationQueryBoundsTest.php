@@ -70,6 +70,7 @@ it('bulk-loads registration recipients without per-recipient query growth', func
     for ($index = 0; $index < 40; $index++) {
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->getKey(),
+            'registration_no' => 'REG-BULK-' . $index,
             'status' => 'confirmed',
         ]);
         $participant = $registration->participants()->create([
@@ -111,6 +112,7 @@ it('bounds registration recipient memory by processing chunks without loading ev
     for ($index = 0; $index < 520; $index++) {
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->getKey(),
+            'registration_no' => 'REG-BATCH-' . $index,
             'status' => 'confirmed',
         ]);
         $participant = $registration->participants()->create([
