@@ -198,3 +198,11 @@ test('a bound gate can block redirects with a custom reason', function (): void 
         && $event->link->slug === 'gated-link');
     expect(LinkClick::query()->count())->toBe(1);
 });
+
+test('oversized ad click ids are neither forwarded nor stored', function (): void {
+    CreateLink::run(['name' => 'Bounded', 'slug' => 'bounded-click-id', 'destination_url' => 'https://merchant.example/bounded']);
+
+    $this->get('/go/bounded-click-id?gclid=' . str_repeat('a', 501))->assertRedirect('https://merchant.example/bounded');
+
+    expect(LinkClick::query()->sole()->properties)->toBeNull();
+});

@@ -167,3 +167,13 @@ test('UTM forwarding preserves defaults destination incoming and baked precedenc
         'utm_content' => 'incoming', 'utm_creative' => 'baked', 'fbclid' => 'baked-click',
     ])->and(parse_url($url, PHP_URL_FRAGMENT))->toBe('details');
 });
+
+test('disabled user agent tracking does not store the raw header or device information', function (): void {
+    config()->set('links.features.tracking.user_agent.enabled', false);
+    CreateLink::run(['name' => 'Private', 'slug' => 'private-agent', 'destination_url' => 'https://merchant.example/private']);
+
+    $this->withHeaders(['User-Agent' => LINKS_CHROME_UA])->get('/go/private-agent')->assertRedirect();
+
+    $click = LinkClick::query()->sole();
+    expect($click->user_agent)->toBeNull()->and($click->browser)->toBeNull()->and($click->device_type)->toBeNull();
+});
