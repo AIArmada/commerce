@@ -164,3 +164,33 @@ describe('VoucherApplied and VoucherRemoved difference', function (): void {
             ->and($applied->getVoucherCode())->toBe($removed->getVoucherCode());
     });
 });
+
+it('records the actual allocated discount in the immutable usage event', function (): void {
+    $voucher = VoucherData::fromArray([
+        'id' => 'voucher-1',
+        'code' => 'EVENT',
+        'name' => 'Event voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+    $usage = new \AIArmada\Vouchers\Data\VoucherUsageData(
+        id: 'usage-1',
+        voucherId: $voucher->id,
+        discountAmount: 250,
+        currency: 'MYR',
+        channel: 'checkout',
+        redeemedByType: 'customer',
+        redeemedById: 'customer-1',
+        usedAt: new DateTimeImmutable,
+        metadata: ['order_id' => 'order-1'],
+        notes: null,
+    );
+
+    $event = new \AIArmada\Vouchers\Events\VoucherUsageRecorded($voucher, $usage);
+
+    expect($event->usage)->toBe($usage)
+        ->and($event->getDiscountAmountCents())->toBe(250)
+        ->and($event->toEventPayload()['discount_cents'])->toBe(250);
+});

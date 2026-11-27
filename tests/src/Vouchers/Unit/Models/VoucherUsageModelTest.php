@@ -295,6 +295,16 @@ describe('VoucherUsage Model', function (): void {
             expect($usage->isOrderRedemption())->toBeTrue();
         });
 
+        it('recognizes checkout redemption from the order metadata with a customer redeemer', function (): void {
+            $usage = new VoucherUsage([
+                'redeemed_by_type' => 'customer',
+                'redeemed_by_id' => 'customer-1',
+                'metadata' => ['order_id' => 'order-1'],
+            ]);
+
+            expect($usage->isOrderRedemption())->toBeTrue();
+        });
+
         it('returns false when no redeemedBy relation exists', function (): void {
             $usage = new VoucherUsage;
             $usage->redeemed_by_type = 'customer';

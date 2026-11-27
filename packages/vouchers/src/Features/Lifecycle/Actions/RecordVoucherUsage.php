@@ -7,6 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -183,7 +184,18 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 }
             }
 
-            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), $usage));
+            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), new VoucherUsageData(
+                id: $usage->id,
+                voucherId: $usage->voucher_id,
+                discountAmount: $usage->discount_amount,
+                currency: $usage->currency,
+                channel: $usage->channel,
+                redeemedByType: $usage->redeemed_by_type,
+                redeemedById: $usage->redeemed_by_id,
+                usedAt: $usage->used_at,
+                metadata: $usage->metadata,
+                notes: $usage->notes,
+            )));
 
             return $usage;
         });

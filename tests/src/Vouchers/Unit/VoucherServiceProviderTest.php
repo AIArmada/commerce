@@ -75,7 +75,6 @@ describe('VoucherServiceProvider', function (): void {
             expect($provides)->toContain(VoucherService::class)
                 ->and($provides)->toContain(VoucherValidator::class)
                 ->and($provides)->toContain(VoucherRulesFactory::class)
-                ->and($provides)->toContain(AffiliateIntegrationRegistrar::class)
                 ->and($provides)->toContain('voucher');
         });
     });

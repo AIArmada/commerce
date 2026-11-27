@@ -30,6 +30,7 @@ use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 class VoucherService implements VoucherServiceInterface
 {
@@ -269,7 +270,11 @@ class VoucherService implements VoucherServiceInterface
             VoucherType::Fixed => (int) ($voucher->value ?? 0),
             default => 0,
         };
-        $money = Money::{$currency}(max(0, $discount));
+        if ($discount < 0) {
+            throw ValidationException::withMessages(['discount_amount' => 'Voucher discount cannot be negative.']);
+        }
+
+        $money = Money::{$currency}($discount);
         $metadata = [
             'order_id' => $orderId,
         ];
@@ -302,23 +307,13 @@ class VoucherService implements VoucherServiceInterface
 
     private function resolveMoneyCurrency(?string $currency, VoucherModel $voucher): string
     {
-        $currencies = Currency::getCurrencies();
+        $normalized = mb_strtoupper(mb_trim($currency ?? $voucher->currency));
 
-        foreach ([$currency, $voucher->currency, config('vouchers.default_currency', 'MYR'), 'MYR'] as $candidate) {
-            if (! is_string($candidate) || $candidate === '') {
-                continue;
-            }
-
-            $normalized = mb_strtoupper($candidate);
-
-            if (preg_match('/^[A-Z]{3}$/', $normalized) && array_key_exists($normalized, $currencies)) {
-                return $normalized;
-            }
+        if (! preg_match('/^[A-Z]{3}$/', $normalized) || ! array_key_exists($normalized, Currency::getCurrencies())) {
+            throw ValidationException::withMessages(['currency' => 'The redemption currency must be a supported 3-letter code.']);
         }
 
-        $firstAvailable = array_key_first($currencies);
-
-        return is_string($firstAvailable) && $firstAvailable !== '' ? $firstAvailable : 'MYR';
+        return $normalized;
     }
 
     /**

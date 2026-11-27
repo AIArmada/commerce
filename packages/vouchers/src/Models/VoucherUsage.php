@@ -95,6 +95,12 @@ final class VoucherUsage extends Model implements Auditable
 
     public function isOrderRedemption(): bool
     {
+        $orderId = $this->metadata['order_id'] ?? null;
+
+        if (is_string($orderId) && mb_trim($orderId) !== '') {
+            return true;
+        }
+
         $redeemedBy = $this->resolveRedeemedBySafely();
 
         $redeemedByType = mb_strtolower((string) ($this->redeemed_by_type ?? ''));

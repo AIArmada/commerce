@@ -120,12 +120,6 @@ final class AffiliateReportingContextResolver
 
     public function orderId(VoucherUsage $usage): ?string
     {
-        $redeemedById = $this->normalizeString((string) ($usage->redeemed_by_id ?? ''));
-
-        if ($redeemedById !== null && $usage->isOrderRedemption()) {
-            return $redeemedById;
-        }
-
         $metadata = is_array($usage->metadata) ? $usage->metadata : [];
         $orderId = $metadata['order_id'] ?? null;
 

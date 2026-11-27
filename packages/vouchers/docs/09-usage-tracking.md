@@ -285,11 +285,11 @@ use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 
 Event::listen(VoucherUsageRecorded::class, function ($event) {
     $voucherData = $event->voucher;    // VoucherData DTO
-    $usage = $event->usage;            // VoucherUsage model
+    $usage = $event->usage;            // VoucherUsageData immutable snapshot
 
     Analytics::track('voucher_redeemed', [
         'voucher_code' => $voucherData->code,
-        'discount' => $usage->discount_amount,
+        'discount' => $usage->discountAmount,
         'currency' => $usage->currency,
         'channel' => $usage->channel,
     ]);

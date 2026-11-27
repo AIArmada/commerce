@@ -622,6 +622,8 @@ test('checkout enforces a voucher limit against the customer rather than individ
 });
 
 test('voucher deletion removes dependent usage and wallet rows through database constraints', function (): void {
+    config()->set('vouchers.wallet.enabled', true);
+
     $voucher = Voucher::create([
         'code' => 'CASCADEDELETE',
         'name' => 'Cascade deletion',
@@ -640,4 +642,23 @@ test('voucher deletion removes dependent usage and wallet rows through database 
     expect($service->delete($voucher->code))->toBeTrue()
         ->and(VoucherUsage::query()->whereKey($usageId)->exists())->toBeFalse()
         ->and(VoucherWallet::query()->whereKey($wallet->getKey())->exists())->toBeFalse();
+});
+
+test('checkout rejects negative discounts and unknown currencies instead of silently coercing them', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'STRICTREDEEM',
+        'name' => 'Strict redemption',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+    $order = Order::factory()->create(['currency' => 'MYR']);
+    $service = app(VoucherService::class);
+
+    expect(fn () => $service->redeem($voucher->code, (string) $order->getKey(), -1, 'MYR'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect(fn () => $service->redeem($voucher->code, (string) $order->getKey(), 100, 'ZZZ'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($voucher->usages()->count())->toBe(0);
 });
