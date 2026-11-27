@@ -7,7 +7,7 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Events\CustomerSegmentChanged;
+use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
