@@ -6,24 +6,23 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Actions\IngestSignalEvent;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalDailyMetric;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalGoal;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\AcquisitionReportService;
-use AIArmada\Signals\Services\ContentPerformanceReportService;
-use AIArmada\Signals\Services\ConversionFunnelReportService;
-use AIArmada\Signals\Services\GoalsReportService;
-use AIArmada\Signals\Services\LiveActivityReportService;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
-use AIArmada\Signals\Services\SignalMetricsAggregator;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Queries\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Extensions\AcquisitionReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\GoalsReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\LiveActivityReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Actions\AggregateDailyMetrics;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -199,7 +198,7 @@ it('stamps daily metrics with the property currency and rejects direct mismatche
         'revenue_minor' => 4000,
     ], trusted: true);
 
-    $metric = app(SignalMetricsAggregator::class)->aggregateForDate(Carbon::parse('2026-10-17'), $property);
+    $metric = app(AggregateDailyMetrics::class)->aggregateForDate(CarbonImmutable::parse('2026-10-17'), $property->id);
 
     expect($metric->currency)->toBe('MYR')
         ->and($metric->revenue_minor)->toBe(4000);
@@ -244,15 +243,15 @@ it('keeps single and batch rollups equivalent and ignores legacy foreign-currenc
         'revenue_minor' => 20000,
     ]);
 
-    $aggregator = app(SignalMetricsAggregator::class);
-    $single = $aggregator->aggregateForDate(Carbon::parse('2026-10-17'), $property);
+    $aggregator = app(AggregateDailyMetrics::class);
+    $single = $aggregator->aggregateForDate(CarbonImmutable::parse('2026-10-17'), $property->id);
 
     expect($single->revenue_minor)->toBe(15000)
         ->and($single->currency)->toBe('MYR')
         ->and($single->events)->toBe(3);
 
     SignalDailyMetric::query()->where('tracked_property_id', $property->id)->delete();
-    $aggregator->backfill(Carbon::parse('2026-10-17'), Carbon::parse('2026-10-17'));
+    $aggregator->aggregateRange(CarbonImmutable::parse('2026-10-17'), CarbonImmutable::parse('2026-10-17'));
 
     $batch = SignalDailyMetric::query()
         ->where('tracked_property_id', $property->id)
@@ -271,7 +270,7 @@ it('groups dashboard revenue by currency and returns scalar revenue with currenc
     sig02_metric($myr, '2026-10-17', 1000);
     sig02_metric($usd, '2026-10-17', 2000);
 
-    $service = app(SignalsDashboardService::class);
+    $service = app(DashboardRead::class);
     $start = CarbonImmutable::parse('2026-10-17 00:00:00');
     $end = CarbonImmutable::parse('2026-10-17 23:59:59');
 
@@ -280,7 +279,7 @@ it('groups dashboard revenue by currency and returns scalar revenue with currenc
     expect($summary['revenue'])->toBe(['MYR' => 1000, 'USD' => 2000])
         ->and($summary)->not->toHaveKey('revenue_minor');
 
-    $single = $service->summary($myr, $start, $end);
+    $single = $service->summary($myr->id, $start, $end);
 
     expect($single['revenue_minor'])->toBe(1000)
         ->and($single['currency'])->toBe('MYR')
@@ -291,7 +290,7 @@ it('groups dashboard revenue by currency and returns scalar revenue with currenc
     expect($trend[0]['revenue'])->toBe(['MYR' => 1000, 'USD' => 2000])
         ->and($trend[0])->not->toHaveKey('revenue_minor');
 
-    $singleTrend = $service->trend($myr, $start, $end);
+    $singleTrend = $service->trend($myr->id, $start, $end);
 
     expect($singleTrend[0]['revenue_minor'])->toBe(1000)
         ->and($singleTrend[0]['currency'])->toBe('MYR');
@@ -318,7 +317,7 @@ it('keeps currency aggregation isolated per owner', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $summary = app(SignalsDashboardService::class)->summary(
+    $summary = app(DashboardRead::class)->summary(
         null,
         CarbonImmutable::parse('2026-10-17 00:00:00'),
         CarbonImmutable::parse('2026-10-17 23:59:59'),

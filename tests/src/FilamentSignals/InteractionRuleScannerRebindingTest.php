@@ -5,7 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
-use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
+use AIArmada\FilamentSignals\Drivers\PinnedPageMarkupFetcher;
+use AIArmada\FilamentSignals\Features\Configuration\Queries\InteractionRuleScanner;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Http;
 
@@ -15,8 +16,7 @@ it('rejects mixed public and private DNS answers before scanner transport', func
     Http::fake();
     $scanner = new InteractionRuleScanner(
         new Filesystem,
-        new PublicHttpUrlGuard(static fn (string $host): array => ['93.184.216.34', '10.0.0.7']),
-        new PinnedHttpClient,
+        new PinnedPageMarkupFetcher(new PublicHttpUrlGuard(static fn (string $host): array => ['93.184.216.34', '10.0.0.7']), new PinnedHttpClient),
     );
 
     expect(fn () => $scanner->scan('https://mixed.example/page', 'click'))

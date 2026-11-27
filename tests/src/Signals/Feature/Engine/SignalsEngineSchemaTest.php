@@ -3,18 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalAlertDelivery;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalDailyMetric;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalGoal;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalInteractionRule;
-use AIArmada\Signals\Models\SignalSegment;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertDelivery;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalInteractionRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
+use AIArmada\Signals\Features\Reporting\Models\SignalSegment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 

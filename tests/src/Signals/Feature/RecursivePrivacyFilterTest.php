@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Actions\IdentifySignalIdentity;
-use AIArmada\Signals\Actions\IngestSignalEvent;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalPropertyFilter;
+use AIArmada\Signals\Features\Ingestion\Actions\IdentifySignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Support\SignalPropertyFilter;
 
 uses(SignalsTestCase::class);
 

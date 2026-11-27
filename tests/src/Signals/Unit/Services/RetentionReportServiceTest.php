@@ -6,10 +6,12 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SavedSignalReport;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
+use AIArmada\Signals\Features\Reporting\Models\SavedSignalReport;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
@@ -135,7 +137,7 @@ it('builds an owner-safe retention cohort report', function (): void {
                 'retention_rate' => 50.0,
             ],
         ])
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Retention Property']);
 });
 
@@ -210,6 +212,6 @@ it('uses saved retention windows from saved reports', function (): void {
                 'retention_rate' => 50.0,
             ],
         ])
-        ->and($service->getSavedReportOptions())
+        ->and(app(ReportConfiguration::class)->savedReportOptions('retention'))
         ->toBe([$savedReport->id => 'Retention 1d and 14d']);
 });

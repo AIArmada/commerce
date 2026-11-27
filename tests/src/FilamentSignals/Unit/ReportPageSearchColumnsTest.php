@@ -3,16 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\FilamentSignals\Pages\AcquisitionReport;
-use AIArmada\FilamentSignals\Pages\ContentPerformanceReport;
-use AIArmada\FilamentSignals\Pages\JourneyReport;
-use AIArmada\FilamentSignals\Pages\LiveActivityReport;
-use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\AcquisitionReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\ContentPerformanceReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\JourneyReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\LiveActivityReport;
+use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\PageViewsReport;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Filament\Tables\Table;
 
 uses(FilamentSignalsTestCase::class);
 
-it('searches acquisition campaign by the underlying campaign column', function (): void {
+it('searches acquisition campaign through the attributed campaign expression', function (): void {
     config()->set('filament-signals.resources.labels.outcomes', 'Registrations');
     config()->set('filament-signals.resources.labels.monetary_value', 'Donations');
 
@@ -23,7 +24,7 @@ it('searches acquisition campaign by the underlying campaign column', function (
     $monetaryValueColumn = $table->getColumn('revenue_minor');
 
     expect($column)->not()->toBeNull()
-        ->and($column?->getSearchColumns(new SignalEvent))->toBe(['campaign'])
+        ->and($column?->isSearchable())->toBeTrue()
         ->and($outcomesColumn?->getLabel())->toBe('Registrations')
         ->and($monetaryValueColumn?->getLabel())->toBe('Donations');
 });
@@ -52,7 +53,8 @@ it('uses the configured monetary value label on live activity tables', function 
     $column = $table->getColumn('revenue_minor');
 
     expect($column)->not()->toBeNull()
-        ->and($column?->getLabel())->toBe('Donations');
+        ->and($column?->getLabel())->toBe('Donations')
+        ->and($table->getColumn('session.country_code'))->not()->toBeNull();
 });
 
 it('searches journey breakdowns by the underlying session columns', function (): void {
@@ -62,4 +64,16 @@ it('searches journey breakdowns by the underlying session columns', function ():
 
     expect($column)->not()->toBeNull()
         ->and($column?->getSearchColumns(new SignalEvent))->toBe(['entry_path', 'exit_path', 'country', 'device_type', 'browser', 'os', 'utm_source', 'utm_medium', 'utm_campaign']);
+});
+
+it('allows only absolute HTTP and HTTPS report links', function (): void {
+    $page = app(PageViewsReport::class);
+    $method = new ReflectionMethod($page, 'safeReportUrl');
+
+    expect($method->invoke($page, 'https://example.com/page'))->toBe('https://example.com/page')
+        ->and($method->invoke($page, 'http://example.com/page'))->toBe('http://example.com/page')
+        ->and($method->invoke($page, 'javascript:alert(1)'))->toBeNull()
+        ->and($method->invoke($page, 'ftp://example.com/page'))->toBeNull()
+        ->and($method->invoke($page, '//example.com/page'))->toBeNull()
+        ->and($method->invoke($page, null))->toBeNull();
 });

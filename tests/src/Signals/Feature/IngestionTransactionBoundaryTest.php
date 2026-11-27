@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Signals\Actions\IngestSignalEvent;
-use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;

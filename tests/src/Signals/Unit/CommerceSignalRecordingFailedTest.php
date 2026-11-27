@@ -6,8 +6,8 @@ use AIArmada\AffiliateNetwork\Events\OfferCreated;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Exceptions\CommerceSignalRecordingFailed;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 
 uses(SignalsTestCase::class);
@@ -77,8 +77,10 @@ it('reports alert failures with persisted identifiers and no previous text', fun
     ]);
 
     $failure = CommerceSignalRecordingFailed::forAlertEvaluation(
-        $event,
-        $property,
+        (string) $event->getKey(),
+        (string) $property->getKey(),
+        $event->getAttributes()['owner_type'] ?? null,
+        $event->getAttributes()['owner_id'] ?? null,
         new RuntimeException('customer email customer@example.com leaked in evaluator'),
     );
 

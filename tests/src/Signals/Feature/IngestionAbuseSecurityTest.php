@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 
@@ -131,6 +131,37 @@ it('rate limits browser ingestion by property key and client address', function 
 
     $this->postJson('/api/signals/collect/browser-event', $payload)->assertAccepted();
     $this->postJson('/api/signals/collect/browser-event', $payload)->assertStatus(429);
+});
+
+it('applies the property limit across distinct client addresses', function (): void {
+    createSecureSignalsProperty($this, 'browser-property-rate-key');
+    config()->set('signals.ingestion.browser.rate_limit_per_minute', 100);
+    config()->set('signals.ingestion.browser.property_rate_limit_per_minute', 1);
+
+    $payload = [
+        'write_key' => 'browser-property-rate-key',
+        'event_name' => 'custom.clicked',
+    ];
+
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+        ->postJson('/api/signals/collect/browser-event', $payload)
+        ->assertAccepted();
+
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.11'])
+        ->postJson('/api/signals/collect/browser-event', $payload)
+        ->assertStatus(429);
+});
+
+it('validates browser payload limits before looking up the write key', function (): void {
+    config()->set('signals.ingestion.browser.max_string_bytes', 16);
+
+    $this->postJson('/api/signals/collect/browser-event', [
+        'write_key' => 'missing-write-key',
+        'event_name' => 'custom.large',
+        'properties' => [
+            'title' => str_repeat('x', 32),
+        ],
+    ])->assertUnprocessable();
 });
 
 it('applies the public abuse validator to identify and geolocation payloads', function (): void {

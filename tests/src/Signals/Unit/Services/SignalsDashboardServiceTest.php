@@ -8,15 +8,16 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalDailyMetric;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalsDashboardService;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
+use AIArmada\Signals\Features\Reporting\Models\SignalDailyMetric;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 uses(SignalsTestCase::class);
@@ -236,7 +237,10 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $service = app(SignalsDashboardService::class);
+    $service = app(DashboardRead::class);
+
+    expect(fn (): array => $service->summary($propertyB->id))->toThrow(ModelNotFoundException::class);
+    expect(fn (): array => $service->trend($propertyB->id))->toThrow(ModelNotFoundException::class);
 
     $summary = $service->summary(
         null,
@@ -291,7 +295,7 @@ it('requires an owner context or explicit global context for dashboard metrics',
         ]);
     });
 
-    $service = app(SignalsDashboardService::class);
+    $service = app(DashboardRead::class);
 
     expect(fn (): array => $service->summary(
         null,
@@ -364,7 +368,7 @@ it('reads dashboard totals and trends from daily rollups', function (): void {
     DB::enableQueryLog();
 
     try {
-        $service = app(SignalsDashboardService::class);
+        $service = app(DashboardRead::class);
         $summary = $service->summary(
             null,
             CarbonImmutable::parse('2026-03-10 00:00:00'),

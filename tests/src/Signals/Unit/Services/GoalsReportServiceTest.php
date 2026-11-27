@@ -6,12 +6,13 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalGoal;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\GoalsReportService;
+use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\GoalsReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Reporting\Models\SignalGoal;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -146,7 +147,7 @@ it('builds an owner-safe goals report', function (): void {
         ->and($rows[0]['revenue_minor'])->toBe(12000)
         ->and($rows[0]['goal_rate'])->toBe(100.0)
         ->and($rows[0]['tracked_property_name'])->toBe('Owner A Goals Property')
-        ->and($service->getTrackedPropertyOptions())
+        ->and(app(TelemetryRead::class)->propertyOptions())
         ->toBe([$propertyA->id => 'Owner A Goals Property']);
 });
 

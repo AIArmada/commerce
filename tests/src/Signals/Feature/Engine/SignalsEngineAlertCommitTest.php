@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Exceptions\CommerceSignalRecordingFailed;
-use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
-use AIArmada\Signals\Models\SignalAlertLog;
-use AIArmada\Signals\Models\SignalAlertRule;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Features\Alerts\EntryPoints\Jobs\EvaluateSignalAlertsForEvent;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertLog;
+use AIArmada\Signals\Features\Alerts\Models\SignalAlertRule;
+use AIArmada\Signals\Features\Alerts\Queries\AlertEvaluator;
+use AIArmada\Signals\Features\Ingestion\Actions\IngestSignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Support\Facades\DB;
@@ -49,9 +49,9 @@ function engineThrowingSyncAlertEvaluation(): void
         }
     });
 
-    app()->instance(SignalAlertEvaluator::class, new class
+    app()->instance(AlertEvaluator::class, new class implements AlertEvaluator
     {
-        public function evaluate(SignalAlertRule $rule): array
+        public function evaluate(SignalAlertRule $rule, ?string $revenueCurrency = null): array
         {
             throw new RuntimeException('engine evaluator boom');
         }
@@ -177,7 +177,7 @@ it('keeps the persisted event when immediate alert evaluation fails at level zer
     engineThrowingSyncAlertEvaluation();
 
     $this->beforeApplicationDestroyed(static function (): void {
-        app()->forgetInstance(SignalAlertEvaluator::class);
+        app()->forgetInstance(AlertEvaluator::class);
     });
 
     expect(DB::transactionLevel())->toBe(0);
@@ -228,7 +228,7 @@ it('keeps the persisted event and later callbacks when deferred alert evaluation
     engineThrowingSyncAlertEvaluation();
 
     $this->beforeApplicationDestroyed(static function (): void {
-        app()->forgetInstance(SignalAlertEvaluator::class);
+        app()->forgetInstance(AlertEvaluator::class);
     });
 
     $property = $this->engineProperty('Engine Alert Deferred Failure');

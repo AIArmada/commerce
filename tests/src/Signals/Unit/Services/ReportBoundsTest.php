@@ -6,11 +6,11 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\Signals\Models\SignalEvent;
-use AIArmada\Signals\Models\SignalIdentity;
-use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\ConversionFunnelReportService;
-use AIArmada\Signals\Services\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
+use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
+use AIArmada\Signals\Features\Ingestion\Models\SignalIdentity;
+use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 
 uses(SignalsTestCase::class);
