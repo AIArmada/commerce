@@ -20,8 +20,10 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
 
     public function findForSubject(Model $subject): ?ChipCustomerLink
     {
+        $this->assertSubjectOwner($subject);
+
         /** @var ChipCustomerLink|null $link */
-        $link = ChipCustomerLink::query()
+        $link = ChipCustomerLink::query()->forOwner(OwnerContext::CURRENT, false)
             ->where('subject_type', $subject->getMorphClass())
             ->where('subject_id', (string) $subject->getKey())
             ->first();
@@ -51,7 +53,7 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
             $query->withoutOwnerScope();
 
             if ($resolved instanceof Model) {
-                $query->forOwner($resolved);
+                $query->forOwner($resolved, false);
             } else {
                 $query->globalOnly();
             }
@@ -142,10 +144,33 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
+    private function assertSubjectOwner(Model $subject): void
+    {
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        $attributes = $subject->getAttributes();
+        $type = $attributes['owner_type'] ?? null;
+        $id = $attributes['owner_id'] ?? null;
+
+        if ($type === null && $id === null) {
+            return;
+        }
+
+        if ($owner === null || $type !== $owner->getMorphClass() || ! is_scalar($id) || (string) $id !== (string) $owner->getKey()) {
+            throw new AuthorizationException('CHIP customer subject belongs to a different owner.');
+        }
+    }
+
     private function applyOwner(ChipCustomerLink $link, Model $subject): void
     {
-        $subjectOwnerType = $subject->getAttribute('owner_type');
-        $subjectOwnerId = $subject->getAttribute('owner_id');
+        $attributes = $subject->getAttributes();
+        $subjectOwnerType = $attributes['owner_type'] ?? null;
+        $subjectOwnerId = $attributes['owner_id'] ?? null;
 
         if (is_string($subjectOwnerType) && $subjectOwnerType !== '' && is_scalar($subjectOwnerId)) {
             $link->owner_type = $subjectOwnerType;

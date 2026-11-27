@@ -70,3 +70,16 @@ describe('ChipCustomerDirectory', function (): void {
             ->and($directory->findForSubject($subject)?->metadata)->toBe(['source' => 'second']);
     });
 });
+
+it('rejects a foreign-owned subject before creating its first customer link', function (): void {
+    config()->set('chip.owner.enabled', true);
+    config()->set('chip.owner.include_global', true);
+
+    $owner = User::query()->create(['name' => 'Owner A', 'email' => 'foreign-owner-a@example.com', 'password' => 'secret']);
+    $other = User::query()->create(['name' => 'Owner B', 'email' => 'foreign-owner-b@example.com', 'password' => 'secret']);
+    $subject = User::query()->create(['name' => 'Subject', 'email' => 'foreign-subject@example.com', 'password' => 'secret']);
+    $subject->forceFill(['owner_type' => $other->getMorphClass(), 'owner_id' => (string) $other->getKey()]);
+
+    expect(fn () => OwnerContext::withOwner($owner, fn () => app(ChipCustomerDirectoryInterface::class)->link($subject, 'foreign-customer')))
+        ->toThrow(AuthorizationException::class);
+});
