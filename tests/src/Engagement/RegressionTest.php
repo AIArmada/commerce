@@ -301,7 +301,7 @@ it('refuses to dispatch a reminder with a non-allowlisted stored class', functio
     ]);
     $reminder->forceFill(['notification_class' => $unlisted])->save();
 
-    expect(fn () => event(new ReminderDue($reminder->fresh())))
+    expect(fn () => event(new ReminderDue($reminder->id, $reminder->recipient_type, $reminder->recipient_id, $reminder->remindable_type, $reminder->remindable_id, $reminder->owner_type, $reminder->owner_id, $reminder->reminder_type)))
         ->toThrow(InvalidArgumentException::class);
 });
 

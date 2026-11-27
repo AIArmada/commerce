@@ -263,6 +263,7 @@ $due = app(\AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery
 
 Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `DispatchManagedNotificationAction` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.
 
+Reminder lifecycle events carry immutable identifiers, not Eloquent instances.
 Each due reminder is reloaded with a row lock while `ReminderDue` is dispatched,
 so overlapping command runs skip reminders already claimed or completed. Direct
 `markSent` and `markFailed` calls only transition pending or scheduled reminders;

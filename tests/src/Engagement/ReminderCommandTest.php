@@ -120,6 +120,7 @@ it('dispatches a due reminder only once across command runs', function (): void 
         ->and(Artisan::call('engagement:send-due-reminders'))->toBe(0);
 
     Event::assertDispatchedTimes(ReminderDue::class, 1);
+    Event::assertDispatched(ReminderDue::class, fn (ReminderDue $event): bool => $event->reminderId === $reminder->id);
     expect($reminder->fresh()->status)->toBe(ReminderStatus::Sent);
 });
 

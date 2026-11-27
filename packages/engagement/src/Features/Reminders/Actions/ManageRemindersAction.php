@@ -117,10 +117,28 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
 
             $reminder->save();
 
-            event(new ReminderCreated($reminder));
+            event(new ReminderCreated(
+                $reminder->id,
+                $reminder->recipient_type,
+                $reminder->recipient_id,
+                $reminder->remindable_type,
+                $reminder->remindable_id,
+                $reminder->owner_type,
+                $reminder->owner_id,
+                $reminder->reminder_type,
+            ));
 
             if ($reminder->scheduled_at !== null) {
-                event(new ReminderScheduled($reminder));
+                event(new ReminderScheduled(
+                    $reminder->id,
+                    $reminder->recipient_type,
+                    $reminder->recipient_id,
+                    $reminder->remindable_type,
+                    $reminder->remindable_id,
+                    $reminder->owner_type,
+                    $reminder->owner_id,
+                    $reminder->reminder_type,
+                ));
             }
 
             return $reminder;
@@ -167,7 +185,16 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
 
             if ($locked instanceof Reminder) {
                 $locked->update(['status' => ReminderStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
-                event(new ReminderCancelled($locked));
+                event(new ReminderCancelled(
+                    $locked->id,
+                    $locked->recipient_type,
+                    $locked->recipient_id,
+                    $locked->remindable_type,
+                    $locked->remindable_id,
+                    $locked->owner_type,
+                    $locked->owner_id,
+                    $locked->reminder_type,
+                ));
             }
         });
     }
@@ -190,7 +217,16 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
             }
 
             $lockedReminder->update(['status' => ReminderStatus::Sent, 'sent_at' => CarbonImmutable::now()]);
-            event(new ReminderSent($lockedReminder));
+            event(new ReminderSent(
+                $lockedReminder->id,
+                $lockedReminder->recipient_type,
+                $lockedReminder->recipient_id,
+                $lockedReminder->remindable_type,
+                $lockedReminder->remindable_id,
+                $lockedReminder->owner_type,
+                $lockedReminder->owner_id,
+                $lockedReminder->reminder_type,
+            ));
         });
     }
 
@@ -216,7 +252,17 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 'failed_at' => CarbonImmutable::now(),
                 'failure_reason' => $reason,
             ]);
-            event(new ReminderFailed($lockedReminder, $reason));
+            event(new ReminderFailed(
+                $lockedReminder->id,
+                $lockedReminder->recipient_type,
+                $lockedReminder->recipient_id,
+                $lockedReminder->remindable_type,
+                $lockedReminder->remindable_id,
+                $lockedReminder->owner_type,
+                $lockedReminder->owner_id,
+                $lockedReminder->reminder_type,
+                $reason,
+            ));
         });
     }
 

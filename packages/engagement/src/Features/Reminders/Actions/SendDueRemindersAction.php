@@ -95,7 +95,16 @@ final readonly class SendDueRemindersAction
                     return false;
                 }
 
-                event(new ReminderDue($lockedReminder));
+                event(new ReminderDue(
+                    $lockedReminder->id,
+                    $lockedReminder->recipient_type,
+                    $lockedReminder->recipient_id,
+                    $lockedReminder->remindable_type,
+                    $lockedReminder->remindable_id,
+                    $lockedReminder->owner_type,
+                    $lockedReminder->owner_id,
+                    $lockedReminder->reminder_type,
+                ));
                 $this->reminderManager->markSent($lockedReminder);
 
                 return true;

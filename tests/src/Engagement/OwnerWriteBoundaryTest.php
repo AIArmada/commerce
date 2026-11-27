@@ -50,7 +50,7 @@ it('rejects foreign owner mutations and reminder events', function (): void {
             ->toThrow(AuthorizationException::class)
             ->and(fn (): mixed => app(ManageRemindersAction::class)->markFailed($reminder, 'spoofed'))
             ->toThrow(AuthorizationException::class)
-            ->and(fn (): mixed => event(new ReminderDue($reminder)))
+            ->and(fn (): mixed => event(new ReminderDue($reminder->id, $reminder->recipient_type, $reminder->recipient_id, $reminder->remindable_type, $reminder->remindable_id, $reminder->owner_type, $reminder->owner_id, $reminder->reminder_type)))
             ->toThrow(AuthorizationException::class);
     });
 

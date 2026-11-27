@@ -24,8 +24,8 @@ final class DispatchReminderThroughCommunications
     public function handle(ReminderDue $event): void
     {
         $reminder = Reminder::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(Reminder::class, $event->reminder->getKey())
-            : Reminder::query()->whereKey($event->reminder->getKey())->firstOrFail();
+            ? OwnerWriteGuard::findOrFailForOwner(Reminder::class, $event->reminderId)
+            : Reminder::query()->whereKey($event->reminderId)->firstOrFail();
         $recipient = $reminder->recipient;
 
         if (! $recipient instanceof Model) {
