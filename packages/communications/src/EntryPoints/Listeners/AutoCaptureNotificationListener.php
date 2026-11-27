@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Listeners;
+namespace AIArmada\Communications\EntryPoints\Listeners;
 
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\ContentRenderer;

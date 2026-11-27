@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Console\Commands;
+namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\Communications\Services\NotificationInboxService;
 use Carbon\CarbonImmutable;

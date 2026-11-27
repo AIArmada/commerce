@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Listeners;
+namespace AIArmada\Communications\EntryPoints\Listeners;
 
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Traits\HasCommunicationContext;
-use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Notifications\Events\NotificationSending;
 
-final class RecordNativeNotificationSent
+final class RecordNativeNotificationSending
 {
     public function __construct(
         private readonly CommunicationRecorder $recorder,
     ) {}
 
-    public function handle(NotificationSent $event): void
+    public function handle(NotificationSending $event): void
     {
         $notification = $event->notification;
 
@@ -32,22 +32,7 @@ final class RecordNativeNotificationSent
         $deliveryId = $deliveryIdsByChannel[$event->channel] ?? null;
 
         if ($deliveryId !== null) {
-            $response = $event->response;
-            $result = [];
-
-            if (is_object($response) && method_exists($response, 'toArray')) {
-                $result = $response->toArray();
-            } elseif (is_array($response)) {
-                $result = $response;
-            } elseif (is_string($response)) {
-                $result = ['provider_message_id' => $response];
-            }
-
-            $this->recorder->markSent(
-                $communicationId,
-                $deliveryId,
-                $result,
-            );
+            $this->recorder->markSending($communicationId, $deliveryId);
         }
     }
 }

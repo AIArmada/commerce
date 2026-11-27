@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Communications\Console\Commands\DispatchDueCommunicationsCommand;
-use AIArmada\Communications\Console\Commands\ExpireCommunicationsCommand;
-use AIArmada\Communications\Console\Commands\PruneCommunicationDataCommand;
-use AIArmada\Communications\Console\Commands\ReconcileCommunicationStatusCommand;
+use AIArmada\Communications\EntryPoints\Commands\DispatchDueCommunicationsCommand;
+use AIArmada\Communications\EntryPoints\Commands\ExpireCommunicationsCommand;
+use AIArmada\Communications\EntryPoints\Commands\PruneCommunicationDataCommand;
+use AIArmada\Communications\EntryPoints\Commands\ReconcileCommunicationStatusCommand;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
