@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory;
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Cart\ValidateInventoryOnAdd;

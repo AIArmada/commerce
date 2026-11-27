@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Contracts\ContextualBuyableValidatorInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\ValidateCartStep;

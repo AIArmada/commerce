@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\Snapshots\Services;
 
 use AIArmada\Cart\Cart as BaseCart;
-use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 
 class CartSyncManager implements CartSnapshotSyncInterface
 {

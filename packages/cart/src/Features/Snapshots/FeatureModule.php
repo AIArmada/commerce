@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\Snapshots;
 
-use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;
@@ -28,6 +27,7 @@ use AIArmada\Cart\Features\Snapshots\Queries\ReadSnapshotConditions;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\Cart\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 

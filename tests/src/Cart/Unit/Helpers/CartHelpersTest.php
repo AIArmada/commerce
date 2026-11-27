@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 
 it('returns current cart instance when no name is given', function (): void {
     $manager = app('cart');

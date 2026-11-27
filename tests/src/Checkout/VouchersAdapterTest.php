@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Vouchers\Contracts\VoucherServiceInterface;

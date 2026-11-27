@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Events\CartAbandoned;
+use AIArmada\Cart\Features\Conditions\EntryPoints\Jobs\RemoveConditionFromAllCartsJob;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -17,7 +18,6 @@ use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use AIArmada\FilamentCart\Actions\NotifyAbandonedCart;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
 use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
-use AIArmada\Cart\Features\Conditions\EntryPoints\Jobs\RemoveConditionFromAllCartsJob;
 use AIArmada\FilamentCart\EntryPoints\Listeners\SendCartAbandonedNotification;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use AIArmada\FilamentCart\Pages\CartDashboard;

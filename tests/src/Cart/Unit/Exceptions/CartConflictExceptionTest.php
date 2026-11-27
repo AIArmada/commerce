@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Exceptions\CartConflictException;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 
 describe('CartConflictException', function (): void {
     it('creates exception with version info', function (): void {

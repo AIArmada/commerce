@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
 describe('Cart getById', function (): void {

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Events\ItemConditionAdded;
@@ -12,6 +11,7 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Events\MetadataAdded;
 use AIArmada\Cart\Events\MetadataRemoved;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 
 describe('ItemAdded Event', function (): void {
     it('creates event with item and cart', function (): void {

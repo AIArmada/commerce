@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Events\MetadataCleared;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 
 describe('CartCleared Event', function (): void {
     it('creates event with cart', function (): void {

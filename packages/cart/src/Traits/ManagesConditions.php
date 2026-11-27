@@ -12,12 +12,12 @@ use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerInterface;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Target;
-use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;
 use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Runtime\CartConditionConvertible;
 use Traversable;
 
 trait ManagesConditions

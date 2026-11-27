@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Contracts\CartValidationResult;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\Buyable;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Cart\Services\CartConditionResolver;
 use Tests\Support\Cart\InMemoryStorage;
 

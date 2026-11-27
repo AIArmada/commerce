@@ -7,8 +7,8 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
-use AIArmada\Cart\Runtime\ConditionProviderInterface;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Runtime\ConditionProviderInterface;
 
 it('syncs condition providers into cart conditions', function (): void {
     $registry = app(ConditionProviderRegistry::class);

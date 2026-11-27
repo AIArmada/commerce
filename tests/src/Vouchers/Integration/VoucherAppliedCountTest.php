@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;

@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
-use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Features\Snapshots\Api\SnapshotConditionLookup;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
-use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -122,13 +122,22 @@ it('clears the requested condition type from both cart and item levels', functio
     $cart->add('sku-1', 'Product', 1000, 1);
 
     $cart->addCondition(new CartCondition(
-        name: 'cart-discount', type: 'discount', target: 'cart@cart_subtotal/aggregate', value: '-10%',
+        name: 'cart-discount',
+        type: 'discount',
+        target: 'cart@cart_subtotal/aggregate',
+        value: '-10%',
     ));
     $cart->addItemCondition('sku-1', new CartCondition(
-        name: 'item-discount', type: 'discount', target: 'items@item_discount/per-item', value: '-5%',
+        name: 'item-discount',
+        type: 'discount',
+        target: 'items@item_discount/per-item',
+        value: '-5%',
     ));
     $cart->addItemCondition('sku-1', new CartCondition(
-        name: 'item-fee', type: 'fee', target: 'items@item_discount/per-item', value: '+1',
+        name: 'item-fee',
+        type: 'fee',
+        target: 'items@item_discount/per-item',
+        value: '+1',
     ));
 
     app(RemoveStoredConditions::class)->clearByType((string) $snapshot->getKey(), 'discount');

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners;
 
-use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;
@@ -15,6 +14,7 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 
 /**
  * Unified listener that syncs normalized cart snapshot whenever cart state changes.
