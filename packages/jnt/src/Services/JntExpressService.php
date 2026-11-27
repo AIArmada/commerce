@@ -100,7 +100,7 @@ class JntExpressService
         $response = $this->getClient()->post('/api/order/addOrder', $orderData);
 
         try {
-            return OrderData::fromApiArray($this->responseData($response));
+            return OrderData::fromApiArray($this->responseData($response, '/api/order/addOrder'));
         } catch (InvalidArgumentException $e) {
             throw JntApiException::invalidApiResponse('/api/order/addOrder', $e->getMessage());
         }
@@ -117,7 +117,7 @@ class JntExpressService
             'txlogisticId' => $orderId,
         ]);
 
-        return $response['data'];
+        return $this->responseData($response, '/api/order/getOrders');
     }
 
     /**
@@ -166,7 +166,7 @@ class JntExpressService
 
         $response = $this->getClient()->post('/api/order/cancelOrder', $payload);
 
-        return $response['data'];
+        return $this->responseData($response, '/api/order/cancelOrder');
     }
 
     /**
@@ -190,7 +190,7 @@ class JntExpressService
 
         $response = $this->getClient()->post('/api/order/printOrder', $payload);
 
-        return $response['data'];
+        return $this->responseData($response, '/api/order/printOrder');
     }
 
     public function trackParcel(?string $orderId = null, ?string $trackingNumber = null): TrackingData
@@ -221,7 +221,11 @@ class JntExpressService
         $response = $this->getClient()->post('/api/logistics/trace', $payload);
 
         try {
-            $trackingData = TrackingData::fromApiArray($this->responseData($response));
+            $trackingData = TrackingData::fromApiArray($this->responseData($response, '/api/logistics/trace'));
+
+            if (! $this->matchesTrackingRequest($trackingData, $orderId, $trackingNumber)) {
+                throw new InvalidArgumentException('Tracking response does not match the requested identifiers.');
+            }
         } catch (InvalidArgumentException $e) {
             throw JntApiException::invalidApiResponse('/api/logistics/trace', $e->getMessage());
         }
@@ -255,7 +259,11 @@ class JntExpressService
                     continue;
                 }
 
-                return TrackingData::fromApiArray($cached['tracking_data']);
+                $trackingData = TrackingData::fromApiArray($cached['tracking_data']);
+
+                if ($this->matchesTrackingRequest($trackingData, $orderId, $trackingNumber)) {
+                    return $trackingData;
+                }
             } catch (Throwable) {
                 continue;
             }
@@ -293,17 +301,37 @@ class JntExpressService
      */
     private function trackingCacheIdentifiers(?string $orderId, ?string $trackingNumber, ?TrackingData $trackingData = null): array
     {
-        return array_values(array_unique(array_filter([
-            $orderId,
-            $trackingNumber,
-            $trackingData?->orderId,
-            $trackingData?->trackingNumber,
-        ], static fn (?string $identifier): bool => $identifier !== null && $identifier !== '')));
+        $identifiers = [];
+
+        foreach ([$orderId, $trackingData?->orderId] as $id) {
+            if ($id !== null && $id !== '') {
+                $identifiers[] = 'order:' . $id;
+            }
+        }
+
+        foreach ([$trackingNumber, $trackingData?->trackingNumber] as $number) {
+            if ($number !== null && $number !== '') {
+                $identifiers[] = 'tracking:' . $number;
+            }
+        }
+
+        return array_values(array_unique($identifiers));
+    }
+
+    private function matchesTrackingRequest(TrackingData $data, ?string $orderId, ?string $trackingNumber): bool
+    {
+        return ($trackingNumber === null || $data->trackingNumber === $trackingNumber)
+            && ($orderId === null || $data->orderId === null || $data->orderId === $orderId);
     }
 
     private function trackingCacheKey(string $identifier): string
     {
-        return 'jnt.tracking.poll.' . sha1(($this->customerCode ?? '') . '|' . $identifier);
+        return 'jnt.tracking.poll.' . hash('sha256', serialize([
+            $this->config['environment'] ?? null,
+            $this->config['api_account'] ?? null,
+            $this->customerCode,
+            $identifier,
+        ]));
     }
 
     private function trackingPollingDebounceMinutes(): int
@@ -585,12 +613,12 @@ class JntExpressService
      * @param array<string, mixed> $response
      * @return array<string, mixed>
      */
-    private function responseData(array $response): array
+    private function responseData(array $response, string $endpoint): array
     {
         $data = $response['data'] ?? null;
 
         if (! is_array($data)) {
-            throw new InvalidArgumentException('Missing or invalid response data.');
+            throw JntApiException::invalidApiResponse($endpoint, 'Missing or invalid response data.');
         }
 
         return $data;
