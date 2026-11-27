@@ -79,6 +79,8 @@ Manage vouchers saved to user wallets.
 
 ### StackingConfigurationPage
 
+Read-only view of the active stacking configuration. Update `config/vouchers.php` to change these settings.
+
 Configure how vouchers interact when multiple are applied:
 
 - Define exclusive voucher categories
@@ -86,6 +88,8 @@ Configure how vouchers interact when multiple are applied:
 - Configure combination limits
 
 ### TargetingConfigurationPage
+
+Read-only view of the targeting validation setting. Update `config/vouchers.php` to change it.
 
 Create and manage targeting presets:
 

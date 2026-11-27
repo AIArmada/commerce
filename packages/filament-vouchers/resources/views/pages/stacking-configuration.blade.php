@@ -4,18 +4,10 @@
             Stacking Configuration
         </x-slot>
         <x-slot name="description">
-            Configure how multiple vouchers can be combined in a single cart.
+            Current application configuration. Change config/vouchers.php to update these settings.
         </x-slot>
 
-        <form wire:submit="save">
-            {{ $this->form }}
-
-            <div class="mt-6 flex justify-end gap-3">
-                @foreach ($this->getFormActions() as $action)
-                    {{ $action }}
-                @endforeach
-            </div>
-        </form>
+        {{ $this->form }}
     </x-filament::section>
 
     <x-filament::section class="mt-6">

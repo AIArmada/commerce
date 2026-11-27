@@ -5,6 +5,13 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 
 describe('VoucherValidationResult', function (): void {
+    it('is an immutable framework-independent result', function (): void {
+        $reflection = new ReflectionClass(VoucherValidationResult::class);
+        expect($reflection->isReadOnly())->toBeTrue()
+            ->and($reflection->isFinal())->toBeTrue()
+            ->and($reflection->getParentClass())->toBeFalse();
+    });
+
     describe('construction', function (): void {
         it('can be constructed with all parameters', function (): void {
             $result = new VoucherValidationResult(
