@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "Subscriptions",
+  "owns": {
+    "table:cashier_chip_renewal_attempts": [
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\ClaimRenewalAttempt",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\RenewSubscriptions",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\SyncChipPurchaseStatus"
+    ],
+    "table:cashier_chip_subscriptions": [
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\RenewSubscriptions",
+      "AIArmada\\CashierChip\\Features\\Subscriptions\\Actions\\SyncChipPurchaseStatus"
+    ]
+  },
+  "extensions": {}
+}

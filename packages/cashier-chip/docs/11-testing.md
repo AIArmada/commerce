@@ -262,7 +262,7 @@ that owner, and another owner's context must not be able to read or process the 
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CashierChip\Subscription\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 
 $attempts = OwnerContext::withOwner($owner, fn () => RenewalAttempt::query()->get());
 ```

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Actions\RenewSubscriptions;
-use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\RenewSubscriptions;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Checkout;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
@@ -12,7 +12,7 @@ use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\CashierChip\Invoice\Invoice;
-use AIArmada\CashierChip\Subscription\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Chip\Data\PurchaseData;

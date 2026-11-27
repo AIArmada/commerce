@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\EntryPoints\Listeners;
+namespace AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners;
 
-use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-class HandlePurchasePaymentFailure
+class HandlePurchasePaid
 {
-    public function handle(PurchasePaymentFailure $event): void
+    public function handle(PurchasePaid $event): void
     {
         if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
             return;
@@ -33,6 +33,6 @@ class HandlePurchasePaymentFailure
             return;
         }
 
-        SyncChipPurchaseStatus::make()->syncFailed($billable, $purchase, $event->payload);
+        SyncChipPurchaseStatus::run($billable, $purchase, $event->payload);
     }
 }

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Subscription;
+namespace AIArmada\CashierChip\Features\Subscriptions\Models;
+
+use AIArmada\CashierChip\Subscription\Subscription;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

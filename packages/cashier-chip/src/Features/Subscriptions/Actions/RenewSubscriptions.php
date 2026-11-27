@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Actions;
+namespace AIArmada\CashierChip\Features\Subscriptions\Actions;
 
+use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\CashierChip\Subscription\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

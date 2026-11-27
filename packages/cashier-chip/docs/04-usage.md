@@ -63,10 +63,10 @@ integration auto-detects that package by default and fails loudly if it is unava
 ```php
 use AIArmada\CashierChip\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
-use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
 use AIArmada\CashierChip\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Actions\RefundChipPayment;
-use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 
 // One-off charge with rate limiting and error handling
 ChargeChipCustomer::run($user, 2500, $recurringToken, ['reference' => 'Order #123']);

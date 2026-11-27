@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\EntryPoints\Commands;
+namespace AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Commands;
 
-use AIArmada\CashierChip\Actions\RenewSubscriptions;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\RenewSubscriptions;
 use Illuminate\Console\Command;
 
 final class RenewSubscriptionsCommand extends Command

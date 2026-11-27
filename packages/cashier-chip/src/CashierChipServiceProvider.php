@@ -8,13 +8,17 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
-use AIArmada\CashierChip\EntryPoints\Commands\RenewSubscriptionsCommand;
-use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaid;
-use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaymentFailure;
+use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Commands\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaid;
+use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
 use AIArmada\CashierChip\Payment\PaymentMethodStore;
 use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
+use AIArmada\CashierChip\Platform\FeatureCatalog;
+use AIArmada\CashierChip\Platform\FeatureModule;
+use AIArmada\CashierChip\Platform\ExtensionRegistry;
+use InvalidArgumentException;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
@@ -27,6 +31,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class CashierChipServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -45,6 +52,7 @@ final class CashierChipServiceProvider extends PackageServiceProvider
         $this->bindInvoiceRenderer();
         $this->bindPaymentMethodStore();
         $this->bindCustomerOwnerResolver();
+        $this->registerFeatureModules();
     }
 
     public function bootingPackage(): void
@@ -52,9 +60,30 @@ final class CashierChipServiceProvider extends PackageServiceProvider
         $this->registerEventListeners();
         $this->registerOctaneListeners();
 
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
+
         $this->app->booted(static function (): void {
             Cashier::rememberOctaneDefaults();
         });
+    }
+
+    private function registerFeatureModules(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid Cashier CHIP feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     protected function bindInvoiceRenderer(): void
