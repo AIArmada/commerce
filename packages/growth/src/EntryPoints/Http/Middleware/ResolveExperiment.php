@@ -7,7 +7,7 @@ namespace AIArmada\Growth\EntryPoints\Http\Middleware;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
 use AIArmada\Growth\EntryPoints\Http\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Enums\ExperimentStatus;
-use AIArmada\Growth\Settings\GrowthSettings;
+use AIArmada\Growth\Queries\ExperimentMiddlewareEnabled;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Growth\Support\Context\ExperimentResolver;
 use Closure;
@@ -15,7 +15,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use Symfony\Component\HttpFoundation\Response;
 
 final class ResolveExperiment
@@ -29,7 +28,7 @@ final class ResolveExperiment
 
     public function handle(Request $request, Closure $next, ?string $experimentSlug = null): Response
     {
-        if (! $this->isExperimentMiddlewareEnabled()) {
+        if (! app(ExperimentMiddlewareEnabled::class)->handle()) {
             /** @var Response $response */
             $response = $next($request);
 
@@ -77,27 +76,4 @@ final class ResolveExperiment
         return $response;
     }
 
-    private function isExperimentMiddlewareEnabled(): bool
-    {
-        if (! $this->hasConfiguredSettingsRepository()) {
-            return (bool) config('growth.features.experiment_middleware.enabled', false);
-        }
-
-        try {
-            return app(GrowthSettings::class)->experimentMiddlewareEnabled;
-        } catch (MissingSettings) {
-            return (bool) config('growth.features.experiment_middleware.enabled', false);
-        }
-    }
-
-    private function hasConfiguredSettingsRepository(): bool
-    {
-        $defaultRepository = config('settings.default_repository');
-        $repositories = config('settings.repositories');
-
-        return is_string($defaultRepository)
-            && $defaultRepository !== ''
-            && is_array($repositories)
-            && array_key_exists($defaultRepository, $repositories);
-    }
 }

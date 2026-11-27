@@ -42,7 +42,7 @@ final class DefaultRequestExperimentSubjectResolver implements RequestExperiment
     {
         $user = $this->resolveUser($request);
 
-        if (! $user instanceof Authenticatable) {
+        if (! $user instanceof Model || ! $user instanceof Authenticatable) {
             return null;
         }
 
@@ -52,32 +52,10 @@ final class DefaultRequestExperimentSubjectResolver implements RequestExperiment
             return null;
         }
 
-        $query = $this->identityQuery($experiment, $owner);
-
-        if ($user instanceof Model) {
-            $identity = (clone $query)
-                ->where('auth_user_type', $user->getMorphClass())
-                ->where('auth_user_id', $userIdentifier)
-                ->first();
-
-            if ($identity instanceof SignalIdentity) {
-                return $identity;
-            }
-        }
-
-        $fallbackQuery = (clone $query)->where('external_id', $userIdentifier);
-
-        if ($user instanceof Model) {
-            // External identifiers may collide across user types. Only match
-            // rows stamped for this user type, plus unstamped legacy rows.
-            $morphClass = $user->getMorphClass();
-
-            $fallbackQuery->where(static function (Builder $query) use ($morphClass): void {
-                $query->where('auth_user_type', $morphClass)->orWhereNull('auth_user_type');
-            });
-        }
-
-        $identity = $fallbackQuery->first();
+        $identity = $this->identityQuery($experiment, $owner)
+            ->where('auth_user_type', $user->getMorphClass())
+            ->where('auth_user_id', $userIdentifier)
+            ->first();
 
         return $identity instanceof SignalIdentity ? $identity : null;
     }

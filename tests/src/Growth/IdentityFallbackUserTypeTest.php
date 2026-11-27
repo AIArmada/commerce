@@ -23,7 +23,7 @@ function identityFallbackOwner(): User
     ]);
 }
 
-describe('Identity fallback user-type matching', function (): void {
+describe('Authenticated identity matching', function (): void {
     beforeEach(function (): void {
         config()->set('growth.features.owner.enabled', true);
         config()->set('signals.owner.enabled', true);
@@ -73,13 +73,13 @@ describe('Identity fallback user-type matching', function (): void {
         expect($subjects->identity)->toBeNull();
     });
 
-    it('still matches unstamped fallback identities for the request user', function (): void {
+    it('does not attribute an unstamped external identifier to an authenticated user', function (): void {
         $owner = identityFallbackOwner();
 
         $experiment = OwnerContext::withOwner($owner, function (): Experiment {
             $trackedProperty = TrackedProperty::query()->create([
-                'name' => 'Identity Fallback Legacy Property ' . Str::random(6),
-                'slug' => 'identity-legacy-' . Str::lower(Str::random(8)),
+                'name' => 'Unstamped Identity Property ' . Str::random(6),
+                'slug' => 'identity-unstamped-' . Str::lower(Str::random(8)),
                 'write_key' => Str::random(40),
                 'type' => 'website',
                 'timezone' => 'UTC',
@@ -96,7 +96,7 @@ describe('Identity fallback user-type matching', function (): void {
             return $experiment->fresh(['trackedProperty']) ?? $experiment;
         });
 
-        $legacy = OwnerContext::withOwner($owner, fn (): SignalIdentity => SignalIdentity::query()->create([
+        OwnerContext::withOwner($owner, fn (): SignalIdentity => SignalIdentity::query()->create([
             'tracked_property_id' => $experiment->tracked_property_id,
             'external_id' => (string) $owner->getKey(),
         ]));
@@ -109,7 +109,43 @@ describe('Identity fallback user-type matching', function (): void {
             fn () => app(DefaultRequestExperimentSubjectResolver::class)->resolve($request, $experiment)
         );
 
-        expect($subjects->identity)->not->toBeNull()
-            ->and((string) $subjects->identity->getKey())->toBe((string) $legacy->getKey());
+        expect($subjects->identity)->toBeNull();
+    });
+    it('matches only the authenticated user type and identifier', function (): void {
+        $owner = identityFallbackOwner();
+
+        $experiment = OwnerContext::withOwner($owner, function (): Experiment {
+            $property = TrackedProperty::query()->create([
+                'name' => 'Authenticated Identity Property',
+                'slug' => 'identity-auth-' . Str::lower(Str::random(8)),
+                'write_key' => Str::random(40),
+                'type' => 'website',
+                'timezone' => 'UTC',
+                'currency' => 'MYR',
+                'is_active' => true,
+            ]);
+
+            return Experiment::factory()->create([
+                'tracked_property_id' => $property->getKey(),
+                'status' => ExperimentStatus::Active,
+            ]);
+        });
+
+        $identity = OwnerContext::withOwner($owner, fn (): SignalIdentity => SignalIdentity::query()->create([
+            'tracked_property_id' => $experiment->tracked_property_id,
+            'external_id' => 'independent-external-id',
+            'auth_user_type' => $owner->getMorphClass(),
+            'auth_user_id' => (string) $owner->getKey(),
+        ]));
+
+        $request = Request::create('/sales-page', 'GET');
+        $request->setUserResolver(fn (): User => $owner);
+
+        $subjects = OwnerContext::withOwner(
+            $owner,
+            fn () => app(DefaultRequestExperimentSubjectResolver::class)->resolve($request, $experiment)
+        );
+
+        expect($subjects->identity?->getKey())->toBe($identity->getKey());
     });
 });

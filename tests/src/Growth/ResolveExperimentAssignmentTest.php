@@ -742,3 +742,25 @@ it('consolidates matching session and identity assignments into the earliest ass
         ->and($resolvedAssignment->signal_session_id)->toBe((string) $session->getKey())
         ->and(Assignment::query()->withoutOwnerScope()->where('experiment_id', $experiment->getKey())->count())->toBe(1);
 });
+
+it('uses current variant weights for new assignments even when the resolver instance is reused', function (): void {
+    $owner = growthCreateOwner();
+    $experiment = growthCreateExperiment($owner);
+    $resolver = app(ResolveExperimentAssignment::class);
+
+    OwnerContext::withOwner($owner, function () use ($experiment, $resolver): void {
+        $variants = $experiment->variants->keyBy('code');
+        Variant::query()->whereKey($variants['A']->getKey())->update(['traffic_percentage' => 100]);
+        Variant::query()->whereKey($variants['B']->getKey())->update(['traffic_percentage' => 0]);
+
+        $first = $resolver->handle($experiment, anonymousId: 'weight-change-first');
+
+        Variant::query()->whereKey($variants['A']->getKey())->update(['traffic_percentage' => 0]);
+        Variant::query()->whereKey($variants['B']->getKey())->update(['traffic_percentage' => 100]);
+
+        $second = $resolver->handle($experiment, anonymousId: 'weight-change-second');
+
+        expect($first->variant_id)->toBe((string) $variants['A']->getKey())
+            ->and($second->variant_id)->toBe((string) $variants['B']->getKey());
+    });
+});
