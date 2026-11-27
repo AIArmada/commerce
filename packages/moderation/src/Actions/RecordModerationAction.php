@@ -10,6 +10,7 @@ use AIArmada\Moderation\Support\ModerationModelGuard;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use LogicException;
+use RuntimeException;
 
 final readonly class RecordModerationAction
 {
@@ -53,7 +54,7 @@ final readonly class RecordModerationAction
         return $connection->transaction(function () use ($actionable, $actionedBy, $type, $reason, $notes, $metadata): ModerationAction {
             $actionable->newQuery()->whereKey($actionable->getKey())->lockForUpdate()->firstOrFail();
 
-            return ModerationAction::create([
+            $record = new ModerationAction([
                 'actionable_type' => $actionable->getMorphClass(),
                 'actionable_id' => $actionable->getKey(),
                 'actioned_by_type' => $actionedBy?->getMorphClass(),
@@ -63,6 +64,12 @@ final readonly class RecordModerationAction
                 'notes' => $notes,
                 'metadata' => $metadata,
             ]);
+
+            if (! $record->save()) {
+                throw new RuntimeException('The moderation action write was cancelled.');
+            }
+
+            return $record;
         });
     }
 }

@@ -304,3 +304,40 @@ test('enforces moderation payload limits on blocks as well as action records', f
         ->and(fn () => app(BlockEntityAction::class)->execute($this->entity, metadata: array_fill(0, 51, 'x')))
         ->toThrow(InvalidArgumentException::class, 'must not exceed 50 entries');
 });
+
+test('rejects already expired blocks without persisting an active record', function (): void {
+    expect(fn () => app(BlockEntityAction::class)->execute(
+        $this->entity,
+        expiresAt: CarbonImmutable::now()->subMinute(),
+    ))->toThrow(InvalidArgumentException::class, 'Block expiry must be in the future');
+
+    expect(Block::query()->count())->toBe(0);
+});
+
+test('does not report success when a block save is cancelled', function (): void {
+    Block::saving(static fn (Block $block): ?bool => $block->notes === 'cancelled' ? false : null);
+
+    try {
+        expect(fn () => app(BlockEntityAction::class)->execute($this->entity, notes: 'cancelled'))
+            ->toThrow(RuntimeException::class, 'creation was cancelled');
+
+        expect(Block::query()->count())->toBe(0);
+    } finally {
+        Block::flushEventListeners();
+        Block::clearBootedModels();
+    }
+});
+
+test('does not report success when a moderation audit write is cancelled', function (): void {
+    ModerationAction::saving(static fn (ModerationAction $record): ?bool => $record->reason === 'cancelled' ? false : null);
+
+    try {
+        expect(fn () => app(RecordModerationAction::class)->execute($this->entity, ModerationActionType::Warn, 'cancelled'))
+            ->toThrow(RuntimeException::class, 'write was cancelled');
+
+        expect(ModerationAction::query()->count())->toBe(0);
+    } finally {
+        ModerationAction::flushEventListeners();
+        ModerationAction::clearBootedModels();
+    }
+});

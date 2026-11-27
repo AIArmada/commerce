@@ -12,7 +12,9 @@ use AIArmada\Moderation\Support\ModerationModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use LogicException;
+use RuntimeException;
 
 final readonly class BlockEntityAction
 {
@@ -48,6 +50,10 @@ final readonly class BlockEntityAction
         return $connection->transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
             $blockable->newQuery()->whereKey($blockable->getKey())->lockForUpdate()->firstOrFail();
 
+            if ($expiresAt->lessThanOrEqualTo(CarbonImmutable::now())) {
+                throw new InvalidArgumentException('Block expiry must be in the future.');
+            }
+
             $existing = OwnerScopeOverride::withoutIncludeGlobal(fn (): ?Block => Block::query()
                 ->where('blockable_type', $blockable->getMorphClass())
                 ->where('blockable_id', $blockable->getKey())
@@ -61,7 +67,9 @@ final readonly class BlockEntityAction
 
             if ($existing instanceof Block) {
                 if ($existing->expires_at !== null && $expiresAt->greaterThan($existing->expires_at)) {
-                    $existing->forceFill(['expires_at' => $expiresAt])->save();
+                    if (! $existing->forceFill(['expires_at' => $expiresAt])->save()) {
+                        throw new RuntimeException('The moderation block extension was cancelled.');
+                    }
                 }
 
                 return $existing;
@@ -79,7 +87,9 @@ final readonly class BlockEntityAction
             $block->forceFill(['expires_at' => $expiresAt]);
 
             $block->transitionTo(BlockStatus::Active);
-            $block->save();
+            if (! $block->save()) {
+                throw new RuntimeException('The moderation block creation was cancelled.');
+            }
 
             return $block;
         });
