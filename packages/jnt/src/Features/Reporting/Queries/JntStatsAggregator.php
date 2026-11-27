@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Queries;
+namespace AIArmada\Jnt\Features\Reporting\Queries;
 
+use AIArmada\Jnt\Features\Reporting\Api\DashboardStats;
 use AIArmada\Jnt\Models\JntOrder;
 
-final class JntStatsAggregator
+final readonly class JntStatsAggregator implements DashboardStats
 {
     /**
      * @return array{total:int, delivered:int, in_transit:int, problems:int, pending:int, returns:int}
      */
-    public static function calculateOrderStats(): array
+    public function calculateOrderStats(): array
     {
         $query = JntOrder::query();
 

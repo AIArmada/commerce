@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Queries;
+namespace AIArmada\Shipping\Features\Reporting\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
@@ -20,7 +21,7 @@ use AIArmada\Shipping\States\Shipped;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
-final class ShippingStatsAggregator
+final readonly class ShippingStatsAggregator implements DashboardStats
 {
     /**
      * @return array{total: int, pending: int, inTransit: int, deliveredToday: int, exceptions: int, pendingReturns: int}

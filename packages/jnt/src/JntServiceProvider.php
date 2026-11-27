@@ -18,6 +18,9 @@ use AIArmada\Jnt\EntryPoints\Commands\Webhooks\WebhookTestCommand;
 use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
 use AIArmada\Jnt\EntryPoints\Listeners\SendShipmentNotifications;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
+use AIArmada\Jnt\Platform\ExtensionRegistry;
+use AIArmada\Jnt\Platform\FeatureCatalog;
+use AIArmada\Jnt\Platform\FeatureModule;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
@@ -70,6 +73,17 @@ class JntServiceProvider extends PackageServiceProvider
      */
     public function registeringPackage(): void
     {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
         $this->configureSpatieWebhookClient();
         $this->registerSpatieWebhookClient();
         $this->registerServices();
@@ -94,6 +108,14 @@ class JntServiceProvider extends PackageServiceProvider
      */
     public function bootingPackage(): void
     {
+        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
         $this->assertOwnerResolverConfigured();
         $this->registerCartConditionProvider();
         $this->registerShippingDriver();

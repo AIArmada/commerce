@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Widgets;
 
-use AIArmada\Jnt\Queries\JntStatsAggregator;
+use AIArmada\Jnt\Features\Reporting\Api\DashboardStats;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -13,7 +13,7 @@ final class JntStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $stats = JntStatsAggregator::calculateOrderStats();
+        $stats = app(DashboardStats::class)->calculateOrderStats();
 
         $totalOrders = (int) ($stats['total'] ?? 0);
         $deliveredCount = (int) ($stats['delivered'] ?? 0);

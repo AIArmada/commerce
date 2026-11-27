@@ -45,7 +45,7 @@ keywords:
 - Relation managers: `ShipmentResource/RelationManagers/{EventsRelationManager,ItemsRelationManager}`, `ReturnAuthorizationResource/RelationManagers/ItemsRelationManager`, `ShippingZoneResource/RelationManagers/RatesRelationManager`
 - Pages: `Pages/ShippingDashboard`, `Pages/FulfillmentQueue`, `Pages/ManifestPage`
 - Widgets: `Widgets/ShippingDashboardWidget`, `Widgets/PendingShipmentsWidget`, `Widgets/CarrierPerformanceWidget`, `Widgets/PendingActionsWidget`
-- Actions/Support: `Actions/{ShipAction,CancelShipmentAction,PrintLabelAction,SyncTrackingAction,ApproveReturnAction,RejectReturnAction}` (all `Filament\Actions\Action` subclasses — no bulk variants), `Support/MoneyInput`, `AIArmada\Shipping\Queries\ShippingStatsAggregator`
+- Actions/Support: `Actions/{ShipAction,CancelShipmentAction,PrintLabelAction,SyncTrackingAction,ApproveReturnAction,RejectReturnAction}` (all `Filament\Actions\Action` subclasses — no bulk variants), `Support/MoneyInput`, `AIArmada\Shipping\Features\Reporting\Api\DashboardStats`
 - Config `filament-shipping.php` keys: `shipping_methods`, `carriers` (shipped but unread), `features.enable_fulfillment_queue`, `fulfillment.urgent_threshold_hours`, `fulfillment.old_threshold_hours`, `navigation.group`, `navigation.sort`, `pages.navigation_sort.{dashboard,fulfillment_queue,manifest}`, `resources.navigation_sort.{shipments,zones,rates,returns}`
 
 ## Docs map

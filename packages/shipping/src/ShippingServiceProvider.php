@@ -13,6 +13,9 @@ use AIArmada\Shipping\Integrations\PackageReturns;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Platform\ExtensionRegistry;
+use AIArmada\Shipping\Platform\FeatureCatalog;
+use AIArmada\Shipping\Platform\FeatureModule;
 use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
 use AIArmada\Shipping\Policies\ShipmentPolicy;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
@@ -24,6 +27,7 @@ use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
 use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;
 use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
 use AIArmada\Shipping\Support\ZoneResolutionStrategyRegistry;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -42,6 +46,17 @@ final class ShippingServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
         $this->app->scoped(ShippingManager::class, function ($app): ShippingManager {
             return new ShippingManager($app);
         });
@@ -122,6 +137,14 @@ final class ShippingServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
         $this->registerPolicies();
     }
 

@@ -7,8 +7,8 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Support\MoneyInput;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
 use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Queries\ShippingStatsAggregator;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;
 use AIArmada\Shipping\States\Pending;
@@ -72,7 +72,7 @@ describe('Shipping stats aggregation', function (): void {
         DB::enableQueryLog();
 
         try {
-            $stats = app(ShippingStatsAggregator::class)->getAllStats();
+            $stats = app(DashboardStats::class)->getAllStats();
             $queries = DB::getQueryLog();
         } finally {
             DB::disableQueryLog();

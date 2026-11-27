@@ -258,7 +258,7 @@ $panel->resources([
 Extend Filament's own widget base and pull the shared aggregator:
 
 ```php
-use AIArmada\Jnt\Queries\JntStatsAggregator;
+use AIArmada\Jnt\Features\Reporting\Api\DashboardStats;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -266,7 +266,7 @@ class CustomStatsWidget extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
-        $stats = JntStatsAggregator::calculateOrderStats();
+        $stats = app(DashboardStats::class)->calculateOrderStats();
 
         return [
             Stat::make('Total Orders', $stats['total']),

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\Shipping\Queries\ShippingStatsAggregator;
+use AIArmada\Shipping\Features\Reporting\Api\DashboardStats;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -14,7 +14,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $stats = app(ShippingStatsAggregator::class)->getAllStats();
+        $stats = app(DashboardStats::class)->getAllStats();
 
         return [
             Stat::make('Pending Shipments', $stats['pending'])
