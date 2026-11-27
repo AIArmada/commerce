@@ -24,7 +24,7 @@ abstract class CollectApi
      */
     protected function assertSafePathSegment(string $value, string $field): void
     {
-        if ($value !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $value) === 1) {
+        if ($value !== '' && preg_match('/\A[A-Za-z0-9_-]+\z/', $value) === 1) {
             return;
         }
 
