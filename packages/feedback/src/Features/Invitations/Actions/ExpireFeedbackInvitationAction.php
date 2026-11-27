@@ -7,13 +7,12 @@ namespace AIArmada\Feedback\Features\Invitations\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
-use Illuminate\Support\Facades\DB;
 
 final readonly class ExpireFeedbackInvitationAction
 {
     public function execute(string $invitationId): void
     {
-        DB::transaction(function () use ($invitationId): void {
+        (new FeedbackInvitation)->getConnection()->transaction(function () use ($invitationId): void {
             $invitation = FeedbackInvitation::query()
                 ->whereKey($invitationId)
                 ->lockForUpdate()

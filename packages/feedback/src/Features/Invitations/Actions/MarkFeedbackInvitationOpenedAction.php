@@ -9,19 +9,18 @@ use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationOpened;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 
 final readonly class MarkFeedbackInvitationOpenedAction
 {
     public function execute(FeedbackInvitation $invitation): FeedbackInvitation
     {
-        $guarded = FeedbackInvitation::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitation->id)
-            : FeedbackInvitation::query()->whereKey($invitation->id)->firstOrFail();
+        return (new FeedbackInvitation)->getConnection()->transaction(function () use ($invitation): FeedbackInvitation {
+            if (FeedbackInvitation::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitation->id);
+            }
 
-        return DB::transaction(function () use ($guarded): FeedbackInvitation {
             $invitation = FeedbackInvitation::query()
-                ->whereKey($guarded->id)
+                ->whereKey($invitation->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 

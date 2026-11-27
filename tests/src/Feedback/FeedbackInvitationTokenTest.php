@@ -8,6 +8,7 @@ use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
+use AIArmada\Feedback\Events\FeedbackInvitationOpened;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Invitations\Actions\ExpireFeedbackInvitationAction;
 use AIArmada\Feedback\Features\Invitations\Actions\GenerateFeedbackInvitationUrlAction;
@@ -175,4 +176,43 @@ it('rolls back the invitation when URL generation fails', function (): void {
 
     expect(fn () => app(SendFeedbackInvitationAction::class)->execute($form->id, email: 'example@example.com'))->toThrow(RuntimeException::class)
         ->and(FeedbackInvitation::query()->where('feedback_form_id', $form->id)->count())->toBe(0);
+});
+
+it('opens an invitation only once even when passed a stale model', function (): void {
+    config()->set('feedback.owner.enabled', false);
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Open Once Form'));
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', bin2hex(random_bytes(32))),
+        'status' => FeedbackInvitationStatus::Sent,
+    ]);
+    Event::fake([FeedbackInvitationOpened::class]);
+
+    $action = app(MarkFeedbackInvitationOpenedAction::class);
+    $first = $action->execute($invitation);
+    $second = $action->execute($invitation);
+
+    expect($first->status)->toBe(FeedbackInvitationStatus::Opened)
+        ->and($second->status)->toBe(FeedbackInvitationStatus::Opened)
+        ->and($first->opened_at)->not->toBeNull()
+        ->and($second->opened_at->equalTo($first->opened_at))->toBeTrue();
+
+    Event::assertDispatchedTimes(FeedbackInvitationOpened::class, 1);
+});
+
+it('rolls back opening an invitation when an opened listener fails', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Open Rollback Form'));
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', bin2hex(random_bytes(32))),
+        'status' => FeedbackInvitationStatus::Sent,
+    ]);
+    Event::listen(FeedbackInvitationOpened::class, static function (): void {
+        throw new RuntimeException('Opening failed');
+    });
+
+    expect(fn () => app(MarkFeedbackInvitationOpenedAction::class)->execute($invitation))
+        ->toThrow(RuntimeException::class, 'Opening failed')
+        ->and($invitation->fresh()->status)->toBe(FeedbackInvitationStatus::Sent)
+        ->and($invitation->fresh()->opened_at)->toBeNull();
 });
