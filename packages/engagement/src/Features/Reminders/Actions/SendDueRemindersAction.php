@@ -10,7 +10,9 @@ use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 final readonly class SendDueRemindersAction
@@ -18,6 +20,7 @@ final readonly class SendDueRemindersAction
     public function __construct(
         private ManageRemindersAction $reminderManager,
         private ReadDueRemindersQuery $dueReminders,
+        private Dispatcher $events,
     ) {}
 
     public function execute(): int
@@ -95,7 +98,11 @@ final readonly class SendDueRemindersAction
                     return false;
                 }
 
-                event(new ReminderDue(
+                if (! $this->events->hasListeners(ReminderDue::class)) {
+                    throw new RuntimeException('No reminder delivery listener is registered.');
+                }
+
+                $this->events->dispatch(new ReminderDue(
                     $lockedReminder->id,
                     $lockedReminder->recipient_type,
                     $lockedReminder->recipient_id,

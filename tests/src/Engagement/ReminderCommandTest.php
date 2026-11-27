@@ -208,3 +208,16 @@ it('bounds due reads and excludes expired reminders from active state', function
         ->and(array_column($state, 'id'))->not->toContain($expired->id)
         ->and($state)->toHaveCount(2);
 });
+
+it('does not report successful reminder delivery when no delivery listener is registered', function (): void {
+    Event::forget(ReminderDue::class);
+
+    $reminder = $this->manager->setReminder($this->recipient, $this->subject, 'before_start', [
+        'remind_at' => now()->subMinute(),
+    ]);
+
+    expect(Artisan::call('engagement:send-due-reminders'))->toBe(0)
+        ->and($reminder->fresh()->status)->toBe(ReminderStatus::Failed)
+        ->and($reminder->fresh()->sent_at)->toBeNull()
+        ->and($reminder->fresh()->failure_reason)->toContain('No reminder delivery listener');
+});
