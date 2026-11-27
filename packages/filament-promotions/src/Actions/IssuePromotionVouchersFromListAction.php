@@ -60,6 +60,9 @@ final class IssuePromotionVouchersFromListAction extends Action
 
                 $issue = static fn (): Collection => IssueVouchersFromPromotion::run($promotion, $count, $codePrefix);
                 $issued = $promotion->owner_type === null && $promotion->owner_id === null
+                    && OwnerContext::resolve() === null
+                    && ! config('promotions.features.owner.enabled', false)
+                    && ! config('vouchers.owner.enabled', false)
                     ? OwnerContext::withOwner(null, $issue)
                     : $issue();
 

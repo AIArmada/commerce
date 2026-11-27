@@ -6,9 +6,9 @@ namespace AIArmada\Promotions\Actions;
 
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -33,20 +33,22 @@ final class IssueVouchersFromPromotion
             throw new InvalidArgumentException('Voucher issue count must be between 1 and 100.');
         }
 
-        if (config('promotions.features.owner.enabled', false)) {
-            $promotion = OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
-        }
-
         $voucherService = $this->resolveVoucherService();
-        $owner = OwnerContext::fromTypeAndId($promotion->owner_type, $promotion->owner_id);
 
-        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-            throw new NoCurrentOwnerException(
-                'Issuing vouchers from a global promotion requires explicit global context. Use OwnerContext::withOwner(null, ...) before calling this action.'
-            );
-        }
+        return $promotion->getConnection()->transaction(function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
+            $promotion = Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
+            $owner = OwnerContext::resolve();
 
-        return OwnerContext::withOwner($owner, fn (): Collection => $promotion->getConnection()->transaction(function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
+            if ($promotion->owner_type === null && $promotion->owner_id === null) {
+                if (! OwnerContext::isExplicitGlobal()) {
+                    throw new NoCurrentOwnerException('Issuing vouchers from a global promotion requires explicit global context.');
+                }
+            } elseif ($owner === null
+                || $owner->getMorphClass() !== $promotion->owner_type
+                || (string) $owner->getKey() !== (string) $promotion->owner_id) {
+                throw new AuthorizationException('Promotion is not accessible in the current owner scope.');
+            }
+
             $issued = collect();
 
             for ($sequence = 1; $sequence <= $count; $sequence++) {
@@ -55,6 +57,7 @@ final class IssueVouchersFromPromotion
                     $overrides,
                 );
 
+                $payload['usage_limit'] = 1;
                 $payload['promotion_id'] = $promotion->id;
                 $payload['owner_type'] = $promotion->owner_type;
                 $payload['owner_id'] = $promotion->owner_id;
@@ -63,7 +66,7 @@ final class IssueVouchersFromPromotion
             }
 
             return $issued;
-        }));
+        });
     }
 
     /**

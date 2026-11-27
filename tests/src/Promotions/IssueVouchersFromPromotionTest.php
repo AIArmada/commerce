@@ -97,3 +97,28 @@ it('rejects unbounded promotion voucher issuance before any writes', function ()
     expect(fn () => IssueVouchersFromPromotion::run(new Promotion, count: 101))
         ->toThrow(InvalidArgumentException::class, 'between 1 and 100');
 });
+
+it('does not impersonate another promotion owner when promotion scoping is disabled', function (): void {
+    config()->set('promotions.features.owner.enabled', false);
+    config()->set('vouchers.owner.enabled', true);
+
+    $owner = new class extends Model {};
+    $owner->setAttribute('id', 'issuer-a');
+    $other = new class extends Model {};
+    $other->setAttribute('id', 'issuer-b');
+
+    $promotion = OwnerContext::withOwner($owner, function () use ($owner): Promotion {
+        $promotion = new Promotion([
+            'name' => 'Owned issuance',
+            'type' => PromotionType::Fixed,
+            'discount_value' => 100,
+        ]);
+        $promotion->assignOwner($owner);
+        $promotion->save();
+
+        return $promotion;
+    });
+
+    expect(fn () => OwnerContext::withOwner($other, fn () => IssueVouchersFromPromotion::run($promotion)))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+});
