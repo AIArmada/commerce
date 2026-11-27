@@ -84,7 +84,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
             return true;
         }
 
-        return $this->getShippingAddress($cart) !== null;
+        return $this->getShippingAddress($cart) !== null && $this->cartToPackages($cart) !== [];
     }
 
     public function getType(): string
@@ -110,6 +110,10 @@ class ShippingConditionProvider implements ConditionProviderInterface
 
         $origin = $this->getOriginAddress();
         $packages = $this->cartToPackages($cart);
+        if ($packages === []) {
+            return null;
+        }
+
         $options = ['cart_total' => 0, 'item_count' => 0, 'currency' => CartMoney::currency()];
 
         foreach ($cart->getItems() as $item) {
@@ -217,18 +221,30 @@ class ShippingConditionProvider implements ConditionProviderInterface
     {
         $packages = [];
         $totalValue = 0;
+        $requiresShipping = false;
 
         foreach ($cart->getItems() as $item) {
-            $totalValue += $item->getRawSubtotal();
             $quantity = max(1, (int) $item->quantity);
             $components = ComponentLines::fromCartItem($item);
 
             if ($components !== []) {
                 $declaredValue = $item->getRawSubtotal();
                 $allocatedDeclaredValue = false;
+                $hasPhysicalComponent = false;
 
                 foreach (ComponentLines::expand($components, $quantity) as $component) {
-                    if (! $component['requires_shipping'] || $component['weight'] === null) {
+                    if (! $component['requires_shipping']) {
+                        continue;
+                    }
+
+                    $requiresShipping = true;
+
+                    if (! $hasPhysicalComponent) {
+                        $totalValue += $declaredValue;
+                        $hasPhysicalComponent = true;
+                    }
+
+                    if ($component['weight'] === null) {
                         continue;
                     }
 
@@ -255,6 +271,9 @@ class ShippingConditionProvider implements ConditionProviderInterface
             if ($item->getAttribute('requires_shipping') === false) {
                 continue;
             }
+
+            $requiresShipping = true;
+            $totalValue += $item->getRawSubtotal();
 
             $attributes = [
                 'weight_grams' => $item->getAttribute('weight_grams'),
@@ -287,7 +306,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
             );
         }
 
-        if ($packages === []) {
+        if ($packages === [] && $requiresShipping) {
             return [new PackageData(weight: 0, declaredValue: $totalValue)];
         }
 
