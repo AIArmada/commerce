@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
+use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 use Illuminate\Support\Facades\Gate;
@@ -171,4 +172,19 @@ it('blocks syncing global rows without explicit global context', function (): vo
 
     $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
+});
+
+it('rejects synchronization without a tracking number at the domain boundary', function (): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-DOMAIN-NO-TRACKING',
+        'customer_code' => 'CUST',
+        'tracking_number' => null,
+    ]);
+
+    $service = Mockery::mock(JntTrackingService::class);
+    $service->shouldNotReceive('syncOrderTracking');
+    app()->instance(JntTrackingService::class, $service);
+
+    expect(fn () => app(SyncStoredTracking::class)->execute($order->id))
+        ->toThrow(DomainException::class);
 });

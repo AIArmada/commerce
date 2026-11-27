@@ -6,7 +6,7 @@ namespace AIArmada\FilamentJnt\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Services\JntTrackingService;
+use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
@@ -49,8 +49,7 @@ final class SyncTrackingAction
                 }
 
                 try {
-                    $trackingService = app(JntTrackingService::class);
-                    $trackingService->syncOrderTracking($record);
+                    app(SyncStoredTracking::class)->execute((string) $record->getKey());
 
                     $record->refresh();
 
