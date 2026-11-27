@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CommunicationContextData;
@@ -47,7 +48,7 @@ class CommunicationRecorderService implements CommunicationRecorder
 
     public function markSending(string $communicationId, string $deliveryId): void
     {
-        $delivery = CommunicationDelivery::query()->find($deliveryId);
+        $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
 
         if ($delivery === null || $delivery->cancelled_at !== null) {
             return;
@@ -72,7 +73,7 @@ class CommunicationRecorderService implements CommunicationRecorder
 
     public function markSent(string $communicationId, string $deliveryId, array $result): void
     {
-        $delivery = CommunicationDelivery::query()->find($deliveryId);
+        $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
 
         if ($delivery === null) {
             return;
@@ -88,7 +89,7 @@ class CommunicationRecorderService implements CommunicationRecorder
 
     public function markFailed(string $communicationId, string $deliveryId, string $failureMessage): void
     {
-        $delivery = CommunicationDelivery::query()->find($deliveryId);
+        $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
 
         if ($delivery === null) {
             return;
@@ -110,9 +111,34 @@ class CommunicationRecorderService implements CommunicationRecorder
             return;
         }
 
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
+
         $communication->status = CommunicationStatus::Cancelled;
         $communication->cancelled_at = CarbonImmutable::now();
         $communication->save();
+    }
+
+    private function deliveryForCommunication(string $communicationId, string $deliveryId): ?CommunicationDelivery
+    {
+        $delivery = CommunicationDelivery::query()
+            ->where('communication_id', $communicationId)
+            ->find($deliveryId);
+
+        if ($delivery === null) {
+            return null;
+        }
+
+        if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId);
+        }
+
+        if (Communication::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
+        }
+
+        return $delivery;
     }
 
     private function recalculateCommunicationStatus(string $communicationId): void

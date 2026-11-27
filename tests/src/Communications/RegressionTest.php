@@ -765,3 +765,22 @@ test('attachment storage fields are validated server-side', function (): void {
 
     expect($attachment->exists)->toBeTrue();
 });
+
+test('communication recorder cannot mutate a delivery belonging to another communication', function (): void {
+    $first = regressionCommunication();
+    $second = regressionCommunication();
+    $delivery = regressionDelivery($second);
+    $recorder = app(CommunicationRecorder::class);
+
+    $recorder->markSending($first->id, $delivery->id);
+    $recorder->markSent($first->id, $delivery->id, ['provider_message_id' => 'wrong']);
+    $recorder->markFailed($first->id, $delivery->id, 'wrong communication');
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Pending)
+        ->and($delivery->fresh()->provider_message_id)->toBeNull()
+        ->and($first->fresh()->status)->toBe(CommunicationStatus::Draft);
+
+    $recorder->markSending($second->id, $delivery->id);
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sending);
+});
