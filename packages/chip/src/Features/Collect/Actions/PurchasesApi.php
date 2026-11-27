@@ -984,7 +984,13 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
                 TaxPercent::normalize($product['tax_percent']);
             }
 
-            $subtotal += $totalPriceOverride ?? ProductData::multiplyMinorUnits($price, (string) $quantity);
+            $lineTotal = $totalPriceOverride ?? ProductData::multiplyMinorUnits($price, (string) $quantity);
+
+            if ($lineTotal > PHP_INT_MAX - $subtotal) {
+                throw new ChipValidationException('Purchase subtotal exceeds the supported range.');
+            }
+
+            $subtotal += $lineTotal;
         }
 
         $this->assertCappedLength($data['purchase'], 'notes', 10000, 'Purchase notes');
@@ -1057,7 +1063,11 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
             return $amount;
         }
 
-        if (is_float($amount) && is_finite($amount) && floor($amount) === $amount) {
+        if (is_float($amount)
+            && is_finite($amount)
+            && floor($amount) === $amount
+            && $amount >= (float) PHP_INT_MIN
+            && $amount < -(float) PHP_INT_MIN) {
             return (int) $amount;
         }
 
