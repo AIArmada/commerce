@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Concurrency;
 
 describe('RateShoppingEngine', function (): void {
+    beforeEach(function (): void {
+        config(['shipping.features.owner.enabled' => false]);
+    });
+
     it('can get all rates from multiple carriers', function (): void {
         // Mock ShippingManager
         $shippingManager = Mockery::mock(ShippingManager::class);
@@ -39,14 +43,14 @@ describe('RateShoppingEngine', function (): void {
         $shippingManager->shouldReceive('driver')->with('ups')->andReturn($upsDriver);
 
         // Mock Concurrency to return the rates directly
-        $fedexRates = collect([
+        $fedexRates = [
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
             new RateQuoteData(carrier: 'fedex', service: 'express', rate: 2500, currency: 'USD', estimatedDays: 1),
-        ]);
+        ];
 
-        $upsRates = collect([
+        $upsRates = [
             new RateQuoteData(carrier: 'ups', service: 'ground', rate: 1400, currency: 'USD', estimatedDays: 4),
-        ]);
+        ];
 
         Concurrency::shouldReceive('run')
             ->once()
@@ -118,12 +122,12 @@ describe('RateShoppingEngine', function (): void {
         Concurrency::shouldReceive('run')
             ->once()
             ->andReturn([
-                'fedex' => collect([
+                'fedex' => [
                     new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-                ]),
-                'ups' => collect([
+                ],
+                'ups' => [
                     new RateQuoteData(carrier: 'ups', service: 'ground', rate: 1400, currency: 'USD', estimatedDays: 4),
-                ]),
+                ],
             ]);
 
         $engine = new RateShoppingEngine($shippingManager, [
@@ -297,10 +301,10 @@ describe('RateShoppingEngine', function (): void {
         Concurrency::shouldReceive('run')
             ->once()
             ->andReturn([
-                'fedex' => collect([
+                'fedex' => [
                     new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 5),
                     new RateQuoteData(carrier: 'fedex', service: 'express', rate: 2500, currency: 'USD', estimatedDays: 1),
-                ]),
+                ],
             ]);
 
         $engine = new RateShoppingEngine($shippingManager, [
@@ -353,12 +357,12 @@ describe('RateShoppingEngine', function (): void {
         Concurrency::shouldReceive('run')
             ->once()
             ->andReturn([
-                'fedex' => collect([
+                'fedex' => [
                     new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1500, currency: 'USD', estimatedDays: 3),
-                ]),
-                'ups' => collect([
+                ],
+                'ups' => [
                     new RateQuoteData(carrier: 'ups', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 4),
-                ]),
+                ],
             ]);
 
         $engine = new RateShoppingEngine($shippingManager, [

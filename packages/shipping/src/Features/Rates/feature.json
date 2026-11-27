@@ -7,6 +7,9 @@
     ],
     "table:shipping_zones": [
       "AIArmada\\Shipping\\Features\\Rates\\Actions\\WriteRateConfiguration"
+    ],
+    "store:shipping-rate-cache": [
+      "AIArmada\\Shipping\\Features\\Rates\\Persistence\\RateCache"
     ]
   },
   "extensions": {}

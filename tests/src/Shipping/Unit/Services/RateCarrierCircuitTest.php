@@ -28,6 +28,10 @@ function circuitTestAddresses(): array
 }
 
 describe('Rate carrier circuit breaker and fan-out timeout', function (): void {
+    beforeEach(function (): void {
+        config(['shipping.features.owner.enabled' => false]);
+    });
+
     it('skips carriers past the consecutive failure threshold', function (): void {
         [$origin, $destination, $packages] = circuitTestAddresses();
 
@@ -55,9 +59,9 @@ describe('Rate carrier circuit breaker and fan-out timeout', function (): void {
     it('passes the configured timeout to concurrent carrier fan-out', function (): void {
         [$origin, $destination, $packages] = circuitTestAddresses();
 
-        $rates = collect([
+        $rates = [
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 3),
-        ]);
+        ];
 
         $seenTimeout = null;
 

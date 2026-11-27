@@ -11,14 +11,12 @@ use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Features\Rates\Persistence\RateCache;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Strategies\CheapestRateStrategy;
 use AIArmada\Shipping\Strategies\FastestRateStrategy;
 use AIArmada\Shipping\Strategies\PreferredCarrierStrategy;
-use Illuminate\Cache\TaggableStore;
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Concurrency;
 use Throwable;
 
@@ -29,12 +27,7 @@ class RateShoppingEngine
 {
     protected RateSelectionStrategyInterface $strategy;
 
-    /**
-     * Rate cache keys written through this instance.
-     *
-     * @var array<int, string>
-     */
-    protected array $trackedCacheKeys = [];
+    private readonly RateCache $cache;
 
     /**
      * @param  array<string, mixed>  $config
@@ -44,6 +37,7 @@ class RateShoppingEngine
         protected readonly array $config = []
     ) {
         $this->strategy = $this->resolveStrategy();
+        $this->cache = new RateCache;
     }
 
     /**
@@ -68,19 +62,7 @@ class RateShoppingEngine
         }
 
         if ($cacheTtl > 0) {
-            $repository = $this->cacheRepository();
-
-            if ($repository->getStore() instanceof TaggableStore) {
-                return $repository->tags($this->cacheTags())->remember($cacheKey, $cacheTtl, function () use ($origin, $destination, $packages, $options) {
-                    return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options);
-                });
-            }
-
-            $this->trackedCacheKeys[] = $cacheKey;
-
-            return $repository->remember($cacheKey, $cacheTtl, function () use ($origin, $destination, $packages, $options) {
-                return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options);
-            });
+            return $this->cache->remember($this->cacheTags(), $cacheKey, $cacheTtl, fn (): Collection => $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options));
         }
 
         return $this->fetchRatesFromAllCarriers($origin, $destination, $packages, $options);
@@ -171,19 +153,7 @@ class RateShoppingEngine
      */
     public function clearCache(): void
     {
-        $repository = $this->cacheRepository();
-
-        if ($repository->getStore() instanceof TaggableStore) {
-            $repository->tags($this->cacheTags())->flush();
-
-            return;
-        }
-
-        foreach (array_unique($this->trackedCacheKeys) as $cacheKey) {
-            $repository->forget($cacheKey);
-        }
-
-        $this->trackedCacheKeys = [];
+        $this->cache->clear($this->cacheTags());
     }
 
     /**
@@ -290,7 +260,7 @@ class RateShoppingEngine
      */
     public function recordCarrierSuccess(string $carrierCode): void
     {
-        $this->cacheRepository()->forget($this->circuitCacheKey($carrierCode));
+        $this->cache->forgetFailure($this->circuitCacheKey($carrierCode));
     }
 
     /**
@@ -307,16 +277,7 @@ class RateShoppingEngine
             return;
         }
 
-        $repository = $this->cacheRepository();
-        $key = $this->circuitCacheKey($carrierCode);
-        $failures = (int) $repository->get($key, 0) + 1;
-
-        $repository->put($key, $failures, $this->circuitCooldownSeconds());
-    }
-
-    protected function cacheRepository(): CacheRepository
-    {
-        return Cache::store();
+        $this->cache->recordFailure($this->circuitCacheKey($carrierCode), $this->circuitCooldownSeconds());
     }
 
     protected function isCircuitOpen(string $carrierCode): bool
@@ -327,7 +288,7 @@ class RateShoppingEngine
             return false;
         }
 
-        return (int) $this->cacheRepository()->get($this->circuitCacheKey($carrierCode), 0) >= $threshold;
+        return $this->cache->failures($this->circuitCacheKey($carrierCode)) >= $threshold;
     }
 
     protected function circuitCacheKey(string $carrierCode): string
