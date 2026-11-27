@@ -15,6 +15,7 @@ use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationSentActi
 use AIArmada\Communications\Features\Delivery\Actions\RecordNotificationFailureAction;
 use AIArmada\Communications\Features\Delivery\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Features\Aggregate\Actions\RedactCommunicationPayloadAction;
+use AIArmada\Communications\Features\Delivery\Actions\RedactDeliveryPayloadAction;
 use AIArmada\Communications\Features\Delivery\Actions\RetryCommunicationDeliveryAction;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -192,9 +193,9 @@ function actionGuardRun(
         'complete-attempt' => app(CompleteDeliveryAttemptAction::class)->handle($attempt->id),
         'recalculate-status' => app(RecalculateCommunicationStatusAction::class)->handle($communication->id),
         'redact-content' => app(RedactCommunicationPayloadAction::class)->handleContent($content->id),
-        'redact-delivery' => app(RedactCommunicationPayloadAction::class)->handleDelivery($delivery->id),
-        'redact-attempt' => app(RedactCommunicationPayloadAction::class)->handleAttempt($attempt->id),
-        'redact-event' => app(RedactCommunicationPayloadAction::class)->handleEvent($event->id),
+        'redact-delivery' => app(RedactDeliveryPayloadAction::class)->handleDelivery($delivery->id),
+        'redact-attempt' => app(RedactDeliveryPayloadAction::class)->handleAttempt($attempt->id),
+        'redact-event' => app(RedactDeliveryPayloadAction::class)->handleEvent($event->id),
         'attach-reference' => app(CommunicationReferenceWriter::class)->handle(
             $communication->id,
             'events',

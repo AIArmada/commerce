@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\ProviderEventData;
+use AIArmada\Communications\Features\Delivery\Api\ProviderEventProcessor;
 use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
@@ -18,7 +19,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-final class ApplyProviderEventAction
+final class ApplyProviderEventAction implements ProviderEventProcessor
 {
     public function __construct(
         private readonly PayloadRedactor $redactor,
@@ -44,6 +45,11 @@ final class ApplyProviderEventAction
         'bounce', 'complaint', 'delivery', 'open', 'read', 'click',
         'send', 'reject', 'failed', 'accept', 'suppress', 'unsubscribe',
     ];
+
+    public function process(ProviderEventData $eventData): void
+    {
+        $this->handle($eventData);
+    }
 
     public function handle(ProviderEventData $eventData): CommunicationDelivery
     {

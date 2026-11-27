@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Features\Delivery\Api\ProviderEventProcessor;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Contracts\ProviderEventNormalizer;
@@ -38,7 +38,7 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(
         ProviderEventNormalizer $normalizer,
-        ApplyProviderEventAction $applyAction,
+        ProviderEventProcessor $applyAction,
         IdempotencyLock $lock,
     ): void {
         $fingerprint = $this->fingerprint();
@@ -74,7 +74,7 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
                         );
                     }
 
-                    $applyAction->handle($eventData);
+                    $applyAction->process($eventData);
                 },
             );
 
