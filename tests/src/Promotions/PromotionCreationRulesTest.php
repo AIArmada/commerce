@@ -33,6 +33,11 @@ it('rejects invalid promotion input', function (array $overrides): void {
 })->with([
     'missing name' => [['name' => '']],
     'unknown type' => [['type' => 'bogus']],
+    'array type' => [['type' => ['percentage']]],
+    'array code' => [['code' => ['invalid']]],
+    'numeric code' => [['code' => 123]],
+    'array date' => [['starts_at' => ['2026-02-01']]],
+    'boolean date' => [['ends_at' => true]],
     'percentage above 100' => [['discount_value' => 500]],
     'fractional percentage' => [['discount_value' => 15.5]],
     'negative percentage' => [['discount_value' => -5]],

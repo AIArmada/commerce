@@ -9,9 +9,11 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -34,6 +36,7 @@ final class IssueVouchersFromPromotion
         }
 
         $voucherService = $this->resolveVoucherService();
+        $this->assertSharedConnection($promotion);
 
         return $promotion->getConnection()->transaction(function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
             $promotion = Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
@@ -67,6 +70,21 @@ final class IssueVouchersFromPromotion
 
             return $issued;
         });
+    }
+
+    private function assertSharedConnection(Promotion $promotion): void
+    {
+        $voucherClass = 'AIArmada\\\\Vouchers\\\\Models\\\\Voucher';
+
+        if (! is_subclass_of($voucherClass, Model::class)) {
+            throw new RuntimeException('Voucher issuance requires the vouchers package to be installed.');
+        }
+
+        $voucher = new $voucherClass;
+
+        if ($voucher->getConnection() !== $promotion->getConnection()) {
+            throw new LogicException('Promotion voucher issuance requires a shared database connection.');
+        }
     }
 
     /**

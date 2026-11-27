@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -213,8 +212,10 @@ class Promotion extends Model implements Auditable
             $voucher = new $voucherModelClass;
             $table = $voucher->getTable();
 
-            return Schema::hasTable($table)
-                && Schema::hasColumn($table, 'promotion_id');
+            $schema = $voucher->getConnection()->getSchemaBuilder();
+
+            return $schema->hasTable($table)
+                && $schema->hasColumn($table, 'promotion_id');
         } catch (Throwable) {
             return false;
         }

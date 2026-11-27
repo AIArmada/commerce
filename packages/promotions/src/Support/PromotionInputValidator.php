@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use InvalidArgumentException;
 use Throwable;
 
@@ -24,7 +25,7 @@ final readonly class PromotionInputValidator
         $type = $data['type'] ?? PromotionType::Percentage;
 
         if (! $type instanceof PromotionType) {
-            $type = PromotionType::tryFrom((string) $type);
+            $type = is_string($type) ? PromotionType::tryFrom($type) : null;
         }
 
         if (! $type instanceof PromotionType) {
@@ -76,6 +77,10 @@ final readonly class PromotionInputValidator
             return null;
         }
 
+        if (! is_string($value) && ! $value instanceof DateTimeInterface) {
+            throw new InvalidArgumentException("Promotion {$field} is not a valid date.");
+        }
+
         try {
             return CarbonImmutable::parse($value);
         } catch (Throwable) {
@@ -89,7 +94,11 @@ final readonly class PromotionInputValidator
             return;
         }
 
-        $normalized = mb_strtoupper(mb_trim((string) $code));
+        if (! is_string($code)) {
+            throw new InvalidArgumentException('The promotion code must be a string.');
+        }
+
+        $normalized = mb_strtoupper(mb_trim($code));
 
         if ($normalized === '') {
             return;
