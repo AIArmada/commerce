@@ -116,18 +116,21 @@ class RateShoppingEngine implements ShopRates
                 continue;
             }
 
-            $driver = $this->shippingManager->driver($carrierCode);
+            try {
+                $driver = $this->shippingManager->driver($carrierCode);
 
-            if ($driver->servicesDestination($destination)) {
-                try {
-                    $carrierRates = $driver->getRates($origin, $destination, $packages, $options);
+                if (! $driver->servicesDestination($destination)) {
                     $this->recordCarrierSuccess($carrierCode);
-                    $rates = $rates->merge($carrierRates);
-                } catch (Throwable $e) {
-                    // Log error but continue with other carriers
-                    $this->recordCarrierFailure($carrierCode);
-                    report($e);
+
+                    continue;
                 }
+
+                $carrierRates = $driver->getRates($origin, $destination, $packages, $options);
+                $this->recordCarrierSuccess($carrierCode);
+                $rates = $rates->merge($carrierRates);
+            } catch (Throwable $e) {
+                $this->recordCarrierFailure($carrierCode);
+                report($e);
             }
         }
 
@@ -219,6 +222,8 @@ class RateShoppingEngine implements ShopRates
                         );
 
                         if (! $driver->servicesDestination($destination)) {
+                            app(self::class)->recordCarrierSuccess($carrierCode);
+
                             return [];
                         }
 
@@ -333,15 +338,27 @@ class RateShoppingEngine implements ShopRates
     {
         $fallbackEnabled = $this->config['fallback_to_manual'] ?? true;
 
-        if (! $fallbackEnabled) {
+        if (! $fallbackEnabled || ! $this->shippingManager->hasDriver('manual')) {
             return null;
         }
 
-        return $this->shippingManager->driver('manual')->getRates(
+        try {
+            $driver = $this->shippingManager->driver('manual');
+
+            if (! $driver->servicesDestination($destination)) {
+                return null;
+            }
+
+            return $driver->getRates(
                 new AddressData(name: '', phone: '', line1: '', postcode: ''),
                 $destination,
-                $packages
+                $packages,
             )[0] ?? null;
+        } catch (Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     /**
