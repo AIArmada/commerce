@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Http\Controllers;
+namespace AIArmada\Communications\EntryPoints\Http\Controllers;
 
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
 use AIArmada\Communications\Jobs\ProcessWebhookEventJob;

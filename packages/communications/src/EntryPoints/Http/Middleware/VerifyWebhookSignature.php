@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Http\Middleware;
+namespace AIArmada\Communications\EntryPoints\Http\Middleware;
 
 use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
 use Carbon\CarbonImmutable;

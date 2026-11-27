@@ -26,7 +26,7 @@ use AIArmada\Communications\Contracts\RateLimiter as RateLimiterContract;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Contracts\SuppressionResolver;
 use AIArmada\Communications\Contracts\WebhookOwnerResolver;
-use AIArmada\Communications\Http\Livewire\InboxIndex;
+use AIArmada\Communications\EntryPoints\Http\Livewire\InboxIndex;
 use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
 use AIArmada\Communications\Listeners\AutoCaptureNotificationListener;
 use AIArmada\Communications\Listeners\RecordNativeNotificationSending;

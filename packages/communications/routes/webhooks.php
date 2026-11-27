@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Http\Controllers\WebhookController;
+use AIArmada\Communications\EntryPoints\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::group([

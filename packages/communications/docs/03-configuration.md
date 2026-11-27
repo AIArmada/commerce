@@ -173,7 +173,7 @@ Optional integrations can be enabled explicitly when the package is installed:
 ## Webhooks
 
 ```php
-use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 
 'webhooks' => [
     'middleware' => ['api', 'throttle:communications-webhooks', VerifyWebhookSignature::class],

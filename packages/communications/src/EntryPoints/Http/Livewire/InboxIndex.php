@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Http\Livewire;
+namespace AIArmada\Communications\EntryPoints\Http\Livewire;
 
 use AIArmada\Communications\Models\NotificationInbox;
 use Carbon\CarbonImmutable;
