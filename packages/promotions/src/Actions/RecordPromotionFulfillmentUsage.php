@@ -9,10 +9,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Actions\MergeOrderMetadata;
 use AIArmada\Promotions\Models\Promotion;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 use Throwable;
 
 final readonly class RecordPromotionFulfillmentUsage
@@ -67,7 +66,11 @@ final readonly class RecordPromotionFulfillmentUsage
 
             return;
         }
-        DB::transaction(function () use ($order, $allocations, $owner, $ownerType, $ownerId): void {
+        if ($order->getConnection()->getName() !== (new Promotion)->getConnection()->getName()) {
+            throw new \LogicException('Promotion usage and order metadata require the same database connection.');
+        }
+
+        $order->getConnection()->transaction(function () use ($order, $allocations, $owner, $ownerType, $ownerId): void {
             $lockedOrder = Order::query()
                 ->withoutGlobalScope(OwnerScope::class)
                 ->whereKey($order->getKey())
@@ -182,29 +185,12 @@ final readonly class RecordPromotionFulfillmentUsage
     /**
      * @param  list<string>  $countedPromotionIds
      */
-    private function persistCountedPromotionIds(mixed $order, mixed $owner, array $countedPromotionIds): void
+    private function persistCountedPromotionIds(Order $order, ?\Illuminate\Database\Eloquent\Model $owner, array $countedPromotionIds): void
     {
-        if ($countedPromotionIds === []) {
-            return;
-        }
-
-        if (! is_object($order) || ! method_exists($order, 'getAttribute') || ! $order->exists) {
-            return;
-        }
-
-        $metadata = $order->getAttribute('metadata');
-
-        if (! is_array($metadata)) {
-            $metadata = [];
-        }
-
-        $metadata['promotions_usage_counted'] = $countedPromotionIds;
-        OwnerContext::withOwner($owner, static function () use ($order, $metadata): void {
-            $saved = $order->forceFill(['metadata' => $metadata])->saveQuietly();
-
-            if ($saved === false) {
-                throw new RuntimeException(sprintf('Promotion usage stamp could not be persisted for order [%s].', (string) $order->getKey()));
-            }
+        OwnerContext::withOwner($owner, static function () use ($order, $countedPromotionIds): void {
+            app(MergeOrderMetadata::class)->handle((string) $order->getKey(), [
+                'promotions_usage_counted' => $countedPromotionIds,
+            ]);
         });
     }
 

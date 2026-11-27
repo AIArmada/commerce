@@ -99,9 +99,9 @@ it('rejects affiliate program ids outside the current owner scope on create', fu
     });
 
     $page = app(CreateVoucher::class);
-    $mutate = new ReflectionMethod(CreateVoucher::class, 'mutateFormDataBeforeCreate');
+    $mutate = new ReflectionMethod(CreateVoucher::class, 'handleRecordCreation');
 
-    expect(fn (): array => OwnerContext::withOwner($ownerA, function () use ($page, $mutate, $foreignProgram): array {
+    expect(fn () => OwnerContext::withOwner($ownerA, function () use ($page, $mutate, $foreignProgram) {
         return $mutate->invoke($page, [
             'code' => 'PAGE-FOREIGN-PROGRAM',
             'type' => VoucherType::Fixed->value,

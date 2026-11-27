@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Compound\Matchers;
 
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Vouchers\Compound\Enums\ProductMatcherType;
-use AIArmada\Vouchers\Contracts\ProductMatcherInterface;
+use AIArmada\Vouchers\Runtime\ProductMatcherInterface;
 use Illuminate\Support\Collection;
 
 /**

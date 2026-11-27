@@ -26,7 +26,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\ModelStates\HasStates;
@@ -626,7 +625,7 @@ class Voucher extends Model implements Auditable
 
     public function delete(): ?bool
     {
-        return DB::transaction(fn (): ?bool => parent::delete());
+        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
     }
 
     protected function casts(): array

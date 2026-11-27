@@ -9,7 +9,7 @@ use AIArmada\Vouchers\Compound\Matchers\CategoryMatcher;
 use AIArmada\Vouchers\Compound\Matchers\CompositeMatcher;
 use AIArmada\Vouchers\Compound\Matchers\PriceMatcher;
 use AIArmada\Vouchers\Compound\Matchers\SkuMatcher;
-use AIArmada\Vouchers\Contracts\ProductMatcherInterface;
+use AIArmada\Vouchers\Runtime\ProductMatcherInterface;
 use Illuminate\Support\Collection;
 
 /**

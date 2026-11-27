@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Compound\Conditions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Vouchers\Compound\Enums\ItemSelectionStrategy;
-use AIArmada\Vouchers\Contracts\ProductMatcherInterface;
+use AIArmada\Vouchers\Runtime\ProductMatcherInterface;
 use Illuminate\Support\Collection;
 
 /**

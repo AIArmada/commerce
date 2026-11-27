@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
 use Carbon\CarbonImmutable;
 
@@ -19,6 +20,10 @@ final readonly class TransitionWalletTimestamp implements WalletTimestampTransit
         $column = $redeemed ? 'redeemed_at' : 'claimed_at';
 
         $wallet->getConnection()->transaction(function () use ($wallet, $column): void {
+            if (config('vouchers.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(VoucherWallet::class, $wallet->getKey());
+            }
+
             $fresh = $wallet->newQuery()
                 ->whereKey($wallet->getKey())
                 ->lockForUpdate()

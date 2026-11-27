@@ -50,7 +50,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
             /** @var VoucherModel|null $lockedVoucher */
             $lockedVoucher = $this->voucherQuery()
                 ->where('code', $this->normalizeCode($code))
-                ->when($voucherModel !== null, fn ($query) => $query->whereKey($voucherModel->getKey()))
+                ->when($voucherModel !== null, fn ($query) => $query->whereKey($voucherModel?->getKey()))
                 ->lockForUpdate()
                 ->first();
 
@@ -96,6 +96,10 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
 
             if (! $lockedVoucher->hasStarted()) {
                 throw InvalidVoucherException::notStarted($lockedVoucher->code);
+            }
+
+            if ($lockedVoucher->status instanceof Depleted) {
+                throw VoucherUsageLimitException::globalLimit($lockedVoucher->code);
             }
 
             if (! $lockedVoucher->status->canBeUsed()) {

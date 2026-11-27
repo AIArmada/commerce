@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Contracts;
+namespace AIArmada\Vouchers\Runtime;
 
 use AIArmada\Cart\Models\CartItem;
 use Illuminate\Support\Collection;

@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Compound\Matchers;
 
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Vouchers\Compound\Enums\ProductMatcherType;
-use AIArmada\Vouchers\Contracts\ProductMatcherInterface;
+use AIArmada\Vouchers\Runtime\ProductMatcherInterface;
 
 /**
  * Composite matcher that combines multiple matchers with AND/OR logic.
