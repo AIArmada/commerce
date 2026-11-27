@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
+use Illuminate\Support\Collection;
 use Carbon\CarbonImmutable;
 
 final readonly class ArchiveExperiments
@@ -18,6 +19,7 @@ final readonly class ArchiveExperiments
             'enabled' => 'growth.features.owner.enabled',
         ]);
 
+        /** @var Collection<int, array{archived: int}> $results */
         $results = OwnerScopeOverride::withoutIncludeGlobal(fn () => $runner->forEach(function () use ($threshold, $dryRun): array {
             $archived = 0;
 
@@ -50,6 +52,6 @@ final readonly class ArchiveExperiments
             return ['archived' => $archived];
         }));
 
-        return (int) collect($results)->sum('archived');
+        return (int) $results->sum('archived');
     }
 }

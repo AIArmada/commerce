@@ -42,7 +42,7 @@ final class DefaultRequestExperimentSubjectResolver implements RequestExperiment
     {
         $user = $this->resolveUser($request);
 
-        if (! $user instanceof Model || ! $user instanceof Authenticatable) {
+        if (! $user instanceof Model) {
             return null;
         }
 

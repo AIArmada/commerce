@@ -202,11 +202,9 @@ final class BuildExperimentSignalProperties
         $owner = OwnerContext::fromTypeAndId($assignment->owner_type, $assignment->owner_id);
 
         if ($owner === null) {
-            /** @phpstan-ignore-next-line dynamic Eloquent scope */
             return $query->globalOnly();
         }
 
-        /** @phpstan-ignore-next-line dynamic Eloquent scope */
         return $query->forOwner($owner, includeGlobal: false);
     }
 

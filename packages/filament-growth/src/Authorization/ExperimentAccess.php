@@ -105,19 +105,20 @@ final class ExperimentAccess
             if ($experiment instanceof Experiment
                 && (string) $experiment->getKey() === (string) $variant->experiment_id
                 && $experiment->relationLoaded('trackedProperty')) {
-                return self::canMutateExperiment($experiment);
+                return (! Variant::ownerScopeConfig()->enabled || self::sameOwnerTuple($variant, $experiment))
+                    && self::canMutateExperiment($experiment);
             }
         }
 
-        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)
-            ->whereKey($variant->experiment_id)
+        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)
+            ->whereKey($variant->getKey())
             ->exists();
     }
 
-    private static function sameOwnerTuple(Experiment $experiment, TrackedProperty $property): bool
+    private static function sameOwnerTuple(Experiment | Variant $experiment, TrackedProperty | Experiment $property): bool
     {
-        $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
-        $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
+        $experimentColumns = OwnerTupleColumns::forModelClass($experiment::class);
+        $propertyColumns = OwnerTupleColumns::forModelClass($property::class);
 
         $experimentType = $experiment->getAttribute($experimentColumns->ownerTypeColumn);
         $experimentId = $experiment->getAttribute($experimentColumns->ownerIdColumn);

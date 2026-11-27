@@ -13,7 +13,9 @@ final readonly class UpdateGrowthSettings
     {
         try {
             $settings = app(GrowthSettings::class);
-            $settings->experimentMiddlewareEnabled;
+            if ($settings->experimentMiddlewareEnabled === $enabled) {
+                return;
+            }
         } catch (MissingSettings) {
             $settings = new GrowthSettings(['experimentMiddlewareEnabled' => $enabled]);
         }

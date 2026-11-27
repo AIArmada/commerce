@@ -26,7 +26,6 @@ final class ExperimentWinnersWidget extends Widget
 
     protected int | string | array $columnSpan = 'full';
 
-    /** @phpstan-ignore-next-line property.defaultValue */
     protected string $view = 'filament-growth::widgets.experiment-winners';
 
     public static function canView(): bool

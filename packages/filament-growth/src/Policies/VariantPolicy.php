@@ -49,12 +49,12 @@ final class VariantPolicy
 
     public function update(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentAccess::canMutateVariant($variant);
     }
 
     public function delete(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentAccess::canMutateVariant($variant);
     }
 
     public function deleteAny(Authorizable $user): bool
@@ -64,7 +64,7 @@ final class VariantPolicy
 
     public function restore(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentAccess::canMutateVariant($variant);
     }
 
     public function restoreAny(Authorizable $user): bool
@@ -74,7 +74,7 @@ final class VariantPolicy
 
     public function forceDelete(Authorizable $user, Variant $variant): bool
     {
-        return ExperimentOwnership::scopeVariants(Variant::query(), writable: true)->whereKey($variant->getKey())->exists();
+        return ExperimentAccess::canMutateVariant($variant);
     }
 
     public function forceDeleteAny(Authorizable $user): bool

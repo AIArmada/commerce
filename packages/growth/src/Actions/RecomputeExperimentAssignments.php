@@ -7,6 +7,7 @@ namespace AIArmada\Growth\Actions;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Growth\Models\Assignment;
+use Illuminate\Support\Collection;
 
 final readonly class RecomputeExperimentAssignments
 {
@@ -17,6 +18,7 @@ final readonly class RecomputeExperimentAssignments
     {
         $runner = new OwnerBatchRunner(Assignment::class, ['enabled' => 'growth.features.owner.enabled']);
 
+        /** @var Collection<int, array{changed: int, quarantined: int, unchanged: int}> $results */
         $results = OwnerScopeOverride::withoutIncludeGlobal(fn () => $runner->forEach(function () use ($dryRun): array {
             $counts = ['changed' => 0, 'quarantined' => 0, 'unchanged' => 0];
 
@@ -30,9 +32,9 @@ final readonly class RecomputeExperimentAssignments
         }));
 
         return [
-            'changed' => (int) collect($results)->sum('changed'),
-            'quarantined' => (int) collect($results)->sum('quarantined'),
-            'unchanged' => (int) collect($results)->sum('unchanged'),
+            'changed' => (int) $results->sum('changed'),
+            'quarantined' => (int) $results->sum('quarantined'),
+            'unchanged' => (int) $results->sum('unchanged'),
         ];
     }
 }

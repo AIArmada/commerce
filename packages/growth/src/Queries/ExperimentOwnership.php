@@ -111,14 +111,15 @@ final class ExperimentOwnership
      */
     public static function scopeOwner(Builder $query, bool $writable = false): Builder
     {
-        $model = $query->getModel();
+        /** @var class-string<Model> $modelClass */
+        $modelClass = $query->getModel()::class;
 
-        if (! method_exists($model, 'ownerScopeConfig')) {
+        if (! method_exists($modelClass, 'ownerScopeConfig')) {
             throw new InvalidArgumentException('Growth owner queries require an owner-scoped model.');
         }
 
         /** @var OwnerScopeConfig $config */
-        $config = $model::ownerScopeConfig();
+        $config = $modelClass::ownerScopeConfig();
 
         if (! $config->enabled) {
             return $query;

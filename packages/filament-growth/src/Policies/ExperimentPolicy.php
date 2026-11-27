@@ -50,12 +50,12 @@ final class ExperimentPolicy
 
     public function update(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentAccess::canMutateExperiment($experiment);
     }
 
     public function delete(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentAccess::canMutateExperiment($experiment);
     }
 
     public function deleteAny(Authorizable $user): bool
@@ -65,7 +65,7 @@ final class ExperimentPolicy
 
     public function restore(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentAccess::canMutateExperiment($experiment);
     }
 
     public function restoreAny(Authorizable $user): bool
@@ -75,7 +75,7 @@ final class ExperimentPolicy
 
     public function forceDelete(Authorizable $user, Experiment $experiment): bool
     {
-        return ExperimentOwnership::scopeExperiments(Experiment::query(), writable: true)->whereKey($experiment->getKey())->exists();
+        return ExperimentAccess::canMutateExperiment($experiment);
     }
 
     public function forceDeleteAny(Authorizable $user): bool
