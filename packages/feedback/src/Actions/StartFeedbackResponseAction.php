@@ -162,5 +162,4 @@ final class StartFeedbackResponseAction
             return $response;
         }, 5);
     }
-
 }

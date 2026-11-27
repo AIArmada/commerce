@@ -6,9 +6,9 @@ namespace AIArmada\Contacting\Features\ContactMethods\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
 use AIArmada\Contacting\Features\ContactMethods\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Actions\SynchronizePrimaryContactMethodAction;
-use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;

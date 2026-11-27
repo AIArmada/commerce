@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
 use AIArmada\Contacting\Data\ContactLinksData;
+use AIArmada\Contacting\Features\ContactMethods\Actions\BuildContactLinksAction;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;

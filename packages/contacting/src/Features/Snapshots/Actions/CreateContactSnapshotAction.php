@@ -37,8 +37,8 @@ final readonly class CreateContactSnapshotAction
     }
 
     /**
-     * @param iterable<string> $contactMethodIds
-     * @param iterable<string> $socialProfileIds
+     * @param  iterable<string>  $contactMethodIds
+     * @param  iterable<string>  $socialProfileIds
      * @return Collection<int, ContactSnapshot>
      */
     public function fromBundle(Model $snapshotable, iterable $contactMethodIds, iterable $socialProfileIds, ?string $reason = null): Collection

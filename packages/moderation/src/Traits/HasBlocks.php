@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Traits;
 
-use AIArmada\Moderation\Actions\ExpireDeletedEntityBlocksAction;
 use AIArmada\Moderation\Actions\BlockEntityAction;
-use AIArmada\Moderation\Support\ModerationModelGuard;
+use AIArmada\Moderation\Actions\ExpireDeletedEntityBlocksAction;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Models\Block;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,5 +83,4 @@ trait HasBlocks
         return BlockReason::tryFrom($reason)
             ?? throw new InvalidArgumentException(sprintf('Unknown block reason [%s].', $reason));
     }
-
 }

@@ -9,6 +9,7 @@ use AIArmada\Contacting\Drivers\PinnedPublicHtmlFetcher;
 use AIArmada\Contacting\Platform\ExtensionRegistry;
 use AIArmada\Contacting\Platform\FeatureCatalog;
 use AIArmada\Contacting\Platform\FeatureModule;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -40,7 +41,7 @@ final class ContactingServiceProvider extends PackageServiceProvider
             $module = $this->app->make($class);
 
             if (! $module instanceof FeatureModule) {
-                throw new \InvalidArgumentException("Invalid contacting feature module [{$class}].");
+                throw new InvalidArgumentException("Invalid contacting feature module [{$class}].");
             }
 
             $this->featureModules[$feature] = $module;

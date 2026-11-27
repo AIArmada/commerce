@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Customers\Models\Customer;

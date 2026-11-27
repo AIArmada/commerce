@@ -77,9 +77,8 @@ final readonly class RecordModerationAction
 
         $encoded = json_encode($metadata);
 
-        if ($encoded === false || strlen($encoded) > 65535) {
+        if ($encoded === false || mb_strlen($encoded) > 65535) {
             throw new InvalidArgumentException('Moderation metadata must not exceed 65535 bytes.');
         }
     }
-
 }

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Moderation\Traits;
 
 use AIArmada\Moderation\Actions\RecordModerationAction;
-use AIArmada\Moderation\Support\ModerationModelGuard;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -43,5 +43,4 @@ trait HasModerationActions
             notes: $notes,
         );
     }
-
 }

@@ -6,10 +6,10 @@ namespace AIArmada\Contacting\Features\SocialProfiles\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
-use AIArmada\Contacting\Features\SocialProfiles\Actions\SynchronizePrimarySocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
 use AIArmada\Contacting\Enums\SocialPlatform;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\SynchronizePrimarySocialProfileAction;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;

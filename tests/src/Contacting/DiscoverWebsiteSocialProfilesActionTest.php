@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
-use AIArmada\Contacting\Features\SocialProfiles\Actions\DiscoverWebsiteSocialProfilesAction;
 use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\DiscoverWebsiteSocialProfilesAction;
 use Illuminate\Support\Facades\Http;
 
 test('discover website social profiles extracts direct social urls and html anchor links', function (): void {

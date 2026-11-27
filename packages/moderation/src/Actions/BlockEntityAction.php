@@ -7,9 +7,9 @@ namespace AIArmada\Moderation\Actions;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
+use AIArmada\Moderation\Support\ModerationModelGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use AIArmada\Moderation\Support\ModerationModelGuard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -75,5 +75,4 @@ final readonly class BlockEntityAction
             return $block;
         });
     }
-
 }

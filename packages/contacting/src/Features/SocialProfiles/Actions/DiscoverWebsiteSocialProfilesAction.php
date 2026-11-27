@@ -93,6 +93,7 @@ class DiscoverWebsiteSocialProfilesAction
     {
         $document = new DOMDocument;
         $previousErrors = libxml_use_internal_errors(true);
+
         try {
             $document->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
         } finally {

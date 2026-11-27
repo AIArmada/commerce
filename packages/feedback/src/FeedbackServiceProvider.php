@@ -11,6 +11,9 @@ use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTemplate;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Platform\ExtensionRegistry;
+use AIArmada\Feedback\Platform\FeatureCatalog;
+use AIArmada\Feedback\Platform\FeatureModule;
 use AIArmada\Feedback\Policies\FeedbackFormPolicy;
 use AIArmada\Feedback\Policies\FeedbackInvitationPolicy;
 use AIArmada\Feedback\Policies\FeedbackResponsePolicy;
@@ -18,10 +21,8 @@ use AIArmada\Feedback\Policies\FeedbackTemplatePolicy;
 use AIArmada\Feedback\Policies\FeedbackTestimonialPolicy;
 use AIArmada\Feedback\Support\AnswerValueNormalizer;
 use AIArmada\Feedback\Support\InvitationUrlGenerator as DefaultInvitationUrlGenerator;
-use AIArmada\Feedback\Platform\ExtensionRegistry;
-use AIArmada\Feedback\Platform\FeatureCatalog;
-use AIArmada\Feedback\Platform\FeatureModule;
 use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -58,7 +59,7 @@ final class FeedbackServiceProvider extends PackageServiceProvider
             $module = $this->app->make($class);
 
             if (! $module instanceof FeatureModule) {
-                throw new \InvalidArgumentException("Invalid feedback feature module [{$class}].");
+                throw new InvalidArgumentException("Invalid feedback feature module [{$class}].");
             }
 
             $this->featureModules[$feature] = $module;
@@ -72,5 +73,4 @@ final class FeedbackServiceProvider extends PackageServiceProvider
             $module->boot($this->app);
         }
     }
-
 }

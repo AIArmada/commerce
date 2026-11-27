@@ -5,30 +5,31 @@ declare(strict_types=1);
 namespace AIArmada\Engagement;
 
 use AIArmada\Communications\CommunicationsServiceProvider;
-use AIArmada\Engagement\EntryPoints\Commands\MatchSubscriptionsCommand;
-use AIArmada\Engagement\Features\Counters\EntryPoints\Commands\ReconcileEngagementCountersCommand;
-use AIArmada\Engagement\EntryPoints\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
-use AIArmada\Engagement\Events\ReminderDue;
-use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
+use AIArmada\Engagement\EntryPoints\Commands\MatchSubscriptionsCommand;
+use AIArmada\Engagement\EntryPoints\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\EntryPoints\Listeners\DispatchReminderThroughCommunications;
+use AIArmada\Engagement\Events\ReminderDue;
+use AIArmada\Engagement\Features\Counters\EntryPoints\Commands\ReconcileEngagementCountersCommand;
+use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
+use AIArmada\Engagement\Platform\ExtensionRegistry;
+use AIArmada\Engagement\Platform\FeatureCatalog;
+use AIArmada\Engagement\Platform\FeatureModule;
 use AIArmada\Engagement\Services\DefaultEngagementManager;
 use AIArmada\Engagement\Services\DefaultEngagementPolicyResolver;
 use AIArmada\Engagement\Services\DefaultEngagementStateResolver;
 use AIArmada\Engagement\Services\DefaultReminderManager;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
 use AIArmada\Engagement\Services\DefaultSubscriptionManager;
-use AIArmada\Engagement\Platform\ExtensionRegistry;
-use AIArmada\Engagement\Platform\FeatureCatalog;
-use AIArmada\Engagement\Platform\FeatureModule;
 use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\EventsServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -73,7 +74,7 @@ final class EngagementServiceProvider extends PackageServiceProvider
             $module = $this->app->make($class);
 
             if (! $module instanceof FeatureModule) {
-                throw new \InvalidArgumentException("Invalid engagement feature module [{$class}].");
+                throw new InvalidArgumentException("Invalid engagement feature module [{$class}].");
             }
 
             $this->featureModules[$feature] = $module;
@@ -117,5 +118,4 @@ final class EngagementServiceProvider extends PackageServiceProvider
             DispatchReminderThroughCommunications::class,
         );
     }
-
 }

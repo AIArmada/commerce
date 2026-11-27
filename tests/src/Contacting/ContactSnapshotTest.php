@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
+use AIArmada\Contacting\Features\Snapshots\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Features\Snapshots\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
 use AIArmada\Customers\Models\Customer;

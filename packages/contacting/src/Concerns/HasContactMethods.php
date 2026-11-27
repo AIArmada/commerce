@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Concerns;
 
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Actions\DeleteContactMethodsForEntityAction;
-use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

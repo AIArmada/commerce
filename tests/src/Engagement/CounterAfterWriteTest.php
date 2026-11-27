@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Features\Counters\Actions\UpdateEngagementCountersAction;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 
