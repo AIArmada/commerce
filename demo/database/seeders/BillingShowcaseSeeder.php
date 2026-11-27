@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -90,17 +91,14 @@ final class BillingShowcaseSeeder extends Seeder
             ]
         );
 
-        StoredPaymentMethod::firstOrCreate(
+        Cashier::paymentMethodStore()->saveForBillable(
+            new RecordReference($user->getMorphClass(), (string) $user->getKey()),
+            $attributes['default_pm_id'],
             [
-                'billable_type' => $user->getMorphClass(),
-                'billable_id' => (string) $user->getKey(),
-            ],
-            [
-                'recurring_token' => $attributes['default_pm_id'],
                 'type' => $attributes['pm_type'] ?? null,
                 'last_four' => $attributes['pm_last_four'] ?? null,
-                'is_default' => true,
-            ]
+            ],
+            makeDefault: true,
         );
     }
 

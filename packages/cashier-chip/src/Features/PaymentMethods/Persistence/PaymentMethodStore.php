@@ -96,7 +96,13 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
             $shouldSetDefault = $makeDefault || ! $this->queryForBillable($billable)->lockForUpdate()->where('is_default', true)->exists();
 
             if ($shouldSetDefault) {
-                $this->queryForBillable($billable)->update(['is_default' => false]);
+                $otherMethods = $this->queryForBillable($billable)->where('is_default', true);
+
+                if ($paymentMethod->exists) {
+                    $otherMethods->whereKeyNot($paymentMethod->getKey());
+                }
+
+                $otherMethods->update(['is_default' => false]);
                 $paymentMethod->is_default = true;
             } else {
                 $paymentMethod->is_default ??= false;
@@ -124,7 +130,7 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
                 return null;
             }
 
-            $this->queryForBillable($billable)->lockForUpdate()->update(['is_default' => false]);
+            $this->queryForBillable($billable)->where('is_default', true)->whereKeyNot($paymentMethod->getKey())->update(['is_default' => false]);
 
             $paymentMethod->is_default = true;
             $paymentMethod->save();

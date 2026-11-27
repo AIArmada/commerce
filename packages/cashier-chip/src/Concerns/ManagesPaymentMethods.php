@@ -295,20 +295,17 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
     {
         Cashier::paymentMethodStore()->assertBillableAccess($this->paymentMethodSubject());
 
-        foreach ($this->chipRecurringTokens() as $index => $token) {
+        foreach ($this->chipRecurringTokens() as $token) {
             $tokenId = $token['id'] ?? null;
 
             if (! is_string($tokenId) || $tokenId === '') {
                 continue;
             }
 
-            $makeDefault = $index === 0;
-
             Cashier::paymentMethodStore()->saveForBillable(
                 $this->paymentMethodSubject(),
                 $tokenId,
                 $this->paymentMethodAttributesFromToken($token),
-                $makeDefault,
             );
         }
     }

@@ -539,3 +539,17 @@ describe('RepairRegression security', function (): void {
         expect($subscription->recurring_token)->toBeNull();
     });
 });
+
+it('keeps the default flag when the same saved payment method is selected repeatedly', function (): void {
+    $user = $this->createUser(['chip_id' => 'cli_default_repeat']);
+    $reference = new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey());
+    $store = Cashier::paymentMethodStore();
+    $store->saveForBillable($reference, 'tok_repeat_default', [], true);
+    $store->saveForBillable($reference, 'tok_other_default', [], false);
+
+    $store->setDefaultForBillable($reference, 'tok_repeat_default');
+    $store->saveForBillable($reference, 'tok_repeat_default', [], true);
+
+    expect($store->defaultForBillable($reference)?->recurringToken())->toBe('tok_repeat_default')
+        ->and(collect($store->allForBillable($reference))->where('is_default', true)->count())->toBe(1);
+});
