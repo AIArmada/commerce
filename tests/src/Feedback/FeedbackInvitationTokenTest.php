@@ -5,10 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
+use AIArmada\Feedback\Actions\ExpireFeedbackInvitationAction;
 use AIArmada\Feedback\Actions\GenerateFeedbackInvitationUrlAction;
+use AIArmada\Feedback\Actions\MarkFeedbackInvitationOpenedAction;
 use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
 use AIArmada\Feedback\Actions\SendFeedbackInvitationAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
+use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
@@ -122,4 +125,38 @@ it('throttles repeated invitation token attempts', function (): void {
 
     expect(fn () => app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToken))
         ->toThrow(RuntimeException::class, 'Too many invitation token attempts');
+});
+
+it('preserves terminal invitation states during delayed expiry and opening', function (FeedbackInvitationStatus $status): void {
+    $form = app(CreateFeedbackFormAction::class)
+        ->execute(new CreateFeedbackFormData(name: 'Terminal Invitation Form'));
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', bin2hex(random_bytes(32))),
+        'status' => FeedbackInvitationStatus::Sent,
+        'expires_at' => CarbonImmutable::now()->subMinute(),
+    ]);
+
+    FeedbackInvitation::query()->whereKey($invitation->id)->update(['status' => $status]);
+
+    app(ExpireFeedbackInvitationAction::class)->execute($invitation->id);
+    app(MarkFeedbackInvitationOpenedAction::class)->execute($invitation);
+
+    expect($invitation->fresh()->status)->toBe($status);
+})->with([FeedbackInvitationStatus::Submitted, FeedbackInvitationStatus::Cancelled]);
+
+it('does not open an expired invitation', function (): void {
+    $form = app(CreateFeedbackFormAction::class)
+        ->execute(new CreateFeedbackFormData(name: 'Expired Open Form'));
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', bin2hex(random_bytes(32))),
+        'status' => FeedbackInvitationStatus::Sent,
+        'expires_at' => CarbonImmutable::now()->subMinute(),
+    ]);
+
+    $result = app(MarkFeedbackInvitationOpenedAction::class)->execute($invitation);
+
+    expect($result->status)->toBe(FeedbackInvitationStatus::Sent)
+        ->and($result->opened_at)->toBeNull();
 });

@@ -9,24 +9,29 @@ use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Events\FeedbackFormPublished;
 use AIArmada\Feedback\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
-final class PublishFeedbackFormAction
+final readonly class PublishFeedbackFormAction
 {
     public function execute(FeedbackForm $form): FeedbackForm
     {
-        $form = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+        $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
 
-        if ($form->status === FeedbackFormStatus::Published) {
+        return DB::transaction(function () use ($guarded): FeedbackForm {
+            $form = FeedbackForm::query()->whereKey($guarded->id)->lockForUpdate()->firstOrFail();
+
+            if ($form->status === FeedbackFormStatus::Published) {
+                return $form;
+            }
+
+            $form->forceFill([
+                'status' => FeedbackFormStatus::Published,
+                'published_at' => CarbonImmutable::now(),
+            ])->save();
+
+            FeedbackFormPublished::dispatch($form);
+
             return $form;
-        }
-
-        $form->forceFill([
-            'status' => FeedbackFormStatus::Published,
-            'published_at' => CarbonImmutable::now(),
-        ])->save();
-
-        FeedbackFormPublished::dispatch($form);
-
-        return $form;
+        });
     }
 }

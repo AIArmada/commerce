@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources\ContactMethodResource\Pages;
 
+use AIArmada\Contacting\Actions\UpdateContactMethodAction;
+use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\FilamentContacting\Resources\ContactMethodResource;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditContactMethod extends EditRecord
 {
@@ -18,5 +21,12 @@ final class EditContactMethod extends EditRecord
             : null;
 
         return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        abort_unless($record instanceof ContactMethod, 404);
+
+        return app(UpdateContactMethodAction::class)->execute($record, $data);
     }
 }

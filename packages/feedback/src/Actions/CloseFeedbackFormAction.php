@@ -9,24 +9,29 @@ use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Events\FeedbackFormClosed;
 use AIArmada\Feedback\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
-final class CloseFeedbackFormAction
+final readonly class CloseFeedbackFormAction
 {
     public function execute(FeedbackForm $form): FeedbackForm
     {
-        $form = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+        $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
 
-        if ($form->status === FeedbackFormStatus::Closed) {
+        return DB::transaction(function () use ($guarded): FeedbackForm {
+            $form = FeedbackForm::query()->whereKey($guarded->id)->lockForUpdate()->firstOrFail();
+
+            if ($form->status === FeedbackFormStatus::Closed) {
+                return $form;
+            }
+
+            $form->forceFill([
+                'status' => FeedbackFormStatus::Closed,
+                'closed_at' => CarbonImmutable::now(),
+            ])->save();
+
+            FeedbackFormClosed::dispatch($form);
+
             return $form;
-        }
-
-        $form->forceFill([
-            'status' => FeedbackFormStatus::Closed,
-            'closed_at' => CarbonImmutable::now(),
-        ])->save();
-
-        FeedbackFormClosed::dispatch($form);
-
-        return $form;
+        });
     }
 }

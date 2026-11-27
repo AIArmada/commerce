@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\Pages;
 
+use AIArmada\Feedback\Actions\UpdateFeedbackFormAction;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Enums\FeedbackFormVisibility;
+use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers\InvitationsRelationManager;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers\QuestionsRelationManager;
@@ -19,6 +21,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditFeedbackForm extends EditRecord
 {
@@ -59,5 +62,12 @@ final class EditFeedbackForm extends EditRecord
             InvitationsRelationManager::class,
             TestimonialsRelationManager::class,
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        abort_unless($record instanceof FeedbackForm, 404);
+
+        return app(UpdateFeedbackFormAction::class)->execute($record, $data);
     }
 }

@@ -4,10 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources\SocialProfileResource\Pages;
 
+use AIArmada\Contacting\Actions\UpdateSocialProfileAction;
+use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\FilamentContacting\Resources\SocialProfileResource;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditSocialProfile extends EditRecord
 {
     protected static string $resource = SocialProfileResource::class;
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        abort_unless($record instanceof SocialProfile, 404);
+
+        return app(UpdateSocialProfileAction::class)->execute($record, $data);
+    }
 }
