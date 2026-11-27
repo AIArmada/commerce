@@ -41,9 +41,10 @@ abstract class CollectApi
         try {
             return $operation();
         } catch (Throwable $exception) {
-            Log::error($message, array_merge($context, [
-                'error' => $exception->getMessage(),
-            ]));
+            Log::error($message, [
+                'exception' => $exception::class,
+                'context_keys' => array_keys($context),
+            ]);
 
             throw $exception;
         }

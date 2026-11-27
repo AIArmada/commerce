@@ -18,6 +18,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Sleep;
 use Throwable;
 
 abstract class BaseHttpClient
@@ -96,7 +97,7 @@ abstract class BaseHttpClient
                     $response = $this->sendRequest($method, $url, $data, $headers);
 
                     if ($response->failed() && $attempt < $attempts && $this->shouldRetry($method, null, $response)) {
-                        usleep($delayMilliseconds * 1000);
+                        Sleep::for($delayMilliseconds)->milliseconds();
 
                         continue;
                     }
@@ -111,7 +112,7 @@ abstract class BaseHttpClient
                         throw $exception;
                     }
 
-                    usleep($delayMilliseconds * 1000);
+                    Sleep::for($delayMilliseconds)->milliseconds();
                 }
             }
 

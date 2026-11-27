@@ -119,9 +119,8 @@ final class PurchasesApi extends CollectApi
     {
         $cacheKey = $this->idempotencyCacheKey((string) $data['brand_id'], $idempotencyKey);
         $fingerprint = $this->payloadFingerprint($data);
-        $legacyFingerprints = $this->legacyIdempotencyFingerprints($data);
 
-        $cachedPurchase = $this->resolveCachedPurchase($this->cache?->get($cacheKey), $fingerprint, $legacyFingerprints);
+        $cachedPurchase = $this->resolveCachedPurchase($this->cache?->get($cacheKey), $fingerprint);
         if ($cachedPurchase !== null) {
             return $cachedPurchase;
         }
@@ -130,7 +129,6 @@ final class PurchasesApi extends CollectApi
             (string) $data['brand_id'],
             $idempotencyKey,
             $fingerprint,
-            $legacyFingerprints,
         );
         if ($ledgerPurchase !== null) {
             return $ledgerPurchase;
@@ -160,8 +158,8 @@ final class PurchasesApi extends CollectApi
 
         return $lock->block(
             max(1, (int) config('chip.http.timeout', 30)),
-            function () use ($cache, $cacheKey, $data, $fingerprint, $idempotencyKey, $legacyFingerprints): PurchaseData {
-                $cachedPurchase = $this->resolveCachedPurchase($cache->get($cacheKey), $fingerprint, $legacyFingerprints);
+            function () use ($cache, $cacheKey, $data, $fingerprint, $idempotencyKey): PurchaseData {
+                $cachedPurchase = $this->resolveCachedPurchase($cache->get($cacheKey), $fingerprint);
                 if ($cachedPurchase !== null) {
                     return $cachedPurchase;
                 }
@@ -170,7 +168,6 @@ final class PurchasesApi extends CollectApi
                     (string) $data['brand_id'],
                     $idempotencyKey,
                     $fingerprint,
-                    $legacyFingerprints,
                 );
                 if ($ledgerPurchase !== null) {
                     return $ledgerPurchase;
@@ -209,10 +206,7 @@ final class PurchasesApi extends CollectApi
         return $purchase;
     }
 
-    /**
-     * @param  list<string>  $legacyFingerprints
-     */
-    private function resolveCachedPurchase(mixed $cached, string $fingerprint, array $legacyFingerprints = []): ?PurchaseData
+    private function resolveCachedPurchase(mixed $cached, string $fingerprint): ?PurchaseData
     {
         if ($cached === null) {
             return null;
@@ -224,13 +218,11 @@ final class PurchasesApi extends CollectApi
             throw new ChipValidationException('Cached idempotent purchase response is invalid.');
         }
 
-        foreach ([$fingerprint, ...$legacyFingerprints] as $candidate) {
-            if (hash_equals($candidate, $cached['fingerprint'])) {
-                /** @var array<string, mixed> $purchase */
-                $purchase = $cached['purchase'];
+        if (hash_equals($fingerprint, $cached['fingerprint'])) {
+            /** @var array<string, mixed> $purchase */
+            $purchase = $cached['purchase'];
 
-                return PurchaseData::from($purchase);
-            }
+            return PurchaseData::from($purchase);
         }
 
         throw new ChipValidationException(
@@ -427,8 +419,7 @@ final class PurchasesApi extends CollectApi
      *
      * Strips the fields the request cleanup removed (`purchase.total`, null
      * product categories) so equivalent payloads share one fingerprint
-     * regardless of which serialization path produced them. Pre-cleanup
-     * shapes are covered by legacyIdempotencyFingerprints().
+     * regardless of which serialization path produced them.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -455,71 +446,12 @@ final class PurchasesApi extends CollectApi
     }
 
     /**
-     * Fingerprints matching pre-cleanup entry shapes. Match-only: new entries
-     * are always recorded under payloadFingerprint().
-     *
-     * Pre-cleanup payloads carried two now-removed fields in path-dependent
-     * combinations: `purchase.total` (builder paths, always equal to
-     * `total_override`) and null product categories (object serialization
-     * paths; the cents/line-item paths omitted the key). A retry cannot tell
-     * which path stored the entry, so every combination is tried. The forms
-     * are disjoint by field presence, so a genuine same-version conflict can
-     * never match a legacy form.
-     *
-     * @param  array<string, mixed>  $data
-     * @return list<string>
-     */
-    private function legacyIdempotencyFingerprints(array $data): array
-    {
-        $base = $this->canonicalIdempotencyPayload($data);
-
-        $withNulls = $base;
-        if (isset($withNulls['purchase']['products']) && is_array($withNulls['purchase']['products'])) {
-            foreach ($withNulls['purchase']['products'] as $index => $product) {
-                if (is_array($product) && ! array_key_exists('category', $product)) {
-                    $withNulls['purchase']['products'][$index]['category'] = null;
-                }
-            }
-        }
-
-        $forms = [$withNulls];
-
-        $override = $data['purchase']['total_override'] ?? null;
-        if ($override !== null && isset($base['purchase']) && is_array($base['purchase'])) {
-            $withTotal = $base;
-            $withTotal['purchase']['total'] = $override;
-
-            $withBoth = $withNulls;
-            $withBoth['purchase']['total'] = $override;
-
-            $forms[] = $withTotal;
-            $forms[] = $withBoth;
-        }
-
-        $fingerprints = array_map(
-            fn (array $form): string => hash('sha256', json_encode($this->sortForFingerprint($form), JSON_THROW_ON_ERROR)),
-            $forms
-        );
-
-        return array_values(array_unique($fingerprints));
-    }
-
-    /**
-     * Keyless-checkout key derivation. PERMANENTLY FROZEN.
-     *
-     * Re-adds `category: null` to products lacking the key (the pre-cleanup
-     * object-serialization shape) and never adds `purchase.total` (the
-     * checkout path never carried it). Keyless entries recorded before the
-     * wire cleanup were keyed under this exact projection, so deriving the
-     * retry key any other way would miss them and double-post.
-     *
-     * Do NOT "simplify" this to payloadFingerprint(), and do NOT evolve it
-     * alongside canonicalIdempotencyPayload(): the duplication is the point.
-     * Pinned by literal-hash tests in PurchaseIdempotencyCompatTest.
+     * Stable checkout identity projection. This is the canonical key format;
+     * it must remain independent of request payload normalization.
      *
      * @param  array<string, mixed>  $data
      */
-    private function frozenCheckoutKeyFingerprint(array $data): string
+    private function checkoutKeyFingerprint(array $data): string
     {
         if (isset($data['purchase']['products']) && is_array($data['purchase']['products'])) {
             foreach ($data['purchase']['products'] as $index => $product) {
@@ -894,7 +826,7 @@ final class PurchasesApi extends CollectApi
             // collapse together). The keyless checkout-builder path is a
             // separate route that must never gain fingerprinting: without a
             // stable operation identity it would break buy-twice-identical.
-            $idempotencyKey = 'checkout-' . $this->frozenCheckoutKeyFingerprint($data);
+            $idempotencyKey = 'checkout-' . $this->checkoutKeyFingerprint($data);
         }
 
         $data['idempotency_key'] = $idempotencyKey;
