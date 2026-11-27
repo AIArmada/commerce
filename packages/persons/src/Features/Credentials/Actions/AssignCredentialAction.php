@@ -7,10 +7,13 @@ namespace AIArmada\Persons\Features\Credentials\Actions;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Features\Credentials\Models\CredentialAssignment;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
+use AIArmada\Persons\Models\Person;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class AssignCredentialAction
 {
@@ -43,9 +46,14 @@ final class AssignCredentialAction
         ]);
         $assignment->credential_id = $credential->getKey();
         $assignment->credentialable()->associate($credentialable);
+        $this->assertDates($assignment);
 
         try {
-            $assignment->getConnection()->transaction(fn (): bool => $assignment->save());
+            $assignment->getConnection()->transaction(function () use ($assignment): void {
+                if (! $assignment->save()) {
+                    throw new RuntimeException('Assignment creation was cancelled.');
+                }
+            });
         } catch (UniqueConstraintViolationException $exception) {
             $raced = CredentialAssignment::query()
                 ->where('credentialable_type', $credentialable->getMorphClass())
@@ -61,6 +69,67 @@ final class AssignCredentialAction
         }
 
         return $assignment;
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function update(Person $person, CredentialAssignment $assignment, array $attributes): CredentialAssignment
+    {
+        return $person->getConnection()->transaction(function () use ($person, $assignment, $attributes): CredentialAssignment {
+            $record = $this->lockAssignment($person, $assignment);
+            $reference = $attributes['credential_id'] ?? $record->credential_id;
+            unset($attributes['credential_id']);
+
+            if (! is_string($reference) || mb_trim($reference) === '') {
+                throw new InvalidArgumentException('A valid assignment reference is required.');
+            }
+
+            $record->fill($this->validate($attributes));
+            $record->credential_id = $reference;
+            $this->assertDates($record);
+
+            if (! $record->save()) {
+                throw new RuntimeException('Assignment update was cancelled.');
+            }
+
+            return $record;
+        });
+    }
+
+    public function delete(Person $person, CredentialAssignment $assignment): bool
+    {
+        return $person->getConnection()->transaction(function () use ($person, $assignment): bool {
+            return (bool) $this->lockAssignment($person, $assignment)->delete();
+        });
+    }
+
+    private function lockAssignment(Person $person, CredentialAssignment $assignment): CredentialAssignment
+    {
+        if (! $person->exists || $person->getKey() === null || ! $assignment->exists || $assignment->getKey() === null) {
+            throw new InvalidArgumentException('Person and assignment must be persisted.');
+        }
+
+        $person->newQuery()->whereKey($person->getKey())->lockForUpdate()->firstOrFail();
+
+        $record = CredentialAssignment::query()
+            ->where('credentialable_type', $person->getMorphClass())
+            ->where('credentialable_id', $person->getKey())
+            ->whereKey($assignment->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if ($record === null) {
+            throw new AuthorizationException('The assignment does not belong to this person.');
+        }
+
+        return $record;
+    }
+
+    private function assertDates(CredentialAssignment $assignment): void
+    {
+        if ($assignment->date_obtained !== null && $assignment->date_expired !== null
+            && $assignment->date_expired->lt($assignment->date_obtained)) {
+            throw new InvalidArgumentException('The expiry date must be on or after the start date.');
+        }
     }
 
     /**

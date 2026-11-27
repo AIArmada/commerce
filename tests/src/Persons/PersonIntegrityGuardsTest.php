@@ -258,3 +258,49 @@ it('rolls back credential definition deletion when an assignment vetoes deletion
     expect(CredentialDefinition::query()->whereKey($definition->id)->exists())->toBeTrue()
         ->and(CredentialAssignment::query()->whereKey($assignment->id)->exists())->toBeTrue();
 });
+
+it('rejects updates and deletes of another person title assignment', function (): void {
+    $person = Person::create(['name' => 'Title Owner']);
+    $other = Person::create(['name' => 'Other Person']);
+    $category = TitleCategory::create(['code' => 'assignment-guard', 'name' => 'Assignment Guard', 'sort_order' => 1]);
+    $title = Title::create([
+        'category_id' => $category->id,
+        'name' => 'Dr.',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $action = app(AssignTitleAction::class);
+    $assignment = $action->execute($person, $title->id);
+
+    expect(fn () => $action->update($other, $assignment, ['status' => 'revoked']))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => $action->delete($other, $assignment))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+
+    expect($action->update($person, $assignment, ['status' => 'revoked'])->status)->toBe(AssignmentStatus::Revoked);
+    expect($action->delete($person, $assignment))->toBeTrue();
+});
+
+it('rejects invalid credential dates and cross-person assignment writes', function (): void {
+    $person = Person::create(['name' => 'Credential Owner']);
+    $other = Person::create(['name' => 'Other Credential Person']);
+    $definition = CredentialDefinition::create([
+        'name' => 'CPA',
+        'credential_type' => CredentialType::ProfessionalLicense,
+    ]);
+    $action = app(AssignCredentialAction::class);
+
+    expect(fn () => $action->execute($person, $definition->id, [
+        'date_obtained' => '2026-01-02',
+        'date_expired' => '2026-01-01',
+    ]))->toThrow(InvalidArgumentException::class, 'The expiry date');
+
+    $assignment = $action->execute($person, $definition->id);
+    expect(fn () => $action->update($other, $assignment, ['status' => 'revoked']))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => $action->delete($other, $assignment))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+
+    expect($action->update($person, $assignment, ['status' => 'revoked'])->status)->toBe(AssignmentStatus::Revoked);
+    expect($action->delete($person, $assignment))->toBeTrue();
+});

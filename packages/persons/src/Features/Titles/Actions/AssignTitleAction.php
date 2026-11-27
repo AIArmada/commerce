@@ -7,10 +7,13 @@ namespace AIArmada\Persons\Features\Titles\Actions;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
+use AIArmada\Persons\Models\Person;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class AssignTitleAction
 {
@@ -43,9 +46,14 @@ final class AssignTitleAction
         ]);
         $assignment->title_id = $title->getKey();
         $assignment->titleable()->associate($titleable);
+        $this->assertDates($assignment);
 
         try {
-            $assignment->getConnection()->transaction(fn (): bool => $assignment->save());
+            $assignment->getConnection()->transaction(function () use ($assignment): void {
+                if (! $assignment->save()) {
+                    throw new RuntimeException('Assignment creation was cancelled.');
+                }
+            });
         } catch (UniqueConstraintViolationException $exception) {
             $raced = TitleAssignment::query()
                 ->where('titleable_type', $titleable->getMorphClass())
@@ -61,6 +69,67 @@ final class AssignTitleAction
         }
 
         return $assignment;
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function update(Person $person, TitleAssignment $assignment, array $attributes): TitleAssignment
+    {
+        return $person->getConnection()->transaction(function () use ($person, $assignment, $attributes): TitleAssignment {
+            $record = $this->lockAssignment($person, $assignment);
+            $reference = $attributes['title_id'] ?? $record->title_id;
+            unset($attributes['title_id']);
+
+            if (! is_string($reference) || mb_trim($reference) === '') {
+                throw new InvalidArgumentException('A valid assignment reference is required.');
+            }
+
+            $record->fill($this->validate($attributes));
+            $record->title_id = $reference;
+            $this->assertDates($record);
+
+            if (! $record->save()) {
+                throw new RuntimeException('Assignment update was cancelled.');
+            }
+
+            return $record;
+        });
+    }
+
+    public function delete(Person $person, TitleAssignment $assignment): bool
+    {
+        return $person->getConnection()->transaction(function () use ($person, $assignment): bool {
+            return (bool) $this->lockAssignment($person, $assignment)->delete();
+        });
+    }
+
+    private function lockAssignment(Person $person, TitleAssignment $assignment): TitleAssignment
+    {
+        if (! $person->exists || $person->getKey() === null || ! $assignment->exists || $assignment->getKey() === null) {
+            throw new InvalidArgumentException('Person and assignment must be persisted.');
+        }
+
+        $person->newQuery()->whereKey($person->getKey())->lockForUpdate()->firstOrFail();
+
+        $record = TitleAssignment::query()
+            ->where('titleable_type', $person->getMorphClass())
+            ->where('titleable_id', $person->getKey())
+            ->whereKey($assignment->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if ($record === null) {
+            throw new AuthorizationException('The assignment does not belong to this person.');
+        }
+
+        return $record;
+    }
+
+    private function assertDates(TitleAssignment $assignment): void
+    {
+        if ($assignment->date_awarded !== null && $assignment->date_expired !== null
+            && $assignment->date_expired->lt($assignment->date_awarded)) {
+            throw new InvalidArgumentException('The expiry date must be on or after the start date.');
+        }
     }
 
     /**
