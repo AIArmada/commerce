@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\Facades\Chip;
 
@@ -10,8 +11,8 @@ describe('SyncChipRecordsFromApiCommand', function (): void {
         $firstPurchaseId = '11111111-1111-4111-8111-111111111111';
         $secondPurchaseId = '22222222-2222-4222-8222-222222222222';
 
-        Chip::shouldReceive('getPurchase')->once()->with($firstPurchaseId)->andReturn(['status' => 'paid']);
-        Chip::shouldReceive('getPurchase')->once()->with($secondPurchaseId)->andReturn(['status' => 'refunded']);
+        Chip::shouldReceive('getPurchase')->once()->with($firstPurchaseId)->andReturn(PurchaseData::from(['id' => $firstPurchaseId, 'status' => 'paid', 'purchase' => ['currency' => 'MYR', 'total' => 1000]]));
+        Chip::shouldReceive('getPurchase')->once()->with($secondPurchaseId)->andReturn(PurchaseData::from(['id' => $secondPurchaseId, 'status' => 'refunded', 'purchase' => ['currency' => 'MYR', 'total' => 1000]]));
 
         $this->artisan(SyncChipRecordsFromApiCommand::class, [
             '--purchase-id' => [$firstPurchaseId, $secondPurchaseId],
@@ -28,7 +29,7 @@ describe('SyncChipRecordsFromApiCommand', function (): void {
     it('accepts normalized comma-separated status filters', function (): void {
         $purchaseId = '33333333-3333-4333-8333-333333333333';
 
-        Chip::shouldReceive('getPurchase')->once()->with($purchaseId)->andReturn(['status' => 'refunded']);
+        Chip::shouldReceive('getPurchase')->once()->with($purchaseId)->andReturn(PurchaseData::from(['id' => $purchaseId, 'status' => 'refunded', 'purchase' => ['currency' => 'MYR', 'total' => 1000]]));
 
         $this->artisan(SyncChipRecordsFromApiCommand::class, [
             '--purchase-id' => [$purchaseId],
