@@ -89,21 +89,9 @@ describe('JntOrder model', function (): void {
         expect($relation->getRelated())->toBeInstanceOf(JntOrderParcel::class);
     });
 
-    it('defines trackingEvents relationship', function (): void {
-        $order = new JntOrder;
-        $relation = $order->trackingEvents();
 
-        expect($relation)->toBeInstanceOf(HasMany::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntTrackingEvent::class);
-    });
 
-    it('defines webhookLogs relationship', function (): void {
-        $order = new JntOrder;
-        $relation = $order->webhookLogs();
 
-        expect($relation)->toBeInstanceOf(HasMany::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntWebhookLog::class);
-    });
 
     it('applies owner scope when disabled', function (): void {
         config(['jnt.owner.enabled' => false]);

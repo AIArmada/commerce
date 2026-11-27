@@ -251,7 +251,7 @@ final class JntOrderInfolist
                 ->schema([
                     RepeatableEntry::make('trackingEvents')
                         ->label('')
-                        ->getStateUsing(fn (JntOrder $record): mixed => $record->trackingEvents()
+                        ->getStateUsing(fn (JntOrder $record): mixed => JntTrackingEvent::query()->where('order_id', $record->id)->where('owner_type', $record->owner_type)->where('owner_id', $record->owner_id)
                             ->latest('scan_time')
                             ->limit((int) config('filament-jnt.infolist.tracking_events_limit', 50))
                             ->get())
@@ -274,7 +274,7 @@ final class JntOrderInfolist
                                 ->placeholder('—'),
                         ])
                         ->grid(1)
-                        ->visible(fn (JntOrder $record): bool => $record->trackingEvents()->exists()),
+                        ->visible(fn (JntOrder $record): bool => JntTrackingEvent::query()->where('order_id', $record->id)->where('owner_type', $record->owner_type)->where('owner_id', $record->owner_id)->exists()),
                 ])
                 ->collapsible(),
 

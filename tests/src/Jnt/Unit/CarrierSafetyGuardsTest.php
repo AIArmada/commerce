@@ -203,7 +203,7 @@ describe('carrier safety guards', function (): void {
             ->and(JntTrackingEvent::query()->where('order_id', $order->id)->exists())->toBeFalse();
     });
 
-    it('loads the latest tracking event without per-order queries', function (): void {
+    it('reads the latest tracking scan in a single query', function (): void {
         config()->set('jnt.owner.enabled', false);
 
         $order = JntOrder::query()->create([
@@ -221,14 +221,12 @@ describe('carrier safety guards', function (): void {
             ]);
         }
 
-        $loaded = JntOrder::query()->with('latestTrackingEventRelation')->findOrFail($order->id);
-
         DB::enableQueryLog();
-        $latest = $loaded->latestTrackingEvent();
+        $latest = app(\AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan::class)->forOrder($order->id, $order->owner_type, $order->owner_id);
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
-        expect($latest?->scan_type_code)->toBe('602')->and($queries)->toBeEmpty();
+        expect($latest)->toBe('2024-01-16 12:00:00')->and($queries)->toHaveCount(1);
     });
 
     it('sanitizes waybill output paths and filenames', function (): void {

@@ -9,8 +9,6 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Data\TrackingStatus;
-use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
-use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use AIArmada\Jnt\Contracts\StatusMappingStrategyInterface;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +16,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use AIArmada\Jnt\Features\Orders\Persistence\DeleteOrderChildren;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -74,8 +71,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property CarbonInterface|null $updated_at
  * @property-read Collection<int, JntOrderItem> $items
  * @property-read Collection<int, JntOrderParcel> $parcels
- * @property-read Collection<int, JntTrackingEvent> $trackingEvents
- * @property-read Collection<int, JntWebhookLog> $webhookLogs
  *
  * @method static Builder<static> forOwner(?Model $owner = null, bool $includeGlobal = true)
  */
@@ -170,26 +165,6 @@ final class JntOrder extends Model implements Auditable
     }
 
     /**
-     * Get the tracking events for this order.
-     *
-     * @return HasMany<JntTrackingEvent, $this>
-     */
-    public function trackingEvents(): HasMany
-    {
-        return $this->hasMany(JntTrackingEvent::class, 'order_id');
-    }
-
-    /**
-     * Get the webhook logs for this order.
-     *
-     * @return HasMany<JntWebhookLog, $this>
-     */
-    public function webhookLogs(): HasMany
-    {
-        return $this->hasMany(JntWebhookLog::class, 'order_id');
-    }
-
-    /**
      * Check if the order has been delivered.
      */
     public function isDelivered(): bool
@@ -213,28 +188,6 @@ final class JntOrder extends Model implements Auditable
     public function isCancelled(): bool
     {
         return $this->cancelled_at !== null;
-    }
-
-    /**
-     * Latest tracking event relation (eager-loadable, no per-order query).
-     *
-     * @return HasOne<JntTrackingEvent, $this>
-     */
-    public function latestTrackingEventRelation(): HasOne
-    {
-        return $this->hasOne(JntTrackingEvent::class, 'order_id')->latestOfMany('scan_time');
-    }
-
-    /**
-     * Get the latest tracking event.
-     */
-    public function latestTrackingEvent(): ?JntTrackingEvent
-    {
-        if ($this->relationLoaded('latestTrackingEventRelation')) {
-            return $this->getRelation('latestTrackingEventRelation');
-        }
-
-        return $this->latestTrackingEventRelation()->first();
     }
 
     private ?TrackingStatus $normalizedStatusMemo = null;

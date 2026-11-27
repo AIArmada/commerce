@@ -7,6 +7,7 @@ namespace AIArmada\Jnt\Features\Orders\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Features\Orders\Api\UpdateTrackingSnapshot;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,7 @@ final readonly class WriteTrackingSnapshot implements UpdateTrackingSnapshot
             }
 
             $order = JntOrder::query()->lockForUpdate()->findOrFail($orderId);
-            $latestStoredScan = $order->trackingEvents()->withoutOwnerScope()->max('scan_time');
+            $latestStoredScan = app(ReadLatestTrackingScan::class)->forOrder($orderId, $order->owner_type, $order->owner_id);
 
             if ($scanTime === null || ($latestStoredScan !== null && $scanTime->format('Y-m-d H:i:s') < (string) $latestStoredScan) || $order->isCancelled()) {
                 $attributes = array_intersect_key($attributes, ['last_tracked_at' => true]);

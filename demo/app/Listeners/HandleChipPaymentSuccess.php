@@ -284,7 +284,7 @@ final class HandleChipPaymentSuccess
                 ]);
             }
 
-            if (! $shipment->trackingEvents()->exists()) {
+            if (! JntTrackingEvent::query()->where('order_id', $shipment->id)->where('owner_type', $shipment->owner_type)->where('owner_id', $shipment->owner_id)->exists()) {
                 $this->createInitialTrackingEvent($shipment);
             }
         });

@@ -14,6 +14,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(\AIArmada\Jnt\Features\Tracking\Api\StoreTrackingEvents::class, \AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter::class);
+        $app->bind(\AIArmada\Jnt\Features\Tracking\Api\ReadLatestTrackingScan::class, \AIArmada\Jnt\Features\Tracking\Queries\LatestTrackingScan::class);
         $app->bind(DeleteOrderTracking::class, OrderTrackingCleanup::class);
     }
 

@@ -16,6 +16,7 @@ use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\Enums\ProductStatus;
@@ -920,7 +921,6 @@ final class ShopController extends Controller
                     $builder->where('tracking_number', $query)
                         ->orWhere('order_id', $query);
                 })
-                ->with('trackingEvents')
                 ->first();
         }
 
@@ -936,7 +936,13 @@ final class ShopController extends Controller
             ->take(5)
             ->get();
 
-        return view('shop.tracking', compact('shipment', 'recentShipments'));
+        $trackingEvents = $shipment === null ? collect() : JntTrackingEvent::query()
+            ->where('order_id', $shipment->id)
+            ->where('owner_type', $shipment->owner_type)
+            ->where('owner_id', $shipment->owner_id)
+            ->latest('scan_time')->get();
+
+        return view('shop.tracking', compact('shipment', 'recentShipments', 'trackingEvents'));
     }
 
     /**
