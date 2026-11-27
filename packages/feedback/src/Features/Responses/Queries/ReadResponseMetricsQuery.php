@@ -4,14 +4,73 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Responses\Queries;
 
+use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
+use AIArmada\Feedback\Data\NpsResultData;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Features\Responses\Api\ReadsResponseMetrics;
+use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Database\Eloquent\Builder;
 
 final class ReadResponseMetricsQuery implements ReadsResponseMetrics
 {
+    public function __construct(
+        private readonly NpsCalculator $npsCalculator,
+        private readonly CsatCalculator $csatCalculator,
+        private readonly RatingDistributionCalculator $ratingDistribution,
+    ) {}
+
+    public function nps(?string $formId = null, ?string $questionKey = null): NpsResultData
+    {
+        return $this->npsCalculator->calculate($formId, $questionKey);
+    }
+
+    public function csat(?string $formId = null, ?string $questionKey = null): CsatResultData
+    {
+        return $this->csatCalculator->calculate($formId, $questionKey);
+    }
+
+    public function distribution(?string $formId = null, ?string $questionKey = null): array
+    {
+        return $this->ratingDistribution->calculate($formId, $questionKey);
+    }
+
+    public function average(?string $formId = null, ?string $questionKey = null): ?float
+    {
+        return $this->ratingDistribution->average($formId, $questionKey);
+    }
+
+    public function latestComments(?string $formId = null, int $limit = 10): array
+    {
+        return FeedbackAnswer::query()
+            ->whereHas('response', function (Builder $query) use ($formId): void {
+                $query->whereIn('status', ['submitted', 'reviewed']);
+
+                if ($formId !== null) {
+                    $query->where('feedback_form_id', $formId);
+                }
+            })
+            ->whereHas('question', function (Builder $query) use ($formId): void {
+                $query->whereIn('type', ['short_text', 'long_text']);
+
+                if ($formId !== null) {
+                    $query->where('feedback_form_id', $formId);
+                }
+            })
+            ->whereNotNull('text_value')
+            ->where('text_value', '!=', '')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(max(0, min($limit, 100)))
+            ->get(['id', 'text_value'])
+            ->map(static fn (FeedbackAnswer $answer): array => [
+                'id' => $answer->id,
+                'text_value' => (string) $answer->text_value,
+            ])
+            ->all();
+    }
+
     public function summary(?string $formId = null): FeedbackAnalyticsData
     {
         $submitted = FeedbackResponseStatus::Submitted->value;

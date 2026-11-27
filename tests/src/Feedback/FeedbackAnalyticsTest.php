@@ -10,10 +10,7 @@ use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
-use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
-use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
-use AIArmada\Feedback\Features\Analytics\Queries\RatingDistributionCalculator;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Support\Collection;
@@ -74,8 +71,8 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
     ]);
 
     $analytics = app(FeedbackAnalyticsQuery::class);
-    $nps = app(NpsCalculator::class)->calculate($npsForm);
-    $csat = app(CsatCalculator::class)->calculate($csatForm);
+    $nps = app(FeedbackAnalyticsQuery::class)->nps($npsForm);
+    $csat = app(FeedbackAnalyticsQuery::class)->csat($csatForm);
 
     expect($nps->score)->toBe(0)
         ->and($nps->promoterCount)->toBe(1)
@@ -150,7 +147,7 @@ it('excludes cross-owner joined answers from rating calculations', function (): 
 
     $distribution = OwnerContext::withOwner(
         $ownerA,
-        fn (): array => app(RatingDistributionCalculator::class)->calculate($form, 'rating'),
+        fn (): array => app(FeedbackAnalyticsQuery::class)->distributionForQuestion($form, 'rating'),
     );
 
     expect($distribution)->toBe([5 => 1]);

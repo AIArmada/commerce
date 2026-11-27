@@ -174,14 +174,14 @@ $response = app(SubmitFeedbackResponseAction::class)->execute(
 ## NPS / CSAT
 
 ```php
-use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
-use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
-$nps = app(NpsCalculator::class)->calculate($form);
-$csat = app(CsatCalculator::class)->calculate($form);
+
+$nps = app(FeedbackAnalyticsQuery::class)->nps($form);
+$csat = app(FeedbackAnalyticsQuery::class)->csat($form);
 
 // Per-question aggregates run over that question's answer scores.
-$npsForQuestion = app(NpsCalculator::class)->calculate($form, 'recommendation');
+$npsForQuestion = app(FeedbackAnalyticsQuery::class)->nps($form, 'recommendation');
 ```
 
 `FeedbackAnalyticsQuery::nps($form, $questionKey)` and `csat($form,

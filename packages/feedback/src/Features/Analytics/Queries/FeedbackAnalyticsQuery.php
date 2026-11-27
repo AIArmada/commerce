@@ -10,20 +10,14 @@ use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Data\NpsResultData;
 use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Forms\Api\ReadsFormMetrics;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Api\ReadsResponseMetrics;
 use AIArmada\Feedback\Features\Testimonials\Api\ReadsTestimonialMetrics;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 final class FeedbackAnalyticsQuery
 {
     public function __construct(
-        private readonly NpsCalculator $npsCalculator,
-        private readonly CsatCalculator $csatCalculator,
-        private readonly RatingDistributionCalculator $ratingDistribution,
         private readonly CompletionRateCalculator $completionRate,
         private readonly ReadsResponseMetrics $responseMetrics,
         private readonly ReadsFormMetrics $formMetrics,
@@ -50,17 +44,17 @@ final class FeedbackAnalyticsQuery
 
     public function averageForQuestion(FeedbackForm $form, string $questionKey): ?float
     {
-        return $this->ratingDistribution->average($form, $questionKey);
+        return $this->responseMetrics->average($form->id, $questionKey);
     }
 
     public function distributionForQuestion(FeedbackForm $form, string $questionKey): array
     {
-        return $this->ratingDistribution->calculate($form, $questionKey);
+        return $this->responseMetrics->distribution($form->id, $questionKey);
     }
 
-    public function latestComments(FeedbackForm $form, int $limit = 10): Collection
+    public function latestComments(FeedbackForm $form, int $limit = 10): array
     {
-        return $this->commentsQuery($form)->limit($limit)->get();
+        return $this->responseMetrics->latestComments($form->id, $limit);
     }
 
     public function completionRate(FeedbackForm $form): float
@@ -70,12 +64,12 @@ final class FeedbackAnalyticsQuery
 
     public function nps(FeedbackForm $form, ?string $questionKey = null): NpsResultData
     {
-        return $this->npsCalculator->calculate($form, $questionKey);
+        return $this->responseMetrics->nps($form->id, $questionKey);
     }
 
     public function csat(FeedbackForm $form, ?string $questionKey = null): CsatResultData
     {
-        return $this->csatCalculator->calculate($form, $questionKey);
+        return $this->responseMetrics->csat($form->id, $questionKey);
     }
 
     /**
@@ -100,10 +94,10 @@ final class FeedbackAnalyticsQuery
                     ]),
                     'response_trend' => $responseMetrics['response_trend'],
                     'average_rating' => $responseMetrics['average_rating'],
-                    'nps' => $this->npsCalculator->calculate(),
-                    'csat' => $this->csatCalculator->calculate(),
-                    'rating_distribution' => $this->ratingDistribution->calculate(),
-                    'latest_comments' => $this->commentsQuery()->limit(10)->get()->toArray(),
+                    'nps' => $this->responseMetrics->nps(),
+                    'csat' => $this->responseMetrics->csat(),
+                    'rating_distribution' => $this->responseMetrics->distribution(),
+                    'latest_comments' => $this->responseMetrics->latestComments(),
                     'completion_rate' => $this->completionRate->calculate(),
                     'testimonials' => $this->testimonialMetrics->counts(),
                 ];
@@ -111,25 +105,4 @@ final class FeedbackAnalyticsQuery
         );
     }
 
-    /**
-     * @return Builder<FeedbackAnswer>
-     */
-    private function commentsQuery(?FeedbackForm $form = null): Builder
-    {
-        /** @var Builder<FeedbackAnswer> $query */
-        $query = FeedbackAnswer::query()
-            ->whereHas('response', function (Builder $q) use ($form): void {
-                $q->whereIn('status', ['submitted', 'reviewed']);
-
-                if ($form !== null) {
-                    $q->where('feedback_form_id', $form->id);
-                }
-            })
-            ->whereNotNull('text_value')
-            ->where('text_value', '!=', '')
-            ->with(['response.form', 'question'])
-            ->latest();
-
-        return $query;
-    }
 }

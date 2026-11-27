@@ -2,21 +2,20 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Features\Analytics\Queries;
+namespace AIArmada\Feedback\Features\Responses\Queries;
 
 use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Database\Eloquent\Builder;
 
 final class CsatCalculator
 {
-    public function calculate(?FeedbackForm $form = null, ?string $questionKey = null): CsatResultData
+    public function calculate(?string $formId = null, ?string $questionKey = null): CsatResultData
     {
         $query = $questionKey !== null
-            ? $this->answerQuery($form, $questionKey)
-            : $this->baseQuery($form);
+            ? $this->answerQuery($formId, $questionKey)
+            : $this->baseQuery($formId);
 
         $counts = (clone $query)
             ->selectRaw('
@@ -63,15 +62,15 @@ final class CsatCalculator
         );
     }
 
-    private function baseQuery(?FeedbackForm $form = null): Builder
+    private function baseQuery(?string $formId = null): Builder
     {
         /** @var Builder<FeedbackResponse> $query */
         $query = FeedbackResponse::query()
             ->whereIn('status', ['submitted', 'reviewed'])
             ->whereNotNull('score');
 
-        if ($form !== null) {
-            $query->where('feedback_form_id', $form->id);
+        if ($formId !== null) {
+            $query->where('feedback_form_id', $formId);
         }
 
         return $query;
@@ -80,24 +79,24 @@ final class CsatCalculator
     /**
      * @return Builder<FeedbackAnswer>
      */
-    private function answerQuery(?FeedbackForm $form, string $questionKey): Builder
+    private function answerQuery(?string $formId, string $questionKey): Builder
     {
         /** @var Builder<FeedbackAnswer> $query */
         $query = FeedbackAnswer::query()->whereNotNull('score');
 
-        $query->whereHas('response', function (Builder $q) use ($form): void {
+        $query->whereHas('response', function (Builder $q) use ($formId): void {
             $q->whereIn('status', ['submitted', 'reviewed']);
 
-            if ($form !== null) {
-                $q->where('feedback_form_id', $form->id);
+            if ($formId !== null) {
+                $q->where('feedback_form_id', $formId);
             }
         });
 
-        $query->whereHas('question', function (Builder $q) use ($form, $questionKey): void {
+        $query->whereHas('question', function (Builder $q) use ($formId, $questionKey): void {
             $q->where('key', $questionKey);
 
-            if ($form !== null) {
-                $q->where('feedback_form_id', $form->id);
+            if ($formId !== null) {
+                $q->where('feedback_form_id', $formId);
             }
         });
 

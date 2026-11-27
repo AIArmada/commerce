@@ -31,9 +31,7 @@ use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackFormCreated;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
 use AIArmada\Feedback\Events\FeedbackInvitationSent;
-use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
-use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
@@ -41,7 +39,7 @@ use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
-use AIArmada\Feedback\Support\AnswerValueNormalizer;
+use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Support\ScoreCalculator;
 use AIArmada\Feedback\Traits\ReceivesFeedback;
 use Carbon\CarbonImmutable;
@@ -149,8 +147,8 @@ it('aggregates per-question NPS and CSAT over answer scores', function (): void 
         isAnonymous: true,
     ));
 
-    $npsResult = app(NpsCalculator::class)->calculate($form, 'recommendation');
-    $csatResult = app(CsatCalculator::class)->calculate($form, 'satisfaction');
+    $npsResult = app(FeedbackAnalyticsQuery::class)->nps($form, 'recommendation');
+    $csatResult = app(FeedbackAnalyticsQuery::class)->csat($form, 'satisfaction');
 
     // Response total is 12 (promoter range); per-question aggregates must not see it.
     expect($npsResult->promoterCount)->toBe(1)
@@ -556,17 +554,17 @@ it('builds the dashboard response trend on sqlite', function (): void {
 });
 
 it('normalizes unsafe numbers and dates to null', function (): void {
-    $normalizer = app(AnswerValueNormalizer::class);
+    $normalizer = app(AnswerNormalizer::class);
 
-    $number = $normalizer->normalize(new FeedbackQuestion(['type' => 'number']), 'abc');
-    $scored = $normalizer->normalize(new FeedbackQuestion(['type' => 'rating']), 'abc');
-    $datetime = $normalizer->normalize(new FeedbackQuestion(['type' => 'datetime']), 'not-a-date');
+    $number = $normalizer->normalize('number', 'abc');
+    $scored = $normalizer->normalize('rating', 'abc');
+    $datetime = $normalizer->normalize('datetime', 'not-a-date');
 
     expect($number['number_value'])->toBeNull()
         ->and($scored['number_value'])->toBeNull()
         ->and($datetime['datetime_value'])->toBeNull();
 
-    $valid = $normalizer->normalize(new FeedbackQuestion(['type' => 'number']), '4.5');
+    $valid = $normalizer->normalize('number', '4.5');
 
     expect($valid['number_value'])->toBe(4.5);
 });

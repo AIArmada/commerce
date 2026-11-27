@@ -10,7 +10,6 @@ use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
-use Illuminate\Support\Collection;
 
 final class FeedbackFormAnalytics extends Page
 {
@@ -41,9 +40,9 @@ final class FeedbackFormAnalytics extends Page
     }
 
     /**
-     * @return Collection<int, mixed>
+     * @return list<array{id: string, text_value: string}>
      */
-    public function getLatestComments(): Collection
+    public function getLatestComments(): array
     {
         return app(FeedbackAnalyticsQuery::class)->latestComments($this->getForm());
     }
