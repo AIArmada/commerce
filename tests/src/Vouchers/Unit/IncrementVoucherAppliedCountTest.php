@@ -16,14 +16,16 @@ use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
-it('does not increment malformed owner tuple rows when handling global voucher applications', function (): void {
+it('tracks applications only for the exact voucher and valid owner tuple', function (?string $rowOwnerType, bool $matchingIdentity, ?string $eventOwnerType, int $expectedCount): void {
     config()->set('vouchers.tracking.track_applications', true);
 
     $table = (new Voucher)->getTable();
 
+    $voucherId = (string) Str::uuid();
+
     DB::table($table)->insert([
-        'id' => (string) Str::uuid(),
-        'owner_type' => 'broken-owner-type',
+        'id' => $voucherId,
+        'owner_type' => $rowOwnerType,
         'owner_id' => null,
         'code' => 'MALFORMED-GLOBAL',
         'name' => 'Malformed Global Voucher Row',
@@ -56,7 +58,7 @@ it('does not increment malformed owner tuple rows when handling global voucher a
     $event = new VoucherApplied(
         new Cart(new InMemoryStorage, 'listener-cart-' . Str::uuid()->toString()),
         VoucherData::fromArray([
-            'id' => (string) Str::uuid(),
+            'id' => $matchingIdentity ? $voucherId : (string) Str::uuid(),
             'code' => 'MALFORMED-GLOBAL',
             'name' => 'Global Voucher Event',
             'type' => VoucherType::Fixed,
@@ -64,7 +66,7 @@ it('does not increment malformed owner tuple rows when handling global voucher a
             'currency' => 'MYR',
             'status' => Active::class,
             'owner_id' => null,
-            'owner_type' => null,
+            'owner_type' => $eventOwnerType,
         ])
     );
 
@@ -74,5 +76,10 @@ it('does not increment malformed owner tuple rows when handling global voucher a
         ->where('code', 'MALFORMED-GLOBAL')
         ->value('applied_count');
 
-    expect((int) $appliedCount)->toBe(0);
-});
+    expect((int) $appliedCount)->toBe($expectedCount);
+})->with([
+    'malformed persisted owner tuple' => ['broken-owner-type', true, null, 0],
+    'reused code with different voucher id' => [null, false, null, 0],
+    'malformed event owner tuple' => [null, true, 'broken-owner-type', 0],
+    'exact global voucher' => [null, true, null, 1],
+]);
