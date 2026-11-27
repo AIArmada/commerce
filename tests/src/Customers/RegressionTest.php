@@ -944,7 +944,9 @@ it('rolls back a merge when a contact transfer is vetoed', function (): void {
 });
 
 it('rolls back contact transfers when merge metadata persistence is vetoed', function (): void {
-    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Metadata Veto', 'metadata' => ['test' => 'preserve']]);
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Metadata Veto']);
+    $source->forceFill(['metadata' => ['test' => 'preserve']])->saveOrFail();
+    expect($source->fresh()->metadata)->toBe(['test' => 'preserve']);
     $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Metadata Veto']);
     $contact = $source->addContactMethod(ContactMethodData::email('merge-metadata-veto@example.com'));
 

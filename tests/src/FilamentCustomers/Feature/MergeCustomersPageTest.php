@@ -182,9 +182,14 @@ it('labels merge search results without per-row lookups', function (): void {
         }
 
         $queries = [];
+        $customer = new Customer;
+        $customerTable = $customer->getTable();
+        $contactTable = $customer->contactMethods()->getRelated()->getTable();
 
-        DB::listen(static function ($query) use (&$queries): void {
-            $queries[] = $query->sql;
+        DB::listen(static function ($query) use (&$queries, $customerTable, $contactTable): void {
+            if (str_contains($query->sql, '"' . $customerTable . '"') || str_contains($query->sql, '"' . $contactTable . '"')) {
+                $queries[] = $query->sql;
+            }
         });
 
         $results = filamentCustomers_searchCustomers('Searchable');

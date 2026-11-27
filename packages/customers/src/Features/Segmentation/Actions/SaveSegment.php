@@ -70,7 +70,11 @@ final readonly class SaveSegment
                 }
             });
         } catch (UniqueConstraintViolationException $exception) {
-            if (str_contains((string) ($exception->errorInfo[2] ?? ''), 'customers_segments_owner_slug_unique')) {
+            $detail = (string) ($exception->errorInfo[2] ?? '');
+            $table = $segment->getTable();
+
+            if (str_contains($detail, 'customers_segments_owner_slug_unique')
+                || str_contains($detail, "UNIQUE constraint failed: {$table}.owner_scope, {$table}.slug")) {
                 throw ValidationException::withMessages([
                     'slug' => 'The segment slug has already been taken within this owner scope.',
                 ]);
