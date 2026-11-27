@@ -63,7 +63,7 @@
                                     <span>{{ $voucher->name }}</span>
                                 </td>
                                 <td>
-                                    <x-filament::badge :color="\AIArmada\Vouchers\Enums\VoucherType::from($voucher->type->value)->color()" size="sm">
+                                    <x-filament::badge :color="\AIArmada\Vouchers\Data\VoucherType::from($voucher->type->value)->color()" size="sm">
                                         {{ $voucher->type->label() }}
                                     </x-filament::badge>
                                 </td>

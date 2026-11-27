@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\States\Active;
 
 it('converts voucher condition to cart condition and back', function (): void {
@@ -16,7 +16,7 @@ it('converts voucher condition to cart condition and back', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $voucherCondition = new VoucherCondition($voucherData, order: 75, dynamic: false);
@@ -47,7 +47,7 @@ it('exposes structured target definitions for vouchers', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 1500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
     ]);
 
@@ -76,7 +76,7 @@ it('supports overriding the target definition via voucher metadata', function ()
         'type' => VoucherType::Percentage->value,
         'value' => 5,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
     ]);
 
@@ -97,7 +97,7 @@ it('uses the default condition target when target definition only contains eligi
         'type' => VoucherType::Percentage->value,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'targeting' => [
                 'mode' => 'all',

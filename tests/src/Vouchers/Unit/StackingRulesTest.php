@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Stacking\Rules\CampaignExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\CategoryExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\MaxDiscountPercentageRule;
@@ -65,7 +65,7 @@ function createVoucherCondition(
         'owner_type' => null,
         'starts_at' => null,
         'expires_at' => null,
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => null,
         'metadata' => $metadata,
     ]);

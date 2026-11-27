@@ -13,7 +13,7 @@ use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -73,7 +73,7 @@ it('rejects present but malformed assignee markers', function (mixed $assignee):
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => ['assignee' => $assignee],
     ]);
 
@@ -103,7 +103,7 @@ it('leaves unmarked commercial vouchers untouched by the assignee check', functi
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     Auth::setUser($user);
@@ -155,7 +155,7 @@ it('refuses usage on expired and revoked vouchers', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'expires_at' => now()->subDay(),
     ]);
 
@@ -171,7 +171,7 @@ it('refuses usage on expired and revoked vouchers', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     ExpireVoucher::run($revoked->code);
@@ -192,7 +192,7 @@ it('replays an existing idempotent usage after the voucher expires', function ()
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
     $metadata = ['idempotency_key' => 'replay-after-expiry'];
 
@@ -213,7 +213,7 @@ it('rejects an idempotency key replayed for a different redeemer', function (): 
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
     $firstRedeemer = assigneeUser();
     $secondRedeemer = assigneeUser();

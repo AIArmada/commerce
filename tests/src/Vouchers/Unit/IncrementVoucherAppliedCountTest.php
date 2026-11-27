@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Models\Voucher;
@@ -44,7 +44,7 @@ it('tracks applications only for the exact voucher and valid owner tuple', funct
         'allows_manual_redemption' => false,
         'starts_at' => null,
         'expires_at' => null,
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => null,
         'metadata' => null,
         'stacking_rules' => null,
@@ -64,7 +64,7 @@ it('tracks applications only for the exact voucher and valid owner tuple', funct
             'type' => VoucherType::Fixed,
             'value' => 100,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'owner_id' => null,
             'owner_type' => $eventOwnerType,
         ])

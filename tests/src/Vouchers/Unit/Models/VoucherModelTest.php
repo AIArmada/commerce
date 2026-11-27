@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -71,7 +71,7 @@ describe('Voucher Model', function (): void {
             'type' => VoucherType::Percentage,
             'value' => 1000,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'affiliate_id' => (string) Str::uuid(),
             'affiliate_program_id' => (string) Str::uuid(),
             'affiliate_commission_value' => 2500,
@@ -165,7 +165,7 @@ describe('Voucher Model', function (): void {
                     'type' => VoucherType::Percentage,
                     'value' => 10,
                     'currency' => 'MYR',
-                    'status' => Active::class,
+                    'status' => 'active',
                 ]);
 
                 $voucher->usages()->create([
@@ -359,7 +359,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Percentage,
                 'value' => 1000,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $voucher->usages()->create([
@@ -383,7 +383,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Fixed,
                 'value' => 5000,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $voucher->walletEntries()->create([
@@ -407,7 +407,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Percentage,
                 'value' => 1500,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $voucher->usages()->create([

@@ -13,7 +13,7 @@ use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 
 final class ValidatePromoCodeAction

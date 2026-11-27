@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
-use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherCreated;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
@@ -109,7 +109,7 @@ final class CreateVoucher implements VoucherCreator
 
                     $voucher = VoucherModel::create($createData);
 
-                    event(new VoucherCreated(VoucherData::fromModel($voucher)));
+                    event(new VoucherCreated(VoucherSnapshot::fromModel($voucher)));
 
                     return $voucher;
                 });

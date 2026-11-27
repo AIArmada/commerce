@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\States\Active;
@@ -47,7 +47,7 @@ test('applied_count is incremented when voucher is applied to cart', function ()
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => Active::class,
+        'status' => 'active',
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -72,7 +72,7 @@ test('applied_count increments multiple times for different sessions', function 
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => Active::class,
+        'status' => 'active',
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -109,7 +109,7 @@ test('VoucherApplied event is fired when voucher is applied', function (): void 
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => Active::class,
+        'status' => 'active',
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -129,7 +129,7 @@ test('getConversionRate returns null when voucher has never been applied', funct
         'type' => VoucherType::Percentage,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     expect($voucher->getConversionRate())->toBeNull();
@@ -142,7 +142,7 @@ test('getConversionRate returns zero when applied but never redeemed', function 
         'type' => VoucherType::Percentage,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $voucher->applied_count = 10;
@@ -159,7 +159,7 @@ test('getConversionRate calculates correct percentage', function (): void {
         'type' => VoucherType::Percentage,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     // Apply 5 times
@@ -194,7 +194,7 @@ test('getAbandonedCount returns correct count', function (): void {
         'type' => VoucherType::Percentage,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     // Apply 10 times
@@ -236,7 +236,7 @@ test('getStatistics returns comprehensive stats', function (): void {
         'type' => VoucherType::Percentage,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit' => 100,
     ]);
 
@@ -279,7 +279,7 @@ test('applied_count is not incremented when tracking is disabled', function (): 
         'type' => VoucherType::Percentage,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $voucher = $voucher->fresh();

@@ -9,10 +9,10 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherStatus;
 use Illuminate\Support\Facades\Event;
 use Mockery\Expectation;
 
@@ -36,7 +36,7 @@ it('normalizes voucher validation results', function (): void {
         return;
     }
 
-    $status = VoucherStatus::fromString('active', new Voucher);
+    $status = VoucherStatus::Active;
 
     $voucherData = new VoucherData(
         id: 'voucher-1',

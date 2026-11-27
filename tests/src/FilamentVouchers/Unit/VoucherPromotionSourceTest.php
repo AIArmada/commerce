@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use Filament\Actions\Action;
@@ -70,7 +70,7 @@ it('derives promotion source attributes from the related promotion when availabl
         'type' => VoucherType::Fixed,
         'value' => 1500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'promotion_id' => $promotion->id,
     ])->fresh();
 
@@ -87,7 +87,7 @@ it('does not derive promotion source attributes from metadata without a relation
         'type' => VoucherType::Fixed,
         'value' => 1500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => [
             'source_promotion_id' => (string) Str::uuid(),
             'source_promotion_name' => 'Recovery Campaign',

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherValidator;
@@ -21,7 +21,7 @@ test('validates valid voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -49,7 +49,7 @@ test('validates inactive voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Paused::class,
+        'status' => 'paused',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -68,7 +68,7 @@ test('validates voucher not started', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'starts_at' => now()->addDay(),
     ]);
 
@@ -88,7 +88,7 @@ test('validates expired voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'expires_at' => now()->subDay(),
     ]);
 
@@ -110,7 +110,7 @@ test('validates voucher with usage limit reached', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit' => 1,
     ]);
 
@@ -156,7 +156,7 @@ test('validates voucher with per-user limit reached', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit_per_user' => 1,
     ]);
 
@@ -187,7 +187,7 @@ test('validates voucher with minimum cart value not met', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'min_cart_value' => 20000, // 20000 cents = $200.00
     ]);
 
@@ -207,7 +207,7 @@ test('validates with object cart', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'min_cart_value' => 5000, // 5000 cents = $50.00
     ]);
 
@@ -235,7 +235,7 @@ test('validates voucher with cart condition target definition as no eligibility 
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
     ]);
 
@@ -256,7 +256,7 @@ test('fails closed for targeted vouchers without a live cart', function (): void
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'type' => 'category',
             'categories' => ['electronics'],
@@ -281,7 +281,7 @@ test('fails closed for unknown non-empty target definition payloads', function (
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'type' => 'category',
             'categories' => ['electronics'],
@@ -306,7 +306,7 @@ test('fails closed for invalid cart condition target definition payloads', funct
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => [
             'scope' => 'not-a-scope',
             'phase' => 'cart_subtotal',
@@ -338,7 +338,7 @@ test('fails closed for malformed targeting payloads', function (array $targetDef
         'type' => VoucherType::Percentage->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'target_definition' => $targetDefinition,
     ]);
 
@@ -378,7 +378,7 @@ test('normalizes code with uppercase', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -398,7 +398,7 @@ test('normalizes code without uppercase', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     $validator = app(VoucherValidator::class);

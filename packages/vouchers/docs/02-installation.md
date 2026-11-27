@@ -87,7 +87,7 @@ Verify installation by creating a test voucher:
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = Voucher::create([
     'code' => 'TEST10',

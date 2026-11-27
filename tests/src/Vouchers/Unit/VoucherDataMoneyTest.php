@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Exceptions\InvalidVoucherDataException;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\States\Active;
 
 it('rejects floats for every integer monetary or limit field at the DTO boundary', function (): void {
@@ -24,9 +23,9 @@ it('rejects floats for every integer monetary or limit field at the DTO boundary
             'type' => VoucherType::Fixed->value,
             'value' => $field === 'value' ? 100.5 : 100,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             $field => 100.5,
-        ]))->toThrow(InvalidVoucherDataException::class);
+        ]))->toThrow(\InvalidArgumentException::class);
     }
 });
 
@@ -38,7 +37,7 @@ it('rejects float aliases at the DTO boundary as well', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 100,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'minCartValue' => 100.5,
-    ]))->toThrow(InvalidVoucherDataException::class);
+    ]))->toThrow(\InvalidArgumentException::class);
 });

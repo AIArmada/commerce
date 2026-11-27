@@ -15,7 +15,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use App\Models\User;
@@ -222,7 +222,7 @@ test('checkout builds CHIP purchase lines from exact order math without cart-lev
             'allows_manual_redemption' => true,
             'starts_at' => null,
             'expires_at' => null,
-            'status' => Active::class,
+            'status' => 'active',
             'target_definition' => null,
             'metadata' => null,
         ]);

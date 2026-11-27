@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Support;
 
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use Akaunting\Money\Currency;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;

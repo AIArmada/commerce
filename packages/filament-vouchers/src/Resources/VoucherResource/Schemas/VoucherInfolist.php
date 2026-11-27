@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\FilamentAffiliates\Features\Programs\Api\ProgramAdminLinks;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Infolists\Components\TextEntry;

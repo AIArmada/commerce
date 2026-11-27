@@ -10,8 +10,8 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
@@ -280,7 +280,7 @@ final class VoucherSuggestionsWidget extends Widget
     {
         try {
             $savings = app(VoucherDiscountCalculator::class)
-                ->calculate(VoucherData::fromModel($voucher), $cartTotal);
+                ->calculate(VoucherSnapshot::fromModel($voucher), $cartTotal);
         } catch (Throwable) {
             $savings = $this->simpleTypeEstimate($voucher, $cartTotal);
         }

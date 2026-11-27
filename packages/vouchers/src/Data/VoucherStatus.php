@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Enums;
+namespace AIArmada\Vouchers\Data;
 
 enum VoucherStatus: string
 {

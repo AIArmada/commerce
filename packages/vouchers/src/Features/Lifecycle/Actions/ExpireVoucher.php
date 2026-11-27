@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherExpired;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\States\Expired;
@@ -47,7 +47,7 @@ final class ExpireVoucher
             $voucher->status->transitionTo(Expired::class);
             $voucher->save();
 
-            event(new VoucherExpired(VoucherData::fromModel($voucher)));
+            event(new VoucherExpired(VoucherSnapshot::fromModel($voucher)));
         });
     }
 }

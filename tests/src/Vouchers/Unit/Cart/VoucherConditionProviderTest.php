@@ -13,7 +13,7 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Cart\VoucherConditionProvider;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
 use Mockery;
 

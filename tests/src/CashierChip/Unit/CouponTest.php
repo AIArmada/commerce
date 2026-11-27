@@ -5,10 +5,8 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherStatus;
 use Carbon\Carbon;
 
 uses(CashierChipTestCase::class);
@@ -34,7 +32,7 @@ $createVoucherData = function (array $attributes = []): VoucherData {
         ownerType: null,
         startsAt: $attributes['startsAt'] ?? null,
         expiresAt: $attributes['expiresAt'] ?? null,
-        status: $attributes['status'] ?? VoucherStatus::fromString(Active::class),
+        status: $attributes['status'] ?? VoucherStatus::Active,
         targetDefinition: null,
         metadata: $attributes['metadata'] ?? [],
     );
@@ -105,7 +103,7 @@ describe('Coupon', function () use ($createVoucherData): void {
 
     it('validation', function () use ($createVoucherData): void {
         $activeVoucher = $createVoucherData([
-            'status' => VoucherStatus::fromString(Active::class),
+            'status' => VoucherStatus::Active,
             'startsAt' => Carbon::yesterday(),
             'expiresAt' => Carbon::tomorrow(),
         ]);
@@ -113,7 +111,7 @@ describe('Coupon', function () use ($createVoucherData): void {
         $this->assertTrue((new Coupon($activeVoucher))->isActive());
         $this->assertFalse((new Coupon($activeVoucher))->isExpired());
 
-        $inactiveVoucher = $createVoucherData(['status' => VoucherStatus::fromString(Paused::class)]);
+        $inactiveVoucher = $createVoucherData(['status' => VoucherStatus::Paused]);
         $this->assertFalse((new Coupon($inactiveVoucher))->isValid());
         $this->assertFalse((new Coupon($inactiveVoucher))->isActive());
 
@@ -138,7 +136,7 @@ describe('Coupon', function () use ($createVoucherData): void {
 
     it('calculate discount fixed', function () use ($createVoucherData): void {
         $voucher = $createVoucherData([
-            'status' => VoucherStatus::fromString(Active::class),
+            'status' => VoucherStatus::Active,
             'type' => VoucherType::Fixed,
             'value' => 500, // 5.00
         ]);
@@ -147,7 +145,7 @@ describe('Coupon', function () use ($createVoucherData): void {
         $this->assertEquals(500, $coupon->calculateDiscount(10000));
         // Capped at amount
         $this->assertEquals(400, $coupon->calculateDiscount(400));
-        $inactiveVoucher = $createVoucherData(['status' => VoucherStatus::fromString(Paused::class)]);
+        $inactiveVoucher = $createVoucherData(['status' => VoucherStatus::Paused]);
 
         $inactiveCoupon = new Coupon($inactiveVoucher);
         $this->assertFalse($inactiveCoupon->isValid());

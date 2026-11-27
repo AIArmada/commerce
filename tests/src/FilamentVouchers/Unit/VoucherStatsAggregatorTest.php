@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
@@ -20,7 +20,7 @@ beforeEach(function (): void {
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]));
@@ -31,7 +31,7 @@ beforeEach(function (): void {
         'type' => VoucherType::Percentage,
         'value' => 1500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->addDay(),
     ]));
@@ -42,7 +42,7 @@ beforeEach(function (): void {
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Expired::class,
+        'status' => 'expired',
         'allows_manual_redemption' => false,
         'expires_at' => now()->subDay(),
     ]));

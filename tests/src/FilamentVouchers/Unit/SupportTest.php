@@ -8,7 +8,7 @@ use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\Vouchers\States\Active;
 use Illuminate\Database\Schema\Blueprint;
@@ -109,7 +109,7 @@ it('resolves voucher owner display labels via OwnerTypeRegistry', function (): v
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);

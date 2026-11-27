@@ -15,8 +15,9 @@ use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherReservations;
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
@@ -52,7 +53,7 @@ class VoucherService implements VoucherServiceInterface
                     ->where('code', $normalizedCode)
                     ->first();
 
-                return $voucher ? VoucherData::fromModel($voucher) : null;
+                return $voucher ? VoucherSnapshot::fromModel($voucher) : null;
             },
         );
     }
@@ -90,7 +91,7 @@ class VoucherService implements VoucherServiceInterface
         /** @var VoucherModel $voucher */
         $voucher = app(VoucherCreator::class)->handle($data);
 
-        return VoucherData::fromModel($voucher);
+        return VoucherSnapshot::fromModel($voucher);
     }
 
     /**
@@ -100,7 +101,7 @@ class VoucherService implements VoucherServiceInterface
     {
         $voucher = app(VoucherUpdater::class)->handle($this->normalizeCode($code), $data);
 
-        return VoucherData::fromModel($voucher);
+        return VoucherSnapshot::fromModel($voucher);
     }
 
     public function delete(string $code): bool
@@ -335,7 +336,7 @@ class VoucherService implements VoucherServiceInterface
             return 0;
         }
 
-        return app(VoucherDiscountCalculator::class)->calculate(VoucherData::fromModel($voucher), (int) $subtotal);
+        return app(VoucherDiscountCalculator::class)->calculate(VoucherSnapshot::fromModel($voucher), (int) $subtotal);
     }
 
     private function resolveRedeemedByOrder(string $orderId): ?Model

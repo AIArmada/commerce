@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
-use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
@@ -155,7 +155,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 }
             }
 
-            event(new VoucherUsageRecorded(VoucherData::fromModel($lockedVoucher), $usage));
+            event(new VoucherUsageRecorded(VoucherSnapshot::fromModel($lockedVoucher), $usage));
 
             return $usage;
         });

@@ -6,9 +6,8 @@ use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\PromotionCode;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherStatus;
 
 uses(CashierChipTestCase::class);
 
@@ -34,7 +33,7 @@ describe('PromotionCode', function (): void {
             ownerType: null,
             startsAt: null,
             expiresAt: null,
-            status: VoucherStatus::fromString(Active::class),
+            status: VoucherStatus::Active,
             targetDefinition: null,
             metadata: []
         );
@@ -69,7 +68,7 @@ describe('PromotionCode', function (): void {
             ownerType: null,
             startsAt: null,
             expiresAt: null,
-            status: VoucherStatus::fromString(Active::class),
+            status: VoucherStatus::Active,
             targetDefinition: null,
             metadata: []
         );
@@ -103,7 +102,7 @@ describe('PromotionCode', function (): void {
             ownerType: null,
             startsAt: null,
             expiresAt: null,
-            status: VoucherStatus::fromString(Active::class),
+            status: VoucherStatus::Active,
             targetDefinition: null,
             metadata: []
         );

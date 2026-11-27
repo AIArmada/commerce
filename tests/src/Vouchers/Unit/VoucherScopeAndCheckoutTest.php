@@ -6,7 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -47,7 +47,7 @@ function scopeVoucher(array $attributes = []): Voucher
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ], $attributes));
 }
 

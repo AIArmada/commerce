@@ -44,7 +44,7 @@ php artisan migrate
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = Voucher::create([
     'code' => 'SUMMER2024',
@@ -348,7 +348,7 @@ Cart::validateAppliedVouchers(): array
 | `VoucherNotFoundException` | Voucher code does not exist |
 | `VoucherExpiredException` | Voucher has expired |
 | `InvalidVoucherException` | Voucher is invalid (inactive, not started, min cart value not met) |
-| `InvalidVoucherDataException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
+| `InvalidArgumentException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
 | `VoucherUsageLimitException` | Usage limit exceeded |
 | `VoucherValidationException` | Voucher validation failed during checkout |
 | `VoucherStackingException` | Stacking policy violation |

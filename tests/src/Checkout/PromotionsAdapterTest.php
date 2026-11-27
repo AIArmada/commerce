@@ -10,7 +10,7 @@ use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\States\Active;
 use Mockery\Expectation;
 
@@ -111,7 +111,7 @@ it('does not resolve a code promotion when the code belongs to a valid voucher',
             'type' => VoucherType::Fixed->value,
             'value' => 1000,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]));
 
     app()->instance(VoucherServiceInterface::class, $voucherService);

@@ -15,7 +15,7 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Ingestion\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\States\Active;
@@ -125,7 +125,7 @@ it('records a voucher applied signal for the owner-scoped property', function ()
         'type' => VoucherType::Fixed->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     Event::dispatch(new VoucherApplied($cart, $voucher));
@@ -174,7 +174,7 @@ it('records repeated cart and voucher interactions without collapsing them', fun
         'type' => VoucherType::Fixed->value,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     Event::dispatch(new VoucherApplied($cart, $voucher));

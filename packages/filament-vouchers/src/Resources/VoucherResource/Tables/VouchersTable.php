@@ -7,7 +7,7 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;

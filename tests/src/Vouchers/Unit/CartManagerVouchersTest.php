@@ -6,7 +6,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
@@ -37,7 +37,7 @@ it('proxies voucher interactions via cart manager wrapper', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     Voucher::shouldReceive('validate')

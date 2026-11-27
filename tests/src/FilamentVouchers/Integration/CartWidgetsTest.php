@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
@@ -68,7 +68,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         'type' => VoucherType::Percentage,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -184,7 +184,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 100,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
         'usage_limit' => 5,
@@ -245,7 +245,7 @@ it('prevents voucher suggestions widget cross-tenant cart access when owner scop
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);

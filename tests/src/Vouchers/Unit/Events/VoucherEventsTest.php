@@ -7,7 +7,7 @@ use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\States\Active;
@@ -31,7 +31,7 @@ describe('VoucherApplied event', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1000,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]);
     });
 
@@ -96,7 +96,7 @@ describe('VoucherRemoved event', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]);
     });
 
@@ -152,7 +152,7 @@ describe('VoucherApplied and VoucherRemoved difference', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
         ]);
     });
 

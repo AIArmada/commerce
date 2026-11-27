@@ -11,7 +11,7 @@ use AIArmada\FilamentPromotions\Widgets\PromotionStatsWidget;
 use AIArmada\FilamentPromotions\Widgets\TopPromotionsUsageChart;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
@@ -91,7 +91,7 @@ function filamentPromotions_createIssuedVoucher(Promotion $promotion, string $co
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'MYR',
-        'status' => Active::class,
+        'status' => 'active',
         'usage_limit' => 1,
         'applied_count' => $redeemed ? 1 : 0,
         'starts_at' => now()->subDay(),

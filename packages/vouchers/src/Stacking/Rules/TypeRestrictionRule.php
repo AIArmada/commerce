@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Stacking\Rules;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Stacking\Contracts\StackingRuleInterface;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Stacking\StackingDecision;

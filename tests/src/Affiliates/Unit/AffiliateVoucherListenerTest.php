@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Str;
@@ -39,7 +39,7 @@ function dispatchVoucherApplied(array $metadata, ?string $affiliateId = null): v
         'type' => VoucherType::Fixed->value,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => $metadata,
         'affiliate_id' => $affiliateId,
     ]);
@@ -100,7 +100,7 @@ test('listener preserves affiliate commission and program overrides from voucher
         'type' => VoucherType::Fixed->value,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'metadata' => [
         ],
         'affiliate_id' => $this->affiliate->id,

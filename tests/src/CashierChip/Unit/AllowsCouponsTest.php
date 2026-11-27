@@ -7,7 +7,7 @@ use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
@@ -74,7 +74,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1000, // 10%
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -110,7 +110,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Paused::class,
+            'status' => 'paused',
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -127,7 +127,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'forever'],
         ]);
 
@@ -144,7 +144,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'forever'],
         ]);
 
@@ -177,7 +177,7 @@ describe('AllowsCoupons', function (): void {
             'type' => VoucherType::Percentage->value,
             'value' => 1000, // 10%
             'currency' => 'MYR',
-            'status' => Active::class,
+            'status' => 'active',
             'metadata' => ['duration' => 'once'],
         ]);
 

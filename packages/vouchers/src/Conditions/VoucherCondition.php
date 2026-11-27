@@ -12,7 +12,7 @@ use AIArmada\Cart\Conditions\Target;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Runtime\CartConditionConvertible;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 use Illuminate\Contracts\Support\Arrayable;
 use JsonException;

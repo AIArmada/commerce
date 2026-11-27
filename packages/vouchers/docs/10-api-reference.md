@@ -70,7 +70,7 @@ Voucher::create(array $data): VoucherData
 - `starts_at` - Start datetime
 - `expires_at` - Expiry datetime
 - `allows_manual_redemption` - Allow manual redemption
-- `status` - Spatie state class, e.g. `AIArmada\Vouchers\States\Active::class` (default: `Active::class`). The backed `AIArmada\Vouchers\Enums\VoucherStatus` enum is **not** accepted here.
+- `status` - Spatie state class, e.g. `AIArmada\Vouchers\States\Active::class` (default: `Active::class`). The backed `AIArmada\Vouchers\Data\VoucherStatus` enum is **not** accepted here.
 - `metadata` - Additional data array
 - `target_definition` - Targeting rules array
 
@@ -389,14 +389,14 @@ enum VoucherType: string
 
 Two distinct types share this name:
 
-- `AIArmada\Vouchers\Enums\VoucherStatus` — the plain backed enum used for labels, filters,
+- `AIArmada\Vouchers\Data\VoucherStatus` — the plain backed enum used for labels, filters,
   and option lists.
 - `AIArmada\Vouchers\States\VoucherStatus` — the abstract Spatie model-state that the `status`
   cast on `Voucher` and `VoucherData::$status` actually resolves to. This is the type you
   pass to `create()` and receive from reads.
 
 ```php
-// AIArmada\Vouchers\Enums\VoucherStatus
+// AIArmada\Vouchers\Data\VoucherStatus
 enum VoucherStatus: string
 {
     case Active = 'active';
@@ -416,7 +416,7 @@ enum VoucherStatus: string
 | `VoucherNotFoundException` | Voucher code not found |
 | `VoucherExpiredException` | Voucher has expired |
 | `InvalidVoucherException` | Voucher is invalid |
-| `InvalidVoucherDataException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
+| `InvalidArgumentException` | Invalid data passed to VoucherData (e.g., float instead of integer) |
 | `VoucherUsageLimitException` | Usage limit exceeded |
 | `VoucherValidationException` | Voucher validation failed during checkout |
 | `VoucherStackingException` | Stacking policy violation |

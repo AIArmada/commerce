@@ -7,7 +7,7 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\RelationManage
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;

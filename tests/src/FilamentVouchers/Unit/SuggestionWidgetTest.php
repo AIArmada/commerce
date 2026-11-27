@@ -6,7 +6,7 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 
@@ -33,7 +33,7 @@ function suggestionVoucher(array $overrides = []): Voucher
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'starts_at' => now()->subDay(),
     ], $overrides));
 }

@@ -14,7 +14,7 @@ use AIArmada\Affiliates\Features\Conversions\States\PaidConversion;
 use AIArmada\Affiliates\States\Pending as PendingAffiliate;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;

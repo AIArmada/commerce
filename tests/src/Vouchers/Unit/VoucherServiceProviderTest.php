@@ -8,7 +8,7 @@ use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
@@ -92,7 +92,7 @@ describe('VoucherServiceProvider', function (): void {
                 'type' => VoucherType::Fixed->value,
                 'value' => 50,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $voucherCondition = new VoucherCondition($voucherData, order: 90, dynamic: false);
@@ -112,7 +112,7 @@ describe('VoucherServiceProvider', function (): void {
                 'type' => VoucherType::Percentage->value,
                 'value' => 10,
                 'currency' => 'MYR',
-                'status' => Active::class,
+                'status' => 'active',
             ]);
 
             $result = $resolver->resolve($voucherData);

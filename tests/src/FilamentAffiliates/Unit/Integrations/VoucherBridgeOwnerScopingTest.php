@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Str;
@@ -45,7 +45,7 @@ it('does not leak cross-tenant voucher urls by code', function (): void {
             'type' => VoucherType::Percentage,
             'value' => 1000,
             'currency' => 'USD',
-            'status' => Active::class,
+            'status' => 'active',
             'allows_manual_redemption' => true,
             'applied_count' => 0,
             'stacking_priority' => 0,

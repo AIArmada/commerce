@@ -4,22 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Data;
 
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Exceptions\InvalidVoucherDataException;
-use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
 use Akaunting\Money\Money;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use DateTimeInterface;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Voucher data transfer object.
@@ -28,10 +17,12 @@ use Spatie\LaravelData\Mappers\SnakeCaseMapper;
  * All monetary values are stored in minor units (cents) as integers.
  * Percentage values are stored in basis points (e.g., 10.50% = 1050).
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class VoucherData extends Data
+final readonly class VoucherData implements \JsonSerializable
 {
+    public ?DateTimeImmutable $startsAt;
+
+    public ?DateTimeImmutable $expiresAt;
+
     /**
      * @param  int  $value  Value in cents for fixed amounts, or basis points for percentages
      * @param  array<string, mixed>|null  $valueConfig  Configuration for compound voucher types
@@ -46,85 +37,37 @@ class VoucherData extends Data
      * @param  list<array{level: int, type?: string, value?: int, share?: float}>|null  $affiliateUplineLevels  Upline override levels
      */
     public function __construct(
-        public readonly string $id,
-        public readonly string $code,
-        public readonly string $name,
-        public readonly ?string $description,
-        public readonly VoucherType $type,
-        public readonly int $value,
-        public readonly ?array $valueConfig,
-        public readonly ?string $creditDestination,
-        public readonly int $creditDelayHours,
-        public readonly string $currency,
-        public readonly ?int $minCartValue,
-        public readonly ?int $maxDiscount,
-        public readonly ?int $usageLimit,
-        public readonly ?int $usageLimitPerUser,
-        public readonly bool $allowsManualRedemption,
-        public readonly int | string | null $ownerId,
-        public readonly ?string $ownerType,
-        #[WithCast(DateTimeInterfaceCast::class)]
-        public readonly ?DateTimeInterface $startsAt,
-        #[WithCast(DateTimeInterfaceCast::class)]
-        public readonly ?DateTimeInterface $expiresAt,
-        public readonly VoucherStatus $status,
-        public readonly ?array $targetDefinition,
-        public readonly ?array $metadata,
-        public readonly ?string $promotionId = null,
-        public readonly ?string $affiliateCommissionType = null,
-        public readonly ?int $affiliateCommissionValue = null,
-        public readonly ?string $affiliateId = null,
-        public readonly ?string $affiliateProgramId = null,
-        public readonly ?array $affiliateUplineLevels = null,
-    ) {}
-
-    /**
-     * Create from a Voucher model.
-     */
-    public static function fromModel(Voucher $voucher): self
-    {
-        $type = $voucher->type;
-
-        if (! $type instanceof VoucherType) {
-            $type = VoucherType::from($type);
-        }
-
-        $status = $voucher->status;
-
-        if (! $status instanceof VoucherStatus) {
-            $status = VoucherStatus::fromString((string) $status);
-        }
-
-        return new self(
-            id: $voucher->id,
-            code: $voucher->code,
-            name: $voucher->name,
-            description: $voucher->description,
-            type: $type,
-            value: (int) $voucher->value,
-            valueConfig: $voucher->value_config,
-            creditDestination: $voucher->credit_destination,
-            creditDelayHours: (int) ($voucher->credit_delay_hours ?? 0),
-            currency: $voucher->currency,
-            minCartValue: $voucher->min_cart_value !== null ? (int) $voucher->min_cart_value : null,
-            maxDiscount: $voucher->max_discount !== null ? (int) $voucher->max_discount : null,
-            usageLimit: $voucher->usage_limit,
-            usageLimitPerUser: $voucher->usage_limit_per_user,
-            allowsManualRedemption: (bool) $voucher->allows_manual_redemption,
-            ownerId: $voucher->owner_id,
-            ownerType: $voucher->owner_type,
-            startsAt: $voucher->starts_at,
-            expiresAt: $voucher->expires_at,
-            status: $status,
-            targetDefinition: $voucher->target_definition,
-            metadata: $voucher->metadata,
-            promotionId: $voucher->promotion_id,
-            affiliateCommissionType: self::normalizeAffiliateCommissionType($voucher->affiliate_commission_type),
-            affiliateCommissionValue: $voucher->affiliate_commission_value,
-            affiliateId: $voucher->affiliate_id,
-            affiliateProgramId: $voucher->affiliate_program_id,
-            affiliateUplineLevels: $voucher->affiliate_upline_levels,
-        );
+        public string $id,
+        public string $code,
+        public string $name,
+        public ?string $description,
+        public VoucherType $type,
+        public int $value,
+        public ?array $valueConfig,
+        public ?string $creditDestination,
+        public int $creditDelayHours,
+        public string $currency,
+        public ?int $minCartValue,
+        public ?int $maxDiscount,
+        public ?int $usageLimit,
+        public ?int $usageLimitPerUser,
+        public bool $allowsManualRedemption,
+        public int | string | null $ownerId,
+        public ?string $ownerType,
+        ?DateTimeInterface $startsAt,
+        ?DateTimeInterface $expiresAt,
+        public VoucherStatus $status,
+        public ?array $targetDefinition,
+        public ?array $metadata,
+        public ?string $promotionId = null,
+        public ?string $affiliateCommissionType = null,
+        public ?int $affiliateCommissionValue = null,
+        public ?string $affiliateId = null,
+        public ?string $affiliateProgramId = null,
+        public ?array $affiliateUplineLevels = null,
+    ) {
+        $this->startsAt = $startsAt === null ? null : DateTimeImmutable::createFromInterface($startsAt);
+        $this->expiresAt = $expiresAt === null ? null : DateTimeImmutable::createFromInterface($expiresAt);
     }
 
     /**
@@ -139,7 +82,7 @@ class VoucherData extends Data
      *
      * @param  array<string, mixed>  $data
      *
-     * @throws InvalidVoucherDataException If float values are passed where integers are expected
+     * @throws \InvalidArgumentException If float values are passed where integers are expected
      */
     public static function fromArray(array $data): self
     {
@@ -165,8 +108,8 @@ class VoucherData extends Data
             $type = VoucherType::from($type);
         }
 
-        $status = $data['status'] ?? Active::class;
-        $status = VoucherStatus::fromString($status);
+        $status = $data['status'] ?? VoucherStatus::Active;
+        $status = $status instanceof VoucherStatus ? $status : VoucherStatus::from($status);
 
         // Get currency with config fallback
         $currency = $data['currency'] ?? (string) config('vouchers.default_currency', 'MYR');
@@ -225,7 +168,7 @@ class VoucherData extends Data
      */
     public function isActive(): bool
     {
-        return $this->status instanceof Active;
+        return $this->status === VoucherStatus::Active;
     }
 
     /**
@@ -335,7 +278,7 @@ class VoucherData extends Data
      *
      * @param  array<string, mixed>  $data
      *
-     * @throws InvalidVoucherDataException If a float is passed
+     * @throws \InvalidArgumentException If a float is passed
      */
     private static function validateIntegerField(array $data, string $field, string $description): void
     {
@@ -346,7 +289,7 @@ class VoucherData extends Data
         $value = $data[$field];
 
         if (is_float($value)) {
-            throw InvalidVoucherDataException::floatNotAllowed($field, $value, $description);
+            throw new \InvalidArgumentException("VoucherData '{$field}' must be an integer ({$description}). Got float: {$value}.");
         }
     }
 
@@ -369,11 +312,7 @@ class VoucherData extends Data
                 $value = $level[$field] ?? null;
 
                 if (is_float($value)) {
-                    throw InvalidVoucherDataException::floatNotAllowed(
-                        "affiliate_upline_levels.{$index}.{$field}",
-                        $value,
-                        $description,
-                    );
+                    throw new \InvalidArgumentException("VoucherData affiliate_upline_levels.{$index}.{$field} must be an integer ({$description}).");
                 }
             }
         }
@@ -390,5 +329,49 @@ class VoucherData extends Data
         }
 
         return null;
+    }
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
+            'type' => $this->type->value,
+            'value' => $this->value,
+            'value_config' => $this->valueConfig,
+            'credit_destination' => $this->creditDestination,
+            'credit_delay_hours' => $this->creditDelayHours,
+            'currency' => $this->currency,
+            'min_cart_value' => $this->minCartValue,
+            'max_discount' => $this->maxDiscount,
+            'usage_limit' => $this->usageLimit,
+            'usage_limit_per_user' => $this->usageLimitPerUser,
+            'allows_manual_redemption' => $this->allowsManualRedemption,
+            'owner_id' => $this->ownerId,
+            'owner_type' => $this->ownerType,
+            'starts_at' => $this->startsAt?->format(DATE_ATOM),
+            'expires_at' => $this->expiresAt?->format(DATE_ATOM),
+            'status' => $this->status->value,
+            'target_definition' => $this->targetDefinition,
+            'metadata' => $this->metadata,
+            'promotion_id' => $this->promotionId,
+            'affiliate_commission_type' => $this->affiliateCommissionType,
+            'affiliate_commission_value' => $this->affiliateCommissionValue,
+            'affiliate_id' => $this->affiliateId,
+            'affiliate_program_id' => $this->affiliateProgramId,
+            'affiliate_upline_levels' => $this->affiliateUplineLevels,
+        ];
+    }
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
+
+    public function toJson(int $options = 0): string
+    {
+        return json_encode($this->toArray(), $options | JSON_THROW_ON_ERROR);
     }
 }

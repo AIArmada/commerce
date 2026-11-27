@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
@@ -20,7 +20,7 @@ function createVoucherForScopesTest(array $attributes = []): Voucher
         'name' => 'Test Voucher',
         'type' => VoucherType::Percentage,
         'value' => 1000,
-        'status' => Active::class,
+        'status' => 'active',
         'stacking_priority' => 100,
     ], $attributes));
 }
@@ -45,8 +45,8 @@ describe('Voucher Model Scopes', function (): void {
         ]);
         $upcoming = createVoucherForScopesTest(['starts_at' => Carbon::now()->addHour()]);
         $expired = createVoucherForScopesTest(['expires_at' => Carbon::now()->subHour()]);
-        $paused = createVoucherForScopesTest(['status' => Paused::class]);
-        $depleted = createVoucherForScopesTest(['status' => Depleted::class]);
+        $paused = createVoucherForScopesTest(['status' => 'paused']);
+        $depleted = createVoucherForScopesTest(['status' => 'depleted']);
         $limitReached = createVoucherForScopesTest(['usage_limit' => 1]);
 
         VoucherUsage::create([
@@ -131,19 +131,19 @@ describe('Voucher Model Methods', function (): void {
 
     it('checks canBeRedeemed correctly', function (): void {
         $validVoucher = createVoucherForScopesTest([
-            'status' => Active::class,
+            'status' => 'active',
             'starts_at' => Carbon::now()->subDay(),
             'expires_at' => Carbon::now()->addDay(),
             'usage_limit' => 10,
         ]);
 
         $expiredVoucher = createVoucherForScopesTest([
-            'status' => Active::class,
+            'status' => 'active',
             'expires_at' => Carbon::now()->subHour(),
         ]);
 
         $pausedVoucher = createVoucherForScopesTest([
-            'status' => Paused::class,
+            'status' => 'paused',
         ]);
 
         expect($validVoucher->canBeRedeemed())->toBeTrue()

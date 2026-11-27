@@ -6,7 +6,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -42,7 +42,7 @@ it('redeems voucher manually when allowed', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 10,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => true,
     ]);
 
@@ -82,7 +82,7 @@ it('rejects manual redemption when voucher disallows it', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 5,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'allows_manual_redemption' => false,
     ]);
 
@@ -123,7 +123,7 @@ it('scopes vouchers to the resolved owner', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 10,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     // Temporarily bind otherOwner as the resolved owner to create their voucher;
@@ -145,7 +145,7 @@ it('scopes vouchers to the resolved owner', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 10,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'owner_type' => $otherOwner->getMorphClass(),
         'owner_id' => $otherOwner->getKey(),
     ]);
@@ -169,7 +169,7 @@ it('scopes vouchers to the resolved owner', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 15,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
     ]);
 
     expect($service->find('OWNED'))->not->toBeNull()
@@ -214,7 +214,7 @@ it('overrides provided owner columns when resolver owner is available', function
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => Active::class,
+        'status' => 'active',
         'owner_type' => $otherOwner->getMorphClass(),
         'owner_id' => $otherOwner->getKey(),
     ]);

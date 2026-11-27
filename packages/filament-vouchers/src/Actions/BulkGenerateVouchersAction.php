@@ -6,7 +6,7 @@ namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\GenerateVoucherBatch;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;

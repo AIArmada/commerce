@@ -13,7 +13,7 @@ use AIArmada\Vouchers\Compound\Conditions\CashbackVoucherCondition;
 use AIArmada\Vouchers\Compound\Conditions\CompoundVoucherCondition;
 use AIArmada\Vouchers\Compound\Conditions\TieredVoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 /**
  * Create a cart for compound voucher testing.

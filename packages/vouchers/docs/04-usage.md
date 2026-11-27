@@ -14,7 +14,7 @@ Set an `assignee` marker in voucher metadata to restrict validation and redempti
 
 ```php
 use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 // Assume $customer is the intended recipient model.
 $voucher = CreateVoucher::run([
@@ -38,7 +38,7 @@ Validation uses the authenticated model. `RecordVoucherUsage` also requires that
 
 ```php
 use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = CreateVoucher::run([
     'code' => 'SUMMER2024',
@@ -118,7 +118,7 @@ if ($result->isValid) {
 }
 ```
 
-`ValidateVoucherCode` is the validation entrypoint. `VoucherData::fromArray()` rejects floats via `InvalidVoucherDataException::floatNotAllowed` — pass integer minor units only.
+`ValidateVoucherCode` is the validation entrypoint. `VoucherData::fromArray()` rejects floats via `InvalidArgumentException::floatNotAllowed` — pass integer minor units only.
 
 Validation fails closed on anything it cannot evaluate:
 
@@ -138,8 +138,8 @@ Use the `Voucher` facade to create vouchers:
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherStatus;
 
 $voucher = Voucher::create([
     'code' => 'SUMMER2024',
@@ -364,7 +364,7 @@ Voucher::create([
 Set initial status:
 
 ```php
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\States\Paused;
 
@@ -379,7 +379,7 @@ Voucher::create([
 ```
 
 `status` is a `spatie/laravel-model-states` state class name. `CreateVoucher` defaults it to
-`AIArmada\Vouchers\States\Active::class`. `AIArmada\Vouchers\Enums\VoucherStatus` is the plain
+`AIArmada\Vouchers\States\Active::class`. `AIArmada\Vouchers\Data\VoucherStatus` is the plain
 string enum used for display and for `UpdateVoucher`'s string form — passing it to `create()`
 will not resolve to a state.
 
@@ -408,7 +408,7 @@ Use `target_definition` to control the cart condition target, meaning the portio
 
 ```php
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 
 Voucher::create([
@@ -424,7 +424,7 @@ Voucher::create([
 Eligibility targeting rules belong under the `targeting` key:
 
 ```php
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Facades\Voucher;
 
 Voucher::create([
@@ -464,7 +464,7 @@ $deleted = Voucher::delete('SUMMER2024'); // Returns true/false
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Data\VoucherType;
 
 $voucher = Voucher::create([
     // Required
