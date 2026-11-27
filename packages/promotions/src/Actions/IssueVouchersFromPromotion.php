@@ -6,6 +6,7 @@ namespace AIArmada\Promotions\Actions;
 
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -39,7 +40,7 @@ final class IssueVouchersFromPromotion
         $this->assertSharedConnection($promotion);
 
         return $promotion->getConnection()->transaction(function () use ($count, $codePrefix, $overrides, $promotion, $voucherService): Collection {
-            $promotion = Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
+            $promotion = Promotion::query()->withoutGlobalScope(OwnerScope::class)->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
             $owner = OwnerContext::resolve();
 
             if ($promotion->owner_type === null && $promotion->owner_id === null) {

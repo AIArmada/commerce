@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Actions\BulkGenerateVouchersAction;
 use AIArmada\Vouchers\Models\Voucher;
+use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);
 
@@ -37,10 +38,11 @@ it('creates the requested batch with unique codes', function (): void {
         ->and($codes->first())->toStartWith('TST-');
 });
 
-it('clamps forged counts instead of generating unbounded batches', function (): void {
-    bulkGenerate(bulkPayload(['count' => 5000, 'name' => 'Clamped']));
+it('rejects forged counts without generating vouchers', function (): void {
+    expect(fn () => bulkGenerate(bulkPayload(['count' => 5000, 'name' => 'Rejected'])))
+        ->toThrow(ValidationException::class);
 
-    expect(Voucher::query()->where('name', 'like', 'Clamped #%')->count())->toBe(100);
+    expect(Voucher::query()->where('name', 'like', 'Rejected #%')->count())->toBe(0);
 });
 
 it('tolerates a missing prefix without crashing', function (): void {

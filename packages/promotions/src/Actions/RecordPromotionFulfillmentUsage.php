@@ -137,7 +137,7 @@ final readonly class RecordPromotionFulfillmentUsage
                     $includeGlobal,
                 )->find($promotionId);
 
-                if ($promotion === null) {
+                if (! $promotion instanceof Promotion) {
                     $this->skip('promotion allocation could not be resolved in the order owner scope', [
                         'order_id' => $lockedOrder->getKey(),
                         'promotion_id' => $promotionId,

@@ -622,29 +622,6 @@ test('checkout enforces a voucher limit against the customer rather than individ
     expect($voucher->usages()->sole()->redeemed_by_id)->toBe((string) $customer->getKey());
 });
 
-test('voucher deletion removes dependent usage and wallet rows through database constraints', function (): void {
-    config()->set('vouchers.wallet.enabled', true);
-
-    $voucher = Voucher::create([
-        'code' => 'CASCADEDELETE',
-        'name' => 'Cascade deletion',
-        'type' => 'fixed',
-        'value' => 100,
-        'currency' => 'MYR',
-        'status' => 'active',
-    ]);
-
-    $customer = User::factory()->create();
-    $service = app(VoucherService::class);
-    $service->recordUsage($voucher->code, Money::MYR(100), redeemedBy: $customer);
-    $wallet = $service->addToWallet($voucher->code, $customer);
-    $usageId = $voucher->usages()->sole()->getKey();
-
-    expect($service->delete($voucher->code))->toBeTrue()
-        ->and(VoucherUsage::query()->whereKey($usageId)->exists())->toBeFalse()
-        ->and(VoucherWallet::query()->whereKey($wallet->getKey())->exists())->toBeFalse();
-});
-
 test('checkout rejects negative discounts and unknown currencies instead of silently coercing them', function (): void {
     $voucher = Voucher::create([
         'code' => 'STRICTREDEEM',

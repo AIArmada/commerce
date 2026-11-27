@@ -313,7 +313,7 @@ test('respects maximum vouchers per cart', function (): void {
 
     // Should throw exception because max is 1
     Cart::applyVoucher('SECOND');
-})->throws(InvalidVoucherException::class, 'Cart already has the maximum number of vouchers');
+})->throws(InvalidVoucherException::class, 'Maximum of 1 vouchers reached');
 
 test('replaces voucher when max per cart and replacement enabled', function (): void {
     config([

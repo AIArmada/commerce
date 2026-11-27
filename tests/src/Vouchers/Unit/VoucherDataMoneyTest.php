@@ -43,7 +43,7 @@ it('rejects noncanonical aliases at the DTO boundary', function (): void {
 });
 
 it('round trips a voucher snapshot without leaking model state or mutable dates', function (): void {
-    $date = new DateTimeImmutable('2026-12-01T10:00:00+08:00');
+    $date = new DateTime('2026-12-01T10:00:00+08:00');
     $snapshot = VoucherData::fromArray([
         'code' => 'SNAPSHOT',
         'type' => 'fixed',

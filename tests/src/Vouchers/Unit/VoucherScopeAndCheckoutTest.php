@@ -128,9 +128,8 @@ describe('checkout voucher validation', function (): void {
         $voucher = scopeVoucher();
 
         $cart = new Cart(new InMemoryStorage, 'checkout-stale-' . uniqid());
-        $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
-
         ApplyVoucherToCart::run($cart, $voucher->code);
+        $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
 
         expect($cart->getDynamicConditions())->not->toBeEmpty();
 
