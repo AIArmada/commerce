@@ -6,6 +6,7 @@ namespace AIArmada\Promotions\Actions;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Orders\Actions\MergeOrderMetadata;
@@ -115,20 +116,26 @@ final readonly class RecordPromotionFulfillmentUsage
                     continue;
                 }
 
-                $promotionId = $allocation['meta']['promotion_id'] ?? null;
+                $meta = $allocation['meta'] ?? null;
+                $promotionId = is_array($meta) ? ($meta['promotion_id'] ?? null) : null;
 
                 if (! is_string($promotionId) || $promotionId === '') {
                     $this->skip('promotion allocation has no promotion id', ['order_id' => $lockedOrder->getKey()]);
 
                     continue;
                 }
-                if (in_array((string) $promotionId, $countedPromotionIds, true)) {
+                if (in_array($promotionId, $countedPromotionIds, true)) {
                     continue;
                 }
 
-                $promotion = Promotion::query()
-                    ->forOwner($owner, false)
-                    ->find($promotionId);
+                $includeGlobal = ! config('promotions.features.owner.enabled', false)
+                    || (bool) config('promotions.features.owner.include_global', false);
+
+                $promotion = OwnerQuery::applyToEloquentBuilder(
+                    Promotion::query()->withoutGlobalScope(OwnerScope::class),
+                    $owner,
+                    $includeGlobal,
+                )->find($promotionId);
 
                 if ($promotion === null) {
                     $this->skip('promotion allocation could not be resolved in the order owner scope', [
@@ -139,7 +146,8 @@ final readonly class RecordPromotionFulfillmentUsage
                     continue;
                 }
 
-                $incremented = OwnerContext::withOwner($owner, static fn (): bool => $promotion->tryIncrementUsage());
+                $promotionOwner = $promotion->owner_type === null ? null : $owner;
+                $incremented = OwnerContext::withOwner($promotionOwner, static fn (): bool => $promotion->tryIncrementUsage());
 
                 if (! $incremented) {
                     $this->skip('promotion usage limit was reached during atomic increment', [
@@ -150,7 +158,7 @@ final readonly class RecordPromotionFulfillmentUsage
                     continue;
                 }
 
-                $countedPromotionIds[] = (string) $promotionId;
+                $countedPromotionIds[] = $promotionId;
             }
 
             if (count($countedPromotionIds) > $previousCount) {
@@ -162,11 +170,9 @@ final readonly class RecordPromotionFulfillmentUsage
     /**
      * @return list<string>
      */
-    private function countedPromotionIds(mixed $order): array
+    private function countedPromotionIds(Order $order): array
     {
-        $metadata = is_callable([$order, 'getAttribute'])
-            ? $order->getAttribute('metadata')
-            : null;
+        $metadata = $order->metadata;
 
         if (! is_array($metadata)) {
             return [];
@@ -178,10 +184,10 @@ final readonly class RecordPromotionFulfillmentUsage
             return [];
         }
 
-        return array_values(array_filter(
-            array_map(static fn (mixed $id): string => (string) $id, $counted),
-            static fn (string $id): bool => $id !== '',
-        ));
+        return array_values(array_unique(array_filter(
+            $counted,
+            static fn (mixed $id): bool => is_string($id) && $id !== '',
+        )));
     }
 
     /**
@@ -196,11 +202,9 @@ final readonly class RecordPromotionFulfillmentUsage
         });
     }
 
-    private function resolveSessionId(mixed $order): ?string
+    private function resolveSessionId(Order $order): ?string
     {
-        $metadata = is_callable([$order, 'getAttribute'])
-            ? $order->getAttribute('metadata')
-            : null;
+        $metadata = $order->metadata;
 
         if (! is_array($metadata)) {
             return null;

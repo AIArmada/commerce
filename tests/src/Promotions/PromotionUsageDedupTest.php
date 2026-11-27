@@ -92,3 +92,30 @@ test('stamp persistence failure rolls back the promotion usage increment', funct
     expect($promotion->fresh()->usage_count)->toBe(0)
         ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
 });
+
+it('counts a global promotion when global promotions are enabled for the order owner', function (): void {
+    config()->set('promotions.features.owner.include_global', true);
+
+    $owner = User::factory()->create();
+    $promotion = OwnerContext::withOwner(null, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
+
+    app(RecordPromotionFulfillmentUsage::class)->handle($order, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(1)
+        ->and($order->fresh()->metadata['promotions_usage_counted'])->toBe([$promotion->id]);
+});
+
+it('does not count another tenant promotion when promotion owner scoping is disabled', function (): void {
+    $owner = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $promotion = OwnerContext::withOwner($otherOwner, fn (): Promotion => Promotion::factory()->active()->create());
+    $order = persistedOrderWithPromotion($owner, $promotion);
+
+    config()->set('promotions.features.owner.enabled', false);
+
+    app(RecordPromotionFulfillmentUsage::class)->handle($order, $owner->getMorphClass(), $owner->getKey());
+
+    expect($promotion->fresh()->usage_count)->toBe(0)
+        ->and($order->fresh()->metadata)->not->toHaveKey('promotions_usage_counted');
+});
