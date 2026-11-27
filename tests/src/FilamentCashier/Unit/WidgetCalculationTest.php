@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Enums\SubscriptionStatus as ChipSubscriptionStatus;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem as ChipSubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
 use AIArmada\FilamentCashier\Widgets\TotalMrrWidget;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,7 @@ use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     app()->register(CashierServiceProvider::class);
+    app()->register(CashierChipServiceProvider::class);
 
     config()->set('cashier.gateways', [
         'chip' => [
@@ -37,6 +40,8 @@ function createChipSubscriptionWithAmount(array $overrides, int $unitAmount): Ch
         'email' => 'widget-' . Str::uuid() . '@example.com',
         'password' => bcrypt('secret'),
     ]);
+
+    $billable->linkChipCustomerToOwner(OwnerContext::resolve());
 
     $subscription = ChipSubscription::query()->create(array_merge([
         'id' => (string) Str::uuid(),

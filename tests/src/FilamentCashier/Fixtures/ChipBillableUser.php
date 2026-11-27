@@ -17,10 +17,14 @@ use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class ChipBillableUser extends User implements BillableContract
@@ -238,6 +242,17 @@ class ChipBillableUser extends User implements BillableContract
     public function subscription(string $type = 'default'): ?SubscriptionContract
     {
         return null;
+    }
+
+    public function chipCustomerLink(): MorphOne
+    {
+        return $this->morphOne(ChipCustomerLink::class, 'subject');
+    }
+
+    public function linkChipCustomerToOwner(Model $owner): void
+    {
+        $link = $this->chipCustomerLink()->make(['chip_customer_id' => (string) Str::uuid()]);
+        $link->assignOwner($owner)->save();
     }
 
     public function subscriptions(): MorphMany
