@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
 use AIArmada\Persons\Features\Identity\Actions\CreatePersonAction;
+use AIArmada\Persons\Features\Identity\Actions\DeletePersonAction;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Enums\PersonNameType;
@@ -149,7 +150,7 @@ describe('person integrity guards', function (): void {
         ]);
         app(AssignTitleAction::class)->execute($person, $title->id);
 
-        $person->delete();
+        expect(app(DeletePersonAction::class)->execute($person))->toBeTrue();
 
         expect(Person::query()->whereKey($person->id)->exists())->toBeFalse()
             ->and(PersonName::query()->where('person_id', $person->id)->exists())->toBeFalse()
