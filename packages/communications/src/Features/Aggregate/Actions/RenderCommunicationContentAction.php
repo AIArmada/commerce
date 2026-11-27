@@ -6,7 +6,6 @@ namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Data\RenderedContentData;
-use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 
 final class RenderCommunicationContentAction
 {
@@ -15,11 +14,11 @@ final class RenderCommunicationContentAction
     ) {}
 
     public function handle(
-        CommunicationTemplate $template,
+        string $templateId,
         string $channel,
         ?string $locale = null,
         array $variables = [],
     ): RenderedContentData {
-        return $this->renderer->render($template->id, $channel, $locale, $variables);
+        return $this->renderer->render($templateId, $channel, $locale, $variables);
     }
 }

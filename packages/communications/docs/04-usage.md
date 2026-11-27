@@ -104,7 +104,7 @@ app(DispatchInboxNotificationAction::class)->handle(
 ### Reading inbox entries on a model
 
 ```php
-use AIArmada\Communications\Traits\HasInbox;
+use AIArmada\Communications\Features\Inbox\Traits\HasInbox;
 use Illuminate\Database\Eloquent\Model;
 
 final class User extends Model
@@ -212,7 +212,7 @@ Rendering a template into a content snapshot (`RenderedContentData`):
 use AIArmada\Communications\Features\Aggregate\Actions\RenderCommunicationContentAction;
 
 $rendered = app(RenderCommunicationContentAction::class)->handle(
-    $template,
+    $template->id,
     'mail',
     'en',
     ['invoice_number' => 'INV-1042'],

@@ -22,3 +22,5 @@
 - Use `Contracts\CommunicationReferenceWriter` for cross-feature reference attachment. Reference writes are serialized on the owning communication row and return a scalar reference ID.
 
 - Managed dispatch idempotency keys are scoped to the effective communication owner and hashed in a dedicated `managed:` namespace. Never pass raw managed keys to the cache lock contract.
+
+- Use `AIArmada\Communications\Features\Inbox\Traits\HasInbox` on recipient models. Render template content through `Features\Aggregate\Actions\RenderCommunicationContentAction` using the scalar template ID, not a Templates model.

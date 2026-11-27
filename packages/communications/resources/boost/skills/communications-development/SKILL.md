@@ -25,3 +25,5 @@ description: Develop and integrate Communications with Laravel Dune ownership, s
 - Managed notification dispatch (`CommunicationManager::notify()` / `Communications::notify()`) accepts `CommunicationContextData` or null and returns the persisted communication ID as a string. Pass event morph type and ID in the context instead of passing an Eloquent model or an untyped array.
 
 - Use `Contracts\CommunicationReferenceWriter` for cross-feature reference attachment. Reference writes are serialized on the owning communication row and return a scalar reference ID.
+
+- Use `AIArmada\Communications\Features\Inbox\Traits\HasInbox` on recipient models. Render template content through `Features\Aggregate\Actions\RenderCommunicationContentAction` using the scalar template ID, not a Templates model.

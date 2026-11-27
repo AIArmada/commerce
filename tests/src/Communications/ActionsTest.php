@@ -397,7 +397,7 @@ test('RenderCommunicationContentAction works with null renderer', function (): v
     ]);
     $template->save();
 
-    $content = $action->handle($template, 'mail', 'en', []);
+    $content = $action->handle($template->id, 'mail', 'en', []);
 
     expect($content)->toBeInstanceOf(RenderedContentData::class);
     expect($content->channel)->toBe('mail');

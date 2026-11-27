@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Traits;
+namespace AIArmada\Communications\Features\Inbox\Traits;
 
 use AIArmada\Communications\Features\Inbox\Actions\ManageInboxEntries;
 use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
