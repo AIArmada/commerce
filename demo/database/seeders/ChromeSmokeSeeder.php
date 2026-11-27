@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
-use AIArmada\Links\Models\Link;
+use AIArmada\Links\Actions\DeleteLinkForSubject;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -36,14 +36,14 @@ final class ChromeSmokeSeeder extends Seeder
 
         NetworkConversionLeg::query()->where('external_reference', 'like', 'CHROME-LEG%')->delete();
 
-        $trackedLinkIds = AffiliateOfferLink::query()
+        $trackedLinks = AffiliateOfferLink::query()
             ->whereHas('offer', fn ($query) => $query->where('slug', 'chrome-offer'))
-            ->pluck('link_id')
-            ->all();
+            ->whereNotNull('link_id')
+            ->get(['id', 'link_id']);
         AffiliateOfferLink::query()->whereHas('offer', fn ($query) => $query->where('slug', 'chrome-offer'))->delete();
 
-        if ($trackedLinkIds !== []) {
-            Link::query()->whereKey($trackedLinkIds)->delete();
+        foreach ($trackedLinks as $trackedLink) {
+            app(DeleteLinkForSubject::class)->handle((string) $trackedLink->link_id, $trackedLink->getMorphClass(), (string) $trackedLink->getKey());
         }
 
         AffiliateOffer::query()->where('slug', 'chrome-offer')->delete();

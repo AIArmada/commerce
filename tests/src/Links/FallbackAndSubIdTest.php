@@ -115,3 +115,12 @@ describe('dynamic sub id forwarding', function (): void {
         expect($subIds)->toBe(['sub1' => 'alpha', 'sub2' => 'beta', 'sub3' => 'gamma']);
     });
 });
+
+test('fallback redirects refuse non-http URLs and credential-bearing destinations', function (string $fallback): void {
+    linksFallbackLink('unsafe-fallback');
+    app()->instance(LinkGateInterface::class, new StubBlockingGate('offer_inactive', $fallback));
+
+    $this->get('/go/unsafe-fallback')->assertGone();
+
+    expect(LinkClick::query()->count())->toBe(0);
+})->with(['javascript:alert(1)', 'https://user:pass@fallback.example/']);

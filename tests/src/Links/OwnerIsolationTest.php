@@ -74,3 +74,17 @@ test('link management re-resolves supplied models under the current owner', func
             ->and($link->fresh()->deactivated_at)->toBeNull();
     });
 });
+
+test('public redirects refuse links whose owner no longer exists', function (): void {
+    $owner = User::factory()->create();
+    $link = OwnerContext::withOwner($owner, fn () => CreateLink::run([
+        'name' => 'Orphaned link',
+        'slug' => 'orphaned-owner-link',
+        'destination_url' => 'https://merchant.example/orphaned',
+    ]));
+    $owner->delete();
+
+    $this->get('/go/' . $link->slug)->assertGone();
+
+    expect(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->id)->count())->toBe(0);
+});

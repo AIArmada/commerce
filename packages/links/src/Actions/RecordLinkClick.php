@@ -12,6 +12,8 @@ use AIArmada\Links\Exceptions\LinkUnavailableException;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Models\LinkClick;
 use AIArmada\Links\Support\LinkAttributes;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use InvalidArgumentException;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -63,7 +65,11 @@ final class RecordLinkClick
             'owner_id' => $link->owner_id,
         ]);
 
-        $owner = OwnerContext::fromTypeAndId($link->owner_type, $link->owner_id);
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail($link->owner_type, $link->owner_id);
+        } catch (ModelNotFoundException | InvalidArgumentException) {
+            throw new LinkUnavailableException('owner_unknown');
+        }
 
         OwnerContext::withOwner($owner, static function () use ($click, $link, $isBot, $record): void {
             $link->getConnection()->transaction(static function () use ($click, $link, $isBot, $record): void {

@@ -65,6 +65,10 @@ final class CreateOfferLink
 
         $connection = (new AffiliateOfferLink)->getConnection();
 
+        if ($connection !== (new Link)->getConnection()) {
+            throw new RuntimeException('Offer tracking links require a shared database connection.');
+        }
+
         return $connection->transaction(function () use ($offer, $affiliateId, $options, $targetUrl, $connection): AffiliateOfferLink {
             $this->affiliateProfileGuard->lockForWrite($affiliateId, spl_object_id($connection));
 

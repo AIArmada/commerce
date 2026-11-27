@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\Links\Contracts\SlugGeneratorInterface;
 use AIArmada\Links\Models\Link;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -42,7 +41,7 @@ final class CreatePublicLink
             $slug = $base . $this->slugs->generate(10);
 
             try {
-                return DB::transaction(fn (): Link => CreateLink::run(array_merge($attributes, [
+                return (new Link)->getConnection()->transaction(fn (): Link => CreateLink::run(array_merge($attributes, [
                     'slug' => $slug,
                     'slug_prefix' => $prefix,
                     'require_signature' => false,

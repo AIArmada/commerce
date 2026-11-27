@@ -74,7 +74,7 @@ final class RedirectToLinkController
 
         $gate = app(LinkGateInterface::class);
 
-        if (! in_array($reason, ['owner_changed', 'link_changed', 'link_unknown'], true) && $gate instanceof FallbackRedirectGateInterface) {
+        if (! in_array($reason, ['owner_changed', 'owner_unknown', 'link_changed', 'link_unknown'], true) && $gate instanceof FallbackRedirectGateInterface) {
             $fallback = $gate->fallbackUrl(new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id), $reason);
 
             if (is_string($fallback) && $this->isSafeFallback($fallback)) {
