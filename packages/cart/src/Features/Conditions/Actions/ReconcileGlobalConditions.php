@@ -6,7 +6,6 @@ namespace AIArmada\Cart\Features\Conditions\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
@@ -33,61 +32,83 @@ final readonly class ReconcileGlobalConditions
         Context::scope(function () use ($cart): void {
             $cart = $this->cartInstances->prepare($cart);
 
-            $globalConditions = $this->globalConditionsQuery()->get();
+            $globalConditions = $this->globalConditionsQuery()
+                ->orderByRaw('CASE WHEN owner_id IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('id')
+                ->get()
+                ->unique('name');
             $this->removeDeactivatedGlobalConditions($cart, $globalConditions->pluck('name')->all());
             foreach ($globalConditions as $condition) {
-                $targetDefinition = ConditionTarget::from($condition->target)->toArray();
-
-                // Build condition data
-                $conditionData = [
-                    'name' => $condition->name,
-                    'type' => $condition->type,
-                    'target' => $condition->target,
-                    'target_definition' => $targetDefinition,
-                    'value' => $condition->value,
-                    'order' => $condition->order,
-                    'attributes' => [
-                        'display_name' => $condition->display_name,
-                        'description' => $condition->description,
-                        'is_global' => true,
-                    ],
-                ];
-
-                // Instantiate CartCondition
-                $cartConditionClass = CartCondition::class;
-
-                // Handle dynamic vs static conditions differently
-                if ($condition->isDynamic()) {
-                    $factoryKeys = $condition->getRuleFactoryKeys();
-
-                    if ($factoryKeys === []) {
-                        continue;
-                    }
-
-                    $context = $condition->getRuleContext();
-                    $rules = $this->buildRuleCallables($factoryKeys, $context);
-                    $conditionData['rules'] = $rules;
-
-                    $cartCondition = $cartConditionClass::fromArray($conditionData);
-
-                    if (! $cart->getDynamicConditions()->has($condition->name)) {
-                        $cart->registerDynamicCondition(
-                            $cartCondition,
-                            ruleFactoryKey: count($factoryKeys) === 1 ? $factoryKeys[0] : $factoryKeys,
-                            metadata: [
-                                'context' => $context,
-                            ]
-                        );
-                    }
-                } else {
-                    // Static condition - add only if not already present
-                    if (! $cart->getConditions()->has($condition->name)) {
-                        $cartCondition = $cartConditionClass::fromArray($conditionData);
-                        $cart->addCondition($cartCondition);
-                    }
-                }
+                $this->reconcileCondition($cart, $condition);
             }
         }, hidden: [self::APPLYING_CONTEXT_KEY => true]);
+    }
+
+    private function reconcileCondition(Cart $cart, Condition $condition): void
+    {
+        $name = $condition->name;
+        $stored = $cart->getStoredConditions()->getCondition($name);
+        $dynamic = $cart->getDynamicConditions()->getCondition($name);
+
+        // A shared condition must never overwrite an unrelated user/provider
+        // condition simply because their display identifiers collide.
+        foreach ([$stored, $dynamic] as $existing) {
+            if ($existing !== null && $existing->getAttribute('is_global') !== true) {
+                return;
+            }
+        }
+
+        $data = $condition->toConditionArray($name);
+        $data['attributes']['display_name'] = $condition->display_name;
+        $data['attributes']['description'] = $condition->description;
+        $fingerprint = hash('sha256', json_encode($data, JSON_THROW_ON_ERROR));
+        $data['attributes']['definition_hash'] = $fingerprint;
+
+        if ($condition->isDynamic()) {
+            $factoryKeys = $condition->getRuleFactoryKeys();
+
+            if ($factoryKeys === []) {
+                if ($dynamic !== null) {
+                    $cart->removeDynamicCondition($name);
+                } elseif ($stored !== null) {
+                    $cart->removeCondition($name);
+                }
+
+                return;
+            }
+
+            if ($dynamic?->getAttribute('definition_hash') === $fingerprint) {
+                return;
+            }
+
+            $context = $condition->getRuleContext();
+            $data['rules'] = $this->buildRuleCallables($factoryKeys, $context);
+            $replacement = CartCondition::fromArray($data);
+
+            if ($dynamic !== null) {
+                $cart->removeDynamicCondition($name);
+            } elseif ($stored !== null) {
+                $cart->removeCondition($name);
+            }
+
+            $cart->registerDynamicCondition(
+                $replacement,
+                ruleFactoryKey: count($factoryKeys) === 1 ? $factoryKeys[0] : $factoryKeys,
+                metadata: ['context' => $context],
+            );
+
+            return;
+        }
+
+        if ($dynamic !== null) {
+            $cart->removeDynamicCondition($name);
+            $stored = null;
+        }
+
+        if ($stored?->getAttribute('definition_hash') !== $fingerprint) {
+            $data['rules'] = null;
+            $cart->addCondition(CartCondition::fromArray($data));
+        }
     }
 
     private function isApplying(): bool
@@ -107,7 +128,7 @@ final readonly class ReconcileGlobalConditions
         $globalConditionNames = [];
 
         // Check cart-level conditions
-        foreach ($cart->getConditions() as $condition) {
+        foreach ($cart->getStoredConditions() as $condition) {
             if ($condition->getAttribute('is_global') === true) {
                 $globalConditionNames[] = $condition->getName();
             }
@@ -130,7 +151,7 @@ final readonly class ReconcileGlobalConditions
         // Remove deactivated conditions from cart
         foreach ($deactivatedConditionNames as $conditionName) {
             // Try removing from regular conditions
-            if ($cart->getConditions()->has($conditionName)) {
+            if ($cart->getStoredConditions()->has($conditionName)) {
                 $cart->removeCondition($conditionName);
             }
 

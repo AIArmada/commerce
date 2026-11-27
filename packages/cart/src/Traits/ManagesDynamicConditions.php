@@ -149,13 +149,23 @@ trait ManagesDynamicConditions
     public function removeDynamicCondition(string $name): static
     {
         $this->initializeDynamicConditions();
+        $condition = $this->dynamicConditions->getCondition($name);
         $this->dynamicConditions->forget($name);
+
+        if ($condition?->getTargetDefinition()->scope === ConditionScope::ITEMS) {
+            foreach ($this->getItemsFromStorage() as $item) {
+                if ($item->conditions->has($name)) {
+                    $this->removeItemCondition($item->id, $name);
+                }
+            }
+        }
 
         // Also remove it from active conditions if it was applied
         $this->removeCondition($name);
 
         // Remove from metadata storage
         $this->removeDynamicConditionMetadata($name);
+        $this->invalidatePipelineCache();
 
         return $this;
     }
@@ -198,6 +208,7 @@ trait ManagesDynamicConditions
     public function markDynamicConditionsDirty(): void
     {
         $this->dynamicConditionsDirty = true;
+        $this->invalidatePipelineCache();
     }
 
     /**
@@ -671,10 +682,6 @@ trait ManagesDynamicConditions
     {
         try {
             $shouldApply = $condition->shouldApply($this);
-            Log::info('Condition evaluation result', [
-                'name' => $condition->getName(),
-                'shouldApply' => $shouldApply,
-            ]);
         } catch (Throwable $exception) {
             $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
                 'scope' => $condition->getTargetDefinition()->scope->value,

@@ -923,3 +923,48 @@ it('removes deactivated dynamic global conditions from active carts', function (
     expect(CartFacade::getDynamicConditions()->has('limited-time-bulk-discount'))->toBeFalse();
     expect(CartFacade::getConditions()->has('limited-time-bulk-discount'))->toBeFalse();
 });
+
+it('refreshes an edited active global condition on the next cart mutation', function (): void {
+    $condition = Condition::factory()->create([
+        'name' => 'editable-global-tax',
+        'type' => 'tax',
+        'target' => 'cart@grand_total/aggregate',
+        'value' => '10%',
+        'is_global' => true,
+        'is_active' => true,
+    ]);
+
+    CartFacade::add('sku-1', 'Product', 1000, 1);
+    expect(CartFacade::getConditions()->getCondition('editable-global-tax')->getValue())->toBe('10%');
+
+    $condition->update(['value' => '20%']);
+    CartFacade::add('sku-2', 'Product', 1000, 1);
+
+    $applied = CartFacade::getConditions()->getCondition('editable-global-tax');
+    expect($applied->getValue())->toBe('20%');
+    expect($applied->getAttribute('condition_id'))->toBe($condition->id);
+});
+
+it('removes applied item conditions when their global dynamic rule is deactivated', function (): void {
+    $condition = Condition::factory()->create([
+        'name' => 'temporary-item-discount',
+        'type' => 'discount',
+        'target' => 'items@item_discount/per_item',
+        'value' => '-10%',
+        'is_global' => true,
+        'is_active' => true,
+        'rules' => ['factory_keys' => ['min-items'], 'context' => ['min' => 1]],
+    ]);
+
+    CartFacade::add('sku-1', 'Product', 1000, 1);
+    CartFacade::getConditions();
+    expect(CartFacade::getDynamicConditions()->has('temporary-item-discount'))->toBeTrue();
+
+    $condition->update(['is_active' => false]);
+    CartFacade::add('sku-2', 'Product', 1000, 1);
+
+    expect(CartFacade::getDynamicConditions()->has('temporary-item-discount'))->toBeFalse();
+    foreach (CartFacade::getItems() as $item) {
+        expect($item->conditions->has('temporary-item-discount'))->toBeFalse();
+    }
+});
