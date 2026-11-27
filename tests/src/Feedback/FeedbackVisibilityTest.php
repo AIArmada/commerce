@@ -7,7 +7,7 @@ use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Support\VisibilityRuleEvaluator;
 
@@ -57,15 +57,20 @@ it('excludes hidden questions from submission validation', function (): void {
 });
 
 it('evaluates supported visibility operators', function (): void {
-    $question = new FeedbackQuestion([
-        'visibility_rules' => [
+    $question = new QuestionDefinition(
+        id: 'question',
+        key: 'follow_up',
+        type: 'short_text',
+        isRequired: true,
+        isScored: false,
+        visibilityRules: [
             'show_if' => [
                 'question_key' => 'tags',
                 'operator' => 'in',
                 'value' => 'vip',
             ],
         ],
-    ]);
+    );
 
     $evaluator = app(VisibilityRuleEvaluator::class);
 

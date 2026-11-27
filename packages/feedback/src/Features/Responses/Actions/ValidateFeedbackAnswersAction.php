@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Responses\Actions;
 
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 use AIArmada\Feedback\Support\ValidationRuleBuilder;
 use AIArmada\Feedback\Support\VisibilityRuleEvaluator;
 use Illuminate\Support\Facades\Validator;
@@ -17,23 +17,24 @@ final class ValidateFeedbackAnswersAction
         private readonly VisibilityRuleEvaluator $visibilityEvaluator,
     ) {}
 
-    public function execute(FeedbackForm $form, array $answerValues): array
+    /**
+     * @param list<QuestionDefinition> $questions
+     * @return list<QuestionDefinition>
+     */
+    public function execute(array $questions, array $answerValues): array
     {
-        $form->loadMissing('questions');
 
         $evaluatedValues = $answerValues;
 
         $visibleQuestions = $this->visibilityEvaluator->filterHiddenQuestions(
-            $form->questions->all(),
+            $questions,
             $evaluatedValues,
         );
 
         $rules = [];
-        $questionMap = [];
 
         foreach ($visibleQuestions as $question) {
             $rules["answers.{$question->key}"] = $this->ruleBuilder->build($question);
-            $questionMap[$question->key] = $question;
         }
 
         $validator = Validator::make(

@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Support;
 
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 use Closure;
 use Illuminate\Validation\Rule;
 
 final class ValidationRuleBuilder
 {
-    public function build(FeedbackQuestion $question): array
+    public function build(QuestionDefinition $question): array
     {
         $rules = [];
         $type = FeedbackQuestionType::tryFrom($question->type);
         $settings = $question->settings ?? [];
 
-        if ($question->is_required && ! $type?->isDisplayOnly()) {
+        if ($question->isRequired && ! $type?->isDisplayOnly()) {
             $rules[] = 'required';
         } elseif (! $type?->isDisplayOnly()) {
             $rules[] = 'nullable';
@@ -42,7 +42,7 @@ final class ValidationRuleBuilder
         };
     }
 
-    private function inputRules(FeedbackQuestionType $type, FeedbackQuestion $question, array $rules, array $settings): array
+    private function inputRules(FeedbackQuestionType $type, QuestionDefinition $question, array $rules, array $settings): array
     {
         $rules[] = match ($type) {
             FeedbackQuestionType::ShortText, FeedbackQuestionType::LongText => 'string',
@@ -78,11 +78,11 @@ final class ValidationRuleBuilder
         return $rules;
     }
 
-    private function choiceRules(FeedbackQuestionType $type, FeedbackQuestion $question, array $rules): array
+    private function choiceRules(FeedbackQuestionType $type, QuestionDefinition $question, array $rules): array
     {
         if ($type === FeedbackQuestionType::MultipleChoice || $type === FeedbackQuestionType::Ranking) {
             $rules[] = 'array';
-            if ($question->is_required) {
+            if ($question->isRequired) {
                 $rules[] = 'min:1';
             }
             $rules[] = $this->optionMembershipRule($question, true);
@@ -114,7 +114,7 @@ final class ValidationRuleBuilder
         return $rules;
     }
 
-    private function scoredRules(FeedbackQuestionType $type, FeedbackQuestion $question, array $rules, array $settings): array
+    private function scoredRules(FeedbackQuestionType $type, QuestionDefinition $question, array $rules, array $settings): array
     {
         $rules[] = 'numeric';
 
@@ -143,7 +143,7 @@ final class ValidationRuleBuilder
         };
     }
 
-    private function optionMembershipRule(FeedbackQuestion $question, bool $requireArray): Closure
+    private function optionMembershipRule(QuestionDefinition $question, bool $requireArray): Closure
     {
         return function (string $attribute, mixed $value, Closure $fail) use ($question, $requireArray): void {
             $allowed = $this->allowedOptionValues($question);
@@ -171,15 +171,8 @@ final class ValidationRuleBuilder
     /**
      * @return list<string>
      */
-    private function allowedOptionValues(FeedbackQuestion $question): array
+    private function allowedOptionValues(QuestionDefinition $question): array
     {
-        $options = $question->relationLoaded('options')
-            ? $question->options
-            : $question->options()->get();
-
-        return $options
-            ->map(fn ($option): string => (string) $option->value)
-            ->values()
-            ->all();
+        return array_column($question->options, 'value');
     }
 }

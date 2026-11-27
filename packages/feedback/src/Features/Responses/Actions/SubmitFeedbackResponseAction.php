@@ -98,18 +98,17 @@ final class SubmitFeedbackResponseAction
                         $submittedValues[$answer->questionKey] = $answer->value;
                     }
 
-                    $visibleQuestions = $this->validateAnswers->execute($form, $submittedValues);
+                    $visibleQuestions = $this->validateAnswers->execute($form->questions->map(static fn ($question) => $question->definition())->values()->all(), $submittedValues);
 
                     foreach ($visibleQuestions as $question) {
                         $value = $submittedValues[$question->key] ?? null;
 
-                        if ($value === null && ! $question->is_required) {
+                        if ($value === null && ! $question->isRequired) {
                             continue;
                         }
 
-                        $definition = $question->definition();
-                        $normalized = $this->normalizeAnswer->execute($definition, $value);
-                        $score = $this->calculateAnswerScore->execute($definition, $value);
+                        $normalized = $this->normalizeAnswer->execute($question, $value);
+                        $score = $this->calculateAnswerScore->execute($question, $value);
 
                         $answerData = array_merge($normalized, [
                             'feedback_response_id' => $response->id,

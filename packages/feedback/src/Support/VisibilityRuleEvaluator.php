@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Support;
 
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 
 final class VisibilityRuleEvaluator
 {
-    public function isVisible(FeedbackQuestion $question, array $answerValues): bool
+    public function isVisible(QuestionDefinition $question, array $answerValues): bool
     {
-        $rules = $question->visibility_rules;
+        $rules = $question->visibilityRules;
 
         if (empty($rules) || ! isset($rules['show_if'])) {
             return true;
@@ -42,6 +42,10 @@ final class VisibilityRuleEvaluator
         };
     }
 
+    /**
+     * @param list<QuestionDefinition> $questions
+     * @return list<QuestionDefinition>
+     */
     public function filterHiddenQuestions(array $questions, array $answerValues): array
     {
         $visible = [];
