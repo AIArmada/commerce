@@ -26,7 +26,7 @@ use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Resources\CartResource\RelationManagers\ConditionsRelationManager;
 use AIArmada\FilamentCart\Resources\CartResource\Tables\CartsTable;
 use AIArmada\FilamentCart\Resources\ConditionResource;
-use AIArmada\FilamentCart\Services\CartDownloadService;
+use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
 use AIArmada\FilamentCart\Support\ConditionTargetLabels;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
@@ -393,7 +393,7 @@ describe('download service', function (): void {
             'instance' => 'default',
         ]);
 
-        expect(fn () => app(CartDownloadService::class)->download($cart))->toThrow(JsonException::class);
+        expect(fn () => app(DownloadCart::class)->download($cart))->toThrow(JsonException::class);
     });
 
     it('refuses cross-owner exports', function (): void {
@@ -412,7 +412,7 @@ describe('download service', function (): void {
             'currency' => 'USD',
         ]));
 
-        expect(fn () => app(CartDownloadService::class)->download($foreign))->toThrow(AuthorizationException::class);
+        expect(fn () => app(DownloadCart::class)->download($foreign))->toThrow(AuthorizationException::class);
     });
 });
 

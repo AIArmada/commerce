@@ -2,41 +2,35 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentCart\Services;
+namespace AIArmada\FilamentCart\Actions;
 
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentCart\Data\CartExport;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use JsonException;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
-final class CartDownloadService
+final readonly class BuildCartExport
 {
     /**
-     * Stream the cart export. Callers must authorize first; the cart is
+     * Build the cart export. Callers must authorize first; the cart is
      * revalidated against the current owner scope as defense in depth.
      *
      * @throws JsonException
      */
-    public function download(CartSnapshot $cart): StreamedResponse
+    public function execute(CartSnapshot $cart): CartExport
     {
         $cart = $this->authorizeCart($cart);
         $json = json_encode($this->payload($cart), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
-        return response()->streamDownload(
-            static function () use ($json): void {
-                echo $json;
-            },
-            $this->filename($cart),
-            ['Content-Type' => 'application/json'],
-        );
+        return new CartExport($this->filename($cart), $json);
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function payload(CartSnapshot $cart): array
+    private function payload(CartSnapshot $cart): array
     {
         return [
             'id' => $cart->id,
@@ -51,7 +45,7 @@ final class CartDownloadService
         ];
     }
 
-    public function filename(CartSnapshot $cart): string
+    private function filename(CartSnapshot $cart): string
     {
         $instance = $this->normalizeFileComponent($cart->instance, 'default');
         $identifier = $this->normalizeFileComponent($cart->identifier, 'cart');

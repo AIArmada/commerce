@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart;
 
 use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
-use AIArmada\FilamentCart\Services\CartDownloadService;
+use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -23,7 +23,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(FilamentCartPlugin::class);
-        $this->app->singleton(CartDownloadService::class);
+        $this->app->singleton(DownloadCart::class);
     }
 
     public function bootingPackage(): void
@@ -48,7 +48,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
     public function provides(): array
     {
         return [
-            CartDownloadService::class,
+            DownloadCart::class,
         ];
     }
 

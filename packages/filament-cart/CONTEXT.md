@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Models: none; resources consume `AIArmada\\Cart\\Snapshots\\CartSnapshot`, `CartSnapshotItem`, and `CartSnapshotCondition`
-- Actions/Services: `Actions/ApplyConditionAction`, `Actions/RemoveConditionAction`, `Services/CartDownloadService`
+- Actions/Services: `Actions/ApplyConditionAction`, `Actions/RemoveConditionAction`, `Actions/BuildCartExport`, `EntryPoints/Http/DownloadCart`
 - Resources: `CartResource`, `CartItemResource`, `ConditionResource`
 - Relation managers: `CartResource/RelationManagers/{ItemsRelationManager,ConditionsRelationManager}` — snapshot conditions are shown here, not as a separate resource
 - Pages: `Pages/CartDashboard`, `Pages/LiveDashboardPage`
