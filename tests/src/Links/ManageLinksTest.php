@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Links\Actions\CreateLink;
 use AIArmada\Links\Actions\DeactivateLink;
+use AIArmada\Links\Actions\DeleteLink;
+use AIArmada\Links\Actions\RecordLinkClick;
 use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Events\LinkCreated;
 use AIArmada\Links\Events\LinkDeactivated;
 use AIArmada\Links\Events\LinkReactivated;
 use AIArmada\Links\Events\LinkUpdated;
+use AIArmada\Links\Models\LinkClick;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
@@ -151,4 +154,15 @@ test('deactivation and reactivation are idempotent', function (): void {
 
     Event::assertDispatched(LinkReactivated::class, 1);
     expect($link->refresh()->deactivated_at)->toBeNull();
+});
+
+test('deleting a tracked link removes its clicks without affecting other links', function (): void {
+    $link = CreateLink::run(['name' => 'Delete', 'destination_url' => 'https://merchant.example/delete']);
+    $other = CreateLink::run(['name' => 'Keep', 'destination_url' => 'https://merchant.example/keep']);
+    RecordLinkClick::run($link);
+    RecordLinkClick::run($other);
+
+    expect(app(DeleteLink::class)->handle($link))->toBeTrue()
+        ->and(LinkClick::query()->withoutOwnerScope()->where('link_id', $link->id)->exists())->toBeFalse()
+        ->and(LinkClick::query()->withoutOwnerScope()->where('link_id', $other->id)->exists())->toBeTrue();
 });

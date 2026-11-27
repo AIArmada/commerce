@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Links\Actions;
 
 use AIArmada\Links\Models\Link;
+use AIArmada\Links\Persistence\DeleteLockedLink;
 
 final readonly class DeleteLinkForSubject
 {
@@ -27,7 +28,7 @@ final readonly class DeleteLinkForSubject
                 return false;
             }
 
-            return (bool) $link->delete();
+            return app(DeleteLockedLink::class)->handle($link);
         });
     }
 }
