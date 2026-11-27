@@ -6,7 +6,8 @@
       "AIArmada\\Persons\\Features\\Titles\\Actions\\ReorderTitleAction"
     ],
     "table:title_assignments": [
-      "AIArmada\\Persons\\Features\\Titles\\Actions\\AssignTitleAction"
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\AssignTitleAction",
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\DeletePersonTitles"
     ],
     "table:title_issuers": [
       "AIArmada\\Persons\\Features\\Titles\\Actions\\SaveTitleIssuer"

@@ -10,7 +10,8 @@
       "AIArmada\\Persons\\Features\\Identity\\Actions\\PersistPerson"
     ],
     "table:person_names": [
-      "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName"
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\SavePersonName",
+      "AIArmada\\Persons\\Features\\Identity\\Actions\\CleanupPersonDependents"
     ]
   },
   "extensions": {}

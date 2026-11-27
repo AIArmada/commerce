@@ -3,7 +3,8 @@
   "name": "Affiliations",
   "owns": {
     "table:affiliations": [
-      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\SaveAffiliation"
+      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\SaveAffiliation",
+      "AIArmada\\Persons\\Features\\Affiliations\\Actions\\DeletePersonAffiliations"
     ]
   },
   "extensions": {}

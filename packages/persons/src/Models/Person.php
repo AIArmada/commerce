@@ -9,6 +9,7 @@ use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Features\Identity\Api\PersonDependentsCleaner;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
@@ -25,7 +26,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
@@ -108,12 +108,7 @@ class Person extends Model implements Sortable
         });
 
         static::deleting(function (Person $person): void {
-            DB::transaction(function () use ($person): void {
-                $person->names()->chunkById(500, static fn (EloquentCollection $names): mixed => $names->each->delete());
-                $person->titleAssignments()->chunkById(500, static fn (EloquentCollection $assignments): mixed => $assignments->each->delete());
-                $person->credentialAssignments()->chunkById(500, static fn (EloquentCollection $assignments): mixed => $assignments->each->delete());
-                $person->affiliations()->chunkById(500, static fn (EloquentCollection $affiliations): mixed => $affiliations->each->delete());
-            });
+            app(PersonDependentsCleaner::class)->cleanup((string) $person->getKey(), $person->getMorphClass());
         });
     }
 
