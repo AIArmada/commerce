@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -32,24 +33,24 @@ describe('ChipCustomerDirectory', function (): void {
 
         $directory = app(ChipCustomerDirectoryInterface::class);
 
-        $link = OwnerContext::withOwner($ownerOne, fn () => $directory->link($subject, 'chip_customer_test_123', [
+        $link = OwnerContext::withOwner($ownerOne, fn () => $directory->link(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()), 'chip_customer_test_123', [
             'source' => 'chip-customer-directory-test',
         ]));
 
-        $scopedChipCustomerId = OwnerContext::withOwner($ownerOne, fn () => $directory->getChipCustomerId($subject));
+        $scopedChipCustomerId = OwnerContext::withOwner($ownerOne, fn () => $directory->getChipCustomerId(new RecordReference($subject->getMorphClass(), (string) $subject->getKey())));
 
-        expect($link->subject?->is($subject))->toBeTrue()
+        expect($link->subject->equals(new RecordReference($subject->getMorphClass(), (string) $subject->getKey())))->toBeTrue()
             ->and($link->chip_customer_id)->toBe('chip_customer_test_123')
-            ->and($link->owner_type)->toBe($ownerOne->getMorphClass())
-            ->and($link->owner_id)->toBe((string) $ownerOne->getKey())
-            ->and(OwnerContext::withOwner($ownerOne, fn () => $directory->hasChipCustomerId($subject)))->toBeTrue()
+            ->and($link->owner?->type)->toBe($ownerOne->getMorphClass())
+            ->and($link->owner?->id)->toBe((string) $ownerOne->getKey())
+            ->and(OwnerContext::withOwner($ownerOne, fn () => $directory->hasChipCustomerId(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()))))->toBeTrue()
             ->and($scopedChipCustomerId)->toBe('chip_customer_test_123')
-            ->and($directory->findByChipCustomerId('chip_customer_test_123', $ownerOne)?->is($link))->toBeTrue()
-            ->and($directory->findByChipCustomerId('chip_customer_test_123', $ownerTwo))->toBeNull();
+            ->and($directory->findByChipCustomerId('chip_customer_test_123', new RecordReference($ownerOne->getMorphClass(), (string) $ownerOne->getKey()))?->id)->toBe($link->id)
+            ->and($directory->findByChipCustomerId('chip_customer_test_123', new RecordReference($ownerTwo->getMorphClass(), (string) $ownerTwo->getKey())))->toBeNull();
 
         expect(fn () => OwnerContext::withOwner(
             $ownerTwo,
-            fn () => $directory->link($subject, 'chip_customer_cross_owner')
+            fn () => $directory->link(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()), 'chip_customer_cross_owner')
         ))->toThrow(AuthorizationException::class);
     });
 
@@ -62,24 +63,20 @@ describe('ChipCustomerDirectory', function (): void {
 
         $directory = app(ChipCustomerDirectoryInterface::class);
 
-        $firstLink = $directory->link($subject, 'chip_customer_first', ['source' => 'first']);
-        $updatedLink = $directory->link($subject, 'chip_customer_second', ['source' => 'second']);
+        $firstLink = $directory->link(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()), 'chip_customer_first', ['source' => 'first']);
+        $updatedLink = $directory->link(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()), 'chip_customer_second', ['source' => 'second']);
 
-        expect($updatedLink->is($firstLink))->toBeTrue()
-            ->and($directory->findForSubject($subject)?->chip_customer_id)->toBe('chip_customer_second')
-            ->and($directory->findForSubject($subject)?->metadata)->toBe(['source' => 'second']);
+        expect($updatedLink->id)->toBe($firstLink->id)
+            ->and($directory->findForSubject(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()))?->chip_customer_id)->toBe('chip_customer_second')
+            ->and($directory->findForSubject(new RecordReference($subject->getMorphClass(), (string) $subject->getKey()))?->metadata)->toBe(['source' => 'second']);
     });
 });
 
-it('rejects a foreign-owned subject before creating its first customer link', function (): void {
+it('rejects a missing owner before linking any customer in owner mode', function (): void {
     config()->set('chip.owner.enabled', true);
-    config()->set('chip.owner.include_global', true);
+    $subject = User::query()->create(['name' => 'Subject', 'email' => 'missing-owner-subject@example.com', 'password' => 'secret']);
+    $reference = new RecordReference($subject->getMorphClass(), (string) $subject->getKey());
 
-    $owner = User::query()->create(['name' => 'Owner A', 'email' => 'foreign-owner-a@example.com', 'password' => 'secret']);
-    $other = User::query()->create(['name' => 'Owner B', 'email' => 'foreign-owner-b@example.com', 'password' => 'secret']);
-    $subject = User::query()->create(['name' => 'Subject', 'email' => 'foreign-subject@example.com', 'password' => 'secret']);
-    $subject->forceFill(['owner_type' => $other->getMorphClass(), 'owner_id' => (string) $other->getKey()]);
-
-    expect(fn () => OwnerContext::withOwner($owner, fn () => app(ChipCustomerDirectoryInterface::class)->link($subject, 'foreign-customer')))
+    expect(fn () => app(ChipCustomerDirectoryInterface::class)->link($reference, 'foreign-customer'))
         ->toThrow(AuthorizationException::class);
 });

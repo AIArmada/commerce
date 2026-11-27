@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
@@ -31,7 +32,7 @@ use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
 use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
@@ -763,8 +764,8 @@ describe('directory lookup scopes the ambient owner', function (): void {
         /** @var ChipCustomerDirectory $directory */
         $directory = app(ChipCustomerDirectoryInterface::class);
 
-        OwnerContext::withOwner($ownerOne, fn () => $directory->link($subjectOne, 'chip_customer_repair_1'));
-        OwnerContext::withOwner($ownerTwo, fn () => $directory->link($subjectTwo, 'chip_customer_repair_2'));
+        OwnerContext::withOwner($ownerOne, fn () => $directory->link(new RecordReference($subjectOne->getMorphClass(), (string) $subjectOne->getKey()), 'chip_customer_repair_1'));
+        OwnerContext::withOwner($ownerTwo, fn () => $directory->link(new RecordReference($subjectTwo->getMorphClass(), (string) $subjectTwo->getKey()), 'chip_customer_repair_2'));
 
         $found = OwnerContext::withOwner($ownerOne, fn () => $directory->findByChipCustomerId('chip_customer_repair_1'));
         $hidden = OwnerContext::withOwner($ownerOne, fn () => $directory->findByChipCustomerId('chip_customer_repair_2'));

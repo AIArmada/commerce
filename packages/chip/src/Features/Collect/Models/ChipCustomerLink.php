@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\Collect\Models;
+
+use AIArmada\Chip\Models\ChipModel;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

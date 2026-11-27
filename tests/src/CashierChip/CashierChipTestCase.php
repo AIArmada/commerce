@@ -188,7 +188,7 @@ abstract class CashierChipTestCase extends Orchestra
         });
 
         if (is_string($chipCustomerId) && $chipCustomerId !== '') {
-            Cashier::chipCustomerDirectory()->link($user, $chipCustomerId);
+            Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), $chipCustomerId);
         }
 
         return $user;
@@ -196,7 +196,7 @@ abstract class CashierChipTestCase extends Orchestra
 
     protected function linkChipCustomer(User $user, string $chipCustomerId): void
     {
-        Cashier::chipCustomerDirectory()->link($user, $chipCustomerId);
+        Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), $chipCustomerId);
     }
 
     /**

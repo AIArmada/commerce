@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Billable;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

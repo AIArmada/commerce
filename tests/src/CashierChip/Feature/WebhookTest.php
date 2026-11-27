@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
@@ -187,8 +188,8 @@ it('resolves billable by owner context when chip_id is duplicated across tenants
         'email' => 'cashier-chip-owner-a-dup@example.com',
     ]);
 
-    OwnerContext::withOwner($ownerB, fn () => Cashier::chipCustomerDirectory()->link($ownerB, 'duplicated-client-id'));
-    OwnerContext::withOwner($ownerA, fn () => Cashier::chipCustomerDirectory()->link($ownerA, 'duplicated-client-id'));
+    OwnerContext::withOwner($ownerB, fn () => Cashier::chipCustomerDirectory()->link(new RecordReference($ownerB->getMorphClass(), (string) $ownerB->getKey()), 'duplicated-client-id'));
+    OwnerContext::withOwner($ownerA, fn () => Cashier::chipCustomerDirectory()->link(new RecordReference($ownerA->getMorphClass(), (string) $ownerA->getKey()), 'duplicated-client-id'));
 
     $purchaseData = [
         'id' => 'test-purchase-id-owner-a',

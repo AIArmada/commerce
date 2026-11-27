@@ -176,11 +176,12 @@ use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 
 $directory = app(ChipCustomerDirectoryInterface::class);
 
-$link = $directory->link($user, $client->id, [
+$subject = new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey());
+$link = $directory->link($subject, $client->id, [
     'source' => 'checkout',
 ]);
 
-$chipCustomerId = $directory->getChipCustomerId($user);
+$chipCustomerId = $directory->getChipCustomerId($subject);
 ```
 
 The directory stores links in `chip_customers` and applies owner scoping through `commerce-support` when CHIP owner mode is enabled.

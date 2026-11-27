@@ -16,7 +16,7 @@ use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Chip\Events\PurchasePaid;
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;

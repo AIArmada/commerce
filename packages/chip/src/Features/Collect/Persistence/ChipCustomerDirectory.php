@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Features\Collect\Persistence;
 
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Data\CustomerLinkData;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +21,14 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
         private readonly ChipCollectService $chip,
     ) {}
 
-    public function findForSubject(Model $subject): ?ChipCustomerLink
+    public function findForSubject(RecordReference $subject): ?CustomerLinkData
+    {
+        $link = $this->findSubjectModel($this->resolveSubject($subject));
+
+        return $link === null ? null : $this->toData($link);
+    }
+
+    private function findSubjectModel(Model $subject): ?ChipCustomerLink
     {
         $this->assertSubjectOwner($subject);
 
@@ -31,15 +41,15 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
         return $link;
     }
 
-    public function findByChipCustomerId(string $chipCustomerId, ?Model $owner = null): ?ChipCustomerLink
+    public function findByChipCustomerId(string $chipCustomerId, ?RecordReference $owner = null): ?CustomerLinkData
     {
         $query = ChipCustomerLink::query();
 
         if ($owner !== null) {
             $query
                 ->withoutOwnerScope()
-                ->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', (string) $owner->getKey());
+                ->where('owner_type', $owner->type)
+                ->where('owner_id', $owner->id);
         } elseif ((bool) config('chip.owner.enabled', false)) {
             $resolved = OwnerContext::resolve();
 
@@ -62,22 +72,27 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
         /** @var ChipCustomerLink|null $link */
         $link = $query->where('chip_customer_id', $chipCustomerId)->first();
 
-        return $link;
+        return $link === null ? null : $this->toData($link);
     }
 
-    public function getChipCustomerId(Model $subject): ?string
+    public function getChipCustomerId(RecordReference $subject): ?string
     {
         return $this->findForSubject($subject)?->chip_customer_id;
     }
 
-    public function hasChipCustomerId(Model $subject): bool
+    public function hasChipCustomerId(RecordReference $subject): bool
     {
         return $this->getChipCustomerId($subject) !== null;
     }
 
-    public function link(Model $subject, string $chipCustomerId, array $metadata = []): ChipCustomerLink
+    public function link(RecordReference $subject, string $chipCustomerId, array $metadata = []): CustomerLinkData
     {
-        $link = $this->findForSubject($subject);
+        return $this->toData($this->linkSubject($this->resolveSubject($subject), $chipCustomerId, $metadata));
+    }
+
+    private function linkSubject(Model $subject, string $chipCustomerId, array $metadata): ChipCustomerLink
+    {
+        $link = $this->findSubjectModel($subject);
 
         if ($link === null) {
             if ($this->findAnyForSubject($subject) !== null) {
@@ -98,9 +113,14 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
         return $link->refresh();
     }
 
-    public function ensureForSubject(Model $subject, CustomerInterface $customer): ChipCustomerLink
+    public function ensureForSubject(RecordReference $subject, CustomerInterface $customer): CustomerLinkData
     {
-        $link = $this->findForSubject($subject);
+        return $this->toData($this->ensureSubject($this->resolveSubject($subject), $customer));
+    }
+
+    private function ensureSubject(Model $subject, CustomerInterface $customer): ChipCustomerLink
+    {
+        $link = $this->findSubjectModel($subject);
 
         if ($link !== null) {
             return $link;
@@ -112,19 +132,35 @@ final class ChipCustomerDirectory implements ChipCustomerDirectoryInterface
 
         $client = $this->chip->createClient($this->toClientPayload($customer));
 
-        return $this->link($subject, $client->id, $customer->getCustomerMetadata());
+        return $this->linkSubject($subject, $client->id, $customer->getCustomerMetadata());
     }
 
-    public function syncForSubject(Model $subject, CustomerInterface $customer): ChipCustomerLink
+    public function syncForSubject(RecordReference $subject, CustomerInterface $customer): CustomerLinkData
     {
-        $link = $this->ensureForSubject($subject, $customer);
+        $link = $this->ensureSubject($this->resolveSubject($subject), $customer);
 
         $this->chip->updateClient($link->chip_customer_id, $this->toClientPayload($customer));
 
         $link->metadata = $customer->getCustomerMetadata();
         $link->save();
 
-        return $link->refresh();
+        return $this->toData($link->refresh());
+    }
+
+    private function resolveSubject(RecordReference $subject): Model
+    {
+        return EloquentRecordReference::resolve($subject) ?? throw new AuthorizationException('CHIP customer subject is not accessible.');
+    }
+
+    private function toData(ChipCustomerLink $link): CustomerLinkData
+    {
+        return new CustomerLinkData(
+            id: (string) $link->getKey(),
+            subject: new RecordReference($link->subject_type, $link->subject_id),
+            chip_customer_id: $link->chip_customer_id,
+            owner: $link->owner_type !== null && $link->owner_id !== null ? new RecordReference($link->owner_type, $link->owner_id) : null,
+            metadata: $link->metadata ?? [],
+        );
     }
 
     /**

@@ -8,8 +8,9 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\Chip\Data\ClientData;
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -20,7 +21,7 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
      */
     public function chipId(): ?string
     {
-        return Cashier::chipCustomerDirectory()->getChipCustomerId($this);
+        return $this->exists ? Cashier::chipCustomerDirectory()->getChipCustomerId($this->chipSubjectReference()) : null;
     }
 
     /**
@@ -41,7 +42,7 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
      */
     public function hasChipId(): bool
     {
-        return Cashier::chipCustomerDirectory()->hasChipCustomerId($this);
+        return $this->chipId() !== null;
     }
 
     /**
@@ -72,7 +73,7 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
         $client = Cashier::chip()->createClient(array_filter($payload));
 
         Cashier::chipCustomerDirectory()->link(
-            $this,
+            $this->chipSubjectReference(),
             $client->id,
             $this->toPaymentCustomerData()->getCustomerMetadata(),
         );
@@ -294,6 +295,11 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
         if (! $this->hasChipId()) {
             throw InvalidCustomer::notYetCreated($this);
         }
+    }
+
+    private function chipSubjectReference(): RecordReference
+    {
+        return new RecordReference($this->getMorphClass(), (string) $this->getKey());
     }
 
     private function toPaymentCustomerData(): PaymentCustomerData
