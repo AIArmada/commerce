@@ -6,6 +6,7 @@ namespace AIArmada\Contacting\Features\Snapshots\Actions;
 
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Features\Snapshots\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Features\Snapshots\Models\ContactSnapshot;
@@ -23,9 +24,9 @@ final class CreateContactSnapshotAction
     public function fromContactMethod(Model $snapshotable, ContactMethod $contactMethod, ?string $reason = null): ContactSnapshot
     {
         $this->assertSnapshotsEnabled();
+        $contactMethod = $this->guardContactMethod($contactMethod);
         $contactMethod->loadMissing('owner');
-        $ownerValue = $contactMethod->getRelationValue('owner');
-        $owner = $ownerValue instanceof Model ? $ownerValue : null;
+        $owner = $this->sourceOwner($contactMethod);
         $this->assertOwnerMatches($snapshotable, $owner);
 
         return $this->persistSnapshot(
@@ -42,7 +43,7 @@ final class CreateContactSnapshotAction
                 url: null,
                 displayValue: $contactMethod->display_value,
                 isPublic: $contactMethod->is_public,
-                payload: $contactMethod->toArray(),
+                payload: $contactMethod->attributesToArray(),
                 owner: $owner,
             ),
             $owner,
@@ -52,9 +53,9 @@ final class CreateContactSnapshotAction
     public function fromSocialProfile(Model $snapshotable, SocialProfile $socialProfile, ?string $reason = null): ContactSnapshot
     {
         $this->assertSnapshotsEnabled();
+        $socialProfile = $this->guardSocialProfile($socialProfile);
         $socialProfile->loadMissing('owner');
-        $ownerValue = $socialProfile->getRelationValue('owner');
-        $owner = $ownerValue instanceof Model ? $ownerValue : null;
+        $owner = $this->sourceOwner($socialProfile);
         $this->assertOwnerMatches($snapshotable, $owner);
 
         return $this->persistSnapshot(
@@ -71,7 +72,7 @@ final class CreateContactSnapshotAction
                 url: $socialProfile->url,
                 displayValue: $socialProfile->display_name ?? $socialProfile->handle,
                 isPublic: $socialProfile->is_public,
-                payload: $socialProfile->toArray(),
+                payload: $socialProfile->attributesToArray(),
                 owner: $owner,
             ),
             $owner,
@@ -88,8 +89,8 @@ final class CreateContactSnapshotAction
         $this->assertSnapshotsEnabled();
 
         return DB::transaction(function () use ($contactMethods, $reason, $snapshotable, $socialProfiles): Collection {
-            $contactMethods = Collection::make($contactMethods)->loadMissing('owner');
-            $socialProfiles = Collection::make($socialProfiles)->loadMissing('owner');
+            $contactMethods = Collection::make($contactMethods)->map(fn (ContactMethod $source): ContactMethod => $this->guardContactMethod($source))->loadMissing('owner');
+            $socialProfiles = Collection::make($socialProfiles)->map(fn (SocialProfile $source): SocialProfile => $this->guardSocialProfile($source))->loadMissing('owner');
 
             $snapshots = new Collection;
             $rows = [];
@@ -113,7 +114,7 @@ final class CreateContactSnapshotAction
                         url: null,
                         displayValue: $contactMethod->display_value,
                         isPublic: $contactMethod->is_public,
-                        payload: $contactMethod->toArray(),
+                        payload: $contactMethod->attributesToArray(),
                         owner: $owner,
                     ),
                     $rows,
@@ -139,7 +140,7 @@ final class CreateContactSnapshotAction
                         url: $socialProfile->url,
                         displayValue: $socialProfile->display_name ?? $socialProfile->handle,
                         isPublic: $socialProfile->is_public,
-                        payload: $socialProfile->toArray(),
+                        payload: $socialProfile->attributesToArray(),
                         owner: $owner,
                     ),
                     $rows,
@@ -160,9 +161,27 @@ final class CreateContactSnapshotAction
         });
     }
 
+    private function guardContactMethod(ContactMethod $source): ContactMethod
+    {
+        return ContactMethod::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $source->id)
+            : ContactMethod::query()->whereKey($source->id)->firstOrFail();
+    }
+
+    private function guardSocialProfile(SocialProfile $source): SocialProfile
+    {
+        return SocialProfile::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $source->id)
+            : SocialProfile::query()->whereKey($source->id)->firstOrFail();
+    }
+
     private function sourceOwner(ContactMethod | SocialProfile $source): ?Model
     {
         $owner = $source->getRelationValue('owner');
+
+        if ($source->owner_type !== null && ! $owner instanceof Model) {
+            throw new AuthorizationException('The contact source owner cannot be resolved.');
+        }
 
         return $owner instanceof Model ? $owner : null;
     }

@@ -29,7 +29,9 @@ final class UpdateSocialProfileAction
 
     public function execute(SocialProfile $profile, SocialProfileData | array $data): SocialProfile
     {
-        $profile = OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
+        $profile = SocialProfile::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey())
+            : SocialProfile::query()->whereKey($profile->getKey())->firstOrFail();
 
         if (is_array($data)) {
             $data = SocialProfileData::from($data);

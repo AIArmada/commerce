@@ -12,7 +12,9 @@ final class SetPrimarySocialProfileAction
 {
     public function execute(SocialProfile $profile): SocialProfile
     {
-        $profile = OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
+        $profile = SocialProfile::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey())
+            : SocialProfile::query()->whereKey($profile->getKey())->firstOrFail();
 
         DB::transaction(function () use ($profile): void {
             $profile->is_primary = true;

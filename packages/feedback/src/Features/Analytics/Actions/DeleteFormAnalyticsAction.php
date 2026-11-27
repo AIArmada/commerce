@@ -13,7 +13,11 @@ final readonly class DeleteFormAnalyticsAction implements DeletesFormAnalytics
 {
     public function execute(string $formId): void
     {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+        if (FeedbackForm::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+        } else {
+            FeedbackForm::query()->whereKey($formId)->firstOrFail();
+        }
 
         FeedbackFormAnalytics::query()->where('feedback_form_id', $formId)->delete();
     }

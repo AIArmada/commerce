@@ -66,3 +66,20 @@ test('CreateContactSnapshotAction persists social profile snapshots', function (
         ->and($snapshot->owner_type)->toBe($profile->owner_type)
         ->and($snapshot->owner_id)->toBe($profile->owner_id);
 });
+
+test('snapshot payloads exclude loaded relations', function (): void {
+    $customer = Customer::create([
+        'first_name' => 'Snapshot',
+        'last_name' => 'Payload',
+        'email' => 'snapshot-payload-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $method = $customer->addContactMethod(ContactMethodData::email('payload-' . uniqid() . '@example.com'));
+    $method->setRelation('contactable', $customer);
+
+    $snapshot = (new CreateContactSnapshotAction)->fromContactMethod($customer, $method);
+
+    expect($snapshot->payload)->not->toHaveKeys(['owner', 'contactable'])
+        ->and($snapshot->payload['value'])->toBe($method->value);
+});

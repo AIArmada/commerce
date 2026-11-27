@@ -22,7 +22,7 @@ final readonly class DeleteSocialProfilesForEntityAction
                     $owner = OwnerTupleParser::fromTypeAndId(
                         $record->owner_type,
                         $record->owner_id,
-                    )->toOwnerModel();
+                    )->toOwnerModelOrFail();
 
                     OwnerContext::withOwner($owner, function () use ($record): void {
                         $record->delete();

@@ -30,7 +30,9 @@ final class UpdateContactMethodAction
 
     public function execute(ContactMethod $contactMethod, ContactMethodData | array $data): ContactMethod
     {
-        $contactMethod = OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey());
+        $contactMethod = ContactMethod::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey())
+            : ContactMethod::query()->whereKey($contactMethod->getKey())->firstOrFail();
 
         if (is_array($data)) {
             $data = ContactMethodData::from($data);

@@ -12,7 +12,9 @@ final class SetPrimaryContactMethodAction
 {
     public function execute(ContactMethod $contactMethod): ContactMethod
     {
-        $contactMethod = OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey());
+        $contactMethod = ContactMethod::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey())
+            : ContactMethod::query()->whereKey($contactMethod->getKey())->firstOrFail();
 
         DB::transaction(function () use ($contactMethod): void {
             $contactMethod->is_primary = true;
