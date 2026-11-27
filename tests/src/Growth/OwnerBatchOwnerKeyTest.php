@@ -8,6 +8,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Growth\Actions\RepairExperimentAssignment;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Enums\VariantStatus;
@@ -16,6 +17,7 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 function batchKeyOwner(): User
@@ -152,5 +154,54 @@ describe('Growth owner batch commands', function (): void {
         } finally {
             $this->travelBack();
         }
+    });
+    it('archives only eligible concluded experiments and is idempotent', function (): void {
+        $owner = batchKeyOwner();
+        $eligible = batchKeyExperiment($owner, ExperimentStatus::Concluded);
+        $recent = batchKeyExperiment($owner, ExperimentStatus::Concluded);
+        $active = batchKeyExperiment($owner, ExperimentStatus::Active);
+
+        OwnerContext::withOwner($owner, fn (): int => Experiment::query()->whereKey([$eligible->getKey(), $active->getKey()])->update([
+            'updated_at' => CarbonImmutable::now()->subDays(120),
+        ]));
+
+        $this->artisan('growth:archive-experiments')
+            ->expectsOutputToContain('Experiments archived: 1')
+            ->assertSuccessful();
+
+        $this->artisan('growth:archive-experiments')
+            ->expectsOutputToContain('Experiments archived: 0')
+            ->assertSuccessful();
+
+        expect($eligible->fresh()->status)->toBe(ExperimentStatus::Archived)
+            ->and($recent->fresh()->status)->toBe(ExperimentStatus::Concluded)
+            ->and($active->fresh()->status)->toBe(ExperimentStatus::Active);
+    });
+    it('rejects direct repair of an assignment belonging to another owner', function (): void {
+        $owner = batchKeyOwner();
+        $foreignOwner = batchKeyOwner();
+        $experiment = batchKeyExperiment($foreignOwner);
+
+        $assignment = OwnerContext::withOwner($foreignOwner, fn (): Assignment => app(ResolveExperimentAssignment::class)->handle($experiment, anonymousId: 'foreign-repair'));
+
+        expect(fn () => OwnerContext::withOwner($owner, fn () => app(RepairExperimentAssignment::class)->handle($assignment)))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    it('clears a previous quarantine when a valid allocation is repaired', function (): void {
+        $owner = batchKeyOwner();
+        $experiment = batchKeyExperiment($owner);
+
+        OwnerContext::withOwner($owner, function () use ($experiment): void {
+            $assignment = app(ResolveExperimentAssignment::class)->handle($experiment, anonymousId: 'valid-repair');
+            $assignment->metadata = ['repair_quarantine' => ['reason' => 'inactive_experiment'], 'keep' => true];
+            $assignment->save();
+
+            expect(app(RepairExperimentAssignment::class)->handle($assignment, false))->toBe(RepairExperimentAssignment::CHANGED)
+                ->and($assignment->fresh()->metadata)->toHaveKey('repair_quarantine');
+
+            expect(app(RepairExperimentAssignment::class)->handle($assignment))->toBe(RepairExperimentAssignment::CHANGED)
+                ->and($assignment->fresh()->metadata)->toBe(['keep' => true]);
+        });
     });
 });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Features\Reminders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
@@ -35,51 +34,49 @@ final readonly class SendDueRemindersAction
             ],
         );
 
-        $count = OwnerContext::withOwner(null, function () use ($runner, $now, &$remaining): int {
-            return (int) $runner->forEach(function () use ($now, &$remaining): int {
-                if ($remaining === 0) {
-                    return 0;
+        $count = (int) $runner->forEachAcrossOwners(function () use ($now, &$remaining): int {
+            if ($remaining === 0) {
+                return 0;
+            }
+
+            $count = 0;
+            $lastRemindAt = null;
+            $lastId = null;
+
+            do {
+                $query = $this->dueReminders->query($now)
+                    ->orderBy('remind_at')
+                    ->orderBy('id');
+
+                if ($lastId !== null) {
+                    $query->where(function ($query) use ($lastRemindAt, $lastId): void {
+                        $query->where('remind_at', '>', $lastRemindAt)
+                            ->orWhere(function ($query) use ($lastRemindAt, $lastId): void {
+                                $query->where('remind_at', $lastRemindAt)->where('id', '>', $lastId);
+                            });
+                    });
                 }
 
-                $count = 0;
-                $lastRemindAt = null;
-                $lastId = null;
+                $pageSize = min(100, $remaining);
+                $reminders = $query->limit($pageSize)->get();
 
-                do {
-                    $query = $this->dueReminders->query($now)
-                        ->orderBy('remind_at')
-                        ->orderBy('id');
+                foreach ($reminders as $reminder) {
+                    $lastRemindAt = $reminder->getRawOriginal('remind_at');
+                    $lastId = $reminder->getKey();
 
-                    if ($lastId !== null) {
-                        $query->where(function ($query) use ($lastRemindAt, $lastId): void {
-                            $query->where('remind_at', '>', $lastRemindAt)
-                                ->orWhere(function ($query) use ($lastRemindAt, $lastId): void {
-                                    $query->where('remind_at', $lastRemindAt)->where('id', '>', $lastId);
-                                });
-                        });
+                    $remaining--;
+                    if ($this->sendReminder($reminder)) {
+                        $count++;
                     }
 
-                    $pageSize = min(100, $remaining);
-                    $reminders = $query->limit($pageSize)->get();
-
-                    foreach ($reminders as $reminder) {
-                        $lastRemindAt = $reminder->getRawOriginal('remind_at');
-                        $lastId = $reminder->getKey();
-
-                        $remaining--;
-                        if ($this->sendReminder($reminder)) {
-                            $count++;
-                        }
-
-                        if ($remaining === 0) {
-                            break;
-                        }
+                    if ($remaining === 0) {
+                        break;
                     }
-                } while ($remaining > 0 && $reminders->count() === $pageSize);
+                }
+            } while ($remaining > 0 && $reminders->count() === $pageSize);
 
-                return $count;
-            })->sum();
-        });
+            return $count;
+        })->sum();
 
         return $count;
     }

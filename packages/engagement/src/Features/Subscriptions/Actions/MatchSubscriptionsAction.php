@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Features\Subscriptions\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\HasSubscriptionMatchContext;
 use AIArmada\Engagement\Contracts\Subscribable;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
@@ -34,26 +33,24 @@ final readonly class MatchSubscriptionsAction
             ],
         );
 
-        $processed = OwnerContext::withOwner(null, function () use ($runner, $modelClass, $subjectId, $trigger, &$found): int {
-            return (int) $runner->forEach(function () use ($modelClass, $subjectId, $trigger, &$found): int {
-                /** @var Model|null $model */
-                $model = $modelClass::query()->find($subjectId);
+        $processed = (int) $runner->forEachAcrossOwners(function () use ($modelClass, $subjectId, $trigger, &$found): int {
+            /** @var Model|null $model */
+            $model = $modelClass::query()->find($subjectId);
 
-                if (! $model instanceof Model) {
-                    return 0;
-                }
+            if (! $model instanceof Model) {
+                return 0;
+            }
 
-                $found = true;
-                $context = $this->buildMatchContext($model);
-                $matches = 0;
+            $found = true;
+            $context = $this->buildMatchContext($model);
+            $matches = 0;
 
-                foreach ($this->subscriptions->matchingSubscriptions($model, $trigger, $context) as $_subscription) {
-                    $matches++;
-                }
+            foreach ($this->subscriptions->matchingSubscriptions($model, $trigger, $context) as $_subscription) {
+                $matches++;
+            }
 
-                return $matches;
-            })->sum();
-        });
+            return $matches;
+        })->sum();
 
         if (! $found) {
             throw new InvalidArgumentException("Subject not found for type [{$subjectType}] with ID [{$subjectId}].");
