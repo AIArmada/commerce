@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Console\Commands\RebuildSegmentsCommand;
+use AIArmada\Customers\EntryPoints\Commands\RebuildSegmentsCommand;
 use AIArmada\Customers\Models\Segment;
 use Illuminate\Contracts\Console\Kernel;
 

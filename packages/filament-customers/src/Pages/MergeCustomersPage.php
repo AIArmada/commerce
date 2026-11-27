@@ -7,8 +7,8 @@ namespace AIArmada\FilamentCustomers\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Customers\Actions\MergeCustomers;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentCustomers\Actions\MergeCustomersAction;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use BackedEnum;
 use Closure;
@@ -204,7 +204,7 @@ final class MergeCustomersPage extends Page implements HasForms
         Gate::forUser($user)->authorize('delete', $source);
 
         try {
-            app(MergeCustomersAction::class)->execute($target, $source);
+            app(MergeCustomers::class)->execute($target, $source);
         } catch (InvalidArgumentException $exception) {
             Notification::make()
                 ->danger()

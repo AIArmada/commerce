@@ -20,6 +20,10 @@ final class MergeCustomers
 {
     public function execute(Customer $target, Customer $source): Customer
     {
+        if (! $target->exists || ! $source->exists || $target->is($source)) {
+            throw new InvalidArgumentException('Customers must be distinct persisted records.');
+        }
+
         if (! $this->customersShareOwnerContext($source, $target)) {
             throw new InvalidArgumentException('Cannot merge customers across different owner contexts.');
         }

@@ -27,9 +27,10 @@ final class ReorderFeaturedPersonsAction
                 throw ValidationException::withMessages(['order' => 'Only distinct featured people may be reordered.']);
             }
 
-            $remaining = $order;
-            $after = array_map(function (string $id) use ($order, &$remaining): string {
-                return in_array($id, $order, true) ? array_shift($remaining) : $id;
+            $selected = array_fill_keys($order, true);
+            $offset = 0;
+            $after = array_map(function (string $id) use ($order, $selected, &$offset): string {
+                return isset($selected[$id]) ? $order[$offset++] : $id;
             }, $before);
 
             if ($before === $after) {

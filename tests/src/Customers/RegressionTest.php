@@ -817,3 +817,16 @@ describe('atomic person linkage', function (): void {
         expect($customer->fresh()?->first_name)->toBe('Link');
     });
 });
+
+it('rejects a customer self-merge without deleting the customer', function (): void {
+    $owner = CustomersTestOwner::query()->create(['name' => 'Merge Owner']);
+
+    OwnerContext::withOwner($owner, function (): void {
+        $customer = createRegressionTestCustomer(['first_name' => 'Keep', 'last_name' => 'Me']);
+
+        expect(fn () => app(MergeCustomers::class)->execute($customer, $customer->fresh()))
+            ->toThrow(InvalidArgumentException::class, 'Customers must be distinct persisted records.');
+
+        expect(Customer::query()->whereKey($customer->getKey())->exists())->toBeTrue();
+    });
+});
