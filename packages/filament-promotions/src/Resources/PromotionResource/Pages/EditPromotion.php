@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
@@ -72,6 +73,7 @@ final class EditPromotion extends EditRecord
         $actions[] = ViewAction::make();
         $actions[] = Action::make('deactivate')
             ->label('Deactivate')
+            ->authorize(static fn (): bool => FilamentPermission::hasAbility('promotion.update'))
             ->color('danger')
             ->requiresConfirmation()
             ->visible(fn (Promotion $record): bool => $record->is_active)

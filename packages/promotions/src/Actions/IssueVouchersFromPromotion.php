@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -30,8 +29,8 @@ final class IssueVouchersFromPromotion
         ?string $codePrefix = null,
         array $overrides = [],
     ): Collection {
-        if ($count < 1) {
-            throw new InvalidArgumentException('Voucher issue count must be at least 1.');
+        if ($count < 1 || $count > 100) {
+            throw new InvalidArgumentException('Voucher issue count must be between 1 and 100.');
         }
 
         if (config('promotions.features.owner.enabled', false)) {
@@ -103,7 +102,7 @@ final class IssueVouchersFromPromotion
             'usage_limit' => 1,
             'starts_at' => $promotion->starts_at,
             'expires_at' => $promotion->ends_at,
-            'status' => Active::class,
+            'status' => 'active',
             'owner_type' => $promotion->owner_type,
             'owner_id' => $promotion->owner_id,
             'target_definition' => $this->buildTargetDefinition($promotion),

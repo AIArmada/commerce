@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Pages\ListVoucherUsages;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables\VoucherUsagesTable;
@@ -15,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class VoucherUsageResource extends Resource
@@ -26,6 +28,21 @@ final class VoucherUsageResource extends Resource
     protected static ?string $navigationLabel = 'Voucher Usage';
 
     protected static ?string $recordTitleAttribute = 'user_identifier';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('voucher.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('voucher.view');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return self::canViewAny();
+    }
 
     public static function table(Table $table): Table
     {

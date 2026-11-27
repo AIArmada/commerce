@@ -92,3 +92,8 @@ it('requires explicit global context before issuing vouchers from a global promo
         ->and($storedVoucher->owner_type)->toBeNull()
         ->and($storedVoucher->owner_id)->toBeNull();
 });
+
+it('rejects unbounded promotion voucher issuance before any writes', function (): void {
+    expect(fn () => IssueVouchersFromPromotion::run(new Promotion, count: 101))
+        ->toThrow(InvalidArgumentException::class, 'between 1 and 100');
+});

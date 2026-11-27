@@ -7,6 +7,7 @@ namespace AIArmada\FilamentVouchers\Actions;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Runtime\VoucherBatchIssuer;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -19,6 +20,8 @@ final class BulkGenerateVouchersAction extends Action
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->authorize(static fn (): bool => FilamentPermission::hasAbility('voucher.create'));
 
         $this->label('Bulk Generate');
         $this->icon(Heroicon::OutlinedSquare2Stack);

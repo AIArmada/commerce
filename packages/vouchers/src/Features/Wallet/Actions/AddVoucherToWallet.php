@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Wallet\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
+use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -21,6 +23,7 @@ final class AddVoucherToWallet implements WalletClaim
 {
     use AsAction;
     use QueriesVouchers;
+    use ResolvesVoucherAssignee;
 
     /**
      * Add a voucher to the owner's wallet.
@@ -37,6 +40,12 @@ final class AddVoucherToWallet implements WalletClaim
 
             if (! $voucher instanceof VoucherModel) {
                 throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
+            }
+
+            $assignee = $this->resolveAssignee($voucher);
+
+            if ($assignee !== null && ($holder->getMorphClass() !== $assignee['type'] || (string) $holder->getKey() !== $assignee['id'])) {
+                throw InvalidVoucherException::assignedToAnother($voucher->code);
             }
 
             $existing = VoucherWallet::where('voucher_id', $voucher->id)

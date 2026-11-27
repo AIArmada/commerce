@@ -7,6 +7,7 @@ namespace AIArmada\FilamentVouchers\Actions;
 use AIArmada\Vouchers\Runtime\VoucherAvailability;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -16,6 +17,8 @@ final class PauseVoucherAction extends Action
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->authorize(static fn (): bool => FilamentPermission::hasAbility('voucher.update'));
 
         $this->label('Pause');
         $this->icon(Heroicon::OutlinedPause);

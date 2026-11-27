@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Resources;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource\Pages\ListVoucherWallets;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource\Tables\VoucherWalletsTable;
@@ -16,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class VoucherWalletResource extends Resource
@@ -29,6 +31,21 @@ final class VoucherWalletResource extends Resource
     protected static ?string $modelLabel = 'Wallet Entry';
 
     protected static ?string $pluralModelLabel = 'Wallet Entries';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('voucher.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('voucher.view');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return self::canViewAny();
+    }
 
     public static function table(Table $table): Table
     {

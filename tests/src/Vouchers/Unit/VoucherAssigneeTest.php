@@ -228,3 +228,12 @@ it('rejects an idempotency key replayed for a different redeemer', function (): 
         redeemedBy: $secondRedeemer,
     ))->toThrow(ValidationException::class);
 });
+
+it('prevents a foreign account from claiming an assigned voucher into its wallet', function (): void {
+    $assignee = assigneeUser();
+    $stranger = assigneeUser();
+    $voucher = assigneeVoucher($assignee);
+
+    expect(fn () => app(\AIArmada\Vouchers\Runtime\WalletClaim::class)->handle($voucher->code, $stranger))
+        ->toThrow(InvalidVoucherException::class, 'another account');
+});

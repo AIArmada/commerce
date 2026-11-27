@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\WalletEntryDeletion;
 use Filament\Actions\Action;
@@ -134,11 +135,13 @@ final class WalletEntriesTable
             ->filters([
                 SelectFilter::make('holder_type')
                     ->label('Holder Type')
-                    ->options([
-                        'App\\Models\\User' => 'User',
-                        'App\\Models\\Store' => 'Store',
-                        'App\\Models\\Team' => 'Team',
-                    ])
+                    ->options(static fn (): array => VoucherWalletResource::getEloquentQuery()
+                        ->whereNotNull('holder_type')
+                        ->distinct()
+                        ->orderBy('holder_type')
+                        ->pluck('holder_type')
+                        ->mapWithKeys(static fn (string $type): array => [$type => class_basename($type)])
+                        ->all())
                     ->native(false),
 
                 TernaryFilter::make('claimed_at')
