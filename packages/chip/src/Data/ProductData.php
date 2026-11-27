@@ -3,40 +3,32 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
-
-use AIArmada\Chip\Data\Casts\MoneyCast;
-use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use Akaunting\Money\Money;
 use InvalidArgumentException;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Attributes\WithTransformer;
 
-final class ProductData extends ChipData
+
+
+final readonly class ProductData
 {
     public function __construct(
-        public readonly string $name,
-        public readonly string $quantity,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $price,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $discount,
-        public readonly float | string $tax_percent,
-        public readonly ?string $category,
-        public readonly ?int $total_price_override = null,
+        public string $name,
+        public string $quantity,
+        public Money $price,
+        public Money $discount,
+        public float | string $tax_percent,
+        public ?string $category,
+        public ?int $total_price_override = null,
     ) {}
 
     /**
      * Create a Product from array data (typically from CHIP API response).
      * Prices in the array are expected to be in cents (minor units).
      *
-     * @param  array<string, mixed>|self  ...$payloads
+     * @param  array<string, mixed>  $data
      */
-    public static function from(mixed ...$payloads): static
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
         $currency = $data['currency'] ?? 'MYR';
 
         return new self(
