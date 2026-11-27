@@ -100,6 +100,7 @@ final class AggregateExperimentMetrics
 
         $rows = $this->assignmentQuery->forExperiment($experiment)
             ->orderBy('assigned_at')
+            ->orderBy('id')
             ->limit($cap + 1)
             ->get();
 
@@ -123,6 +124,7 @@ final class AggregateExperimentMetrics
             ->where('tracked_property_id', $experiment->tracked_property_id)
             ->whereIn('event_name', [$checkoutStartedEventName, $purchaseEventName, $refundEventName])
             ->orderBy('occurred_at')
+            ->orderBy('id')
             ->limit($cap + 1)
             ->get(['id', 'tracked_property_id', 'occurred_at', 'event_name', 'event_category', 'revenue_minor', 'currency', 'properties']);
 
@@ -357,6 +359,7 @@ final class AggregateExperimentMetrics
             // Oldest-first explicit window; Laravel parenthesizes UNION legs so
             // the limit binds to this leg on every supported driver.
             ->orderBy($assignmentTable . '.assigned_at')
+            ->orderBy($assignmentTable . '.id')
             ->limit($this->maxAssignmentRows() + 1);
         $query = $variantQuery->toBase()->unionAll($assignmentQuery->toBase());
 
@@ -407,6 +410,7 @@ final class AggregateExperimentMetrics
                 DB::raw('NULL AS position'),
             ])
             ->orderBy($eventTable . '.occurred_at')
+            ->orderBy($eventTable . '.id')
             ->limit($this->maxEventRows() + 1);
 
         $query->unionAll($eventQuery->toBase());

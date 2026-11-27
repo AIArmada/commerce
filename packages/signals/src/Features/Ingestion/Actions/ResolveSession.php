@@ -152,7 +152,7 @@ final readonly class ResolveSession
         bool $storeRaw,
     ): void {
         $session->fill([
-            'signal_identity_id' => $identity?->id,
+            'signal_identity_id' => $identity?->id ?? $session->signal_identity_id,
             'entry_path' => $session->entry_path ?? ($payload['path'] ?? null),
             'country_code' => $session->country_code ?? $this->resolveCountryCode($request, $payload),
             'country_source' => $session->country_source ?? $this->resolveCountrySource($request, $payload),
@@ -239,7 +239,7 @@ final readonly class ResolveSession
         }
 
         $payloadCountry = $payload['country_code'] ?? null;
-        if (is_string($payloadCountry) && $payloadCountry !== '') {
+        if (is_string($payloadCountry) && preg_match('/^[A-Z]{2}$/', mb_strtoupper($payloadCountry))) {
             return 'payload';
         }
 
@@ -265,7 +265,7 @@ final readonly class ResolveSession
             if ($packed === false) {
                 return $ip;
             }
-            $anonymized = mb_substr($packed, 0, 6) . str_repeat("\x00", 10);
+            $anonymized = substr($packed, 0, 6) . str_repeat("\x00", 10);
 
             return inet_ntop($anonymized) ?: $ip;
         }

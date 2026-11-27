@@ -236,10 +236,20 @@ final readonly class IngestSignalEvent
 
     private function normalizeRevenueMinor(mixed $value): int
     {
+        if (is_int($value)) {
+            return max(0, $value);
+        }
+
         if (! is_numeric($value)) {
             return 0;
         }
 
-        return max(0, (int) round((float) $value));
+        $rounded = round((float) $value);
+
+        if (! is_finite($rounded) || $rounded >= (float) PHP_INT_MAX) {
+            throw new InvalidArgumentException('Revenue exceeds the supported minor-unit range.');
+        }
+
+        return max(0, (int) $rounded);
     }
 }

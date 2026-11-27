@@ -150,3 +150,24 @@ describe('Metrics row windows', function (): void {
             ->and($batch['assignment_count'])->toBe(1);
     });
 });
+
+it('uses stable event ids to break timestamp ties in single and batch windows', function (): void {
+    config()->set('growth.metrics.max_event_rows', 1);
+
+    $owner = metricsCapOwner();
+    $experiment = metricsCapExperiment($owner);
+    $assignment = metricsCapAssignment($owner, $experiment, 'identity:stable-window');
+    $first = metricsCapEvent($owner, $experiment, $assignment, 'order.paid', 1000);
+    $second = metricsCapEvent($owner, $experiment, $assignment, 'order.paid', 2000);
+
+    OwnerContext::withOwner($owner, function () use ($first, $second): void {
+        SignalEvent::query()->whereKey([$first->id, $second->id])->update(['occurred_at' => '2026-01-01 00:00:00']);
+    });
+
+    $expected = strcmp($first->id, $second->id) < 0 ? 1000 : 2000;
+    $single = OwnerContext::withOwner($owner, fn (): array => app(AggregateExperimentMetrics::class)->handle($experiment));
+    $batch = OwnerContext::withOwner($owner, fn (): array => app(AggregateExperimentMetrics::class)->handleMany(new EloquentCollection([$experiment])));
+
+    expect($single['totals']['revenue_minor'])->toBe($expected)
+        ->and($batch['results'][(string) $experiment->getKey()]['totals']['revenue_minor'])->toBe($expected);
+});

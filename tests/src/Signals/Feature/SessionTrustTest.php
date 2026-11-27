@@ -105,3 +105,39 @@ it('normalizes trusted revenue to non-negative minor units', function (): void {
 
     expect(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(4);
 });
+
+it('anonymizes IPv6 addresses using byte boundaries', function (): void {
+    $resolver = app(ResolveSession::class);
+    $anonymize = new ReflectionMethod(ResolveSession::class, 'anonymizeIpAddress');
+
+    expect($anonymize->invoke($resolver, 'c3a9:c3a9:c3a9:c3a9:1234:5678:9abc:def0'))->toBe('c3a9:c3a9:c3a9::')
+        ->and($anonymize->invoke($resolver, '203.0.113.42'))->toBe('203.0.113.0');
+});
+
+it('does not erase the session identity on a later event without identity fields', function (): void {
+    $property = createSessionTrustProperty();
+    $ingest = app(IngestSignalEvent::class);
+    $first = $ingest->handle($property, [
+        'event_name' => 'custom.first',
+        'external_id' => 'known-customer',
+        'session_identifier' => 'known-session',
+    ], trusted: true);
+
+    $ingest->handle($property, [
+        'event_name' => 'custom.next',
+        'session_identifier' => 'known-session',
+    ], trusted: true);
+
+    expect($first->signal_identity_id)->not->toBeNull()
+        ->and($property->sessions()->firstOrFail()->signal_identity_id)->toBe($first->signal_identity_id);
+});
+
+it('preserves integer minor-unit revenue above the exact floating-point range', function (): void {
+    $property = createSessionTrustProperty();
+    $event = app(IngestSignalEvent::class)->handle($property, [
+        'event_name' => 'order.paid',
+        'revenue_minor' => 9007199254740993,
+    ], trusted: true);
+
+    expect($event->revenue_minor)->toBe(9007199254740993);
+});
