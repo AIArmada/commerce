@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Exports;
+namespace AIArmada\Inventory\Contracts;
 
 /**
  * Contract for exportable inventory data.

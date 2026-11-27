@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Exports;
+namespace AIArmada\Inventory\Features\Reporting\Queries;
+
+use AIArmada\Inventory\Contracts\ExportableInterface;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -57,7 +59,7 @@ final class BatchExport implements ExportableInterface
                 ->where('expires_at', '>', CarbonImmutable::now());
         }
 
-        foreach ($query->cursor() as $batch) {
+        foreach ($query->orderBy('id')->lazy(500) as $batch) {
             $daysUntilExpiry = $batch->expires_at !== null
                 ? CarbonImmutable::now()->diffInDays($batch->expires_at, false)
                 : null;

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Exports;
+namespace AIArmada\Inventory\Features\Reporting\Queries;
+
+use AIArmada\Inventory\Contracts\ExportableInterface;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -69,8 +71,8 @@ final class StockLevelExport implements ExportableInterface
             $query->where('quantity_on_hand', '<=', 0);
         }
 
-        foreach ($query->cursor() as $level) {
-            $available = $level->quantity_on_hand - $level->quantity_reserved;
+        foreach ($query->orderBy('id')->lazy(500) as $level) {
+            $available = $level->available;
             $status = match (true) {
                 $level->quantity_on_hand <= 0 => 'Out of Stock',
                 $level->isLowStock() => 'Low Stock',

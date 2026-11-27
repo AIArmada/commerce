@@ -13,3 +13,5 @@ Stock threshold evaluation, alert persistence and location hierarchy services be
 Inventory reporting and reconciliation queries live under `AIArmada\Inventory\Features\Reporting\Queries`.
 
 Use `AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService` for read-only fulfillment location planning.
+
+Inventory exports use `Contracts/ExportableInterface`, `Features/Reporting/Queries` and `Features/Reporting/Actions/ExportService`.

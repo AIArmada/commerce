@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
-use AIArmada\Inventory\Exports\ExportableInterface;
-use AIArmada\Inventory\Exports\StockLevelExport;
+use AIArmada\Inventory\Contracts\ExportableInterface;
+use AIArmada\Inventory\Features\Reporting\Queries\StockLevelExport;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use Carbon\CarbonImmutable;

@@ -16,7 +16,7 @@ use AIArmada\Inventory\Features\Reservations\EntryPoints\Console\CleanupExpiredA
 use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
-use AIArmada\Inventory\Exports\ExportService;
+use AIArmada\Inventory\Features\Reporting\Actions\ExportService;
 use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
@@ -66,7 +66,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->registerCoreServices();
-        $this->registerReportServices();
         $this->registerFeatureModules();
     }
 
@@ -120,14 +119,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
         $this->app->singleton(InventoryService::class);
         $this->app->alias(InventoryService::class, 'inventory');
 
-    }
-
-    /**
-     * Register reporting and analytics services.
-     */
-    private function registerReportServices(): void
-    {
-        $this->app->singleton(ExportService::class);
     }
 
     private function registerFeatureModules(): void

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Exports;
+namespace AIArmada\Inventory\Features\Reporting\Queries;
+
+use AIArmada\Inventory\Contracts\ExportableInterface;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -76,7 +78,7 @@ final class MovementExport implements ExportableInterface
             });
         }
 
-        foreach ($query->cursor() as $movement) {
+        foreach ($query->orderBy('id')->lazy(500) as $movement) {
             yield [
                 $movement->id,
                 $movement->type,

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Exports\ExportableInterface;
-use AIArmada\Inventory\Exports\ValuationExport;
+use AIArmada\Inventory\Contracts\ExportableInterface;
+use AIArmada\Inventory\Features\Reporting\Queries\ValuationExport;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use Carbon\CarbonImmutable;

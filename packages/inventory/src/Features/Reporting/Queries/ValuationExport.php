@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Exports;
+namespace AIArmada\Inventory\Features\Reporting\Queries;
+
+use AIArmada\Inventory\Contracts\ExportableInterface;
 
 use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -54,7 +56,7 @@ final class ValuationExport implements ExportableInterface
             }
         }
 
-        foreach ($query->cursor() as $snapshot) {
+        foreach ($query->orderBy('id')->lazy(500) as $snapshot) {
             yield [
                 $snapshot->snapshot_date->format('Y-m-d'),
                 $snapshot->costing_method->label(),
