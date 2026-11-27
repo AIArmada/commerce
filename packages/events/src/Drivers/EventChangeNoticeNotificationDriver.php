@@ -61,33 +61,29 @@ final class EventChangeNoticeNotificationDriver implements EventChangeNoticeNoti
      */
     private function recipientBatches(EventChangeNoticeNotificationData $notice): iterable
     {
-        if ($notice->recipients !== []) {
-            yield from $this->uniqueRecipientBatches($notice->recipients);
+        $resolved = false;
 
-            return;
+        foreach ($this->uniqueRecipientBatches($this->configuredRecipients($notice)) as $batch) {
+            $resolved = true;
+
+            yield $batch;
         }
+
+        if (! $resolved && $notice->audienceScope === 'registrants') {
+            yield from $this->registrationRecipientBatches($notice->eventId);
+        }
+    }
+
+    /**
+     * @return iterable<int, EventNotificationRecipientData>
+     */
+    private function configuredRecipients(EventChangeNoticeNotificationData $notice): iterable
+    {
+        yield from $notice->recipients;
 
         if ($notice->updateId !== null) {
-            $resolved = false;
-
-            $audience = $this->audienceResolver->resolve($notice->updateId, $notice->audienceScope);
-
-            foreach ($this->uniqueRecipientBatches($audience) as $batch) {
-                $resolved = true;
-
-                yield $batch;
-            }
-
-            if ($resolved) {
-                return;
-            }
+            yield from $this->audienceResolver->resolve($notice->updateId, $notice->audienceScope);
         }
-
-        if ($notice->audienceScope !== 'registrants') {
-            return;
-        }
-
-        yield from $this->registrationRecipientBatches($notice->eventId);
     }
 
     /**

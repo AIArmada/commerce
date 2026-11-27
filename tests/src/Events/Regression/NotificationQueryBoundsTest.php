@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Data\EventChangeNoticeNotificationData;
 use AIArmada\Events\Data\EventNotificationRecipientData;
 use AIArmada\Events\Drivers\EventChangeNoticeNotificationDriver;
@@ -36,6 +38,31 @@ final class IntegerKeyNotificationRecipient extends Model
         return (string) $this->getAttribute('email');
     }
 }
+
+it('delivers to explicit and resolved audience recipients once each', function (): void {
+    [$explicitUser, $audienceUser] = User::factory()->count(2)->create()->all();
+    $explicit = new EventNotificationRecipientData($explicitUser->getMorphClass(), (string) $explicitUser->getKey());
+    $audience = new EventNotificationRecipientData($audienceUser->getMorphClass(), (string) $audienceUser->getKey());
+
+    $resolver = mock(EventChangeNoticeAudienceResolver::class);
+    $resolver->shouldReceive('resolve')->once()->with('update-id', 'followers')->andReturn([$explicit, $audience]);
+
+    $manager = mock(CommunicationManager::class);
+    foreach ([$explicitUser, $audienceUser] as $user) {
+        $manager->shouldReceive('notify')->once()
+            ->withArgs(static fn (Model $notifiable): bool => $notifiable->is($user))
+            ->andReturn(new Communication);
+    }
+
+    new EventChangeNoticeNotificationDriver($manager, $resolver)->dispatch(new EventChangeNoticeNotificationData(
+        title: 'Event Change Notice',
+        message: 'Combined audience',
+        eventId: (string) Event::factory()->create()->getKey(),
+        updateId: 'update-id',
+        audienceScope: 'followers',
+        recipients: [$explicit],
+    ));
+});
 
 it('bulk-loads registration recipients without per-recipient query growth', function (): void {
     $event = Event::factory()->create();

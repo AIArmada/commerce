@@ -7,6 +7,23 @@ This guide uses the Modular Dune public surface: scalar-ID `Contracts`, feature
 See [Troubleshooting](99-troubleshooting.md#legacy-namespaces-were-removed) for
 the legacy-name mapping.
 
+## Updating custom Events integrations
+
+- Custom `EventOrderDriver` implementations supply `ownerType` and `ownerId`
+  when constructing `EventRefundMatchData`. See [refund authorization](#refund-and-admissions-authorization).
+- Custom `RegistrationsApi` implementations return a list of child registration
+  IDs from `expandComponents()`. Return an empty list when there are no children.
+- Link bundle components to an event, occurrence, or session within the parent
+  registration's event. Expansion rejects components outside that event scope.
+- Set `OwnerContext` before creating registrations or reading event scopes.
+  Registration payloads cannot assign owners through `owner_type` or `owner_id`.
+- Use `EventTicketingDriver::restoreRefundedRegistrationItemInventory()` with the
+  registration item ID for refund restocking. The order-level
+  `restoreRefundedInventory()` method has been removed.
+- Use `EventSearchPayloadResolver` and `EventSearchRelationProvider` to customize
+  automatic indexing. A custom `EventSearchDocumentBuilder` binding applies to
+  callers that resolve that contract directly.
+
 ## Resolving models
 
 Application code that may run with model overrides resolves classes through
