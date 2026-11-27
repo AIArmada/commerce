@@ -33,6 +33,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $owner_type
  * @property int|string|null $owner_id
  * @property int $quantity
+ * @property int|null $quantity_before
+ * @property int|null $quantity_after
  * @property string $type
  * @property string|null $reason
  * @property string|null $reference
@@ -78,6 +80,8 @@ final class InventoryMovement extends Model implements Auditable
         'to_location_id',
         'batch_id',
         'quantity',
+        'quantity_before',
+        'quantity_after',
         'type',
         'reason',
         'reference',
@@ -291,6 +295,8 @@ final class InventoryMovement extends Model implements Auditable
     {
         return [
             'quantity' => 'integer',
+            'quantity_before' => 'integer',
+            'quantity_after' => 'integer',
             'occurred_at' => 'immutable_datetime',
         ];
     }

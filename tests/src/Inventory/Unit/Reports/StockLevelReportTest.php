@@ -642,3 +642,27 @@ it('reports dead-stock value only for its exact item and location', function ():
     expect($report->get($this->item->getKey())['value'])->toBe(400)
         ->and($report->get($uncosted->getKey())['value'])->toBeNull();
 });
+
+it('reports cycle count percentages from recorded before quantities without inventing historical costs', function (): void {
+    foreach ([[10, 2], [20, 4], [10, 0]] as [$before, $variance]) {
+        InventoryMovement::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'to_location_id' => $this->location->id,
+            'type' => MovementType::Adjustment,
+            'quantity' => $variance,
+            'quantity_before' => $before,
+            'quantity_after' => $before + $variance,
+            'reason' => 'cycle_count',
+            'occurred_at' => now()->subDay(),
+        ]);
+    }
+
+    $result = $this->report->getCycleCountMetrics();
+
+    expect($result['total_counts'])->toBe(3)
+        ->and($result['accurate_counts'])->toBe(1)
+        ->and($result['total_variance_units'])->toBe(6)
+        ->and($result['avg_variance_percentage'])->toBe(13.33)
+        ->and($result['total_variance_value'])->toBeNull();
+});

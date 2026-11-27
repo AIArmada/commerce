@@ -82,7 +82,7 @@ final class CycleCountAction
 
                         TextInput::make('counted_quantity')
                             ->label('Counted Quantity')
-                            ->numeric()
+                            ->integer()
                             ->required()
                             ->minValue(0)
                             ->autofocus(),
@@ -111,11 +111,18 @@ final class CycleCountAction
                 }
 
                 $countedQuantity = (int) $data['counted_quantity'];
-                $systemQuantity = (int) InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-                    ->where('inventoryable_type', $record->getMorphClass())
-                    ->where('inventoryable_id', $record->getKey())
-                    ->where('location_id', $locationId)
-                    ->value('quantity_on_hand');
+                $counter = isset($data['counter']) ? (string) $data['counter'] : null;
+
+                $movement = AdjustInventory::run(
+                    model: $record,
+                    locationId: $locationId,
+                    newQuantity: $countedQuantity,
+                    reason: 'cycle_count',
+                    note: $counter !== null && $counter !== '' ? "Counted by {$counter}" : null,
+                    userId: Auth::id(),
+                );
+
+                $systemQuantity = (int) $movement->quantity_before;
                 $variance = $countedQuantity - $systemQuantity;
 
                 if ($variance === 0) {
@@ -127,20 +134,6 @@ final class CycleCountAction
 
                     return;
                 }
-
-                $reason = 'Cycle Count';
-                if (isset($data['counter'])) {
-                    $reason .= " by {$data['counter']}";
-                }
-
-                AdjustInventory::run(
-                    model: $record,
-                    locationId: $locationId,
-                    newQuantity: $countedQuantity,
-                    reason: $reason,
-                    note: "Variance: {$variance} (System: {$systemQuantity}, Counted: {$countedQuantity})",
-                    userId: Auth::id(),
-                );
 
                 $varianceText = $variance > 0 ? "+{$variance}" : (string) $variance;
 

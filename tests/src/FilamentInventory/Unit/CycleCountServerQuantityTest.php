@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\FilamentInventory\Actions\CycleCountAction;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 
 beforeEach(function (): void {
@@ -33,6 +34,12 @@ it('recomputes the system quantity server side without a submitted value', funct
         ->first();
 
     expect((int) $level?->quantity_on_hand)->toBe(12);
+
+    $movement = InventoryMovement::query()->where('reason', 'cycle_count')->sole();
+
+    expect($movement->quantity)->toBe(2)
+        ->and($movement->quantity_before)->toBe(10)
+        ->and($movement->quantity_after)->toBe(12);
 });
 
 it('verifies the count without adjustment when quantities match', function (): void {
@@ -55,4 +62,11 @@ it('verifies the count without adjustment when quantities match', function (): v
         ->first();
 
     expect((int) $level?->quantity_on_hand)->toBe(7);
+
+    $movement = InventoryMovement::query()->where('reason', 'cycle_count')->sole();
+
+    expect($movement->quantity)->toBe(0)
+        ->and($movement->quantity_before)->toBe(7)
+        ->and($movement->quantity_after)->toBe(7)
+        ->and($movement->to_location_id)->toBe($location->id);
 });

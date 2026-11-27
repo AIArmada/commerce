@@ -54,21 +54,25 @@ final class AdjustInventory
             $oldQuantity = $level->quantity_on_hand;
             $difference = $newQuantity - $oldQuantity;
 
-            if ($difference === 0) {
+            if ($difference === 0 && $reason !== 'cycle_count') {
                 throw new InvalidArgumentException('No adjustment needed, quantities are equal');
             }
 
             // Ledger path: the movement below is the audit record, so the
             // level's direct-write auto-audit must stand down.
-            $level->suppressLedgerAudit = true;
-            $level->update(['quantity_on_hand' => $newQuantity]);
+            if ($difference !== 0) {
+                $level->suppressLedgerAudit = true;
+                $level->update(['quantity_on_hand' => $newQuantity]);
+            }
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
                 'inventoryable_id' => $model->getKey(),
                 'from_location_id' => $difference < 0 ? $locationId : null,
-                'to_location_id' => $difference > 0 ? $locationId : null,
+                'to_location_id' => $difference >= 0 ? $locationId : null,
                 'quantity' => abs($difference),
+                'quantity_before' => $oldQuantity,
+                'quantity_after' => $newQuantity,
                 'type' => MovementType::Adjustment->value,
                 'reason' => $reason,
                 'user_id' => $userId,
@@ -76,9 +80,11 @@ final class AdjustInventory
                 'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
             ]);
 
-            Event::dispatch(new InventoryAdjusted($model, $level, $movement, $oldQuantity, $newQuantity));
+            if ($difference !== 0) {
+                Event::dispatch(new InventoryAdjusted($model, $level, $movement, $oldQuantity, $newQuantity));
 
-            $this->thresholds->handle($model, $level);
+                $this->thresholds->handle($model, $level);
+            }
 
             return $movement;
         });

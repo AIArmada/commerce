@@ -358,8 +358,8 @@ final class StockLevelReport
      *     accurate_counts: int,
      *     accuracy_percentage: float,
      *     total_variance_units: int,
-     *     total_variance_value: int,
-     *     avg_variance_percentage: float,
+     *     total_variance_value: int|null,
+     *     avg_variance_percentage: float|null,
      * }
      */
     public function getCycleCountMetrics(
@@ -382,6 +382,9 @@ final class StockLevelReport
             ->selectRaw('COUNT(*) as total_counts')
             ->selectRaw('SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END) as accurate_counts')
             ->selectRaw('SUM(ABS(quantity)) as total_variance')
+            ->selectRaw('AVG(CASE WHEN quantity_before > 0 THEN ABS(quantity) * 100.0 / quantity_before WHEN quantity_before = 0 AND quantity = 0 THEN 0.0 ELSE NULL END) as avg_variance_percentage')
+            ->selectRaw('COUNT(CASE WHEN quantity_before IS NULL OR (quantity_before = 0 AND quantity <> 0) THEN 1 END) as undefined_variance_counts')
+            ->toBase()
             ->first();
 
         $totalCounts = (int) ($aggregate->total_counts ?? 0);
@@ -395,8 +398,8 @@ final class StockLevelReport
                 ? round(($accurateCounts / $totalCounts) * 100, 2)
                 : 100.0,
             'total_variance_units' => (int) $totalVariance,
-            'total_variance_value' => 0, // Requires cost layer integration
-            'avg_variance_percentage' => 0.0,
+            'total_variance_value' => $totalVariance === 0 ? 0 : null,
+            'avg_variance_percentage' => $totalCounts === 0 ? 0.0 : ((int) ($aggregate->undefined_variance_counts ?? 0) > 0 ? null : round((float) $aggregate->avg_variance_percentage, 2)),
         ];
     }
 }
