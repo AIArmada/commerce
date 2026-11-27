@@ -6,7 +6,7 @@ namespace AIArmada\Customers;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
-use AIArmada\Customers\EntryPoints\Commands\RebuildSegmentsCommand;
+use AIArmada\Customers\Features\Segmentation\EntryPoints\Commands\RebuildSegmentsCommand;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;

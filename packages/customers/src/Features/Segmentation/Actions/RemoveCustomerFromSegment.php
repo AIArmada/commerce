@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Actions;
+namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
@@ -13,6 +13,10 @@ final class RemoveCustomerFromSegment
 {
     public function execute(Customer $customer, Segment $segment): void
     {
+        if (! $customer->exists || ! $segment->exists) {
+            throw new InvalidArgumentException('Customer and segment must be persisted.');
+        }
+
         if (! $this->shareOwner($customer, $segment)) {
             throw new InvalidArgumentException('Customer and segment must share the same owner context.');
         }

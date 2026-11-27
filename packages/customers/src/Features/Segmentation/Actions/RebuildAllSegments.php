@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Actions;
+namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;

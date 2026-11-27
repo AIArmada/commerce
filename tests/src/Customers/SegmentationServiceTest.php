@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Actions\RebuildAllSegments;
-use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Services\SegmentationService;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use Illuminate\Support\Facades\Event;
 
 /**

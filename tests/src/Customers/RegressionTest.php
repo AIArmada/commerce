@@ -19,7 +19,7 @@ use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\CustomerResolver;
-use AIArmada\Customers\Services\SegmentationService;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

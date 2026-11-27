@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Services;
+namespace AIArmada\Customers\Features\Segmentation\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Actions\RebuildAllSegments;
-use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;

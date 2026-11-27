@@ -11,9 +11,9 @@ The package provides action classes for common customer workflows:
 ```php
 use AIArmada\Customers\Actions\CreateCustomer;
 use AIArmada\Customers\Actions\UpdateCustomerProfile;
-use AIArmada\Customers\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
-use AIArmada\Customers\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Actions\LinkCustomerToPerson;
 use AIArmada\Customers\Actions\MergeCustomers;
 
@@ -428,7 +428,7 @@ $vipCustomers = Customer::inSegment($vipSegment)->get();
 ### Using Segmentation Service
 
 ```php
-use AIArmada\Customers\Services\SegmentationService;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 
 $service = app(SegmentationService::class);
 
