@@ -120,19 +120,15 @@ final readonly class TypeTransformer
      */
     public static function moneyToMinor(int | float | string $major): int
     {
-        if (is_int($major)) {
-            return $major * 100;
-        }
-
         if (is_float($major)) {
-            if (! is_finite($major)) {
+            if (! is_finite($major) || ! is_finite($major * 100)) {
                 throw new InvalidArgumentException('Money must be a finite number.');
             }
 
-            return (int) round($major * 100);
+            return self::parseMinorInteger(sprintf('%.0f', round($major * 100)));
         }
 
-        $normalized = str_replace([',', ' '], '', mb_trim($major));
+        $normalized = str_replace([',', ' '], '', mb_trim((string) $major));
 
         if (! preg_match('/^-?\d+(?:\.\d{1,2})?$/', $normalized)) {
             throw new InvalidArgumentException("Invalid money value: {$major}");
@@ -141,9 +137,23 @@ final readonly class TypeTransformer
         $negative = str_starts_with($normalized, '-');
         $unsigned = mb_ltrim($normalized, '+-');
         [$whole, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
-        $minor = ((int) $whole * 100) + (int) mb_str_pad($fraction, 2, '0');
+        $digits = $whole . mb_str_pad($fraction, 2, '0');
 
-        return $negative ? -$minor : $minor;
+        return self::parseMinorInteger(($negative ? '-' : '') . $digits);
+    }
+
+    private static function parseMinorInteger(string $value): int
+    {
+        $negative = str_starts_with($value, '-');
+        $digits = mb_ltrim(mb_ltrim($value, '-'), '0');
+        $normalized = $digits === '' ? '0' : ($negative ? '-' : '') . $digits;
+        $minor = filter_var($normalized, FILTER_VALIDATE_INT);
+
+        if ($minor === false) {
+            throw new InvalidArgumentException('Money exceeds the integer minor-unit range.');
+        }
+
+        return $minor;
     }
 
     /**
@@ -152,8 +162,9 @@ final readonly class TypeTransformer
     public static function forMoney(int $minor): string
     {
         $negative = $minor < 0;
-        $absolute = abs($minor);
-        $value = intdiv($absolute, 100) . '.' . mb_str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
+        $whole = abs(intdiv($minor, 100));
+        $fraction = abs($minor % 100);
+        $value = $whole . '.' . mb_str_pad((string) $fraction, 2, '0', STR_PAD_LEFT);
 
         return $negative ? '-' . $value : $value;
     }

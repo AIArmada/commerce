@@ -108,7 +108,7 @@ final readonly class PrintWaybillData
     {
         $content = $this->getPdfContent();
 
-        return $content !== null ? mb_strlen($content) : null;
+        return $content !== null ? mb_strlen($content, '8bit') : null;
     }
 
     /**
