@@ -9,7 +9,6 @@ use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\WebhookService;
 use Illuminate\Support\Facades\Http;
-use Spatie\LaravelData\DataCollection;
 
 describe('OrderCancelCommand', function (): void {
     it('cancels order with provided reason and confirmation', function (): void {
@@ -147,8 +146,8 @@ describe('OrderTrackCommand', function (): void {
             scanTypeName: 'Delivered',
             scanType: 'SIGN',
         );
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$detail], DataCollection::class);
+
+        $details = [$detail];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123456',
@@ -169,8 +168,8 @@ describe('OrderTrackCommand', function (): void {
     });
 
     it('tracks by tracking number when the flag is provided', function (): void {
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([], DataCollection::class);
+
+        $details = [];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNTTRACK123',
@@ -194,8 +193,8 @@ describe('OrderTrackCommand', function (): void {
     });
 
     it('warns when no tracking information found', function (): void {
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([], DataCollection::class);
+
+        $details = [];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123456',

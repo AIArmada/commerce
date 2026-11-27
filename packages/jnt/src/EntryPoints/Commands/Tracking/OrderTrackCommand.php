@@ -27,7 +27,7 @@ class OrderTrackCommand extends JntCommand
                 ? $jnt->trackParcel(null, (string) $orderId)
                 : $jnt->trackParcel((string) $orderId);
 
-            if ($tracking->details->count() === 0) {
+            if (count($tracking->details) === 0) {
                 $this->warn('No tracking information found for this order.');
 
                 return self::SUCCESS;
@@ -36,7 +36,7 @@ class OrderTrackCommand extends JntCommand
             $this->success('Tracking Information Found');
 
             $details = [];
-            foreach ($tracking->details->toCollection() as $detail) {
+            foreach ($tracking->details as $detail) {
                 $details[] = [
                     $detail->scanTime,
                     $detail->scanType,

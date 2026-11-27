@@ -5,54 +5,50 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Data;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Tracking detail data from JNT Express API.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class TrackingDetailData extends Data
+
+
+final readonly class TrackingDetailData
 {
     public function __construct(
-        public readonly string $scanTime,
-        public readonly string $description,
-        public readonly string $scanTypeCode,
-        public readonly string $scanTypeName,
-        public readonly string $scanType,
-        public readonly ?string $actualWeight = null,
-        public readonly ?string $scanNetworkTypeName = null,
-        public readonly ?string $scanNetworkName = null,
-        public readonly ?string $staffName = null,
-        public readonly ?string $staffContact = null,
-        public readonly ?string $scanNetworkContact = null,
-        public readonly ?string $scanNetworkProvince = null,
-        public readonly ?string $scanNetworkCity = null,
-        public readonly ?string $scanNetworkArea = null,
-        public readonly ?string $signaturePictureUrl = null,
-        public readonly ?string $longitude = null,
-        public readonly ?string $latitude = null,
-        public readonly ?string $timeZone = null,
+        public string $scanTime,
+        public string $description,
+        public string $scanTypeCode,
+        public string $scanTypeName,
+        public string $scanType,
+        public ?string $actualWeight = null,
+        public ?string $scanNetworkTypeName = null,
+        public ?string $scanNetworkName = null,
+        public ?string $staffName = null,
+        public ?string $staffContact = null,
+        public ?string $scanNetworkContact = null,
+        public ?string $scanNetworkProvince = null,
+        public ?string $scanNetworkCity = null,
+        public ?string $scanNetworkArea = null,
+        public ?string $signaturePictureUrl = null,
+        public ?string $longitude = null,
+        public ?string $latitude = null,
+        public ?string $timeZone = null,
         // Additional fields from complete API documentation
-        public readonly ?string $otp = null,
-        public readonly ?string $secondLevelTypeCode = null,
-        public readonly ?string $wcTraceFlag = null,
-        public readonly ?string $postCode = null,
-        public readonly ?string $paymentStatus = null,
-        public readonly ?string $paymentMethod = null,
-        public readonly ?string $nextStopName = null,
-        public readonly ?string $remark = null,
-        public readonly ?string $nextNetworkProvinceName = null,
-        public readonly ?string $nextNetworkCityName = null,
-        public readonly ?string $nextNetworkAreaName = null,
-        public readonly ?string $problemType = null,
-        public readonly ?string $signUrl = null,
-        public readonly ?string $electronicSignaturePicUrl = null,
-        public readonly ?int $scanNetworkId = null,
-        public readonly ?string $scanNetworkCountry = null,
+        public ?string $otp = null,
+        public ?string $secondLevelTypeCode = null,
+        public ?string $wcTraceFlag = null,
+        public ?string $postCode = null,
+        public ?string $paymentStatus = null,
+        public ?string $paymentMethod = null,
+        public ?string $nextStopName = null,
+        public ?string $remark = null,
+        public ?string $nextNetworkProvinceName = null,
+        public ?string $nextNetworkCityName = null,
+        public ?string $nextNetworkAreaName = null,
+        public ?string $problemType = null,
+        public ?string $signUrl = null,
+        public ?string $electronicSignaturePicUrl = null,
+        public ?int $scanNetworkId = null,
+        public ?string $scanNetworkCountry = null,
     ) {}
 
     /**
@@ -153,11 +149,11 @@ class TrackingDetailData extends Data
 
     public function getLocation(): string
     {
-        return collect([
+        return implode(', ', array_filter([
             $this->scanNetworkArea,
             $this->scanNetworkCity,
             $this->scanNetworkProvince,
-        ])->filter()->implode(', ') ?: $this->scanNetworkName ?? '';
+        ])) ?: $this->scanNetworkName ?? '';
     }
 
     public function hasCoordinates(): bool

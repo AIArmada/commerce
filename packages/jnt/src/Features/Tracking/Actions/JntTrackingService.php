@@ -48,7 +48,7 @@ class JntTrackingService
      */
     public function getCurrentStatus(TrackingData $trackingData): TrackingStatus
     {
-        if ($trackingData->details->count() === 0) {
+        if (count($trackingData->details) === 0) {
             return TrackingStatus::Pending;
         }
 
@@ -82,7 +82,7 @@ class JntTrackingService
     {
         $events = [];
 
-        foreach ($trackingData->details->toCollection() as $detail) {
+        foreach ($trackingData->details as $detail) {
             $occurredAt = $this->parseDetailScanTime($detail);
 
             if ($occurredAt === null) {
@@ -270,7 +270,7 @@ class JntTrackingService
     {
         $rows = [];
 
-        foreach ($trackingData->details->toCollection() as $detail) {
+        foreach ($trackingData->details as $detail) {
             $scanTime = $this->parseDetailScanTime($detail);
 
             if ($scanTime === null) {

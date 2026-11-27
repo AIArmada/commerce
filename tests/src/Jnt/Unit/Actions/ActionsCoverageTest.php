@@ -7,14 +7,12 @@ use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingData;
-use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Features\Orders\Actions\CancelOrder;
 use AIArmada\Jnt\Features\Orders\Actions\CreateOrder;
 use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
 use AIArmada\Jnt\Features\Waybills\Actions\PrintWaybill;
 use AIArmada\Jnt\Services\JntExpressService;
-use Spatie\LaravelData\DataCollection;
 
 describe('CreateOrder action', function (): void {
     it('can be instantiated via constructor', function (): void {
@@ -134,8 +132,8 @@ describe('TrackParcel action', function (): void {
     });
 
     it('handles parcel tracking by order ID', function (): void {
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([], DataCollection::class);
+
+        $details = [];
 
         $expectedTracking = new TrackingData(
             trackingNumber: 'JNT123456',
@@ -157,8 +155,8 @@ describe('TrackParcel action', function (): void {
     });
 
     it('handles parcel tracking by tracking number', function (): void {
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([], DataCollection::class);
+
+        $details = [];
 
         $expectedTracking = new TrackingData(
             trackingNumber: 'JNT123456',

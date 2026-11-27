@@ -6,24 +6,21 @@ namespace AIArmada\Jnt\Data;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Carbon\CarbonImmutable;
-use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\DataCollection;
 use Throwable;
 
 /**
  * Tracking data from JNT Express API.
  */
-class TrackingData extends Data
+final readonly class TrackingData
 {
     /**
-     * @param  DataCollection<int, TrackingDetailData>  $details
+     * @param  list<TrackingDetailData>  $details
      */
     public function __construct(
-        public readonly string $trackingNumber,
-        #[DataCollectionOf(TrackingDetailData::class)]
-        public readonly DataCollection $details,
-        public readonly ?string $orderId = null,
+        public string $trackingNumber,
+
+        public array $details,
+        public ?string $orderId = null,
     ) {}
 
     /**
@@ -35,7 +32,7 @@ class TrackingData extends Data
     {
         return new self(
             trackingNumber: $trackingNumber,
-            details: new DataCollection(TrackingDetailData::class, $details),
+            details: array_values($details),
             orderId: $orderId,
         );
     }
@@ -85,27 +82,27 @@ class TrackingData extends Data
         return [
             'billCode' => $this->trackingNumber,
             'txlogisticId' => $this->orderId,
-            'details' => $this->details->toArray(),
+            'details' => array_map(static fn (TrackingDetailData $detail): array => $detail->toApiArray(), $this->details),
         ];
     }
 
     public function getLatestDetail(): ?TrackingDetailData
     {
-        if ($this->details->count() === 0) {
-            return null;
-        }
+        $latestDetail = null;
+        $latestTimestamp = PHP_INT_MIN;
 
-        /** @var TrackingDetailData|null $latestDetail */
-        $latestDetail = $this->details
-            ->toCollection()
-            ->sortByDesc(static function (TrackingDetailData $detail): int {
-                try {
-                    return CarbonImmutable::parse($detail->scanTime)->getTimestamp();
-                } catch (Throwable) {
-                    return 0;
-                }
-            })
-            ->first();
+        foreach ($this->details as $detail) {
+            try {
+                $timestamp = CarbonImmutable::parse($detail->scanTime)->getTimestamp();
+            } catch (Throwable) {
+                $timestamp = 0;
+            }
+
+            if ($timestamp > $latestTimestamp) {
+                $latestDetail = $detail;
+                $latestTimestamp = $timestamp;
+            }
+        }
 
         return $latestDetail;
     }

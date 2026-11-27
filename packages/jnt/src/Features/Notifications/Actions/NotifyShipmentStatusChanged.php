@@ -19,7 +19,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Spatie\LaravelData\DataCollection;
 use Throwable;
 use TypeError;
 use ValueError;
@@ -160,13 +159,10 @@ final class NotifyShipmentStatusChanged
                 $result['events']
             );
 
-            /** @var DataCollection<int, TrackingDetailData> $detailCollection */
-            $detailCollection = new DataCollection(TrackingDetailData::class, $details);
-
             return new TrackingData(
                 trackingNumber: $result['tracking_number'],
                 orderId: $result['order_id'],
-                details: $detailCollection
+                details: array_values($details)
             );
         } catch (Throwable) {
             return null;

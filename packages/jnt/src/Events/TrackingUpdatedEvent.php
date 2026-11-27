@@ -30,33 +30,33 @@ final class TrackingUpdatedEvent
 
     public function getLatestStatus(): ?string
     {
-        if ($this->tracking->details->count() === 0) {
+        if (count($this->tracking->details) === 0) {
             return null;
         }
 
-        $latest = $this->tracking->details->last();
+        $latest = $this->tracking->details[array_key_last($this->tracking->details)];
 
         return $latest instanceof TrackingDetailData ? $latest->scanType : null;
     }
 
     public function getLatestDescription(): ?string
     {
-        if ($this->tracking->details->count() === 0) {
+        if (count($this->tracking->details) === 0) {
             return null;
         }
 
-        $latest = $this->tracking->details->last();
+        $latest = $this->tracking->details[array_key_last($this->tracking->details)];
 
         return $latest instanceof TrackingDetailData ? $latest->description : null;
     }
 
     public function getLatestLocation(): ?string
     {
-        if ($this->tracking->details->count() === 0) {
+        if (count($this->tracking->details) === 0) {
             return null;
         }
 
-        $latest = $this->tracking->details->last();
+        $latest = $this->tracking->details[array_key_last($this->tracking->details)];
 
         if (! ($latest instanceof TrackingDetailData)) {
             return null;
@@ -72,28 +72,28 @@ final class TrackingUpdatedEvent
 
     public function isDelivered(): bool
     {
-        return $this->tracking->details->toCollection()->some(
+        return collect($this->tracking->details)->some(
             fn (TrackingDetailData $detail): bool => in_array($detail->scanType, ['DELIVER', 'SIGNED'], true)
         );
     }
 
     public function isInTransit(): bool
     {
-        return $this->tracking->details->toCollection()->some(
+        return collect($this->tracking->details)->some(
             fn (TrackingDetailData $detail): bool => in_array($detail->scanType, ['TRANSFER', 'ARRIVAL'], true)
         );
     }
 
     public function hasProblems(): bool
     {
-        return $this->tracking->details->toCollection()->some(
+        return collect($this->tracking->details)->some(
             fn (TrackingDetailData $detail): bool => in_array($detail->scanType, ['RETURN', 'REJECT', 'PROBLEM'], true)
         );
     }
 
     public function isCollected(): bool
     {
-        return $this->tracking->details->toCollection()->some(
+        return collect($this->tracking->details)->some(
             fn (TrackingDetailData $detail): bool => $detail->scanType === 'COLLECT'
         );
     }
@@ -103,11 +103,11 @@ final class TrackingUpdatedEvent
      */
     public function getDetails(): array
     {
-        return $this->tracking->details->all();
+        return $this->tracking->details;
     }
 
     public function getDetailCount(): int
     {
-        return $this->tracking->details->count();
+        return count($this->tracking->details);
     }
 }

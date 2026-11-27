@@ -12,7 +12,6 @@ use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
-use Spatie\LaravelData\DataCollection;
 
 /**
  * Helper function to create a TrackingDetailData object with all required fields
@@ -87,8 +86,7 @@ describe('JntTrackingService', function (): void {
 
         $service = new JntTrackingService($expressService, $statusMapper);
 
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([], DataCollection::class);
+        $details = [];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123456',
@@ -124,8 +122,7 @@ describe('JntTrackingService', function (): void {
             'scanTime' => '2024-01-15 10:00:00',
         ]);
 
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$olderDetail, $newerDetail], DataCollection::class);
+        $details = [$olderDetail, $newerDetail];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123456',
@@ -167,8 +164,7 @@ describe('JntTrackingService', function (): void {
             'scanNetworkProvince' => 'Wilayah Persekutuan',
         ]);
 
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$detail], DataCollection::class);
+        $details = [$detail];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123456',
@@ -206,8 +202,7 @@ describe('JntTrackingService', function (): void {
             'scanNetworkName' => 'Central Hub',
         ]);
 
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$detail], DataCollection::class);
+        $details = [$detail];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT789',
@@ -243,8 +238,7 @@ describe('JntTrackingService', function (): void {
             'scanNetworkCountry' => 'MY',
         ]);
 
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$detail], DataCollection::class);
+        $details = [$detail];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123',
@@ -273,8 +267,7 @@ describe('JntTrackingService', function (): void {
             'scanNetworkName' => 'Main Hub KL',
         ]);
 
-        /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$detail], DataCollection::class);
+        $details = [$detail];
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123',
