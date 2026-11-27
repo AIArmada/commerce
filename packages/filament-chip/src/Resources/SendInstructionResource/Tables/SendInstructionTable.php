@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Tables;
 
-use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\Chip\Features\Payouts\Actions\ResendPayoutWebhook;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;

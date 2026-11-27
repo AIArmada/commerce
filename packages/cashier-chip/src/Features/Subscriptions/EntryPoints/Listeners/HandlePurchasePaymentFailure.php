@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners;
 
-use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 

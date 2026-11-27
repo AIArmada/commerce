@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Tables;
 
-use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use AIArmada\Chip\Features\Payouts\Actions\DeleteBankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
