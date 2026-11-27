@@ -8,8 +8,10 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherUsageData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
+use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 
 describe('VoucherApplied event', function (): void {
     beforeEach(function (): void {
@@ -175,7 +177,7 @@ it('records the actual allocated discount in the immutable usage event', functio
         'currency' => 'MYR',
         'status' => 'active',
     ]);
-    $usage = new \AIArmada\Vouchers\Data\VoucherUsageData(
+    $usage = new VoucherUsageData(
         id: 'usage-1',
         voucherId: $voucher->id,
         discountAmount: 250,
@@ -188,7 +190,7 @@ it('records the actual allocated discount in the immutable usage event', functio
         notes: null,
     );
 
-    $event = new \AIArmada\Vouchers\Events\VoucherUsageRecorded($voucher, $usage);
+    $event = new VoucherUsageRecorded($voucher, $usage);
 
     expect($event->usage)->toBe($usage)
         ->and($event->getDiscountAmountCents())->toBe(250)

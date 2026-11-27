@@ -9,7 +9,7 @@ use DateTimeImmutable;
 final readonly class VoucherUsageData
 {
     /**
-     * @param array<string, mixed>|null $metadata
+     * @param  array<string, mixed>|null  $metadata
      */
     public function __construct(
         public string $id,

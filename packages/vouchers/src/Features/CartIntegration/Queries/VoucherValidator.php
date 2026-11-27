@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\CartIntegration\Queries;
 
-use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
-
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -16,6 +14,7 @@ use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Depleted;

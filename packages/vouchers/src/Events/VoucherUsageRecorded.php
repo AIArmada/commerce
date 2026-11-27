@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Events;
 
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Events\Concerns\HasVoucherEventData;
 use AIArmada\Vouchers\Data\VoucherUsageData;
+use AIArmada\Vouchers\Events\Concerns\HasVoucherEventData;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

@@ -35,8 +35,9 @@ final class RemoveVoucherFromCart implements CartVoucherRemoval
         }
 
         if (is_array($metadata) && $metadata !== []) {
-            $remaining = array_values(array_filter($metadata, fn (mixed $candidate): bool =>
-                is_string($candidate) && $this->normalizeCode($candidate) !== $normalized
+            $remaining = array_values(array_filter(
+                $metadata,
+                fn (mixed $candidate): bool => is_string($candidate) && $this->normalizeCode($candidate) !== $normalized
             ));
 
             if ($remaining !== $metadata) {

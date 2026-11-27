@@ -10,6 +10,7 @@ use AIArmada\Vouchers\Features\CartIntegration\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Features\CartIntegration\EntryPoints\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
@@ -266,7 +267,7 @@ it('removes a voucher from metadata and all cart condition stores together', fun
     ApplyVoucherToCart::run($cart, $voucher->code);
     $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
 
-    app(\AIArmada\Vouchers\Runtime\CartVoucherRemoval::class)->handle($cart, $voucher->code);
+    app(CartVoucherRemoval::class)->handle($cart, $voucher->code);
 
     expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
         ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue()

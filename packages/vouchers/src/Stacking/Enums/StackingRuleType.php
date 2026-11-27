@@ -103,6 +103,7 @@ enum StackingRuleType: string
 
     /**
      * Get the rule class name.
+     *
      * @return class-string<StackingRuleInterface>
      */
     public function getRuleClass(): string

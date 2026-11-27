@@ -10,10 +10,10 @@ use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
 use AIArmada\Vouchers\Services\VoucherService;
 use Mockery;
 

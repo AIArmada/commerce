@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
+use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\Cache;

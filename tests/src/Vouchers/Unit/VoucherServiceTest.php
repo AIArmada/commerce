@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 test('voucher service can find voucher', function (): void {
     $voucher = Voucher::create([
@@ -657,8 +658,8 @@ test('checkout rejects negative discounts and unknown currencies instead of sile
     $service = app(VoucherService::class);
 
     expect(fn () => $service->redeem($voucher->code, (string) $order->getKey(), -1, 'MYR'))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
     expect(fn () => $service->redeem($voucher->code, (string) $order->getKey(), 100, 'ZZZ'))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
     expect($voucher->usages()->count())->toBe(0);
 });
