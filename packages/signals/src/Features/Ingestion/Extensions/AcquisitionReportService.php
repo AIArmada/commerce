@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
+use AIArmada\Signals\Features\Ingestion\Api\AcquisitionReportRead;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\Signals\Contracts\ReportInterface;
@@ -15,7 +16,7 @@ use AIArmada\Signals\Support\SignalReportRevenue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
-final class AcquisitionReportService implements ReportInterface
+final class AcquisitionReportService implements ReportInterface, AcquisitionReportRead
 {
     public function type(): string
     {

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Models;
 
+use AIArmada\Signals\Features\Ingestion\Extensions\JourneyReportService;
+use Illuminate\Database\Eloquent\Builder;
+use AIArmada\Signals\Features\Ingestion\Extensions\DevicesReportService;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Features\Ingestion\Actions\DetachDeletedTelemetry;
@@ -135,6 +138,70 @@ final class SignalSession extends Model
         'reverse_geocoded_at' => 'immutable_datetime',
         'raw_reverse_geocode_payload' => 'array',
     ];
+
+    /**
+     * @return Builder<SignalSession>
+     */
+    public static function deviceTypeRows(
+        ?string $trackedPropertyId = null,
+        ?string $from = null,
+        ?string $until = null,
+        ?string $signalSegmentId = null,
+        bool $excludeBots = true,
+    ): Builder
+    {
+        return app(DevicesReportService::class)->getDeviceTypeQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
+    }
+
+    /**
+     * @return Builder<SignalSession>
+     */
+    public static function browserRows(
+        ?string $trackedPropertyId = null,
+        ?string $from = null,
+        ?string $until = null,
+        ?string $signalSegmentId = null,
+        bool $excludeBots = true,
+    ): Builder
+    {
+        return app(DevicesReportService::class)->getBrowserQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
+    }
+
+    /**
+     * @return Builder<SignalSession>
+     */
+    public static function operatingSystemRows(
+        ?string $trackedPropertyId = null,
+        ?string $from = null,
+        ?string $until = null,
+        ?string $signalSegmentId = null,
+        bool $excludeBots = true,
+    ): Builder
+    {
+        return app(DevicesReportService::class)->getOsQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
+    }
+
+    /**
+     * @return Builder<SignalSession>
+     */
+    public static function brandModelRows(
+        ?string $trackedPropertyId = null,
+        ?string $from = null,
+        ?string $until = null,
+        ?string $signalSegmentId = null,
+        bool $excludeBots = true,
+    ): Builder
+    {
+        return app(DevicesReportService::class)->getBrandModelQuery($trackedPropertyId, $from, $until, $signalSegmentId, $excludeBots);
+    }
+
+    /**
+     * @return Builder<SignalSession>
+     */
+    public static function journeyRows(?string $trackedPropertyId = null, ?string $from = null, ?string $until = null, ?string $signalSegmentId = null, ?string $savedReportId = null): Builder
+    {
+        return app(JourneyReportService::class)->getTableQuery($trackedPropertyId, $from, $until, $signalSegmentId, $savedReportId);
+    }
 
     public function getTable(): string
     {

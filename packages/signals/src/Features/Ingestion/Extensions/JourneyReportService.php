@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion\Extensions;
 
+use AIArmada\Signals\Features\Ingestion\Api\JourneyReportRead;
 use AIArmada\Signals\Contracts\ReportInterface;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Queries\SignalSegmentReportFilter;
@@ -11,7 +12,7 @@ use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Support\SavedSignalReportDefinition;
 use Illuminate\Database\Eloquent\Builder;
 
-final class JourneyReportService implements ReportInterface
+final class JourneyReportService implements ReportInterface, JourneyReportRead
 {
     public function type(): string
     {

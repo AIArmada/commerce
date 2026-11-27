@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead;
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
@@ -65,7 +65,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
      */
     public function getSummary(): array
     {
-        return app(ContentPerformanceReportService::class)->summary(
+        return app(ContentPerformanceReportRead::class)->summary(
             $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
             $this->dateFrom,
             $this->dateTo,
@@ -77,7 +77,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(app(ContentPerformanceReportService::class)->getTableQuery(
+            ->query(SignalEvent::contentPerformanceRows(
                 $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
                 $this->dateFrom,
                 $this->dateTo,
@@ -91,7 +91,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
                     ->label('Property')
                     ->toggleable(),
                 TextColumn::make('content_breakdown_value')
-                    ->label(app(ContentPerformanceReportService::class)->getBreakdownLabel($this->savedReportId !== '' ? $this->savedReportId : null))
+                    ->label(app(ContentPerformanceReportRead::class)->getBreakdownLabel($this->savedReportId !== '' ? $this->savedReportId : null))
                     ->searchable(['path', 'source', 'medium', 'campaign', 'referrer']),
                 TextColumn::make('content_path')
                     ->label('Path')

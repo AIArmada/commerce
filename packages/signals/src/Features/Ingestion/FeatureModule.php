@@ -4,6 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Features\Ingestion;
 
+use AIArmada\Signals\Features\Ingestion\Extensions\ContentPerformanceReportService;
+use AIArmada\Signals\Features\Ingestion\Api\ContentPerformanceReportRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\AcquisitionReportService;
+use AIArmada\Signals\Features\Ingestion\Api\AcquisitionReportRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\LiveActivityReportService;
+use AIArmada\Signals\Features\Ingestion\Api\LiveActivityReportRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\JourneyReportService;
+use AIArmada\Signals\Features\Ingestion\Api\JourneyReportRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\DevicesReportService;
+use AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead;
 use AIArmada\Signals\Features\Ingestion\Extensions\ConversionFunnelReportService;
 use AIArmada\Signals\Features\Ingestion\Api\ConversionFunnelReportRead;
 use AIArmada\Signals\Features\Ingestion\Extensions\RetentionReportService;
@@ -43,6 +53,11 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(GoalsReportRead::class, GoalsReportService::class);
         $app->bind(RetentionReportRead::class, RetentionReportService::class);
         $app->bind(ConversionFunnelReportRead::class, ConversionFunnelReportService::class);
+        $app->bind(DevicesReportRead::class, DevicesReportService::class);
+        $app->bind(JourneyReportRead::class, JourneyReportService::class);
+        $app->bind(LiveActivityReportRead::class, LiveActivityReportService::class);
+        $app->bind(AcquisitionReportRead::class, AcquisitionReportService::class);
+        $app->bind(ContentPerformanceReportRead::class, ContentPerformanceReportService::class);
         $app->bind(DailyTelemetryRead::class, ReadDailyTelemetry::class);
         $app->bind(TelemetryRead::class, ReadTelemetry::class);
         $app->bind(BrowserInteractionRules::class, ActiveBrowserInteractionRules::class);
