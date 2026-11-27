@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use Carbon\CarbonImmutable;
 
@@ -202,6 +202,25 @@ describe('WebhookRetryManager', function (): void {
 
             expect($result->isFailed())->toBeTrue();
         });
+    });
+
+    it('does not dispatch the same failed delivery twice before the backoff elapses', function (): void {
+        $webhook = Webhook::query()->create([
+            'title' => 'Retry test',
+            'event_type' => 'purchase.paid',
+            'events' => ['purchase.paid'],
+            'payload' => ['id' => 'retry-once'],
+            'status' => 'failed',
+            'retry_count' => 0,
+            'created_on' => time(),
+            'updated_on' => time(),
+            'callback' => 'https://example.com/webhook',
+        ]);
+
+        $this->dispatchAction->result = WebhookResult::failed('Retry later');
+        expect($this->manager->retry($webhook)->isFailed())->toBeTrue();
+        expect($this->manager->retry($webhook)->isSkipped())->toBeTrue();
+        expect($webhook->refresh()->retry_count)->toBe(1);
     });
 
     describe('setBackoffSchedule', function (): void {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\EntryPoints\Commands;
+namespace AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands;
 
-use AIArmada\Chip\Actions\CleanWebhooks;
-use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\CleanWebhooks;
+use AIArmada\Chip\Features\WebhookDelivery\Support\WebhookOwnerBatchRunner;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;

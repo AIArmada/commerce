@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\WebhookDelivery\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 use Spatie\WebhookClient\Models\WebhookCall;
-use Throwable;
 
 /**
  * @property string|null $url
@@ -145,47 +144,6 @@ class Webhook extends WebhookCall
     public function updatedOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['updated_on'] ?? null));
-    }
-
-    /**
-     * Mark the webhook as processed.
-     */
-    public function markProcessed(float $processingTimeMs = 0): self
-    {
-        $this->forceFill([
-            'status' => 'processed',
-            'processed' => true,
-            'processed_at' => CarbonImmutable::now(),
-            'processing_time_ms' => $processingTimeMs,
-        ])->save();
-
-        return $this;
-    }
-
-    /**
-     * Mark the webhook as failed.
-     */
-    public function markFailed(Throwable $exception): self
-    {
-        $this->forceFill([
-            'status' => 'failed',
-            'last_error' => $exception->getMessage(),
-        ])->save();
-
-        return $this;
-    }
-
-    /**
-     * Mark the webhook for retry.
-     */
-    public function markForRetry(string $reason): self
-    {
-        $this->forceFill([
-            'status' => 'failed',
-            'last_error' => $reason,
-        ])->save();
-
-        return $this;
     }
 
     protected function toTimestamp(?int $value): ?CarbonImmutable

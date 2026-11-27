@@ -7,7 +7,7 @@ use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Features\Payouts\Models\SendWebhook;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

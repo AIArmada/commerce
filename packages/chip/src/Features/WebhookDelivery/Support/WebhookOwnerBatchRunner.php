@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Support;
+namespace AIArmada\Chip\Features\WebhookDelivery\Support;
 
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Webhooks;
+namespace AIArmada\Chip\Features\WebhookDelivery\Queries;
 
 use AIArmada\Chip\Data\WebhookHealth;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -99,9 +99,9 @@ class WebhookMonitor
         Webhook::query()
             ->forOwner()
             ->where('created_at', '>=', $since)
-            ->select(['created_at', 'status'])
+            ->select(['id', 'created_at', 'status'])
             ->orderBy('id')
-            ->chunk(1000, function ($webhooks) use (&$buckets): void {
+            ->chunkById(1000, function ($webhooks) use (&$buckets): void {
                 foreach ($webhooks as $webhook) {
                     $hour = CarbonImmutable::parse($webhook->created_at)->format('Y-m-d H:00:00');
 

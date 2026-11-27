@@ -11,15 +11,15 @@ use AIArmada\Chip\Contracts\ChipSendTransport;
 use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\EntryPoints\Commands\ChipHealthCheckCommand;
-use AIArmada\Chip\EntryPoints\Commands\CleanWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\EntryPoints\Commands\PruneIdempotencyStubsCommand;
-use AIArmada\Chip\EntryPoints\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Platform\ExtensionRegistry;
 use AIArmada\Chip\Platform\FeatureCatalog;
 use AIArmada\Chip\Platform\FeatureModule;
@@ -28,7 +28,7 @@ use AIArmada\Chip\Services\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
-use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
+use AIArmada\Chip\Features\WebhookDelivery\Support\WebhookOwnerBatchRunner;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -141,7 +141,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             'store_headers' => [
                 'x-signature',
             ],
-            'process_webhook_job' => Webhooks\ProcessChipWebhook::class,
+            'process_webhook_job' => Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook::class,
         ];
 
         config([

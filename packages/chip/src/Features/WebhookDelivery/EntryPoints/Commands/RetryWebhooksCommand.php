@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\EntryPoints\Commands;
+namespace AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands;
 
-use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\Support\WebhookOwnerBatchRunner;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -21,7 +21,7 @@ final class RetryWebhooksCommand extends Command
 
     public function handle(WebhookRetryManager $retryManager, WebhookOwnerBatchRunner $batchRunner): int
     {
-        $limit = max(0, (int) $this->option('limit'));
+        $limit = max(1, (int) $this->option('limit'));
 
         $totals = $batchRunner->run(function (?Model $_owner, ?int $remainingLimit = null) use ($retryManager): array {
             return $this->processRetries($retryManager, $remainingLimit ?? (int) $this->option('limit'));
@@ -37,7 +37,7 @@ final class RetryWebhooksCommand extends Command
      */
     private function processRetries(WebhookRetryManager $retryManager, int $limit): array
     {
-        $webhooks = $retryManager->getRetryableWebhooks()
+        $webhooks = $retryManager->getRetryableWebhooks($limit)
             ->take($limit);
 
         if ($webhooks->isEmpty()) {

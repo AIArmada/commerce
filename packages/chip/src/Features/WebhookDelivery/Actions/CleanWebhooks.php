@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Actions;
+namespace AIArmada\Chip\Features\WebhookDelivery\Actions;
 
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

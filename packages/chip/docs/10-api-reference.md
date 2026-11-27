@@ -419,7 +419,7 @@ Extracts the CHIP purchase ID from webhook payloads. `fromPaymentPayload` handle
 ### WebhookOwnerBatchRunner
 
 ```php
-use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
+use AIArmada\Chip\Features\WebhookDelivery\Support\WebhookOwnerBatchRunner;
 
 $runner = app(WebhookOwnerBatchRunner::class);
 

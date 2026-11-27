@@ -6,7 +6,7 @@ use AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\Chip\Testing\WebhookFactory;
 use Illuminate\Database\Schema\Blueprint;

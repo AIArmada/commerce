@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\EntryPoints\Commands\CleanWebhooksCommand;
-use AIArmada\Chip\EntryPoints\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\CleanWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\RetryWebhooksCommand;
 
 /**
  * These tests verify command signatures, descriptions, and basic instantiation.

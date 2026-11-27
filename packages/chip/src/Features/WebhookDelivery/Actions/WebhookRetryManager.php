@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Webhooks;
+namespace AIArmada\Chip\Features\WebhookDelivery\Actions;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
+use InvalidArgumentException;
+use Illuminate\Support\Facades\DB;
 
 class WebhookRetryManager
 {
@@ -43,7 +45,7 @@ class WebhookRetryManager
     {
         $nextAttempt = $webhook->retry_count + 1;
 
-        return $this->backoffSchedule[$nextAttempt] ?? $this->backoffSchedule[5];
+        return $this->backoffSchedule[$nextAttempt] ?? (int) end($this->backoffSchedule);
     }
 
     public function retry(Webhook $webhook): WebhookResult
@@ -51,8 +53,26 @@ class WebhookRetryManager
         $retryOwner = $this->resolveRetryOwner($webhook);
 
         $executeRetry = function () use ($webhook, $retryOwner): WebhookResult {
-            $webhook->increment('retry_count');
-            $webhook->update(['last_retry_at' => CarbonImmutable::now()]);
+            $claimed = DB::transaction(function () use ($webhook): ?Webhook {
+                $current = Webhook::query()->forOwner(OwnerContext::CURRENT, false)->lockForUpdate()->find($webhook->getKey());
+
+                if (! $current instanceof Webhook || ! $this->shouldRetry($current) || ! $this->isEligibleForRetry($current, CarbonImmutable::now())) {
+                    return null;
+                }
+
+                $current->forceFill([
+                    'retry_count' => $current->retry_count + 1,
+                    'last_retry_at' => CarbonImmutable::now(),
+                ])->save();
+
+                return $current;
+            });
+
+            if ($claimed === null) {
+                return WebhookResult::skipped('Webhook is no longer eligible for retry.');
+            }
+
+            $webhook = $claimed;
 
             try {
                 $payload = is_array($webhook->payload) ? $webhook->payload : [];
@@ -90,7 +110,7 @@ class WebhookRetryManager
     /**
      * @return Collection<int, Webhook>
      */
-    public function getRetryableWebhooks(): Collection
+    public function getRetryableWebhooks(int $limit = 100): Collection
     {
         $now = CarbonImmutable::now();
         $maxAttempts = count($this->backoffSchedule);
@@ -117,6 +137,7 @@ class WebhookRetryManager
                 }
             })
             ->orderBy('id')
+            ->limit(max(0, $limit))
             ->get();
     }
 
@@ -125,6 +146,10 @@ class WebhookRetryManager
      */
     public function setBackoffSchedule(array $schedule): self
     {
+        if ($schedule === [] || array_keys($schedule) !== range(1, count($schedule)) || min($schedule) < 0) {
+            throw new InvalidArgumentException('Webhook retry backoff must contain consecutive attempts with non-negative delays.');
+        }
+
         $this->backoffSchedule = $schedule;
 
         return $this;
@@ -145,7 +170,7 @@ class WebhookRetryManager
     private function resolveRetryOwner(Webhook $webhook): ?Model
     {
         if (is_string($webhook->owner_type ?? null) && $webhook->owner_type !== '' && (is_string($webhook->owner_id ?? null) || is_int($webhook->owner_id ?? null))) {
-            return OwnerContext::fromTypeAndId($webhook->owner_type, $webhook->owner_id);
+            return OwnerContext::fromTypeAndIdOrFail($webhook->owner_type, $webhook->owner_id);
         }
 
         $payload = is_array($webhook->payload) ? $webhook->payload : [];
@@ -156,6 +181,6 @@ class WebhookRetryManager
             return null;
         }
 
-        return OwnerContext::fromTypeAndId($payloadOwnerType, $payloadOwnerId);
+        return OwnerContext::fromTypeAndIdOrFail($payloadOwnerType, $payloadOwnerId);
     }
 }

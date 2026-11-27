@@ -8,7 +8,7 @@ use AIArmada\Chip\Contracts\ChipSendTransport;
 use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Drivers\ChipSendClient;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use Illuminate\Support\Facades\Route;
 
 describe('Package bootstrap', function (): void {

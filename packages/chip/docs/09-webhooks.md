@@ -12,7 +12,7 @@ The package registers a POST route at `config('chip.webhooks.route', '/chip/webh
 
 - controller: `AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController`
 - route name: `chip.webhook`
-- processor job: `AIArmada\Chip\Webhooks\ProcessChipWebhook`
+- processor job: `AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook`
 
 This path integrates with `spatie/laravel-webhook-client` and the package's webhook event dispatcher, so incoming deliveries can be verified, deduplicated, stored, and translated into typed CHIP events.
 
