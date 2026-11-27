@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Jobs;
 
-use AIArmada\Cart\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;

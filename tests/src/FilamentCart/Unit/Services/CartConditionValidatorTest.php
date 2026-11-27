@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\ValidateStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\ValidateStoredCondition;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition as ConditionModel;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;

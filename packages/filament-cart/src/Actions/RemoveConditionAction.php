@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\Cart\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

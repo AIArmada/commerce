@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Pages;
 
+use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Jobs\RemoveConditionFromAllCartsJob;
@@ -11,6 +13,7 @@ use AIArmada\FilamentCart\Resources\ConditionResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditCondition extends EditRecord
 {
@@ -43,7 +46,7 @@ final class EditCondition extends EditRecord
             Actions\DeleteAction::make()
                 ->visible(fn (Condition $record) => ConditionResource::canDelete($record))
                 ->using(function (Condition $record): void {
-                    self::authorizeCondition($record)->delete();
+                    app(DeleteStoredCondition::class)->execute($record);
                 }),
         ];
     }
@@ -56,6 +59,13 @@ final class EditCondition extends EditRecord
         );
 
         return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        \assert($record instanceof Condition);
+
+        return app(SaveStoredCondition::class)->update($record, $data);
     }
 
     private static function authorizeCondition(Condition $condition): Condition

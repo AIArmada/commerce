@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\RemoveStoredConditions;
+use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\Cart\Snapshots\CartInstanceManager;

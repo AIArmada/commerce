@@ -1,6 +1,11 @@
 {
   "schema": 1,
   "name": "Conditions",
-  "owns": {},
+  "owns": {
+    "table:conditions": [
+      "AIArmada\\Cart\\Features\\Conditions\\Actions\\SaveStoredCondition",
+      "AIArmada\\Cart\\Features\\Conditions\\Actions\\DeleteStoredCondition"
+    ]
+  },
   "extensions": {}
 }
