@@ -6,29 +6,34 @@ namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Features\Collect\Api\RefundStateSynchronizer;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Synchronize local purchase refund state from a CHIP refund payment payload.
  */
-final class SyncPurchaseRefundState
+final readonly class SyncPurchaseRefundState implements RefundStateSynchronizer
 {
-    use AsAction;
 
-    public function handle(PaymentData $refundPayment, ?Purchase $purchase = null): ?Purchase
+    public function handle(PaymentData $refundPayment, ?string $purchaseId = null): void
     {
         if ($refundPayment->payment_type !== 'refund') {
-            return $purchase;
+            return;
         }
 
-        $purchase ??= $this->resolvePurchase($refundPayment);
+        $relatedId = $refundPayment->getRelatedPurchaseId();
+        if ($purchaseId !== null && $relatedId !== null && $purchaseId !== $relatedId) {
+            return;
+        }
 
-        if ($purchase === null) {
-            return null;
+        $purchaseId ??= $relatedId;
+
+        if ($purchaseId === null) {
+            return;
         }
 
         $refundAmount = $refundPayment->getAmountInCents();
@@ -38,8 +43,8 @@ final class SyncPurchaseRefundState
 
         // Lock the row so concurrent refund webhooks cannot both read the
         // same cumulative total and undercount.
-        return DB::transaction(function () use ($purchase, $refundPayment, $refundAmount): ?Purchase {
-            $locked = Purchase::query()->whereKey($purchase->getKey())->lockForUpdate()->first();
+        DB::transaction(function () use ($purchaseId, $refundPayment, $refundAmount): void {
+            $locked = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($purchaseId)->lockForUpdate()->first();
 
             if (! $locked instanceof Purchase) {
                 return null;
@@ -59,7 +64,7 @@ final class SyncPurchaseRefundState
             }
 
             if ($cumulativeRefundAmount <= 0) {
-                return $locked;
+                return;
             }
 
             $locked->forceFill([
@@ -70,20 +75,7 @@ final class SyncPurchaseRefundState
                 'refundable_amount' => $purchaseTotal > 0 ? max(0, $purchaseTotal - $cumulativeRefundAmount) : 0,
                 'refunded_at' => CarbonImmutable::now(),
             ])->save();
-
-            return $locked->refresh();
         });
-    }
-
-    private function resolvePurchase(PaymentData $refundPayment): ?Purchase
-    {
-        $purchaseId = $refundPayment->getRelatedPurchaseId();
-
-        if ($purchaseId === null) {
-            return null;
-        }
-
-        return Purchase::query()->find($purchaseId);
     }
 
     private function resolvePurchaseTotal(Purchase $purchase): int

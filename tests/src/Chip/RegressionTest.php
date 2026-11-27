@@ -463,10 +463,11 @@ describe('refund sync accumulates without double counting', function (): void {
             'updated_on' => time(),
         ])->save();
 
-        $result = app(SyncPurchaseRefundState::class)->handle($refund, $purchase);
+        app(SyncPurchaseRefundState::class)->handle($refund, (string) $purchase->getKey());
+        $result = $purchase->refresh();
 
-        expect($result?->refund_amount_minor)->toBe(3000)
-            ->and($result?->refundable_amount)->toBe(7000);
+        expect($result->refund_amount_minor)->toBe(3000)
+            ->and($result->refundable_amount)->toBe(7000);
     });
 });
 

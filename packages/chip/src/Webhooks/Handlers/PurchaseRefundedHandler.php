@@ -7,7 +7,7 @@ namespace AIArmada\Chip\Webhooks\Handlers;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Events\PaymentRefunded;
-use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
+use AIArmada\Chip\Features\Collect\Api\RefundStateSynchronizer;
 
 /**
  * Handles documented CHIP refund completion webhooks.
@@ -32,7 +32,7 @@ class PurchaseRefundedHandler implements WebhookHandler
             return WebhookResult::skipped('Refund payment payload is missing');
         }
 
-        app(SyncPurchaseRefundState::class)->handle($paymentRefunded->payment, $localPurchase);
+        app(RefundStateSynchronizer::class)->handle($paymentRefunded->payment, (string) $localPurchase->getKey());
 
         PaymentRefunded::dispatch($paymentRefunded->payment, $payload->rawPayload);
 
