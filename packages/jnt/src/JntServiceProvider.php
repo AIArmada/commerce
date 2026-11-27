@@ -8,7 +8,10 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
+use AIArmada\Jnt\Contracts\TrackingReader;
+use AIArmada\Jnt\Contracts\WaybillWriter;
 use AIArmada\Jnt\Drivers\JntShippingDriver;
+use AIArmada\Jnt\Drivers\LocalWaybillWriter;
 use AIArmada\Jnt\EntryPoints\Commands\Health\HealthCheckCommand;
 use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderCancelCommand;
 use AIArmada\Jnt\EntryPoints\Commands\Orders\OrderCreateCommand;
@@ -242,6 +245,8 @@ class JntServiceProvider extends PackageServiceProvider
             statusMapper: $app->make(JntStatusMapper::class),
         ));
         $this->app->alias(JntTrackingService::class, 'jnt.tracking');
+        $this->app->bind(TrackingReader::class, JntTrackingService::class);
+        $this->app->bind(WaybillWriter::class, LocalWaybillWriter::class);
     }
 
     /**
@@ -262,8 +267,7 @@ class JntServiceProvider extends PackageServiceProvider
                 JntShippingDriver::class,
                 fn (Application $app): JntShippingDriver => new JntShippingDriver(
                     $app->make(JntExpressService::class),
-                    $app->make(JntTrackingService::class),
-                    $app->make(JntStatusMapper::class),
+                    $app->make(TrackingReader::class),
                 )
             );
         }

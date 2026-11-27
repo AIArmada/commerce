@@ -301,7 +301,6 @@ describe('carrier safety guards', function (): void {
         $driver = new JntShippingDriver(
             Mockery::mock(JntExpressService::class),
             Mockery::mock(JntTrackingService::class),
-            Mockery::mock(JntStatusMapper::class),
         );
 
         $multiplier = new ReflectionMethod($driver, 'getRegionMultiplierBasisPoints');

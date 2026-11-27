@@ -10,7 +10,7 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
+use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Notifications\OrderProblemNotification;
 use AIArmada\Jnt\Notifications\OrderShippedNotification;
@@ -26,7 +26,7 @@ use ValueError;
 final class NotifyShipmentStatusChanged
 {
     public function __construct(
-        private readonly JntTrackingService $trackingService
+        private readonly TrackingReader $trackingService
     ) {}
 
     /**

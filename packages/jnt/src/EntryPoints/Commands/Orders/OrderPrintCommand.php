@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\EntryPoints\Commands\Orders;
 
 use AIArmada\Jnt\Data\PrintWaybillData;
-use AIArmada\Jnt\Drivers\LocalWaybillWriter;
+use AIArmada\Jnt\Contracts\WaybillWriter;
 use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Services\JntExpressService;
 
@@ -18,7 +18,7 @@ class OrderPrintCommand extends JntCommand
 
     protected $description = 'Print waybill for a J&T Express order';
 
-    public function handle(JntExpressService $jnt, LocalWaybillWriter $writer): int
+    public function handle(JntExpressService $jnt, WaybillWriter $writer): int
     {
         return $this->withErrorHandling(function () use ($jnt, $writer): int {
             $orderId = $this->argument('order-id');

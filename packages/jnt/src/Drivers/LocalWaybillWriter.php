@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Drivers;
 
+use AIArmada\Jnt\Contracts\WaybillWriter;
 use AIArmada\Jnt\Data\PrintWaybillData;
 
-final readonly class LocalWaybillWriter
+final readonly class LocalWaybillWriter implements WaybillWriter
 {
     public function write(PrintWaybillData $waybill, string $path): bool
     {

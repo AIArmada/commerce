@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Tracking\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
-class JntTrackingService
+class JntTrackingService implements TrackingReader
 {
     public function __construct(
         private readonly JntExpressService $expressService,

@@ -12,8 +12,7 @@ use AIArmada\Jnt\Enums\GoodsType;
 use AIArmada\Jnt\Enums\TrackingStatus as JntTrackingStatus;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
-use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
-use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
+use AIArmada\Jnt\Contracts\TrackingReader;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Support\TypeTransformer;
 use AIArmada\Shipping\Contracts\AddressValidationResult;
@@ -44,8 +43,7 @@ class JntShippingDriver implements ShippingDriverInterface
 {
     public function __construct(
         protected readonly JntExpressService $jntService,
-        protected readonly JntTrackingService $trackingService,
-        protected readonly JntStatusMapper $statusMapper,
+        protected readonly TrackingReader $trackingService,
     ) {}
 
     public function getCarrierCode(): string

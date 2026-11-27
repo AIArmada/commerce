@@ -337,7 +337,7 @@ $waybill = PrintWaybillData::fromApiArray($result);
 
 $waybill->hasBase64Content();  // true for single parcel
 $waybill->hasUrlContent();     // true for multi-parcel
-app(\AIArmada\Jnt\Drivers\LocalWaybillWriter::class)->write($waybill, '/path/to/waybill.pdf');
+app(\AIArmada\Jnt\Contracts\WaybillWriter::class)->write($waybill, '/path/to/waybill.pdf');
 $waybill->getPdfContent();     // Binary PDF content
 $waybill->getPdfSize();        // Size in bytes
 $waybill->getFormattedSize();  // "1.5 MB"

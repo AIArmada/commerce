@@ -9,7 +9,6 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Features\Tracking\Actions\JntTrackingService;
-use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
@@ -24,12 +23,10 @@ use AIArmada\Shipping\Enums\DriverCapability;
 beforeEach(function (): void {
     $this->jntService = Mockery::mock(JntExpressService::class);
     $this->trackingService = Mockery::mock(JntTrackingService::class);
-    $this->statusMapper = new JntStatusMapper;
 
     $this->driver = new JntShippingDriver(
         $this->jntService,
         $this->trackingService,
-        $this->statusMapper
     );
 });
 
