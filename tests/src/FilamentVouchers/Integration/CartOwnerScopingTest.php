@@ -113,28 +113,8 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
         test()->markTestSkipped('Filament cart integration is not available in this environment.');
     }
 
-    $manager = new class
-    {
-        public int $calls = 0;
-
-        public function resolve(string $instance, string $identifier): object
-        {
-            $this->calls++;
-
-            return new class
-            {
-                public function getAppliedVouchers(): array
-                {
-                    return [];
-                }
-
-                public function applyVoucher(string $code): void {}
-
-                public function removeVoucher(string $code): void {}
-            };
-        }
-    };
-
+    $manager = Mockery::mock(CartInstanceManager::class);
+    $manager->shouldNotReceive('resolve');
     app()->instance(CartInstanceManager::class, $manager);
 
     expect($bridge->getCartInstance($cartOwnedByB))->toBeNull();
@@ -147,5 +127,4 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
     expect(fn () => $bridge->removeVoucher($cartOwnedByB, 'SAVE10'))
         ->toThrow(VoucherException::class, 'not authorized');
 
-    expect($manager->calls)->toBe(0);
 });

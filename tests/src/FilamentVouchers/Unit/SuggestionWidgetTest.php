@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Cart as LiveCart;
+use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\Vouchers\Data\VoucherType;
@@ -41,43 +46,15 @@ it('applies suggestions by record key, resolving the code server-side', function
     $cart = suggestionCart();
     $voucher = suggestionVoucher();
 
-    $applied = [];
-    app()->instance(CartInstanceManager::class, new class($applied)
-    {
-        /** @var array<int, string> */
-        public array $applied;
+    $live = new LiveCart(new InMemoryStorage, $cart->identifier);
+    $manager = Mockery::mock(CartInstanceManager::class);
+    $manager->shouldReceive('resolve')->with($cart->instance, $cart->identifier)->andReturn($live);
+    app()->instance(CartInstanceManager::class, $manager);
 
-        public function __construct(array &$applied)
-        {
-            $this->applied = &$applied;
-        }
-
-        public function resolve(string $instance, string $identifier): object
-        {
-            $applied = &$this->applied;
-
-            return new class($applied)
-            {
-                /** @var array<int, string> */
-                public array $applied;
-
-                public function __construct(array &$applied)
-                {
-                    $this->applied = &$applied;
-                }
-
-                public function getAppliedVouchers(): array
-                {
-                    return [];
-                }
-
-                public function applyVoucher(string $code): void
-                {
-                    $this->applied[] = $code;
-                }
-            };
-        }
-    });
+    $applicator = Mockery::mock(CartVoucherApplicator::class);
+    $applicator->shouldReceive('handle')->once()->with($live, $voucher->code)
+        ->andReturn(new VoucherCondition(VoucherSnapshot::fromModel($voucher)));
+    app()->instance(CartVoucherApplicator::class, $applicator);
 
     $widget = app(VoucherSuggestionsWidget::class);
     $widget->record = $cart;
@@ -87,7 +64,8 @@ it('applies suggestions by record key, resolving the code server-side', function
     // keys resolve to nothing and apply nothing.
     $widget->applySuggestion("x'); DROP TABLE vouchers; --");
 
-    expect($applied)->toBe([$voucher->code]);
+    // The typed applicator expectation also verifies that the hostile key caused no write.
+    expect($widget->record->getKey())->toBe($cart->getKey());
 });
 
 it('resolves the cart once no matter how many candidates exist', function (): void {
@@ -96,33 +74,13 @@ it('resolves the cart once no matter how many candidates exist', function (): vo
     suggestionVoucher();
     suggestionVoucher();
 
-    $resolutions = 0;
-    app()->instance(CartInstanceManager::class, new class($resolutions)
-    {
-        public int $resolutions;
-
-        public function __construct(int &$resolutions)
-        {
-            $this->resolutions = &$resolutions;
-        }
-
-        public function resolve(string $instance, string $identifier): object
-        {
-            $this->resolutions++;
-
-            return new class
-            {
-                public function getAppliedVouchers(): array
-                {
-                    return [];
-                }
-            };
-        }
-    });
+    $live = new LiveCart(new InMemoryStorage, $cart->identifier);
+    $manager = Mockery::mock(CartInstanceManager::class);
+    $manager->shouldReceive('resolve')->once()->with($cart->instance, $cart->identifier)->andReturn($live);
+    app()->instance(CartInstanceManager::class, $manager);
 
     $widget = app(VoucherSuggestionsWidget::class);
     $widget->record = $cart;
 
-    expect($widget->getEligibleVouchers())->not->toBeEmpty()
-        ->and($resolutions)->toBe(1);
+    expect($widget->getEligibleVouchers())->not->toBeEmpty();
 });
