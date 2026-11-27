@@ -9,6 +9,7 @@ use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Support\TaxPercent;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * Fake CHIP client for testing CHIP API calls directly.
@@ -612,7 +613,11 @@ class FakeChipClient
 
             // Over-gross discounts throw from the primitive, mirroring
             // the server's 400 product_subtotal_negative.
-            $total += ProductData::lineTotalMinorUnits($price, $quantity, $discount, $taxPercent, $totalPriceOverride);
+            try {
+                $total += ProductData::lineTotalMinorUnits($price, $quantity, $discount, $taxPercent, $totalPriceOverride);
+            } catch (InvalidArgumentException $exception) {
+                throw new ChipValidationException($exception->getMessage());
+            }
         }
 
         return $total;

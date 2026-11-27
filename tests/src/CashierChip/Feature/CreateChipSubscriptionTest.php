@@ -52,7 +52,10 @@ it('rejects overflowing subscription item totals', function (): void {
 it('blocks another billable before making CHIP requests in owner mode', function (): void {
     $owner = $this->createUser();
     $other = $this->createUser();
-    config(['cashier-chip.features.owner.enabled' => true]);
+    config([
+        'cashier-chip.features.owner.enabled' => true,
+        'cashier-chip.features.owner.validate_billable_owner' => true,
+    ]);
     $clientCount = count($this->fakeChip->getFakeClient()->getClients());
 
     $draft = new SubscriptionDraft(

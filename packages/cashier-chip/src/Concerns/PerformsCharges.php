@@ -208,13 +208,7 @@ trait PerformsCharges
     public function findPayment(string $id): ?Payment
     {
         try {
-            $purchaseData = Cashier::chip()->getPurchase($id);
-
-            if (is_array($purchaseData)) {
-                $purchase = PurchaseData::from($purchaseData);
-            } else {
-                $purchase = $purchaseData;
-            }
+            $purchase = Cashier::chip()->getPurchase($id);
 
             $purchaseClientId = $purchase->getClientId();
             $billableChipId = $this->chipId();
@@ -248,8 +242,6 @@ trait PerformsCharges
 
     /**
      * Refund a customer for a charge.
-     *
-     * @param  array<string, mixed>  $options
      */
     public function refund(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {

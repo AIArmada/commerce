@@ -156,7 +156,7 @@ describe('WebhookRetryManager', function (): void {
             ->and($webhook->processed)->toBeTrue();
     });
 
-    it('restores owner context when replaying dispatcher-backed events', function (): void {
+    it('replays dispatcher-backed events inside the explicitly selected owner context', function (): void {
         config()->set('chip.owner.enabled', true);
 
         $owner = User::query()->create([
@@ -188,6 +188,10 @@ describe('WebhookRetryManager', function (): void {
         });
 
         OwnerContext::withOwner(null, function () use ($manager, $webhook): void {
+            expect($manager->retry($webhook)->isSkipped())->toBeTrue();
+        });
+
+        OwnerContext::withOwner($owner, function () use ($manager, $webhook): void {
             $result = $manager->retry($webhook);
 
             expect($result->isHandled())->toBeTrue();

@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 \uses(TestCase::class);
+
 describe('SyncChipPurchaseStatus', function (): void {
     it('dispatches PaymentSucceeded on syncPaid', function (): void {
         Event::fake();
@@ -265,6 +266,7 @@ describe('SyncChipPurchaseStatus', function (): void {
 
     it('emits a reconciliation hook when a second distinct purchase conflicts with a settled period', function (): void {
         Cashier::fake(new FakeChipClient);
+        $this->app->register(\AIArmada\CashierChip\CashierChipServiceProvider::class);
 
         config()->set('cashier-chip.features.owner.enabled', true);
         config()->set('cashier-chip.features.owner.include_global', false);
