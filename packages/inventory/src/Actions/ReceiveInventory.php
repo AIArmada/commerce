@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Actions;
 
+use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Events\InventoryReceived;
 use AIArmada\Inventory\Models\InventoryMovement;
-use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Persistence\InventoryLevelStore;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-/**
- * Receive inventory at a location.
- */
 final class ReceiveInventory
 {
     use AsAction;
 
     public function __construct(
-        private readonly InventoryService $inventoryService,
+        private readonly InventoryLevelStore $levels,
     ) {}
 
-    /**
-     * Receive inventory at a location.
-     */
     public function handle(
         Model $model,
         string $locationId,
@@ -33,14 +33,30 @@ final class ReceiveInventory
         ?string $userId = null,
         ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
-        return $this->inventoryService->receive(
-            model: $model,
-            locationId: $locationId,
-            quantity: $quantity,
-            reason: $reason,
-            note: $note,
-            userId: $userId,
-            occurredAt: $occurredAt,
-        );
+        if ($quantity <= 0) {
+            throw new InvalidArgumentException('Quantity must be positive');
+        }
+
+        return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
+            $level = $this->levels->getOrCreate($model, $locationId);
+            $level->incrementOnHand($quantity);
+
+            $movement = InventoryMovement::create([
+                'inventoryable_type' => $model->getMorphClass(),
+                'inventoryable_id' => $model->getKey(),
+                'to_location_id' => $locationId,
+                'quantity' => $quantity,
+                'type' => MovementType::Receipt->value,
+                'reason' => $reason,
+                'user_id' => $userId,
+                'note' => $note,
+                'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
+            ]);
+
+            Event::dispatch(new InventoryReceived($model, $level, $movement));
+
+            return $movement;
+        });
     }
+
 }

@@ -4,27 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
-use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Events\InventoryAdjusted;
-use AIArmada\Inventory\Events\InventoryReceived;
-use AIArmada\Inventory\Events\InventoryShipped;
-use AIArmada\Inventory\Events\InventoryTransferred;
-use AIArmada\Inventory\Events\LowInventoryDetected;
-use AIArmada\Inventory\Events\OutOfInventory;
-use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
+use AIArmada\Inventory\Actions\AdjustInventory;
+use AIArmada\Inventory\Actions\ReceiveInventory;
+use AIArmada\Inventory\Actions\ShipInventory;
+use AIArmada\Inventory\Actions\TransferInventory;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Inventory\Persistence\InventoryLevelStore;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
-use InvalidArgumentException;
 
 /**
  * Core inventory operations service.
@@ -75,32 +68,8 @@ final class InventoryService
         ?string $userId = null,
         ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive');
-        }
-
-        return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
-            $level = $this->getOrCreateLevel($model, $locationId);
-            $level->incrementOnHand($quantity);
-
-            $movement = InventoryMovement::create([
-                'inventoryable_type' => $model->getMorphClass(),
-                'inventoryable_id' => $model->getKey(),
-                'to_location_id' => $locationId,
-                'quantity' => $quantity,
-                'type' => MovementType::Receipt->value,
-                'reason' => $reason,
-                'user_id' => $userId,
-                'note' => $note,
-                'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
-            ]);
-
-            Event::dispatch(new InventoryReceived($model, $level, $movement));
-
-            return $movement;
-        });
+        return app(ReceiveInventory::class)->handle($model, $locationId, $quantity, $reason, $note, $userId, $occurredAt);
     }
-
     /**
      * Ship inventory from a location.
      */
@@ -114,49 +83,8 @@ final class InventoryService
         ?string $userId = null,
         ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive');
-        }
-
-        return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $reference, $note, $userId, $occurredAt): InventoryMovement {
-            $levelQuery = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLevel::query()
-                    ->where('inventoryable_type', $model->getMorphClass())
-                    ->where('inventoryable_id', $model->getKey())
-                    ->where('location_id', $locationId)
-            );
-
-            $level = $levelQuery->lockForUpdate()->first();
-
-            $available = $level?->available ?? 0;
-
-            if ($level === null || $available < $quantity) {
-                throw InsufficientInventoryException::forLocation($locationId, $quantity, $available);
-            }
-
-            $level->decrementOnHand($quantity);
-
-            $movement = InventoryMovement::create([
-                'inventoryable_type' => $model->getMorphClass(),
-                'inventoryable_id' => $model->getKey(),
-                'from_location_id' => $locationId,
-                'quantity' => $quantity,
-                'type' => MovementType::Shipment->value,
-                'reason' => $reason,
-                'reference' => $reference,
-                'user_id' => $userId,
-                'note' => $note,
-                'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
-            ]);
-
-            Event::dispatch(new InventoryShipped($model, $level, $movement));
-
-            $this->checkLowInventory($model, $level);
-
-            return $movement;
-        });
+        return app(ShipInventory::class)->handle($model, $locationId, $quantity, $reason, $reference, $note, $userId, $occurredAt);
     }
-
     /**
      * Transfer inventory between locations.
      */
@@ -169,55 +97,8 @@ final class InventoryService
         ?string $userId = null,
         ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
-        if ($quantity <= 0) {
-            throw new InvalidArgumentException('Quantity must be positive');
-        }
-
-        if ($fromLocationId === $toLocationId) {
-            throw new InvalidArgumentException('Source and destination locations must be different');
-        }
-
-        return DB::transaction(function () use ($model, $fromLocationId, $toLocationId, $quantity, $note, $userId, $occurredAt): InventoryMovement {
-            $fromLevelQuery = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLevel::query()
-                    ->where('inventoryable_type', $model->getMorphClass())
-                    ->where('inventoryable_id', $model->getKey())
-                    ->where('location_id', $fromLocationId)
-            );
-
-            $fromLevel = $fromLevelQuery->lockForUpdate()->first();
-
-            $available = $fromLevel?->available ?? 0;
-
-            if ($fromLevel === null || $available < $quantity) {
-                throw InsufficientInventoryException::forLocation($fromLocationId, $quantity, $available);
-            }
-
-            $toLevel = $this->getOrCreateLevel($model, $toLocationId);
-
-            $fromLevel->decrementOnHand($quantity);
-            $toLevel->incrementOnHand($quantity);
-
-            $movement = InventoryMovement::create([
-                'inventoryable_type' => $model->getMorphClass(),
-                'inventoryable_id' => $model->getKey(),
-                'from_location_id' => $fromLocationId,
-                'to_location_id' => $toLocationId,
-                'quantity' => $quantity,
-                'type' => MovementType::Transfer->value,
-                'user_id' => $userId,
-                'note' => $note,
-                'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
-            ]);
-
-            Event::dispatch(new InventoryTransferred($model, $fromLevel, $toLevel, $movement));
-
-            $this->checkLowInventory($model, $fromLevel);
-
-            return $movement;
-        });
+        return app(TransferInventory::class)->handle($model, $fromLocationId, $toLocationId, $quantity, $note, $userId, $occurredAt);
     }
-
     /**
      * Adjust inventory to a specific quantity at a location.
      */
@@ -230,54 +111,8 @@ final class InventoryService
         ?string $userId = null,
         ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
-        if ($newQuantity < 0) {
-            throw new InvalidArgumentException('New quantity cannot be negative');
-        }
-
-        return DB::transaction(function () use ($model, $locationId, $newQuantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
-            $level = $this->getOrCreateLevel($model, $locationId);
-            $level = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
-                ->whereKey($level->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($newQuantity < $level->quantity_reserved) {
-                throw new InvalidArgumentException('On-hand quantity cannot be less than reserved stock.');
-            }
-
-            $oldQuantity = $level->quantity_on_hand;
-            $difference = $newQuantity - $oldQuantity;
-
-            if ($difference === 0) {
-                throw new InvalidArgumentException('No adjustment needed, quantities are equal');
-            }
-
-            // Ledger path: the movement below is the audit record, so the
-            // level's direct-write auto-audit must stand down.
-            $level->suppressLedgerAudit = true;
-            $level->update(['quantity_on_hand' => $newQuantity]);
-
-            $movement = InventoryMovement::create([
-                'inventoryable_type' => $model->getMorphClass(),
-                'inventoryable_id' => $model->getKey(),
-                'from_location_id' => $difference < 0 ? $locationId : null,
-                'to_location_id' => $difference > 0 ? $locationId : null,
-                'quantity' => abs($difference),
-                'type' => MovementType::Adjustment->value,
-                'reason' => $reason,
-                'user_id' => $userId,
-                'note' => $note ?? sprintf('Adjusted from %d to %d', $oldQuantity, $newQuantity),
-                'occurred_at' => $occurredAt ?? CarbonImmutable::now(),
-            ]);
-
-            Event::dispatch(new InventoryAdjusted($model, $level, $movement, $oldQuantity, $newQuantity));
-
-            $this->checkLowInventory($model, $level);
-
-            return $movement;
-        });
+        return app(AdjustInventory::class)->handle($model, $locationId, $newQuantity, $reason, $note, $userId, $occurredAt);
     }
-
     /**
      * Get availability across all locations.
      * Availability is read directly from committed inventory levels.
@@ -439,49 +274,8 @@ final class InventoryService
      */
     public function getOrCreateLevel(Model $model, string $locationId): InventoryLevel
     {
-        if (InventoryOwnerScope::isEnabled()) {
-            $locationExists = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLocation::query()->whereKey($locationId)
-            )->exists();
-
-            if (! $locationExists) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
-        }
-
-        $identity = [
-            'inventoryable_type' => $model->getMorphClass(),
-            'inventoryable_id' => $model->getKey(),
-            'location_id' => $locationId,
-        ];
-
-        try {
-            return InventoryLevel::firstOrCreate(
-                $identity,
-                [
-                    'quantity_on_hand' => 0,
-                    'quantity_reserved' => 0,
-                ]
-            );
-        } catch (QueryException $exception) {
-            // The framework already rescues plain unique races, but its
-            // recovery lookup is over-constrained by the mutable quantity
-            // defaults. Re-select by identity so a loser never 500s when
-            // the winner's row has since moved.
-            if (! in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true)) {
-                throw $exception;
-            }
-
-            $level = InventoryLevel::query()->where($identity)->first();
-
-            if (! $level instanceof InventoryLevel) {
-                throw $exception;
-            }
-
-            return $level;
-        }
+        return app(InventoryLevelStore::class)->getOrCreate($model, $locationId);
     }
-
     /**
      * Get movement history for a model.
      *
@@ -530,23 +324,5 @@ final class InventoryService
         $location = InventoryLocation::getOrCreateDefault();
 
         return $this->ship($model, $location->id, $quantity, $reason, $reference, $note, $userId);
-    }
-
-    /**
-     * Check and dispatch low inventory events.
-     */
-    private function checkLowInventory(Model $model, InventoryLevel $level): void
-    {
-        if (! config('inventory.events.low_inventory', true)) {
-            return;
-        }
-
-        $level->refresh();
-
-        if ($level->available === 0 && config('inventory.events.out_of_inventory', true)) {
-            Event::dispatch(new OutOfInventory($model, $level));
-        } elseif ($level->isLowStock()) {
-            Event::dispatch(new LowInventoryDetected($model, $level));
-        }
     }
 }
