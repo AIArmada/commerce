@@ -27,11 +27,15 @@ final class AbcAnalysisChart extends ChartWidget
         $report = app(StockLevelReport::class);
         $analysis = $report->getAbcAnalysis();
 
-        $classAPercent = $analysis->count() > 0
-            ? round(($analysis->where('classification', 'A')->count() / $analysis->count()) * 100, 1)
-            : 0;
+        if ($analysis->isEmpty()) {
+            return 'No valued inventory in the reporting currency.';
+        }
 
-        return "Class A items: {$classAPercent}% of SKUs, 80% of value";
+        $classA = $analysis->where('classification', 'A');
+        $classAPercent = round(($classA->count() / $analysis->count()) * 100, 1);
+        $classAValuePercent = round((float) ($classA->last()['cumulative_percentage'] ?? 0), 1);
+
+        return "Class A: {$classAPercent}% of displayed valued SKUs, {$classAValuePercent}% of total recorded value.";
     }
 
     protected function getData(): array
@@ -43,10 +47,6 @@ final class AbcAnalysisChart extends ChartWidget
         $classBCounts = $analysis->where('classification', 'B')->count();
         $classCCounts = $analysis->where('classification', 'C')->count();
 
-        $classAValue = $analysis->where('classification', 'A')->sum('total_value');
-        $classBValue = $analysis->where('classification', 'B')->sum('total_value');
-        $classCValue = $analysis->where('classification', 'C')->sum('total_value');
-
         return [
             'datasets' => [
                 [
@@ -56,9 +56,9 @@ final class AbcAnalysisChart extends ChartWidget
                 ],
             ],
             'labels' => [
-                'Class A (80% value)',
-                'Class B (15% value)',
-                'Class C (5% value)',
+                'Class A',
+                'Class B',
+                'Class C',
             ],
         ];
     }

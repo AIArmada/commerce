@@ -10,6 +10,9 @@ interface CostLayerValues
 {
     public function total(CostingMethod $method, string $currency): int;
 
+    /** @return list<array{inventoryable_type: string, inventoryable_id: string, total_value: int, overall_value: int}> */
+    public function rankedItems(CostingMethod $method, string $currency, int $limit): array;
+
     /** @return array<string, int> */
     public function byLocation(CostingMethod $method, string $currency): array;
 }

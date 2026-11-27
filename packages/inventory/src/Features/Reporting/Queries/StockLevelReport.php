@@ -167,50 +167,32 @@ final class StockLevelReport
      *     classification: string,
      * }>
      */
-    public function getAbcAnalysis(int $limit = 500): Collection
+    public function getAbcAnalysis(int $limit = 500, CostingMethod $method = CostingMethod::Fifo): Collection
     {
-        $stocksQuery = InventoryOwnerScope::applyToLocationQuery(
-            InventoryLevel::query()
-                ->select([
-                    'inventoryable_type',
-                    'inventoryable_id',
-                    DB::raw('SUM(quantity_on_hand) as total_quantity'),
-                ])
-                ->groupBy('inventoryable_type', 'inventoryable_id')
-                ->orderByDesc('total_quantity')
-                ->limit(max(1, $limit))
+        $items = app(CostLayerValues::class)->rankedItems(
+            $method,
+            (string) config('inventory.defaults.currency', 'MYR'),
+            $limit,
         );
-
-        $stocks = $stocksQuery->get();
-
-        $totalQuantity = $stocks->sum('total_quantity');
-        if ($totalQuantity === 0) {
-            return collect();
-        }
 
         $cumulativeValue = 0;
 
-        /** @var Collection<int, array{inventoryable_type: string, inventoryable_id: string, total_value: int, cumulative_percentage: float, classification: string}> $analysis */
-        $analysis = $stocks->map(function ($stock) use ($totalQuantity, &$cumulativeValue): array {
-            $cumulativeValue += $stock->total_quantity;
-            $cumulativePercentage = ($cumulativeValue / $totalQuantity) * 100;
-
-            $classification = match (true) {
-                $cumulativePercentage <= 80 => 'A',
-                $cumulativePercentage <= 95 => 'B',
-                default => 'C',
-            };
+        return collect($items)->map(function (array $item) use (&$cumulativeValue): array {
+            $previousPercentage = ($cumulativeValue / $item['overall_value']) * 100;
+            $cumulativeValue += $item['total_value'];
 
             return [
-                'inventoryable_type' => (string) $stock->inventoryable_type,
-                'inventoryable_id' => (string) $stock->inventoryable_id,
-                'total_value' => (int) $stock->total_quantity,
-                'cumulative_percentage' => round($cumulativePercentage, 2),
-                'classification' => (string) $classification,
+                'inventoryable_type' => $item['inventoryable_type'],
+                'inventoryable_id' => $item['inventoryable_id'],
+                'total_value' => $item['total_value'],
+                'cumulative_percentage' => round(($cumulativeValue / $item['overall_value']) * 100, 2),
+                'classification' => match (true) {
+                    $previousPercentage < 80 => 'A',
+                    $previousPercentage < 95 => 'B',
+                    default => 'C',
+                },
             ];
         });
-
-        return $analysis;
     }
 
     /**

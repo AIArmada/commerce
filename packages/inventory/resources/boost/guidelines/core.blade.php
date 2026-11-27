@@ -23,3 +23,5 @@ FEFO batch planning belongs to `Features/Traceability/Queries/FefoStrategy`; nea
 Reorder suggestion reporting uses `Features/Replenishment/Api/ReorderSuggestionCounts`; implement `Contracts/ExportableInterface` for custom export rows.
 
 Dashboard and location stock values represent recorded remaining cost layers in `inventory.defaults.currency`, defaulting to FIFO. Pass `CostingMethod::WeightedAverage` for weighted-average layers. Standard cost is not a layer-based valuation and is not supported by these reports. Uncosted stock is not included in monetary totals.
+
+ABC analysis ranks positive remaining monetary cost-layer values, not physical quantities. It uses the full valued inventory denominator even when the displayed result is limited. A SKU crossing a class threshold remains in the class where its cumulative contribution began.

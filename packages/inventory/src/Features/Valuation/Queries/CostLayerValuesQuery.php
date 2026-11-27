@@ -33,6 +33,30 @@ final readonly class CostLayerValuesQuery implements CostLayerValues
             ->all();
     }
 
+    public function rankedItems(CostingMethod $method, string $currency, int $limit): array
+    {
+        return $this->layers($method, $currency)
+            ->toBase()
+            ->select('inventoryable_type', 'inventoryable_id')
+            ->selectRaw('SUM(remaining_quantity * unit_cost_minor) AS total_value')
+            ->selectRaw('SUM(SUM(remaining_quantity * unit_cost_minor)) OVER () AS overall_value')
+            ->groupBy('inventoryable_type', 'inventoryable_id')
+            ->havingRaw('SUM(remaining_quantity * unit_cost_minor) > 0')
+            ->orderByDesc('total_value')
+            ->orderBy('inventoryable_type')
+            ->orderBy('inventoryable_id')
+            ->limit(max(1, $limit))
+            ->get()
+            ->map(static fn ($row): array => [
+                'inventoryable_type' => (string) $row->inventoryable_type,
+                'inventoryable_id' => (string) $row->inventoryable_id,
+                'total_value' => (int) $row->total_value,
+                'overall_value' => (int) $row->overall_value,
+            ])
+            ->values()
+            ->all();
+    }
+
     /** @return Builder<InventoryCostLayer> */
     private function layers(CostingMethod $method, string $currency): Builder
     {

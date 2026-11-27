@@ -86,31 +86,40 @@ describe('StockLevelReport', function (): void {
     });
 
     describe('getAbcAnalysis', function (): void {
-        it('returns empty collection when no stock', function (): void {
-            $result = $this->report->getAbcAnalysis();
-
-            expect($result)->toBeEmpty();
+        it('returns empty collection when no valued stock', function (): void {
+            expect($this->report->getAbcAnalysis())->toBeEmpty();
         });
 
-        it('classifies items by cumulative percentage', function (): void {
-            // Create items with different quantities
-            for ($i = 1; $i <= 5; $i++) {
-                $item = InventoryItem::create(['name' => "Item $i"]);
-                InventoryLevel::factory()->create([
+        it('ranks by monetary value and retains the full denominator when limited', function (): void {
+            config(['inventory.defaults.currency' => 'MYR']);
+
+            foreach ([[1, 850], [10, 10], [50, 1]] as [$quantity, $unitCost]) {
+                $item = InventoryItem::create(['name' => 'Valued stock']);
+
+                InventoryCostLayer::factory()->create([
                     'inventoryable_type' => $item->getMorphClass(),
                     'inventoryable_id' => $item->getKey(),
                     'location_id' => $this->location->id,
-                    'quantity_on_hand' => 100 * (6 - $i),
+                    'quantity' => $quantity,
+                    'remaining_quantity' => $quantity,
+                    'unit_cost_minor' => $unitCost,
+                    'total_cost_minor' => $quantity * $unitCost,
+                    'costing_method' => CostingMethod::Fifo,
+                    'currency' => 'MYR',
                 ]);
             }
 
             $result = $this->report->getAbcAnalysis();
 
-            expect($result)->toHaveCount(5);
-            expect($result->first()['classification'])->toBe('A');
+            expect($result->pluck('total_value')->all())->toBe([850, 100, 50])
+                ->and($result->pluck('classification')->all())->toBe(['A', 'B', 'C'])
+                ->and($result->pluck('cumulative_percentage')->all())->toBe([85.0, 95.0, 100.0])
+                ->and($this->report->getAbcAnalysis(1)->first()['cumulative_percentage'])->toBe(85.0);
         });
 
-        it('returns correct data structure', function (): void {
+        it('excludes uncosted inventory and other costing methods and currencies', function (): void {
+            config(['inventory.defaults.currency' => 'MYR']);
+
             InventoryLevel::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
@@ -118,15 +127,29 @@ describe('StockLevelReport', function (): void {
                 'quantity_on_hand' => 100,
             ]);
 
-            $result = $this->report->getAbcAnalysis();
+            foreach ([[CostingMethod::WeightedAverage, 'MYR'], [CostingMethod::Fifo, 'USD']] as [$method, $currency]) {
+                InventoryCostLayer::factory()->create([
+                    'inventoryable_type' => $this->item->getMorphClass(),
+                    'inventoryable_id' => $this->item->getKey(),
+                    'location_id' => $this->location->id,
+                    'quantity' => 1,
+                    'remaining_quantity' => 1,
+                    'unit_cost_minor' => 500,
+                    'total_cost_minor' => 500,
+                    'costing_method' => $method,
+                    'currency' => $currency,
+                ]);
+            }
 
-            expect($result->first())->toHaveKeys([
-                'inventoryable_type',
-                'inventoryable_id',
-                'total_value',
-                'cumulative_percentage',
-                'classification',
-            ]);
+            expect($this->report->getAbcAnalysis())->toBeEmpty()
+                ->and($this->report->getAbcAnalysis(method: CostingMethod::WeightedAverage)->first())
+                ->toMatchArray([
+                    'inventoryable_type' => $this->item->getMorphClass(),
+                    'inventoryable_id' => $this->item->getKey(),
+                    'total_value' => 500,
+                    'cumulative_percentage' => 100.0,
+                    'classification' => 'A',
+                ]);
         });
     });
 
