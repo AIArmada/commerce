@@ -12,7 +12,8 @@ final readonly class TrustedSignatureReplayStore
     {
         $key = 'signals:trusted:signature:' . hash('sha256', $timestamp . ':' . $signature);
         $store = config('cache.limiter');
+        $store = is_string($store) && mb_trim($store) !== '' ? $store : null;
 
-        return Cache::store(is_string($store) ? $store : null)->add($key, true, $ttlSeconds);
+        return Cache::store($store)->add($key, true, $ttlSeconds);
     }
 }

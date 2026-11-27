@@ -266,3 +266,14 @@ it('reserves a signed request atomically until its timestamp expires', function 
     expect($store->reserve($timestamp, $signature, 600))->toBeTrue()
         ->and($store->reserve($timestamp, $signature, 600))->toBeFalse();
 });
+
+it('uses the default cache store when the limiter store is blank', function (): void {
+    config()->set('cache.limiter', '');
+
+    $store = app(TrustedSignatureReplayStore::class);
+    $timestamp = (string) time();
+    $signature = hash('sha256', 'blank-limiter-store');
+
+    expect($store->reserve($timestamp, $signature, 600))->toBeTrue()
+        ->and($store->reserve($timestamp, $signature, 600))->toBeFalse();
+});

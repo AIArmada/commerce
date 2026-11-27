@@ -15,7 +15,11 @@ use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use ReflectionProperty;
 
 function metricsCapOwner(): User
 {
@@ -149,6 +153,47 @@ describe('Metrics row windows', function (): void {
             ->and($result['totals']['assignments'])->toBe(1)
             ->and($batch['assignment_count'])->toBe(1);
     });
+
+    it('keeps truncated shared batch windows out of single-experiment aggregation', function (): void {
+        config()->set('growth.metrics.max_assignment_rows', 1);
+        config()->set('growth.metrics.max_event_rows', 1);
+
+        $owner = metricsCapOwner();
+        $firstExperiment = metricsCapExperiment($owner);
+        $secondExperiment = metricsCapExperiment($owner);
+        $firstAssignment = metricsCapAssignment($owner, $firstExperiment, 'identity:shared-cap-1');
+        $secondAssignment = metricsCapAssignment($owner, $secondExperiment, 'identity:shared-cap-2');
+        $firstEvent = metricsCapEvent($owner, $firstExperiment, $firstAssignment, 'order.paid', 1000);
+        $secondEvent = metricsCapEvent($owner, $secondExperiment, $secondAssignment, 'order.paid', 2000);
+
+        OwnerContext::withOwner($owner, function () use ($firstAssignment, $firstEvent): void {
+            Assignment::query()->whereKey($firstAssignment->getKey())->update(['assigned_at' => CarbonImmutable::now()->subDay()]);
+            SignalEvent::query()->whereKey($firstEvent->getKey())->update(['occurred_at' => CarbonImmutable::now()->subDay()]);
+        });
+
+        $batch = OwnerContext::withOwner(
+            $owner,
+            fn (): array => app(AggregateExperimentMetrics::class)->handleMany(
+                new EloquentCollection([$firstExperiment, $secondExperiment]),
+            ),
+        );
+
+        $secondBatchResult = $batch['results'][(string) $secondExperiment->getKey()];
+
+        expect($secondBatchResult['truncated'])->toBeTrue()
+            ->and($secondBatchResult['totals']['assignments'])->toBe(0)
+            ->and($secondBatchResult['totals']['purchases'])->toBe(0)
+            ->and($batch['assignment_count'])->toBe(1);
+
+        $single = OwnerContext::withOwner(
+            $owner,
+            fn (): array => app(AggregateExperimentMetrics::class)->handle($secondExperiment),
+        );
+
+        expect($single['truncated'])->toBeFalse()
+            ->and($single['totals']['assignments'])->toBe(1)
+            ->and($single['totals']['purchases'])->toBe(1);
+    });
 });
 
 it('uses stable event ids to break timestamp ties in single and batch windows', function (): void {
@@ -170,4 +215,41 @@ it('uses stable event ids to break timestamp ties in single and batch windows', 
 
     expect($single['totals']['revenue_minor'])->toBe($expected)
         ->and($batch['results'][(string) $experiment->getKey()]['totals']['revenue_minor'])->toBe($expected);
+});
+
+it('reuses identical batch snapshots without repeating queries', function (): void {
+    $owner = metricsCapOwner();
+    $experiment = metricsCapExperiment($owner);
+    $assignment = metricsCapAssignment($owner, $experiment, 'identity:batch-cache');
+    metricsCapEvent($owner, $experiment, $assignment, 'order.paid', 1000);
+
+    $consoleProperty = new ReflectionProperty(Application::class, 'isRunningInConsole');
+    $consoleProperty->setAccessible(true);
+    $wasRunningInConsole = $consoleProperty->getValue(app());
+
+    app()->instance('request', Request::create('/growth-batch-cache'));
+    $consoleProperty->setValue(app(), false);
+
+    $queries = 0;
+    DB::listen(static function () use (&$queries): void {
+        $queries++;
+    });
+
+    try {
+        $first = OwnerContext::withOwner(
+            $owner,
+            fn (): array => app(AggregateExperimentMetrics::class)->handleMany(new EloquentCollection([$experiment])),
+        );
+        $firstQueryCount = $queries;
+        $second = OwnerContext::withOwner(
+            $owner,
+            fn (): array => app(AggregateExperimentMetrics::class)->handleMany(new EloquentCollection([$experiment])),
+        );
+
+        expect($firstQueryCount)->toBeGreaterThan(0)
+            ->and($queries)->toBe($firstQueryCount)
+            ->and($second)->toBe($first);
+    } finally {
+        $consoleProperty->setValue(app(), $wasRunningInConsole);
+    }
 });

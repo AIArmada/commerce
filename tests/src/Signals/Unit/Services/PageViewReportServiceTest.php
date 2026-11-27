@@ -7,11 +7,13 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
+use AIArmada\Signals\Features\Ingestion\Extensions\PageViewReportService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use AIArmada\Signals\Features\Reporting\Api\DashboardRead;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 uses(SignalsTestCase::class);
 
@@ -186,4 +188,37 @@ it('groups missing paths and explicit root paths together and counts anonymous v
         ->and($rows->first()->page_path)->toBe('/')
         ->and((int) $rows->first()->views)->toBe(2)
         ->and($summary['total_visitors'])->toBe(2);
+});
+
+it('computes the page view summary in one aggregate query', function (): void {
+    $property = TrackedProperty::query()->create([
+        'name' => 'Aggregate Page Property',
+        'slug' => 'aggregate-page-property',
+        'write_key' => 'aggregate-page-key',
+    ]);
+
+    foreach ([null, '/'] as $path) {
+        SignalEvent::query()->create([
+            'tracked_property_id' => $property->id,
+            'occurred_at' => CarbonImmutable::now(),
+            'event_name' => 'page_view',
+            'event_category' => 'page_view',
+            'path' => $path,
+        ]);
+    }
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    $summary = app(PageViewReportService::class)->summary($property->id);
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toHaveCount(1)
+        ->and($summary)->toBe([
+            'total_page_views' => 2,
+            'total_visitors' => 2,
+            'total_pages' => 1,
+        ]);
 });

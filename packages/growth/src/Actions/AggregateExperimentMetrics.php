@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Growth\Actions;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Growth\Enums\ResolveStrategy;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
@@ -20,7 +20,9 @@ use AIArmada\Growth\Support\Queries\VariantQuery;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -28,6 +30,8 @@ use stdClass;
 
 final class AggregateExperimentMetrics
 {
+    private const string BATCH_CACHE_ATTRIBUTE = 'growth.aggregate_metrics.batch';
+
     public function __construct(
         private readonly ExperimentResolver $experimentResolver,
         private readonly VariantQuery $variantQuery,
@@ -157,7 +161,16 @@ final class AggregateExperimentMetrics
      */
     public function handleMany(EloquentCollection $experiments): array
     {
+        $batchCacheKey = $this->batchCacheKey($experiments);
+        $cachedBatch = $this->cachedBatchResults($batchCacheKey);
+
+        if ($cachedBatch !== null) {
+            return $cachedBatch;
+        }
+
         $experiments->loadMissing('trackedProperty');
+        $this->reloadMissingTrackedProperties($experiments);
+        $this->assertBatchExperimentsVisible($experiments);
 
         $checkoutStartedEventName = (string) config('growth.integrations.signals.checkout_started_event_name', 'checkout.started');
         $refundEventName = (string) config('growth.integrations.signals.refund_event_name', 'order.refunded');
@@ -293,15 +306,17 @@ final class AggregateExperimentMetrics
                 'truncated' => $batchTruncated,
                 ...$calculated,
             ];
-
-            $this->storeCachedResults($experimentId, $results[$experimentId]);
         }
 
-        return [
+        $batch = [
             'results' => $results,
             'variant_count' => $variants->count(),
             'assignment_count' => $assignments->count(),
         ];
+
+        $this->storeCachedBatchResults($batchCacheKey, $batch);
+
+        return $batch;
     }
 
     /**
@@ -315,7 +330,20 @@ final class AggregateExperimentMetrics
         $assignmentTable = (new Assignment)->getTable();
         $experimentIds = $experiments->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all();
         $casts = $this->unionNullCasts();
-        $variantQuery = OwnerUiScope::apply(Variant::query(), includeGlobal: false)
+        $variantConfig = Variant::ownerScopeConfig();
+        $variantQuery = Variant::query()->withoutGlobalScope(OwnerScope::class);
+
+        if ($variantConfig->enabled) {
+            $this->applyExperimentOwnerScope(
+                $variantQuery,
+                $experiments,
+                $variantTable . '.experiment_id',
+                $variantTable . '.' . $variantConfig->ownerTypeColumn,
+                $variantTable . '.' . $variantConfig->ownerIdColumn,
+            );
+        }
+
+        $variantQuery
             ->whereIn($variantTable . '.experiment_id', $experimentIds)
             ->select([
                 DB::raw("'variant' AS record_type"),
@@ -335,7 +363,20 @@ final class AggregateExperimentMetrics
                 $variantTable . '.name',
                 $variantTable . '.position',
             ]);
-        $assignmentQuery = OwnerUiScope::apply(Assignment::query(), includeGlobal: false)
+        $assignmentConfig = Assignment::ownerScopeConfig();
+        $assignmentQuery = Assignment::query()->withoutGlobalScope(OwnerScope::class);
+
+        if ($assignmentConfig->enabled) {
+            $this->applyExperimentOwnerScope(
+                $assignmentQuery,
+                $experiments,
+                $assignmentTable . '.experiment_id',
+                $assignmentTable . '.' . $assignmentConfig->ownerTypeColumn,
+                $assignmentTable . '.' . $assignmentConfig->ownerIdColumn,
+            );
+        }
+
+        $assignmentQuery
             ->whereIn($assignmentTable . '.experiment_id', $experimentIds)
             ->select([
                 DB::raw("'assignment' AS record_type"),
@@ -387,7 +428,20 @@ final class AggregateExperimentMetrics
 
         $eventTable = (new SignalEvent)->getTable();
         $trackedPropertyIds = $experiments->pluck('tracked_property_id')->filter()->unique()->values()->all();
-        $eventQuery = OwnerUiScope::apply(SignalEvent::query(), includeGlobal: false)
+        $eventConfig = SignalEvent::ownerScopeConfig();
+        $eventQuery = SignalEvent::query()->withoutGlobalScope(OwnerScope::class);
+
+        if (Experiment::ownerScopeConfig()->enabled || $eventConfig->enabled) {
+            $this->applyEventOwnerScope(
+                $eventQuery,
+                $experiments,
+                $eventTable,
+                $eventTable . '.' . $eventConfig->ownerTypeColumn,
+                $eventTable . '.' . $eventConfig->ownerIdColumn,
+            );
+        }
+
+        $eventQuery
             ->whereIn($eventTable . '.tracked_property_id', $trackedPropertyIds)
             ->whereIn($eventTable . '.event_name', $eventNames)
             ->select([
@@ -415,6 +469,249 @@ final class AggregateExperimentMetrics
         $query->unionAll($eventQuery->toBase());
 
         return $query->get()->map($mapRow);
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @param  EloquentCollection<int, Experiment>  $experiments
+     */
+    private function applyExperimentOwnerScope(
+        Builder $query,
+        EloquentCollection $experiments,
+        string $experimentColumn,
+        string $ownerTypeColumn,
+        string $ownerIdColumn,
+    ): void {
+        $query->where(function (Builder $query) use ($experiments, $experimentColumn, $ownerTypeColumn, $ownerIdColumn): void {
+            foreach ($experiments as $experiment) {
+                $query->orWhere(function (Builder $inner) use ($experiment, $experimentColumn, $ownerTypeColumn, $ownerIdColumn): void {
+                    $inner->where($experimentColumn, (string) $experiment->getKey());
+
+                    $this->applyOwnerTuple($inner, $experiment->owner_type, $experiment->owner_id, $ownerTypeColumn, $ownerIdColumn);
+                });
+            }
+        });
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @param  EloquentCollection<int, Experiment>  $experiments
+     */
+    private function applyEventOwnerScope(
+        Builder $query,
+        EloquentCollection $experiments,
+        string $eventTable,
+        string $ownerTypeColumn,
+        string $ownerIdColumn,
+    ): void {
+        $properties = [];
+
+        foreach ($experiments as $experiment) {
+            $trackedProperty = $experiment->trackedProperty;
+
+            if ($trackedProperty instanceof TrackedProperty) {
+                $properties[(string) $trackedProperty->getKey()] = [$trackedProperty->owner_type, $trackedProperty->owner_id];
+            }
+        }
+
+        if ($properties === []) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($properties, $eventTable, $ownerTypeColumn, $ownerIdColumn): void {
+            foreach ($properties as $trackedPropertyId => [$ownerType, $ownerId]) {
+                $query->orWhere(function (Builder $inner) use ($trackedPropertyId, $ownerType, $ownerId, $eventTable, $ownerTypeColumn, $ownerIdColumn): void {
+                    $inner->where($eventTable . '.tracked_property_id', $trackedPropertyId);
+
+                    $this->applyOwnerTuple($inner, $ownerType, $ownerId, $ownerTypeColumn, $ownerIdColumn);
+                });
+            }
+        });
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     */
+    private function applyOwnerTuple(
+        Builder $query,
+        ?string $ownerType,
+        ?string $ownerId,
+        string $ownerTypeColumn,
+        string $ownerIdColumn,
+    ): void {
+        if ($ownerType === null || $ownerId === null) {
+            $query->whereNull($ownerTypeColumn)->whereNull($ownerIdColumn);
+
+            return;
+        }
+
+        $query->where($ownerTypeColumn, $ownerType)->where($ownerIdColumn, $ownerId);
+    }
+
+    /**
+     * @param  EloquentCollection<int, Experiment>  $experiments
+     */
+    private function reloadMissingTrackedProperties(EloquentCollection $experiments): void
+    {
+        $missingIds = [];
+
+        foreach ($experiments as $experiment) {
+            $trackedProperty = $experiment->relationLoaded('trackedProperty')
+                ? $experiment->getRelation('trackedProperty')
+                : null;
+
+            if (! $trackedProperty instanceof TrackedProperty
+                || (string) $trackedProperty->getKey() !== (string) $experiment->tracked_property_id) {
+                $missingIds[] = (string) $experiment->tracked_property_id;
+            }
+        }
+
+        if ($missingIds === []) {
+            return;
+        }
+
+        $trackedProperties = TrackedProperty::query()
+            ->withoutGlobalScope(OwnerScope::class)
+            ->whereKey(array_values(array_unique($missingIds)))
+            ->get()
+            ->keyBy(static fn (TrackedProperty $trackedProperty): string => (string) $trackedProperty->getKey());
+
+        foreach ($experiments as $experiment) {
+            $trackedProperty = $experiment->relationLoaded('trackedProperty')
+                ? $experiment->getRelation('trackedProperty')
+                : null;
+
+            if ($trackedProperty instanceof TrackedProperty
+                && (string) $trackedProperty->getKey() === (string) $experiment->tracked_property_id) {
+                continue;
+            }
+
+            $trackedProperty = $trackedProperties->get((string) $experiment->tracked_property_id);
+
+            $experiment->setRelation('trackedProperty', $trackedProperty instanceof TrackedProperty ? $trackedProperty : null);
+        }
+    }
+
+    /**
+     * @param  EloquentCollection<int, Experiment>  $experiments
+     */
+    private function assertBatchExperimentsVisible(EloquentCollection $experiments): void
+    {
+        $message = 'Growth experiment is not accessible in the current owner scope.';
+        $experimentConfig = Experiment::ownerScopeConfig();
+        $propertyConfig = TrackedProperty::ownerScopeConfig();
+
+        if ($experimentConfig->enabled) {
+            $owner = OwnerContext::resolveConfigured($experimentConfig);
+            OwnerContext::assertResolvedOrExplicitGlobal($owner, $message);
+
+            foreach ($experiments as $experiment) {
+                if (! $this->ownerTupleVisible($experiment->owner_type, $experiment->owner_id, $owner, $experimentConfig->includeGlobal)) {
+                    throw new AuthorizationException($message);
+                }
+
+                $trackedProperty = $experiment->trackedProperty;
+
+                if (! $trackedProperty instanceof TrackedProperty
+                    || ! $this->ownerTuplesMatch($trackedProperty->owner_type, $trackedProperty->owner_id, $experiment->owner_type, $experiment->owner_id)) {
+                    throw new AuthorizationException($message);
+                }
+            }
+
+            return;
+        }
+
+        if (! $propertyConfig->enabled) {
+            return;
+        }
+
+        $owner = OwnerContext::resolveConfigured($propertyConfig);
+        OwnerContext::assertResolvedOrExplicitGlobal($owner, $message);
+
+        foreach ($experiments as $experiment) {
+            $trackedProperty = $experiment->trackedProperty;
+
+            if (! $trackedProperty instanceof TrackedProperty
+                || ! $this->ownerTupleVisible($trackedProperty->owner_type, $trackedProperty->owner_id, $owner, $propertyConfig->includeGlobal)) {
+                throw new AuthorizationException($message);
+            }
+        }
+    }
+
+    private function ownerTupleVisible(?string $ownerType, ?string $ownerId, ?Model $owner, bool $includeGlobal): bool
+    {
+        if ($ownerType === null && $ownerId === null) {
+            return $owner === null || $includeGlobal;
+        }
+
+        if ($owner === null || $ownerType === null || $ownerId === null) {
+            return false;
+        }
+
+        return $ownerType === $owner->getMorphClass() && (string) $ownerId === (string) $owner->getKey();
+    }
+
+    private function ownerTuplesMatch(?string $leftType, ?string $leftId, ?string $rightType, ?string $rightId): bool
+    {
+        return $leftType === $rightType && (string) $leftId === (string) $rightId;
+    }
+
+    /**
+     * @param  EloquentCollection<int, Experiment>  $experiments
+     */
+    private function batchCacheKey(EloquentCollection $experiments): string
+    {
+        $experimentIds = $experiments
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->sort()
+            ->values()
+            ->all();
+
+        return hash('sha256', implode('|', $experimentIds) . '|' . $this->maxAssignmentRows() . '|' . $this->maxEventRows());
+    }
+
+    /**
+     * @return array{results: array<string, array<string, mixed>>, variant_count: int, assignment_count: int}|null
+     */
+    private function cachedBatchResults(string $cacheKey): ?array
+    {
+        if (app()->runningInConsole() || ! app()->bound('request')) {
+            return null;
+        }
+
+        $cache = request()->attributes->get(self::BATCH_CACHE_ATTRIBUTE, []);
+
+        if (! is_array($cache)) {
+            return null;
+        }
+
+        $results = $cache[$cacheKey] ?? null;
+
+        return is_array($results) ? $results : null;
+    }
+
+    /**
+     * @param  array{results: array<string, array<string, mixed>>, variant_count: int, assignment_count: int}  $batch
+     */
+    private function storeCachedBatchResults(string $cacheKey, array $batch): void
+    {
+        if (app()->runningInConsole() || ! app()->bound('request')) {
+            return;
+        }
+
+        $cache = request()->attributes->get(self::BATCH_CACHE_ATTRIBUTE, []);
+        $cache = is_array($cache) ? $cache : [];
+        $cache[$cacheKey] = $batch;
+        request()->attributes->set(self::BATCH_CACHE_ATTRIBUTE, $cache);
     }
 
     /**

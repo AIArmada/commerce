@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Features\Browser;
 
 use AIArmada\Signals\Contracts\BrowserContextResolverInterface;
-use AIArmada\Signals\Features\Browser\Api\BrowserContextAccess;
 use AIArmada\Signals\Features\Browser\Api\TrackerMarkup;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\Middleware\BootstrapSignalsBrowserContext;
-use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
 use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextResolver;
 use AIArmada\Signals\Features\Browser\EntryPoints\Listeners\InjectSignalsTrackerIntoHtmlResponse;
 use AIArmada\Signals\Features\Browser\Queries\SignalsTrackerRenderer;
 use AIArmada\Signals\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Signals\Support\Http\SignalsBrowserContextManager;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\Events\RequestHandled;
@@ -24,7 +23,6 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->scoped(SignalsBrowserContextManager::class);
-        $app->bind(BrowserContextAccess::class, static fn (Application $app): BrowserContextAccess => $app->make(SignalsBrowserContextManager::class));
         $app->bind(TrackerMarkup::class, SignalsTrackerRenderer::class);
         $app->bind(BrowserContextResolverInterface::class, SignalsBrowserContextResolver::class);
     }

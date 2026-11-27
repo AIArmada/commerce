@@ -59,7 +59,7 @@ final class InteractionRuleScanner
         $normalizedTriggerType = $this->normalizeTriggerType($triggerType);
         $html = $this->markupFetcher->fetch($pageUrl);
 
-        if ($html === null || $html === '' || mb_strlen($html) > PageMarkupFetcher::MAX_HTML_BYTES) {
+        if ($html === null || $html === '' || mb_strlen($html, '8bit') > PageMarkupFetcher::MAX_HTML_BYTES) {
             return [];
         }
 
