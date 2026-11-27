@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Products\Actions\RebuildCollectionMembership;
 use AIArmada\Products\Actions\SaveCollection;
+use AIArmada\Products\Actions\SyncCatalogRelationships;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
@@ -57,6 +58,30 @@ describe('Collection Model', function (): void {
             ]))->toThrow(\Illuminate\Validation\ValidationException::class);
 
             expect($collection->fresh()->name)->toBe('Local Collection');
+        });
+    });
+
+    it('rejects cross-owner relationship updates without detaching existing membership', function (): void {
+        config()->set('products.features.owner.enabled', true);
+        config()->set('products.features.owner.include_global', false);
+        config()->set('products.features.owner.auto_assign_on_create', true);
+
+        $ownerA = TestOwner::query()->create(['name' => 'Membership Owner A']);
+        $ownerB = TestOwner::query()->create(['name' => 'Membership Owner B']);
+
+        $foreign = OwnerContext::withOwner($ownerB, static fn (): Product => Product::query()->create(['name' => 'Foreign Membership', 'price' => 1000]));
+
+        OwnerContext::withOwner($ownerA, static function () use ($foreign): void {
+            $collection = app(SaveCollection::class)->create(['name' => 'Manual Membership']);
+            $local = Product::query()->create(['name' => 'Local Membership', 'price' => 1000]);
+            $action = app(SyncCatalogRelationships::class);
+
+            $action->syncCollectionProducts($collection, [$local->getKey()]);
+
+            expect(fn () => $action->syncCollectionProducts($collection, [$foreign->getKey()]))
+                ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+            expect($collection->products()->pluck('id')->all())->toBe([$local->getKey()]);
         });
     });
 

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentProducts\Resources\CollectionResource\Schemas;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
+use AIArmada\Products\Actions\SyncCatalogRelationships;
 use AIArmada\Products\Enums\CatalogStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
@@ -207,7 +207,7 @@ class CollectionForm
                                         }
                                     )
                                     ->multiple()
-                                    ->saveRelationshipsBeforeChildrenUsing(OwnerScopedRelationshipSelect::guard(Product::class))
+                                    ->saveRelationshipsUsing(fn (Collection $record, ?array $state) => app(SyncCatalogRelationships::class)->syncCollectionProducts($record, $state ?? []))
                                     ->preload()
                                     ->searchable()
                                     ->helperText('For manual collections only'),

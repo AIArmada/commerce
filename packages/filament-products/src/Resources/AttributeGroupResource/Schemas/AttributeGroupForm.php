@@ -7,8 +7,7 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Schemas;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
-use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
-use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Actions\SyncCatalogRelationships;
 use AIArmada\Products\Models\AttributeGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -74,7 +73,7 @@ class AttributeGroupForm
                                     return OwnerQuery::applyToEloquentBuilder($query, $owner);
                                 }
                             )
-                            ->saveRelationshipsBeforeChildrenUsing(OwnerScopedRelationshipSelect::guard(Attribute::class))
+                            ->saveRelationshipsUsing(fn (AttributeGroup $record, ?array $state) => app(SyncCatalogRelationships::class)->syncGroupAttributes($record, $state ?? []))
                             ->preload()
                             ->searchable(),
                     ]),
