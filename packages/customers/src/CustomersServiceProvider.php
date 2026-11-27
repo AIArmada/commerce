@@ -11,7 +11,7 @@ use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
-use AIArmada\Customers\Drivers\CustomersPaymentSubjectDriver;
+use AIArmada\Customers\Features\Identity\Services\CustomersPaymentSubjectDriver;
 use AIArmada\Customers\Platform\ExtensionRegistry;
 use AIArmada\Customers\Platform\FeatureCatalog;
 use AIArmada\Customers\Platform\FeatureModule;

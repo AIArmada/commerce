@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Customers\Drivers;
+namespace AIArmada\Customers\Features\Identity\Services;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
@@ -14,7 +14,6 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 
 final readonly class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterface
 {

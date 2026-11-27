@@ -18,7 +18,7 @@ use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Drivers\CustomersPaymentSubjectDriver;
+use AIArmada\Customers\Features\Identity\Services\CustomersPaymentSubjectDriver;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 
 use function Pest\Laravel\actingAs;
