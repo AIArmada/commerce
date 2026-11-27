@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -14,6 +13,7 @@ use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeSetResource\Tables;
 
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\Products\Actions\SetDefaultAttributeSet;
 use AIArmada\Products\Models\AttributeSet;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables;
 use Filament\Tables\Table;

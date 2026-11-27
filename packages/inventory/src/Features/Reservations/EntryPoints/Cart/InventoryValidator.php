@@ -9,8 +9,8 @@ use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Runtime\CartValidatorInterface;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
-use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 
 /**
  * Validates cart items against inventory availability.

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;

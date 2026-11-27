@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
-use AIArmada\Products\Actions\SynchronizeCompositeShipping;
-use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Contracts\Buyable;
@@ -16,6 +14,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
+use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Concerns\HasComponents;
 use AIArmada\Products\Contracts\Inventoryable;
@@ -29,6 +28,7 @@ use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;

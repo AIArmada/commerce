@@ -20,7 +20,7 @@ final readonly class CatalogExport
     ];
 
     /**
-     * @param array<int, mixed> $fields
+     * @param  array<int, mixed>  $fields
      * @return LazyCollection<int, list<string|int|float|null>>
      */
     public function rows(array $fields, string $status = 'all'): LazyCollection

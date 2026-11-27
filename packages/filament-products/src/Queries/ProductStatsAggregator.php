@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Queries;
 
-use AIArmada\FilamentProducts\Persistence\ProductStatsCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentProducts\Persistence\ProductStatsCache;
 use AIArmada\Products\Queries\CatalogStatistics;
 
 final readonly class ProductStatsAggregator

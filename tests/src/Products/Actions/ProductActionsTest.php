@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Actions\GenerateVariants;
@@ -20,6 +19,7 @@ use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;

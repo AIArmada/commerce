@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Products\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\Products\Database\Factories\ProductComponentFactory;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;

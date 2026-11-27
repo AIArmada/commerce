@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 
 describe('HasAttributes Trait', function (): void {
     describe('Custom Attribute Management', function (): void {

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -10,6 +9,7 @@ use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Products\Actions\CreateCompositeProduct;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;

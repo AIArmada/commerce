@@ -123,5 +123,4 @@ final class InventoryServiceProvider extends PackageServiceProvider
             $this->modules[] = $module;
         }
     }
-
 }

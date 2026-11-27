@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Traits;
 
-use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Products\Models\AttributeValue;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

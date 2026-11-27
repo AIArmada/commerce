@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CollectionResource\Tables;
 
+use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use AIArmada\Products\Actions\RebuildCollectionMembership;
 use AIArmada\Products\Models\Collection;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use AIArmada\FilamentProducts\Actions\DeleteCatalogBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;

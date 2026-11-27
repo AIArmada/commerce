@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Persistence\CustomAttributeValues;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 use AIArmada\Products\Enums\AttributeType;
@@ -10,6 +9,7 @@ use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Persistence\CustomAttributeValues;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;

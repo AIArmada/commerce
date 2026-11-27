@@ -6,14 +6,14 @@ namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Cart;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
+use AIArmada\Inventory\Features\Reservations\Actions\AllocateCartInventory;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
+use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use AIArmada\Inventory\Features\Reservations\Actions\AllocateCartInventory;
-use AIArmada\Inventory\Features\Reservations\Queries\InventoryDemandResolver;
-use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 
 /**
  * CartManager decorator that adds inventory allocation functionality.
