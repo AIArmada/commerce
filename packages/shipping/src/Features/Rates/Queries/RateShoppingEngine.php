@@ -14,9 +14,10 @@ use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Api\ShopRates;
 use AIArmada\Shipping\Features\Rates\Persistence\RateCache;
 use AIArmada\Shipping\ShippingManager;
-use AIArmada\Shipping\Strategies\CheapestRateStrategy;
-use AIArmada\Shipping\Strategies\FastestRateStrategy;
-use AIArmada\Shipping\Strategies\PreferredCarrierStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\BalancedRateStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\CheapestRateStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\FastestRateStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\PreferredCarrierStrategy;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Concurrency;
 use Throwable;
@@ -447,16 +448,14 @@ class RateShoppingEngine implements ShopRates
 
     /**
      * Resolve the rate selection strategy based on config.
-     *
-     * Cached using once() because this method is parameterless and reads
-     * only from immutable config. Safe for request-scoped caching.
      */
     protected function resolveStrategy(): RateSelectionStrategyInterface
     {
-        return once(fn () => match ($this->config['strategy'] ?? 'cheapest') {
+        return match ($this->config['strategy'] ?? 'cheapest') {
             'fastest' => new FastestRateStrategy,
+            'balanced' => new BalancedRateStrategy,
             'preferred' => new PreferredCarrierStrategy($this->config['carrier_priority'] ?? []),
             default => new CheapestRateStrategy,
-        });
+        };
     }
 }

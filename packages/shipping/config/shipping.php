@@ -116,7 +116,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'rate_shopping' => [
-        'strategy' => 'cheapest', // cheapest, fastest, preferred
+        'strategy' => 'cheapest', // cheapest, fastest, preferred, balanced
         'cache_ttl' => 300, // seconds
         'fallback_to_manual' => true,
         'concurrency_timeout' => 30, // seconds per carrier fan-out; process/fork drivers only

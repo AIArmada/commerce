@@ -704,3 +704,21 @@ it('does not reuse a rate cache key for different shipment details', function ()
     expect($baseKey)->not->toBe($differentAddressKey)
         ->and($baseKey)->not->toBe($differentDimensionsKey);
 });
+
+it('uses balanced strategy when configured rather than choosing the cheapest quote', function (): void {
+    config(['shipping.features.owner.enabled' => false]);
+    $manager = Mockery::mock(ShippingManager::class);
+    $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['carrier']);
+    Concurrency::shouldReceive('run')->once()->andReturn([
+        'carrier' => [
+            new RateQuoteData(carrier: 'carrier', service: 'fast', rate: 2000, currency: 'MYR', estimatedDays: 1),
+            new RateQuoteData(carrier: 'carrier', service: 'balanced', rate: 1000, currency: 'MYR', estimatedDays: 2),
+            new RateQuoteData(carrier: 'carrier', service: 'cheap', rate: 500, currency: 'MYR', estimatedDays: 7),
+        ],
+    ]);
+
+    $engine = new RateShoppingEngine($manager, ['strategy' => 'balanced', 'cache_ttl' => 0, 'circuit_failure_threshold' => 0]);
+    $address = new AddressData(name: 'Test', phone: '123456', line1: 'Test Road', postcode: '50000');
+
+    expect($engine->getBestRate($address, $address, [new PackageData(weight: 1000)])?->service)->toBe('balanced');
+});

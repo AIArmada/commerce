@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Strategies\BalancedRateStrategy;
-use AIArmada\Shipping\Strategies\CheapestRateStrategy;
-use AIArmada\Shipping\Strategies\FastestRateStrategy;
-use AIArmada\Shipping\Strategies\PreferredCarrierStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\BalancedRateStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\CheapestRateStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\FastestRateStrategy;
+use AIArmada\Shipping\Features\Rates\Strategies\PreferredCarrierStrategy;
 
 // ============================================
 // CheapestRateStrategy Tests
@@ -207,4 +207,16 @@ describe('BalancedRateStrategy', function (): void {
 
         expect($selected->carrier)->toBe('fast');
     });
+});
+
+it('selects the least expensive quote within an equal preferred carrier priority', function (): void {
+    $strategy = new PreferredCarrierStrategy(['preferred' => 1, 'other' => 1]);
+
+    $selected = $strategy->select([
+        new RateQuoteData(carrier: 'preferred', service: 'express', rate: 2500, currency: 'MYR', estimatedDays: 1),
+        new RateQuoteData(carrier: 'preferred', service: 'standard', rate: 1000, currency: 'MYR', estimatedDays: 3),
+        new RateQuoteData(carrier: 'other', service: 'standard', rate: 1200, currency: 'MYR', estimatedDays: 2),
+    ]);
+
+    expect($selected?->rate)->toBe(1000);
 });

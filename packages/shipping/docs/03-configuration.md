@@ -195,7 +195,7 @@ $zone = app(ShippingZoneResolver::class)->resolve(
 
 ```php
 'rate_shopping' => [
-    'strategy' => 'cheapest', // cheapest, fastest, preferred
+    'strategy' => 'cheapest', // cheapest, fastest, preferred, balanced
     'cache_ttl' => 300, // seconds
     'fallback_to_manual' => true,
     'concurrency_timeout' => 30, // seconds per carrier fan-out; process/fork drivers only
@@ -214,7 +214,8 @@ $zone = app(ShippingZoneResolver::class)->resolve(
 |----------|-------------|
 | `cheapest` | Select the lowest cost option |
 | `fastest` | Select the fastest delivery option |
-| `preferred` | Use `carrier_priority`, falling back to the cheapest quote |
+| `preferred` | Use `carrier_priority`, choosing the lowest price within equal priority, falling back to the cheapest quote |
+| `balanced` | Balance estimated delivery days and price; optional `speed_weight` and `cost_weight` quote options |
 
 ## Free Shipping
 

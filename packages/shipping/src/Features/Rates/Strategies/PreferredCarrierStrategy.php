@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Strategies;
+namespace AIArmada\Shipping\Features\Rates\Strategies;
 
 use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Data\RateQuoteData;
@@ -32,7 +32,7 @@ class PreferredCarrierStrategy implements RateSelectionStrategyInterface
 
             $priority = $this->priority[$rate->carrier] ?? null;
 
-            if ($priority !== null && ($preferred === null || $priority < $bestPriority)) {
+            if ($priority !== null && ($preferred === null || $priority < $bestPriority || ($priority === $bestPriority && $rate->rate < $preferred->rate))) {
                 $preferred = $rate;
                 $bestPriority = $priority;
             }
