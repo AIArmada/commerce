@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;

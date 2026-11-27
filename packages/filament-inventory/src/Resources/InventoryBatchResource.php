@@ -13,7 +13,7 @@ use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\ViewInvent
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas\InventoryBatchForm;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas\InventoryBatchInfolist;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Tables\InventoryBatchesTable;
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Traceability\Models;
 
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryBatch;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;

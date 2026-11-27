@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Traceability\Actions;
 
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

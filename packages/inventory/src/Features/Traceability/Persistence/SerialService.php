@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialEventType;
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerialHistory;

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Inventory\Enums\BatchStatus;
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;

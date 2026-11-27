@@ -35,7 +35,7 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant as GrowthVariant;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryBackorder;
-use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryDemandHistory;
 use AIArmada\Inventory\Models\InventoryLevel;
