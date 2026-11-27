@@ -29,6 +29,7 @@ use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 
 it('isolates bookmark collections by owner', function (): void {
     $ownerA = User::query()->create([
@@ -229,4 +230,45 @@ it('does not reuse or mutate global engagement records through tenant write acti
     foreach ($local as $record) {
         expect($record->newQueryWithoutScopes()->findOrFail($record->getKey())->status)->not->toBe($record->status);
     }
+});
+
+it('enforces unique global interaction identities and unbound subscription identities in the database', function (): void {
+    config(['engagement.owner.enabled' => true]);
+    $owner = User::factory()->create();
+    $actor = new EngagementActor;
+    $subject = new EngagementSubject;
+    $interactions = app(ManageInteractionsAction::class);
+    $subscriptions = app(ManageSubscriptionsAction::class);
+
+    OwnerContext::withOwner(null, function () use ($actor, $subject, $interactions, $subscriptions): void {
+        $bookmark = $interactions->bookmark($actor, $subject);
+        $collection = BookmarkCollection::query()->create([
+            'name' => 'Unique collection',
+            'visibility' => 'private',
+            'status' => 'active',
+        ]);
+        $interactions->addBookmarkToCollection($actor, $bookmark, $collection);
+
+        $records = [
+            $interactions->follow($actor, $subject),
+            $bookmark,
+            $interactions->respond($actor, $subject, 'going'),
+            $interactions->react($actor, $subject, 'like'),
+            BookmarkCollectionItem::query()->firstOrFail(),
+            $subscriptions->subscribe($actor, $subject),
+            $subscriptions->subscribe($actor),
+        ];
+
+        foreach ($records as $record) {
+            expect(fn () => $record->getConnection()->transaction(fn () => $record->replicate()->save()))
+                ->toThrow(QueryException::class);
+        }
+    });
+
+    OwnerContext::withOwner($owner, function () use ($actor, $subscriptions): void {
+        $subscription = $subscriptions->subscribe($actor);
+
+        expect(fn () => $subscription->getConnection()->transaction(fn () => $subscription->replicate()->save()))
+            ->toThrow(QueryException::class);
+    });
 });
