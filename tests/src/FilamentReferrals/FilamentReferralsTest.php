@@ -281,13 +281,11 @@ it('fulfils and reverses a manual reward through core actions', function (): voi
     ]);
     $invite = filamentReferralsQualifyInvite($owner, $program, $owner, User::factory()->create(), 'rewarded-member@example.com');
     $reward = $invite->rewards()->firstOrFail();
-    $reward->metadata = ['external_reference' => 'manual-referral-123'];
-    $reward->save();
     $this->setCurrentOwner($owner);
 
     Livewire::actingAs($owner)
         ->test(ListReferralRewards::class)
-        ->callTableAction('fulfill', $reward->getKey())
+        ->callTableAction('fulfill', $reward->getKey(), data: ['manual_reference' => 'manual-referral-123'])
         ->assertHasNoTableActionErrors();
 
     expect($reward->fresh()->status)->toBe(ReferralRewardStatus::Fulfilled)
@@ -351,9 +349,7 @@ it('shows only current owner counts in referral statistics', function (): void {
         'stats-rewarded@example.com',
     );
     $ownReward = $ownRewardedInvite->rewards()->firstOrFail();
-    $ownReward->metadata = ['external_reference' => 'stats-manual-ref'];
-    $ownReward->save();
-    OwnerContext::withOwner($owner, fn (): ReferralReward => FulfillReferralReward::run($ownReward));
+    OwnerContext::withOwner($owner, fn (): ReferralReward => FulfillReferralReward::run($ownReward, 'stats-manual-ref'));
 
     $this->newInvite($otherOwner, $otherProgram, $otherOwner, 'foreign-stats-pending@example.com');
     filamentReferralsQualifyInvite($otherOwner, $otherProgram, $otherOwner, User::factory()->create(), 'foreign-stats-qualified@example.com');

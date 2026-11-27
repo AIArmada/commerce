@@ -95,9 +95,7 @@ it('completes a two-sided referral lifecycle and rewards the invite', function (
     expect($qualified->rewards)->toHaveCount(2);
 
     foreach ($qualified->rewards as $index => $reward) {
-        $reward->metadata = ['external_reference' => 'receipt-' . $index];
-        $reward->save();
-        OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($reward));
+        OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($reward, 'receipt-' . $index));
     }
 
     expect($accepted->fresh()->status)->toBe(ReferralInviteStatus::Rewarded)
@@ -336,9 +334,8 @@ it('requires a manual reference, fulfils only once, and returns a rewarded invit
     expect($failed->status)->toBe(ReferralRewardStatus::Failed)
         ->and($failed->metadata['fulfillment_failure'])->toContain('external_reference');
 
-    $failed->metadata = ['external_reference' => 'manual-receipt'];
-    $failed->save();
-    $firstFulfilment = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($failed));
+    $firstFulfilment = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($failed, 'manual-receipt'));
+    expect(fn () => OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($failed, 'different-receipt')))->toThrow(LogicException::class);
     $fulfilledAt = $firstFulfilment->fulfilled_at;
     $replay = OwnerContext::withOwner($owner, fn () => FulfillReferralReward::run($firstFulfilment));
 
@@ -1136,14 +1133,7 @@ it('refuses tenant writes on global programs while global reads stay visible', f
     expect($reward->fresh()->status)->toBe(ReferralRewardStatus::Pending)
         ->and($revocable->fresh()->status)->toBe(ReferralInviteStatus::Accepted);
 
-    // Explicit-global context still mutates global rows. The manual driver
-    // requires a stored reference before it can fulfil.
-    OwnerContext::withOwner(null, static function () use ($reward): void {
-        $reward->metadata = ['external_reference' => 'global-receipt-1'];
-        $reward->save();
-    });
-
-    OwnerContext::withOwner(null, fn () => FulfillReferralReward::run($reward));
+    OwnerContext::withOwner(null, fn () => FulfillReferralReward::run($reward, 'global-receipt-1'));
     OwnerContext::withOwner(null, fn () => RevokeReferralInvite::run($revocable));
 
     expect($reward->fresh()->status)->toBe(ReferralRewardStatus::Fulfilled)

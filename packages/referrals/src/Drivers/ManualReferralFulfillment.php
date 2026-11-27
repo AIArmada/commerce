@@ -12,15 +12,13 @@ final class ManualReferralFulfillment implements ReferralRewardFulfillment
 {
     public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
     {
-        $metadataKey = (string) config('referrals.fulfillment.drivers.manual.reference_metadata_key', 'external_reference');
-        $metadata = is_array($reward->metadata) ? $reward->metadata : [];
-        $reference = $metadata[$metadataKey] ?? null;
+        $reference = $reward->manualReference === null ? '' : mb_trim($reward->manualReference);
 
-        if (! is_string($reference) || mb_trim($reference) === '') {
-            return ReferralFulfillmentResult::failed(sprintf('Manual fulfilment requires a non-empty [%s] reward metadata value.', $metadataKey));
+        if ($reference === '' || mb_strlen($reference) > 255) {
+            return ReferralFulfillmentResult::failed('Manual fulfilment requires an external_reference of 1 to 255 characters.');
         }
 
-        return ReferralFulfillmentResult::fulfilled(mb_trim($reference));
+        return ReferralFulfillmentResult::fulfilled($reference);
     }
 
     public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult

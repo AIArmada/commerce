@@ -56,10 +56,7 @@ OwnerContext::withOwner($tenant, function () use ($referrer, $invitee): void {
 
     foreach ($qualified->rewards as $reward) {
         // A host records its real external action reference for the manual rail.
-        $reward->metadata = ['external_reference' => 'host-receipt-' . $reward->id];
-        $reward->save();
-
-        FulfillReferralReward::run($reward);
+        FulfillReferralReward::run($reward, 'host-receipt-' . $reward->id);
     }
 });
 ```
@@ -119,7 +116,7 @@ The `reward_points` driver may carry a `family_key` slug (1..64, `[a-z0-9_-]`) t
 
 ### Manual
 
-The default rail requires a non-empty external reference in reward metadata. Set the metadata key configured at `referrals.fulfillment.drivers.manual.reference_metadata_key` before calling `FulfillReferralReward`. A missing reference marks the reward `Failed`; correct the metadata and retry.
+Pass the verified external reference (1–255 characters) directly to `FulfillReferralReward::run($reward, $reference)` for manual rewards. A missing reference marks the reward `Failed`; supply the reference and retry. A fulfilled reward cannot be replayed with a different reference.
 
 The manual rail records that reference in referrals. The host must perform and verify the actual compensation or reversal itself before calling the matching action; manual reversal records the reason and reference but does not contact an external system.
 

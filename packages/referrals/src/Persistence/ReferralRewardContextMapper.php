@@ -9,7 +9,7 @@ use AIArmada\Referrals\Models\ReferralReward;
 
 final readonly class ReferralRewardContextMapper
 {
-    public static function map(ReferralReward $reward, ?string $qualificationBusinessKey): ReferralRewardContext
+    public static function map(ReferralReward $reward, ?string $qualificationBusinessKey, ?string $manualReference = null): ReferralRewardContext
     {
         return new ReferralRewardContext(
             id: $reward->id,
@@ -27,6 +27,7 @@ final readonly class ReferralRewardContextMapper
             externalReference: $reward->external_reference,
             metadata: $reward->metadata ?? [],
             qualificationBusinessKey: $qualificationBusinessKey,
+            manualReference: $manualReference,
         );
     }
 }

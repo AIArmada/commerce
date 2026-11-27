@@ -10,7 +10,7 @@ Check `referrals.fulfillment.drivers.<driver>.enabled`, install the optional pac
 
 ## Manual fulfilment fails without a reference
 
-Set a non-empty reward metadata value using the configured `reference_metadata_key`, then retry the `Failed` reward. Manual reversal also requires the stored external reference.
+For manual rewards, supply the verified external reference directly to `FulfillReferralReward::run($reward, $reference)` and retry.
 
 ## The same contact cannot create another invite
 
