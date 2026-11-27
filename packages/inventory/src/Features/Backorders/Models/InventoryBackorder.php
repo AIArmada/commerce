@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Backorders\Models;
+
+use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Database\Factories\InventoryBackorderFactory;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -343,5 +346,10 @@ final class InventoryBackorder extends Model implements Auditable
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
+    }
+
+    protected static function newFactory(): InventoryBackorderFactory
+    {
+        return InventoryBackorderFactory::new();
     }
 }

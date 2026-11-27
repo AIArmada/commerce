@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Backorders\Actions;
 
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Models\InventoryBackorder;
-use AIArmada\Inventory\Services\Stock\BackorderService;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;

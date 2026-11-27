@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\States;
 
-use AIArmada\Inventory\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\ModelStates\State;
 use Spatie\ModelStates\StateConfig;

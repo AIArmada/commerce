@@ -34,7 +34,7 @@ use AIArmada\Inventory\Features\Valuation\Persistence\WeightedAverageCostService
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Features\Traceability\Queries\SerialLookupService;
 use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
-use AIArmada\Inventory\Services\Stock\BackorderService;
+use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
 use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
@@ -70,7 +70,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->registerCoreServices();
-        $this->registerAllocationServices();
         $this->registerReportServices();
         $this->registerIntegrationServices();
         $this->registerFeatureModules();
@@ -129,14 +128,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(InventoryAllocationService::class);
         $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
-    }
-
-    /**
-     * Register allocation and backorder services.
-     */
-    private function registerAllocationServices(): void
-    {
-        $this->app->singleton(BackorderService::class);
     }
 
     /**

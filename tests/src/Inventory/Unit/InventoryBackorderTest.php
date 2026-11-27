@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\States\Cancelled;
 use AIArmada\Inventory\States\Expired;
 use AIArmada\Inventory\States\Fulfilled;

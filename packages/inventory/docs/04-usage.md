@@ -161,8 +161,8 @@ RecordSerial::run($product, serialNumber: 'SN-001-ABC', locationId: $locationId)
 ### Backorder Management
 
 ```php
-use AIArmada\Inventory\Actions\CreateBackorder;
-use AIArmada\Inventory\Actions\ResolveBackorder;
+use AIArmada\Inventory\Features\Backorders\Actions\CreateBackorder;
+use AIArmada\Inventory\Features\Backorders\Actions\ResolveBackorder;
 
 // Create a backorder
 CreateBackorder::run($product, quantity: 20, orderId: $orderId, customerId: $customerId);

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Backorders\Persistence;
 
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\States\Pending;

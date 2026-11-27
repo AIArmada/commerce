@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\Inventory\Models\InventoryBackorder;
+use AIArmada\Inventory\Features\Backorders\Models\InventoryBackorder;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
