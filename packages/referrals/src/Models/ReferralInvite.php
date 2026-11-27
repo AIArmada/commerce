@@ -64,12 +64,6 @@ class ReferralInvite extends Model
             $invite->status ??= ReferralInviteStatus::Pending;
         });
 
-        static::deleting(function (self $invite): void {
-            foreach ($invite->rewards()->get() as $reward) {
-                $reward->delete();
-            }
-        });
-
         static::updating(function (self $invite): void {
             foreach (['program_id', 'referrer_type', 'referrer_id', 'invitee_hash', 'invitee_contact_encrypted', 'token_hash'] as $attribute) {
                 if ($invite->isDirty($attribute)) {

@@ -14,8 +14,8 @@ return new class extends Migration
 
         Schema::create(config('referrals.database.tables.rewards', 'referral_rewards'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('invite_id')->index();
-            $table->foreignUuid('program_id')->index();
+            $table->foreignUuid('invite_id')->index()->constrained((string) config('referrals.database.tables.invites', 'referral_invites'))->cascadeOnDelete();
+            $table->foreignUuid('program_id')->index()->constrained((string) config('referrals.database.tables.programs', 'referral_programs'))->cascadeOnDelete();
             $table->string('side', 16);
             $table->nullableUuidMorphs('beneficiary');
             $table->string('driver', 32);

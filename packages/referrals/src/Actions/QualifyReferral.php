@@ -54,10 +54,6 @@ final class QualifyReferral
                 ->firstOrFail();
 
             if (in_array($invite->status, [ReferralInviteStatus::Qualified, ReferralInviteStatus::Rewarded], true)) {
-                if ($invite->qualification_business_key !== $businessKey) {
-                    throw new LogicException('A qualified referral cannot be replayed with a different business key.');
-                }
-
                 return [
                     'result' => $this->storedResult($invite),
                     'qualified' => false,

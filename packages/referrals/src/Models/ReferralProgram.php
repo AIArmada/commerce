@@ -81,12 +81,6 @@ class ReferralProgram extends Model
         static::creating(function (self $program): void {
             $program->status ??= ReferralProgramStatus::Draft;
         });
-
-        static::deleting(function (self $program): void {
-            foreach ($program->invites()->get() as $invite) {
-                $invite->delete();
-            }
-        });
     }
 
     public function getTable(): string

@@ -147,10 +147,6 @@ final class Link extends Model
                 $link->slug = static::generateUniqueSlug();
             }
         });
-
-        static::deleting(function (Link $link): void {
-            $link->clicks()->delete();
-        });
     }
 
     private static function generateUniqueSlug(): string

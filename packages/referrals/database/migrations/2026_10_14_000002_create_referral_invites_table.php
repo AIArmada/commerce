@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('referrals.database.tables.invites', 'referral_invites'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('program_id')->index();
+            $table->foreignUuid('program_id')->index()->constrained((string) config('referrals.database.tables.programs', 'referral_programs'))->cascadeOnDelete();
             $table->nullableUuidMorphs('referrer');
             $table->string('invitee_hash', 64);
             $table->text('invitee_contact_encrypted')->nullable();
