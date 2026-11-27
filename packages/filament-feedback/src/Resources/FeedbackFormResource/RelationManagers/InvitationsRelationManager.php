@@ -21,9 +21,9 @@ final class InvitationsRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('email'),
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('effective_status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (FeedbackInvitationStatus $state): string => match ($state->value) {
                         'pending' => 'gray',
                         'sent' => 'info',
                         'opened' => 'warning',

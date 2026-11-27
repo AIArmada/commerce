@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 use AIArmada\Feedback\Support\FeedbackSubmissionGuard;
@@ -26,7 +26,7 @@ final class StartFeedbackResponseAction
     public function __construct(
         private readonly FeedbackModelReferenceGuard $referenceGuard,
         private readonly FeedbackSubmissionGuard $submissionGuard,
-        private readonly ExpireFeedbackInvitationAction $expireInvitation,
+        private readonly ManagesInvitationLifecycle $invitationLifecycle,
     ) {}
 
     public function execute(
@@ -52,7 +52,7 @@ final class StartFeedbackResponseAction
                 fn (Throwable $exception): bool => $exception instanceof DeadlockException,
             );
         } catch (FeedbackInvitationExpiredException $exception) {
-            $this->expireInvitation->execute($exception->invitationId);
+            $this->invitationLifecycle->expire($exception->invitationId);
 
             throw $exception;
         }
@@ -151,10 +151,7 @@ final class StartFeedbackResponseAction
             ]);
 
             if ($invitation !== null) {
-                $invitation->forceFill([
-                    'status' => FeedbackInvitationStatus::Started,
-                    'started_at' => CarbonImmutable::now(),
-                ])->save();
+                $this->invitationLifecycle->start($invitation->id);
             }
 
             FeedbackResponseStarted::dispatch($response);

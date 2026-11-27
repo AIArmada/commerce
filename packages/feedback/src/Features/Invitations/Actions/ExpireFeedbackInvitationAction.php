@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Actions;
+namespace AIArmada\Feedback\Features\Invitations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Illuminate\Support\Facades\DB;
 
 final readonly class ExpireFeedbackInvitationAction
@@ -23,7 +23,9 @@ final readonly class ExpireFeedbackInvitationAction
                 return;
             }
 
-            OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitationId);
+            if (FeedbackInvitation::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitationId);
+            }
 
             if (! $invitation->isExpired() || in_array($invitation->status, [
                 FeedbackInvitationStatus::Submitted,

@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Models;
+namespace AIArmada\Feedback\Features\Invitations\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
+use AIArmada\Feedback\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -96,7 +97,7 @@ final class FeedbackInvitation extends Model
      */
     public function isExpired(): bool
     {
-        return $this->expires_at !== null && CarbonImmutable::now()->isAfter($this->expires_at);
+        return $this->expires_at !== null && CarbonImmutable::now()->greaterThanOrEqualTo($this->expires_at);
     }
 
     /**

@@ -6,12 +6,12 @@ namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
-use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 use AIArmada\Feedback\Exceptions\FeedbackInvitationExpiredException;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Support\FeedbackSubmissionGuard;
 use Carbon\CarbonImmutable;
@@ -31,7 +31,7 @@ final class SubmitFeedbackResponseAction
         private readonly CalculateFeedbackResponseScoreAction $calculateResponseScore,
         private readonly ExtractFeedbackTestimonialAction $extractTestimonial,
         private readonly FeedbackSubmissionGuard $submissionGuard,
-        private readonly ExpireFeedbackInvitationAction $expireInvitation,
+        private readonly ManagesInvitationLifecycle $invitationLifecycle,
     ) {}
 
     public function execute(SubmitFeedbackResponseData $data): FeedbackResponse
@@ -44,7 +44,7 @@ final class SubmitFeedbackResponseAction
                 fn (Throwable $exception): bool => $exception instanceof DeadlockException,
             );
         } catch (FeedbackInvitationExpiredException $exception) {
-            $this->expireInvitation->execute($exception->invitationId);
+            $this->invitationLifecycle->expire($exception->invitationId);
 
             throw $exception;
         }
@@ -135,10 +135,7 @@ final class SubmitFeedbackResponseAction
                     ])->save();
 
                     if (isset($invitation)) {
-                        $invitation->forceFill([
-                            'status' => FeedbackInvitationStatus::Submitted,
-                            'submitted_at' => CarbonImmutable::now(),
-                        ])->save();
+                        $this->invitationLifecycle->submit($invitation->id);
                     }
 
                     $this->calculateResponseScore->execute($response);

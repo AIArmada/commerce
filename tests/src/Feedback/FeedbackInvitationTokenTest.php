@@ -5,15 +5,15 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
-use AIArmada\Feedback\Actions\ExpireFeedbackInvitationAction;
-use AIArmada\Feedback\Actions\GenerateFeedbackInvitationUrlAction;
-use AIArmada\Feedback\Actions\MarkFeedbackInvitationOpenedAction;
-use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
-use AIArmada\Feedback\Actions\SendFeedbackInvitationAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ExpireFeedbackInvitationAction;
+use AIArmada\Feedback\Features\Invitations\Actions\GenerateFeedbackInvitationUrlAction;
+use AIArmada\Feedback\Features\Invitations\Actions\MarkFeedbackInvitationOpenedAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
+use AIArmada\Feedback\Features\Invitations\Actions\SendFeedbackInvitationAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Events\FeedbackInvitationCreated;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 
@@ -159,4 +159,17 @@ it('does not open an expired invitation', function (): void {
 
     expect($result->status)->toBe(FeedbackInvitationStatus::Sent)
         ->and($result->opened_at)->toBeNull();
+});
+
+it('rolls back the invitation when URL generation fails', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Failed URL Form'));
+    app()->instance(\AIArmada\Feedback\Contracts\InvitationUrlGenerator::class, new class implements \AIArmada\Feedback\Contracts\InvitationUrlGenerator {
+        public function generate(string $invitationId, string $rawToken): string
+        {
+            throw new RuntimeException('URL generation failed');
+        }
+    });
+
+    expect(fn () => app(SendFeedbackInvitationAction::class)->execute($form, email: 'example@example.com'))->toThrow(RuntimeException::class)
+        ->and(FeedbackInvitation::query()->where('feedback_form_id', $form->id)->count())->toBe(0);
 });

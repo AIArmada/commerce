@@ -77,7 +77,7 @@ app(PublishFeedbackFormAction::class)->execute($form);
 ## Send invitation
 
 ```php
-use AIArmada\Feedback\Actions\SendFeedbackInvitationAction;
+use AIArmada\Feedback\Features\Invitations\Actions\SendFeedbackInvitationAction;
 
 $result = app(SendFeedbackInvitationAction::class)->execute(
     form: $form,
@@ -115,7 +115,7 @@ must define a route matching that shape whose handler resolves the raw token and
 renders the form:
 
 ```php
-use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/feedback/invitations/{token}', function (string $token) {
@@ -236,7 +236,7 @@ explicit owner scope:
 
 ```php
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 
 FeedbackInvitation::query()
     ->whereNotIn('status', [
@@ -257,7 +257,7 @@ FeedbackInvitation::query()
 `SendFeedbackInvitationAction` mints `bin2hex(random_bytes(32))` and persists only `hash('sha256', $rawToken)`. Resolve via `ResolveFeedbackInvitationTokenAction`, which does the hashed lookup plus expiry, single-use (`submitted` rejects reuse), and rate-limit (`feedback.security.invitation_rate_limit`):
 
 ```php
-use AIArmada\Feedback\Actions\ResolveFeedbackInvitationTokenAction;
+use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
 
 $invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToken);
 ```

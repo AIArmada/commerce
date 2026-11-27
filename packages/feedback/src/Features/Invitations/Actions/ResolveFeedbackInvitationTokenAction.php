@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Actions;
+namespace AIArmada\Feedback\Features\Invitations\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Illuminate\Support\Facades\RateLimiter;
 use RuntimeException;
 
@@ -65,7 +65,7 @@ final readonly class ResolveFeedbackInvitationTokenAction
             $owner = OwnerTupleParser::fromTypeAndId(
                 $invitation->owner_type,
                 $invitation->owner_id,
-            )->toOwnerModel();
+            )->toOwnerModelOrFail();
 
             OwnerContext::withOwner($owner, function () use ($invitation): void {
                 $this->expireInvitation->execute($invitation->id);

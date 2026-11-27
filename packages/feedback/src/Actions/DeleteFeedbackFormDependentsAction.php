@@ -6,6 +6,7 @@ namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Features\Analytics\Api\DeletesFormAnalytics;
+use AIArmada\Feedback\Features\Invitations\Api\ManagesInvitationLifecycle;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
@@ -15,7 +16,10 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteFeedbackFormDependentsAction
 {
-    public function __construct(private DeletesFormAnalytics $deleteAnalytics) {}
+    public function __construct(
+        private DeletesFormAnalytics $deleteAnalytics,
+        private ManagesInvitationLifecycle $invitations,
+    ) {}
 
     public function execute(FeedbackForm $form): void
     {
@@ -36,7 +40,7 @@ final readonly class DeleteFeedbackFormDependentsAction
                 ->delete();
 
             $form->responses()->delete();
-            $form->invitations()->delete();
+            $this->invitations->deleteForForm($formId);
 
             FeedbackQuestionOption::query()
                 ->whereHas('question', fn (Builder $query) => $query->where('feedback_form_id', $formId))

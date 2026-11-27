@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Actions;
+namespace AIArmada\Feedback\Features\Invitations\Actions;
 
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use InvalidArgumentException;
 
 final class GenerateFeedbackInvitationUrlAction
@@ -20,6 +20,6 @@ final class GenerateFeedbackInvitationUrlAction
             throw new InvalidArgumentException('The raw invitation token does not match this invitation.');
         }
 
-        return $this->urlGenerator->generate($invitation, $rawToken);
+        return $this->urlGenerator->generate($invitation->id, $rawToken);
     }
 }

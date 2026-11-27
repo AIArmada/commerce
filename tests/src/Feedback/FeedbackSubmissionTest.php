@@ -16,7 +16,7 @@ use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;

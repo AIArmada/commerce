@@ -9,7 +9,7 @@ use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackQuestion;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Models\FeedbackResponse;

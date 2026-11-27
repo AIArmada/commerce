@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Policies;
+namespace AIArmada\Feedback\Features\Invitations\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Illuminate\Database\Eloquent\Model;
 
 final class FeedbackInvitationPolicy

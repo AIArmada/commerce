@@ -6,7 +6,7 @@ namespace AIArmada\FilamentFeedback\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Models\FeedbackInvitation;
+use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;

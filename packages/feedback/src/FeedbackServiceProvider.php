@@ -7,7 +7,6 @@ namespace AIArmada\Feedback;
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Models\FeedbackForm;
-use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTemplate;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
@@ -15,12 +14,11 @@ use AIArmada\Feedback\Platform\ExtensionRegistry;
 use AIArmada\Feedback\Platform\FeatureCatalog;
 use AIArmada\Feedback\Platform\FeatureModule;
 use AIArmada\Feedback\Policies\FeedbackFormPolicy;
-use AIArmada\Feedback\Policies\FeedbackInvitationPolicy;
 use AIArmada\Feedback\Policies\FeedbackResponsePolicy;
 use AIArmada\Feedback\Policies\FeedbackTemplatePolicy;
 use AIArmada\Feedback\Policies\FeedbackTestimonialPolicy;
 use AIArmada\Feedback\Support\AnswerValueNormalizer;
-use AIArmada\Feedback\Support\InvitationUrlGenerator as DefaultInvitationUrlGenerator;
+use AIArmada\Feedback\Drivers\InvitationUrlGenerator as DefaultInvitationUrlGenerator;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -44,7 +42,6 @@ final class FeedbackServiceProvider extends PackageServiceProvider
     {
         Gate::policy(FeedbackForm::class, FeedbackFormPolicy::class);
         Gate::policy(FeedbackResponse::class, FeedbackResponsePolicy::class);
-        Gate::policy(FeedbackInvitation::class, FeedbackInvitationPolicy::class);
         Gate::policy(FeedbackTemplate::class, FeedbackTemplatePolicy::class);
         Gate::policy(FeedbackTestimonial::class, FeedbackTestimonialPolicy::class);
 
