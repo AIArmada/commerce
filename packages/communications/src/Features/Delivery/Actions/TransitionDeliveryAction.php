@@ -103,7 +103,9 @@ final class TransitionDeliveryAction
             $delivery->{$timestampColumn} = CarbonImmutable::now();
         }
 
-        $delivery->save();
+        if (! $delivery->save()) {
+            throw new RuntimeException('Delivery transition was cancelled.');
+        }
 
         $this->dispatchEvent($delivery, $targetStatus);
 
@@ -125,7 +127,9 @@ final class TransitionDeliveryAction
 
             if ($delivery->{$timestampColumn} === null) {
                 $delivery->{$timestampColumn} = CarbonImmutable::now();
-                $delivery->save();
+                if (! $delivery->save()) {
+                    throw new RuntimeException('Delivery transition was cancelled.');
+                }
             }
 
             return true;

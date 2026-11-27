@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use RuntimeException;
 use Throwable;
 
 final readonly class ReplayWebhookEvent implements WebhookReplay
@@ -56,61 +58,103 @@ final readonly class ReplayWebhookEvent implements WebhookReplay
 
     public function replay(string $eventId, bool $force): string
     {
-        $event = CommunicationEvent::query()->find($eventId);
+        $candidate = CommunicationEvent::query()->find($eventId);
 
-        if ($event === null) {
-            return 'skipped';
-        }
-
-        if (! $force && $event->processed_at !== null) {
-            return 'skipped';
-        }
-
-        if (! in_array($event->event, ApplyProviderEventAction::DELIVERY_EVENTS, true)) {
-            return 'skipped';
-        }
-
-        /** @var CommunicationDelivery|null $delivery */
-        $delivery = CommunicationDelivery::query()->find($event->delivery_id);
-
-        if ($delivery === null) {
+        if ($candidate === null || $candidate->delivery_id === null) {
             return 'skipped';
         }
 
         try {
-            $target = ApplyProviderEventAction::EVENT_STATUS_MAP[$event->event];
-            $transitions = app(TransitionDeliveryAction::class);
+            return (new CommunicationDelivery)->getConnection()->transaction(function () use ($candidate, $eventId, $force): string {
+                // Match the provider-event delivery-first lock order.
+                $delivery = CommunicationDelivery::query()->lockForUpdate()->find($candidate->delivery_id);
 
-            if ($force) {
-                $transitions->handle($delivery, $target, force: true);
-            } else {
-                $transitions->applyProviderStatus($delivery, $target);
-            }
+                if ($delivery === null) {
+                    return 'skipped';
+                }
 
-            $event->processed_at = CarbonImmutable::now();
-            $event->save();
+                $event = CommunicationEvent::query()->lockForUpdate()->find($eventId);
 
-            $this->auditRecorder->recordWebhookReplay(
-                communicationId: $event->communication_id ?? 'unknown',
-                actorType: 'system',
-                actorId: 'replay-command',
-                reason: 'Webhook event replayed via command',
-                metadata: [
-                    'event_id' => $event->id,
-                    'delivery_id' => $event->delivery_id,
-                    'provider' => $event->provider,
-                    'event_type' => $event->event,
-                    'replayed_at' => CarbonImmutable::now()->toIso8601String(),
-                ],
-            );
+                if ($event === null || $event->delivery_id !== $delivery->id
+                    || (! $force && $event->processed_at !== null)
+                    || ! in_array($event->event, ApplyProviderEventAction::DELIVERY_EVENTS, true)) {
+                    return 'skipped';
+                }
 
-            return 'replayed';
+                if (CommunicationDelivery::ownerScopeConfig()->enabled) {
+                    OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $delivery->id);
+                    OwnerWriteGuard::findOrFailForOwner(CommunicationEvent::class, $event->id);
+                }
+
+                if (($event->communication_id !== null && $event->communication_id !== $delivery->communication_id)
+                    || $event->owner_type !== $delivery->owner_type
+                    || $event->owner_id !== $delivery->owner_id) {
+                    throw new RuntimeException('Webhook event does not belong to the delivery.');
+                }
+
+                $event->processed_at = CarbonImmutable::now();
+                $event->failed_at = null;
+                $event->failure_message = null;
+
+                if (! $event->save()) {
+                    throw new RuntimeException('Webhook event processing was cancelled.');
+                }
+
+                $target = ApplyProviderEventAction::EVENT_STATUS_MAP[$event->event];
+                $transitions = app(TransitionDeliveryAction::class);
+
+                if ($force) {
+                    $transitions->handle($delivery, $target, force: true);
+                } else {
+                    $transitions->applyProviderStatus($delivery, $target);
+                }
+
+                $this->auditRecorder->recordWebhookReplay(
+                    communicationId: $delivery->communication_id,
+                    actorType: 'system',
+                    actorId: 'replay-command',
+                    reason: 'Webhook event replayed via command',
+                    metadata: [
+                        'event_id' => $event->id,
+                        'delivery_id' => $event->delivery_id,
+                        'provider' => $event->provider,
+                        'event_type' => $event->event,
+                        'replayed_at' => CarbonImmutable::now()->toIso8601String(),
+                    ],
+                );
+
+                return 'replayed';
+            });
         } catch (Throwable $e) {
-            $event->failed_at = CarbonImmutable::now();
-            $event->failure_message = $e->getMessage();
-            $event->save();
+            try {
+                $this->recordFailure($eventId, $e);
+            } catch (Throwable $failure) {
+                report($failure);
+            }
 
             return 'failed';
         }
+    }
+
+    private function recordFailure(string $eventId, Throwable $exception): void
+    {
+        (new CommunicationEvent)->getConnection()->transaction(function () use ($eventId, $exception): void {
+            $event = CommunicationEvent::query()->lockForUpdate()->find($eventId);
+
+            if ($event === null || $event->processed_at !== null) {
+                return;
+            }
+
+            if (CommunicationEvent::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(CommunicationEvent::class, $event->id);
+            }
+
+            $event->failed_at = CarbonImmutable::now();
+            $event->failure_message = $exception->getMessage();
+
+            if (! $event->save()) {
+                throw new RuntimeException('Webhook replay failure recording was cancelled.', previous: $exception);
+            }
+        });
     }
 }

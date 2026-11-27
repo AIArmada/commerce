@@ -36,6 +36,7 @@ use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Features\Delivery\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Features\Delivery\Actions\PlanCommunicationDeliveriesAction;
 use AIArmada\Communications\Features\Delivery\Actions\StartDeliveryAttemptAction;
+use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Features\Delivery\Support\GuardedDeliverySend;
@@ -292,6 +293,71 @@ test('provider events transition through the state machine and emit events', fun
     expect($delivery->fresh()->delivered_at)->not->toBeNull();
 
     Event::assertDispatched(DeliveryDelivered::class, fn (DeliveryDelivered $event): bool => $event->deliveryId === $delivery->id);
+});
+
+test('rolls back provider events when the delivery transition is vetoed', function (): void {
+    Event::fake([DeliveryDelivered::class]);
+
+    $communication = regressionCommunication();
+    $delivery = regressionDelivery($communication);
+
+    CommunicationDelivery::saving(static fn (CommunicationDelivery $record): bool => $record->id !== $delivery->id);
+
+    expect(fn () => app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+        provider: 'sendgrid',
+        providerEventId: 'provider-transition-veto',
+        providerMessageId: null,
+        eventType: 'delivery',
+        occurredAt: CarbonImmutable::now(),
+        communicationId: $communication->id,
+        deliveryId: $delivery->id,
+    )))->toThrow(RuntimeException::class, 'Delivery transition was cancelled.');
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Pending)
+        ->and(CommunicationEvent::query()->where('provider_event_id', 'provider-transition-veto')->exists())->toBeFalse();
+
+    Event::assertNotDispatched(DeliveryDelivered::class);
+});
+
+test('does not transition a delivery when provider event recording is vetoed', function (): void {
+    $communication = regressionCommunication();
+    $delivery = regressionDelivery($communication);
+
+    CommunicationEvent::saving(static fn (CommunicationEvent $record): bool => $record->provider_event_id !== 'provider-record-veto');
+
+    expect(fn () => app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+        provider: 'sendgrid',
+        providerEventId: 'provider-record-veto',
+        providerMessageId: null,
+        eventType: 'delivery',
+        occurredAt: CarbonImmutable::now(),
+        communicationId: $communication->id,
+        deliveryId: $delivery->id,
+    )))->toThrow(RuntimeException::class, 'Provider event recording was cancelled.');
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Pending);
+});
+
+test('replay rolls back a vetoed transition and records failure', function (): void {
+    $communication = regressionCommunication();
+    $delivery = regressionDelivery($communication);
+    $event = CommunicationEvent::create([
+        'communication_id' => $communication->id,
+        'delivery_id' => $delivery->id,
+        'source' => 'provider',
+        'event' => 'delivery',
+        'provider' => 'sendgrid',
+        'provider_event_id' => 'replay-transition-veto',
+        'occurred_at' => CarbonImmutable::now(),
+        'received_at' => CarbonImmutable::now(),
+    ]);
+
+    CommunicationDelivery::saving(static fn (CommunicationDelivery $record): bool => $record->id !== $delivery->id);
+
+    expect(app(WebhookReplay::class)->replay($event->id, false))->toBe('failed')
+        ->and($event->fresh()->processed_at)->toBeNull()
+        ->and($event->fresh()->failed_at)->not->toBeNull()
+        ->and($delivery->fresh()->status)->toBe(DeliveryStatus::Pending);
 });
 
 test('late provider events never regress terminal deliveries', function (): void {

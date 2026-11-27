@@ -16,7 +16,6 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class ApplyProviderEventAction implements ProviderEventProcessor
@@ -74,7 +73,7 @@ final class ApplyProviderEventAction implements ProviderEventProcessor
 
     private function apply(ProviderEventData $eventData, string $eventType): CommunicationDelivery
     {
-        return DB::transaction(function () use ($eventData, $eventType): CommunicationDelivery {
+        return (new CommunicationDelivery)->getConnection()->transaction(function () use ($eventData, $eventType): CommunicationDelivery {
             $delivery = $this->findDeliveryForUpdate($eventData->deliveryId);
 
             if ($eventData->communicationId !== null && $eventData->communicationId !== $delivery->communication_id) {
@@ -83,10 +82,12 @@ final class ApplyProviderEventAction implements ProviderEventProcessor
 
             $event = $this->recordEvent($eventData, $delivery);
 
-            $this->transitions->applyProviderStatus($delivery, self::EVENT_STATUS_MAP[$eventType]);
-
             $event->processed_at = CarbonImmutable::now();
-            $event->save();
+            if (! $event->save()) {
+                throw new RuntimeException('Provider event processing was cancelled.');
+            }
+
+            $this->transitions->applyProviderStatus($delivery, self::EVENT_STATUS_MAP[$eventType]);
 
             return $delivery->fresh() ?? $delivery;
         });
@@ -152,7 +153,9 @@ final class ApplyProviderEventAction implements ProviderEventProcessor
         $event->failure_message = $data->failureMessage;
 
         try {
-            $event->save();
+            if (! $event->save()) {
+                throw new RuntimeException('Provider event recording was cancelled.');
+            }
         } catch (UniqueConstraintViolationException $exception) {
             throw new RuntimeException("Duplicate provider event {$data->provider}/{$providerEventId}.", previous: $exception);
         }
