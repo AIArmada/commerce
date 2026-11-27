@@ -6,6 +6,7 @@ namespace AIArmada\Links\Actions;
 
 use AIArmada\Links\Events\LinkUpdated;
 use AIArmada\Links\Models\Link;
+use AIArmada\Links\Persistence\LockOwnedLink;
 use AIArmada\Links\Support\LinkAttributes;
 use Illuminate\Support\Facades\Validator;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,16 +21,23 @@ final class UpdateLink
      */
     public function handle(Link $link, array $attributes, ?bool $requireHttps = null, ?array $allowedHosts = null): Link
     {
-        $validated = Validator::make($attributes, LinkAttributes::updateRules($link, $requireHttps, $allowedHosts))->validate();
+        $updated = $link->getConnection()->transaction(function () use ($link, $attributes, $requireHttps, $allowedHosts): Link {
+            $link = app(LockOwnedLink::class)->handle($link);
+            $validated = Validator::make($attributes, LinkAttributes::updateRules($link, $requireHttps, $allowedHosts))->validate();
 
-        if (! is_string($validated['slug'] ?? null) || ($validated['slug'] ?? '') === '') {
-            unset($validated['slug']);
-        }
+            if (! is_string($validated['slug'] ?? null) || ($validated['slug'] ?? '') === '') {
+                unset($validated['slug']);
+            }
 
-        $link->update($validated);
+            $link->update($validated);
 
-        event(new LinkUpdated($link));
+            return $link;
+        });
 
-        return $link->refresh();
+        event(new LinkUpdated($updated));
+
+        $link->setRawAttributes($updated->getAttributes(), true);
+
+        return $updated;
     }
 }

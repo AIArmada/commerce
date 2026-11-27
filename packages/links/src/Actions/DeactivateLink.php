@@ -6,6 +6,7 @@ namespace AIArmada\Links\Actions;
 
 use AIArmada\Links\Events\LinkDeactivated;
 use AIArmada\Links\Models\Link;
+use AIArmada\Links\Persistence\LockOwnedLink;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -15,14 +16,24 @@ final class DeactivateLink
 
     public function handle(Link $link): Link
     {
-        if ($link->deactivated_at !== null) {
-            return $link;
+        [$resolved, $changed] = $link->getConnection()->transaction(function () use ($link): array {
+            $resolved = app(LockOwnedLink::class)->handle($link);
+
+            if ($resolved->deactivated_at !== null) {
+                return [$resolved, false];
+            }
+
+            $resolved->update(['deactivated_at' => CarbonImmutable::now()]);
+
+            return [$resolved, true];
+        });
+
+        $link->setRawAttributes($resolved->getAttributes(), true);
+
+        if ($changed) {
+            event(new LinkDeactivated($resolved));
         }
 
-        $link->update(['deactivated_at' => CarbonImmutable::now()]);
-
-        event(new LinkDeactivated($link));
-
-        return $link->refresh();
+        return $resolved;
     }
 }

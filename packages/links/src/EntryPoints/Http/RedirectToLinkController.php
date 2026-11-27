@@ -22,7 +22,6 @@ use Throwable;
 
 final class RedirectToLinkController
 {
-
     public function branded(Request $request, string $prefix, string $slug): RedirectResponse
     {
         return $this->redirect($request, $slug);
@@ -53,6 +52,10 @@ final class RedirectToLinkController
             return $this->blockedResponse($link, $exception->reason);
         } catch (Throwable $exception) {
             report($exception);
+
+            if ($link->max_clicks !== null) {
+                abort(503, 'Unable to verify link availability.');
+            }
         }
 
         if ($link->require_signature && ! URL::hasValidSignature($request)) {
