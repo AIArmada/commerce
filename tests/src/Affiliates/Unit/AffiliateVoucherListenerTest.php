@@ -14,7 +14,6 @@ use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

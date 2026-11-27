@@ -6,8 +6,8 @@ use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Billing\PromotionCode;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
 
 uses(CashierChipTestCase::class);
 

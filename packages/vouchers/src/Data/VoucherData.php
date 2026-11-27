@@ -9,6 +9,8 @@ use BackedEnum;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use DateTimeInterface;
+use InvalidArgumentException;
+use JsonSerializable;
 
 /**
  * Voucher data transfer object.
@@ -17,7 +19,7 @@ use DateTimeInterface;
  * All monetary values are stored in minor units (cents) as integers.
  * Percentage values are stored in basis points (e.g., 10.50% = 1050).
  */
-final readonly class VoucherData implements \JsonSerializable
+final readonly class VoucherData implements JsonSerializable
 {
     public ?DateTimeImmutable $startsAt;
 
@@ -82,13 +84,13 @@ final readonly class VoucherData implements \JsonSerializable
      *
      * @param  array<string, mixed>  $data
      *
-     * @throws \InvalidArgumentException If float values are passed where integers are expected
+     * @throws InvalidArgumentException If float values are passed where integers are expected
      */
     public static function fromArray(array $data): self
     {
         foreach (array_keys($data) as $key) {
             if (is_string($key) && (preg_match('/[A-Z]/', $key) || in_array($key, ['max_uses', 'max_uses_per_user', 'min_order_value', 'max_discount_value'], true))) {
-                throw new \InvalidArgumentException("Unknown voucher snapshot field '{$key}'. Use canonical snake_case fields.");
+                throw new InvalidArgumentException("Unknown voucher snapshot field '{$key}'. Use canonical snake_case fields.");
             }
         }
 
@@ -278,7 +280,7 @@ final readonly class VoucherData implements \JsonSerializable
      *
      * @param  array<string, mixed>  $data
      *
-     * @throws \InvalidArgumentException If a float is passed
+     * @throws InvalidArgumentException If a float is passed
      */
     private static function validateIntegerField(array $data, string $field, string $description): void
     {
@@ -289,7 +291,7 @@ final readonly class VoucherData implements \JsonSerializable
         $value = $data[$field];
 
         if (! is_int($value) && (! is_string($value) || filter_var($value, FILTER_VALIDATE_INT) === false)) {
-            throw new \InvalidArgumentException("VoucherData '{$field}' must be an integer ({$description}).");
+            throw new InvalidArgumentException("VoucherData '{$field}' must be an integer ({$description}).");
         }
     }
 
@@ -312,7 +314,7 @@ final readonly class VoucherData implements \JsonSerializable
                 $value = $level[$field] ?? null;
 
                 if (is_float($value)) {
-                    throw new \InvalidArgumentException("VoucherData affiliate_upline_levels.{$index}.{$field} must be an integer ({$description}).");
+                    throw new InvalidArgumentException("VoucherData affiliate_upline_levels.{$index}.{$field} must be an integer ({$description}).");
                 }
             }
         }
@@ -330,6 +332,7 @@ final readonly class VoucherData implements \JsonSerializable
 
         return null;
     }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {

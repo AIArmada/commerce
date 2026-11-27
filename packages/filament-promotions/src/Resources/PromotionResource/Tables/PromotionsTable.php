@@ -8,9 +8,10 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
+use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\Promotions\Actions\DeletePromotion;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Promotions\Actions\DeletePromotion;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -145,7 +146,7 @@ final class PromotionsTable
                     DeleteBulkAction::make()
                         ->action(function (Collection $records): void {
                             foreach ($records as $record) {
-                                abort_unless(\AIArmada\FilamentPromotions\Resources\PromotionResource::canDelete($record), 403);
+                                abort_unless(PromotionResource::canDelete($record), 403);
                                 app(DeletePromotion::class)->handle($record);
                             }
                         })

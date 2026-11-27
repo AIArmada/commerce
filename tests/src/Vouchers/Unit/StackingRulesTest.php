@@ -17,7 +17,6 @@ use AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule;
 use AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\TypeRestrictionRule;
 use AIArmada\Vouchers\Stacking\Rules\ValueThresholdRule;
-use AIArmada\Vouchers\States\Active;
 
 function createStackingTestCart(int $subtotalCents = 10000): Cart
 {

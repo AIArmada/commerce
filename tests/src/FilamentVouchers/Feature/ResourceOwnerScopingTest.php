@@ -14,7 +14,6 @@ use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 

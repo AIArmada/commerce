@@ -6,10 +6,10 @@ namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
-use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class RemoveVoucherFromCart implements CartVoucherRemoval
@@ -63,5 +63,4 @@ final class RemoveVoucherFromCart implements CartVoucherRemoval
 
         return null;
     }
-
 }

@@ -6,7 +6,6 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\States\Active;
 
 it('converts voucher condition to cart condition and back', function (): void {
     $voucherData = VoucherData::fromArray([

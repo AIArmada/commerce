@@ -10,8 +10,6 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 

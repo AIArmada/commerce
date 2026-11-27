@@ -11,7 +11,6 @@ use AIArmada\FilamentVouchers\Actions\AddToMyWalletAction;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 

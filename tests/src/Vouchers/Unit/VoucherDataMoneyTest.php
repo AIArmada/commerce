@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Data\VoucherStatus;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\States\Active;
 
 it('rejects floats for every integer monetary or limit field at the DTO boundary', function (): void {
     foreach ([
@@ -25,7 +25,7 @@ it('rejects floats for every integer monetary or limit field at the DTO boundary
             'currency' => 'MYR',
             'status' => 'active',
             $field => 100.5,
-        ]))->toThrow(\InvalidArgumentException::class);
+        ]))->toThrow(InvalidArgumentException::class);
     }
 });
 
@@ -39,11 +39,11 @@ it('rejects noncanonical aliases at the DTO boundary', function (): void {
         'currency' => 'MYR',
         'status' => 'active',
         'minCartValue' => 100,
-    ]))->toThrow(\InvalidArgumentException::class);
+    ]))->toThrow(InvalidArgumentException::class);
 });
 
 it('round trips a voucher snapshot without leaking model state or mutable dates', function (): void {
-    $date = new \DateTime('2026-12-01T10:00:00+08:00');
+    $date = new DateTimeImmutable('2026-12-01T10:00:00+08:00');
     $snapshot = VoucherData::fromArray([
         'code' => 'SNAPSHOT',
         'type' => 'fixed',
@@ -55,7 +55,7 @@ it('round trips a voucher snapshot without leaking model state or mutable dates'
 
     $date->modify('+1 day');
     expect($snapshot->startsAt?->format('Y-m-d'))->toBe('2026-12-01')
-        ->and($snapshot->status)->toBe(\AIArmada\Vouchers\Data\VoucherStatus::Paused)
+        ->and($snapshot->status)->toBe(VoucherStatus::Paused)
         ->and(VoucherData::fromArray($snapshot->toArray())->toArray())->toBe($snapshot->toArray())
         ->and((new ReflectionClass(VoucherData::class))->isReadOnly())->toBeTrue();
 });

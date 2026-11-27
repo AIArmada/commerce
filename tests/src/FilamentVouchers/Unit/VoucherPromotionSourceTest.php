@@ -8,7 +8,6 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Infolists\Components\TextEntry;

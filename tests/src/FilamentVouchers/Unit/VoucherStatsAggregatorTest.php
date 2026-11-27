@@ -8,8 +8,6 @@ use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Expired;
 
 uses(TestCase::class);
 

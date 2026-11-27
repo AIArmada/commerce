@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 
-use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
+use AIArmada\Promotions\Actions\DeletePromotion;
 use AIArmada\Promotions\Actions\UpdatePromotion;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Promotions\Actions\DeletePromotion;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;

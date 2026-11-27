@@ -8,15 +8,17 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
-use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Actions\MergeOrderMetadata;
+use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Models\Promotion;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 use Throwable;
 
 final readonly class RecordPromotionFulfillmentUsage
 {
-    public function handle(Order $order, ?string $ownerType, int|string|null $ownerId): void
+    public function handle(Order $order, ?string $ownerType, int | string | null $ownerId): void
     {
         $sessionId = $this->resolveSessionId($order);
 
@@ -67,7 +69,7 @@ final readonly class RecordPromotionFulfillmentUsage
             return;
         }
         if ($order->getConnection()->getName() !== (new Promotion)->getConnection()->getName()) {
-            throw new \LogicException('Promotion usage and order metadata require the same database connection.');
+            throw new LogicException('Promotion usage and order metadata require the same database connection.');
         }
 
         $order->getConnection()->transaction(function () use ($order, $allocations, $owner, $ownerType, $ownerId): void {
@@ -185,7 +187,7 @@ final readonly class RecordPromotionFulfillmentUsage
     /**
      * @param  list<string>  $countedPromotionIds
      */
-    private function persistCountedPromotionIds(Order $order, ?\Illuminate\Database\Eloquent\Model $owner, array $countedPromotionIds): void
+    private function persistCountedPromotionIds(Order $order, ?Model $owner, array $countedPromotionIds): void
     {
         OwnerContext::withOwner($owner, static function () use ($order, $countedPromotionIds): void {
             app(MergeOrderMetadata::class)->handle((string) $order->getKey(), [

@@ -13,7 +13,6 @@ use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
-use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use Illuminate\Support\Facades\Config;
 

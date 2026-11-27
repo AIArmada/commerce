@@ -7,7 +7,6 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
-use AIArmada\Vouchers\States\Active;
 
 it('calculates percentage discounts using basis points', function (): void {
     $calculator = app(VoucherDiscountCalculator::class);

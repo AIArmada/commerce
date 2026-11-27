@@ -131,5 +131,4 @@ final class StackingConfigurationPage extends Page implements HasForms
             ->statePath('data')
             ->disabled();
     }
-
 }

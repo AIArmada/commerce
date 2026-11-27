@@ -7,7 +7,6 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
-use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 

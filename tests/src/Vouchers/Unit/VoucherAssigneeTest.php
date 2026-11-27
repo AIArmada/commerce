@@ -9,16 +9,16 @@ declare(strict_types=1);
 // unused revocation cannot be followed by a late use.
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
-use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
-use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
-use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherExpiredException;
+use AIArmada\Vouchers\Features\CartIntegration\Actions\ValidateVoucherCode;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\ExpireVoucher;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Runtime\WalletClaim;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -234,6 +234,6 @@ it('prevents a foreign account from claiming an assigned voucher into its wallet
     $stranger = assigneeUser();
     $voucher = assigneeVoucher($assignee);
 
-    expect(fn () => app(\AIArmada\Vouchers\Runtime\WalletClaim::class)->handle($voucher->code, $stranger))
+    expect(fn () => app(WalletClaim::class)->handle($voucher->code, $stranger))
         ->toThrow(InvalidVoucherException::class, 'another account');
 });

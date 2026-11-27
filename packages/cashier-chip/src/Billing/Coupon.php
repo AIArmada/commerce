@@ -6,8 +6,8 @@ namespace AIArmada\CashierChip\Billing;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
 use Carbon\Carbon;
 
 uses(CashierChipTestCase::class);

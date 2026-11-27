@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Data;
 
+use JsonSerializable;
 
 /**
  * Result of voucher validation.
  *
  * Represents whether a voucher is valid for use and if not, the reason why.
  */
-final readonly class VoucherValidationResult implements \JsonSerializable
+final readonly class VoucherValidationResult implements JsonSerializable
 {
     /**
      * @param  array<string, mixed>|null  $details  Additional details about the validation result
@@ -74,6 +75,7 @@ final readonly class VoucherValidationResult implements \JsonSerializable
     {
         return $this->details[$key] ?? $default;
     }
+
     /** @return array{is_valid: bool, reason: ?string, details: ?array} */
     public function toArray(): array
     {

@@ -8,12 +8,13 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
-use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
+use AIArmada\Vouchers\Runtime\VoucherUpdater;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class EditVoucher extends EditRecord
 {
@@ -22,7 +23,7 @@ final class EditVoucher extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         if (! $record instanceof Voucher) {
-            throw new \InvalidArgumentException('Expected a voucher record.');
+            throw new InvalidArgumentException('Expected a voucher record.');
         }
 
         return app(VoucherUpdater::class)->handle($record, $data);

@@ -8,7 +8,6 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 

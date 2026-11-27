@@ -8,11 +8,12 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
-use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -230,7 +231,7 @@ it('overrides provided owner columns when resolver owner is available', function
 });
 
 it('enforces the manual redemption flag at the usage write boundary', function (): void {
-    $voucher = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = Voucher::create([
         'code' => 'DIRECT-MANUAL-GUARD',
         'name' => 'Manual guard',
         'type' => 'fixed',
@@ -240,10 +241,10 @@ it('enforces the manual redemption flag at the usage write boundary', function (
         'allows_manual_redemption' => false,
     ]);
 
-    expect(fn () => app(\AIArmada\Vouchers\Runtime\VoucherUsageRecorder::class)->handle(
+    expect(fn () => app(VoucherUsageRecorder::class)->handle(
         $voucher->code,
-        \Akaunting\Money\Money::MYR(100),
+        Money::MYR(100),
         channel: (string) config('vouchers.redemption.manual_channel', 'manual'),
-    ))->toThrow(\AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException::class);
+    ))->toThrow(ManualRedemptionNotAllowedException::class);
     expect($voucher->usages()->count())->toBe(0);
 });

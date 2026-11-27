@@ -11,12 +11,14 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Runtime\VoucherDeletion;
+use AIArmada\Vouchers\Runtime\VoucherDepletion;
+use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\States\VoucherStatus;
-use AIArmada\Vouchers\Runtime\VoucherLookup;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -316,7 +318,7 @@ class Voucher extends Model implements Auditable
      */
     public function checkIfDepleted(): void
     {
-        app(\AIArmada\Vouchers\Runtime\VoucherDepletion::class)->handle($this);
+        app(VoucherDepletion::class)->handle($this);
     }
 
     /**
@@ -619,7 +621,7 @@ class Voucher extends Model implements Auditable
 
         self::deleting(function (Voucher $voucher): void {
             app(VoucherLookup::class)->forgetForVoucher($voucher);
-            app(\AIArmada\Vouchers\Runtime\VoucherDeletion::class)->deleteDependents($voucher);
+            app(VoucherDeletion::class)->deleteDependents($voucher);
         });
     }
 

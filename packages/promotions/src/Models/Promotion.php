@@ -10,6 +10,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Promotions\Actions\DeletePromotionTargets;
+use AIArmada\Promotions\Actions\IncrementPromotionUsage;
 use AIArmada\Promotions\Database\Factories\PromotionFactory;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Support\IssuedVoucherTrackingState;
@@ -433,7 +435,7 @@ class Promotion extends Model implements Auditable
 
     public function tryIncrementUsage(): bool
     {
-        return app(\AIArmada\Promotions\Actions\IncrementPromotionUsage::class)->handle($this);
+        return app(IncrementPromotionUsage::class)->handle($this);
     }
 
     public function hasRemainingUsage(): bool
@@ -580,7 +582,7 @@ class Promotion extends Model implements Auditable
                 }
             }
 
-            app(\AIArmada\Promotions\Actions\DeletePromotionTargets::class)->handle($promotion);
+            app(DeletePromotionTargets::class)->handle($promotion);
         });
     }
 }

@@ -5,10 +5,11 @@ declare(strict_types=1);
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Facades\Voucher;
-use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 
@@ -71,12 +72,12 @@ it('rejects vouchers when stacking is disabled even if auto replacement is enabl
     Voucher::shouldReceive('find')->once()->andReturn($voucherData);
 
     $cart = new CartWithVouchers(Cart::getCurrentCart());
-    $cart->setStackingPolicy(new \AIArmada\Vouchers\Stacking\StackingPolicy(
+    $cart->setStackingPolicy(new StackingPolicy(
         rules: [['type' => 'max_vouchers', 'value' => 0]],
         autoReplace: true,
     ));
 
     expect(fn () => $cart->applyVoucher('BLOCKED'))
-        ->toThrow(\AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+        ->toThrow(InvalidVoucherException::class);
     expect($cart->hasVoucher())->toBeFalse();
 });

@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
+use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
+use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\CreateVoucher;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
-use AIArmada\Vouchers\Data\VoucherType;
+use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -210,7 +213,7 @@ describe('usage recording guards', function (): void {
         $second = guardVoucher();
 
         expect(fn () => RecordVoucherUsage::run($first->code, Money::MYR(100), voucherModel: $second))
-            ->toThrow(\AIArmada\Vouchers\Exceptions\VoucherNotFoundException::class);
+            ->toThrow(VoucherNotFoundException::class);
 
         expect(VoucherUsage::query()->whereIn('voucher_id', [$first->id, $second->id])->count())->toBe(0);
     });
@@ -220,7 +223,7 @@ describe('usage recording guards', function (): void {
         $user = guardWalletUser();
 
         expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100), redeemedBy: $user))
-            ->toThrow(\AIArmada\Vouchers\Exceptions\VoucherUsageLimitException::class);
+            ->toThrow(VoucherUsageLimitException::class);
     });
 
     it('rejects usage in a different currency than the voucher', function (): void {
@@ -290,7 +293,7 @@ it('rejects new usage for paused and future vouchers', function (): void {
 
     foreach ([$paused, $future] as $voucher) {
         expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100)))
-            ->toThrow(\AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+            ->toThrow(InvalidVoucherException::class);
     }
 });
 

@@ -8,7 +8,7 @@ use AIArmada\Vouchers\Models\Voucher;
 
 final readonly class RecordVoucherApplication
 {
-    public function handle(string $voucherId, int|string|null $ownerId, ?string $ownerType): void
+    public function handle(string $voucherId, int | string | null $ownerId, ?string $ownerType): void
     {
         if (! config('vouchers.tracking.track_applications', true) || $voucherId === '') {
             return;

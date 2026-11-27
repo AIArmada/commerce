@@ -6,10 +6,10 @@ namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherCreated;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
 use AIArmada\Vouchers\Support\VoucherInputValidator;

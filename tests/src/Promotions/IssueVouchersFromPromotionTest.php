@@ -10,6 +10,7 @@ use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 it('issues one-time vouchers linked to the source promotion', function (): void {
@@ -120,5 +121,5 @@ it('does not impersonate another promotion owner when promotion scoping is disab
     });
 
     expect(fn () => OwnerContext::withOwner($other, fn () => IssueVouchersFromPromotion::run($promotion)))
-        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 });

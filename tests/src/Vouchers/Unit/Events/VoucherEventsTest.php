@@ -10,7 +10,6 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
-use AIArmada\Vouchers\States\Active;
 
 describe('VoucherApplied event', function (): void {
     beforeEach(function (): void {

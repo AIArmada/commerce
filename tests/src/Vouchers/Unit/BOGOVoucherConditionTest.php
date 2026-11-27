@@ -7,8 +7,8 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Compound\Conditions\BOGOVoucherCondition;
 use AIArmada\Vouchers\Compound\Enums\ItemSelectionStrategy;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherStatus;
+use AIArmada\Vouchers\Data\VoucherType;
 
 /**
  * Create a test cart with items.

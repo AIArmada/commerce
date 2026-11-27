@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
-use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -16,6 +15,7 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
@@ -218,6 +218,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                 return hash('sha256', (string) $value);
             }
         }
+
         return null;
     }
 }

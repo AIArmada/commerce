@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Features\Lifecycle\EntryPoints\Listeners;
 
-use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherApplication;
 use AIArmada\Vouchers\Events\VoucherApplied;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherApplication;
 
 final readonly class IncrementVoucherAppliedCount
 {

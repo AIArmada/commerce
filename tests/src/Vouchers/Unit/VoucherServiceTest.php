@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
+use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -588,7 +589,7 @@ test('it creates only one usage on duplicate commit', function (): void {
 });
 
 test('checkout enforces a voucher limit against the customer rather than individual orders', function (): void {
-    $customer = \AIArmada\Commerce\Tests\Fixtures\Models\User::create([
+    $customer = User::create([
         'name' => 'Voucher customer',
         'email' => 'voucher-customer@example.test',
         'password' => 'secret',

@@ -18,7 +18,6 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
-use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Facades\Event;
 
 uses(SignalsTestCase::class);
