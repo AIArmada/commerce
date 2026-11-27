@@ -16,12 +16,14 @@ use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
 use AIArmada\Persons\Features\Affiliations\Models\AffiliationRole;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use AIArmada\Persons\Features\Titles\Models\TitleIssuer;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     persons_register_morph_map('person');
@@ -89,6 +91,34 @@ describe('person identity models', function (): void {
         expect($person->fresh()->names)->toHaveCount(3);
         expect($person->names->first()->name_type)->toBe(PersonNameType::Display);
         expect($person->names->last()->name_type)->toBe(PersonNameType::Nickname);
+    });
+
+    it('updates searchable names and rejects changes to names owned by another person', function (): void {
+        $person = Person::factory()->create(['name' => 'Original']);
+        $other = Person::factory()->create();
+        $action = app(SavePersonName::class);
+
+        $name = $action->create($person, [
+            'name_type' => PersonNameType::Display,
+            'full_name' => 'Distinct Alias',
+            'language_code' => 'en',
+            'is_primary' => true,
+            'person_id' => $other->id,
+        ]);
+
+        expect($name->person_id)->toBe($person->id)
+            ->and($person->fresh()->searchable_name)->toContain('distinct alias');
+
+        expect(fn () => $action->update($other, $name, ['full_name' => 'Forged']))
+            ->toThrow(AuthorizationException::class);
+
+        $action->update($person, $name, ['full_name' => 'Updated Alias']);
+
+        expect($person->fresh()->searchable_name)->toContain('updated alias')
+            ->not->toContain('distinct alias');
+
+        expect($action->delete($person, $name))->toBeTrue()
+            ->and($person->fresh()->searchable_name)->not->toContain('updated alias');
     });
 
     it('keeps only one primary name per person and name scope', function (): void {
