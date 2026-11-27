@@ -922,7 +922,7 @@ use AIArmada\Ticketing\Models\TicketType;
 $ticketType = TicketType::query()->findOrFail($ticketTypeId);
 
 app(AddEventTicketTypeToCartAction::class)->handle(
-    cart: app(AIArmada\Cart\Contracts\CartManagerInterface::class)->getCartInstance('default'),
+    cart: app(AIArmada\Cart\Runtime\CartManagerInterface::class)->getCartInstance('default'),
     ticketType: $ticketType,
     quantity: 2,
     participants: [

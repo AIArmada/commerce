@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use AIArmada\Inventory\Models\InventoryLocation;

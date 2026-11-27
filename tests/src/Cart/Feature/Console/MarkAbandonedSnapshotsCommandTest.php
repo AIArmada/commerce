@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Features\Snapshots\Api\AbandonmentSweep;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,6 +20,11 @@ beforeEach(function (): void {
             return null;
         }
     });
+});
+
+it('requires explicit global context to enumerate snapshot owners', function (): void {
+    expect(fn () => app(AbandonmentSweep::class)->owners())
+        ->toThrow(AuthorizationException::class);
 });
 
 it('exits successfully when abandonment tracking feature is disabled', function (): void {

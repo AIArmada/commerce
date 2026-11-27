@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Services;
 
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Contracts\CartConditionConvertible;
+use AIArmada\Cart\Runtime\CartConditionConvertible;
 use Closure;
 
 final class CartConditionResolver

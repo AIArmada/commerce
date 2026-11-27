@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;

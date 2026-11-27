@@ -21,19 +21,22 @@ declare(strict_types=1);
  * sessions/users via session manipulation for proper testing approach.
  */
 
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Listeners\HandleUserLogin;
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLogin;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Cart\Storage\CartRevision;
-use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -379,6 +382,53 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
 
     expect(array_sum(array_column($ownerItemsAfter, 'quantity')))->toBe(2);
     expect($ownerItemsAfter['product-1']['name'])->toBe('Owner Scoped Product');
+});
+
+it('binds the merged event source cart to the global guest storage while the target stays scoped', function (): void {
+    config(['cart.owner.enabled' => true]);
+    config(['cart.events' => true]);
+
+    $connection = app('db')->connection();
+    $storage = new DatabaseStorage($connection, 'carts');
+
+    $owner = User::query()->create([
+        'name' => 'Event Owner',
+        'email' => 'event-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $guestIdentifier = 'event-guest-session';
+    $userIdentifier = 'event-user';
+    $captured = null;
+
+    Event::listen(CartMerged::class, function (CartMerged $event) use (&$captured): void {
+        $captured = $event;
+    });
+
+    $storage->putItems($guestIdentifier, 'default', [
+        'product-1' => [
+            'id' => 'product-1',
+            'name' => 'Guest Product',
+            'price' => 1000,
+            'quantity' => 2,
+            'attributes' => [],
+        ],
+    ], CartRevision::none());
+
+    $action = new MigrateGuestCartToUserAction(
+        app(CartMergeStrategyRegistry::class),
+        $storage->withOwner($owner),
+    );
+
+    expect(OwnerContext::withOwner($owner, fn (): bool => $action->execute($userIdentifier, 'default', $guestIdentifier)))->toBeTrue();
+
+    expect($captured)->toBeInstanceOf(CartMerged::class)
+        ->and($captured->sourceCart->storage()->getOwnerType())->toBeNull()
+        ->and($captured->sourceCart->getIdentifier())->toBe($guestIdentifier)
+        ->and($captured->targetCart->storage()->getOwnerType())->toBe($owner->getMorphClass())
+        ->and((string) $captured->targetCart->storage()->getOwnerId())->toBe((string) $owner->getKey());
 });
 
 it('migrates guest cart metadata into an existing user cart', function (): void {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Conditions;
 
-use AIArmada\Cart\Contracts\ConditionProviderInterface;
+use AIArmada\Cart\Runtime\ConditionProviderInterface;
 
 final class ConditionProviderRegistry
 {

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSyncManager;
-use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
-use AIArmada\Cart\Snapshots\SyncNormalizedCartJob;
+use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
+use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Support\Facades\Log;
 

@@ -19,7 +19,7 @@ use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyConversion
 use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\NotifyProgramJoined;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Orders\Events\CommissionAttributionRequired;

@@ -25,6 +25,8 @@ final readonly class CartStorageSnapshot
         public array $items = [],
         public array $conditions = [],
         public array $metadata = [],
+        public ?string $createdAt = null,
+        public ?string $updatedAt = null,
     ) {}
 
     public function revision(): CartRevision

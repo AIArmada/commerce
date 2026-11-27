@@ -511,7 +511,7 @@ inherits the guest session or a truncated numeric identity.
 ### Direct Migration
 
 ```php
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 
 $action = app(MigrateGuestCartToUserAction::class);
 
@@ -533,7 +533,7 @@ The session ID must be captured **before** auth regenerates the session —
 ID to the `Login` listener.
 
 ```php
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
 
 $action = app(MigrateCartOnLoginAction::class);
 
@@ -584,7 +584,7 @@ $action->execute(userId: 123, instance: 'default', sessionId: 'session-abc');
 Or register globally via the registry:
 
 ```php
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 
 $registry = app(CartMergeStrategyRegistry::class);
 $registry->register($yourHandler, 'my-strategy');
@@ -620,4 +620,9 @@ Key options for `cart:clear-abandoned`:
 > When `cart.owner.enabled` is `true` and no owner context is resolved, the
 > command fails unless `--all-owners` is passed. `--mark-only` additionally
 > requires `--confirm-all-owners`, so run `--dry-run` first.
+>
+> Multi-owner runs take one cutoff for the whole run. Live-cart cleanup uses
+> keyset batches: rows that no longer match the delete predicate are kept while
+> later batches continue. With `cart.owner.enabled` disabled, cleanup applies
+> no owner predicate.
 

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Services\CartMigrationService;
-use AIArmada\Cart\Snapshots\CartSnapshot;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
-use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
-use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
+use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\CleanupSnapshotOnCartMerged;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem as CartItem;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -338,7 +339,7 @@ describe('CartMerged Event Updates', function (): void {
 
         $event = new CartMerged(
             targetCart: Cart::getCartInstance('default', 'owner-42'),
-            sourceCart: Cart::getCartInstance('default', 'owner-42'),
+            sourceCart: OwnerContext::withOwner(null, fn () => Cart::getCartInstance('default', 'guest-owner-session')),
             totalItemsMerged: 1,
             mergeStrategy: 'add_quantities',
             hadConflicts: false,
@@ -700,4 +701,247 @@ describe('Edge Cases', function (): void {
         expect(CartSnapshot::where('identifier', '101')->exists())->toBeTrue();
         expect(CartSnapshot::where('identifier', 'guest_xyz')->exists())->toBeFalse();
     });
+});
+
+it('does not delete a snapshot when a merge resolves to the same identity', function (): void {
+    $snapshot = CartSnapshot::create([
+        'identifier' => 'same-cart',
+        'instance' => 'default',
+        'currency' => 'MYR',
+    ]);
+    $cart = Cart::getCartInstance('default', 'same-cart');
+
+    (new CleanupSnapshotOnCartMerged)->handle(new CartMerged(
+        targetCart: $cart,
+        sourceCart: $cart,
+        totalItemsMerged: 0,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: false,
+        originalSourceIdentifier: 'same-cart',
+        originalTargetIdentifier: 'same-cart',
+    ));
+
+    expect(CartSnapshot::query()->whereKey($snapshot->getKey())->exists())->toBeTrue();
+});
+
+it('reconciles overlapping guest and user items from the live merged cart without duplicate rows', function (): void {
+    $source = CartSnapshot::create(['identifier' => 'overlap-guest', 'instance' => 'default', 'currency' => 'MYR']);
+    $target = CartSnapshot::create(['identifier' => 'overlap-user', 'instance' => 'default', 'currency' => 'MYR']);
+
+    foreach ([$source, $target] as $snapshot) {
+        $snapshot->cartItems()->create([
+            'item_id' => 'shared-product',
+            'name' => 'Shared Product',
+            'price' => 1000,
+            'quantity' => 1,
+        ]);
+    }
+
+    Cart::storage()->putItems('overlap-user', 'default', [
+        'shared-product' => ['id' => 'shared-product', 'name' => 'Shared Product', 'price' => 1000, 'quantity' => 2, 'attributes' => [], 'conditions' => []],
+    ], CartRevision::none());
+
+    (new CleanupSnapshotOnCartMerged)->handle(new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'overlap-user'),
+        sourceCart: Cart::getCartInstance('default', 'overlap-guest'),
+        totalItemsMerged: 1,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: true,
+    ));
+
+    expect(CartSnapshot::query()->whereKey($source->id)->exists())->toBeFalse()
+        ->and($target->cartItems()->count())->toBe(1)
+        ->and($target->cartItems()->first()->quantity)->toBe(2)
+        ->and($target->refresh()->quantity)->toBe(2);
+});
+
+it('creates an owner-safe target snapshot on first tenant login without promoting the global source', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
+
+    $owner = User::query()->create([
+        'name' => 'First Login Owner',
+        'email' => 'first-login-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+    $guestSnapshot = OwnerContext::withOwner(null, fn () => CartSnapshot::create([
+        'identifier' => 'first-login-guest',
+        'instance' => 'default',
+        'items' => ['product-1' => ['id' => 'product-1', 'quantity' => 2]],
+        'items_count' => 1,
+        'quantity' => 2,
+        'subtotal' => 2000,
+        'total' => 2000,
+        'currency' => 'MYR',
+    ]));
+
+    $liveCart = OwnerContext::withOwner($owner, fn () => CartModel::query()->create([
+        'identifier' => 'first-login-user',
+        'instance' => 'default',
+        'items' => ['product-1' => [
+            'id' => 'product-1',
+            'name' => 'Product',
+            'price' => 1000,
+            'quantity' => 2,
+            'attributes' => [],
+            'conditions' => [],
+        ]],
+        'conditions' => [],
+        'metadata' => [],
+        'version' => 1,
+    ]));
+
+    $event = OwnerContext::withOwner($owner, fn () => new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'first-login-user'),
+        sourceCart: OwnerContext::withOwner(null, fn () => Cart::getCartInstance('default', 'first-login-guest')),
+        totalItemsMerged: 2,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: false,
+        originalSourceIdentifier: 'first-login-guest',
+        originalTargetIdentifier: 'first-login-user',
+    ));
+
+    OwnerContext::withOwner($owner, fn () => (new CleanupSnapshotOnCartMerged)->handle($event));
+
+    $target = OwnerContext::withOwner($owner, fn () => CartSnapshot::query()
+        ->forOwner($owner, false)
+        ->where('identifier', 'first-login-user')
+        ->first());
+
+    expect($target)->not->toBeNull()
+        ->and((string) $target?->owner_id)->toBe((string) $owner->getKey())
+        ->and($target?->items_count)->toBe(1)
+        ->and(CartSnapshot::query()->withoutOwnerScope()->whereKey($guestSnapshot->id)->exists())->toBeFalse()
+        ->and(CartSnapshot::query()->withoutOwnerScope()
+            ->where('identifier', 'first-login-user')
+            ->whereNull('owner_type')
+            ->exists())->toBeFalse();
+
+    expect($liveCart->id)->not->toBe($guestSnapshot->id);
+});
+
+it('creates an owned snapshot from a global guest snapshot when no live target remains', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
+
+    $owner = User::query()->create([
+        'name' => 'Snapshot Copy Owner',
+        'email' => 'snapshot-copy-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+    $guestSnapshot = OwnerContext::withOwner(null, function (): CartSnapshot {
+        $snapshot = CartSnapshot::create([
+            'identifier' => 'copy-guest',
+            'instance' => 'default',
+            'items' => ['product-1' => ['id' => 'product-1', 'quantity' => 1]],
+            'items_count' => 1,
+            'quantity' => 1,
+            'subtotal' => 1000,
+            'total' => 1000,
+            'currency' => 'MYR',
+        ]);
+
+        $snapshot->cartItems()->create([
+            'item_id' => 'product-1',
+            'name' => 'Product',
+            'price' => 1000,
+            'quantity' => 1,
+        ]);
+
+        return $snapshot;
+    });
+
+    $event = OwnerContext::withOwner($owner, fn () => new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'copy-user'),
+        sourceCart: OwnerContext::withOwner(null, fn () => Cart::getCartInstance('default', 'copy-guest')),
+        totalItemsMerged: 1,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: false,
+        originalSourceIdentifier: 'copy-guest',
+        originalTargetIdentifier: 'copy-user',
+    ));
+
+    OwnerContext::withOwner($owner, fn () => (new CleanupSnapshotOnCartMerged)->handle($event));
+
+    $target = OwnerContext::withOwner($owner, fn () => CartSnapshot::query()
+        ->forOwner($owner, false)
+        ->where('identifier', 'copy-user')
+        ->first());
+
+    expect($target)->not->toBeNull()
+        ->and($target?->id)->not->toBe($guestSnapshot->id)
+        ->and((string) $target?->owner_id)->toBe((string) $owner->getKey())
+        ->and($target?->cartItems()->count())->toBe(1)
+        ->and(CartSnapshot::query()->withoutOwnerScope()->whereKey($guestSnapshot->id)->exists())->toBeFalse();
+});
+
+it('does not touch another tenants snapshot with the same guest identifier', function (): void {
+    config()->set('cart.owner.enabled', true);
+
+    $ownerA = User::query()->create([
+        'name' => 'Tenant Merge A',
+        'email' => 'tenant-merge-a@example.com',
+        'password' => 'secret',
+    ]);
+    $ownerB = User::query()->create([
+        'name' => 'Tenant Merge B',
+        'email' => 'tenant-merge-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
+
+    $foreignSnapshot = OwnerContext::withOwner($ownerB, fn () => CartSnapshot::create([
+        'identifier' => 'shared-guest-identifier',
+        'instance' => 'default',
+        'items_count' => 1,
+        'quantity' => 1,
+        'currency' => 'MYR',
+    ]));
+    $ownedSnapshot = OwnerContext::withOwner($ownerA, fn () => CartSnapshot::create([
+        'identifier' => 'shared-guest-identifier',
+        'instance' => 'default',
+        'items_count' => 1,
+        'quantity' => 1,
+        'currency' => 'MYR',
+    ]));
+
+    $event = OwnerContext::withOwner($ownerA, fn () => new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'tenant-a-user'),
+        sourceCart: OwnerContext::withOwner(null, fn () => Cart::getCartInstance('default', 'shared-guest-identifier')),
+        totalItemsMerged: 0,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: false,
+        originalSourceIdentifier: 'shared-guest-identifier',
+        originalTargetIdentifier: 'tenant-a-user',
+    ));
+
+    OwnerContext::withOwner($ownerA, fn () => (new CleanupSnapshotOnCartMerged)->handle($event));
+
+    expect(CartSnapshot::query()->withoutOwnerScope()->whereKey($foreignSnapshot->id)->exists())->toBeTrue();
+    expect($ownedSnapshot->refresh()->identifier)->toBe('shared-guest-identifier');
+});
+
+it('refreshes the merged target even when the guest snapshot was never created', function (): void {
+    Cart::storage()->putItems('unsynced-target', 'default', [
+        'product-1' => ['id' => 'product-1', 'name' => 'Product', 'price' => 1000, 'quantity' => 3, 'attributes' => [], 'conditions' => []],
+    ], CartRevision::none());
+
+    (new CleanupSnapshotOnCartMerged)->handle(new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'unsynced-target'),
+        sourceCart: Cart::getCartInstance('default', 'unsynced-source'),
+        totalItemsMerged: 3,
+        mergeStrategy: 'add_quantities',
+    ));
+
+    $target = CartSnapshot::query()->where('identifier', 'unsynced-target')->firstOrFail();
+
+    expect($target->quantity)->toBe(3)
+        ->and($target->cartItems()->count())->toBe(1);
 });

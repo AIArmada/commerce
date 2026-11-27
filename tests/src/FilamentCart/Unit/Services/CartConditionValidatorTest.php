@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\ValidateStoredCondition;
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Models\Condition as ConditionModel;
-use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Features\Conditions\Actions\ValidateStoredCondition;
+use AIArmada\Cart\Features\Conditions\Models\Condition as ConditionModel;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use Illuminate\Support\Facades\DB;
@@ -93,8 +93,9 @@ describe('ValidateStoredCondition', function (): void {
 
         ConditionModel::query()->delete();
 
-        ConditionModel::create([
+        $definition = ConditionModel::create([
             'name' => 'Active Promo',
+            'display_name' => 'Weekend savings',
             'type' => 'discount',
             'target' => 'cart@cart_subtotal/aggregate',
             'target_definition' => [
@@ -108,23 +109,13 @@ describe('ValidateStoredCondition', function (): void {
         ]);
 
         $cart->add('sku-1', 'Test Item', 10000, 1);
-        $cart->addCondition([
-            'name' => 'Active Promo',
-            'type' => 'discount',
-            'target_definition' => [
-                'scope' => 'cart',
-                'phase' => 'cart_subtotal',
-                'application' => 'aggregate',
-            ],
-            'value' => '-10%',
-            'attributes' => ['is_global' => true],
-        ]);
+        $cart->addCondition($definition->refresh()->createCondition());
 
         $result = $validator->handle($cart);
 
         expect($result['is_valid'])->toBeTrue();
         expect($result['removed_conditions'])->toBeEmpty();
-        expect($cart->getConditions()->has('Active Promo'))->toBeTrue();
+        expect($cart->getConditions()->has('Weekend savings'))->toBeTrue();
     });
 
     it('requires an owner context when validating global conditions in owner mode', function (): void {

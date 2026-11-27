@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
-use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {

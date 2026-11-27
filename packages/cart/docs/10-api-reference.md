@@ -351,7 +351,7 @@ interface StorageInterface
 
     // Revisioned reads and writes
     public function getSnapshot(string $identifier, string $instance): ?CartStorageSnapshot;
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision;
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision;
     public function putConditions(string $identifier, string $instance, array $conditions, CartRevision $expectedRevision): CartRevision;
     public function putBoth(string $identifier, string $instance, array $items, array $conditions, CartRevision $expectedRevision): CartRevision;
 
@@ -610,7 +610,7 @@ php artisan cart:clear-abandoned --batch-size=500
 ### MigrateGuestCartToUserAction
 
 ```php
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 
 $action = app(MigrateGuestCartToUserAction::class);
 
@@ -635,7 +635,7 @@ $result->message;
 ### MigrateCartOnLoginAction
 
 ```php
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
 
 $action = app(MigrateCartOnLoginAction::class);
 
@@ -654,7 +654,7 @@ $result = $action->execute(user: $user, instance: 'default', sessionId: 'session
 Handles guest-to-user cart migration.
 
 ```php
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 
 $service = app(CartMigrationService::class);
 
@@ -757,7 +757,7 @@ $rules = RulePresets::not($rulesA);              // NOT
 Registers and resolves merge strategies by name.
 
 ```php
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Enums\CartMergeStrategy;
 
 $registry = app(CartMergeStrategyRegistry::class);
@@ -794,7 +794,7 @@ $wishlist = $factory->cloneForInstance($cart, 'wishlist');
 Configures and creates condition pipeline instances.
 
 ```php
-use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
+use AIArmada\Cart\Runtime\Conditions\Pipeline\ConditionPipelineFactory;
 
 $factory = app(ConditionPipelineFactory::class);
 
@@ -848,7 +848,7 @@ from that same session. Migration state is never keyed by a login identifier,
 so one session cannot plant a migration into another account's login.
 
 ```php
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
 
 session()->put(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY, session()->getId());
 $guestSessionId = session()->pull(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY);

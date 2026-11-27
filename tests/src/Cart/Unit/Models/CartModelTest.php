@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -100,5 +100,5 @@ it('rejects saving with an explicit owner that mismatches the current owner cont
 
     expect(fn () => OwnerContext::withOwner($ownerA, static function () use ($cart): void {
         $cart->save();
-    }))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Models\\CartModel.');
+    }))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\\Cart\\Features\\LiveCart\\Models\\CartModel.');
 });

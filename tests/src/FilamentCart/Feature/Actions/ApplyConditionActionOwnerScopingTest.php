@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -107,6 +107,16 @@ it('returns only item-level conditions for item actions', function (): void {
     ]);
     $itemCondition->assignOwner($owner)->save();
 
+    $dynamicItemCondition = Condition::factory()
+        ->forItems()
+        ->active()
+        ->withRules(['factory_keys' => ['always-true'], 'context' => []])
+        ->create([
+            'name' => 'owner-dynamic-item-discount',
+            'display_name' => 'Owner Dynamic Item Discount',
+        ]);
+    $dynamicItemCondition->assignOwner($owner)->save();
+
     $cartCondition = Condition::factory()->create([
         'name' => 'owner-cart-discount',
         'display_name' => 'Owner Cart Discount',
@@ -121,7 +131,12 @@ it('returns only item-level conditions for item actions', function (): void {
     $options = $optionsMethod->invoke(null, 'discount', true);
 
     expect(array_key_exists($itemCondition->id, $options))->toBeTrue();
+    expect(array_key_exists($dynamicItemCondition->id, $options))->toBeFalse();
     expect(array_key_exists($cartCondition->id, $options))->toBeFalse();
+
+    $labelMethod = new ReflectionMethod(ApplyConditionAction::class, 'resolveConditionLabel');
+
+    expect($labelMethod->invoke(null, $dynamicItemCondition->id, true))->toBeNull();
 
     $queryMethod = new ReflectionMethod(ApplyConditionAction::class, 'getScopedConditionQuery');
 
