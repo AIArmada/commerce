@@ -12,7 +12,7 @@ use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Cart\CompositeComponents;
 use AIArmada\Inventory\Cart\InventoryValidator;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Listeners\ReserveStockOnCheckout;
+use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockOnCheckout;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
@@ -392,7 +392,7 @@ describe('composite add and checkout reservation listeners', function (): void {
         ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
-        $listener = new ReserveStockOnCheckout($this->allocationService);
+        $listener = app(ReserveStockOnCheckout::class);
         $listener->handle(new class($cart)
         {
             public function __construct(public Cart $cart) {}
@@ -407,5 +407,30 @@ describe('composite add and checkout reservation listeners', function (): void {
                 ->where('inventoryable_id', $parent->getKey())
                 ->count())->toBe(0)
             ->and($cart->getMetadata('inventory_allocations')['allocations'])->toHaveKeys(['mouse-pair', 'standalone-mouse']);
+    });
+
+    it('rolls back the entire checkout allocation when a later item has insufficient stock', function (): void {
+        config()->set('inventory.cart.reserve_on_checkout', true);
+        config()->set('inventory.cart.validate_on_add', false);
+        config()->set('inventory.cart.block_checkout_on_insufficient', true);
+
+        $available = InventoryItem::create(['name' => 'Available']);
+        $unavailable = InventoryItem::create(['name' => 'Unavailable']);
+        $this->inventoryService->receive($available, $this->location->id, 5);
+
+        $cart = new Cart(new InMemoryStorage, 'atomic-checkout-cart');
+        $cart->add(id: 'available', name: 'Available', price: 100, quantity: 2, associatedModel: $available);
+        $cart->add(id: 'unavailable', name: 'Unavailable', price: 100, quantity: 1, associatedModel: $unavailable);
+
+        $event = new class($cart)
+        {
+            public function __construct(public Cart $cart) {}
+        };
+
+        expect(fn () => app(ReserveStockOnCheckout::class)->handle($event))
+            ->toThrow(InsufficientInventoryException::class);
+
+        expect($this->allocationService->getAllocationsForCart((string) $cart->getId()))->toBeEmpty()
+            ->and($this->inventoryService->getLevel($available, $this->location->id)?->fresh()->quantity_reserved)->toBe(0);
     });
 });
