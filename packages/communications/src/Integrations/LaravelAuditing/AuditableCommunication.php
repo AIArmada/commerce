@@ -6,8 +6,8 @@ namespace AIArmada\Communications\Integrations\LaravelAuditing;
 
 use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
 use AIArmada\Communications\Models\CommunicationPreference;
-use AIArmada\Communications\Models\CommunicationTemplate;
-use AIArmada\Communications\Models\CommunicationTemplateVersion;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use OwenIt\Auditing\Auditable;
 
 trait AuditableCommunication

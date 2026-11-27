@@ -11,7 +11,7 @@ use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Data\RenderedContentData;
 use AIArmada\Communications\Enums\TemplateStatus;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use Illuminate\Notifications\Messages\MailMessage;
 
 beforeEach(function (): void {

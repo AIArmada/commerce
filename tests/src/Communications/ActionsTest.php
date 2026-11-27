@@ -32,7 +32,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;

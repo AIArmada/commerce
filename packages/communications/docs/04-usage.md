@@ -185,9 +185,9 @@ discriminators are excluded from `$fillable`, and `communication_templates.statu
 has no database default, so set `status` directly on the model:
 
 ```php
-use AIArmada\Communications\Actions\PublishTemplateAction;
+use AIArmada\Communications\Features\Templates\Actions\PublishTemplateAction;
 use AIArmada\Communications\Enums\TemplateStatus;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 
 $template = CommunicationTemplate::query()->make([
     'key' => 'invoice-paid',

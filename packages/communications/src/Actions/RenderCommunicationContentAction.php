@@ -6,7 +6,7 @@ namespace AIArmada\Communications\Actions;
 
 use AIArmada\Communications\Contracts\ContentRenderer;
 use AIArmada\Communications\Data\RenderedContentData;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 
 final class RenderCommunicationContentAction
 {

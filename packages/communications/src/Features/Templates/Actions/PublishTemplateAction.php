@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Actions;
+namespace AIArmada\Communications\Features\Templates\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Events\TemplatePublished;
-use AIArmada\Communications\Models\CommunicationTemplate;
-use AIArmada\Communications\Models\CommunicationTemplateVersion;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -22,6 +23,11 @@ final class PublishTemplateAction
                 ->lockForUpdate()
                 ->findOrFail($versionId);
 
+            if (CommunicationTemplateVersion::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(CommunicationTemplateVersion::class, $versionId);
+                OwnerWriteGuard::findOrFailForOwner(CommunicationTemplate::class, $version->template_id);
+            }
+
             if ($version->published_at !== null) {
                 throw new RuntimeException("Template version {$versionId} is already published.");
             }
@@ -29,6 +35,10 @@ final class PublishTemplateAction
             $template = CommunicationTemplate::query()
                 ->lockForUpdate()
                 ->findOrFail($version->template_id);
+
+            if ($template->owner_type !== $version->owner_type || $template->owner_id !== $version->owner_id) {
+                throw new RuntimeException('Template and version must share the same owner context.');
+            }
 
             $publishedAt = CarbonImmutable::now();
             $version->published_at = $publishedAt;

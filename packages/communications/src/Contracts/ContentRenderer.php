@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Contracts;
 
 use AIArmada\Communications\Data\RenderedContentData;
-use AIArmada\Communications\Models\CommunicationTemplate;
+use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
 
 interface ContentRenderer
 {
