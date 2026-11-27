@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
-use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
 use BackedEnum;
@@ -29,7 +28,7 @@ final class BookmarkResource extends Resource
 
     public static function getModel(): string
     {
-        return ModelResolver::bookmarkClass();
+        return config('engagement.models.bookmark', Bookmark::class);
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bookmark';
@@ -114,7 +113,7 @@ final class BookmarkResource extends Resource
             ->bulkActions([
                 BulkAction::make('remove')
                     ->action(function ($records): void {
-                        BulkRecordProcessor::eachInChunks($records, ModelResolver::bookmarkClass(), function (Bookmark $record): void {
+                        BulkRecordProcessor::eachInChunks($records, static::getModel(), function (Bookmark $record): void {
                             if (! $record->isActive()) {
                                 return;
                             }

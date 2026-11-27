@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
-use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\BulkRecordProcessor;
 use BackedEnum;
@@ -29,7 +28,7 @@ final class FollowResource extends Resource
 
     public static function getModel(): string
     {
-        return ModelResolver::followClass();
+        return config('engagement.models.follow', Follow::class);
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-heart';
@@ -120,7 +119,7 @@ final class FollowResource extends Resource
             ->bulkActions([
                 BulkAction::make('mute')
                     ->action(function ($records): void {
-                        BulkRecordProcessor::eachInChunks($records, ModelResolver::followClass(), function (Follow $record): void {
+                        BulkRecordProcessor::eachInChunks($records, static::getModel(), function (Follow $record): void {
                             if (! $record->isActive()) {
                                 return;
                             }
@@ -132,7 +131,7 @@ final class FollowResource extends Resource
                     }),
                 BulkAction::make('unfollow')
                     ->action(function ($records): void {
-                        BulkRecordProcessor::eachInChunks($records, ModelResolver::followClass(), function (Follow $record): void {
+                        BulkRecordProcessor::eachInChunks($records, static::getModel(), function (Follow $record): void {
                             if (! $record->isActive()) {
                                 return;
                             }

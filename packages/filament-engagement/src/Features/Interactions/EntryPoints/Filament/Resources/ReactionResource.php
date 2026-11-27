@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
 use AIArmada\Engagement\Features\Interactions\Models\Reaction;
-use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -28,7 +27,7 @@ final class ReactionResource extends Resource
 
     public static function getModel(): string
     {
-        return ModelResolver::reactionClass();
+        return config('engagement.models.reaction', Reaction::class);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

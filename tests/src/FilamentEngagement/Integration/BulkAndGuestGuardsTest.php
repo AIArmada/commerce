@@ -6,7 +6,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;
-use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\BookmarkAction;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\FollowAction;
 use AIArmada\FilamentEngagement\Features\Interactions\EntryPoints\Filament\Actions\ReactAction;
@@ -108,7 +107,7 @@ it('processes bulk selections in bounded chunks without dropping rows', function
     OwnerContext::withOwner($actor, function () use ($records, &$processed): void {
         BulkRecordProcessor::eachInChunks(
             $records,
-            ModelResolver::followClass(),
+            Follow::class,
             function (Follow $record) use (&$processed): void {
                 $processed[] = (string) $record->getKey();
             },
@@ -124,7 +123,7 @@ it('processes bulk selections in bounded chunks without dropping rows', function
 it('ignores an empty bulk selection', function (): void {
     $calls = 0;
 
-    BulkRecordProcessor::eachInChunks([], ModelResolver::followClass(), function () use (&$calls): void {
+    BulkRecordProcessor::eachInChunks([], Follow::class, function () use (&$calls): void {
         $calls++;
     });
 
@@ -148,7 +147,7 @@ it('fails closed when a selected row leaves the owner scope', function (): void 
     OwnerContext::withOwner($ownerA, static function () use ($foreign): void {
         BulkRecordProcessor::eachInChunks(
             [$foreign],
-            ModelResolver::followClass(),
+            Follow::class,
             static function (): void {},
         );
     });

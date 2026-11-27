@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -28,7 +27,7 @@ final class SubscriptionResource extends Resource
 
     public static function getModel(): string
     {
-        return ModelResolver::subscriptionClass();
+        return config('engagement.models.subscription', Subscription::class);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Features\Reminders\Models\Reminder;
-use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -29,7 +28,7 @@ final class ReminderResource extends Resource
 
     public static function getModel(): string
     {
-        return ModelResolver::reminderClass();
+        return config('engagement.models.reminder', Reminder::class);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null
