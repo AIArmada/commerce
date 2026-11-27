@@ -45,7 +45,7 @@ final class RatingDistributionCalculator
         $questionTable = (new FeedbackQuestion)->getTable();
 
         /** @var Builder<FeedbackResponse> $query */
-        $query = FeedbackResponse::query()->where('status', 'submitted');
+        $query = FeedbackResponse::query()->whereIn('status', ['submitted', 'reviewed']);
 
         if ($form !== null) {
             $query->where("{$responseTable}.feedback_form_id", $form->id);

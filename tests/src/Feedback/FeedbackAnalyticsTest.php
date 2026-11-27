@@ -155,3 +155,32 @@ it('excludes cross-owner joined answers from rating calculations', function (): 
 
     expect($distribution)->toBe([5 => 1]);
 });
+
+it('keeps reviewed responses in analytics and dashboard totals', function (): void {
+    $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Reviewed analytics'));
+    $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
+        'key' => 'rating',
+        'type' => 'rating',
+        'label' => 'Rating',
+    ]);
+    $response = FeedbackResponse::query()->create([
+        'feedback_form_id' => $form->id,
+        'status' => 'reviewed',
+        'score' => 5,
+        'submitted_at' => now(),
+        'is_anonymous' => true,
+    ]);
+    FeedbackAnswer::query()->create([
+        'feedback_response_id' => $response->id,
+        'feedback_question_id' => $question->id,
+        'number_value' => 5,
+    ]);
+
+    $analytics = app(FeedbackAnalyticsQuery::class);
+    $dashboard = $analytics->dashboard();
+
+    expect($analytics->completionRate($form))->toBe(100.0)
+        ->and($analytics->distributionForQuestion($form, 'rating'))->toBe([5 => 1])
+        ->and($dashboard['overview']['submitted_responses'])->toBe(1)
+        ->and(array_sum($dashboard['response_trend']))->toBe(1);
+});

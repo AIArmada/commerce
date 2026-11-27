@@ -9,15 +9,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Data\NpsResultData;
-use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Forms\Api\ReadsFormMetrics;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
-use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Responses\Api\ReadsResponseMetrics;
+use AIArmada\Feedback\Features\Testimonials\Api\ReadsTestimonialMetrics;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class FeedbackAnalyticsQuery
 {
@@ -26,6 +25,9 @@ final class FeedbackAnalyticsQuery
         private readonly CsatCalculator $csatCalculator,
         private readonly RatingDistributionCalculator $ratingDistribution,
         private readonly CompletionRateCalculator $completionRate,
+        private readonly ReadsResponseMetrics $responseMetrics,
+        private readonly ReadsFormMetrics $formMetrics,
+        private readonly ReadsTestimonialMetrics $testimonialMetrics,
     ) {}
 
     public function summaryForForm(FeedbackForm $form): FeedbackAnalyticsData
@@ -43,39 +45,7 @@ final class FeedbackAnalyticsQuery
 
     public function calculateLive(FeedbackForm $form): FeedbackAnalyticsData
     {
-        $submitted = FeedbackResponseStatus::Submitted->value;
-        $reviewed = FeedbackResponseStatus::Reviewed->value;
-        $rejected = FeedbackResponseStatus::Rejected->value;
-        $spam = FeedbackResponseStatus::Spam->value;
-
-        $row = $this->responseQuery($form)
-            ->selectRaw(
-                'COUNT(*) as total, ' .
-                'COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as completed, ' .
-                'AVG(score) as avg_score, ' .
-                'MAX(max_score) as max_score, ' .
-                'COUNT(CASE WHEN status = ? THEN 1 END) as pending, ' .
-                'COUNT(CASE WHEN status = ? THEN 1 END) as rejected, ' .
-                'COUNT(CASE WHEN status = ? THEN 1 END) as spam',
-                [$submitted, $reviewed, $submitted, $rejected, $spam],
-            )
-            ->first();
-
-        $total = (int) ($row?->getAttribute('total') ?? 0);
-        $completed = (int) ($row?->getAttribute('completed') ?? 0);
-        $avgScore = $row?->getAttribute('avg_score');
-        $maxScore = $row?->getAttribute('max_score');
-
-        return new FeedbackAnalyticsData(
-            totalResponses: $total,
-            completedResponses: $completed,
-            averageScore: $avgScore !== null ? round((float) $avgScore, 2) : null,
-            maxScore: $maxScore !== null ? round((float) $maxScore, 2) : null,
-            completionRate: $total > 0 ? round(($completed / $total) * 100, 2) : 0.0,
-            pendingReview: (int) ($row?->getAttribute('pending') ?? 0),
-            rejected: (int) ($row?->getAttribute('rejected') ?? 0),
-            spam: (int) ($row?->getAttribute('spam') ?? 0),
-        );
+        return $this->responseMetrics->summary($form->id);
     }
 
     public function averageForQuestion(FeedbackForm $form, string $questionKey): ?float
@@ -121,64 +91,24 @@ final class FeedbackAnalyticsQuery
             'feedback.dashboard',
             (int) config('feedback.analytics.dashboard_cache_ttl', 30),
             function (): array {
-                $formQuery = FeedbackForm::query();
-                $responseQuery = FeedbackResponse::query();
-                $submittedResponseQuery = (clone $responseQuery)->where('status', 'submitted');
-
-                $testimonialQuery = FeedbackTestimonial::query();
+                $responseMetrics = $this->responseMetrics->dashboardMetrics();
 
                 return [
-                    'overview' => [
-                        'total_forms' => (clone $formQuery)->count(),
-                        'published_forms' => (clone $formQuery)->where('status', 'published')->count(),
-                        'total_responses' => (clone $responseQuery)->count(),
-                        'submitted_responses' => (clone $submittedResponseQuery)->count(),
-                    ],
-                    'response_trend' => (clone $submittedResponseQuery)
-                        ->selectRaw($this->trendDateExpression() . ' as date, COUNT(*) as count')
-                        ->groupBy('date')
-                        ->whereNotNull('submitted_at')
-                        ->orderByDesc('date')
-                        ->limit(30)
-                        ->pluck('count', 'date')
-                        ->reverse()
-                        ->toArray(),
-                    'average_rating' => (clone $submittedResponseQuery)
-                        ->whereNotNull('score')
-                        ->avg('score'),
+                    'overview' => array_merge($this->formMetrics->counts(), [
+                        'total_responses' => $responseMetrics['total_responses'],
+                        'submitted_responses' => $responseMetrics['submitted_responses'],
+                    ]),
+                    'response_trend' => $responseMetrics['response_trend'],
+                    'average_rating' => $responseMetrics['average_rating'],
                     'nps' => $this->npsCalculator->calculate(),
                     'csat' => $this->csatCalculator->calculate(),
                     'rating_distribution' => $this->ratingDistribution->calculate(),
                     'latest_comments' => $this->commentsQuery()->limit(10)->get()->toArray(),
                     'completion_rate' => $this->completionRate->calculate(),
-                    'testimonials' => [
-                        'pending' => (clone $testimonialQuery)->where('status', 'pending')->count(),
-                        'approved' => (clone $testimonialQuery)->where('status', 'approved')->count(),
-                        'published' => (clone $testimonialQuery)->where('status', 'published')->count(),
-                    ],
+                    'testimonials' => $this->testimonialMetrics->counts(),
                 ];
             },
         );
-    }
-
-    private function trendDateExpression(): string
-    {
-        $driver = DB::connection()->getDriverName();
-
-        return match ($driver) {
-            'sqlite' => 'date(submitted_at)',
-            'sqlsrv' => 'CAST(submitted_at AS DATE)',
-            default => 'DATE(submitted_at)',
-        };
-    }
-
-    /**
-     * @return Builder<FeedbackResponse>
-     */
-    private function responseQuery(FeedbackForm $form): Builder
-    {
-        /** @var Builder<FeedbackResponse> */
-        return FeedbackResponse::query()->where('feedback_form_id', $form->id);
     }
 
     /**
@@ -189,7 +119,7 @@ final class FeedbackAnalyticsQuery
         /** @var Builder<FeedbackAnswer> $query */
         $query = FeedbackAnswer::query()
             ->whereHas('response', function (Builder $q) use ($form): void {
-                $q->where('status', 'submitted');
+                $q->whereIn('status', ['submitted', 'reviewed']);
 
                 if ($form !== null) {
                     $q->where('feedback_form_id', $form->id);

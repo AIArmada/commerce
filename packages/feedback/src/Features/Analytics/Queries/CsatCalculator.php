@@ -67,7 +67,7 @@ final class CsatCalculator
     {
         /** @var Builder<FeedbackResponse> $query */
         $query = FeedbackResponse::query()
-            ->where('status', 'submitted')
+            ->whereIn('status', ['submitted', 'reviewed'])
             ->whereNotNull('score');
 
         if ($form !== null) {
@@ -86,7 +86,7 @@ final class CsatCalculator
         $query = FeedbackAnswer::query()->whereNotNull('score');
 
         $query->whereHas('response', function (Builder $q) use ($form): void {
-            $q->where('status', 'submitted');
+            $q->whereIn('status', ['submitted', 'reviewed']);
 
             if ($form !== null) {
                 $q->where('feedback_form_id', $form->id);

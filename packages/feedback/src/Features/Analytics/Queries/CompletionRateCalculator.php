@@ -5,32 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Features\Analytics\Queries;
 
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
+use AIArmada\Feedback\Features\Responses\Api\ReadsResponseMetrics;
 
-final class CompletionRateCalculator
+final readonly class CompletionRateCalculator
 {
+    public function __construct(private ReadsResponseMetrics $metrics) {}
+
     public function calculate(?FeedbackForm $form = null): float
     {
-        $totalQuery = FeedbackResponse::query();
-
-        if ($form !== null) {
-            $totalQuery->where('feedback_form_id', $form->id);
-        }
-
-        $total = $totalQuery->count();
-
-        if ($total === 0) {
-            return 0.0;
-        }
-
-        $submittedQuery = FeedbackResponse::query()->whereIn('status', ['submitted', 'reviewed']);
-
-        if ($form !== null) {
-            $submittedQuery->where('feedback_form_id', $form->id);
-        }
-
-        $submitted = $submittedQuery->count();
-
-        return round(($submitted / $total) * 100, 2);
+        return $this->metrics->summary($form?->id)->completionRate;
     }
 }
