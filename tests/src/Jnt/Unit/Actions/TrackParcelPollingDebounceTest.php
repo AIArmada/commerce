@@ -36,13 +36,13 @@ function makeJntPollingTestService(): JntExpressService
     );
 }
 
-function fakeJntTrackingResponse(): array
+function fakeJntTrackingResponse(string $trackingNumber = 'TRK-POLLING'): array
 {
     return [
         'code' => '1',
         'msg' => 'Success',
         'data' => [
-            'billCode' => 'TRK-POLLING',
+            'billCode' => $trackingNumber,
             'txlogisticId' => 'ORDER-POLLING',
             'details' => [],
         ],
@@ -65,7 +65,7 @@ it('debounces repeated TrackParcel polling within the configured window', functi
 
 it('polls again after the debounce window expires', function (): void {
     Http::fake([
-        '*/api/logistics/trace' => Http::response(fakeJntTrackingResponse()),
+        '*/api/logistics/trace' => Http::response(fakeJntTrackingResponse('TRK-POLLING-EXPIRY')),
     ]);
 
     $now = CarbonImmutable::parse('2026-09-12 00:00:00');

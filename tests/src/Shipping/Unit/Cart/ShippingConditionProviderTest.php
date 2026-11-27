@@ -261,7 +261,7 @@ it('calculates package weight from cart items', function (): void {
 
     $this->rateEngine->shouldReceive('getBestRate')
         ->once()
-        ->withArgs(fn ($origin, $destination, $packages, $options) => $options['cart_total'] === 10000 && $options['item_count'] === 2 && $options['currency'] === 'MYR')
+        ->withArgs(fn ($origin, $destination, $packages, $options) => $options['cart_total'] === 10000 && $options['item_count'] === 2 && $options['currency'] === \AIArmada\Cart\Support\CartMoney::currency())
         ->andReturn($rate);
 
     $provider = new ShippingConditionProvider($this->rateEngine);

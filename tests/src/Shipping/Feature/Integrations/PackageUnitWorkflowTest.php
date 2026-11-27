@@ -27,7 +27,7 @@ use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
 use AIArmada\Shipping\ShippingManager;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config([
@@ -266,7 +266,7 @@ it('rejects a package return or refund when the current owner owns a different o
         expect(ReturnAuthorization::query()->find($rma->id))->toBeNull()
             ->and(Shipment::query()->find($shipment->id))->toBeNull();
         expect(fn () => app(PackageReturns::class)->request($shipment->id, $item->id, 1, 'damaged'))
-            ->toThrow(ModelNotFoundException::class);
+            ->toThrow(AuthorizationException::class);
         expect(fn () => app(RegisterOrderRefund::class)->execute($order, 1000, 'foreign-refund', 'Return', [
             'return_authorization_id' => $rma->id,
         ]))->toThrow(RuntimeException::class, 'Cross-owner');

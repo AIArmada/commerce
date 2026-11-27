@@ -10,7 +10,7 @@ use AIArmada\Orders\Events\OrderCancelInitiated;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\Support\OrderOutbox;
-use AIArmada\Shipping\Integrations\OrderShipmentUnits;
+use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\DB;

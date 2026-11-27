@@ -9,7 +9,7 @@ use AIArmada\Orders\Events\OrderShipped;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Shipped;
 use AIArmada\Orders\Support\PackageUnit;
-use AIArmada\Shipping\Integrations\OrderShipmentUnits;
+use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Arr;

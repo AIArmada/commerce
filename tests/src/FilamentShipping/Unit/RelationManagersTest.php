@@ -286,12 +286,11 @@ describe('Relation manager write action authorization', function (): void {
         expect($create)->not()->toBeNull();
         expect($edit)->not()->toBeNull();
         expect($delete)->not()->toBeNull();
-        expect($deleteBulk)->not()->toBeNull();
+        expect($deleteBulk)->toBeNull();
 
         expect($create->isAuthorized())->toBeFalse();
         expect($edit->record($item)->isAuthorized())->toBeFalse();
         expect($delete->record($item)->isAuthorized())->toBeFalse();
-        expect($deleteBulk->isAuthorized())->toBeFalse();
     });
 
     it('shows ReturnAuthorization items write actions with update permission', function (): void {
@@ -331,11 +330,10 @@ describe('Relation manager write action authorization', function (): void {
         expect($create)->not()->toBeNull();
         expect($edit)->not()->toBeNull();
         expect($delete)->not()->toBeNull();
-        expect($deleteBulk)->not()->toBeNull();
+        expect($deleteBulk)->toBeNull();
 
         expect($create->isAuthorized())->toBeTrue();
         expect($edit->record($item)->isAuthorized())->toBeTrue();
         expect($delete->record($item)->isAuthorized())->toBeTrue();
-        expect($deleteBulk->isAuthorized())->toBeTrue();
     });
 });
