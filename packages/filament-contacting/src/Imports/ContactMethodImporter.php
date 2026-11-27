@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Imports;
 
 use AIArmada\Contacting\Enums\ContactMethodType;
+use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\FilamentContacting\Imports\Concerns\AuthorizesContactingImports;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
@@ -81,7 +83,19 @@ final class ContactMethodImporter extends Importer
     public function saveRecord(): void
     {
         try {
-            parent::saveRecord();
+            $target = app(ContactingModelReferenceGuard::class)->resolve(
+                $this->data['contactable_type'] ?? null,
+                $this->data['contactable_id'] ?? null,
+            );
+
+            if (! $target instanceof Model) {
+                throw new RowImportFailedException('A persisted contact target is required.');
+            }
+
+            $data = $this->record->getAttributes();
+            unset($data['contactable_type'], $data['contactable_id']);
+
+            $this->record = app(CreateContactMethodAction::class)->execute($target, $data);
         } catch (QueryException $exception) {
             throw new RowImportFailedException($this->saveFailureMessage($exception), previous: $exception);
         }
@@ -118,7 +132,7 @@ final class ContactMethodImporter extends Importer
 
     private function saveFailureMessage(QueryException $exception): string
     {
-        if ($exception->getCode() === '23000') {
+        if (in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
             return 'This contact method already exists and imports never update existing records.';
         }
 

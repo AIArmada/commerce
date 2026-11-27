@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
 use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
@@ -44,6 +46,12 @@ final class ContactMethodsRelationManager extends RelationManager
                     })
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
                     ->disabled(fn (): bool => $guard->contactMethodsReadOnly())
+                    ->using(function (array $data) use ($guard): ContactMethod {
+                        abort_if($guard->contactMethodsReadOnly(), 403);
+                        abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
+
+                        return app(CreateContactMethodAction::class)->execute($this->getOwnerRecord(), $data);
+                    })
                     ->before(function (): void {
                         abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
                     }),

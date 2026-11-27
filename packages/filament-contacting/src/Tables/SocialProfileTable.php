@@ -8,6 +8,10 @@ use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
 use AIArmada\FilamentContacting\Support\ContactingLinks;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\DeleteSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\UpdateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -98,15 +102,32 @@ final class SocialProfileTable
                 ViewAction::make(),
 
                 EditAction::make()
+                    ->schema(SocialProfileFormSchema::make())
+                    ->using(function (SocialProfile $record, array $data) use ($guard): SocialProfile {
+                        abort_if($guard->socialProfilesReadOnly(), 403);
+
+                        return app(UpdateSocialProfileAction::class)->execute($record, $data);
+                    })
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
                     ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
 
                 DeleteAction::make()
+                    ->using(function (SocialProfile $record) use ($guard): bool {
+                        abort_if($guard->socialProfilesReadOnly(), 403);
+
+                        return app(DeleteSocialProfileAction::class)->execute($record);
+                    })
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
                     ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
+                    ->action(function ($records) use ($guard): void {
+                        abort_if($guard->socialProfilesReadOnly(), 403);
+                        foreach ($records as $record) {
+                            app(DeleteSocialProfileAction::class)->execute($record);
+                        }
+                    })
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
                     ->disabled(fn (): bool => $guard->socialProfilesReadOnly()),
 

@@ -56,7 +56,7 @@ final class ContactMethodRepeaterSchema
                         ->fixIndistinctState(),
                     Toggle::make('is_public')
                         ->label(__('Public'))
-                        ->default(true),
+                        ->default(false),
                 ])->columnSpanFull(),
             ])
             ->columns(4)

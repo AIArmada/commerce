@@ -86,7 +86,7 @@ final class ContactMethodFormSchema
 
                             Toggle::make('is_public')
                                 ->label('Public')
-                                ->default((bool) config('contacting.defaults.public_by_default', true)),
+                                ->default(false),
                         ]),
                     ];
                 }),

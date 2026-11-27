@@ -1,14 +1,15 @@
 {
-  "schema": 1,
-  "name": "SocialProfiles",
-  "owns": {
-    "table:social_profiles": [
-      "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\CreateSocialProfileAction",
-      "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\DeleteSocialProfilesForEntityAction",
-      "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\SetPrimarySocialProfileAction",
-      "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\SynchronizePrimarySocialProfileAction",
-      "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\UpdateSocialProfileAction"
-    ]
-  },
-  "extensions": {}
+    "schema": 1,
+    "name": "SocialProfiles",
+    "owns": {
+        "table:social_profiles": [
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\CreateSocialProfileAction",
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\DeleteSocialProfilesForEntityAction",
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\SetPrimarySocialProfileAction",
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\SynchronizePrimarySocialProfileAction",
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\UpdateSocialProfileAction",
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\DeleteSocialProfileAction"
+        ]
+    },
+    "extensions": {}
 }

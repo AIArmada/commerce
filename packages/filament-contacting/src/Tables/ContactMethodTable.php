@@ -7,6 +7,10 @@ namespace AIArmada\FilamentContacting\Tables;
 use AIArmada\Contacting\Enums\ContactMethodType;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
+use AIArmada\Contacting\Features\ContactMethods\Actions\DeleteContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Actions\UpdateContactMethodAction;
+use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
+use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -110,15 +114,32 @@ final class ContactMethodTable
                 ViewAction::make(),
 
                 EditAction::make()
+                    ->schema(ContactMethodFormSchema::make())
+                    ->using(function (ContactMethod $record, array $data) use ($guard): ContactMethod {
+                        abort_if($guard->contactMethodsReadOnly(), 403);
+
+                        return app(UpdateContactMethodAction::class)->execute($record, $data);
+                    })
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
                     ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
 
                 DeleteAction::make()
+                    ->using(function (ContactMethod $record) use ($guard): bool {
+                        abort_if($guard->contactMethodsReadOnly(), 403);
+
+                        return app(DeleteContactMethodAction::class)->execute($record);
+                    })
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
                     ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
             ])
             ->bulkActions([
                 DeleteBulkAction::make()
+                    ->action(function ($records) use ($guard): void {
+                        abort_if($guard->contactMethodsReadOnly(), 403);
+                        foreach ($records as $record) {
+                            app(DeleteContactMethodAction::class)->execute($record);
+                        }
+                    })
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly())
                     ->disabled(fn (): bool => $guard->contactMethodsReadOnly()),
 

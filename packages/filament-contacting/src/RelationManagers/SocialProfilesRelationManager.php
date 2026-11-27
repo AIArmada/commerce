@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;
+use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
 use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
@@ -37,6 +39,12 @@ final class SocialProfilesRelationManager extends RelationManager
                     ->form(SocialProfileFormSchema::make())
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly())
                     ->disabled(fn (): bool => $guard->socialProfilesReadOnly())
+                    ->using(function (array $data) use ($guard): SocialProfile {
+                        abort_if($guard->socialProfilesReadOnly(), 403);
+                        abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
+
+                        return app(CreateSocialProfileAction::class)->execute($this->getOwnerRecord(), $data);
+                    })
                     ->before(function (): void {
                         abort_unless(ContactingRelationOwnerScope::canAccessParent($this->getOwnerRecord()), 403);
                     }),

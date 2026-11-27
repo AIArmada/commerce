@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentContacting\Imports;
 
 use AIArmada\Contacting\Enums\SocialPlatform;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\CreateSocialProfileAction;
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\FilamentContacting\Imports\Concerns\AuthorizesContactingImports;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
@@ -66,7 +68,19 @@ final class SocialProfileImporter extends Importer
     public function saveRecord(): void
     {
         try {
-            parent::saveRecord();
+            $target = app(ContactingModelReferenceGuard::class)->resolve(
+                $this->data['socialable_type'] ?? null,
+                $this->data['socialable_id'] ?? null,
+            );
+
+            if (! $target instanceof Model) {
+                throw new RowImportFailedException('A persisted contact target is required.');
+            }
+
+            $data = $this->record->getAttributes();
+            unset($data['socialable_type'], $data['socialable_id']);
+
+            $this->record = app(CreateSocialProfileAction::class)->execute($target, $data);
         } catch (QueryException $exception) {
             throw new RowImportFailedException($this->saveFailureMessage($exception), previous: $exception);
         }
@@ -122,7 +136,7 @@ final class SocialProfileImporter extends Importer
 
     private function saveFailureMessage(QueryException $exception): string
     {
-        if ($exception->getCode() === '23000') {
+        if (in_array((string) $exception->getCode(), ['23000', '23505'], true)) {
             return 'This social profile already exists and imports never update existing records.';
         }
 
