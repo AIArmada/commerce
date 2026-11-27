@@ -369,6 +369,8 @@ Currency must be a three-letter ISO 4217 code, amounts are integer minor units, 
 
 `AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger` fails closed: replaying a key with a different payload fingerprint throws, and a key reserved without a recorded response throws until reconciled, even after the reservation TTL expires. Reserving requires an explicit owner context when `chip.owner.enabled` is set. A unique database index on the hashed owner, brand and idempotency key prevents concurrent duplicate reservations, including when no shared cache lock is available.
 
+When the provider response is recorded, the ledger row is promoted to the provider purchase ID so there is one visible purchase row. If a webhook created that provider row first, the ledger adopts it and removes the reservation stub. Webhooks therefore look up purchases by primary key, not by a JSON metadata expression.
+
 Breaking change: `purchase.total` is rejected on the create path. It was previously accepted when no `total_override` was set; now any create payload containing it throws `ChipValidationException` (`purchase.total is server-calculated; use total_override.`). The response field is unchanged — CHIP still calculates and returns `purchase.total`.
 
 - To pin the total, send all four overrides (`subtotal_override`, `total_discount_override`, `total_tax_override`, `total_override`); they must reconcile or creation throws. The line-item subtotal honors per-product `total_price_override` (used as-is, not multiplied by quantity) and rejects negative overrides.

@@ -39,7 +39,7 @@ final class SyncChipPurchaseStatus
             return;
         }
 
-        PaymentSucceeded::dispatch($billable, $purchaseData->toArray());
+        PaymentSucceeded::dispatch($billable, Arr::except($purchaseData->toArray(), ['recurring_token']));
 
         if ($recurringToken = $purchaseData->recurring_token) {
             $this->saveRecurringToken($billable, $recurringToken, $purchase);
@@ -60,7 +60,7 @@ final class SyncChipPurchaseStatus
             return;
         }
 
-        PaymentFailed::dispatch($billable, $purchaseData->toArray());
+        PaymentFailed::dispatch($billable, Arr::except($purchaseData->toArray(), ['recurring_token']));
 
         if ($subscriptionType = $this->getSubscriptionType($purchase)) {
             $subscription = $this->findSubscriptionForWebhook($billable, $subscriptionType);
@@ -194,7 +194,7 @@ final class SyncChipPurchaseStatus
                     'next_billing_at' => (new BillingCycle(
                         $locked->billing_interval ?? 'month',
                         (int) $locked->billing_interval_count,
-                    ))->advance(CarbonImmutable::now()),
+                    ))->advance($locked->next_billing_at instanceof CarbonImmutable ? $locked->next_billing_at : CarbonImmutable::now()),
                 ])->save();
 
                 $this->completeMatchingAttempt($expectedAttempt, $purchaseId, $actualAmount);
@@ -326,17 +326,44 @@ final class SyncChipPurchaseStatus
 
     private function recordProcessedPurchase(Subscription $subscription, string $purchaseId, ?string $periodKey, int $actualAmount): void
     {
-        $exists = RenewalAttempt::query()->where('purchase_id', $purchaseId)->exists();
+        $existing = RenewalAttempt::query()
+            ->where('purchase_id', $purchaseId)
+            ->orderByDesc('created_at')
+            ->lockForUpdate()
+            ->first();
 
-        if ($exists) {
-            return;
+        if ($existing instanceof RenewalAttempt) {
+            if (in_array($existing->status, ['completed', 'mismatch'], true)) {
+                return;
+            }
+
+            if (in_array($existing->status, ['claimed', 'unknown'], true)) {
+                $this->completeMatchingAttempt($existing, $purchaseId, $actualAmount);
+
+                return;
+            }
+        }
+
+        $effectivePeriodKey = $periodKey;
+
+        if ($periodKey !== null) {
+            $holder = RenewalAttempt::query()
+                ->where('subscription_id', $subscription->id)
+                ->where('period_key', $periodKey)
+                ->lockForUpdate()
+                ->first();
+
+            if ($holder instanceof RenewalAttempt
+                && (in_array($holder->status, ['failed', 'skipped'], true) || $existing instanceof RenewalAttempt)) {
+                $effectivePeriodKey = null;
+            }
         }
 
         RenewalAttempt::create([
             'subscription_id' => $subscription->id,
             'status' => 'completed',
             'amount_minor' => $actualAmount,
-            'period_key' => $periodKey,
+            'period_key' => $effectivePeriodKey,
             'purchase_id' => $purchaseId,
             'completed_at' => CarbonImmutable::now(),
         ]);

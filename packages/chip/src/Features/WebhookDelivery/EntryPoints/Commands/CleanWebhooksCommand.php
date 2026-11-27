@@ -14,7 +14,7 @@ final class CleanWebhooksCommand extends Command
 {
     protected $signature = 'chip:clean-webhooks
                             {--days=30 : Delete webhooks older than this many days}
-                            {--status=processed : Only delete webhooks with this status (processed, failed, all)}
+                            {--status=processed : Only delete webhooks with this status (processed, failed, superseded, all)}
                             {--dry-run : Show what would be deleted without actually deleting}';
 
     protected $description = 'Clean old webhook records from the database';
@@ -23,8 +23,8 @@ final class CleanWebhooksCommand extends Command
     {
         $days = (int) $this->option('days');
         $status = (string) $this->option('status');
-        if ($days < 1 || ! in_array($status, ['processed', 'failed', 'all'], true)) {
-            $this->error('Days must be positive and status must be processed, failed, or all.');
+        if ($days < 1 || ! in_array($status, ['processed', 'failed', 'superseded', 'all'], true)) {
+            $this->error('Days must be positive and status must be processed, failed, superseded, or all.');
 
             return self::FAILURE;
         }

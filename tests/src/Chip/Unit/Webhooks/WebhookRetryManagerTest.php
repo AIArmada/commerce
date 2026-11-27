@@ -9,6 +9,7 @@ use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 final class FakeDispatchAction extends DispatchChipWebhookAction
 {
@@ -302,6 +303,45 @@ describe('WebhookRetryManager', function (): void {
             $retryable = $this->manager->getRetryableWebhooks();
 
             expect($retryable->pluck('id')->all())->toBe([$eligibleWebhook->id]);
+        });
+
+        it('reclaims a stale processing claim left by a dead retry worker', function (): void {
+            $now = CarbonImmutable::now();
+
+            $stale = Webhook::forceCreate([
+                'title' => 'Stale processing webhook',
+                'event_type' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-stale-processing', 'type' => 'purchase'],
+                'status' => 'processing',
+                'retry_count' => 0,
+                'created_on' => $now->subHour()->timestamp,
+                'updated_on' => $now->subHour()->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            DB::table($stale->getTable())
+                ->where('id', $stale->getKey())
+                ->update(['updated_at' => $now->subMinutes(31)]);
+
+            $fresh = Webhook::forceCreate([
+                'title' => 'Fresh processing webhook',
+                'event_type' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-fresh-processing', 'type' => 'purchase'],
+                'status' => 'processing',
+                'retry_count' => 0,
+                'created_on' => $now->timestamp,
+                'updated_on' => $now->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            $retryable = $this->manager->getRetryableWebhooks();
+
+            expect($this->manager->shouldRetry($stale->refresh()))->toBeTrue()
+                ->and($this->manager->shouldRetry($fresh->refresh()))->toBeFalse()
+                ->and($retryable->pluck('id')->all())->toContain($stale->id)
+                ->and($retryable->pluck('id')->all())->not->toContain($fresh->id);
         });
     });
 });

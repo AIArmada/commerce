@@ -72,12 +72,18 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
     {
         $ownerType = Arr::get($payload, '__owner_type');
         $ownerId = Arr::get($payload, '__owner_id');
+        $tupleOwner = is_string($ownerType) && (is_string($ownerId) || is_int($ownerId))
+            ? OwnerContext::fromTypeAndId($ownerType, $ownerId)
+            : null;
+        $brandOwner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
 
-        if (is_string($ownerType) && (is_string($ownerId) || is_int($ownerId))) {
-            return OwnerContext::fromTypeAndId($ownerType, $ownerId);
+        if ($tupleOwner instanceof Model && $brandOwner instanceof Model
+            && ($tupleOwner->getMorphClass() !== $brandOwner->getMorphClass()
+                || (string) $tupleOwner->getKey() !== (string) $brandOwner->getKey())) {
+            throw new RuntimeException('Owner metadata does not match the trusted brand owner.');
         }
 
-        return ChipWebhookOwnerResolver::resolveFromPayload($payload);
+        return $tupleOwner ?? $brandOwner;
     }
 
     /**

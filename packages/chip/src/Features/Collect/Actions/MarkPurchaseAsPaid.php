@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Features\Collect\Actions;
 
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\Chip\Features\Collect\Models\Purchase;
@@ -18,8 +19,16 @@ final readonly class MarkPurchaseAsPaid
     {
         $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->findOrFail($purchaseId);
 
-        if ($purchase->status === 'paid') {
+        if ($purchase->status === PurchaseStatus::PAID->value) {
             return;
+        }
+
+        if (in_array($purchase->status, [
+            PurchaseStatus::REFUNDED->value,
+            PurchaseStatus::PENDING_REFUND->value,
+            PurchaseStatus::CHARGEBACK->value,
+        ], true)) {
+            throw new ChipValidationException('A refunded or reversed purchase cannot be marked as paid.');
         }
 
         $remote = $this->chip->markPurchaseAsPaid(

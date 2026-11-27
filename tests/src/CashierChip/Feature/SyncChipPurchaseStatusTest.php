@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
+use AIArmada\CashierChip\Data\BillingCycle;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
@@ -33,6 +34,48 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 \uses(TestCase::class);
+
+/**
+ * @return array{User, Subscription, string}
+ */
+function makeSyncPaidFixture(): array
+{
+    Cashier::fake(new FakeChipClient);
+    app()->register(CashierChipServiceProvider::class);
+
+    config()->set('cashier-chip.features.owner.enabled', true);
+    config()->set('cashier-chip.features.owner.include_global', false);
+
+    /** @var User $user */
+    $user = User::query()->create([
+        'name' => 'Sync User',
+        'email' => 'sync-user-' . Str::uuid() . '@example.com',
+        'password' => bcrypt('secret'),
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($user));
+
+    /** @var Subscription $subscription */
+    $subscription = Subscription::query()->create([
+        'billable_type' => $user->getMorphClass(),
+        'billable_id' => (string) $user->getKey(),
+        'type' => 'default',
+        'chip_id' => 'sub_' . (string) Str::uuid(),
+        'chip_status' => SubscriptionStatus::Active,
+        'chip_price' => 'price_basic_monthly',
+        'quantity' => 1,
+        'billing_interval' => 'month',
+        'billing_interval_count' => 1,
+        'next_billing_at' => CarbonImmutable::now()->subDay(),
+    ]);
+
+    SubscriptionItem::factory()->forSubscription($subscription)->create([
+        'unit_amount' => 1000,
+        'quantity' => 1,
+    ]);
+
+    return [$user, $subscription, ClaimRenewalAttempt::periodKeyFor($subscription->refresh())];
+}
 
 describe('SyncChipPurchaseStatus', function (): void {
     it('dispatches PaymentSucceeded on syncPaid', function (): void {
@@ -341,5 +384,87 @@ describe('SyncChipPurchaseStatus', function (): void {
 
         expect($subscription->refresh()->next_billing_at->toIso8601String())->toBe($nextBillingAt->toIso8601String())
             ->and(RenewalAttempt::query()->where('purchase_id', 'purchase_new')->exists())->toBeFalse();
+    });
+
+    it('settles a paid period over a failed attempt while preserving the failed audit row', function (): void {
+        [$user, $subscription, $periodKey] = makeSyncPaidFixture();
+        $originalBillingDate = $subscription->next_billing_at;
+
+        /** @var RenewalAttempt $failed */
+        $failed = RenewalAttempt::query()->create([
+            'subscription_id' => $subscription->id,
+            'status' => 'failed',
+            'amount_minor' => 1000,
+            'period_key' => $periodKey,
+            'purchase_id' => 'purchase_declined',
+            'last_error_code' => 'PAYMENT_DECLINED',
+        ]);
+
+        $purchaseData = PurchaseData::from([
+            'id' => 'purchase_paid_after_failure',
+            'status' => 'paid',
+            'purchase' => [
+                'total' => 1000,
+                'currency' => 'MYR',
+            ],
+        ]);
+
+        SyncChipPurchaseStatus::run($user, $purchaseData, [
+            'purchase' => [
+                'metadata' => ['subscription_type' => 'default'],
+            ],
+        ]);
+
+        $completed = RenewalAttempt::query()
+            ->where('purchase_id', 'purchase_paid_after_failure')
+            ->first();
+
+        expect($completed)->not->toBeNull()
+            ->and($completed?->status)->toBe('completed')
+            ->and($completed?->period_key)->toBeNull()
+            ->and($completed?->amount_minor)->toBe(1000)
+            ->and($failed->refresh()->status)->toBe('failed')
+            ->and($failed->last_error_code)->toBe('PAYMENT_DECLINED')
+            ->and($subscription->refresh()->next_billing_at->toIso8601String())
+            ->toBe((new BillingCycle('month', 1))->advance($originalBillingDate)->toIso8601String());
+    });
+
+    it('records a late paid purchase that matches an earlier failed attempt identity', function (): void {
+        [$user, $subscription, $periodKey] = makeSyncPaidFixture();
+
+        /** @var RenewalAttempt $failed */
+        $failed = RenewalAttempt::query()->create([
+            'subscription_id' => $subscription->id,
+            'status' => 'failed',
+            'amount_minor' => 1000,
+            'period_key' => $periodKey,
+            'purchase_id' => 'purchase_late_paid',
+            'last_error_code' => 'PAYMENT_DECLINED',
+        ]);
+
+        $purchaseData = PurchaseData::from([
+            'id' => 'purchase_late_paid',
+            'status' => 'paid',
+            'purchase' => [
+                'total' => 1000,
+                'currency' => 'MYR',
+            ],
+        ]);
+
+        SyncChipPurchaseStatus::run($user, $purchaseData, [
+            'purchase' => [
+                'metadata' => ['subscription_type' => 'default'],
+            ],
+        ]);
+
+        $completed = RenewalAttempt::query()
+            ->where('purchase_id', 'purchase_late_paid')
+            ->where('status', 'completed')
+            ->first();
+
+        expect($completed)->not->toBeNull()
+            ->and($completed?->period_key)->toBeNull()
+            ->and($failed->refresh()->status)->toBe('failed')
+            ->and($subscription->refresh()->next_billing_at->isFuture())->toBeTrue();
     });
 });

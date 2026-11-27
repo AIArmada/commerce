@@ -14,6 +14,8 @@ use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -22,6 +24,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 final readonly class RenewSubscriptions
@@ -144,22 +147,24 @@ final readonly class RenewSubscriptions
             return 'failed';
         }
 
-        $paymentMethodId = $billable->defaultPaymentMethod()?->id();
+        $recurringToken = $subscription->recurringToken();
 
-        if ($paymentMethodId === null) {
+        if ($recurringToken === null || $recurringToken === '') {
             $this->recordFailure($attempt, $subscription, 'MISSING_PAYMENT_METHOD');
 
             return 'failed';
         }
 
+        $knownPurchaseId = $attempt->purchase_id;
+
         try {
             $payment = $attempt->purchase_id !== null
                 ? new Payment(Cashier::chip()->getPurchase($attempt->purchase_id))
                 : ChargeChipCustomer::run(
-                    $billable,
-                    $attempt->amount_minor,
-                    $paymentMethodId,
-                    [
+                    billable: $billable,
+                    amount: $attempt->amount_minor,
+                    recurringToken: $recurringToken,
+                    options: [
                         'product_name' => "Subscription: {$subscription->type}",
                         'reference' => "Renewal {$attempt->id}",
                         'idempotency_key' => "renewal-{$attempt->id}",
@@ -169,6 +174,23 @@ final readonly class RenewSubscriptions
                             'renewal_period' => $attempt->period_key,
                         ],
                     ],
+                    onPurchaseCreated: function (PurchaseData $purchase) use ($attempt, &$knownPurchaseId): void {
+                        $knownPurchaseId = $purchase->id;
+                        $recorded = RenewalAttempt::query()
+                            ->whereKey($attempt->id)
+                            ->whereIn('status', ['claimed', 'unknown'])
+                            ->where(function ($query) use ($purchase): void {
+                                $query->whereNull('purchase_id')->orWhere('purchase_id', $purchase->id);
+                            })
+                            ->update([
+                                'purchase_id' => $purchase->id,
+                                'updated_at' => CarbonImmutable::now(),
+                            ]);
+
+                        if ($recorded !== 1) {
+                            throw new RuntimeException('Renewal attempt is no longer claimable.');
+                        }
+                    },
                 );
 
             if ($payment->isSucceeded()) {
@@ -186,12 +208,29 @@ final readonly class RenewSubscriptions
             $this->recordFailure($attempt, $subscription, 'PAYMENT_DECLINED');
 
             return 'failed';
+        } catch (ChipValidationException $exception) {
+            if ($exception->isIdempotencyReconciliationRequired()) {
+                Log::warning('CHIP renewal idempotency reservation requires reconciliation.', [
+                    'renewal_attempt_id' => $attempt->id,
+                ]);
+                $this->recordFailure($attempt, $subscription, 'IDEMPOTENCY_RECONCILIATION_REQUIRED');
+
+                return 'failed';
+            }
+
+            Log::warning('CHIP renewal outcome requires reconciliation.', [
+                'renewal_attempt_id' => $attempt->id,
+                'exception' => $exception::class,
+            ]);
+            $this->recordUnknown($attempt, $knownPurchaseId, 'TRANSPORT_OUTCOME_UNKNOWN');
+
+            return 'unknown';
         } catch (Throwable $throwable) {
             Log::warning('CHIP renewal outcome requires reconciliation.', [
                 'renewal_attempt_id' => $attempt->id,
                 'exception' => $throwable::class,
             ]);
-            $this->recordUnknown($attempt, null, 'TRANSPORT_OUTCOME_UNKNOWN');
+            $this->recordUnknown($attempt, $knownPurchaseId, 'TRANSPORT_OUTCOME_UNKNOWN');
 
             return 'unknown';
         }
@@ -361,7 +400,7 @@ final readonly class RenewSubscriptions
     {
         RenewalAttempt::query()->whereKey($attempt->id)->where('status', 'claimed')->update([
             'status' => 'unknown',
-            'purchase_id' => $purchaseId,
+            'purchase_id' => $purchaseId ?? $attempt->purchase_id,
             'last_error_code' => $code,
             'lease_expires_at' => null,
             'updated_at' => CarbonImmutable::now(),

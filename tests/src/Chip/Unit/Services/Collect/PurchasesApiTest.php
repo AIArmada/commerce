@@ -154,6 +154,16 @@ it('rejects an unreconciled stable total contract', function (): void {
     ]))->toThrow(ChipValidationException::class, 'total overrides do not reconcile');
 });
 
+it('rejects negative purchase amount overrides', function (): void {
+    $this->client->shouldNotReceive('post');
+
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'total_discount_override' => -1,
+        ],
+    ])))->toThrow(ChipValidationException::class, 'total discount override must be non-negative.');
+});
+
 it('rejects out-of-range floating point minor amounts before contacting CHIP', function (float $price): void {
     $this->client->shouldNotReceive('post');
 

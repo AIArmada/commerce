@@ -160,6 +160,19 @@ describe('RepairRegression money lifecycle', function (): void {
             ->and($payment)->toBeInstanceOf(Payment::class);
     });
 
+    it('keeps recurring tokens out of default subscription serialization', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_subscription_hidden']);
+        $subscription = $this->createTrustedSubscription($user, [
+            'type' => 'default',
+            'chip_id' => 'sub_hidden',
+            'chip_status' => SubscriptionStatus::Active,
+            'recurring_token' => 'tok_subscription_secret',
+        ]);
+
+        expect(json_encode($subscription, JSON_THROW_ON_ERROR))->not->toContain('tok_subscription_secret')
+            ->and($subscription->recurringToken())->toBe('tok_subscription_secret');
+    });
+
     it('rejects a subscription charge without a recurring payment token', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_subscription_no_token']);
         $subscription = $user->newSubscription('default', 'price_monthly')->create();

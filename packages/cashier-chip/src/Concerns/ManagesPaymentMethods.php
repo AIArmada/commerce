@@ -11,6 +11,7 @@ use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
@@ -176,13 +177,24 @@ trait ManagesPaymentMethods
      */
     public function deletePaymentMethod(#[SensitiveParameter] string $paymentMethodId): void
     {
-        Cashier::paymentMethodStore()->assertBillableAccess($this->paymentMethodSubject());
+        $store = Cashier::paymentMethodStore();
+        $subject = $this->paymentMethodSubject();
+
+        $store->assertBillableAccess($subject);
+
+        if ($store->findForBillable($subject, $paymentMethodId) === null) {
+            if (! $this->hasChipId()) {
+                return;
+            }
+
+            throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+        }
 
         if ($this->hasChipId()) {
             Cashier::chip()->deleteClientRecurringToken($this->chipId(), $paymentMethodId);
         }
 
-        Cashier::paymentMethodStore()->deleteForBillable($this->paymentMethodSubject(), $paymentMethodId);
+        $store->deleteForBillable($subject, $paymentMethodId);
     }
 
     /**

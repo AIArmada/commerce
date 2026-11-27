@@ -16,6 +16,8 @@ use Throwable;
 
 class WebhookRetryManager
 {
+    private const STALE_PROCESSING_MINUTES = 30;
+
     /**
      * @var array<int, int> Backoff schedule in seconds: [attempt => delay]
      */
@@ -33,6 +35,10 @@ class WebhookRetryManager
 
     public function shouldRetry(Webhook $webhook): bool
     {
+        if ($webhook->status === 'processing' && $this->isStaleProcessingClaim($webhook)) {
+            return $webhook->retry_count < count($this->backoffSchedule);
+        }
+
         if ($webhook->status !== 'failed') {
             return false;
         }
@@ -87,11 +93,13 @@ class WebhookRetryManager
                         'status' => 'processed',
                         'processed' => true,
                         'processed_at' => CarbonImmutable::now(),
+                        'failed_at' => null,
                         'last_error' => null,
                     ])->save();
                 } else {
                     $webhook->forceFill([
                         'status' => 'failed',
+                        'failed_at' => CarbonImmutable::now(),
                         'last_error' => $result->message,
                     ])->save();
                 }
@@ -101,6 +109,7 @@ class WebhookRetryManager
             } catch (Throwable $e) {
                 $webhook->forceFill([
                     'status' => 'failed',
+                    'failed_at' => CarbonImmutable::now(),
                     'last_error' => $e->getMessage(),
                 ])->save();
 
@@ -119,26 +128,34 @@ class WebhookRetryManager
         $now = CarbonImmutable::now();
         $maxAttempts = count($this->backoffSchedule);
         $backoffSchedule = $this->backoffSchedule;
+        $staleCutoff = $now->subMinutes(self::STALE_PROCESSING_MINUTES);
 
         return Webhook::query()
             ->forOwner(OwnerContext::CURRENT, false)
-            ->where('status', 'failed')
             ->where('retry_count', '<', $maxAttempts)
-            ->where(function ($query) use ($now, $maxAttempts, $backoffSchedule): void {
-                // Never retried: eligible immediately.
-                $query->whereNull('last_retry_at');
+            ->where(function ($query) use ($now, $maxAttempts, $backoffSchedule, $staleCutoff): void {
+                $query->where('status', 'failed')
+                    ->where(function ($query) use ($now, $maxAttempts, $backoffSchedule): void {
+                        // Never retried: eligible immediately.
+                        $query->whereNull('last_retry_at');
 
-                // Otherwise the backoff delay depends on the attempt count,
-                // so compare last_retry_at against one cutoff per count.
-                for ($retryCount = 0; $retryCount < $maxAttempts; $retryCount++) {
-                    $delay = $backoffSchedule[$retryCount + 1] ?? end($backoffSchedule);
-                    $cutoff = $now->subSeconds(max(0, (int) $delay));
+                        // Otherwise the backoff delay depends on the attempt count,
+                        // so compare last_retry_at against one cutoff per count.
+                        for ($retryCount = 0; $retryCount < $maxAttempts; $retryCount++) {
+                            $delay = $backoffSchedule[$retryCount + 1] ?? end($backoffSchedule);
+                            $cutoff = $now->subSeconds(max(0, (int) $delay));
 
-                    $query->orWhere(function ($query) use ($retryCount, $cutoff): void {
-                        $query->where('retry_count', $retryCount)
-                            ->where('last_retry_at', '<=', $cutoff);
+                            $query->orWhere(function ($query) use ($retryCount, $cutoff): void {
+                                $query->where('retry_count', $retryCount)
+                                    ->where('last_retry_at', '<=', $cutoff);
+                            });
+                        }
                     });
-                }
+
+                $query->orWhere(function ($query) use ($staleCutoff): void {
+                    $query->where('status', 'processing')
+                        ->where('updated_at', '<=', $staleCutoff);
+                });
             })
             ->orderBy('id')
             ->limit(max(0, $limit))
@@ -159,8 +176,24 @@ class WebhookRetryManager
         return $this;
     }
 
+    private function isStaleProcessingClaim(Webhook $webhook): bool
+    {
+        $updatedAt = $webhook->getAttribute('updated_at');
+
+        if (! $updatedAt instanceof CarbonImmutable) {
+            $updatedAt = $updatedAt === null ? null : CarbonImmutable::parse($updatedAt);
+        }
+
+        return $updatedAt instanceof CarbonImmutable
+            && $updatedAt->lessThan(CarbonImmutable::now()->subMinutes(self::STALE_PROCESSING_MINUTES));
+    }
+
     private function isEligibleForRetry(Webhook $webhook, CarbonImmutable $now): bool
     {
+        if ($webhook->status === 'processing') {
+            return $this->isStaleProcessingClaim($webhook);
+        }
+
         if ($webhook->last_retry_at === null) {
             return true;
         }

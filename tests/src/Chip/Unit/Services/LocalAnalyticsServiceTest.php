@@ -14,6 +14,10 @@ beforeEach(function (): void {
 
 function createPurchase(array $attributes): Purchase
 {
+    if (isset($attributes['created_at']) && ! array_key_exists('created_on', $attributes)) {
+        $attributes['created_on'] = $attributes['created_at']->timestamp;
+    }
+
     $purchase = new Purchase;
     $purchase->forceFill(array_merge([
         'id' => uniqid('p-'),
@@ -127,6 +131,27 @@ it('calculates payment method breakdown', function (): void {
     expect($fpx['successful'])->toBe(2);
     expect($fpx['revenue'])->toBe(4000);
     expect($fpx['success_rate'])->toBe(100.0);
+});
+
+it('uses provider created_on timestamps rather than local ingestion timestamps', function (): void {
+    $now = CarbonImmutable::now();
+
+    createPurchase([
+        'status' => 'paid',
+        'created_at' => $now,
+        'created_on' => $now->subDays(10)->timestamp,
+    ]);
+
+    createPurchase([
+        'status' => 'paid',
+        'created_at' => $now->subDays(10),
+        'created_on' => $now->timestamp,
+    ]);
+
+    $metrics = $this->service->getTransactionMetrics($now->copy()->subDay(), $now->copy()->addDay());
+
+    expect($metrics->total)->toBe(1)
+        ->and($metrics->successful)->toBe(1);
 });
 
 it('includes partial refunds in revenue trends using CHIP amount fields', function (): void {

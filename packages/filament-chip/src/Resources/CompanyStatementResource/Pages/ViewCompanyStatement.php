@@ -65,7 +65,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                         $downloadUrl = $statement->download_url;
 
                         if (is_string($downloadUrl) && $downloadUrl !== '') {
-                            redirect()->away($downloadUrl);
+                            $this->redirect($downloadUrl);
                         } else {
                             Notification::make()
                                 ->title('Download not available')

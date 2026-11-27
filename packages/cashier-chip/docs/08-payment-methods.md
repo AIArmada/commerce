@@ -106,10 +106,13 @@ $user->updateDefaultPaymentMethod($recurringToken);
 ```php
 // Delete a specific payment method
 $user->deletePaymentMethod($recurringToken);
-
-// Note: CHIP may not support revoking recurring tokens via API
-// This removes the local record only
 ```
+
+Deletion first resolves the billable and the stored payment method through the current owner
+scope. Only after that local authorization passes does the package revoke the token at CHIP and
+delete the local record. A token that is not locally visible in the current owner scope is not
+revoked remotely; the call throws `AuthorizationException` when the billable has a CHIP customer
+ID.
 
 There is no public `addPaymentMethod()` helper on the billable API, and there are no dedicated
 payment-method events. Recurring tokens are stored as a side effect of:

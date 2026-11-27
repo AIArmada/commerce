@@ -49,7 +49,7 @@ class LocalAnalyticsService implements PurchaseAnalytics
         $metrics = Purchase::query()
             ->forOwner()
             ->withoutIdempotencyStubs()
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_on', [$startDate->timestamp, $endDate->timestamp])
             ->toBase()
             ->selectRaw('
                 SUM(CASE WHEN (status IN (?, ?, ?) OR ' . self::GROSS_REVENUE_CONDITION . ') THEN total_minor ELSE 0 END) as revenue,
@@ -72,7 +72,7 @@ class LocalAnalyticsService implements PurchaseAnalytics
         $previous = Purchase::query()
             ->forOwner()
             ->withoutIdempotencyStubs()
-            ->whereBetween('created_at', [$previousStart, $previousEnd])
+            ->whereBetween('created_on', [$previousStart->timestamp, $previousEnd->timestamp])
             ->where(function ($query): void {
                 $query->whereIn('status', [...self::SUCCESSFUL_REVENUE_STATUSES, ...self::REFUND_STATUSES]);
             })
@@ -101,7 +101,7 @@ class LocalAnalyticsService implements PurchaseAnalytics
         $metrics = Purchase::query()
             ->forOwner()
             ->withoutIdempotencyStubs()
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_on', [$startDate->timestamp, $endDate->timestamp])
             ->toBase()
             ->selectRaw('
                 COUNT(*) as total,
@@ -139,7 +139,7 @@ class LocalAnalyticsService implements PurchaseAnalytics
         return Purchase::query()
             ->forOwner()
             ->withoutIdempotencyStubs()
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_on', [$startDate->timestamp, $endDate->timestamp])
             ->toBase()
             ->selectRaw("
                 COALESCE(payment_method, 'unknown') as payment_method,
@@ -176,7 +176,7 @@ class LocalAnalyticsService implements PurchaseAnalytics
         return Purchase::query()
             ->forOwner()
             ->withoutIdempotencyStubs()
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_on', [$startDate->timestamp, $endDate->timestamp])
             ->whereIn('status', ['error', 'blocked'])
             ->toBase()
             ->selectRaw("
@@ -212,14 +212,14 @@ class LocalAnalyticsService implements PurchaseAnalytics
         Purchase::query()
             ->forOwner()
             ->withoutIdempotencyStubs()
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_on', [$startDate->timestamp, $endDate->timestamp])
             ->where(function ($query): void {
                 $query->whereIn('status', [...self::SUCCESSFUL_REVENUE_STATUSES, ...self::REFUND_STATUSES]);
             })
-            ->select(['id', 'created_at', 'total_minor'])
+            ->select(['id', 'created_on', 'total_minor'])
             ->chunkById(1000, function ($purchases) use (&$buckets, $groupBy): void {
                 foreach ($purchases as $purchase) {
-                    $period = $this->formatPeriod($purchase->created_at, $groupBy);
+                    $period = $this->formatPeriod($purchase->created_on, $groupBy);
 
                     $buckets[$period] ??= ['count' => 0, 'revenue' => 0];
                     $buckets[$period]['count']++;

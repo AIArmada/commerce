@@ -1017,6 +1017,17 @@ final class PurchasesApi extends CollectApi implements PurchaseOperations
         $taxOverride = $this->nullableMinorAmount($data['purchase']['total_tax_override'] ?? null, 'total tax override');
         $totalOverride = $this->nullableMinorAmount($data['purchase']['total_override'] ?? null, 'total override');
 
+        foreach ([
+            'subtotal override' => $subtotalOverride,
+            'total discount override' => $discountOverride,
+            'total tax override' => $taxOverride,
+            'total override' => $totalOverride,
+        ] as $field => $value) {
+            if ($value !== null && $value < 0) {
+                throw new ChipValidationException("Purchase {$field} must be non-negative.");
+            }
+        }
+
         if ($subtotalOverride !== null && $subtotalOverride !== $subtotal) {
             throw new ChipValidationException('Purchase subtotal override does not match the sum of line items.', [
                 'line_items_subtotal' => $subtotal,

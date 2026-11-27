@@ -54,11 +54,7 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($payload['id'])->lockForUpdate()->first();
 
         if ($purchase === null) {
-            // Promote the reservation stub written when the purchase was created
-            // so the ledger and the mirror remain a single row keyed by the CHIP id.
-            $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
-                ->where('metadata->chip_idempotency->response->id', $payload['id'])
-                ->lockForUpdate()->first() ?? new Purchase;
+            $purchase = new Purchase;
         }
 
         if ($purchase->exists && (string) $purchase->getKey() === (string) $payload['id']) {
@@ -72,15 +68,14 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
             $previousStatus = PurchaseStatus::tryFrom((string) $purchase->status);
             $incomingStatus = PurchaseStatus::tryFrom((string) ($payload['status'] ?? ''));
 
-            if ($previousStatus !== null && $incomingStatus !== null
-                && ($previousStatus->isSuccessful() || in_array($previousStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true))
-                && ($incomingStatus->isFailed() || ($incomingStatus->isPending() && $incomingStatus !== PurchaseStatus::PENDING_REFUND) || $incomingStatus === PurchaseStatus::RELEASED)) {
+            if (in_array($previousStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true)
+                && ! in_array($incomingStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true)) {
                 return false;
             }
 
-            if ((int) $incomingUpdate === (int) $previousUpdate
-                && in_array($previousStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true)
-                && $incomingStatus?->isSuccessful()) {
+            if ($previousStatus !== null && $incomingStatus !== null
+                && ($previousStatus->isSuccessful() || in_array($previousStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true))
+                && ($incomingStatus->isFailed() || ($incomingStatus->isPending() && $incomingStatus !== PurchaseStatus::PENDING_REFUND) || $incomingStatus === PurchaseStatus::RELEASED)) {
                 return false;
             }
         }
@@ -113,8 +108,9 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
                 'client_id' => $payload['client_id'] ?? null,
 
                 // Status
-                'status' => $payload['status'],
-                'total_minor' => is_numeric($payload['purchase']['total'] ?? null) ? (int) $payload['purchase']['total'] : (int) ($purchase->getAttribute('total_minor') ?? 0),
+                'status' => is_string($payload['status'] ?? null) ? $payload['status'] : $purchase->getAttribute('status'),
+                'total_minor' => $this->resolveTotalMinor($payload, $purchase),
+                'payment_method' => $this->resolvePaymentMethod($payload, $purchase),
                 'viewed_on' => $payload['viewed_on'] ?? null,
 
                 // Flags
@@ -270,13 +266,22 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
             return;
         }
 
+        $purchaseCurrency = is_array($payload['purchase'] ?? null) ? ($payload['purchase']['currency'] ?? null) : null;
+        $currency = $paymentData['currency'] ?? $purchaseCurrency;
+
+        if (! is_string($currency) || $currency === '') {
+            return;
+        }
+
+        $paymentType = is_string($paymentData['payment_type'] ?? null) ? $paymentData['payment_type'] : 'purchase';
+
         $paymentMatch = $paymentId !== null
             ? ['id' => $paymentId]
             : [
                 'purchase_id' => $purchaseId,
-                'payment_type' => $paymentData['payment_type'] ?? 'purchase',
+                'payment_type' => $paymentType,
                 'amount' => $paymentData['amount'],
-                'currency' => $paymentData['currency'],
+                'currency' => $currency,
                 'is_outgoing' => $paymentData['is_outgoing'] ?? false,
             ];
 
@@ -289,8 +294,8 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
 
         if ($payment->exists && (
             (string) $payment->purchase_id !== $purchaseId
-            || $payment->payment_type !== ($paymentData['payment_type'] ?? 'purchase')
-            || $payment->currency !== $paymentData['currency']
+            || $payment->payment_type !== $paymentType
+            || $payment->currency !== $currency
             || (int) $payment->amount !== (int) $paymentData['amount']
         )) {
             throw new ChipValidationException('Payment identifier conflicts with an existing payment.');
@@ -299,12 +304,12 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         $payment->forceFill(
             array_merge($paymentId !== null ? ['id' => $paymentId] : [], [
                 'purchase_id' => $purchaseId,
-                'payment_type' => $paymentData['payment_type'] ?? 'purchase',
+                'payment_type' => $paymentType,
                 'is_outgoing' => $paymentData['is_outgoing'] ?? false,
                 'amount' => $paymentData['amount'],
-                'currency' => $paymentData['currency'],
-                'net_amount' => $paymentData['net_amount'] ?? null,
-                'fee_amount' => $paymentData['fee_amount'] ?? null,
+                'currency' => $currency,
+                'net_amount' => is_numeric($paymentData['net_amount'] ?? null) ? (int) $paymentData['net_amount'] : (int) $paymentData['amount'],
+                'fee_amount' => is_numeric($paymentData['fee_amount'] ?? null) ? (int) $paymentData['fee_amount'] : 0,
                 'pending_amount' => $paymentData['pending_amount'] ?? 0,
                 'pending_unfreeze_on' => $paymentData['pending_unfreeze_on'] ?? null,
                 'description' => $paymentData['description'] ?? null,
@@ -319,6 +324,44 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         }
 
         $payment->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolveTotalMinor(array $payload, Purchase $purchase): int
+    {
+        foreach ([
+            $payload['purchase']['total'] ?? null,
+            $payload['purchase']['total_override'] ?? null,
+            $payload['payment']['amount'] ?? null,
+        ] as $candidate) {
+            if (is_numeric($candidate)) {
+                return (int) $candidate;
+            }
+        }
+
+        return (int) ($purchase->getAttribute('total_minor') ?? 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolvePaymentMethod(array $payload, Purchase $purchase): ?string
+    {
+        foreach ([
+            $payload['payment_method'] ?? null,
+            data_get($payload, 'transaction_data.payment_method'),
+            data_get($payload, 'payment.payment_method'),
+        ] as $candidate) {
+            if (is_string($candidate) && $candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        $current = $purchase->getAttribute('payment_method');
+
+        return is_string($current) && $current !== '' ? $current : null;
     }
 
     private function resolveOwner(): ?Model

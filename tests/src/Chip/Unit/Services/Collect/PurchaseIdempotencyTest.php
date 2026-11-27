@@ -6,6 +6,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Drivers\ChipCollectClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Features\Collect\Actions\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
 use Illuminate\Support\Facades\Cache;
 
@@ -170,4 +171,55 @@ it('still rejects a reused key with a genuinely different payload', function ():
     expect(fn () => $api->create($different, 'canonical-conflict-1'))
         ->toThrow(ChipValidationException::class, 'different purchase payload');
     expect($posts)->toBe(1);
+});
+
+it('promotes the reservation to the provider purchase identity when the response is recorded', function (): void {
+    $payload = idempotencyTestPayload();
+    $ledger = new PurchaseIdempotencyLedger;
+    $stub = $ledger->reserve('brand_123', 'canonical-promote-1', canonicalTestFingerprint($payload), $payload);
+    $stubId = (string) $stub->getKey();
+
+    $ledger->record($stub, PurchaseData::from(idempotencyTestResponse()));
+
+    expect(Purchase::query()->whereKey('canonical_purchase_1')->exists())->toBeTrue()
+        ->and(Purchase::query()->whereKey($stubId)->exists())->toBeFalse()
+        ->and(Purchase::query()->count())->toBe(1);
+});
+
+it('adopts a webhook-first provider row instead of keeping a second purchase', function (): void {
+    $payload = idempotencyTestPayload();
+    $response = idempotencyTestResponse();
+
+    $visible = new Purchase;
+    $visible->forceFill([
+        'id' => $response['id'],
+        'type' => 'purchase',
+        'created_on' => $response['created_on'],
+        'updated_on' => $response['updated_on'],
+        'client' => $response['client'],
+        'purchase' => $response['purchase'],
+        'brand_id' => $response['brand_id'],
+        'issuer_details' => [],
+        'transaction_data' => [],
+        'status' => 'paid',
+        'status_history' => [],
+        'refund_availability' => 'all',
+        'refundable_amount' => 1000,
+        'metadata' => ['provider_note' => 'kept'],
+    ])->save();
+
+    $ledger = new PurchaseIdempotencyLedger;
+    $stub = $ledger->reserve('brand_123', 'canonical-adopt-1', canonicalTestFingerprint($payload), $payload);
+    $stubId = (string) $stub->getKey();
+
+    $ledger->record($stub, PurchaseData::from($response));
+
+    $adopted = Purchase::query()->whereKey($response['id'])->firstOrFail();
+
+    expect(Purchase::query()->whereKey($stubId)->exists())->toBeFalse()
+        ->and(Purchase::query()->count())->toBe(1)
+        ->and($adopted->status)->toBe('paid')
+        ->and($adopted->metadata['provider_note'])->toBe('kept')
+        ->and($adopted->metadata['chip_idempotency']['response']['id'])->toBe($response['id'])
+        ->and($ledger->find('brand_123', 'canonical-adopt-1', canonicalTestFingerprint($payload))->id)->toBe($response['id']);
 });

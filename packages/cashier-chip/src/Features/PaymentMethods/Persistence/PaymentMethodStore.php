@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Features\PaymentMethods\Persistence;
 
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Data\StoredPaymentMethodData;
 use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +18,8 @@ use InvalidArgumentException;
 
 final class PaymentMethodStore implements PaymentMethodStoreInterface
 {
+    public function __construct(private CustomerOwnerResolver $ownerResolver) {}
+
     /** @return list<StoredPaymentMethodData> */
     public function allForBillable(RecordReference $billable): array
     {
@@ -267,47 +267,10 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
             return;
         }
 
-        if (is_a($owner, $billable::class) && (string) $owner->getKey() === (string) $billable->getKey()) {
+        if ($this->ownerResolver->canAccess($billable, $owner)) {
             return;
         }
 
-        if (is_a($owner, $billable::class)) {
-            throw new AuthorizationException('Cross-tenant payment method write blocked.');
-        }
-
-        $attributes = $billable->getAttributes();
-        $ownerType = $attributes['owner_type'] ?? null;
-        $ownerId = $attributes['owner_id'] ?? null;
-
-        if (is_string($ownerType) && $ownerType !== '' && is_scalar($ownerId)) {
-            if ($ownerType === $owner->getMorphClass() && (string) $ownerId === (string) $owner->getKey()) {
-                return;
-            }
-
-            throw new AuthorizationException('Cross-tenant payment method write blocked.');
-        }
-
-        if (! method_exists($billable, 'scopeForOwner') && ! method_exists($billable::class, 'ownerScopeConfig')) {
-            return;
-        }
-
-        $columns = OwnerTupleColumns::forModelClass($billable::class);
-
-        /** @var Builder<Model> $query */
-        $query = $billable->newQuery();
-
-        $exists = OwnerQuery::applyToEloquentBuilder(
-            $query->withoutGlobalScope(OwnerScope::class),
-            $owner,
-            false,
-            $columns->ownerTypeColumn,
-            $columns->ownerIdColumn,
-        )
-            ->whereKey($billable->getKey())
-            ->exists();
-
-        if (! $exists) {
-            throw new AuthorizationException('Cross-tenant payment method write blocked.');
-        }
+        throw new AuthorizationException('Cross-tenant payment method write blocked.');
     }
 }

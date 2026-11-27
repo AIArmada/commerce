@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
@@ -10,6 +11,7 @@ use AIArmada\CashierChip\Features\Subscriptions\Actions\RenewSubscriptions;
 use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
+use AIArmada\CashierChip\Testing\FakeChipClient;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Carbon\Carbon;
@@ -96,6 +98,7 @@ describe('RenewSubscriptionsCommand', function (): void {
         $subscription = Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->subDay(),
+            'recurring_token' => null,
         ]);
 
         SubscriptionItem::factory()->forSubscription($subscription)->create([
@@ -426,4 +429,71 @@ it('does not claim new renewals for paused, unpaid or canceled subscriptions', f
     }
 
     expect(RenewalAttempt::query()->count())->toBe(0);
+});
+
+it('charges renewals with the subscription token before the customer default token', function (): void {
+    /** @var User $user */
+    $user = $this->createUser(['chip_id' => 'cli_renewal_token']);
+
+    $defaultToken = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
+    $user->updateDefaultPaymentMethod($defaultToken['id']);
+
+    $subscription = Subscription::factory()->for($user, 'billable')->create([
+        'chip_status' => SubscriptionStatus::Active,
+        'next_billing_at' => Carbon::now()->subDay(),
+        'recurring_token' => 'tok_subscription_specific',
+    ]);
+
+    SubscriptionItem::factory()->forSubscription($subscription)->create([
+        'unit_amount' => 1000,
+        'quantity' => 1,
+    ]);
+
+    $result = $this->app->make(RenewSubscriptions::class)->processRenewals(false, 0);
+
+    $purchases = array_values($this->fakeChip->getFakeClient()->getPurchases());
+
+    expect($result)->toBe(['renewed' => 1, 'failed' => 0, 'unknown' => 0, 'skipped' => 0])
+        ->and($purchases)->toHaveCount(1)
+        ->and($purchases[0]['recurring_token'])->toBe('tok_subscription_specific');
+});
+
+it('persists a known purchase before charging and never reissues it after a transport failure', function (): void {
+    $client = new class extends FakeChipClient
+    {
+        public function chargePurchase(string $purchaseId, string $recurringToken): ?array
+        {
+            throw new RuntimeException('charge transport failed');
+        }
+    };
+
+    $this->fakeChip = Cashier::fake($client);
+
+    /** @var User $user */
+    $user = $this->createUser(['chip_id' => 'cli_renewal_transport']);
+
+    $subscription = Subscription::factory()->for($user, 'billable')->create([
+        'chip_status' => SubscriptionStatus::Active,
+        'next_billing_at' => Carbon::now()->subDay(),
+        'recurring_token' => 'tok_renewal_transport',
+    ]);
+
+    SubscriptionItem::factory()->forSubscription($subscription)->create([
+        'unit_amount' => 1000,
+        'quantity' => 1,
+    ]);
+
+    $action = $this->app->make(RenewSubscriptions::class);
+
+    expect($action->processRenewals(false, 0))->toBe(['renewed' => 0, 'failed' => 0, 'unknown' => 1, 'skipped' => 0]);
+
+    $attempt = RenewalAttempt::query()->where('subscription_id', $subscription->id)->firstOrFail();
+    $purchases = array_values($client->getPurchases());
+
+    expect($purchases)->toHaveCount(1)
+        ->and($attempt->status)->toBe('unknown')
+        ->and($attempt->purchase_id)->toBe($purchases[0]['id']);
+
+    expect($action->processRenewals(false, 0))->toBe(['renewed' => 0, 'failed' => 0, 'unknown' => 1, 'skipped' => 0])
+        ->and(array_values($client->getPurchases()))->toHaveCount(1);
 });

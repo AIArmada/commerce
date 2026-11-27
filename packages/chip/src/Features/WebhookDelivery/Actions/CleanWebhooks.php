@@ -24,7 +24,7 @@ final readonly class CleanWebhooks
 
     private function buildQuery(CarbonImmutable $cutoffDate, string $status, ?Model $owner): Builder
     {
-        if (! in_array($status, ['processed', 'failed', 'all'], true) || $cutoffDate->greaterThanOrEqualTo(CarbonImmutable::now())) {
+        if (! in_array($status, ['processed', 'failed', 'superseded', 'all'], true) || $cutoffDate->greaterThanOrEqualTo(CarbonImmutable::now())) {
             throw new InvalidArgumentException('A past cutoff date and a valid webhook status are required.');
         }
 

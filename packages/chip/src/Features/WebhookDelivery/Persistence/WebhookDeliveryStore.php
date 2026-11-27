@@ -21,6 +21,7 @@ final readonly class WebhookDeliveryStore
             'processed' => true,
             'processed_at' => CarbonImmutable::now(),
             'processing_time_ms' => $processingTimeMs,
+            'failed_at' => null,
             'last_error' => null,
         ])->save();
     }
@@ -29,6 +30,9 @@ final readonly class WebhookDeliveryStore
     {
         $webhook->forceFill([
             'status' => 'failed',
+            'processed' => false,
+            'processed_at' => null,
+            'failed_at' => CarbonImmutable::now(),
             'last_error' => $exception->getMessage(),
         ])->save();
     }
@@ -87,7 +91,7 @@ final readonly class WebhookDeliveryStore
             ->where('idempotency_key', $idempotencyKey)
             ->first();
 
-        if (! $holder instanceof Webhook || $holder->status !== 'failed') {
+        if (! $holder instanceof Webhook || ! in_array($holder->status, ['failed', 'superseded'], true)) {
             return null;
         }
 
@@ -96,7 +100,7 @@ final readonly class WebhookDeliveryStore
         $released = Webhook::query()
             ->forOwner(OwnerContext::CURRENT, false)
             ->whereKey($holder->getKey())
-            ->where('status', 'failed')
+            ->whereIn('status', ['failed', 'superseded'])
             ->where('idempotency_key', $idempotencyKey)
             ->update(['idempotency_key' => null]);
 

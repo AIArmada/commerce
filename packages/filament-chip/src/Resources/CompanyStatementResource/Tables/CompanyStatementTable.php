@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\CompanyStatementResource\Tables;
 
+use AIArmada\Chip\Features\Statements\Actions\CancelCompanyStatement;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -91,15 +94,27 @@ final class CompanyStatementTable
                     ->label('Download')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('info')
-                    ->action(function ($record): void {
-                        $service = app(ChipCollectService::class);
+                    ->action(function ($record, $livewire): void {
+                        $scoped = CompanyStatement::query()
+                            ->forOwner(OwnerContext::CURRENT, false)
+                            ->whereKey($record->id)
+                            ->first();
+
+                        if (! $scoped instanceof CompanyStatement) {
+                            Notification::make()
+                                ->title('Statement is outside your owner scope')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         try {
-                            $statement = $service->getCompanyStatement($record->id);
+                            $statement = app(ChipCollectService::class)->getCompanyStatement((string) $scoped->getKey());
                             $downloadUrl = $statement->download_url ?? null;
 
-                            if ($downloadUrl) {
-                                redirect()->away($downloadUrl);
+                            if (is_string($downloadUrl) && $downloadUrl !== '') {
+                                $livewire->redirect($downloadUrl);
                             } else {
                                 Notification::make()
                                     ->title('Download not available')
@@ -125,10 +140,22 @@ final class CompanyStatementTable
                     ->modalHeading('Cancel Statement Request')
                     ->modalDescription('Are you sure you want to cancel this statement request?')
                     ->action(function ($record): void {
-                        $service = app(ChipCollectService::class);
+                        $scoped = CompanyStatement::query()
+                            ->forOwner(OwnerContext::CURRENT, false)
+                            ->whereKey($record->id)
+                            ->first();
+
+                        if (! $scoped instanceof CompanyStatement) {
+                            Notification::make()
+                                ->title('Statement is outside your owner scope')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         try {
-                            $service->cancelCompanyStatement($record->id);
+                            app(CancelCompanyStatement::class)->handle((string) $scoped->getKey());
                             Notification::make()
                                 ->title('Statement request cancelled')
                                 ->success()

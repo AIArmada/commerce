@@ -40,6 +40,29 @@ it('dispatches PaymentSucceeded on purchase.paid', function (): void {
     });
 });
 
+it('does not expose recurring tokens on PaymentSucceeded event payloads', function (): void {
+    Event::fake([PaymentSucceeded::class]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-token-redaction',
+        'client_id' => 'test-client-id',
+        'status' => 'paid',
+        'recurring_token' => 'tok_event_secret',
+        'transaction_data' => [
+            'payment_method' => 'visa',
+            'extra' => ['masked_pan' => '**** **** **** 4242'],
+        ],
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+    ];
+
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
+
+    Event::assertDispatched(
+        PaymentSucceeded::class,
+        fn (PaymentSucceeded $event): bool => ! array_key_exists('recurring_token', $event->purchase),
+    );
+});
+
 it('dispatches PaymentFailed on purchase.payment_failure', function (): void {
     Event::fake([PaymentFailed::class]);
 

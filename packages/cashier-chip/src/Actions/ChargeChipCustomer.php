@@ -11,6 +11,7 @@ use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Support\IdempotencyKey;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\RateLimiter;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,11 +24,18 @@ final class ChargeChipCustomer
     /**
      * @param  Model&BillableModel  $billable
      * @param  array<string, mixed>  $options
+     * @param  (Closure(PurchaseData): void)|null  $onPurchaseCreated
      *
      * @throws IncompletePayment
      */
-    public function handle(Model $billable, int $amount, #[SensitiveParameter] ?string $recurringToken = null, array $options = []): Payment
-    {
+    public function handle(
+        Model $billable,
+        int $amount,
+        #[SensitiveParameter]
+        ?string $recurringToken = null,
+        array $options = [],
+        ?Closure $onPurchaseCreated = null,
+    ): Payment {
         Cashier::assertAmountWithinBounds($amount);
 
         $rateLimitKey = 'cashier-chip:charge:' . ($billable->chipId() ?? $billable->getKey());
@@ -98,8 +106,17 @@ final class ChargeChipCustomer
 
         $purchase = $builder->create();
 
+        if ($onPurchaseCreated instanceof Closure) {
+            $onPurchaseCreated($purchase);
+        }
+
         if ($recurringToken) {
-            $purchase = Cashier::chip()->chargePurchase($purchase->id, $recurringToken);
+            $idempotencyKey = $options['idempotency_key'] ?? null;
+            $purchase = Cashier::chip()->chargePurchase(
+                $purchase->id,
+                $recurringToken,
+                is_string($idempotencyKey) && $idempotencyKey !== '' ? $idempotencyKey : null,
+            );
         }
 
         $payment = new Payment($purchase);

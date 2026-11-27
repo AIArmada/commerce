@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip\Features\Subscriptions\Models;
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Billing\Coupon;
+use AIArmada\CashierChip\Billing\CustomerOwnerResolver;
 use AIArmada\CashierChip\Billing\Discount;
 use AIArmada\CashierChip\Billing\SubscriptionRecord;
 use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
@@ -104,6 +105,11 @@ class Subscription extends Model implements SubscriptionRecord
     use Prorates;
 
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = ['recurring_token'];
 
     /**
      * @var list<string>
@@ -458,9 +464,17 @@ class Subscription extends Model implements SubscriptionRecord
     /**
      * Filter query by not on trial.
      */
+    public function scopeWhereNotOnTrial(Builder $query): void
+    {
+        $query->where(function (Builder $query): void {
+            $query->whereNull('trial_ends_at')
+                ->orWhere('trial_ends_at', '<=', CarbonImmutable::now());
+        });
+    }
+
     public function scopeNotOnTrial(Builder $query): void
     {
-        $query->whereNull('trial_ends_at')->orWhere('trial_ends_at', '<=', CarbonImmutable::now());
+        $this->scopeWhereNotOnTrial($query);
     }
 
     /**
@@ -779,6 +793,7 @@ class Subscription extends Model implements SubscriptionRecord
             $recurringTokenId,
             [
                 'reference' => "Subscription {$this->type} - Period {$this->next_billing_at?->format('Y-m-d')}",
+                'idempotency_key' => "subscription-{$this->id}-{$this->next_billing_at?->format('Y-m-d')}",
             ]
         );
     }
@@ -1256,29 +1271,15 @@ class Subscription extends Model implements SubscriptionRecord
                     throw new AuthorizationException('Cross-tenant subscription write blocked.');
                 }
 
-                // Fast-path: if owner is the billable, allow it
-                if (
-                    is_a($owner, $billableModel)
+                $exists = is_a($owner, $billableModel)
                     && (string) $owner->getKey() === (string) $subscription->billable_id
-                ) {
-                    // Safe fast-path: tenant owner is the billable.
-                    // No additional owner-scoped lookup required.
-                } else {
-                    if (! method_exists($billableModel, 'scopeForOwner')) {
-                        if (is_a($owner, $billableModel)) {
-                            throw new AuthorizationException('Cross-tenant subscription write blocked.');
-                        }
-
-                        return;
-                    }
-
-                    $exists = $billableModel::forOwner($owner, false)
-                        ->whereKey($subscription->billable_id)
+                    ? true
+                    : app(CustomerOwnerResolver::class)
+                        ->scopeQuery($billableModel::query()->whereKey($subscription->billable_id), $owner)
                         ->exists();
 
-                    if (! $exists) {
-                        throw new AuthorizationException('Cross-tenant subscription write blocked.');
-                    }
+                if (! $exists) {
+                    throw new AuthorizationException('Cross-tenant subscription write blocked.');
                 }
             }
 

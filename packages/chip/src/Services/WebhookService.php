@@ -7,6 +7,9 @@ namespace AIArmada\Chip\Services;
 use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
 use AIArmada\Chip\Features\WebhookDelivery\Api\PublicKeyCache;
+use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -88,7 +91,7 @@ class WebhookService
      */
     public function getPublicKey(?string $webhookId = null): string
     {
-        $cacheKey = config('chip.cache.prefix') . 'public_key' . ($webhookId ? ":{$webhookId}" : '');
+        $cacheKey = config('chip.cache.prefix') . 'public_key' . ($webhookId ? ":{$webhookId}" : '') . ':' . $this->keyCacheScope();
 
         return $this->rememberPublicKey(
             $cacheKey,
@@ -158,7 +161,7 @@ class WebhookService
             return $configuredKey;
         }
 
-        $cacheKey = config('chip.cache.prefix') . "send_public_key:{$configuredWebhookId}";
+        $cacheKey = config('chip.cache.prefix') . "send_public_key:{$configuredWebhookId}:" . $this->keyCacheScope();
 
         return $this->rememberPublicKey(
             $cacheKey,
@@ -220,6 +223,12 @@ class WebhookService
             throw WebhookVerificationException::missingPublicKey();
         }
 
+        $brandCandidates = $this->resolveBrandVerificationKeys($payloadOrRequest);
+
+        if ($brandCandidates !== null) {
+            return $brandCandidates;
+        }
+
         $candidateKeys = [];
 
         foreach ((array) config('chip.webhooks.collect.webhook_keys', []) as $configuredKey) {
@@ -233,6 +242,64 @@ class WebhookService
         }
 
         return array_values(array_unique($candidateKeys));
+    }
+
+    /**
+     * @return array<int, string>|null Null when brand-bound verification is not configured.
+     */
+    private function resolveBrandVerificationKeys(Request $request): ?array
+    {
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return null;
+        }
+
+        $configured = config('chip.webhooks.collect.brand_keys', []);
+        $brandMap = config('chip.owner.webhook_brand_id_map', []);
+
+        if (! is_array($configured) || $configured === []) {
+            if (is_array($brandMap) && count($brandMap) > 1) {
+                throw new WebhookVerificationException('Brand-bound CHIP Collect webhook keys are required when owner mode serves multiple brands.');
+            }
+
+            return null;
+        }
+
+        $payload = json_decode($request->getContent(), true);
+        $brandId = is_array($payload) ? ChipWebhookOwnerResolver::brandIdFromPayload($payload) : null;
+
+        if (! is_string($brandId) || $brandId === '') {
+            throw new WebhookVerificationException('A CHIP Collect webhook brand is required for signature verification.');
+        }
+
+        $brandKeys = $configured[$brandId] ?? null;
+        $brandKeys = is_string($brandKeys) ? [$brandKeys] : $brandKeys;
+
+        if (! is_array($brandKeys)) {
+            throw new WebhookVerificationException('No CHIP Collect webhook public key is configured for the received brand.');
+        }
+
+        $keys = array_values(array_filter(
+            $brandKeys,
+            static fn (mixed $key): bool => is_string($key) && $key !== '',
+        ));
+
+        if ($keys === []) {
+            throw new WebhookVerificationException('No CHIP Collect webhook public key is configured for the received brand.');
+        }
+
+        return array_values(array_unique($keys));
+    }
+
+    private function keyCacheScope(): string
+    {
+        $ownerScope = OwnerScopeKey::forOwner(OwnerContext::resolve());
+        $credentials = implode('|', [
+            (string) config('chip.collect.api_key'),
+            (string) config('chip.collect.brand_id'),
+            (string) config('chip.send.api_key'),
+        ]);
+
+        return hash('sha256', $ownerScope . '|' . $credentials);
     }
 
     /**

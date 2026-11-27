@@ -31,9 +31,7 @@ final class PurchaseIdempotencyLedger
 
         $response = $entry['response'] ?? null;
         if ($response === null) {
-            throw new ChipValidationException(
-                'Purchase idempotency key is already reserved and requires reconciliation.'
-            );
+            throw ChipValidationException::idempotencyReconciliationRequired();
         }
 
         if (! is_array($response)) {
@@ -58,9 +56,7 @@ final class PurchaseIdempotencyLedger
         $existing = $this->findLedger($brandId, $idempotencyKey);
 
         if ($existing !== null) {
-            throw new ChipValidationException(
-                'Purchase idempotency key is already reserved and requires reconciliation.'
-            );
+            throw ChipValidationException::idempotencyReconciliationRequired();
         }
 
         $timestamp = time();
@@ -106,7 +102,7 @@ final class PurchaseIdempotencyLedger
                 $ledger->save();
             });
         } catch (UniqueConstraintViolationException $exception) {
-            throw new ChipValidationException('Purchase idempotency key is already reserved and requires reconciliation.', previous: $exception);
+            throw ChipValidationException::idempotencyReconciliationRequired($exception);
         }
 
         return $ledger;
@@ -116,21 +112,74 @@ final class PurchaseIdempotencyLedger
     {
         $this->assertOwnerContext();
 
-        $ledgerMetadata = $ledger->getAttribute('metadata');
-        $metadata = is_array($ledgerMetadata) ? $ledgerMetadata : [];
-        $entry = $this->entry($ledger);
-        $entry['response'] = $purchase->toArray();
-        $metadata[self::METADATA_KEY] = $entry;
+        DB::transaction(function () use ($ledger, $purchase): void {
+            $stub = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
+                ->whereKey($ledger->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $ledger->forceFill([
-            'metadata' => $metadata,
-            'status' => $purchase->status,
-            'updated_on' => $purchase->updated_on,
-        ]);
+            $entry = $this->entry($stub);
+            $entry['response'] = $purchase->toArray();
 
-        Purchase::withoutEvents(function () use ($ledger): void {
-            $ledger->save();
+            $visible = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
+                ->whereKey($purchase->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($visible instanceof Purchase && (string) $visible->getKey() !== (string) $stub->getKey()) {
+                $visibleMetadata = $visible->getAttribute('metadata');
+                $metadata = is_array($visibleMetadata) ? $visibleMetadata : [];
+                $metadata[self::METADATA_KEY] = $entry;
+
+                $visible->forceFill([
+                    'idempotency_scope_hash' => $stub->getAttribute('idempotency_scope_hash'),
+                    'metadata' => $metadata,
+                    'status' => $this->terminalStatus($visible->getAttribute('status'), $purchase->status),
+                    'updated_on' => max((int) $visible->getRawOriginal('updated_on'), $purchase->updated_on),
+                ]);
+
+                $this->deleteLedger($stub);
+
+                Purchase::withoutEvents(function () use ($visible): void {
+                    $visible->save();
+                });
+
+                return;
+            }
+
+            $stubMetadata = $stub->getAttribute('metadata');
+            $metadata = is_array($stubMetadata) ? $stubMetadata : [];
+            $metadata[self::METADATA_KEY] = $entry;
+
+            $stub->forceFill([
+                'id' => $purchase->id,
+                'metadata' => $metadata,
+                'status' => $this->terminalStatus($stub->getAttribute('status'), $purchase->status),
+                'updated_on' => $purchase->updated_on,
+            ]);
+
+            Purchase::withoutEvents(function () use ($stub): void {
+                $stub->save();
+            });
         });
+    }
+
+    private function terminalStatus(mixed $current, string $incoming): string
+    {
+        if (! is_string($current)) {
+            return $incoming;
+        }
+
+        if (in_array($current, ['refunded', 'chargeback'], true)) {
+            return in_array($incoming, ['refunded', 'chargeback'], true) ? $incoming : $current;
+        }
+
+        if (in_array($current, ['paid', 'cleared', 'settled'], true)
+            && ! in_array($incoming, ['paid', 'cleared', 'settled', 'refunded', 'chargeback'], true)) {
+            return $current;
+        }
+
+        return $incoming;
     }
 
     private function findLedger(string $brandId, string $idempotencyKey): ?Purchase

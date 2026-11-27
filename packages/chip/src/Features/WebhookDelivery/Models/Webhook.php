@@ -50,6 +50,11 @@ class Webhook extends WebhookCall
     /**
      * @var list<string>
      */
+    protected $hidden = ['payload', 'headers', 'public_key', 'signature'];
+
+    /**
+     * @var list<string>
+     */
     protected $fillable = [
         'name',
         'url',
@@ -64,6 +69,7 @@ class Webhook extends WebhookCall
         'signature',
         'verified',
         'processed',
+        'failed_at',
         'processing_error',
         'idempotency_key',
         'retry_count',
@@ -87,6 +93,7 @@ class Webhook extends WebhookCall
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'processed_at' => 'datetime',
+        'failed_at' => 'datetime',
         'last_retry_at' => 'datetime',
         'retry_count' => 'integer',
         'processing_time_ms' => 'float',
