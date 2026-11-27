@@ -8,7 +8,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 function limiterTestOwner(string $label): User
 {
@@ -35,19 +34,18 @@ describe('Batch limiter owner segmentation', function (): void {
             ->decaySeconds(60)
             ->execute([1], fn ($item) => $item, 'sync'));
 
-        expect(fn () => OwnerContext::withOwner($ownerA, fn () => BatchRateLimiter::make()
+        $limited = OwnerContext::withOwner($ownerA, fn () => BatchRateLimiter::make()
             ->keyPrefix($prefix)
             ->maxAttempts(1)
             ->decaySeconds(60)
-            ->maxWaitSeconds(0)
-            ->execute([2], fn ($item) => $item, 'sync')))
-            ->toThrow(RuntimeException::class);
+            ->execute([2], fn ($item) => $item, 'sync'));
+
+        expect($limited[0]['success'])->toBeFalse();
 
         $results = OwnerContext::withOwner($ownerB, fn () => BatchRateLimiter::make()
             ->keyPrefix($prefix)
             ->maxAttempts(1)
             ->decaySeconds(60)
-            ->maxWaitSeconds(0)
             ->execute([3], fn ($item) => $item, 'sync'));
 
         expect($results[0]['success'])->toBeTrue();

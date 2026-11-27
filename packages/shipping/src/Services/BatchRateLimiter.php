@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Closure;
 use Illuminate\Support\Facades\RateLimiter;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -29,27 +28,9 @@ final class BatchRateLimiter
     protected int $decaySeconds = 60;
 
     /**
-     * Delay between batches in milliseconds.
-     */
-    protected int $batchDelayMs = 100;
-
-    /**
-     * Batch size for processing.
-     */
-    protected int $batchSize = 5;
-
-    /**
      * Rate limiter key prefix.
      */
     protected string $keyPrefix = 'shipping';
-
-    /**
-     * Maximum seconds to wait for the rate limit to clear.
-     *
-     * Bulk carrier syncs should run off-request (console, queue); waiting here
-     * blocks the caller, so keep this small on request paths.
-     */
-    protected int $maxWaitSeconds = 30;
 
     /**
      * Create a new instance.
@@ -67,13 +48,11 @@ final class BatchRateLimiter
         return static::make()
             ->keyPrefix("shipping:{$carrierCode}")
             ->maxAttempts(10)
-            ->decaySeconds(60)
-            ->batchSize(5)
-            ->batchDelay(200);
+            ->decaySeconds(60);
     }
 
     /**
-     * Execute operations in rate-limited batches.
+     * Execute within the rate budget without blocking the request.
      *
      * @template TKey of array-key
      * @template TValue
@@ -86,28 +65,25 @@ final class BatchRateLimiter
     public function execute(iterable $items, Closure $callback, ?string $operationKey = null): array
     {
         $results = [];
-        $batch = [];
-        $batchIndex = 0;
         $key = $this->buildKey($operationKey);
 
         foreach ($items as $itemKey => $item) {
-            $batch[$itemKey] = $item;
+            if (RateLimiter::tooManyAttempts($key, $this->maxAttempts)
+                || RateLimiter::hit($key, $this->decaySeconds) > $this->maxAttempts) {
+                $retryAfter = RateLimiter::availableIn($key);
+                $results[$itemKey] = [
+                    'success' => false,
+                    'error' => "Rate limit exceeded. Retry after {$retryAfter} seconds.",
+                ];
 
-            if (count($batch) >= $this->batchSize) {
-                $this->processBatch($batch, $callback, $results, $key);
-                $batch = [];
-
-                // Delay between batches to prevent overwhelming (skip first batch)
-                if ($batchIndex > 0) {
-                    usleep($this->batchDelayMs * 1000);
-                }
-                $batchIndex++;
+                continue;
             }
-        }
 
-        // Process remaining items
-        if (! empty($batch)) {
-            $this->processBatch($batch, $callback, $results, $key);
+            try {
+                $results[$itemKey] = ['success' => true, 'result' => $callback($item, $itemKey)];
+            } catch (Throwable $e) {
+                $results[$itemKey] = ['success' => false, 'error' => $e->getMessage()];
+            }
         }
 
         return $results;
@@ -134,26 +110,6 @@ final class BatchRateLimiter
     }
 
     /**
-     * Set delay between batches in milliseconds.
-     */
-    public function batchDelay(int $ms): static
-    {
-        $this->batchDelayMs = max(0, $ms);
-
-        return $this;
-    }
-
-    /**
-     * Set batch size.
-     */
-    public function batchSize(int $size): static
-    {
-        $this->batchSize = max(1, $size);
-
-        return $this;
-    }
-
-    /**
      * Set rate limiter key prefix.
      */
     public function keyPrefix(string $prefix): static
@@ -161,71 +117,6 @@ final class BatchRateLimiter
         $this->keyPrefix = $prefix;
 
         return $this;
-    }
-
-    /**
-     * Set the maximum seconds to wait for the rate limit to clear.
-     */
-    public function maxWaitSeconds(int $seconds): static
-    {
-        $this->maxWaitSeconds = max(0, $seconds);
-
-        return $this;
-    }
-
-    /**
-     * Process a batch of items with rate limiting.
-     *
-     * @template TKey of array-key
-     * @template TValue
-     * @template TResult
-     *
-     * @param  array<TKey, TValue>  $batch
-     * @param  Closure(TValue, TKey): TResult  $callback
-     * @param  array<TKey, array{success: bool, result?: TResult, error?: string}>  $results
-     */
-    protected function processBatch(array $batch, Closure $callback, array &$results, string $key): void
-    {
-        foreach ($batch as $itemKey => $item) {
-            // Wait for rate limit if needed
-            $this->waitForRateLimit($key);
-
-            try {
-                $result = $callback($item, $itemKey);
-                $results[$itemKey] = [
-                    'success' => true,
-                    'result' => $result,
-                ];
-            } catch (Throwable $e) {
-                $results[$itemKey] = [
-                    'success' => false,
-                    'error' => $e->getMessage(),
-                ];
-            }
-        }
-    }
-
-    /**
-     * Wait for rate limit to clear if exceeded.
-     */
-    protected function waitForRateLimit(string $key): void
-    {
-        $waited = 0;
-
-        while (RateLimiter::tooManyAttempts($key, $this->maxAttempts)) {
-            $retryAfter = RateLimiter::availableIn($key);
-
-            if ($waited + $retryAfter > $this->maxWaitSeconds) {
-                throw new RuntimeException(
-                    "Rate limit exceeded. Would need to wait {$retryAfter} seconds."
-                );
-            }
-
-            sleep($retryAfter);
-            $waited += $retryAfter;
-        }
-
-        RateLimiter::hit($key, $this->decaySeconds);
     }
 
     /**
