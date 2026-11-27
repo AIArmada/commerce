@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 use AIArmada\FilamentCustomers\Support\PrimaryEmailResolver;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;
@@ -126,7 +127,7 @@ final class CustomersTable
 
                             $records->each(function (Customer $record) use ($user): void {
                                 Gate::forUser($user)->authorize('update', $record);
-                                $record->optInMarketing();
+                                app(SaveCustomerDetails::class)->update($record, ['accepts_marketing' => true]);
                             });
                         }),
                     BulkAction::make('opt_out_marketing')
@@ -138,7 +139,7 @@ final class CustomersTable
 
                             $records->each(function (Customer $record) use ($user): void {
                                 Gate::forUser($user)->authorize('update', $record);
-                                $record->optOutMarketing();
+                                app(SaveCustomerDetails::class)->update($record, ['accepts_marketing' => false]);
                             });
                         }),
                 ]),

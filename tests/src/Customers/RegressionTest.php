@@ -18,6 +18,7 @@ use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
@@ -495,12 +496,12 @@ describe('narrowed customer fillable', function (): void {
             'status' => CustomerStatus::Active,
         ]);
 
-        $customer->optInMarketing();
+        $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => true]);
 
         expect($customer->accepts_marketing)->toBeTrue()
             ->and($customer->marketing_consented_at)->not->toBeNull();
 
-        $customer->optOutMarketing();
+        $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => false]);
 
         expect($customer->accepts_marketing)->toBeFalse()
             ->and($customer->fresh()?->marketing_revoked_at)->not->toBeNull();

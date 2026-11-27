@@ -332,17 +332,17 @@ and global updates/deletes always require explicit global context.
 ## Marketing Preferences
 
 New customers default to `accepts_marketing = false`. Marketing consent is
-opt-in: call `optInMarketing()` (which also stamps `marketing_consented_at`)
+opt-in: call `SaveCustomerDetails::update()` with `accepts_marketing: true` (which also stamps `marketing_consented_at`)
 only after the customer consents.
 
 ### Opt In/Out
 
 ```php
 // Opt in to marketing
-$customer->optInMarketing();
+$customer = app(\AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => true]);
 
 // Opt out of marketing
-$customer->optOutMarketing();
+$customer = app(\AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => false]);
 
 // Check preference
 if ($customer->acceptsMarketing()) {

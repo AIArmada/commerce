@@ -6,6 +6,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Features\Identity\Actions\SaveCustomerDetails;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -91,11 +92,11 @@ describe('Customer Model', function (): void {
                 'accepts_marketing' => false,
             ]);
 
-            $customer->optInMarketing();
+            $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => true]);
 
             expect($customer->accepts_marketing)->toBeTrue();
 
-            $customer->optOutMarketing();
+            $customer = app(SaveCustomerDetails::class)->update($customer, ['accepts_marketing' => false]);
 
             expect($customer->accepts_marketing)->toBeFalse();
         });

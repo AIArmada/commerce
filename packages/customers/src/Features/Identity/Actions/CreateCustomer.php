@@ -8,7 +8,6 @@ use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 final class CreateCustomer
 {
@@ -35,13 +34,15 @@ final class CreateCustomer
             ?? $normalizer->normalizePhone($user?->getAttribute('phone'));
         $normalizedEmail = $normalizer->normalizeEmail($email);
 
-        return DB::transaction(function () use ($company, $firstName, $isGuest, $lastName, $normalizedEmail, $personId, $phone, $user): Customer {
-            $customer = Customer::query()->create([
+        $model = new Customer;
+
+        return $model->getConnection()->transaction(function () use ($company, $firstName, $isGuest, $lastName, $normalizedEmail, $personId, $phone, $user): Customer {
+            $customer = new Customer;
+            $customer->fill([
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'company' => $company,
             ]);
-
             $customer->forceFill([
                 'user_id' => $user?->getKey(),
                 'is_guest' => $isGuest,

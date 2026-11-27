@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Concerns;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
-use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Features\Identity\Actions\CreateCustomer;
 use AIArmada\Customers\Features\Identity\Support\CustomerProfileNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -55,36 +54,23 @@ trait HasCustomerProfile
             throw new InvalidArgumentException('User email is required to create a customer profile.');
         }
 
+        if (! $this->exists || $this->getKey() === null) {
+            throw new InvalidArgumentException('A persisted user is required to create a customer profile.');
+        }
+
         [$firstName, $lastName] = $normalizer->splitName($this->name, 'User');
-        $phone = $normalizer->normalizePhone($this->phone);
-        $userId = $this->getKey();
 
         try {
-            return DB::transaction(function () use ($email, $firstName, $lastName, $phone, $userId): Customer {
-                $customer = Customer::query()->create([
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                ]);
+            $customer = app(CreateCustomer::class)->execute(
+                $email,
+                ['first_name' => $firstName, 'last_name' => $lastName, 'phone' => $this->phone],
+                [],
+                $this,
+                false,
+            );
+            $this->unsetRelation('customerProfile');
 
-                $customer->forceFill(['user_id' => $userId])->save();
-
-                $customer->addContactMethod(new ContactMethodData(
-                    type: 'email',
-                    purpose: 'general',
-                    value: $email,
-                    isPrimary: true,
-                ));
-
-                if ($phone !== null) {
-                    $customer->addContactMethod(ContactMethodData::phone(
-                        $phone,
-                        countryCode: config('contacting.defaults.country_code', 'MY'),
-                        purpose: 'general',
-                    ));
-                }
-
-                return $customer;
-            });
+            return $customer;
         } catch (UniqueConstraintViolationException) {
             $this->unsetRelation('customerProfile');
 
@@ -127,7 +113,7 @@ trait HasCustomerProfile
      */
     public function getDefaultShippingAddress(): ?Address
     {
-        $customerProfile = $this->customerProfile;
+        $customerProfile = $this->customerProfile()->first();
 
         if (! $customerProfile instanceof Customer) {
             return null;
@@ -141,7 +127,7 @@ trait HasCustomerProfile
      */
     public function getDefaultBillingAddress(): ?Address
     {
-        $customerProfile = $this->customerProfile;
+        $customerProfile = $this->customerProfile()->first();
 
         if (! $customerProfile instanceof Customer) {
             return null;

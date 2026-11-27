@@ -23,12 +23,11 @@ final readonly class SaveCustomerDetails
     /** @param array<string, mixed> $attributes */
     public function update(Customer $customer, array $attributes): Customer
     {
-        if (Customer::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
-        }
-
         return $customer->getConnection()->transaction(function () use ($customer, $attributes): Customer {
-            $locked = Customer::query()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
+            if (Customer::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Customer::class, $customer->getKey());
+            }
+            $locked = $customer->newQuery()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
 
             return $this->persist($locked, $attributes);
         });
@@ -51,7 +50,10 @@ final readonly class SaveCustomerDetails
         }
 
         if (array_key_exists('accepts_marketing', $attributes)) {
-            $value = filter_var($attributes['accepts_marketing'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $input = $attributes['accepts_marketing'];
+            $value = is_bool($input) || is_int($input) || (is_string($input) && mb_trim($input) !== '')
+                ? filter_var($input, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
 
             if ($value === null) {
                 throw ValidationException::withMessages(['accepts_marketing' => 'Invalid marketing preference.']);

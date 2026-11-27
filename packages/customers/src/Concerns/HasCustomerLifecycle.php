@@ -6,7 +6,6 @@ namespace AIArmada\Customers\Concerns;
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
 trait HasCustomerLifecycle
@@ -34,22 +33,6 @@ trait HasCustomerLifecycle
     public function acceptsMarketing(): bool
     {
         return $this->accepts_marketing;
-    }
-
-    public function optInMarketing(): void
-    {
-        $this->forceFill([
-            'accepts_marketing' => true,
-            'marketing_consented_at' => CarbonImmutable::now(),
-        ])->save();
-    }
-
-    public function optOutMarketing(): void
-    {
-        $this->forceFill([
-            'accepts_marketing' => false,
-            'marketing_revoked_at' => CarbonImmutable::now(),
-        ])->save();
     }
 
     public function getFullNameAttribute(): string
