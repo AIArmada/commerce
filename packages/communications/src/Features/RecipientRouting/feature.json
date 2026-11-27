@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "name": "RecipientRouting",
+  "owns": {
+    "table:communication_destinations": [],
+    "table:communication_preferences": []
+  },
+  "extensions": {}
+}

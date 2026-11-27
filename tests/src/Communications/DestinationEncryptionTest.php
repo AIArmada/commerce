@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Models\CommunicationDestination;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;

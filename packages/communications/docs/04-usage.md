@@ -129,7 +129,7 @@ The package registers the `communications.inbox-index` Livewire component for th
 Store channel addresses on notifiables when you need explicit routing (multiple emails, verified phones, or provider external ids):
 
 ```php
-use AIArmada\Communications\Models\CommunicationDestination;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
 
 $destination = CommunicationDestination::query()->make([
     'channel' => 'mail',
@@ -161,7 +161,7 @@ breaking storage change is applied.
 Preferences may optionally narrow to a scope:
 
 ```php
-use AIArmada\Communications\Models\CommunicationPreference;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
 
 $preference = CommunicationPreference::query()->make([
     'channel' => 'mail',

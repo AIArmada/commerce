@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Features\RecipientRouting\Queries;
 
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\DestinationResolver;
 use AIArmada\Communications\Data\ResolvedDestinationData;
-use AIArmada\Communications\Models\CommunicationDestination;
+use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationDestination;
 use Illuminate\Notifications\Notification;
 use TypeError;
 
@@ -29,7 +29,9 @@ final class CommunicationDestinationResolver implements DestinationResolver
                 ->where('recipient_id', $notifiable->getKey())
                 ->where('channel', $channel)
                 ->where('status', 'active')
+                ->whereNotNull('address')
                 ->orderByDesc('is_primary')
+                ->orderByRaw('CASE WHEN verified_at IS NULL THEN 1 ELSE 0 END')
                 ->orderByDesc('verified_at')
                 ->first();
 

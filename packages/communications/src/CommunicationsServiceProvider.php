@@ -35,7 +35,7 @@ use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAud
 use AIArmada\Communications\Platform\ExtensionRegistry;
 use AIArmada\Communications\Platform\FeatureCatalog;
 use AIArmada\Communications\Platform\FeatureModule;
-use AIArmada\Communications\Services\CommunicationDestinationResolver;
+use AIArmada\Communications\Features\RecipientRouting\Queries\CommunicationDestinationResolver;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Services\CommunicationRecorderService;
 use AIArmada\Communications\Services\DeliveryFencingService;
