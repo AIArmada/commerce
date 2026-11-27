@@ -10,11 +10,18 @@ use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\SequenceManager;
+use AIArmada\Docs\Platform\ExtensionRegistry;
+use AIArmada\Docs\Platform\FeatureCatalog;
+use AIArmada\Docs\Platform\FeatureModule;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class DocsServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -28,6 +35,20 @@ final class DocsServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid docs feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
+
         $this->app->scoped(Numbering\DocumentNumberRegistry::class);
 
         // Sequence manager
@@ -49,6 +70,13 @@ final class DocsServiceProvider extends PackageServiceProvider
         // Bind interface to implementation
         $this->app->alias(DocService::class, DocServiceInterface::class);
         $this->app->alias(DocService::class, 'doc');
+    }
+
+    public function packageBooted(): void
+    {
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     /**
