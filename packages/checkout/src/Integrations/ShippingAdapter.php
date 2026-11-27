@@ -12,7 +12,6 @@ use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ComponentLines;
-use Illuminate\Support\Collection;
 
 final class ShippingAdapter
 {
@@ -46,7 +45,7 @@ final class ShippingAdapter
             return $this->getDefaultRates($session);
         }
 
-        /** @var Collection<int, RateQuoteData> $rateQuotes */
+        /** @var list<RateQuoteData> $rateQuotes */
         $rateQuotes = app(CalculateRates::class)->handle(
             origin: $origin,
             destination: $destination,
@@ -264,12 +263,12 @@ final class ShippingAdapter
     }
 
     /**
-     * @param  Collection<int, RateQuoteData>  $rates
+     * @param  list<RateQuoteData>  $rates
      * @return array<array<string, mixed>>
      */
-    private function normalizeRates(Collection $rates): array
+    private function normalizeRates(array $rates): array
     {
-        return $rates->map(function (RateQuoteData $rate): array {
+        return array_map(static function (RateQuoteData $rate): array {
             return [
                 'method_id' => $rate->carrier . '_' . $rate->service,
                 'carrier' => $rate->carrier,
@@ -286,7 +285,7 @@ final class ShippingAdapter
                 'note' => $rate->note,
                 'expires_at' => $rate->expiresAt?->format(DATE_ATOM),
             ];
-        })->values()->all();
+        }, $rates);
     }
 
     /**

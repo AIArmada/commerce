@@ -7,14 +7,13 @@ namespace AIArmada\Shipping\Features\Rates\Api;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
-use Illuminate\Support\Collection;
 
 interface CalculateRates
 {
     /**
      * @param array<PackageData> $packages
      * @param array<string, mixed> $options
-     * @return Collection<int, RateQuoteData>
+     * @return list<RateQuoteData>
      */
-    public function handle(AddressData $origin, AddressData $destination, array $packages, ?string $carrier = null, array $options = []): Collection;
+    public function handle(AddressData $origin, AddressData $destination, array $packages, ?string $carrier = null, array $options = []): array;
 }

@@ -9,7 +9,6 @@ use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
 use AIArmada\Shipping\ShippingManager;
-use Illuminate\Support\Collection;
 use Throwable;
 
 /**
@@ -26,7 +25,7 @@ final class CalculateShippingRate implements CalculateRates
      *
      * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
-     * @return Collection<int, RateQuoteData>
+     * @return list<RateQuoteData>
      */
     public function handle(
         AddressData $origin,
@@ -34,11 +33,11 @@ final class CalculateShippingRate implements CalculateRates
         array $packages,
         ?string $carrier = null,
         array $options = []
-    ): Collection {
+    ): array {
         if ($carrier !== null) {
             $driver = $this->shippingManager->driver($carrier);
 
-            return $driver->getRates($origin, $destination, $packages, $options);
+            return $driver->getRates($origin, $destination, $packages, $options)->values()->all();
         }
 
         // Get rates from all registered drivers (skip drivers that don't service destination)
@@ -61,6 +60,6 @@ final class CalculateShippingRate implements CalculateRates
             }
         }
 
-        return $rates->sortBy('rate')->values();
+        return $rates->sortBy('rate')->values()->all();
     }
 }

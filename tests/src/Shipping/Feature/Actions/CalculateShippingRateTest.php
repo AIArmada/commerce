@@ -7,7 +7,6 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
-use Illuminate\Support\Collection;
 
 describe('CalculateShippingRate Action', function (): void {
     it('can calculate rates for a specific carrier', function (): void {
@@ -39,10 +38,10 @@ describe('CalculateShippingRate Action', function (): void {
 
         $rates = $action->handle($origin, $destination, $packages, 'null');
 
-        expect($rates)->toBeInstanceOf(Collection::class);
+        expect($rates)->toBeArray();
         expect($rates)->toHaveCount(2);
 
-        $standardRate = $rates->first();
+        $standardRate = ($rates[0] ?? null);
         expect($standardRate)->toBeInstanceOf(RateQuoteData::class);
         expect($standardRate->carrier)->toBe('null');
         expect($standardRate->service)->toBe('standard');
@@ -109,7 +108,7 @@ describe('CalculateShippingRate Action', function (): void {
 
         $rates = $action->handle($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(Collection::class);
+        expect($rates)->toBeArray();
         expect($rates)->toHaveCount(3); // manual (1) + flat_rate (2)
     });
 
@@ -144,7 +143,7 @@ describe('CalculateShippingRate Action', function (): void {
         $rates = $action->handle($origin, $destination, $packages, 'null');
 
         expect($rates)->toHaveCount(2);
-        $rate = $rates->first();
+        $rate = ($rates[0] ?? null);
         expect($rate->rate)->toBe(0); // Null driver returns 0
     });
 
@@ -217,9 +216,9 @@ describe('CalculateShippingRate Action', function (): void {
         // Should not throw, just skip failing carrier
         $rates = $action->handle($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(Collection::class);
+        expect($rates)->toBeArray();
         // Only manual driver rates should be included
         expect($rates)->toHaveCount(1);
-        expect($rates->first()?->carrier)->toBe('manual');
+        expect(($rates[0] ?? null)?->carrier)->toBe('manual');
     });
 });
