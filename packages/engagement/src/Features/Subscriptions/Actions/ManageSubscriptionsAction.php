@@ -72,7 +72,16 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
                         'source' => $source,
                         'metadata' => $metadata,
                     ]);
-                    event(new SubscriptionCreated($existing));
+                    event(new SubscriptionCreated(
+                        $existing->id,
+                        $existing->subscriber_type,
+                        $existing->subscriber_id,
+                        $existing->subscribable_type,
+                        $existing->subscribable_id,
+                        $existing->owner_type,
+                        $existing->owner_id,
+                        $existing->subscription_type,
+                    ));
 
                     return $existing;
                 }
@@ -91,7 +100,16 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
                     'metadata' => $metadata,
                 ]);
 
-                event(new SubscriptionCreated($subscription));
+                event(new SubscriptionCreated(
+                    $subscription->id,
+                    $subscription->subscriber_type,
+                    $subscription->subscriber_id,
+                    $subscription->subscribable_type,
+                    $subscription->subscribable_id,
+                    $subscription->owner_type,
+                    $subscription->owner_id,
+                    $subscription->subscription_type,
+                ));
 
                 return $subscription;
             });
@@ -133,7 +151,16 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
                 'unsubscribed_at' => CarbonImmutable::now(),
                 'muted_at' => null,
             ]);
-            event(new SubscriptionCancelled($subscription));
+            event(new SubscriptionCancelled(
+                $subscription->id,
+                $subscription->subscriber_type,
+                $subscription->subscriber_id,
+                $subscription->subscribable_type,
+                $subscription->subscribable_id,
+                $subscription->owner_type,
+                $subscription->owner_id,
+                $subscription->subscription_type,
+            ));
         });
     }
 
@@ -164,7 +191,17 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
                 'status' => $to,
                 'muted_at' => $to === SubscriptionStatus::Muted ? CarbonImmutable::now() : null,
             ]);
-            event($to === SubscriptionStatus::Muted ? new SubscriptionMuted($locked) : new SubscriptionUnmuted($locked));
+            $eventClass = $to === SubscriptionStatus::Muted ? SubscriptionMuted::class : SubscriptionUnmuted::class;
+            event(new $eventClass(
+                $locked->id,
+                $locked->subscriber_type,
+                $locked->subscriber_id,
+                $locked->subscribable_type,
+                $locked->subscribable_id,
+                $locked->owner_type,
+                $locked->owner_id,
+                $locked->subscription_type,
+            ));
 
             return $locked;
         });
@@ -202,7 +239,19 @@ final readonly class ManageSubscriptionsAction implements WritesSubscriptionReco
                 continue;
             }
 
-            event(new SubscriptionMatched($subscription, $subject, $trigger));
+            event(new SubscriptionMatched(
+                $subscription->id,
+                $subscription->subscriber_type,
+                $subscription->subscriber_id,
+                $subscription->subscribable_type,
+                $subscription->subscribable_id,
+                $subscription->owner_type,
+                $subscription->owner_id,
+                $subscription->subscription_type,
+                $subjectType,
+                $subjectId,
+                $trigger,
+            ));
 
             yield $subscription;
         }

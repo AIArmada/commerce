@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Events;
 
-use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-
-final class SubscriptionCreated
+final readonly class SubscriptionCreated
 {
-    public function __construct(public Subscription $subscription) {}
+    public function __construct(
+        public string $subscriptionId,
+        public string $subscriberType,
+        public string $subscriberId,
+        public ?string $subscribableType,
+        public ?string $subscribableId,
+        public ?string $ownerType,
+        public ?string $ownerId,
+        public string $subscriptionType,
+    ) {}
 }

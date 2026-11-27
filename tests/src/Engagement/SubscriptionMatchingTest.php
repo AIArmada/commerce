@@ -78,9 +78,10 @@ it('matches subscriptions through the console command', function (): void {
         '--trigger' => 'event_published',
     ]))->toBe(0);
 
-    EventFacade::assertDispatched(SubscriptionMatched::class, function (SubscriptionMatched $matched): bool {
-        return $matched->subscription->subscriber_id === $this->subscriber->getKey()
-            && $matched->subject instanceof EngagementSubject
+    EventFacade::assertDispatched(SubscriptionMatched::class, function (SubscriptionMatched $matched) use ($subject): bool {
+        return $matched->subscriberId === $this->subscriber->getKey()
+            && $matched->subjectType === EngagementSubject::class
+            && $matched->subjectId === $subject->id
             && $matched->trigger === 'event_published';
     });
 });
