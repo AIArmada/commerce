@@ -6,9 +6,11 @@ namespace AIArmada\Vouchers\Features\Wallet;
 
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Features\Wallet\Actions\RemoveVoucherFromWallet;
+use AIArmada\Vouchers\Features\Wallet\Actions\TransitionWalletTimestamp;
 use AIArmada\Vouchers\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
+use AIArmada\Vouchers\Runtime\WalletTimestampTransition;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract
@@ -17,6 +19,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(WalletClaim::class, AddVoucherToWallet::class);
         $app->bind(WalletRemoval::class, RemoveVoucherFromWallet::class);
+        $app->bind(WalletTimestampTransition::class, TransitionWalletTimestamp::class);
     }
 
     public function boot(Application $app): void {}

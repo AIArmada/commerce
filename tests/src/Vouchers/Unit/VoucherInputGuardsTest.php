@@ -191,6 +191,7 @@ describe('wallet claim hardening', function (): void {
 
         expect($stale->redeemed_at)->toBeNull();
 
+        $stale->metadata = ['unpersisted' => true];
         $entry->markAsRedeemed();
         $winnerAt = (string) $entry->fresh()->redeemed_at;
 
@@ -198,7 +199,8 @@ describe('wallet claim hardening', function (): void {
         $stale->markAsRedeemed();
 
         expect((string) $entry->fresh()->redeemed_at)->toBe($winnerAt)
-            ->and((string) $stale->redeemed_at)->toBe($winnerAt);
+            ->and((string) $stale->redeemed_at)->toBe($winnerAt)
+            ->and($stale->fresh()->metadata)->toBeNull();
     });
 });
 

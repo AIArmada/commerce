@@ -4,7 +4,8 @@
   "owns": {
     "table:voucher_wallets": [
       "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\AddVoucherToWallet",
-      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\RemoveVoucherFromWallet"
+      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\RemoveVoucherFromWallet",
+      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\TransitionWalletTimestamp"
     ]
   },
   "extensions": {}
