@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Enums;
+namespace AIArmada\Chip\Contracts;
 
 /**
  * Official CHIP Collect Purchase Status Values

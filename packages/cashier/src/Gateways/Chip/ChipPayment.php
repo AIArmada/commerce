@@ -9,7 +9,7 @@ use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;

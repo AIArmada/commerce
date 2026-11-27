@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Enums\SendWebhookHook;
+use AIArmada\Chip\Contracts\SendWebhookHook;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 

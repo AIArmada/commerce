@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 

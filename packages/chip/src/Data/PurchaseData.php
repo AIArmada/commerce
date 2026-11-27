@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;

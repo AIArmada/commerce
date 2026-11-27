@@ -8,7 +8,7 @@ use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;

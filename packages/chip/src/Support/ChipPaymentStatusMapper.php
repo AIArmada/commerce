@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Support;
 
-use AIArmada\Chip\Enums\PurchaseStatus;
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use InvalidArgumentException;
 

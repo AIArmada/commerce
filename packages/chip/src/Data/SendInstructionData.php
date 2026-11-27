@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
-use AIArmada\Chip\Enums\SendInstructionState;
+use AIArmada\Chip\Contracts\SendInstructionState;
 use Carbon\CarbonImmutable;
 
 final readonly class SendInstructionData
