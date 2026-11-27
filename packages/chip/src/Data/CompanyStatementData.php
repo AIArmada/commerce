@@ -6,28 +6,27 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\CarbonImmutable;
 
-final class CompanyStatementData extends ChipData
+final readonly class CompanyStatementData
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $type,
-        public readonly string $format,
-        public readonly string $timezone,
-        public readonly bool $is_test,
-        public readonly string $company_uid,
-        public readonly ?string $query_string,
-        public readonly string $status,
-        public readonly ?string $download_url,
-        public readonly ?int $began_on,
-        public readonly ?int $finished_on,
-        public readonly int $created_on,
-        public readonly int $updated_on,
+        public string $id,
+        public string $type,
+        public string $format,
+        public string $timezone,
+        public bool $is_test,
+        public string $company_uid,
+        public ?string $query_string,
+        public string $status,
+        public ?string $download_url,
+        public ?int $began_on,
+        public ?int $finished_on,
+        public int $created_on,
+        public int $updated_on,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         return new self(
             id: (string) $data['id'],
             type: (string) ($data['type'] ?? 'statement'),
