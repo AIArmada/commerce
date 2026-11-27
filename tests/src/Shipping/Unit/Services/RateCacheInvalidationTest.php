@@ -44,7 +44,7 @@ function rateCacheAddresses(): array
 }
 
 describe('Rate cache invalidation on non-taggable stores', function (): void {
-    it('forgets instance-cached rates when tags are unavailable', function (): void {
+    it('invalidates cached rates across instances when tags are unavailable', function (): void {
         config(['cache.default' => 'file', 'shipping.features.owner.enabled' => false]);
 
         $repository = Cache::store();
@@ -60,21 +60,27 @@ describe('Rate cache invalidation on non-taggable stores', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
         $shippingManager->shouldReceive('getAvailableDrivers')->andReturn(['manual']);
 
+        $updatedRates = [
+            new RateQuoteData(carrier: 'manual', service: 'standard', rate: 700, currency: 'MYR', estimatedDays: 3),
+        ];
+
         Concurrency::shouldReceive('run')
             ->twice()
-            ->andReturn(['manual' => $rates]);
+            ->andReturn(['manual' => $rates], ['manual' => $updatedRates]);
 
         $engine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 300]);
 
         $first = $engine->getAllRates($origin, $destination, $packages);
 
-        expect($first)->toHaveCount(1);
+        $otherEngine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 300]);
 
-        $engine->clearCache();
+        expect($first->first()->rate)->toBe(500)
+            ->and($otherEngine->getAllRates($origin, $destination, $packages)->first()->rate)->toBe(500);
 
-        $second = $engine->getAllRates($origin, $destination, $packages);
+        $otherEngine->clearCache();
 
-        expect($second)->toHaveCount(1);
+        expect($engine->getAllRates($origin, $destination, $packages)->first()->rate)->toBe(700)
+            ->and($otherEngine->getAllRates($origin, $destination, $packages)->first()->rate)->toBe(700);
 
         $engine->clearCache();
     });

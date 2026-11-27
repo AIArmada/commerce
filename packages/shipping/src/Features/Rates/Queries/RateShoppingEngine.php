@@ -150,10 +150,8 @@ class RateShoppingEngine implements ShopRates
     /**
      * Clear cached rates.
      *
-     * Taggable stores flush by tag. Non-taggable stores (file, database) cannot
-     * flush by tag, so every key cached through this instance is forgotten
-     * individually; keys cached by other instances expire via TTL. Use a
-     * taggable store when cross-instance invalidation is required.
+     * Taggable stores flush by tag. Other stores rotate a shared scope
+     * generation, invalidating cached quotes across application instances.
      */
     public function clearCache(): void
     {

@@ -9,11 +9,11 @@ use Closure;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 final class RateCache
 {
-    /** @var array<string, array<string, true>> */
-    private array $keys = [];
+    private const int GENERATION_TTL = 86400;
 
     /**
      * @param  list<string>  $tags
@@ -28,9 +28,19 @@ final class RateCache
             return $repository->tags($tags)->remember($key, $ttl, $load);
         }
 
-        $this->keys[implode('|', $tags)][$key] = true;
+        $generationKey = $this->generationKey($tags);
+        $generation = $repository->get($generationKey);
 
-        return $repository->remember($key, $ttl, $load);
+        if (! is_string($generation)) {
+            $repository->add($generationKey, (string) Str::uuid(), self::GENERATION_TTL);
+            $generation = $repository->get($generationKey);
+        }
+
+        if (! is_string($generation)) {
+            return $load();
+        }
+
+        return $repository->remember($key . ':' . $generation, $ttl, $load);
     }
 
     /** @param list<string> $tags */
@@ -44,13 +54,13 @@ final class RateCache
             return;
         }
 
-        $scope = implode('|', $tags);
+        $repository->put($this->generationKey($tags), (string) Str::uuid(), self::GENERATION_TTL);
+    }
 
-        foreach (array_keys($this->keys[$scope] ?? []) as $key) {
-            $repository->forget($key);
-        }
-
-        unset($this->keys[$scope]);
+    /** @param list<string> $tags */
+    private function generationKey(array $tags): string
+    {
+        return 'shipping:rates:generation:' . hash('sha256', implode('|', $tags));
     }
 
     public function forgetFailure(string $key): void

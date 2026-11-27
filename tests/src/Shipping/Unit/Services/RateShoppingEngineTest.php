@@ -447,7 +447,8 @@ describe('RateShoppingEngine', function (): void {
         $cacheRepository->shouldReceive('getStore')
             ->andReturn(new stdClass); // Not taggable
 
-        // Cache::store()->remember should be called
+        $cacheRepository->shouldReceive('get')->once()->andReturn('test-generation');
+
         Cache::shouldReceive('store')
             ->once()
             ->andReturn($cacheRepository);
