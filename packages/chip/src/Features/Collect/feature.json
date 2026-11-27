@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "Collect",
+  "owns": {
+    "table:chip_purchases": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+    ],
+    "table:chip_clients": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+    ],
+    "table:chip_payments": [
+      "AIArmada\\Chip\\Features\\Collect\\Actions\\StoreChipWebhookPayload"
+    ]
+  },
+  "extensions": {}
+}

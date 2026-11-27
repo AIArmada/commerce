@@ -13,3 +13,11 @@ it('registers the Payouts feature with its declared resource ownership', functio
         ->and($catalog['owners']['table:chip_send_instructions'])->toBe('Payouts')
         ->and($catalog['writes'][CreateSendInstruction::class])->toContain('table:chip_send_instructions');
 });
+
+it('declares Collect as the owner of mirrored CHIP records', function (): void {
+    $catalog = FeatureCatalog::scan(dirname(__DIR__, 4) . '/packages/chip', 'AIArmada\\Chip');
+
+    expect($catalog['owners']['table:chip_purchases'])->toBe('Collect')
+        ->and($catalog['owners']['table:chip_clients'])->toBe('Collect')
+        ->and($catalog['owners']['table:chip_payments'])->toBe('Collect');
+});

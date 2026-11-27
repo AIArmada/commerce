@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Actions;
+namespace AIArmada\Chip\Features\Collect\Actions;
 
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
@@ -144,6 +144,10 @@ final readonly class StoreChipWebhookPayload
     {
         $incoming = $payload['purchase']['metadata'] ?? null;
         $incoming = is_array($incoming) ? $incoming : null;
+
+        if ($incoming !== null) {
+            unset($incoming['chip_idempotency']);
+        }
 
         $existing = $purchase->metadata ?? null;
         $ledger = is_array($existing) ? ($existing['chip_idempotency'] ?? null) : null;

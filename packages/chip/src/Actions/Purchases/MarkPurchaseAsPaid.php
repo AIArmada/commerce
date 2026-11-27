@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Actions\Purchases;
 
-use AIArmada\Chip\Actions\StoreChipWebhookPayload;
+use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\ChipCollectService;
