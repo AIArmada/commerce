@@ -507,7 +507,7 @@ it('tracks shipment with awaiting pickup status', function (): void {
     expect($tracking->status)->toBe(TrackingStatus::AwaitingPickup);
     expect($tracking->carrier)->toBe('zone');
     expect($tracking->events)->toHaveCount(1);
-    expect($tracking->events->first()->code)->toBe('ZONE');
+    expect($tracking->events[0]->code)->toBe('ZONE');
 });
 
 it('applies rate calculation types correctly', function (): void {

@@ -17,8 +17,7 @@ use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
-use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
-use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -36,7 +35,7 @@ class ZoneBasedShippingDriver implements ShippingDriverInterface
      * @param  array<string, mixed>  $config
      */
     public function __construct(
-        protected readonly ShippingZoneResolver $zoneResolver,
+        protected readonly ZoneRateReader $zoneResolver,
         protected readonly array $config = []
     ) {}
 
@@ -89,29 +88,9 @@ class ZoneBasedShippingDriver implements ShippingDriverInterface
         $cartTotal = (int) ($options['cart_total'] ?? 0);
         $itemCount = (int) ($options['item_count'] ?? 0);
 
-        $zone = $this->zoneResolver->resolve($destination, $ownerId, $ownerType);
-
-        if ($zone === null) {
-            return collect();
-        }
-
         $currency = $this->config['currency'] ?? config('shipping.defaults.currency', 'MYR');
 
-        return $zone->rates()
-            ->active()
-            ->get()
-            ->filter(fn (ShippingRate $rate) => $rate->meetsConditions($packages, $cartTotal, $itemCount))
-            ->map(fn (ShippingRate $rate) => new RateQuoteData(
-                carrier: $rate->carrier_code ?? 'zone',
-                service: $rate->method_code,
-                rate: $rate->calculateRate($packages, $cartTotal),
-                currency: $currency,
-                estimatedDays: $rate->estimated_days_min ?? 3,
-                serviceDescription: $rate->name,
-                calculatedLocally: true,
-                note: $rate->description,
-            ))
-            ->values();
+        return collect($this->zoneResolver->quote($destination, $packages, $cartTotal, $itemCount, $currency, $ownerId, $ownerType));
     }
 
     public function createShipment(ShipmentData $data): CarrierOperationResult

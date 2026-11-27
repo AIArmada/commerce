@@ -7,7 +7,10 @@ namespace AIArmada\Shipping\Features\Rates\Queries;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\PackageData;
+use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Features\Rates\Models\ShippingRate;
 use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
@@ -20,7 +23,7 @@ use InvalidArgumentException;
 /**
  * Resolves shipping zones and rates for addresses.
  */
-class ShippingZoneResolver
+class ShippingZoneResolver implements ZoneRateReader
 {
     /**
      * Parameter-keyed cache for zone resolution.
@@ -102,6 +105,40 @@ class ShippingZoneResolver
             ->active()
             ->forCarrier($carrierCode)
             ->get();
+    }
+
+    /**
+     * @param  array<PackageData>  $packages
+     * @return list<RateQuoteData>
+     */
+    public function quote(AddressData $destination, array $packages, int $cartTotal, int $itemCount, string $currency, ?string $ownerId = null, ?string $ownerType = null): array
+    {
+        $zone = $this->resolve($destination, $ownerId, $ownerType);
+
+        if ($zone === null) {
+            return [];
+        }
+
+        $quotes = [];
+
+        foreach ($zone->rates()->active()->get() as $rate) {
+            if (! $rate->meetsConditions($packages, $cartTotal, $itemCount)) {
+                continue;
+            }
+
+            $quotes[] = new RateQuoteData(
+                carrier: $rate->carrier_code ?? 'zone',
+                service: $rate->method_code,
+                rate: $rate->calculateRate($packages, $cartTotal),
+                currency: $currency,
+                estimatedDays: $rate->estimated_days_min ?? 3,
+                serviceDescription: $rate->name,
+                calculatedLocally: true,
+                note: $rate->description,
+            );
+        }
+
+        return $quotes;
     }
 
     /**

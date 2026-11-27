@@ -11,7 +11,7 @@ use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
 use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
-use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
@@ -241,7 +241,7 @@ class ShippingManager
     protected function createZoneDriver(): ShippingDriverInterface
     {
         $config = $this->container->get('config')->get('shipping.drivers.zone', []);
-        $resolver = $this->container->make(ShippingZoneResolver::class);
+        $resolver = $this->container->make(ZoneRateReader::class);
 
         return new ZoneBasedShippingDriver($resolver, $config);
     }

@@ -13,6 +13,7 @@ use AIArmada\Shipping\Features\Rates\Models\ShippingZone;
 use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
+use AIArmada\Shipping\Contracts\ZoneRateReader;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
@@ -87,6 +88,7 @@ final class ShippingServiceProvider extends PackageServiceProvider
 
         // Scoped so per-request memoization cache never bleeds across Octane requests
         $this->app->scoped(ShippingZoneResolver::class);
+        $this->app->bind(ZoneRateReader::class, fn (Application $app): ZoneRateReader => $app->make(ShippingZoneResolver::class));
 
         $this->app->scoped(RateShoppingEngine::class, function ($app): RateShoppingEngine {
             /** @var array<string, mixed> $config */
