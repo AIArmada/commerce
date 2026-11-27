@@ -29,7 +29,7 @@ php artisan vendor:publish --provider="AIArmada\Communications\CommunicationsSer
 ## Destination resolves to the wrong address
 
 1. Check for an active `CommunicationDestination` on the recipient morph + channel (`status = active`). Primary and verified rows win.
-2. If you expect only notifiable routing, confirm no destination row exists or rebind `DestinationResolver` to `NotifiableDestinationResolver`.
+2. If you expect only notifiable routing, confirm no destination row exists or rebind `DestinationResolver` to `Drivers\Notifications\NotifiableDestinationResolver`.
 3. Confirm the notifiable implements `routeNotificationFor($channel)` or `routeNotificationFor{Driver}()` for the fallback path.
 
 ## Owner scoping issues

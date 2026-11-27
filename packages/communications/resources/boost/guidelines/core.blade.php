@@ -8,3 +8,5 @@
 - RecipientRouting owns stored destinations and preferences. Use `Features\RecipientRouting\Actions\SaveRecipientDestination` and `SaveRecipientPreference` with persisted recipients; the destination model hides addresses and external identifiers during serialization.
 
 - Webhook provider interfaces live in `Contracts/`; concrete provider registration, normalization and owner resolution adapters live in `Drivers/Webhooks/`.
+
+- Default notification, audit, eligibility, encryption and cache implementations are in `Drivers/Notifications/`, `Drivers/Audit/`, `Drivers/Eligibility/`, `Drivers/Security/` and `Drivers/Cache/`. Bind their package contracts rather than reaching into implementation classes.

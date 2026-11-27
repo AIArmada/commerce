@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Drivers\Eligibility;
 
 use AIArmada\Communications\Contracts\ConsentResolver;
 use AIArmada\Communications\Contracts\PreferenceResolver;

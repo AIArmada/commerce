@@ -116,7 +116,7 @@ mime values, and non-negative sizes within the configured maximum.
 - `auto_capture_triggers` - optionally restrict opted-in notifications to `NotificationTrigger` values
 - `auto_capture_ignored_channels` - skip selected notification channels
 
-Consent, preferences, quiet hours and rate limits default to `PermissiveEligibilityResolver`. `SuppressionResolver` defaults to `ActiveSuppressionResolver`, which honors active, unexpired, unlifted records for the current owner, destination, channel and applicable category/recipient. Custom bindings implement `resolveConsent()` and `resolveSuppression()`.
+Consent, preferences, quiet hours and rate limits default to `Drivers\Eligibility\PermissiveEligibilityResolver`. `SuppressionResolver` defaults to `ActiveSuppressionResolver`, which honors active, unexpired, unlifted records for the current owner, destination, channel and applicable category/recipient. Custom bindings implement `resolveConsent()` and `resolveSuppression()`.
 
 ## Destinations
 
@@ -124,7 +124,7 @@ Configured under `database.tables.destinations` — see the Database section for
 
 - `CommunicationDestination` rows are owner-scoped polymorphic records (`recipient_type` / `recipient_id`) with `channel`, optional `address` / `external_id`, `status`, `is_primary`, and `verified_at`
 - The default `DestinationResolver` binding is `CommunicationDestinationResolver`: it prefers an active primary destination for the channel, then falls back to Laravel notifiable routing (`routeNotificationFor` / `routeNotificationFor{Driver}`)
-- Bind `AIArmada\Communications\Contracts\DestinationResolver` to `NotifiableDestinationResolver` (or a custom implementation) if you want notifiable-only resolution without the destinations table
+- Bind `AIArmada\Communications\Contracts\DestinationResolver` to `Drivers\Notifications\NotifiableDestinationResolver` (or a custom implementation) if you want notifiable-only resolution without the destinations table
 
 ## Preferences
 
@@ -222,7 +222,7 @@ from provider-specific payload fields. Return a `RecordReference` containing the
 - `cache.idempotency_store` - cache store used for idempotency locks; defaults to `env('CACHE_STORE', 'array')`
 
 > **warning**
-> `IdempotencyLockService` calls `Cache::store(...)`, so the `array` store only lives for the current process. With the default `array` store, idempotency keys do **not** dedupe across HTTP requests or queue workers. Set `COMMUNICATIONS_IDEMPOTENCY_STORE` to a shared store (`redis`, `database`, `memcached`) whenever idempotency matters.
+> `Drivers\Cache\IdempotencyLockService` calls `Cache::store(...)`, so the `array` store only lives for the current process. With the default `array` store, idempotency keys do **not** dedupe across HTTP requests or queue workers. Set `COMMUNICATIONS_IDEMPOTENCY_STORE` to a shared store (`redis`, `database`, `memcached`) whenever idempotency matters.
 
 - `cache.idempotency_ttl` - lifetime of an acquired idempotency lock, in seconds
 

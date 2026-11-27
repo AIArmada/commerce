@@ -20,7 +20,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
-use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
+use AIArmada\Communications\Drivers\Audit\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Drivers\Webhooks\NullProviderEventNormalizer;
 use AIArmada\Communications\Drivers\Webhooks\ProviderWebhookRegistrarService;
 use Carbon\CarbonImmutable;

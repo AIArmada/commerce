@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Support;
+namespace AIArmada\Communications\Drivers\Security;
 
 use AIArmada\Communications\Contracts\DestinationProtector;
 use Illuminate\Support\Facades\Crypt;

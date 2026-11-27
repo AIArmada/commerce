@@ -35,7 +35,7 @@ The package complements Laravel Notifications in two modes:
 
 ## Scale
 
-The domain ships 17 models, 31 actions, and 10 services (see `src/Models/`, `src/Actions/`, `src/Services/`). Unconfigured channels resolve through null-driver defaults (`NullContentRenderer`, `NullCommunicationAuditRecorder`, `NullRecipientSnapshotResolver`, `NullProviderEventNormalizer`) and `PermissiveEligibilityResolver` for consent, preferences, quiet hours and rate limits. Stored active suppressions are enforced by `ActiveSuppressionResolver`. `DestinationResolver` defaults to `CommunicationDestinationResolver`; bind `NullDestinationResolver` or `NotifiableDestinationResolver` to resolve without the destinations table.
+The domain organizes capability actions and models under `src/Features/`, shared contracts under `src/Contracts/`, and integration adapters under `src/Drivers/`. Unconfigured channels resolve through null-driver defaults (`Drivers\Notifications\NullContentRenderer`, `Drivers\Audit\NullCommunicationAuditRecorder`, `Drivers\Notifications\NullRecipientSnapshotResolver`, `NullProviderEventNormalizer`) and `Drivers\Eligibility\PermissiveEligibilityResolver` for consent, preferences, quiet hours and rate limits. Stored active suppressions are enforced by `ActiveSuppressionResolver`. `DestinationResolver` defaults to `CommunicationDestinationResolver`; bind `Drivers\Notifications\NullDestinationResolver` or `Drivers\Notifications\NotifiableDestinationResolver` to resolve without the destinations table.
 
 ## Related packages
 
@@ -52,7 +52,7 @@ The domain ships 17 models, 31 actions, and 10 services (see `src/Models/`, `src
 - No database foreign-key constraints, cascades, or soft deletes
 - All timestamps are timezone-aware
 - All primary keys are UUIDs
-- Eligibility contracts: `resolveConsent()` on `PermissiveEligibilityResolver` and `resolveSuppression()` on `ActiveSuppressionResolver`
+- Eligibility contracts: `resolveConsent()` on `Drivers\Eligibility\PermissiveEligibilityResolver` and `resolveSuppression()` on `ActiveSuppressionResolver`
 - Provider webhooks are allowlisted, HMAC-signed, timestamp-bound, and rate-limited — see `03-configuration.md` and `04-usage.md`
 
 ## Breaking changes

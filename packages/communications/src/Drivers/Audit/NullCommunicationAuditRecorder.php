@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Drivers\Audit;
 
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 

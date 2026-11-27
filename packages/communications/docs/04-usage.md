@@ -273,7 +273,7 @@ Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts
 
 ## Eligibility contracts
 
-Consent, preferences, quiet hours and rate limits resolve through `PermissiveEligibilityResolver`; active persisted suppressions resolve through `ActiveSuppressionResolver`. Custom resolvers implement `resolveConsent()` (`ConsentResolver`) and `resolveSuppression()` (`SuppressionResolver`).
+Consent, preferences, quiet hours and rate limits resolve through `Drivers\Eligibility\PermissiveEligibilityResolver`; active persisted suppressions resolve through `ActiveSuppressionResolver`. Custom resolvers implement `resolveConsent()` (`ConsentResolver`) and `resolveSuppression()` (`SuppressionResolver`).
 
 Webhooks are allowlisted per provider (`communications.webhooks.providers`), HMAC-signed (configurable header and algorithm, default `X-Webhook-Signature` with SHA-256 over the exact timestamp header, a literal `.` and the raw body), timestamp-bound (`X-Webhook-Timestamp`, default 300s tolerance), and rate-limited (`throttle:communications-webhooks`). Unconfigured providers fail closed — see `03-configuration.md`.
 

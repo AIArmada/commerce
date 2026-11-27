@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Support;
+namespace AIArmada\Communications\Drivers\Cache;
 
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use Illuminate\Support\Facades\Cache;
