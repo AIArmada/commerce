@@ -272,7 +272,7 @@ class JntShippingDriver implements ShippingDriverInterface
         return new TrackingData(
             trackingNumber: $trackingNumber,
             status: $currentStatus,
-            events: $events,
+            events: $events->values()->all(),
             carrier: 'jnt',
             deliveredAt: $currentStatus === TrackingStatus::Delivered
             ? $latestEvent?->timestamp

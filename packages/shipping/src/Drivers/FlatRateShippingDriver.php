@@ -114,14 +114,14 @@ class FlatRateShippingDriver implements ShippingDriverInterface
         return new TrackingData(
             trackingNumber: $trackingNumber,
             status: TrackingStatus::AwaitingPickup,
-            events: collect([
+            events: [
                 new TrackingEventData(
                     code: 'FLAT',
                     description: 'Flat rate shipment - tracking not available',
                     timestamp: CarbonImmutable::now(),
                     normalizedStatus: TrackingStatus::AwaitingPickup,
                 ),
-            ]),
+            ],
             carrier: 'flat_rate',
         );
     }

@@ -115,14 +115,14 @@ class NullShippingDriver implements ShippingDriverInterface
         return new TrackingData(
             trackingNumber: $trackingNumber,
             status: TrackingStatus::InTransit,
-            events: collect([
+            events: [
                 new TrackingEventData(
                     code: 'TEST',
                     description: 'Test tracking event',
                     timestamp: CarbonImmutable::now(),
                     normalizedStatus: TrackingStatus::InTransit,
                 ),
-            ]),
+            ],
             carrier: 'null',
         );
     }

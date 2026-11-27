@@ -517,11 +517,11 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
 
             return [
                 'status' => $trackingData->status->value,
-                'events' => $trackingData->events->map(fn ($event) => [
+                'events' => array_map(static fn ($event) => [
                     'date' => $event->timestamp->format(DateTimeInterface::ATOM),
                     'description' => $event->description,
                     'location' => $event->location,
-                ])->toArray(),
+                ], $trackingData->events),
             ];
         } catch (Throwable $e) {
             report($e);

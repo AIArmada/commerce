@@ -120,14 +120,14 @@ class ManualShippingDriver implements ShippingDriverInterface
         return new TrackingData(
             trackingNumber: $trackingNumber,
             status: TrackingStatus::AwaitingPickup,
-            events: collect([
+            events: [
                 new TrackingEventData(
                     code: 'MANUAL',
                     description: 'Manual shipment - tracking not available',
                     timestamp: CarbonImmutable::now(),
                     normalizedStatus: TrackingStatus::AwaitingPickup,
                 ),
-            ]),
+            ],
             carrier: 'manual',
         );
     }

@@ -162,15 +162,15 @@ class TrackingAggregator
     /**
      * Process tracking events and create records for new ones.
      *
-     * @param  Collection<int, TrackingEventData>  $events
+     * @param  list<TrackingEventData>  $events
      * @return Collection<int, ShipmentEvent>
      */
-    protected function processTrackingEvents(Shipment $shipment, Collection $events): Collection
+    protected function processTrackingEvents(Shipment $shipment, array $events): Collection
     {
         $newEvents = collect();
         $mapper = $this->statusMappers[$shipment->carrier_code] ?? null;
 
-        if ($events->isEmpty()) {
+        if ($events === []) {
             return $newEvents;
         }
 
@@ -180,11 +180,7 @@ class TrackingAggregator
         $existing = [];
 
         foreach ($shipment->events()
-            ->whereIn('carrier_event_code', $events
-                ->map(static fn (TrackingEventData $eventData): string => $eventData->code)
-                ->unique()
-                ->values()
-                ->all())
+            ->whereIn('carrier_event_code', array_values(array_unique(array_map(static fn (TrackingEventData $eventData): string => $eventData->code, $events))))
             ->get(['carrier_event_code', 'occurred_at']) as $storedEvent) {
             $existing[$this->trackingEventKey($storedEvent->carrier_event_code, $storedEvent->occurred_at)] = true;
         }

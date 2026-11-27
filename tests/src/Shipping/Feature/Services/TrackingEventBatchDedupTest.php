@@ -61,12 +61,12 @@ describe('Tracking event batch deduplication', function (): void {
         $trackingData = new TrackingData(
             trackingNumber: 'TEST-BATCH-1',
             status: TrackingStatus::InTransit,
-            events: collect([
+            events: [
                 new TrackingEventData(code: 'picked-up', description: 'Picked up', timestamp: $seenAt, normalizedStatus: TrackingStatus::InTransit),
                 new TrackingEventData(code: 'in-transit', description: 'In transit', timestamp: $firstNewAt, normalizedStatus: TrackingStatus::InTransit),
                 new TrackingEventData(code: 'in-transit', description: 'In transit', timestamp: $firstNewAt, normalizedStatus: TrackingStatus::InTransit),
                 new TrackingEventData(code: 'arrived', description: 'Arrived', timestamp: $secondNewAt, normalizedStatus: TrackingStatus::InTransit),
-            ]),
+            ],
         );
 
         $dedupSelects = 0;

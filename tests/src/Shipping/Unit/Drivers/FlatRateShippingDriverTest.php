@@ -140,8 +140,8 @@ it('tracks shipment with awaiting pickup status', function (): void {
     expect($trackingData->status)->toBe(TrackingStatus::AwaitingPickup);
     expect($trackingData->carrier)->toBe('flat_rate');
     expect($trackingData->events)->toHaveCount(1);
-    expect($trackingData->events->first()->code)->toBe('FLAT');
-    expect($trackingData->events->first()->description)->toBe('Flat rate shipment - tracking not available');
+    expect($trackingData->events[0]->code)->toBe('FLAT');
+    expect($trackingData->events[0]->description)->toBe('Flat rate shipment - tracking not available');
 });
 
 it('validates address always returns valid', function (): void {

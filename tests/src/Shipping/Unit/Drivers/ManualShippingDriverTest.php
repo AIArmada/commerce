@@ -161,8 +161,8 @@ it('tracks shipment with awaiting pickup status', function (): void {
     expect($trackingData->status)->toBe(TrackingStatus::AwaitingPickup);
     expect($trackingData->carrier)->toBe('manual');
     expect($trackingData->events)->toHaveCount(1);
-    expect($trackingData->events->first()->code)->toBe('MANUAL');
-    expect($trackingData->events->first()->description)->toBe('Manual shipment - tracking not available');
+    expect($trackingData->events[0]->code)->toBe('MANUAL');
+    expect($trackingData->events[0]->description)->toBe('Manual shipment - tracking not available');
 });
 
 it('cancels shipment always returns true', function (): void {

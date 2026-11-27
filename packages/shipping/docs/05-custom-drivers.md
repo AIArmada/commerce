@@ -296,7 +296,7 @@ class JntShippingDriver implements ShippingDriverInterface
             return new TrackingData(
                 trackingNumber: $trackingNumber,
                 status: TrackingStatus::LabelCreated,
-                events: collect(),
+                events: [],
             );
         }
 
@@ -312,7 +312,7 @@ class JntShippingDriver implements ShippingDriverInterface
                 timestamp: CarbonImmutable::parse($event['timestamp']),
                 normalizedStatus: $this->mapStatus((string) $event['status']),
                 location: $event['location'] ?? null,
-            )),
+            ))->values()->all(),
             carrier: 'jnt',
         );
     }

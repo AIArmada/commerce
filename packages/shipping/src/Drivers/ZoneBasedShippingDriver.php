@@ -142,14 +142,14 @@ class ZoneBasedShippingDriver implements ShippingDriverInterface
         return new TrackingData(
             trackingNumber: $trackingNumber,
             status: TrackingStatus::AwaitingPickup,
-            events: collect([
+            events: [
                 new TrackingEventData(
                     code: 'ZONE',
                     description: 'Zone-based shipment - tracking not available',
                     timestamp: CarbonImmutable::now(),
                     normalizedStatus: TrackingStatus::AwaitingPickup,
                 ),
-            ]),
+            ],
             carrier: 'zone',
         );
     }
