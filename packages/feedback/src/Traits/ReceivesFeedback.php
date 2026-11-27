@@ -7,7 +7,7 @@ namespace AIArmada\Feedback\Traits;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
-use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
+use AIArmada\Feedback\Features\Responses\Api\ReadsSubjectFeedbackMetrics;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Model;
@@ -57,56 +57,19 @@ trait ReceivesFeedback
 
     public function averageFeedbackScore(?string $questionKey = null): ?float
     {
-        if ($questionKey !== null) {
-            $avg = FeedbackAnswer::query()
-                ->whereHas('response', function ($q): void {
-                    $q->where('subject_type', $this->getMorphClass())
-                        ->where('subject_id', $this->getKey())
-                        ->where('status', 'submitted');
-                })
-                ->whereHas('question', function ($q) use ($questionKey): void {
-                    $q->where('key', $questionKey);
-                })
-                ->whereNotNull('score')
-                ->avg('score');
-
-            return $avg !== null ? (float) $avg : null;
-        }
-
-        $avg = $this->feedbackResponses()
-            ->where('status', 'submitted')
-            ->whereNotNull('score')
-            ->avg('score');
-
-        return $avg !== null ? (float) $avg : null;
+        return app(ReadsSubjectFeedbackMetrics::class)->average(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $questionKey,
+        );
     }
 
     public function npsScore(?FeedbackForm $form = null): ?int
     {
-        $query = $this->feedbackResponses()
-            ->where('status', 'submitted')
-            ->whereNotNull('score');
-
-        if ($form !== null) {
-            $query->where('feedback_form_id', $form->id);
-        }
-
-        $counts = (clone $query)
-            ->selectRaw('
-                COUNT(CASE WHEN score >= 9 THEN 1 END) as promoters,
-                COUNT(CASE WHEN score BETWEEN 7 AND 8 THEN 1 END) as passives,
-                COUNT(CASE WHEN score <= 6 THEN 1 END) as detractors,
-                COUNT(*) as total
-            ')
-            ->first();
-
-        if (! $counts || $counts->total === 0) {
-            return null;
-        }
-
-        $promoterPct = ($counts->promoters / $counts->total) * 100;
-        $detractorPct = ($counts->detractors / $counts->total) * 100;
-
-        return (int) round($promoterPct - $detractorPct);
+        return app(ReadsSubjectFeedbackMetrics::class)->nps(
+            $this->getMorphClass(),
+            (string) $this->getKey(),
+            $form?->id,
+        );
     }
 }

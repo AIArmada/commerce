@@ -703,3 +703,40 @@ it('averages per-question scores over answers on the trait', function (): void {
     expect($traitSubject->averageFeedbackScore('q2'))->toBe(0.0)
         ->and($traitSubject->averageFeedbackScore('q1'))->toBe(10.0);
 });
+
+it('includes reviewed subject feedback and excludes drafts, rejected and other subjects', function (): void {
+    $subject = feedbackRegressionUser('Metric subject');
+    $traitSubject = RepairReceivesFeedbackUser::query()->whereKey($subject->id)->firstOrFail();
+    $other = feedbackRegressionUser('Other metric subject');
+    $form = regressionPublishedForm('Subject metrics');
+
+    expect($traitSubject->averageFeedbackScore())->toBeNull()
+        ->and($traitSubject->npsScore($form))->toBeNull();
+
+    foreach ([
+        ['submitted', 10],
+        ['reviewed', 0],
+        ['draft', 10],
+        ['rejected', 10],
+        ['spam', 10],
+    ] as [$status, $score]) {
+        FeedbackResponse::query()->create([
+            'feedback_form_id' => $form->id,
+            'subject_type' => $traitSubject->getMorphClass(),
+            'subject_id' => $traitSubject->getKey(),
+            'status' => $status,
+            'score' => $score,
+        ]);
+    }
+
+    FeedbackResponse::query()->create([
+        'feedback_form_id' => $form->id,
+        'subject_type' => $traitSubject->getMorphClass(),
+        'subject_id' => $other->getKey(),
+        'status' => 'submitted',
+        'score' => 10,
+    ]);
+
+    expect($traitSubject->averageFeedbackScore())->toBe(5.0)
+        ->and($traitSubject->npsScore($form))->toBe(0);
+});
