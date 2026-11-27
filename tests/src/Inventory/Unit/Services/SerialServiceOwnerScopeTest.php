@@ -247,3 +247,25 @@ it('does not let a tenant mutate a visible global serial', function (): void {
 
     expect($serial->fresh()->status)->toBeInstanceOf(Available::class);
 });
+
+it('enforces serial uniqueness for explicit global records on the fresh schema', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    OwnerContext::withOwner(null, function () use ($fixture): void {
+        $fixture['service']->register($fixture['sku'], 'SN-UNIQUE-GLOBAL', $fixture['locationGlobal']->id);
+
+        expect(fn () => $fixture['service']->register($fixture['sku'], 'SN-UNIQUE-GLOBAL', $fixture['locationGlobal']->id))
+            ->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    });
+});
+
+it('allows different owners to register the same serial identifier', function (): void {
+    $fixture = makeOwnerScopedSerialServiceFixture();
+
+    $first = $fixture['service']->register($fixture['sku'], 'SN-SHARED', $fixture['locationA']->id);
+    ($fixture['setOwnerContext'])($fixture['ownerB']);
+    $second = $fixture['service']->register($fixture['sku'], 'SN-SHARED', $fixture['locationB']->id);
+
+    expect($second->id)->not->toBe($first->id)
+        ->and($second->owner_id)->toBe($fixture['ownerB']->getKey());
+});

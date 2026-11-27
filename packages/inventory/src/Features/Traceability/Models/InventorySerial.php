@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Inventory\Database\Factories\InventorySerialFactory;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -71,11 +72,15 @@ final class InventorySerial extends Model implements Auditable
 
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasOwnerScopeKey;
     use HasStates;
     use HasUuids;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'inventory.owner';
+
+    /** @var list<string> */
+    protected $hidden = ['owner_scope'];
 
     /**
      * The attributes that are mass assignable.
