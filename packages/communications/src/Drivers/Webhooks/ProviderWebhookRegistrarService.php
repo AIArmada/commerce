@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Webhooks\Registrars;
+namespace AIArmada\Communications\Drivers\Webhooks;
 
-use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
+use AIArmada\Communications\Contracts\ProviderWebhookRegistrar;
 use RuntimeException;
 
 final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
@@ -12,7 +12,7 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
     public function supports(string $provider): bool
     {
         $provider = $this->normalizeProvider($provider);
-        $config = config("communications.webhooks.providers.{$provider}");
+        $config = $this->providerConfig($provider);
 
         return is_array($config) && ($config['enabled'] ?? true) !== false;
     }
@@ -20,7 +20,7 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
     public function resolveProvider(string $provider): ?string
     {
         $provider = $this->normalizeProvider($provider);
-        $config = config("communications.webhooks.providers.{$provider}");
+        $config = $this->providerConfig($provider);
 
         if (! is_array($config)) {
             return null;
@@ -34,7 +34,7 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
     public function getSecret(string $provider): ?string
     {
         $provider = $this->normalizeProvider($provider);
-        $config = config("communications.webhooks.providers.{$provider}");
+        $config = $this->providerConfig($provider);
 
         if (is_array($config) && is_string($config['secret'] ?? null) && $config['secret'] !== '') {
             return $config['secret'];
@@ -46,7 +46,7 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
     public function getAlgorithm(string $provider): string
     {
         $provider = $this->normalizeProvider($provider);
-        $config = config("communications.webhooks.providers.{$provider}");
+        $config = $this->providerConfig($provider);
 
         $algorithm = is_array($config) && is_string($config['algorithm'] ?? null) && $config['algorithm'] !== ''
             ? mb_strtolower($config['algorithm'])
@@ -62,13 +62,22 @@ final class ProviderWebhookRegistrarService implements ProviderWebhookRegistrar
     public function getSignatureHeader(string $provider): string
     {
         $provider = $this->normalizeProvider($provider);
-        $config = config("communications.webhooks.providers.{$provider}");
+        $config = $this->providerConfig($provider);
 
         if (is_array($config) && is_string($config['signature_header'] ?? null) && mb_trim($config['signature_header']) !== '') {
             return $config['signature_header'];
         }
 
         return 'X-Webhook-Signature';
+    }
+
+    /** @return array<string, mixed>|null */
+    private function providerConfig(string $provider): ?array
+    {
+        $providers = config('communications.webhooks.providers', []);
+        $providerConfig = is_array($providers) ? ($providers[$provider] ?? null) : null;
+
+        return is_array($providerConfig) ? $providerConfig : null;
     }
 
     public function normalizeProvider(string $provider): string

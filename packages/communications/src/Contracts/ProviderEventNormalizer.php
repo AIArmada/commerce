@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Webhooks\Contracts;
+namespace AIArmada\Communications\Contracts;
 
 use AIArmada\Communications\Data\ProviderEventData;
 

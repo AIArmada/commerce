@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Data\ProviderEventData;
-use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
+use AIArmada\Communications\Contracts\ProviderEventNormalizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

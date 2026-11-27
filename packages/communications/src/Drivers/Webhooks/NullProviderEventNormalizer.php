@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Webhooks\Normalizers;
+namespace AIArmada\Communications\Drivers\Webhooks;
 
 use AIArmada\Communications\Data\ProviderEventData;
-use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
+use AIArmada\Communications\Contracts\ProviderEventNormalizer;
 use Carbon\CarbonImmutable;
 
 final class NullProviderEventNormalizer implements ProviderEventNormalizer

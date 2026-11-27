@@ -21,8 +21,8 @@ use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
-use AIArmada\Communications\Webhooks\Normalizers\NullProviderEventNormalizer;
-use AIArmada\Communications\Webhooks\Registrars\ProviderWebhookRegistrarService;
+use AIArmada\Communications\Drivers\Webhooks\NullProviderEventNormalizer;
+use AIArmada\Communications\Drivers\Webhooks\ProviderWebhookRegistrarService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -89,6 +89,15 @@ test('job is dispatched on valid webhook request', function (): void {
 test('route uses configurable middleware', function (): void {
     $middleware = config('communications.webhooks.middleware');
     expect($middleware)->toContain('api', 'throttle:communications-webhooks', VerifyWebhookSignature::class);
+});
+
+test('provider webhook registrar does not resolve nested configuration as a provider', function (): void {
+    Config::set('communications.webhooks.providers.sendgrid.nested', ['secret' => 'nested-secret']);
+
+    $registrar = new ProviderWebhookRegistrarService;
+
+    expect($registrar->supports('sendgrid.nested'))->toBeFalse()
+        ->and($registrar->getSecret('sendgrid.nested'))->toBeNull();
 });
 
 test('provider webhook registrar reads the configured provider secret', function (): void {

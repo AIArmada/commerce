@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\EntryPoints\Http\Middleware;
 
-use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
+use AIArmada\Communications\Contracts\ProviderWebhookRegistrar;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Http\Request;

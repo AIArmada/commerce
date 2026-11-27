@@ -6,3 +6,5 @@
 - HTTP, queue, CLI and listener adapters are under `EntryPoints/` or the owning feature. Verify webhook signatures over timestamp plus raw request body, enforce the replay window and preserve owner context. Never log raw tokens or decrypted destinations.
 
 - RecipientRouting owns stored destinations and preferences. Use `Features\RecipientRouting\Actions\SaveRecipientDestination` and `SaveRecipientPreference` with persisted recipients; the destination model hides addresses and external identifiers during serialization.
+
+- Webhook provider interfaces live in `Contracts/`; concrete provider registration, normalization and owner resolution adapters live in `Drivers/Webhooks/`.
