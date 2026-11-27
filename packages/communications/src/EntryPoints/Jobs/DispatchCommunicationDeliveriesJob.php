@@ -8,9 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
-use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
-use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Api\ScheduledDeliveryLifecycle;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -41,21 +39,7 @@ final class DispatchCommunicationDeliveriesJob implements OwnerScopedJob, Should
 
     protected function performJob(): void
     {
-        $transitioned = 0;
-
-        CommunicationDelivery::query()
-            ->where('communication_id', $this->communicationId)
-            ->where('status', DeliveryStatus::Queued)
-            ->orderBy('queued_at')
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->lock('for update skip locked')
-            ->chunkById(200, function ($deliveries) use (&$transitioned): void {
-                foreach ($deliveries as $delivery) {
-                    app(TransitionDeliveryAction::class)->handle($delivery, DeliveryStatus::Sending);
-                    $transitioned++;
-                }
-            });
+        $transitioned = app(ScheduledDeliveryLifecycle::class)->startQueued($this->communicationId);
 
         if ($transitioned > 0) {
             app(CommunicationStatusRecalculator::class)->handle($this->communicationId);

@@ -28,6 +28,36 @@ final readonly class ManageScheduledDeliveries implements ScheduledDeliveryLifec
             ]);
     }
 
+    public function startQueued(string $communicationId): int
+    {
+        $model = new CommunicationDelivery;
+        $transitioned = 0;
+
+        do {
+            $count = $model->getConnection()->transaction(function () use ($communicationId): int {
+                $deliveries = CommunicationDelivery::query()
+                    ->where('communication_id', $communicationId)
+                    ->where('status', DeliveryStatus::Queued)
+                    ->orderBy('queued_at')
+                    ->orderBy('created_at')
+                    ->orderBy('id')
+                    ->limit(200)
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($deliveries as $delivery) {
+                    $this->transitions->handle($delivery, DeliveryStatus::Sending);
+                }
+
+                return $deliveries->count();
+            });
+
+            $transitioned += $count;
+        } while ($count === 200);
+
+        return $transitioned;
+    }
+
     public function expire(string $communicationId): void
     {
         $model = new CommunicationDelivery;

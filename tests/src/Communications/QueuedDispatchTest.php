@@ -174,6 +174,13 @@ test('due communications queue eligible deliveries in creation order', function 
 
     Queue::assertPushed(DispatchCommunicationDeliveriesJob::class, fn (DispatchCommunicationDeliveriesJob $job): bool => $job->communicationId === $communication->id);
 
+    $repeatExitCode = Artisan::call('communications:dispatch-due', [
+        '--owner' => $owner->getMorphClass() . ':' . $owner->getKey(),
+    ]);
+
+    expect($repeatExitCode)->toBe(0);
+    Queue::assertPushed(DispatchCommunicationDeliveriesJob::class, 1);
+
     expect($exitCode)->toBe(0)
         ->and($first->fresh()->status)->toBe(DeliveryStatus::Queued)
         ->and($second->fresh()->status)->toBe(DeliveryStatus::Queued)
@@ -211,6 +218,12 @@ test('delivery dispatch transitions queued deliveries in their queue order', fun
         'queued_at' => now(),
     ]);
     $second->save();
+
+    (new DispatchCommunicationDeliveriesJob(
+        communicationId: $communication->id,
+        ownerType: $communication->owner_type,
+        ownerId: $communication->owner_id,
+    ))->handle();
 
     (new DispatchCommunicationDeliveriesJob(
         communicationId: $communication->id,
