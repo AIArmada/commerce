@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Support\MoneyInput;
-use AIArmada\FilamentShipping\Support\ShippingStatsAggregator;
+use AIArmada\Shipping\Queries\ShippingStatsAggregator;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Delivered;
 use AIArmada\Shipping\States\ExceptionStatus;

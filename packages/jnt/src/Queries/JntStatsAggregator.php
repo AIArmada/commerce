@@ -2,11 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentJnt\Support;
+namespace AIArmada\Jnt\Queries;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Jnt\Models\JntOrder;
-use Illuminate\Database\Eloquent\Builder;
 
 final class JntStatsAggregator
 {
@@ -15,10 +13,10 @@ final class JntStatsAggregator
      */
     public static function calculateOrderStats(): array
     {
-        $query = self::ordersQuery();
+        $query = JntOrder::query();
 
         /** @var JntOrder|null $row */
-        $row = (clone $query)
+        $row = $query
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered')
             ->selectRaw('SUM(CASE WHEN delivered_at IS NULL AND tracking_number IS NOT NULL AND problem_at IS NULL THEN 1 ELSE 0 END) as in_transit')
@@ -37,20 +35,4 @@ final class JntStatsAggregator
         ];
     }
 
-    /**
-     * @return Builder<JntOrder>
-     */
-    private static function ordersQuery(): Builder
-    {
-        /** @var Builder<JntOrder> $query */
-        $query = JntOrder::query();
-
-        if (! (bool) config('jnt.owner.enabled', false)) {
-            return $query;
-        }
-
-        $includeGlobal = (bool) config('jnt.owner.include_global', false);
-
-        return OwnerUiScope::apply($query, includeGlobal: $includeGlobal);
-    }
 }

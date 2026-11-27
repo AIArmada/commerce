@@ -38,7 +38,7 @@ The `aiarmada/shipping` package provides the carrier-agnostic shipping and fulfi
 - **Core surfaces** — `ShippingManager`, driver interface, rate shopping, label generation, tracking, returns, and strategy selection
 - **Handlers and services** — orders integration, rate caching, and fulfilment helpers
 - **Registries** — `ZoneResolutionStrategyRegistry`, `FreeShippingPolicyRegistry`
-- **Filament support** — `ShippingStatsAggregator` (in `aiarmada/filament-shipping`)
+- **Queries** — `AIArmada\Shipping\Queries\ShippingStatsAggregator` (used by `aiarmada/filament-shipping`)
 
 ## Owner scoping and security notes
 

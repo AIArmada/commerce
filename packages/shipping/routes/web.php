@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Http\Controllers\LabelController;
+use AIArmada\Shipping\EntryPoints\Http\Controllers\LabelController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth'])

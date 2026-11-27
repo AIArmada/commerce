@@ -258,7 +258,7 @@ $panel->resources([
 Extend Filament's own widget base and pull the shared aggregator:
 
 ```php
-use AIArmada\FilamentJnt\Support\JntStatsAggregator;
+use AIArmada\Jnt\Queries\JntStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

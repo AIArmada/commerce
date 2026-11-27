@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentShipping\Support;
+namespace AIArmada\Shipping\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -21,43 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class ShippingStatsAggregator
 {
-    public function getPendingCount(): int
-    {
-        return $this->shipmentQuery()
-            ->where('status', ShipmentStatus::normalize(Pending::class))
-            ->count();
-    }
-
-    public function getInTransitCount(): int
-    {
-        return $this->shipmentQuery()
-            ->whereIn('status', [
-                ShipmentStatus::normalize(Shipped::class),
-                ShipmentStatus::normalize(InTransit::class),
-                ShipmentStatus::normalize(OutForDelivery::class),
-            ])
-            ->count();
-    }
-
-    public function getDeliveredTodayCount(): int
-    {
-        return $this->shipmentQuery()
-            ->where('status', ShipmentStatus::normalize(Delivered::class))
-            ->whereDate('delivered_at', CarbonImmutable::today())
-            ->count();
-    }
-
-    public function getExceptionsCount(): int
-    {
-        return $this->shipmentQuery()
-            ->whereIn('status', [
-                ShipmentStatus::normalize(ExceptionStatus::class),
-                ShipmentStatus::normalize(DeliveryFailed::class),
-            ])
-            ->count();
-    }
-
-    public function getPendingReturnsCount(): int
+    private function getPendingReturnsCount(): int
     {
         $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
 
@@ -80,10 +44,31 @@ final class ShippingStatsAggregator
      */
     public function getAllStats(): array
     {
-        $pending = $this->getPendingCount();
-        $inTransit = $this->getInTransitCount();
-        $deliveredToday = $this->getDeliveredTodayCount();
-        $exceptions = $this->getExceptionsCount();
+        $pendingStatus = ShipmentStatus::normalize(Pending::class);
+        $inTransitStatuses = [
+            ShipmentStatus::normalize(Shipped::class),
+            ShipmentStatus::normalize(InTransit::class),
+            ShipmentStatus::normalize(OutForDelivery::class),
+        ];
+        $exceptionStatuses = [
+            ShipmentStatus::normalize(ExceptionStatus::class),
+            ShipmentStatus::normalize(DeliveryFailed::class),
+        ];
+
+        $counts = $this->shipmentQuery()
+            ->whereIn('status', [$pendingStatus, ...$inTransitStatuses, ...$exceptionStatuses])
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->toBase()
+            ->pluck('aggregate', 'status');
+
+        $pending = (int) $counts->get($pendingStatus, 0);
+        $inTransit = array_sum(array_map(static fn (string $status): int => (int) $counts->get($status, 0), $inTransitStatuses));
+        $exceptions = array_sum(array_map(static fn (string $status): int => (int) $counts->get($status, 0), $exceptionStatuses));
+        $deliveredToday = $this->shipmentQuery()
+            ->where('status', ShipmentStatus::normalize(Delivered::class))
+            ->whereDate('delivered_at', CarbonImmutable::today())
+            ->count();
 
         return [
             'total' => $pending + $inTransit + $deliveredToday + $exceptions,

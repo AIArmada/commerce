@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
+use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
@@ -376,3 +377,11 @@ test('uses builder pattern', function (): void {
     //         && $body['sender']['name'] === 'Builder Sender';
     // });
 });
+
+test('rejects scalar JSON responses from the carrier', function (): void {
+    Http::fake([
+        '*/api/order/getOrders' => Http::response('true', 200, ['Content-Type' => 'application/json']),
+    ]);
+
+    $this->service->queryOrder('TXN-001');
+})->throws(JntApiException::class, 'Invalid API response format');

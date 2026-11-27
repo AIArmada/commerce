@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Http\Controllers;
+namespace AIArmada\Shipping\EntryPoints\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;

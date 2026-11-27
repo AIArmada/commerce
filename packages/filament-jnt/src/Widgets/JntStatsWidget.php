@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\FilamentJnt\Support\JntStatsAggregator;
+use AIArmada\Jnt\Queries\JntStatsAggregator;
 use AIArmada\Jnt\Models\JntOrder;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
