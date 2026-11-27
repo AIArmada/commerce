@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Features\Collect\Actions;
 
+use AIArmada\Chip\Contracts\PurchaseStatus;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Features\Collect\Api\PurchaseMirror;
 use AIArmada\Chip\Features\Collect\Models\Client;
@@ -33,10 +34,11 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         }
 
         DB::transaction(function () use ($payload): void {
-            $this->storePurchase($payload);
-            $this->storeClient($payload);
-            $this->storePayment($payload);
-        });
+            if ($this->storePurchase($payload)) {
+                $this->storeClient($payload);
+                $this->storePayment($payload);
+            }
+        }, attempts: 3);
     }
 
     /**
@@ -45,18 +47,42 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
      * CHIP guarantees purchase IDs are globally unique UUIDs across brands/tenants.
      * We therefore upsert purchases by `id` only and then apply owner attribution.
      */
-    private function storePurchase(array $payload): void
+    private function storePurchase(array $payload): bool
     {
         $owner = $this->resolveOwner();
 
-        $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->find($payload['id']);
+        $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($payload['id'])->lockForUpdate()->first();
 
         if ($purchase === null) {
             // Promote the reservation stub written when the purchase was created
             // so the ledger and the mirror remain a single row keyed by the CHIP id.
             $purchase = Purchase::query()->forOwner(OwnerContext::CURRENT, false)
                 ->where('metadata->chip_idempotency->response->id', $payload['id'])
-                ->first() ?? new Purchase;
+                ->lockForUpdate()->first() ?? new Purchase;
+        }
+
+        if ($purchase->exists && (string) $purchase->getKey() === (string) $payload['id']) {
+            $previousUpdate = $purchase->getRawOriginal('updated_on');
+            $incomingUpdate = $payload['updated_on'] ?? null;
+
+            if (is_numeric($previousUpdate) && (! is_numeric($incomingUpdate) || (int) $incomingUpdate < (int) $previousUpdate)) {
+                return false;
+            }
+
+            $previousStatus = PurchaseStatus::tryFrom((string) $purchase->status);
+            $incomingStatus = PurchaseStatus::tryFrom((string) ($payload['status'] ?? ''));
+
+            if ($previousStatus !== null && $incomingStatus !== null
+                && ($previousStatus->isSuccessful() || in_array($previousStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true))
+                && ($incomingStatus->isFailed() || ($incomingStatus->isPending() && $incomingStatus !== PurchaseStatus::PENDING_REFUND) || $incomingStatus === PurchaseStatus::RELEASED)) {
+                return false;
+            }
+
+            if ((int) $incomingUpdate === (int) $previousUpdate
+                && in_array($previousStatus, [PurchaseStatus::REFUNDED, PurchaseStatus::CHARGEBACK], true)
+                && $incomingStatus?->isSuccessful()) {
+                return false;
+            }
         }
 
         $purchase->forceFill(
@@ -88,6 +114,7 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
 
                 // Status
                 'status' => $payload['status'],
+                'total_minor' => is_numeric($payload['purchase']['total'] ?? null) ? (int) $payload['purchase']['total'] : $purchase->total_minor ?? 0,
                 'viewed_on' => $payload['viewed_on'] ?? null,
 
                 // Flags
@@ -132,6 +159,8 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
         }
 
         $purchase->save();
+
+        return true;
     }
 
     /**
@@ -175,7 +204,12 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
             return;
         }
 
-        $client = Client::query()->forOwner(OwnerContext::CURRENT, false)->firstOrNew(['id' => $clientId]);
+        $client = Client::query()->forOwner(OwnerContext::CURRENT, false)->whereKey($clientId)->lockForUpdate()->first() ?? new Client(['id' => $clientId]);
+
+        $previousUpdate = $client->getRawOriginal('updated_on');
+        if ($client->exists && is_numeric($previousUpdate) && (int) $payload['updated_on'] < (int) $previousUpdate) {
+            return;
+        }
         $client->forceFill(
             [
                 'type' => 'client',
