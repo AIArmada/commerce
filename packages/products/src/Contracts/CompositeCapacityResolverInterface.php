@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Contracts;
 
-use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 
 /**
  * Resolves per-component capacity using arbitrary application context.
@@ -17,8 +16,5 @@ use AIArmada\Products\Models\ProductComponent;
  */
 interface CompositeCapacityResolverInterface
 {
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int;
+    public function availableFor(CompositeCapacityRequest $request): ?int;
 }

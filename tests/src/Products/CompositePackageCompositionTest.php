@@ -9,6 +9,7 @@ use AIArmada\Products\Actions\DuplicateProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -77,12 +78,9 @@ final class CompositePackageCompositionCapacityResolver implements CompositeCapa
     /** @var array<string, int> */
     public array $stock = [];
 
-    /** @param array<string, mixed> $context */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $inventoryable = $component->variant ?? $component->componentProduct;
-
-        return $this->stock[$inventoryable->getMorphClass() . ':' . $inventoryable->getKey()] ?? 0;
+        return $this->stock[$request->inventoryableType . ':' . $request->inventoryableId] ?? 0;
     }
 }
 

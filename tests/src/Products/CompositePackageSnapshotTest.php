@@ -5,10 +5,10 @@ declare(strict_types=1);
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Concerns\HasComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
 use Illuminate\Support\Str;
@@ -23,12 +23,9 @@ final class CompositeTestCapacityResolver implements CompositeCapacityResolverIn
     /** @var array<string, int> */
     public array $stock = [];
 
-    /** @param array<string, mixed> $context */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $inventoryable = $component->variant ?? $component->componentProduct;
-
-        return $this->stock[$inventoryable->getMorphClass() . ':' . $inventoryable->getKey()] ?? 0;
+        return $this->stock[$request->inventoryableType . ':' . $request->inventoryableId] ?? 0;
     }
 }
 

@@ -13,6 +13,7 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Data\CompositeAvailability;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Support\CompositeBuyableRegistry;
 use AIArmada\Products\Data\CompositeSnapshot;
 use AIArmada\Products\Support\ProductShipping;
@@ -109,6 +110,7 @@ final class CompositePackageService
         // Product identity. Different products may draw from one shared pool;
         // one product may draw from distinct windows or other independent scopes.
         $grouped = [];
+        $stockByIdentity = [];
 
         foreach ($leaves as $leaf) {
             $component = $leaf['component'];
@@ -124,18 +126,36 @@ final class CompositePackageService
                 ? array_replace($context, ['composition_path' => $leaf['path']])
                 : $context;
 
+            if (! array_key_exists($inventoryKey, $stockByIdentity)) {
+                $stock = $inventoryable instanceof Buyable ? $inventoryable->getBuyableStock() : null;
+                $stockByIdentity[$inventoryKey] = $stock === null ? null : max(0, $stock);
+            }
+
+            $request = new CompositeCapacityRequest(
+                parentProductId: (string) $product->getKey(),
+                componentId: (string) $component->getKey(),
+                componentProductId: $component->component_product_id,
+                variantId: $component->variant_id,
+                inventoryableType: $inventoryable->getMorphClass(),
+                inventoryableId: (string) $inventoryable->getKey(),
+                quantity: $leaf['quantity'],
+                metadata: $component->metadata ?? [],
+                context: $leafContext,
+                stockAvailable: $stockByIdentity[$inventoryKey],
+            );
+
             $resourceKey = $inventoryKey;
             $scopeKey = '';
             $required = $leaf['quantity'];
 
             if ($this->capacityResolver instanceof CompositeCapacityDemandResolverInterface) {
-                $demand = $this->capacityResolver->demandFor($product, $component, $leafContext);
+                $demand = $this->capacityResolver->demandFor($request);
                 $resourceKey = $demand->resourceKey;
                 $scopeKey = $demand->scopeKey;
                 $required = $this->safeMultiply($required, $demand->unitsPerComponent);
                 $available = $sellable ? $demand->available : 0;
             } else {
-                $available = $sellable ? $this->capacityResolver->availableFor($product, $component, $leafContext) : 0;
+                $available = $sellable ? $this->capacityResolver->availableFor($request) : 0;
                 $available = $available === null ? null : max(0, $available);
             }
 

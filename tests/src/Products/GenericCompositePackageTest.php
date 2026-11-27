@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
@@ -32,12 +33,9 @@ final class GenericCompositeCapacityResolver implements CompositeCapacityResolve
     /** @var array<string, int|null> */
     public array $capacity = [];
 
-    /** @param array<string, mixed> $context */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $inventoryable = $component->variant ?? $component->componentProduct;
-
-        return $this->capacity[(string) $inventoryable->getKey()] ?? null;
+        return $this->capacity[$request->inventoryableId] ?? null;
     }
 }
 
@@ -182,14 +180,11 @@ final class ContextualCompositeResolver implements CompositeCapacityResolverInte
     /** @var list<array<string, mixed>> */
     public array $receivedContext = [];
 
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $this->receivedContext[] = $context;
+        $this->receivedContext[] = $request->context;
 
-        return ($context['session'] ?? null) === 'unavailable' ? 0 : 8;
+        return ($request->context['session'] ?? null) === 'unavailable' ? 0 : 8;
     }
 }
 

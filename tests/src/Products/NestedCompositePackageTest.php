@@ -10,6 +10,7 @@ use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
+use AIArmada\Products\Data\CompositeCapacityRequest;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -50,12 +51,11 @@ final class NestedCompositeCapacityResolver implements CompositeCapacityResolver
     /** @var list<array<string, mixed>> */
     public array $contexts = [];
 
-    /** @param array<string, mixed> $context */
-    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    public function availableFor(CompositeCapacityRequest $request): ?int
     {
-        $this->contexts[] = $context;
+        $this->contexts[] = $request->context;
 
-        return $this->capacities[$component->component_product_id] ?? null;
+        return $this->capacities[$request->componentProductId] ?? null;
     }
 }
 
