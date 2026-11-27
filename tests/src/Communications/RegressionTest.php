@@ -199,8 +199,16 @@ test('tracking target urls are validated and encrypted at rest', function (): vo
     expect(fn () => $action->handle($delivery->id, 'click', 'not-a-url'))
         ->toThrow(InvalidArgumentException::class);
 
+    expect(fn () => $action->handle($delivery->id, 'click', 'https://user@example.com/welcome'))
+        ->toThrow(InvalidArgumentException::class);
+    expect(fn () => $action->handle($delivery->id, 'click', "https://example.com/\nwelcome"))
+        ->toThrow(InvalidArgumentException::class);
+    expect(fn () => $action->handle($delivery->id, 'click', 'https://example.com\\evil.example'))
+        ->toThrow(InvalidArgumentException::class);
+
     $created = $action->handle($delivery->id, 'click', 'https://example.com/welcome?x=1');
 
+    expect($created->trackingToken->toArray())->not->toHaveKeys(['token_hash', 'target_url_ciphertext']);
     expect($created->trackingToken->target_host)->toBe('example.com');
     expect($created->trackingToken->target_url_ciphertext)->not->toBe('https://example.com/welcome?x=1');
     expect(app(DestinationProtector::class)->decrypt($created->trackingToken->target_url_ciphertext))

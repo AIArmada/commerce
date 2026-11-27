@@ -8,12 +8,10 @@ use AIArmada\Communications\Contracts\ConsentResolver;
 use AIArmada\Communications\Contracts\PreferenceResolver;
 use AIArmada\Communications\Contracts\QuietHoursResolver;
 use AIArmada\Communications\Contracts\RateLimiter;
-use AIArmada\Communications\Contracts\SuppressionResolver;
 use AIArmada\Communications\Data\ConsentDecisionData;
-use AIArmada\Communications\Data\SuppressionDecisionData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 
-final class PermissiveEligibilityResolver implements ConsentResolver, PreferenceResolver, QuietHoursResolver, RateLimiter, SuppressionResolver
+final class PermissiveEligibilityResolver implements ConsentResolver, PreferenceResolver, QuietHoursResolver, RateLimiter
 {
     public function resolveConsent(
         ?string $recipientType,
@@ -74,13 +72,4 @@ final class PermissiveEligibilityResolver implements ConsentResolver, Preference
         return false;
     }
 
-    public function resolveSuppression(
-        ?string $recipientType,
-        ?string $recipientId,
-        ?string $destinationHash,
-        ?string $channel,
-        ?string $category,
-    ): SuppressionDecisionData {
-        return SuppressionDecisionData::from(['suppressed' => false]);
-    }
 }

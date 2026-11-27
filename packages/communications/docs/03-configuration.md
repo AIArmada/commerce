@@ -116,10 +116,7 @@ mime values, and non-negative sizes within the configured maximum.
 - `auto_capture_triggers` - optionally restrict opted-in notifications to `NotificationTrigger` values
 - `auto_capture_ignored_channels` - skip selected notification channels
 
-The standalone package binds consent, preference, quiet-hours, rate-limit, and
-suppression contracts to `PermissiveEligibilityResolver`. Custom bindings must
-implement the renamed `resolveConsent()` and `resolveSuppression()` methods;
-the old method names are not retained.
+Consent, preferences, quiet hours and rate limits default to `PermissiveEligibilityResolver`. `SuppressionResolver` defaults to `ActiveSuppressionResolver`, which honors active, unexpired, unlifted records for the current owner, destination, channel and applicable category/recipient. Custom bindings implement `resolveConsent()` and `resolveSuppression()`.
 
 ## Destinations
 
