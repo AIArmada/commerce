@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
@@ -266,7 +267,7 @@ describe('SyncChipPurchaseStatus', function (): void {
 
     it('emits a reconciliation hook when a second distinct purchase conflicts with a settled period', function (): void {
         Cashier::fake(new FakeChipClient);
-        $this->app->register(\AIArmada\CashierChip\CashierChipServiceProvider::class);
+        $this->app->register(CashierChipServiceProvider::class);
 
         config()->set('cashier-chip.features.owner.enabled', true);
         config()->set('cashier-chip.features.owner.include_global', false);
