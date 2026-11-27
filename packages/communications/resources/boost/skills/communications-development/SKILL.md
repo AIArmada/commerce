@@ -21,3 +21,5 @@ description: Develop and integrate Communications with Laravel Dune ownership, s
 - `CommunicationContent` and `CommunicationRecipient` are Aggregate-owned models under `Features/Aggregate/Models/`. Use Aggregate actions to create or modify recipient and content records.
 
 - Native notification recording uses the registered notification event listeners and `NativeNotificationCapture`; the manager handles managed notification dispatch only.
+
+- Managed notification dispatch (`CommunicationManager::notify()` / `Communications::notify()`) accepts `CommunicationContextData` or null and returns the persisted communication ID as a string. Pass event morph type and ID in the context instead of passing an Eloquent model or an untyped array.

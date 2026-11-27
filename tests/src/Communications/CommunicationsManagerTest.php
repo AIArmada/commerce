@@ -53,8 +53,8 @@ test('manager notify creates communication record', function (): void {
 
     $result = Communications::notify($notifiable, $notification, $context);
 
-    expect($result)->toBeInstanceOf(Communication::class);
-    expect($result->purpose)->toBe('manager-test');
+    expect($result)->toBeString();
+    expect(Communication::query()->findOrFail($result)->purpose)->toBe('manager-test');
 });
 
 test('config driven table names support prefix', function (): void {

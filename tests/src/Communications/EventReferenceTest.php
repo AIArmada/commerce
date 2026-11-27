@@ -80,7 +80,7 @@ test('attaching an event reference is idempotent and merges metadata', function 
         ]);
 });
 
-test('manager accepts an event model as context and attaches its reference', function (): void {
+test('manager accepts explicit event identity as context and attaches its reference', function (): void {
     $notifiable = new class
     {
         use Notifiable;
@@ -112,14 +112,15 @@ test('manager accepts an event model as context and attaches its reference', fun
         }
     };
 
-    $communication = app(CommunicationManagerService::class)->notify(
+    $communicationId = app(CommunicationManagerService::class)->notify(
         $notifiable,
         $notification,
-        $event,
+        new CommunicationContextData(purpose: 'event', subjectType: $event->getMorphClass(), subjectId: (string) $event->getKey()),
     );
 
+    $communication = Communication::query()->findOrFail($communicationId);
     $reference = CommunicationReference::query()
-        ->where('communication_id', $communication->id)
+        ->where('communication_id', $communicationId)
         ->sole();
 
     expect($communication->subject_type)->toBe($event->getMorphClass())
@@ -148,7 +149,7 @@ test('manager accepts event context data and attaches its reference', function (
         }
     };
 
-    $communication = app(CommunicationManagerService::class)->notify(
+    $communicationId = app(CommunicationManagerService::class)->notify(
         $notifiable,
         $notification,
         CommunicationContextData::from([
@@ -159,7 +160,7 @@ test('manager accepts event context data and attaches its reference', function (
     );
 
     $reference = CommunicationReference::query()
-        ->where('communication_id', $communication->id)
+        ->where('communication_id', $communicationId)
         ->sole();
 
     expect($reference->reference_type)->toBe('events')

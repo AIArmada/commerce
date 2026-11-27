@@ -331,3 +331,5 @@ failures means `Cancelled`; anything else stays `Processing`. Only the
 `CommunicationFailed`, and first entry stamps `completed_at` / `failed_at`.
 After mass delivery changes, run `php artisan communications:reconcile` to
 resynchronize aggregates.
+
+- Managed notification dispatch (`CommunicationManager::notify()` / `Communications::notify()`) accepts `CommunicationContextData` or null and returns the persisted communication ID as a string. Pass event morph type and ID in the context instead of passing an Eloquent model or an untyped array.
