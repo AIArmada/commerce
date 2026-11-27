@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\Runtime\WalletEntryDeletion;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
@@ -164,6 +166,7 @@ final class WalletEntriesTable
             ->actions([
                 Action::make('markAsRedeemed')
                     ->label('Mark Redeemed')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.update'))
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
@@ -177,8 +180,9 @@ final class WalletEntriesTable
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.delete'))
                     ->action(function (VoucherWallet $record): void {
-                        $record->delete();
+                        app(WalletEntryDeletion::class)->handle($record);
                     }),
 
                 Action::make('viewMetadata')
@@ -196,6 +200,7 @@ final class WalletEntriesTable
             ->bulkActions([
                 BulkAction::make('markAsRedeemed')
                     ->label('Mark as Redeemed')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.update'))
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
@@ -207,7 +212,13 @@ final class WalletEntriesTable
                     }),
 
                 DeleteBulkAction::make()
-                    ->label('Remove from Wallets'),
+                    ->label('Remove from Wallets')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('voucher.delete'))
+                    ->action(function (Collection $records): void {
+                        foreach ($records as $record) {
+                            app(WalletEntryDeletion::class)->handle($record);
+                        }
+                    }),
             ])
             ->recordUrl(null);
     }

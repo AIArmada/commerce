@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Promotions\Actions\DeletePromotion;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -24,7 +25,7 @@ final class ViewPromotion extends ViewRecord
         }
 
         $actions[] = EditAction::make();
-        $actions[] = DeleteAction::make();
+        $actions[] = DeleteAction::make()->using(fn (Promotion $record): bool => app(DeletePromotion::class)->handle($record));
 
         return $actions;
     }

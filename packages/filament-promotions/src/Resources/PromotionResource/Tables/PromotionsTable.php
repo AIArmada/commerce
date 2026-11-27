@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Promotions\Actions\DeletePromotion;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -124,6 +125,7 @@ final class PromotionsTable
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make()
+                    ->using(fn (Promotion $record): bool => app(DeletePromotion::class)->handle($record))
                     ->before(function (Promotion $record): void {
                         if (! config('promotions.features.owner.enabled', false)) {
                             return;
@@ -141,6 +143,12 @@ final class PromotionsTable
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
+                        ->action(function (Collection $records): void {
+                            foreach ($records as $record) {
+                                abort_unless(\AIArmada\FilamentPromotions\Resources\PromotionResource::canDelete($record), 403);
+                                app(DeletePromotion::class)->handle($record);
+                            }
+                        })
                         ->before(function (Collection $records): void {
                             if (! config('promotions.features.owner.enabled', false)) {
                                 return;

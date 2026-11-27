@@ -6,7 +6,8 @@
       "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\AddVoucherToWallet",
       "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\RemoveVoucherFromWallet",
       "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\TransitionWalletTimestamp",
-      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\DeleteVoucherWalletEntries"
+      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\DeleteVoucherWalletEntries",
+      "AIArmada\\Vouchers\\Features\\Wallet\\Actions\\DeleteWalletEntry"
     ]
   },
   "extensions": {}

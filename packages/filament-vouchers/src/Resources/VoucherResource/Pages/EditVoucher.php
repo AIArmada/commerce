@@ -10,6 +10,7 @@ use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\UpdateVoucher;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +31,7 @@ final class EditVoucher extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Voucher $record): bool => app(VoucherDeletion::class)->handle($record)),
         ];
     }
 

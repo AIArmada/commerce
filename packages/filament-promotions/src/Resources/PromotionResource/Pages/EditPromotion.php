@@ -10,6 +10,7 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
 use AIArmada\Promotions\Actions\UpdatePromotion;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Promotions\Actions\DeletePromotion;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
@@ -73,9 +74,9 @@ final class EditPromotion extends EditRecord
             ->label('Deactivate')
             ->color('danger')
             ->requiresConfirmation()
-            ->visible(fn (Promotion $record): bool => $record->is_currently_active)
+            ->visible(fn (Promotion $record): bool => $record->is_active)
             ->action(fn (Promotion $record): Promotion => app(DeactivatePromotion::class)->handle($record));
-        $actions[] = DeleteAction::make();
+        $actions[] = DeleteAction::make()->using(fn (Promotion $record): bool => app(DeletePromotion::class)->handle($record));
 
         return $actions;
     }

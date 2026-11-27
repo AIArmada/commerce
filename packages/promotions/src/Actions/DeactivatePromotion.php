@@ -13,20 +13,25 @@ final class DeactivatePromotion
 {
     public function handle(Promotion $promotion): Promotion
     {
-        if (config('promotions.features.owner.enabled', false)) {
-            /** @var Promotion $promotion */
-            $promotion = OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
-        }
+        return $promotion->getConnection()->transaction(function () use ($promotion): Promotion {
+            if (config('promotions.features.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(Promotion::class, $promotion->getKey());
+            }
 
-        $promotion->update([
-            'is_active' => false,
-            'deactivated_at' => CarbonImmutable::now(),
-        ]);
+            $locked = Promotion::query()->whereKey($promotion->getKey())->lockForUpdate()->firstOrFail();
 
-        $resolved = $promotion->fresh() ?? $promotion;
+            if (! $locked->is_active) {
+                return $locked;
+            }
 
-        PromotionDeactivated::dispatch($resolved);
+            $locked->update([
+                'is_active' => false,
+                'deactivated_at' => CarbonImmutable::now(),
+            ]);
 
-        return $resolved;
+            PromotionDeactivated::dispatch($locked);
+
+            return $locked;
+        });
     }
 }
