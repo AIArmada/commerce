@@ -12,6 +12,8 @@ use AIArmada\Feedback\Features\Forms\Api\ReadsSubmissionForm;
 use AIArmada\Feedback\Features\Forms\Queries\ReadSubmissionFormQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadOwnedFormIdentityQuery;
 use AIArmada\Feedback\Features\Forms\Queries\ReadFormMetricsQuery;
+use AIArmada\Feedback\Features\Forms\Api\ReadsSubjectForms;
+use AIArmada\Feedback\Features\Forms\Queries\ReadSubjectFormsQuery;
 use AIArmada\Feedback\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(ReadsSubjectForms::class, ReadSubjectFormsQuery::class);
         $app->bind(ReadsFormMetrics::class, ReadFormMetricsQuery::class);
         $app->bind(ReadsOwnedFormIdentity::class, ReadOwnedFormIdentityQuery::class);
         $app->bind(ReadsSubmissionForm::class, ReadSubmissionFormQuery::class);

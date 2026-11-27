@@ -716,7 +716,7 @@ it('includes reviewed subject feedback and excludes drafts, rejected and other s
     $form = regressionPublishedForm('Subject metrics');
 
     expect($traitSubject->averageFeedbackScore())->toBeNull()
-        ->and($traitSubject->npsScore($form))->toBeNull();
+        ->and($traitSubject->npsScore($form->id))->toBeNull();
 
     foreach ([
         ['submitted', 10],
@@ -743,7 +743,7 @@ it('includes reviewed subject feedback and excludes drafts, rejected and other s
     ]);
 
     expect($traitSubject->averageFeedbackScore())->toBe(5.0)
-        ->and($traitSubject->npsScore($form))->toBe(0);
+        ->and($traitSubject->npsScore($form->id))->toBe(0);
 });
 
 it('rejects ambiguous template slugs without creating a form', function (): void {
@@ -761,5 +761,5 @@ it('rejects ambiguous template slugs without creating a form', function (): void
 
     expect(fn () => $traitSubject->createFeedbackFormFromTemplate('ambiguous-template'))
         ->toThrow(MultipleRecordsFoundException::class)
-        ->and($traitSubject->feedbackForms()->count())->toBe(0);
+        ->and(count($traitSubject->feedbackFormIds()))->toBe(0);
 });

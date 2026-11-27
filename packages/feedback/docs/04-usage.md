@@ -45,9 +45,9 @@ class Event extends Model
     use ReceivesFeedback;
 }
 
-$event->feedbackForms(); // MorphMany
+$event->feedbackFormIds(); // list of UUIDs
 $formId = $event->createFeedbackFormFromTemplate('post-event-feedback'); // string UUID
-$form = $event->feedbackForms()->findOrFail($formId);
+// Use $formId with feature actions and queries.
 ```
 
 ## Add questions and sections
