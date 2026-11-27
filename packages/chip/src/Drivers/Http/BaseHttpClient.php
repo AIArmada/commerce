@@ -241,9 +241,20 @@ abstract class BaseHttpClient
         Log::channel($this->logChannel())
             ->info($this->requestLogMessage(), [
                 'method' => $method,
-                'url' => $url,
+                'url' => $this->maskedLogUrl($url),
                 'data' => $this->maskSensitiveData($data),
             ]);
+    }
+
+    private function maskedLogUrl(string $url): string
+    {
+        if (! config('chip.logging.mask_sensitive_data', true)) {
+            return $url;
+        }
+
+        $path = explode('?', $url, 2)[0];
+
+        return preg_replace('~(/recurring_tokens/)[^/]+~', '$1***MASKED***', $path) ?? $path;
     }
 
     protected function logResponse(?Response $response): void
@@ -355,6 +366,7 @@ abstract class BaseHttpClient
         return [
             // Authentication
             'api_key', 'secret', 'password', 'token', 'authorization',
+            'recurring_token', 'recurring_token_id', 'token_id', 'access_token', 'refresh_token',
             // Payment card data
             'card_number', 'cvv', 'cvc', 'expiry', 'card_mask',
             // PII - personal
