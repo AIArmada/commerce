@@ -14,9 +14,7 @@ final readonly class DeleteFormAnalyticsAction implements DeletesFormAnalytics
 
     public function execute(string $formId): void
     {
-        $this->forms->requireOwned($formId); else {
-            FeedbackForm::query()->whereKey($formId)->firstOrFail();
-        }
+        $this->forms->requireOwned($formId);
 
         FeedbackFormAnalytics::query()->where('feedback_form_id', $formId)->delete();
     }

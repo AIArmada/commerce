@@ -51,5 +51,4 @@ final readonly class RecalculateFeedbackFormAnalyticsAction
             return $analytics;
         });
     }
-
 }

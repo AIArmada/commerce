@@ -40,7 +40,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
         'max_score' => 5,
     ]));
 
-    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id))->handle();
+    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id, $form->owner_type === null && $form->owner_id === null))->handle();
 
     $aggregate = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($aggregate->owner_type)->toBe($ownerA->getMorphClass())
@@ -55,7 +55,7 @@ it('recalculates stale form analytics through an owner-scoped worker', function 
     $stale = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($stale->average_score)->toBe('5.00');
 
-    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id))->handle();
+    (new RecalculateFeedbackFormAnalyticsJob($form->id, $form->owner_type, $form->owner_id, $form->owner_type === null && $form->owner_id === null))->handle();
 
     $fresh = OwnerContext::withOwner($ownerA, fn (): FeedbackFormAnalytics => FeedbackFormAnalytics::query()->firstOrFail());
     expect($fresh->average_score)->toBe('3.00');
