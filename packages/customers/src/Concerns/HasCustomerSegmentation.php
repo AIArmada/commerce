@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
-use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\CustomerGroup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
 
 beforeEach(function (): void {
     // Owner-disabled on purpose: matchingCustomersQuery() resolves the

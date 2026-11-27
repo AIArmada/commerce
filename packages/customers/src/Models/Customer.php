@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
-use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
@@ -22,9 +21,10 @@ use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Concerns\HasCustomerLifecycle;
 use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

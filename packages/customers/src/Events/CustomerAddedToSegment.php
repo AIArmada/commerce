@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Events;
 
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

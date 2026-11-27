@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -15,12 +14,13 @@ use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Concerns\HasCustomerProfile;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\CustomerNote;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Services\CustomerResolver;
-use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

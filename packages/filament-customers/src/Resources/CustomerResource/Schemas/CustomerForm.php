@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas;
 
-use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\HttpException;

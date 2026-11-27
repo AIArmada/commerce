@@ -7,8 +7,8 @@ use AIArmada\Customers\Events\CustomerAddedToSegment;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Events\CustomerUpdated;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
 
 describe('Customer Events', function (): void {
     describe('CustomerCreated', function (): void {

@@ -6,8 +6,8 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
 use InvalidArgumentException;
 
 final class RemoveCustomerFromSegment

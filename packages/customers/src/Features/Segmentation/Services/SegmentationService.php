@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Features\Segmentation\Services;
 
+use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\EvaluateCustomerSegments;
 use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
-use AIArmada\Customers\Enums\CustomerStatus;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;

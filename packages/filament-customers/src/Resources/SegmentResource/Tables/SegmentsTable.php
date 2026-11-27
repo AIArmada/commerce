@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\SegmentResource\Tables;
 
-use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Enums\SegmentType;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;

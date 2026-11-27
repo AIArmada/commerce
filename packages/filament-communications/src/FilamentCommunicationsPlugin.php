@@ -14,6 +14,7 @@ use AIArmada\Filament\Communications\Resources\CommunicationThreadResource;
 use AIArmada\Filament\Communications\Widgets\DeliveryStatusOverviewWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use LogicException;
 
 final class FilamentCommunicationsPlugin implements Plugin
 {
@@ -27,7 +28,7 @@ final class FilamentCommunicationsPlugin implements Plugin
         $plugin = filament(app(self::class)->getId());
 
         if (! $plugin instanceof static) {
-            throw new \LogicException('The registered Filament plugin has an unexpected type.');
+            throw new LogicException('The registered Filament plugin has an unexpected type.');
         }
 
         return $plugin;

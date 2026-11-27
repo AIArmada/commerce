@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\EntryPoints\Jobs\DispatchCommunicationDeliveriesJob;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;

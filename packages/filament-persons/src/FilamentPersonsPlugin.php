@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPersons;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use LogicException;
 
 final class FilamentPersonsPlugin implements Plugin
 {
@@ -19,7 +20,7 @@ final class FilamentPersonsPlugin implements Plugin
         $plugin = filament(app(self::class)->getId());
 
         if (! $plugin instanceof static) {
-            throw new \LogicException('The registered Filament plugin has an unexpected type.');
+            throw new LogicException('The registered Filament plugin has an unexpected type.');
         }
 
         return $plugin;

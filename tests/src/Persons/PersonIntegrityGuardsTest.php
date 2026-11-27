@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
 use AIArmada\Persons\Actions\AssignTitleAction;
 use AIArmada\Persons\Actions\CreatePersonAction;
 use AIArmada\Persons\Enums\AssignmentStatus;
@@ -10,6 +9,7 @@ use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
+use AIArmada\Persons\Features\Credentials\Actions\AssignCredentialAction;
 use AIArmada\Persons\Features\Credentials\Models\CredentialDefinition;
 use AIArmada\Persons\Models\Person;
 use AIArmada\Persons\Models\PersonName;

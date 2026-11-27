@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Features\Segmentation;
 
+use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Actions\EvaluateCustomerSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
+use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
-use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
-use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
-use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
-use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
-use AIArmada\Customers\Features\Segmentation\Actions\EvaluateCustomerSegments;
 use AIArmada\Customers\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 

@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas;
 
-use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
-use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Features\Segmentation\Actions\SyncManualSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
@@ -22,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;

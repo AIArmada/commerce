@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 
 describe('Customer addresses', function (): void {
     describe('Address Creation', function (): void {

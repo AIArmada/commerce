@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Communications\Enums\SuppressionReason;
-use AIArmada\Communications\Models\CommunicationPreference;
 use AIArmada\Communications\Features\Suppressions\Models\CommunicationSuppression;
+use AIArmada\Communications\Models\CommunicationPreference;
 use Carbon\CarbonImmutable;
 
 test('creates suppression record', function (): void {
