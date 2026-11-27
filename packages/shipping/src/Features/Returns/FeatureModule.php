@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Returns;
 
 use AIArmada\Shipping\Features\Returns\Actions\ApproveReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Actions\WriteReturnAuthorization;
+use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Actions\ManagePackageReturn;
 use AIArmada\Shipping\Features\Returns\Actions\RejectReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(PackageReturnWorkflow::class, ManagePackageReturn::class);
         $app->bind(ApproveReturn::class, ApproveReturnAuthorization::class);
+        $app->bind(ManageReturnAuthorization::class, WriteReturnAuthorization::class);
         $app->bind(RejectReturn::class, RejectReturnAuthorization::class);
     }
 

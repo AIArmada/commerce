@@ -31,7 +31,9 @@ final class ReturnAuthorizationForm
 
                         Select::make('status')
                             ->options(fn (): array => ReturnAuthorizationStatus::options())
-                            ->required(),
+                            ->default('pending')
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Select::make('type')
                             ->options([

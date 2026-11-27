@@ -6,10 +6,11 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Relati
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
-use Filament\Actions\BulkActionGroup;
+use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
+use AIArmada\Shipping\Features\Returns\Api\ManageReturnAuthorization;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -42,22 +43,6 @@ class ItemsRelationManager extends RelationManager
                     ->required()
                     ->default(1)
                     ->minValue(1),
-
-                Forms\Components\TextInput::make('quantity_received')
-                    ->numeric()
-                    ->default(0)
-                    ->minValue(0),
-
-                Forms\Components\Select::make('condition')
-                    ->options([
-                        'unopened' => 'Unopened',
-                        'opened' => 'Opened/Used',
-                        'damaged' => 'Damaged',
-                        'defective' => 'Defective',
-                    ]),
-
-                Forms\Components\Textarea::make('notes')
-                    ->rows(2),
             ]);
     }
 
@@ -74,6 +59,7 @@ class ItemsRelationManager extends RelationManager
 
             return $owner instanceof ReturnAuthorization
                 && ! $owner->isPackageReturn()
+                && ($owner->isPending() || $owner->status instanceof RmaDraft)
                 && $user->can('update', $owner);
         };
 
@@ -105,10 +91,6 @@ class ItemsRelationManager extends RelationManager
                         'defective' => 'warning',
                         default => 'gray',
                     }),
-
-                Tables\Columns\TextColumn::make('notes')
-                    ->limit(30)
-                    ->tooltip(fn ($record) => $record->notes),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('condition')
@@ -121,19 +103,25 @@ class ItemsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->authorize($canUpdateReturn),
+                    ->authorize($canUpdateReturn)
+                    ->using(function (array $data): ReturnAuthorizationItem {
+                        $id = app(ManageReturnAuthorization::class)->createItem((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return $this->getOwnerRecord()->items()->findOrFail($id);
+                    }),
             ])
             ->actions([
                 EditAction::make()
-                    ->authorize($canUpdateReturn),
+                    ->authorize($canUpdateReturn)
+                    ->using(function (ReturnAuthorizationItem $record, array $data): ReturnAuthorizationItem {
+                        app(ManageReturnAuthorization::class)->updateItem((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
                 DeleteAction::make()
-                    ->authorize($canUpdateReturn),
+                    ->authorize($canUpdateReturn)
+                    ->using(fn (ReturnAuthorizationItem $record): bool => app(ManageReturnAuthorization::class)->deleteItem((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
             ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make()
-                        ->authorize($canUpdateReturn),
-                ]),
-            ]);
+            ->bulkActions([]);
     }
 }
