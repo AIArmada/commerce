@@ -33,7 +33,7 @@ it('can get chip id', function (): void {
 it('can check if has default payment method', function (): void {
     expect($this->user->hasDefaultPaymentMethod())->toBeFalse();
 
-    Cashier::paymentMethodStore()->saveForBillable($this->user, 'tok_default_card', [
+    Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($this->user->getMorphClass(), (string) $this->user->getKey()), 'tok_default_card', [
         'type' => 'card',
         'brand' => 'Visa',
         'last_four' => '4242',

@@ -195,7 +195,7 @@ it('blocks cross-tenant payment method writes for billables in owner mode', func
     bindCashierChipOwner($owner);
 
     expect(fn () => Cashier::paymentMethodStore()->saveForBillable(
-        $customer,
+        new \AIArmada\CommerceSupport\Data\RecordReference($customer->getMorphClass(), (string) $customer->getKey()),
         'tok_cross_tenant',
         ['type' => 'card'],
     ))->toThrow(AuthorizationException::class);

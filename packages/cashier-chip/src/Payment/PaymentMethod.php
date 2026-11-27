@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Payment;
 
 use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
+use AIArmada\CashierChip\Data\StoredPaymentMethodData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Model;
@@ -32,22 +32,22 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     protected array $recurringToken;
 
-    protected ?StoredPaymentMethod $storedPaymentMethod = null;
+    protected ?StoredPaymentMethodData $storedPaymentMethod = null;
 
     /**
      * Create a new PaymentMethod instance.
      *
-     * @param  array|StoredPaymentMethod  $recurringToken  The stored payment method or CHIP recurring token resource
+     * @param  array|StoredPaymentMethodData  $recurringToken  The stored payment method or CHIP recurring token resource
      * @return void
      */
     /**
      * @phpstan-param Model&BillableContract $owner
      */
-    public function __construct(Model $owner, array | StoredPaymentMethod $recurringToken)
+    public function __construct(Model $owner, array | StoredPaymentMethodData $recurringToken)
     {
         $this->owner = $owner;
 
-        if ($recurringToken instanceof StoredPaymentMethod) {
+        if ($recurringToken instanceof StoredPaymentMethodData) {
             $this->storedPaymentMethod = $recurringToken;
             $this->recurringToken = [
                 'id' => $recurringToken->recurringToken(),
@@ -168,7 +168,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function isDefault(): bool
     {
-        if ($this->storedPaymentMethod instanceof StoredPaymentMethod) {
+        if ($this->storedPaymentMethod instanceof StoredPaymentMethodData) {
             return (bool) $this->storedPaymentMethod->is_default;
         }
 
@@ -206,7 +206,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      */
     public function asChipRecurringToken(): array
     {
-        if ($this->storedPaymentMethod instanceof StoredPaymentMethod) {
+        if ($this->storedPaymentMethod instanceof StoredPaymentMethodData) {
             return [
                 'id' => $this->storedPaymentMethod->recurringToken(),
                 'payment_method' => $this->storedPaymentMethod->type,

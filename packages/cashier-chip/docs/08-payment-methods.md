@@ -190,3 +190,5 @@ Payment methods are stored in `cashier_chip_payment_methods` (rename via
 | `metadata` | json nullable | Minimal token identifiers (purchase/token id, method, description) |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
+
+The payment-method store accepts a persisted billable `RecordReference` and returns immutable `StoredPaymentMethodData` records; the decrypted token is available only through `recurringToken()` and is not included in the DTO's JSON representation.

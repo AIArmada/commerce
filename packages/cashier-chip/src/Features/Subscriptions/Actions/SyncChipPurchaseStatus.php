@@ -14,6 +14,7 @@ use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -91,7 +92,7 @@ final class SyncChipPurchaseStatus
             : null;
 
         Cashier::paymentMethodStore()->saveForBillable(
-            $billable,
+            new RecordReference($billable->getMorphClass(), (string) $billable->getKey()),
             $recurringToken,
             attributes: [
                 'type' => $paymentMethod,

@@ -396,13 +396,14 @@ describe('RepairRegression security', function (): void {
     it('recurring tokens are encrypted at rest', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_encrypt']);
 
-        $stored = Cashier::paymentMethodStore()->saveForBillable($user, 'tok_secret_123', ['type' => 'card'], true);
+        $stored = Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_secret_123', ['type' => 'card'], true);
 
-        $raw = DB::table($stored->getTable())->where('id', $stored->id)->value('recurring_token');
+        $raw = DB::table((new \AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod)->getTable())->where('id', $stored->id)->value('recurring_token');
 
         expect($raw)->not->toBe('tok_secret_123')
-            ->and($stored->fresh()?->recurring_token)->toBe('tok_secret_123')
-            ->and(Cashier::paymentMethodStore()->findForBillable($user, 'tok_secret_123')?->id)->toBe($stored->id);
+            ->and($stored->recurringToken())->toBe('tok_secret_123')
+            ->and(json_encode($stored, JSON_THROW_ON_ERROR))->not->toContain('tok_secret_123')
+            ->and(Cashier::paymentMethodStore()->findForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_secret_123')?->id)->toBe($stored->id);
     });
 
     it('findPayment hides purchases owned by other billables', function (): void {
@@ -498,7 +499,7 @@ describe('RepairRegression security', function (): void {
 
         SyncChipPurchaseStatus::run($user, PurchaseData::from($payload), $payload);
 
-        $metadata = Cashier::paymentMethodStore()->findForBillable($user, 'tok_meta_1')?->metadata ?? [];
+        $metadata = Cashier::paymentMethodStore()->findForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_meta_1')?->metadata ?? [];
 
         expect($metadata)->not->toHaveKey('purchase')
             ->and($metadata)->not->toHaveKey('transaction_data')
@@ -508,22 +509,22 @@ describe('RepairRegression security', function (): void {
     it('no implicit default when nothing is flagged', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_nodefault']);
 
-        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_a', [], true);
-        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_b', [], false);
+        Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_a', [], true);
+        Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_b', [], false);
 
         DB::table('cashier_chip_payment_methods')
             ->where('billable_id', $user->getKey())
             ->update(['is_default' => false]);
 
-        expect(Cashier::paymentMethodStore()->defaultForBillable($user))->toBeNull()
+        expect(Cashier::paymentMethodStore()->defaultForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey())))->toBeNull()
             ->and($user->fresh()?->hasDefaultPaymentMethod())->toBeFalse();
     });
 
     it('isDefault reflects the stored flag', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_isdefault']);
 
-        $first = Cashier::paymentMethodStore()->saveForBillable($user, 'tok_first', [], true);
-        $second = Cashier::paymentMethodStore()->saveForBillable($user, 'tok_second', [], false);
+        $first = Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_first', [], true);
+        $second = Cashier::paymentMethodStore()->saveForBillable(new \AIArmada\CommerceSupport\Data\RecordReference($user->getMorphClass(), (string) $user->getKey()), 'tok_second', [], false);
 
         $methods = $user->paymentMethods()->keyBy(fn ($method) => $method->id());
 

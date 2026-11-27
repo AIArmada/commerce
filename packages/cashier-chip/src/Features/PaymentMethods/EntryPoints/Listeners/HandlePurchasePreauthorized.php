@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\Chip\Events\PurchasePreauthorized;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 
@@ -54,7 +55,7 @@ class HandlePurchasePreauthorized
      *
      * @param  array<string, mixed>  $purchase
      */
-    protected function handleRecurringToken(object $billable, string $recurringToken, array $purchase): void
+    protected function handleRecurringToken(Model $billable, string $recurringToken, array $purchase): void
     {
         $transactionData = $purchase['transaction_data'] ?? [];
         $extra = is_array($transactionData) && is_array($transactionData['extra'] ?? null)
@@ -65,7 +66,7 @@ class HandlePurchasePreauthorized
             : null;
 
         Cashier::paymentMethodStore()->saveForBillable(
-            $billable,
+            new RecordReference($billable->getMorphClass(), (string) $billable->getKey()),
             $recurringToken,
             attributes: [
                 'type' => $paymentMethod,
