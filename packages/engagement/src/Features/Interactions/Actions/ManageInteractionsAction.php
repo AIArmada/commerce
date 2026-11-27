@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Actions;
 
-use AIArmada\Engagement\Features\Interactions\Api\WritesInteractionRecords;
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Reactable;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
+use AIArmada\Engagement\Features\Interactions\Api\WritesInteractionRecords;
 use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use AIArmada\Engagement\Features\Interactions\Models\Follow;

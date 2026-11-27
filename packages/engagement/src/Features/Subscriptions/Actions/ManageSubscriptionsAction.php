@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Subscriptions\Actions;
 
-use AIArmada\Engagement\Features\Subscriptions\Api\WritesSubscriptionRecords;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
@@ -15,6 +14,7 @@ use AIArmada\Engagement\Events\SubscriptionCreated;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Events\SubscriptionMuted;
 use AIArmada\Engagement\Events\SubscriptionUnmuted;
+use AIArmada\Engagement\Features\Subscriptions\Api\WritesSubscriptionRecords;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Features\Subscriptions\Support\SubscriptionCriteria;
 use AIArmada\Engagement\Support\EngagementModelGuard;

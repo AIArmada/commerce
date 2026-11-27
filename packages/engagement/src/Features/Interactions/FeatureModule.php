@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Features\Interactions;
 
 use AIArmada\Engagement\Features\Interactions\Actions\ManageInteractionsAction;
-use AIArmada\Engagement\Features\Interactions\Api\WritesInteractionRecords;
 use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionState;
+use AIArmada\Engagement\Features\Interactions\Api\WritesInteractionRecords;
 use AIArmada\Engagement\Features\Interactions\Queries\ReadInteractionStateQuery;
 use AIArmada\Engagement\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
