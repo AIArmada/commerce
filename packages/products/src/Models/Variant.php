@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Contracts\Buyable;
@@ -750,28 +751,8 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             }
         });
 
-        static::deleting(function (Variant $variant): void {
-            if (ProductComponent::query()->withoutOwnerScope()->where('variant_id', $variant->getKey())->exists()) {
-                throw new InvalidCompositePackageException('A component variant referenced by a composite package cannot be deleted.');
-            }
-
-            if (ProductComponent::query()->withoutOwnerScope()->where('parent_variant_id', $variant->getKey())->exists()) {
-                throw new InvalidCompositePackageException('A composite variant with a component graph cannot be deleted.');
-            }
-
-            $product = $variant->product()->first();
-
-            if ($product instanceof Product && $product->isCompositeProduct()
-                && $product->status === ProductStatus::Active && $variant->is_enabled
-                && ! Variant::query()
-                    ->where('product_id', $product->getKey())
-                    ->where('is_enabled', true)
-                    ->whereKeyNot($variant->getKey())
-                    ->exists()) {
-                throw new InvalidCompositePackageException('An active composite must retain at least one enabled variant.');
-            }
-
-            $variant->optionValues()->detach();
+        static::deleting(static function (Variant $variant): void {
+            app(CleanupCatalogRelationships::class)->beforeVariantDeletion($variant);
         });
     }
 }

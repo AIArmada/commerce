@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -285,8 +286,8 @@ class OptionValue extends Model implements Auditable
             }
         });
 
-        static::deleting(function (OptionValue $optionValue): void {
-            $optionValue->variants()->detach();
+        static::deleting(static function (OptionValue $optionValue): void {
+            app(CleanupCatalogRelationships::class)->beforeOptionValueDeletion($optionValue);
         });
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Actions\SynchronizeCompositeShipping;
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Contracts\Buyable;
@@ -42,7 +44,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -1027,46 +1028,13 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             }
         });
 
-        static::deleting(function (Product $product): void {
-            if ((bool) config('products.features.owner.enabled', false)
-                && ! Product::query()->whereKey($product->getKey())->exists()) {
-                throw new InvalidCompositePackageException('Cross-tenant write blocked: product is not accessible in the current owner context.');
-            }
-
-            if (ProductComponent::query()->withoutOwnerScope()->where('component_product_id', $product->getKey())->exists()) {
-                throw new InvalidCompositePackageException('A component product referenced by a composite package cannot be deleted.');
-            }
-
-            DB::transaction(function () use ($product): void {
-                // Delete variants individually to trigger model events (for pivot cleanup)
-                $product->variants()->chunkById(100, function ($variants): void {
-                    $variants->each(fn ($variant) => $variant->delete());
-                });
-
-                // Delete options individually so Option::deleting removes its
-                // values (and their variant pivots) instead of orphaning them.
-                $product->options()->chunkById(100, function ($options): void {
-                    $options->each(fn ($option) => $option->delete());
-                });
-
-                $product->categories()->detach();
-                $product->collections()->detach();
-
-                if ($product->isCompositeProduct()) {
-                    ProductComponent::query()->where('product_id', $product->getKey())->delete();
-                }
-            });
+        static::deleting(static function (Product $product): void {
+            app(CleanupCatalogRelationships::class)->beforeProductDeletion($product);
         });
 
-        static::updated(function (Product $product): void {
+        static::updated(static function (Product $product): void {
             if ($product->isCompositeProduct() && $product->wasChanged('requires_shipping')) {
-                ProductComponent::query()
-                    ->where('component_product_id', $product->getKey())
-                    ->with('product')
-                    ->get()
-                    ->each(static function (ProductComponent $reference): void {
-                        $reference->product?->save();
-                    });
+                app(SynchronizeCompositeShipping::class)->forParents($product);
             }
         });
 

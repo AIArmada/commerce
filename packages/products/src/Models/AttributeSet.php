@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -201,10 +202,8 @@ class AttributeSet extends Model implements Auditable
             $set->assignOwner($owner);
         });
 
-        static::deleting(function (AttributeSet $set): void {
-            // Detach from attributes and groups
-            $set->setAttributes()->detach();
-            $set->groups()->detach();
+        static::deleting(static function (AttributeSet $set): void {
+            app(CleanupCatalogRelationships::class)->beforeAttributeSetDeletion($set);
         });
     }
 }

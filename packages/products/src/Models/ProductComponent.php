@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Products\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\Products\Actions\SynchronizeCompositeShipping;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -246,11 +247,11 @@ class ProductComponent extends Model implements Auditable
         });
 
         static::saved(static function (ProductComponent $component): void {
-            self::syncParentShipping($component);
+            app(SynchronizeCompositeShipping::class)->forComponent($component);
         });
 
         static::deleted(static function (ProductComponent $component): void {
-            self::syncParentShipping($component);
+            app(SynchronizeCompositeShipping::class)->forComponent($component);
         });
 
         static::deleting(function (ProductComponent $component): void {
@@ -374,15 +375,6 @@ class ProductComponent extends Model implements Auditable
 
         if ($component->metadata !== null && ! is_array($component->metadata)) {
             throw new InvalidCompositePackageException('Composite component metadata must be an array.');
-        }
-    }
-
-    private static function syncParentShipping(ProductComponent $component): void
-    {
-        $parent = Product::query()->whereKey($component->product_id)->first();
-
-        if ($parent instanceof Product) {
-            $parent->save();
         }
     }
 

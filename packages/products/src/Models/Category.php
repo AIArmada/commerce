@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -528,11 +529,8 @@ class Category extends Model implements Auditable, HasMedia
             $category->validateParentHierarchy();
         });
 
-        static::deleting(function (Category $category): void {
-            // Nullify parent_id for children
-            $category->children()->update(['parent_id' => null]);
-            // Detach from products pivot
-            $category->products()->detach();
+        static::deleting(static function (Category $category): void {
+            app(CleanupCatalogRelationships::class)->beforeCategoryDeletion($category);
         });
     }
 

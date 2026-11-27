@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -214,12 +215,8 @@ class Option extends Model implements Auditable
             }
         });
 
-        static::deleting(function (Option $option): void {
-            // Delete values individually so OptionValue::deleting detaches
-            // variant pivots instead of leaving orphaned pivot rows.
-            $option->values()->reorder()->chunkById(100, function ($values): void {
-                $values->each(fn ($value) => $value->delete());
-            });
+        static::deleting(static function (Option $option): void {
+            app(CleanupCatalogRelationships::class)->beforeOptionDeletion($option);
         });
     }
 }

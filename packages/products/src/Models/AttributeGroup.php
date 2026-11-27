@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Persistence\CleanupCatalogRelationships;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -202,9 +203,8 @@ class AttributeGroup extends Model implements Auditable
             }
         });
 
-        static::deleting(function (AttributeGroup $group): void {
-            $group->groupAttributes()->detach();
-            $group->attributeSets()->detach();
+        static::deleting(static function (AttributeGroup $group): void {
+            app(CleanupCatalogRelationships::class)->beforeAttributeGroupDeletion($group);
         });
     }
 }
