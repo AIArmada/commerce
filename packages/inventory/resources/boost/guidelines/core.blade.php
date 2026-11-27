@@ -11,3 +11,5 @@ Stock levels, locations and movement ledger models live under `AIArmada\Inventor
 Stock threshold evaluation, alert persistence and location hierarchy services belong to `Features/Stock/Persistence`; use the feature-owned classes directly.
 
 Inventory reporting and reconciliation queries live under `AIArmada\Inventory\Features\Reporting\Queries`.
+
+Use `AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService` for read-only fulfillment location planning.

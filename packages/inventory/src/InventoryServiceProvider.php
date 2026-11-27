@@ -17,7 +17,7 @@ use AIArmada\Inventory\Features\Valuation\EntryPoints\Console\CreateValuationSna
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Exports\ExportService;
-use AIArmada\Inventory\Integrations\FulfillmentLocationService;
+use AIArmada\Inventory\Features\Stock\Queries\FulfillmentLocationService;
 use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
 use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
@@ -67,7 +67,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     {
         $this->registerCoreServices();
         $this->registerReportServices();
-        $this->registerIntegrationServices();
         $this->registerFeatureModules();
     }
 
@@ -129,15 +128,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     private function registerReportServices(): void
     {
         $this->app->singleton(ExportService::class);
-    }
-
-    /**
-     * Register integration services for other packages.
-     */
-    private function registerIntegrationServices(): void
-    {
-        $this->app->singleton(FulfillmentLocationService::class);
-
     }
 
     private function registerFeatureModules(): void

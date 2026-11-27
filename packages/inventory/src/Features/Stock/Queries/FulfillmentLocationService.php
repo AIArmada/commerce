@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Integrations;
+namespace AIArmada\Inventory\Features\Stock\Queries;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Models\Order;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -57,12 +58,13 @@ final class FulfillmentLocationService
 
         $locations = $this->getActiveLocations();
         $bestLocation = null;
-        $bestScore = -1;
+        $bestScore = null;
+        $availability = $this->getAvailabilityByLocation($itemRequirements);
 
         foreach ($locations as $location) {
-            $score = $this->calculateFulfillmentScore($location, $itemRequirements);
+            $score = $this->calculateFulfillmentScore($location, $itemRequirements, $availability);
 
-            if ($score > $bestScore) {
+            if ($score[1] > 0 && ($bestScore === null || $score > $bestScore)) {
                 $bestScore = $score;
                 $bestLocation = $location;
             }
@@ -84,8 +86,10 @@ final class FulfillmentLocationService
 
         $locations = $this->getActiveLocations();
 
+        $availability = $this->getAvailabilityByLocation($itemRequirements);
+
         foreach ($locations as $location) {
-            if ($this->locationCanFulfillAll($location, $itemRequirements)) {
+            if ($this->locationCanFulfillAll($location, $itemRequirements, $availability)) {
                 return true;
             }
         }
@@ -103,6 +107,7 @@ final class FulfillmentLocationService
         $itemRequirements = $this->getItemRequirements($order);
         $locations = $this->getActiveLocations()->sortByDesc('priority');
         $plan = new Collection;
+        $availability = $this->getAvailabilityByLocation($itemRequirements);
         $remaining = $itemRequirements->mapWithKeys(fn ($item) => [
             $item['key'] => $item['quantity'],
         ]);
@@ -118,7 +123,7 @@ final class FulfillmentLocationService
                     continue;
                 }
 
-                $available = $this->getAvailableAtLocation($item['model'], $location->id);
+                $available = ($availability[$location->id][$item['key']] ?? 0);
                 $fulfill = min($needed, $available);
 
                 if ($fulfill > 0) {
@@ -158,10 +163,11 @@ final class FulfillmentLocationService
         $totalAvailable = 0;
         $fullyAvailable = true;
         $byItem = [];
+        $totals = $this->inventoryService->getAvailabilityForMany($itemRequirements->pluck('model'));
 
         foreach ($itemRequirements as $item) {
             $required = $item['quantity'];
-            $available = $this->inventoryService->getTotalAvailable($item['model']);
+            $available = ($totals[$item['key']] ?? 0);
             $shortage = max(0, $required - $available);
 
             $totalRequired += $required;
@@ -208,7 +214,12 @@ final class FulfillmentLocationService
                 ];
             });
 
-        return $requirements;
+        return $requirements->groupBy('key')->map(static function (Collection $items): array {
+            $first = $items->first();
+            $first['quantity'] = (int) $items->sum('quantity');
+
+            return $first;
+        })->values();
     }
 
     /**
@@ -229,44 +240,34 @@ final class FulfillmentLocationService
      * Calculate a score for how well a location can fulfill requirements.
      *
      * @param  Collection<int, array{model: Model, quantity: int, key: string}>  $requirements
+     * @param  array<string, array<string, int>> $availability
+     * @return array{int, int, int}
      */
-    private function calculateFulfillmentScore(InventoryLocation $location, Collection $requirements): int
+    private function calculateFulfillmentScore(InventoryLocation $location, Collection $requirements, array $availability): array
     {
-        $score = 0;
+        $fulfilled = 0;
         $canFulfillAll = true;
 
         foreach ($requirements as $item) {
-            $available = $this->getAvailableAtLocation($item['model'], $location->id);
+            $available = $availability[$location->id][$item['key']] ?? 0;
             $needed = $item['quantity'];
-
-            if ($available >= $needed) {
-                $score += $needed * 100; // Full fulfillment bonus
-            } else {
-                $score += $available;
-                $canFulfillAll = false;
-            }
+            $fulfilled += min($needed, $available);
+            $canFulfillAll = $canFulfillAll && $available >= $needed;
         }
 
-        // Bonus for locations that can fulfill everything
-        if ($canFulfillAll) {
-            $score += 10000;
-        }
-
-        // Factor in location priority
-        $score += $location->priority ?? 0;
-
-        return $score;
+        return [(int) $canFulfillAll, $fulfilled, $location->priority ?? 0];
     }
 
     /**
      * Check if a location can fulfill all requirements.
      *
      * @param  Collection<int, array{model: Model, quantity: int, key: string}>  $requirements
+     * @param  array<string, array<string, int>> $availability
      */
-    private function locationCanFulfillAll(InventoryLocation $location, Collection $requirements): bool
+    private function locationCanFulfillAll(InventoryLocation $location, Collection $requirements, array $availability): bool
     {
         foreach ($requirements as $item) {
-            $available = $this->getAvailableAtLocation($item['model'], $location->id);
+            $available = ($availability[$location->id][$item['key']] ?? 0);
 
             if ($available < $item['quantity']) {
                 return false;
@@ -277,17 +278,40 @@ final class FulfillmentLocationService
     }
 
     /**
-     * Get available quantity at a specific location.
+     * @param Collection<int, array{model: Model, quantity: int, key: string}> $requirements
+     * @return array<string, array<string, int>>
      */
-    private function getAvailableAtLocation(Model $model, string $locationId): int
+    private function getAvailabilityByLocation(Collection $requirements): array
     {
-        $level = InventoryLevel::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey())
-            ->where('location_id', $locationId)
-            ->first();
+        if ($requirements->isEmpty()) {
+            return [];
+        }
 
-        return $level?->available ?? 0;
+        $byType = [];
+
+        foreach ($requirements as $item) {
+            $byType[$item['model']->getMorphClass()][] = $item['model']->getKey();
+        }
+
+        $levels = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            ->whereHas('location', fn (Builder $query): Builder => $query->where('is_active', true))
+            ->where(function (Builder $query) use ($byType): void {
+                foreach ($byType as $type => $ids) {
+                    $query->orWhere(fn (Builder $group): Builder => $group
+                        ->where('inventoryable_type', $type)
+                        ->whereIn('inventoryable_id', $ids));
+                }
+            })
+            ->get(['location_id', 'inventoryable_type', 'inventoryable_id', 'quantity_on_hand', 'quantity_reserved']);
+
+        $availability = [];
+
+        foreach ($levels as $level) {
+            $key = $level->inventoryable_type . ':' . $level->inventoryable_id;
+            $availability[$level->location_id][$key] = $level->available;
+        }
+
+        return $availability;
     }
 
     /**
