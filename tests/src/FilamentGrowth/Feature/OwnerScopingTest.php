@@ -9,16 +9,19 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use AIArmada\FilamentGrowth\Actions\DeleteSelectedExperiments;
+use AIArmada\FilamentGrowth\Actions\DeleteSelectedVariants;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
-use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
+use AIArmada\Growth\Actions\SaveVariant;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -447,11 +450,8 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
 
     [$ownedExperiment] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Experiment', 'O');
     [$globalExperiment] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Experiment', 'G');
-    $method = new ReflectionMethod(ExperimentsTable::class, 'deleteSelectedExperiments');
-    $method->setAccessible(true);
-
-    expect(fn (): mixed => $method->invoke(null, collect([$ownedExperiment, $globalExperiment])))
-        ->toThrow(RuntimeException::class, 'Global growth experiments can only be deleted from explicit global context.');
+    expect(fn () => app(DeleteSelectedExperiments::class)->handle(collect([$ownedExperiment, $globalExperiment])))
+        ->toThrow(AuthorizationException::class);
 
     expect(Experiment::query()->withoutOwnerScope()->whereKey($ownedExperiment->getKey())->exists())->toBeTrue()
         ->and(Experiment::query()->withoutOwnerScope()->whereKey($globalExperiment->getKey())->exists())->toBeTrue();
@@ -474,11 +474,8 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
 
     [, $ownedVariant] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Variant', 'O');
     [, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Variant', 'G');
-    $method = new ReflectionMethod(VariantsTable::class, 'deleteSelectedVariants');
-    $method->setAccessible(true);
-
-    expect(fn (): mixed => $method->invoke(null, collect([$ownedVariant, $globalVariant])))
-        ->toThrow(RuntimeException::class, 'Global growth variants can only be deleted from explicit global context.');
+    expect(fn () => app(DeleteSelectedVariants::class)->handle(collect([$ownedVariant, $globalVariant])))
+        ->toThrow(AuthorizationException::class);
 
     expect(Variant::query()->withoutOwnerScope()->whereKey($ownedVariant->getKey())->exists())->toBeTrue()
         ->and(Variant::query()->withoutOwnerScope()->whereKey($globalVariant->getKey())->exists())->toBeTrue();
@@ -805,18 +802,15 @@ it('prunes stale variant settings when the selected experiment module changes', 
         $pricingExperiment->save();
     });
 
-    $data = VariantResource::normalizeFormData([
-        'experiment_id' => (string) $pricingExperiment->getKey(),
-        'settings' => [
-            'headline' => 'Keep me out',
-            'cta_copy' => 'Nope',
-            'price_label' => 'Starter',
-            'price_minor' => 12345,
-            'currency' => 'USD',
-        ],
+    $settings = app(SaveVariant::class)->normalizeSettings('pricing_test', [
+        'headline' => 'Keep me out',
+        'cta_copy' => 'Nope',
+        'price_label' => 'Starter',
+        'price_minor' => 12345,
+        'currency' => 'USD',
     ]);
 
-    expect($data['settings'])->toBe([
+    expect($settings)->toBe([
         'price_label' => 'Starter',
         'price_minor' => 12345,
         'currency' => 'USD',

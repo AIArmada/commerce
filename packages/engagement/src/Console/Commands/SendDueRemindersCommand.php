@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
@@ -40,41 +39,39 @@ final class SendDueRemindersCommand extends Command
             ],
         );
 
-        $count = OwnerContext::withOwner(null, function () use ($runner, $now, &$remaining): int {
-            return (int) $runner->forEach(function () use ($now, &$remaining): int {
-                if ($remaining === 0) {
-                    return 0;
-                }
+        $count = (int) $runner->forEachAcrossOwners(function () use ($now, &$remaining): int {
+            if ($remaining === 0) {
+                return 0;
+            }
 
-                $count = 0;
-                Reminder::query()
-                    ->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled])
-                    ->where('remind_at', '<=', $now)
-                    ->where(function ($query) use ($now): void {
-                        $query->whereNull('expires_at')
-                            ->orWhere('expires_at', '>', $now);
-                    })
-                    ->orderBy('remind_at')
-                    ->chunkById(100, function ($reminders) use (&$remaining, &$count): bool {
-                        foreach ($reminders as $reminder) {
-                            if ($remaining === 0) {
-                                return false;
-                            }
-
-                            if (! $this->sendReminder($reminder)) {
-                                continue;
-                            }
-
-                            $remaining--;
-                            $count++;
+            $count = 0;
+            Reminder::query()
+                ->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled])
+                ->where('remind_at', '<=', $now)
+                ->where(function ($query) use ($now): void {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', $now);
+                })
+                ->orderBy('remind_at')
+                ->chunkById(100, function ($reminders) use (&$remaining, &$count): bool {
+                    foreach ($reminders as $reminder) {
+                        if ($remaining === 0) {
+                            return false;
                         }
 
-                        return $remaining > 0;
-                    });
+                        if (! $this->sendReminder($reminder)) {
+                            continue;
+                        }
 
-                return $count;
-            })->sum();
-        });
+                        $remaining--;
+                        $count++;
+                    }
+
+                    return $remaining > 0;
+                });
+
+            return $count;
+        })->sum();
 
         $this->info("Sent {$count} reminders.");
 

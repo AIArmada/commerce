@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\Growth;
 
 require_once __DIR__ . '/PresentationTestSupport.php';
 
-use AIArmada\Growth\Http\Middleware\ResolveExperiment;
+use AIArmada\Growth\EntryPoints\Http\Middleware\ResolveExperiment;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;

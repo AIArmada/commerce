@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -28,6 +30,12 @@ beforeEach(function (): void {
 afterEach(function (): void {
     Schema::dropIfExists('batch_runner_fixtures');
 });
+
+function batchRunnerWithoutOwner(): void
+{
+    OwnerContext::flushState();
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+}
 
 // ---------------------------------------------------------------------------
 // Fixture model
@@ -73,7 +81,7 @@ it('discovers owners and runs callback per owner', function (): void {
         ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b-1'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -127,7 +135,7 @@ it('runs once when an owner is already resolved', function (): void {
 });
 
 it('runs in explicit global when no owner tuples exist', function (): void {
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -192,7 +200,7 @@ it('forEach collects per-owner results into a collection', function (): void {
         ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -227,7 +235,7 @@ it('reduces integer results into a sum via run()', function (): void {
         ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -258,7 +266,7 @@ it('reduces array results into a merged sum via run()', function (): void {
         ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -284,7 +292,7 @@ it('reduces array results into a merged sum via run()', function (): void {
 // ---------------------------------------------------------------------------
 
 it('runs in explicit global when callback is invoked with null owner', function (): void {
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -304,6 +312,76 @@ it('runs in explicit global when callback is invoked with null owner', function 
     expect($foundCount)->toBe(0);
 });
 
+it('honors an explicit global run without iterating tenant owners', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Explicit Global A',
+        'email' => 'explicit-global-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => null, 'owner_id' => null, 'label' => 'global'],
+        ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+        'enabled' => 'batch_runner_test.enabled',
+    ]);
+
+    config()->set('batch_runner_test.enabled', true);
+
+    $callCount = 0;
+
+    $result = $runner->run(function () use (&$callCount): int {
+        $callCount++;
+
+        expect(OwnerContext::isExplicitGlobal())->toBeTrue()
+            ->and(OwnerContext::resolve())->toBeNull();
+
+        return 7;
+    });
+
+    expect($callCount)->toBe(1)
+        ->and($result)->toBe(7);
+});
+
+it('honors an explicit global forEach without iterating tenant owners', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Explicit Global B',
+        'email' => 'explicit-global-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => null, 'owner_id' => null, 'label' => 'global'],
+        ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+        'enabled' => 'batch_runner_test.enabled',
+    ]);
+
+    config()->set('batch_runner_test.enabled', true);
+
+    $results = $runner->forEach(function (): string {
+        expect(OwnerContext::isExplicitGlobal())->toBeTrue()
+            ->and(OwnerContext::resolve())->toBeNull();
+
+        return 'global-only';
+    });
+
+    expect($results->all())->toBe(['global-only']);
+
+    $sweep = $runner->forEachAcrossOwners(fn (): ?string => OwnerContext::resolve()?->getKey());
+
+    expect($sweep->all())->toEqualCanonicalizing([null, $owner->getKey()])
+        ->and(OwnerContext::isExplicitGlobal())->toBeTrue();
+});
+
 it('deduplicates explicit global tuples when multiple global rows exist', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Dedup A',
@@ -317,7 +395,7 @@ it('deduplicates explicit global tuples when multiple global rows exist', functi
         ['owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey(), 'label' => 'owner'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $callCount = 0;
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
@@ -371,7 +449,7 @@ it('suppresses include_global during iteration without touching config', functio
         ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerIncludeFixture::class, [
         'enabled' => 'batch_runner_include_test.enabled',
@@ -411,7 +489,7 @@ it('fails fast on orphaned owner tuples before running callbacks', function (): 
         ['owner_type' => $owner->getMorphClass(), 'owner_id' => 999999, 'label' => 'orphan'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -435,7 +513,7 @@ it('fails fast on malformed owner tuples before running callbacks', function ():
         ['owner_type' => User::class, 'owner_id' => null, 'label' => 'malformed'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -470,7 +548,7 @@ it('falls back to the model scope config for include-global suppression', functi
         ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerIncludeFixture::class);
 
@@ -500,7 +578,7 @@ it('falls back to the model scope config for the disabled state', function (): v
         ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerDisabledFixture::class);
 
@@ -531,7 +609,7 @@ it('sums only numeric array values without throwing on non-numeric values', func
         ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',
@@ -568,7 +646,7 @@ it('replaces non-numeric carry values with numeric results instead of throwing',
         ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
     ]);
 
-    OwnerContext::setForRequest(null);
+    batchRunnerWithoutOwner();
 
     $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
         'enabled' => 'batch_runner_test.enabled',

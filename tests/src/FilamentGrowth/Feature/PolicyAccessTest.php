@@ -15,11 +15,15 @@ use AIArmada\FilamentGrowth\Resources\ExperimentResource;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
+use AIArmada\Growth\Actions\SaveExperiment;
+use AIArmada\Growth\Actions\SaveVariant;
+use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     filament()->setCurrentPanel('admin');
@@ -292,6 +296,25 @@ it('denies bulk mutations when the resolved owner can only read global growth re
     });
 });
 
+it('denies growth policy access cleanly when only Signals ownership is enabled without an owner', function (): void {
+    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
+
+    $actor = filamentGrowthPolicyUser();
+
+    filamentGrowthBindNoOwner();
+    $this->actingAs($actor);
+
+    OwnerContext::flushState();
+
+    expect(Gate::forUser($actor)->allows('viewAny', Experiment::class))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('create', Experiment::class))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('viewAny', Variant::class))->toBeFalse()
+        ->and(Gate::forUser($actor)->allows('create', Variant::class))->toBeFalse()
+        ->and(ExperimentResource::canCreate())->toBeFalse()
+        ->and(VariantResource::canCreate())->toBeFalse();
+});
+
 it('fails closed for bulk policy checks when no owner context is resolved', function (): void {
     $actor = filamentGrowthPolicyUser();
 
@@ -304,4 +327,61 @@ it('fails closed for bulk policy checks when no owner context is resolved', func
         ->and(Gate::forUser($actor)->allows('deleteAny', Variant::class))->toBeFalse()
         ->and(Gate::forUser($actor)->allows('restoreAny', Variant::class))->toBeFalse()
         ->and(Gate::forUser($actor)->allows('forceDeleteAny', Variant::class))->toBeFalse();
+});
+
+it('denies direct gate access to experiments and variants when the tracked property changes owner', function (): void {
+    $owner = filamentGrowthPolicyUser();
+    $foreignOwner = filamentGrowthPolicyUser();
+    $actor = filamentGrowthPolicyUser();
+    filamentGrowthBindOwner($owner);
+    [$experiment, $variant] = filamentGrowthCreateOwnedExperiment($owner, 'Drifted Property Experiment');
+    $this->actingAs($actor);
+
+    TrackedProperty::query()->withoutOwnerScope()->whereKey($experiment->tracked_property_id)->update([
+        'owner_type' => $foreignOwner->getMorphClass(),
+        'owner_id' => $foreignOwner->getKey(),
+    ]);
+
+    OwnerContext::withOwner($owner, function () use ($actor, $experiment, $variant): void {
+        foreach (['view', 'update', 'delete', 'restore', 'forceDelete'] as $ability) {
+            expect(Gate::forUser($actor)->allows($ability, $experiment))->toBeFalse()
+                ->and(Gate::forUser($actor)->allows($ability, $variant))->toBeFalse();
+        }
+
+        expect(Gate::forUser($actor)->allows('deleteAny', Experiment::class))->toBeFalse()
+            ->and(Gate::forUser($actor)->allows('deleteAny', Variant::class))->toBeFalse()
+            ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeFalse();
+    });
+});
+
+it('retains variant settings on update without a submitted parent field', function (): void {
+    $owner = filamentGrowthPolicyUser();
+    filamentGrowthBindOwner($owner);
+    [$experiment, $variant] = filamentGrowthCreateOwnedExperiment($owner);
+    $this->actingAs($owner);
+
+    OwnerContext::withOwner($owner, function () use ($experiment, $variant): void {
+        $experiment->module_type = 'pricing_test';
+        $experiment->save();
+
+        $saved = app(SaveVariant::class)->update((string) $variant->getKey(), [
+            'settings' => ['price_label' => 'Premium', 'price_minor' => 1200, 'headline' => 'discard'],
+        ]);
+
+        expect($saved->settings)->toBe(['price_label' => 'Premium', 'price_minor' => 1200]);
+    });
+});
+
+it('does not reopen an archived experiment through a direct administrative update', function (): void {
+    $owner = filamentGrowthPolicyUser();
+    filamentGrowthBindOwner($owner);
+    [$experiment] = filamentGrowthCreateOwnedExperiment($owner);
+    $this->actingAs($owner);
+
+    OwnerContext::withOwner($owner, function () use ($experiment): void {
+        $experiment->transitionTo(ExperimentStatus::Archived)->save();
+
+        expect(fn () => app(SaveExperiment::class)->update((string) $experiment->getKey(), ['status' => 'active']))
+            ->toThrow(ValidationException::class);
+    });
 });

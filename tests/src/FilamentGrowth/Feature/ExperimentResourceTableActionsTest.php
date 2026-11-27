@@ -188,3 +188,23 @@ it('shows that draft experiments are not live yet', function (): void {
     expect($column->getState())->toBeFalse()
         ->and($statusColumn->getDescriptionBelow())->toBe('Not live');
 });
+
+it('keeps archived experiments locked even when a stale toggle is submitted', function (): void {
+    filament()->setCurrentPanel('admin');
+
+    $owner = filamentGrowthTableToggleUser();
+    filamentGrowthTableToggleBindOwner($owner);
+    $this->actingAs($owner);
+
+    $experiment = filamentGrowthTableToggleCreateExperiment($owner, ExperimentStatus::Paused);
+    $column = ExperimentResource::table(Table::make(filamentGrowthTableToggleLivewire()))
+        ->getColumn('is_running');
+    $column->record($experiment);
+
+    $experiment->fresh()->transitionTo(ExperimentStatus::Archived)->save();
+    $column->updateState(true);
+
+    expect($experiment->refresh()->status)->toBe(ExperimentStatus::Archived);
+    $column->record($experiment);
+    expect($column->isDisabled())->toBeTrue();
+});
