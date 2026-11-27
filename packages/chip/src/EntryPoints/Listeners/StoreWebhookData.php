@@ -9,12 +9,6 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Store CHIP webhook data in the database.
- *
- * Maps webhook payload fields directly to database columns.
- * No fabrication - only stores what CHIP sends.
- */
 final readonly class StoreWebhookData
 {
     public function __construct(private StoreChipWebhookPayload $action) {}
@@ -39,7 +33,6 @@ final readonly class StoreWebhookData
         $payload = $event->payload;
         $payloadType = $payload['type'] ?? null;
 
-        // Only process purchase-related webhooks
         if ($payloadType === 'purchase') {
             $this->action->storePurchasePayload($payload);
 

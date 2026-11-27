@@ -10,10 +10,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
-final class SyncChipRecordsFromApiAction
+final readonly class SyncChipRecordsFromApiAction
 {
     public function __construct(
-        private readonly StoreChipWebhookPayload $storeWebhookData,
+        private StoreChipWebhookPayload $storeWebhookData,
     ) {}
 
     /**
