@@ -65,7 +65,6 @@ final class BookmarkCollection extends Model
     {
         static::deleting(function (BookmarkCollection $collection): void {
             app(DeleteBookmarkCollectionItemsAction::class)->execute($collection);
-            });
         });
     }
 

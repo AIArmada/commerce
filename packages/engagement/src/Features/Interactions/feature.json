@@ -3,22 +3,22 @@
     "name": "Interactions",
     "owns": {
         "table:follows": [
-            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageFollowsAction"
         ],
         "table:bookmarks": [
-            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageBookmarksAction"
         ],
         "table:responses": [
-            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageResponsesAction"
         ],
         "table:reactions": [
-            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageReactionsAction"
         ],
         "table:engagement_shares": [
-            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction"
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\CreateShareAction"
         ],
         "table:bookmark_collection_items": [
-            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageInteractionsAction",
+            "AIArmada\\Engagement\\Features\\Interactions\\Actions\\ManageBookmarkCollectionItemsAction",
             "AIArmada\\Engagement\\Features\\Interactions\\Actions\\DeleteBookmarkCollectionItemsAction"
         ],
         "table:bookmark_collections": [

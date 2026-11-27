@@ -7,16 +7,17 @@ namespace AIArmada\Engagement\Features\Interactions\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Features\Interactions\Models\BookmarkCollection;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 final readonly class UpdateBookmarkCollectionAction
 {
     /** @param array<string, mixed> $data */
     public function execute(BookmarkCollection $collection, array $data): BookmarkCollection
     {
-        $guarded = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->id);
+        $guarded = BookmarkCollection::ownerScopeConfig()->enabled
+            ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->id)
+            : BookmarkCollection::query()->whereKey($collection->id)->firstOrFail();
 
-        return DB::transaction(function () use ($guarded, $data): BookmarkCollection {
+        return $collection->getConnection()->transaction(function () use ($guarded, $data): BookmarkCollection {
             $collection = BookmarkCollection::query()->whereKey($guarded->id)->lockForUpdate()->firstOrFail();
             $collection->fill(Arr::only($data, ['name', 'description', 'visibility', 'status', 'sort_order']))->save();
 
