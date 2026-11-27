@@ -10,7 +10,9 @@ use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
+use AIArmada\Inventory\Contracts\BatchReservationInvalidator;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use AIArmada\Inventory\Features\Reservations\Actions\InvalidateBatchReservations;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
@@ -33,6 +35,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->alias(InventoryAllocationService::class, 'inventory.allocations');
         $app->singleton(CheckoutReservationService::class);
         $app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
+        $app->bind(BatchReservationInvalidator::class, InvalidateBatchReservations::class);
     }
 
     public function boot(Application $app): void

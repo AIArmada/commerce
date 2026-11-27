@@ -77,7 +77,7 @@ final readonly class ReservationStockStore
 
     private function lock(InventoryLevel $level): InventoryLevel
     {
-        return InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+        return InventoryOwnerScope::forMutation(InventoryLevel::query())
             ->whereKey($level->getKey())
             ->lockForUpdate()
             ->firstOrFail();

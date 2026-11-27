@@ -76,6 +76,23 @@ final class InventoryOwnerScope
         });
     }
 
+    /**
+     * @template TModel of Model
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    public static function forMutation(Builder $query): Builder
+    {
+        if (! self::isEnabled()) {
+            return $query;
+        }
+
+        $owner = self::resolveOwner();
+        OwnerContext::assertResolvedOrExplicitGlobal($owner);
+
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, false);
+    }
+
     public static function isCurrentContextGlobalOnly(): bool
     {
         return self::isEnabled() && self::resolveOwner() === null;

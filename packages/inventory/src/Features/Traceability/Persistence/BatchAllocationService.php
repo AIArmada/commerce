@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Traceability\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Contracts\BatchReservationBalances;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class BatchAllocationService
+final class BatchAllocationService implements BatchReservationBalances
 {
     public function __construct(
         private BatchService $batchService
@@ -138,6 +139,26 @@ final class BatchAllocationService
                 $batch->decrementOnHand($quantity);
             }
         }, 3);
+    }
+
+    public function release(string $batchId, string $itemType, string $itemId, string $locationId, int $quantity): void
+    {
+        $this->releaseBatches([['batch' => $this->resolveBatch($batchId, $itemType, $itemId, $locationId), 'quantity' => $quantity]]);
+    }
+
+    public function commit(string $batchId, string $itemType, string $itemId, string $locationId, int $quantity): void
+    {
+        $this->commitBatches([['batch' => $this->resolveBatch($batchId, $itemType, $itemId, $locationId), 'quantity' => $quantity]]);
+    }
+
+    private function resolveBatch(string $batchId, string $itemType, string $itemId, string $locationId): InventoryBatch
+    {
+        return InventoryOwnerScope::forMutation(InventoryBatch::query())
+            ->whereKey($batchId)
+            ->where('inventoryable_type', $itemType)
+            ->where('inventoryable_id', $itemId)
+            ->where('location_id', $locationId)
+            ->firstOrFail();
     }
 
     /**
