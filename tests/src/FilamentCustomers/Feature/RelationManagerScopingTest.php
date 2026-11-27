@@ -6,7 +6,7 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerNote;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages\ViewCustomer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers\AddressesRelationManager;

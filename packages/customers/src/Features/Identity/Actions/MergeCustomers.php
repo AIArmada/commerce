@@ -14,7 +14,7 @@ use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Features\Segmentation\Actions\TransferCustomerGroupMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerNote;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 

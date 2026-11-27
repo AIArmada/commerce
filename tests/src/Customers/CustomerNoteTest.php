@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Features\Identity\Actions\ManageCustomerNote;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerNote;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use Illuminate\Auth\Access\AuthorizationException;
 
 describe('CustomerNote Model', function (): void {

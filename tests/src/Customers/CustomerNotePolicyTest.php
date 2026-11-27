@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerNote;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Policies\CustomerNotePolicy;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;

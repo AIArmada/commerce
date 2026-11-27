@@ -23,6 +23,7 @@ use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedCustomerGroupMemberships;
 use AIArmada\Customers\Features\Segmentation\Actions\DetachDeletedSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;

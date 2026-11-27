@@ -6,7 +6,7 @@ namespace AIArmada\Customers\Features\Identity\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\CustomerNote;
+use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
