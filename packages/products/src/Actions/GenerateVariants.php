@@ -9,7 +9,7 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Support\Collection;
 
-final class GenerateVariants
+final readonly class GenerateVariants
 {
     public function __construct(
         private VariantGeneratorInterface $generator

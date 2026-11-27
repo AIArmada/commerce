@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Products\Actions\GenerateVariantMatrix;
 use AIArmada\Products\Actions\GenerateVariants;
 use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 
@@ -141,4 +143,23 @@ it('treats a missing job product as a no-op', function (): void {
     );
 
     expect(fn () => $job->handle())->not->toThrow(Exception::class);
+});
+
+it('rejects synchronous variant generation for a product owned by another tenant', function (): void {
+    config()->set('products.features.owner.enabled', true);
+
+    $ownerA = makeOwner('regen-direct-a@example.com');
+    $ownerB = makeOwner('regen-direct-b@example.com');
+    $product = OwnerContext::withOwner($ownerB, fn (): Product => Product::create([
+        'name' => 'Private Product', 'price' => 1000,
+    ]));
+
+    OwnerContext::withOwner($ownerB, fn () => seedMatrix($product));
+
+    OwnerContext::withOwner($ownerA, function () use ($product): void {
+        expect(fn () => app(GenerateVariants::class)->execute($product))->toThrow(ModelNotFoundException::class)
+            ->and(fn () => app(GenerateVariantMatrix::class)->generateSynchronously($product))->toThrow(ModelNotFoundException::class);
+    });
+
+    expect(Variant::query()->withoutOwnerScope()->where('product_id', $product->id)->count())->toBe(0);
 });

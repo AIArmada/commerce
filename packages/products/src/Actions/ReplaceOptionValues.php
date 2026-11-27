@@ -7,6 +7,7 @@ namespace AIArmada\Products\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
+use AIArmada\Products\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -17,14 +18,17 @@ final readonly class ReplaceOptionValues
     {
         DB::transaction(function () use ($option, $values): void {
             $query = Option::query();
+            $products = Product::query();
 
             if (config('products.features.owner.enabled', false)) {
                 $owner = OwnerContext::resolve();
                 OwnerContext::assertResolvedOrExplicitGlobal($owner);
                 $query->forOwner($owner, false);
+                $products->forOwner($owner, false);
             }
 
-            $locked = $query->whereKey($option->getKey())->lockForUpdate()->firstOrFail();
+            $parent = $products->whereKey($option->product_id)->lockForUpdate()->firstOrFail();
+            $locked = $query->where('product_id', $parent->getKey())->whereKey($option->getKey())->lockForUpdate()->firstOrFail();
             $existing = $locked->values()->reorder()->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $retained = [];
 

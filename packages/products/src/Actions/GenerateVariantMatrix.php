@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\EntryPoints\Jobs\GenerateVariantsJob;
 use AIArmada\Products\Events\VariantsGenerated;
@@ -49,58 +50,62 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
      */
     public function generate(Product $product): Collection
     {
-        $options = $product->options()->with('values.option')->get();
-
-        if ($options->isEmpty()) {
-            return collect();
-        }
-
-        $maximum = (int) config('products.features.variants.max_generated', 200);
-        $combinationCount = $this->countCombinations($options);
-
-        if ($combinationCount > $maximum) {
-            throw new VariantGenerationLimitExceeded($combinationCount, $maximum);
-        }
-
-        $combinations = $this->buildCombinations($options);
-
-        $threshold = (int) config('products.features.variants.queue_threshold', 50);
-
-        if (count($combinations) > $threshold) {
-            GenerateVariantsJob::dispatch(
-                productId: $product->getKey(),
-                ownerType: $product->owner_type,
-                ownerId: $product->owner_id,
-                ownerIsGlobal: $product->owner_type === null && $product->owner_id === null,
-            );
-
-            return collect();
-        }
-
-        return $this->generateCombinations($product, $combinations);
+        return $this->generateForProduct($product, false);
     }
 
-    /**
-     * The queued entry point deliberately bypasses the queue threshold.
-     *
-     * @return Collection<int, Variant>
-     */
+    /** @return Collection<int, Variant> */
     public function generateSynchronously(Product $product): Collection
     {
-        $options = $product->options()->with('values.option')->get();
+        return $this->generateForProduct($product, true);
+    }
 
-        if ($options->isEmpty()) {
-            return collect();
+    /** @return Collection<int, Variant> */
+    private function generateForProduct(Product $product, bool $synchronous): Collection
+    {
+        $variants = DB::transaction(function () use ($product, $synchronous): Collection {
+            $query = Product::query();
+
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
+            }
+
+            $locked = $query->whereKey($product->getKey())->lockForUpdate()->firstOrFail();
+            $options = $locked->options()->with('values.option')->get();
+
+            if ($options->isEmpty()) {
+                return collect();
+            }
+
+            $maximum = (int) config('products.features.variants.max_generated', 200);
+            $combinationCount = $this->countCombinations($options);
+
+            if ($combinationCount > $maximum) {
+                throw new VariantGenerationLimitExceeded($combinationCount, $maximum);
+            }
+
+            $threshold = (int) config('products.features.variants.queue_threshold', 50);
+
+            if (! $synchronous && $combinationCount > $threshold) {
+                GenerateVariantsJob::dispatch(
+                    productId: $locked->getKey(),
+                    ownerType: $locked->owner_type,
+                    ownerId: $locked->owner_id,
+                    ownerIsGlobal: $locked->owner_type === null && $locked->owner_id === null,
+                )->afterCommit();
+
+                return collect();
+            }
+
+            return $this->generateCombinations($locked, $this->buildCombinations($options));
+        }, 3);
+
+        if ($variants->isNotEmpty()) {
+            event(new VariantsGenerated($product, $variants));
         }
 
-        $maximum = (int) config('products.features.variants.max_generated', 200);
-        $combinationCount = $this->countCombinations($options);
-
-        if ($combinationCount > $maximum) {
-            throw new VariantGenerationLimitExceeded($combinationCount, $maximum);
-        }
-
-        return $this->generateCombinations($product, $this->buildCombinations($options));
+        return $variants;
     }
 
     /**
@@ -121,8 +126,6 @@ final readonly class GenerateVariantMatrix implements VariantGeneratorInterface
                 $variants->push($this->createOrReuseVariant($product, $combination));
             }
         });
-
-        event(new VariantsGenerated($product, $variants));
 
         return $variants;
     }
