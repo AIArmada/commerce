@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Exports;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -13,19 +14,23 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class FeedbackResponsesExport extends Exporter
 {
+    protected static ?string $model = FeedbackResponse::class;
+
     public static function getColumns(): array
     {
         return [
-            ExportColumn::make('form.name')
+            ExportColumn::make('form_name')
                 ->label('Form'),
             ExportColumn::make('subject_type')
                 ->label('Subject Type'),
             ExportColumn::make('subject_id')
                 ->label('Subject ID'),
             ExportColumn::make('respondent_type')
-                ->label('Respondent Type'),
+                ->label('Respondent Type')
+                ->state(static fn (FeedbackResponse $record): ?string => $record->is_anonymous ? null : $record->respondent_type),
             ExportColumn::make('respondent_id')
-                ->label('Respondent ID'),
+                ->label('Respondent ID')
+                ->state(static fn (FeedbackResponse $record): ?string => $record->is_anonymous ? null : $record->respondent_id),
             ExportColumn::make('status'),
             ExportColumn::make('is_anonymous')
                 ->label('Anonymous'),
@@ -41,8 +46,12 @@ final class FeedbackResponsesExport extends Exporter
         return 'Your export has been completed.';
     }
 
-    public function query(): Builder
+    public static function modifyQuery(Builder $query): Builder
     {
-        return OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false);
+        $query = OwnerUiScope::apply($query, includeGlobal: false);
+        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
+            ->whereColumn('id', $query->getModel()->qualifyColumn('feedback_form_id'));
+
+        return $query->addSelect(['form_name' => $forms->select('name')]);
     }
 }

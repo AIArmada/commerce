@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Features\Responses\Actions\MarkFeedbackResponseAsSpamAction;
 use AIArmada\Feedback\Features\Responses\Actions\RejectFeedbackResponseAction;
@@ -42,17 +43,23 @@ final class FeedbackResponseResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
-            ->with(['form']);
+        $query = OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+        $forms = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)
+            ->whereColumn('id', $query->getModel()->qualifyColumn('feedback_form_id'));
+
+        return $query->addSelect(['form_name' => $forms->select('name')]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('form.name')
+                Tables\Columns\TextColumn::make('form_name')
                     ->label('Form')
-                    ->searchable(),
+                    ->searchable(query: static fn (Builder $query, string $search): Builder => $query->whereIn(
+                        $query->getModel()->qualifyColumn('feedback_form_id'),
+                        OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false)->select('id')->where('name', 'like', '%' . $search . '%'),
+                    )),
                 Tables\Columns\TextColumn::make('subject_type')
                     ->label('Subject Type'),
                 Tables\Columns\TextColumn::make('respondent_type')

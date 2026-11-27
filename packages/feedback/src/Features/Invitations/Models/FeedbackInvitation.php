@@ -7,12 +7,10 @@ namespace AIArmada\Feedback\Features\Invitations\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -35,7 +33,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array|null $metadata
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read FeedbackForm $form
  * @property-read Model|Eloquent $recipient
  */
 final class FeedbackInvitation extends Model
@@ -78,11 +75,6 @@ final class FeedbackInvitation extends Model
             'cancelled_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
         ];
-    }
-
-    public function form(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackForm::class, 'feedback_form_id');
     }
 
     public function recipient(): MorphTo

@@ -6,7 +6,6 @@ namespace AIArmada\Feedback\Features\Responses\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Features\Responses\Actions\DeleteFeedbackAnswerDependentsAction;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -30,7 +29,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property-read FeedbackResponse $response
- * @property-read FeedbackQuestion $question
  */
 final class FeedbackAnswer extends Model
 {
@@ -78,10 +76,5 @@ final class FeedbackAnswer extends Model
     public function response(): BelongsTo
     {
         return $this->belongsTo(FeedbackResponse::class, 'feedback_response_id');
-    }
-
-    public function question(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackQuestion::class, 'feedback_question_id');
     }
 }

@@ -54,7 +54,7 @@ it('keeps network identifiers out of the response export', function (): void {
     expect($columns)->not->toContain('ip_address');
 });
 
-it('eager loads the parent form on invitation and response tables', function (): void {
-    expect(FeedbackInvitationResource::getEloquentQuery()->getEagerLoads())->toHaveKey('form')
-        ->and(FeedbackResponseResource::getEloquentQuery()->getEagerLoads())->toHaveKey('form');
+it('projects the parent form name on invitation and response tables without ORM relationships', function (): void {
+    expect(FeedbackInvitationResource::getEloquentQuery()->toSql())->toContain('form_name')
+        ->and(FeedbackResponseResource::getEloquentQuery()->toSql())->toContain('form_name');
 });

@@ -9,14 +9,12 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
-use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Actions\DeleteFeedbackResponseDependentsAction;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -46,7 +44,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array|null $metadata
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
- * @property-read FeedbackForm $form
  * @property-read Collection<int, FeedbackAnswer> $answers
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $respondent
@@ -104,16 +101,10 @@ final class FeedbackResponse extends Model
         ];
     }
 
-    public function form(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackForm::class, 'feedback_form_id');
-    }
-
     public function answers(): HasMany
     {
         return $this->hasMany(FeedbackAnswer::class, 'feedback_response_id');
     }
-
 
     public function subject(): MorphTo
     {
