@@ -14,11 +14,11 @@ use DateTimeZone;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Sleep;
 use Throwable;
 
 abstract class BaseHttpClient
@@ -89,38 +89,33 @@ abstract class BaseHttpClient
         $attempts = max(1, (int) ($this->retryConfig['attempts'] ?? 1));
         $delayMilliseconds = max(0, (int) ($this->retryConfig['delay'] ?? 0));
 
-        $response = null;
-
         try {
-            for ($attempt = 1; $attempt <= $attempts; $attempt++) {
-                try {
-                    $response = $this->sendRequest($method, $url, $data, $headers);
+            try {
+                $response = retry(
+                    $attempts,
+                    function () use ($method, $url, $data, $headers): Response {
+                        $response = $this->sendRequest($method, $url, $data, $headers);
 
-                    if ($response->failed() && $attempt < $attempts && $this->shouldRetry($method, null, $response)) {
-                        Sleep::for($delayMilliseconds)->milliseconds();
+                        if ($response->failed()) {
+                            if ($this->shouldRetry($method, null, $response)) {
+                                $response->throw();
+                            }
 
-                        continue;
-                    }
+                            $this->handleFailedResponse($response);
+                        }
 
-                    if ($response->failed()) {
-                        $this->handleFailedResponse($response);
-                    }
-
-                    break;
-                } catch (Exception $exception) {
-                    if ($attempt >= $attempts || ! $this->shouldRetry($method, $exception, null)) {
-                        throw $exception;
-                    }
-
-                    Sleep::for($delayMilliseconds)->milliseconds();
-                }
+                        return $response;
+                    },
+                    $delayMilliseconds,
+                    fn (Throwable $exception): bool => $exception instanceof RequestException
+                        ? $this->shouldRetry($method, null, $exception->response)
+                        : $this->shouldRetry($method, $exception, null),
+                );
+            } catch (RequestException $exception) {
+                $this->handleFailedResponse($exception->response);
             }
 
             $this->logResponse($response);
-
-            if (! $response instanceof Response) {
-                throw new ChipApiException('API request failed: no response was received.');
-            }
 
             return $response;
         } catch (Exception $exception) {
