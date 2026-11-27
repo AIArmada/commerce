@@ -54,15 +54,25 @@ final class SyncChipPurchaseStatus
      */
     public function syncFailed(Model $billable, PurchaseData $purchaseData, array $purchase): void
     {
+        if ($this->alreadyProcessed($purchaseData->id)) {
+            return;
+        }
+
         PaymentFailed::dispatch($billable, $purchaseData->toArray());
 
         if ($subscriptionType = $this->getSubscriptionType($purchase)) {
             $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
 
-            if ($subscription && $subscription->chip_status !== SubscriptionStatus::Canceled) {
-                $subscription->forceFill([
-                    'chip_status' => SubscriptionStatus::PastDue,
-                ])->save();
+            if ($subscription instanceof Subscription) {
+                DB::transaction(function () use ($subscription, $purchaseData): void {
+                    $locked = Subscription::query()->whereKey($subscription->getKey())->lockForUpdate()->first();
+
+                    if (! $locked instanceof Subscription || $locked->canceled() || in_array($locked->chip_status, [SubscriptionStatus::Canceled, SubscriptionStatus::Paused, SubscriptionStatus::IncompleteExpired, SubscriptionStatus::Unpaid], true) || $this->alreadyProcessed($purchaseData->id)) {
+                        return;
+                    }
+
+                    $locked->forceFill(['chip_status' => SubscriptionStatus::PastDue])->save();
+                });
             }
         }
     }
@@ -178,7 +188,7 @@ final class SyncChipPurchaseStatus
                 }
 
                 $locked->forceFill([
-                    'chip_status' => SubscriptionStatus::Active,
+                    'chip_status' => $locked->chip_status === SubscriptionStatus::Paused ? SubscriptionStatus::Paused : SubscriptionStatus::Active,
                     'next_billing_at' => Subscription::advanceBillingDate(
                         CarbonImmutable::now(),
                         $locked->billing_interval,

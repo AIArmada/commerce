@@ -296,6 +296,34 @@ describe('RepairRegression renewal idempotency', function (): void {
             ->and($fresh?->next_billing_at?->toIso8601String())->toBe($nextBilling->toIso8601String());
     });
 
+    it('failed webhooks cannot reactivate or mark paused and canceled subscriptions past due', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_terminal_failure']);
+
+        foreach ([SubscriptionStatus::Paused, SubscriptionStatus::Canceled, SubscriptionStatus::IncompleteExpired, SubscriptionStatus::Unpaid] as $status) {
+            $subscription = $this->createTrustedSubscription($user, [
+                'type' => 'failure-' . $status->value,
+                'chip_id' => 'sub-' . $status->value,
+                'chip_status' => $status,
+                'next_billing_at' => CarbonImmutable::now()->subDay(),
+            ]);
+
+            $payload = [
+                'id' => 'pur-failure-' . $status->value,
+                'client_id' => 'cli_terminal_failure',
+                'status' => 'error',
+                'purchase' => [
+                    'total' => 1000,
+                    'currency' => 'MYR',
+                    'metadata' => ['subscription_type' => $subscription->type],
+                ],
+            ];
+
+            app(SyncChipPurchaseStatus::class)->syncFailed($user, PurchaseData::from($payload), $payload);
+
+            expect($subscription->refresh()->chip_status)->toBe($status);
+        }
+    });
+
     it('renewal charges carry a stable idempotency key', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_idem']);
         $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
