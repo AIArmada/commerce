@@ -128,3 +128,28 @@ it('keeps price list and price ensure calls idempotent', function (): void {
     expect($ids[2])->toBe($ids[3]);
     expect($ids[4])->toBe(1);
 });
+
+it('enforces unique global slugs while allowing a tenant to reuse them', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.database.tables.price_lists', 'global_slug_price_lists');
+
+    Schema::dropIfExists('global_slug_price_lists');
+    $migration = require __DIR__ . '/../../../packages/pricing/database/migrations/2000_12_01_000001_create_price_lists_table.php';
+    $migration->up();
+
+    try {
+        $owner = createSlugPricingOwner('Global Slug Owner', 'global-slug-owner@example.com');
+
+        $global = OwnerContext::withOwner(null, fn (): PriceList => PriceList::query()->create(['name' => 'Global Retail', 'slug' => 'retail']));
+        $tenant = OwnerContext::withOwner($owner, fn (): PriceList => PriceList::query()->create(['name' => 'Tenant Retail', 'slug' => 'retail']));
+
+        expect($global->getKey())->not->toBe($tenant->getKey());
+
+        expect(fn () => OwnerContext::withOwner(null, fn (): PriceList => PriceList::query()->create([
+            'name' => 'Duplicate Global Retail',
+            'slug' => 'retail',
+        ])))->toThrow(UniqueConstraintViolationException::class);
+    } finally {
+        Schema::dropIfExists('global_slug_price_lists');
+    }
+});

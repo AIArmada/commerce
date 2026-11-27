@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,7 +11,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('pricing.database.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
+        $tableName = (string) config('pricing.database.tables.price_lists', 'price_lists');
+        $connection = Schema::getConnection();
+        $driver = ConnectionDriver::name($connection);
+
+        if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
+            throw new RuntimeException(sprintf('Pricing identity migration cannot run on unsupported database driver [%s].', $driver));
+        }
+
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->index();
@@ -29,7 +38,7 @@ return new class extends Migration
             $table->timestampTz('starts_at')->nullable();
             $table->timestampTz('ends_at')->nullable();
 
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
 
             $table->timestampsTz();
 
@@ -40,11 +49,17 @@ return new class extends Migration
             $table->index('segment_id');
             $table->index('is_default');
             $table->index('currency');
-            // Slugs are unique per owner so tenants can reuse names like
-            // `retail`. NULL owner tuples stay mutually distinct on most
-            // drivers; global rows are privileged writes guarded by scoped
-            // form rules in addition to this constraint.
-            $table->unique(['owner_type', 'owner_id', 'slug'], 'price_lists_owner_slug_unique');
+            $table->unique(['owner_type', 'owner_id', 'slug'], str_replace(['.', '-', ' '], '_', $tableName) . '_owner_slug_unique');
         });
+
+        $grammar = $connection->getQueryGrammar();
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NULL AND %s IS NULL',
+            $grammar->wrap(str_replace(['.', '-', ' '], '_', $tableName) . '_global_slug_unique'),
+            $grammar->wrapTable($tableName),
+            $grammar->wrap('slug'),
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
+        ));
     }
 };

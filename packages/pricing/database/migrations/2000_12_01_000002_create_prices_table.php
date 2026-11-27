@@ -30,7 +30,7 @@ return new class extends Migration
             $table->timestampTz('starts_at')->nullable();
             $table->timestampTz('ends_at')->nullable();
 
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
 
             $table->timestampsTz();
 
