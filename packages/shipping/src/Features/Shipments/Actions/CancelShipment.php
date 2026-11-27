@@ -39,48 +39,55 @@ final class CancelShipment
                 throw new ShipmentNotCancellableException($shipment->reference, $shipment->status->getValue());
             }
 
-            if ($shipment->items()->whereNotNull('package_unit_ordinal')->exists()
+            $unresolvedCreation = $shipment->operations()->where('operation_type', 'create')
+                ->whereIn('status', [ShipmentOperationStatus::Pending->value, ShipmentOperationStatus::Unknown->value])
+                ->exists();
+
+            if ($unresolvedCreation || ($shipment->tracking_number === null
                 && $shipment->operations()->where('operation_type', 'create')
-                    ->whereIn('status', [ShipmentOperationStatus::Pending, ShipmentOperationStatus::Unknown, ShipmentOperationStatus::Succeeded])->exists()) {
-                throw new RuntimeException('Reconcile the carrier operation before canceling this package shipment.');
+                    ->where('status', ShipmentOperationStatus::Succeeded->value)->exists())) {
+                throw new RuntimeException('Reconcile the carrier operation before canceling this shipment.');
             }
 
-            $driver = $this->shippingManager->driver($shipment->carrier_code);
+            $previous = $shipment->operations()->where('operation_type', 'cancel')
+                ->latest('operation_started_at')->first();
 
-            $operation = app(ShipmentOperationWriter::class)->start(
-                $shipment,
-                'cancel',
-                $shipment->carrier_reference,
-            );
+            if (in_array($previous?->status(), [ShipmentOperationStatus::Pending, ShipmentOperationStatus::Unknown], true)) {
+                throw new RuntimeException('Reconcile the existing cancellation before retrying.');
+            }
 
-            if ($shipment->tracking_number !== null) {
+            if ($previous?->status() !== ShipmentOperationStatus::Succeeded) {
+                $driver = $shipment->tracking_number !== null
+                    ? $this->shippingManager->driver($shipment->carrier_code)
+                    : null;
+
+                $writer = app(ShipmentOperationWriter::class);
+                $operation = $writer->start($shipment, 'cancel', $shipment->carrier_reference);
+
+                if (! $operation->wasRecentlyCreated) {
+                    throw new RuntimeException('Another carrier cancellation is already in progress or completed.');
+                }
+
                 try {
-                    $result = $driver->cancelShipment($shipment->tracking_number);
-                    app(ShipmentOperationWriter::class)->complete($operation, $result);
+                    $result = $driver === null
+                        ? CarrierOperationResult::succeeded()
+                        : $driver->cancelShipment($shipment->tracking_number);
                 } catch (Throwable $e) {
-                    app(ShipmentOperationWriter::class)->complete($operation, 
-                        CarrierOperationResult::unknown($e->getMessage()),
-                    );
-                    Log::warning('Carrier cancellation threw after operation recorded', [
+                    $writer->complete($operation, CarrierOperationResult::unknown('Carrier cancellation was not confirmed.'));
+
+                    Log::warning('Carrier cancellation outcome is unknown', [
                         'shipment_id' => $shipment->id,
-                        'tracking_number' => $shipment->tracking_number,
-                        'error' => $e->getMessage(),
+                        'exception_type' => $e::class,
                     ]);
 
                     throw $e;
                 }
 
-                if (! $result->success && ! $result->alreadyApplied) {
-                    Log::warning('Carrier cancellation returned failure after operation recorded', [
-                        'shipment_id' => $shipment->id,
-                        'tracking_number' => $shipment->tracking_number,
-                        'error' => $result->error,
-                    ]);
+                $writer->complete($operation, $result);
 
+                if (! $result->success && ! $result->alreadyApplied) {
                     throw new RuntimeException($result->error ?? 'The carrier rejected shipment cancellation.');
                 }
-            } else {
-                app(ShipmentOperationWriter::class)->complete($operation, CarrierOperationResult::succeeded());
             }
 
             return DB::transaction(function () use ($shipment, $reason) {

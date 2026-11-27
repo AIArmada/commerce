@@ -61,6 +61,11 @@ final class ShipShipment
                 OrderShipmentUnits::assertComplete($shipment, $order);
             }
 
+            if ($shipment->operations()->where('operation_type', 'cancel')
+                ->whereIn('status', [ShipmentOperationStatus::Pending->value, ShipmentOperationStatus::Unknown->value, ShipmentOperationStatus::Succeeded->value])->exists()) {
+                throw new ShipmentCreationFailedException('Reconcile the cancellation before shipping this shipment.');
+            }
+
             $priorOperation = ShipmentOperation::query()
                 ->where('shipment_id', $shipment->id)
                 ->where('operation_type', 'create')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Data\CarrierOperationResult;
+use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use AIArmada\Shipping\Features\Shipments\Persistence\ShipmentOperationWriter;
 use AIArmada\Shipping\ShippingManager;
@@ -17,7 +18,7 @@ final class ReconcileShipmentOperation
 
     public function handle(ShipmentOperation $operation): CarrierOperationResult
     {
-        if (! $operation->status()->canRetry()) {
+        if ($operation->status() !== ShipmentOperationStatus::Unknown) {
             return CarrierOperationResult::fromArray($operation->carrier_result ?? []);
         }
 
@@ -27,11 +28,17 @@ final class ReconcileShipmentOperation
             return CarrierOperationResult::failed('Shipment not found', retryable: false);
         }
 
-        $driverData = $operation->getAttribute('driver_data') ?? $shipment->getAttribute('carrier_code');
+        // Tracking confirms existence, not cancellation. No normalized tracking
+        // status establishes that a carrier accepted a cancellation.
+        if ($operation->operation_type !== 'create') {
+            return CarrierOperationResult::unknown('Carrier confirmation is required to reconcile this operation.');
+        }
+
+        $driverData = $shipment->carrier_code;
         $trackingNumber = $operation->getAttribute('tracking_number') ?? $shipment->getAttribute('tracking_number');
 
         if ($trackingNumber === null) {
-            return CarrierOperationResult::failed('No tracking number to reconcile', retryable: false);
+            return CarrierOperationResult::unknown('No tracking number to reconcile');
         }
 
         try {
@@ -40,7 +47,7 @@ final class ReconcileShipmentOperation
 
             $tracking = $driver->track($trackingNumber);
 
-            if ($tracking->isDelivered()) {
+            if ($tracking->trackingNumber === $trackingNumber && $tracking->status->getCategory() === 'delivered') {
                 $result = CarrierOperationResult::succeeded($trackingNumber);
                 app(ShipmentOperationWriter::class)->complete($operation, $result);
 

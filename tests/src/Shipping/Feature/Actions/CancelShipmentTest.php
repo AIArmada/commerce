@@ -102,7 +102,7 @@ describe('CancelShipment Action', function (): void {
         ]);
 
         $mockDriver = Mockery::mock(ShippingDriverInterface::class);
-        $mockDriver->shouldReceive('cancelShipment')
+        $mockDriver->shouldReceive('cancelShipment')->once()
             ->with('TRACK-NOT-CANCELLED')
             ->andThrow(new RuntimeException('Carrier API unavailable'));
 
@@ -121,5 +121,30 @@ describe('CancelShipment Action', function (): void {
             ->first();
 
         expect($operation)->not->toBeNull();
+        expect(fn () => $action->handle($shipment))->toThrow(RuntimeException::class, 'Reconcile the existing cancellation');
+        expect($shipment->operations()->count())->toBe(1);
     });
+    it('blocks ordinary shipment cancellation when creation is unresolved', function (ShipmentOperationStatus $status): void {
+        $shipment = Shipment::create([
+            'reference' => 'TEST-CANCEL-UNRESOLVED-CREATE',
+            'carrier_code' => 'null',
+            'status' => Pending::class,
+            'origin_address' => ['name' => 'Origin'],
+            'destination_address' => ['name' => 'Dest'],
+        ]);
+
+        $shipment->operations()->create([
+            'operation_type' => 'create',
+            'status' => $status->value,
+            'operation_started_at' => now(),
+        ]);
+
+        $manager = Mockery::mock(ShippingManager::class);
+        $manager->shouldNotReceive('driver');
+
+        expect(fn () => (new CancelShipment($manager))->handle($shipment))
+            ->toThrow(RuntimeException::class, 'Reconcile the carrier operation');
+        expect($shipment->refresh()->status)->toBeInstanceOf(Pending::class);
+        expect($shipment->operations()->count())->toBe(1);
+    })->with([ShipmentOperationStatus::Pending, ShipmentOperationStatus::Unknown, ShipmentOperationStatus::Succeeded]);
 });

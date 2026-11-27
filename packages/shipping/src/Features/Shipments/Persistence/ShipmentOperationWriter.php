@@ -11,6 +11,7 @@ use AIArmada\Shipping\Features\Shipments\Models\ShipmentOperation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class ShipmentOperationWriter
 {
@@ -25,12 +26,27 @@ final readonly class ShipmentOperationWriter
         // index is intentionally not used: repeat operations legitimately
         // produce multiple completed rows per (shipment, operation type).
         return DB::transaction(function () use ($shipment, $operationType, $reference): ShipmentOperation {
-            Shipment::query()->whereKey($shipment->getKey())->lockForUpdate()->firstOrFail();
+            $lockedShipment = Shipment::query()->whereKey($shipment->getKey())->lockForUpdate()->firstOrFail();
+
+            if (in_array($operationType, ['create', 'cancel'], true)) {
+                $opposite = $operationType === 'create' ? 'cancel' : 'create';
+                $blockingStatuses = [ShipmentOperationStatus::Pending->value, ShipmentOperationStatus::Unknown->value];
+
+                if ($operationType === 'create' || $lockedShipment->tracking_number === null) {
+                    $blockingStatuses[] = ShipmentOperationStatus::Succeeded->value;
+                }
+
+                if ($lockedShipment->operations()->where('operation_type', $opposite)
+                    ->whereIn('status', $blockingStatuses)->exists()) {
+                    throw new RuntimeException('Reconcile the conflicting carrier operation first.');
+                }
+            }
 
             $existing = ShipmentOperation::query()
                 ->where('shipment_id', $shipment->getKey())
                 ->where('operation_type', $operationType)
-                ->where('status', ShipmentOperationStatus::Pending->value)
+                ->whereIn('status', [ShipmentOperationStatus::Pending->value, ShipmentOperationStatus::Unknown->value, ShipmentOperationStatus::Succeeded->value])
+                ->latest('operation_started_at')
                 ->lockForUpdate()
                 ->first();
 
@@ -51,7 +67,7 @@ final readonly class ShipmentOperationWriter
     public function complete(ShipmentOperation $operation, CarrierOperationResult $result): void
     {
         $status = match (true) {
-            $result->success => ShipmentOperationStatus::Succeeded,
+            $result->success || $result->alreadyApplied => ShipmentOperationStatus::Succeeded,
             $result->outcomeType === 'unknown' => ShipmentOperationStatus::Unknown,
             default => ShipmentOperationStatus::Failed,
         };
