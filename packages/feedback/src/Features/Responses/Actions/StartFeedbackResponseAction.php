@@ -74,7 +74,9 @@ final class StartFeedbackResponseAction
             $form = $this->forms->requireOwned($formId, includeQuestions: false);
 
             $this->submissionGuard->assertFormAcceptingSubmissions($form, $isAnonymous, $respondentType, $respondentId);
-            $this->referenceGuard->resolveRespondent($respondentType, $respondentId);
+            $respondent = $this->referenceGuard->resolveRespondent($respondentType, $respondentId);
+            $respondentType = $respondent?->getMorphClass();
+            $respondentId = $respondent === null ? null : (string) $respondent->getKey();
 
             if ($invitationId !== null) {
                 $this->invitationLifecycle->assertUsable($invitationId, $form->id, $respondentType, $respondentId);

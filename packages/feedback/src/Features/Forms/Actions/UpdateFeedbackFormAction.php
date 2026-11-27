@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 final readonly class UpdateFeedbackFormAction
 {
@@ -21,10 +20,12 @@ final readonly class UpdateFeedbackFormAction
     /** @param array<string, mixed> $data */
     public function execute(FeedbackForm $form, array $data): FeedbackForm
     {
-        $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+        return $form->getConnection()->transaction(function () use ($form, $data): FeedbackForm {
+            if (FeedbackForm::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+            }
 
-        return DB::transaction(function () use ($guarded, $data): FeedbackForm {
-            $form = FeedbackForm::query()->whereKey($guarded->id)->lockForUpdate()->firstOrFail();
+            $form = FeedbackForm::query()->whereKey($form->id)->lockForUpdate()->firstOrFail();
             $form->fill(Arr::only($data, [
                 'name', 'slug', 'purpose', 'visibility', 'is_anonymous_allowed',
                 'is_anonymity_optional', 'is_login_required', 'is_one_response_per_respondent',

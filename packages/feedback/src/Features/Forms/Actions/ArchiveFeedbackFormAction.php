@@ -8,16 +8,17 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 
 final readonly class ArchiveFeedbackFormAction
 {
     public function execute(FeedbackForm $form): FeedbackForm
     {
-        $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+        return $form->getConnection()->transaction(function () use ($form): FeedbackForm {
+            if (FeedbackForm::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
+            }
 
-        return DB::transaction(function () use ($guarded): FeedbackForm {
-            $form = FeedbackForm::query()->whereKey($guarded->id)->lockForUpdate()->firstOrFail();
+            $form = FeedbackForm::query()->whereKey($form->id)->lockForUpdate()->firstOrFail();
 
             if ($form->status === FeedbackFormStatus::Archived) {
                 return $form;

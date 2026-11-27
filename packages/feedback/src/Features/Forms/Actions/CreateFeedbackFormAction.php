@@ -17,7 +17,7 @@ final class CreateFeedbackFormAction
 
     public function execute(CreateFeedbackFormData $data): FeedbackForm
     {
-        $this->referenceGuard->resolve($data->subjectType, $data->subjectId);
+        $subject = $this->referenceGuard->resolve($data->subjectType, $data->subjectId);
 
         $form = FeedbackForm::create([
             'name' => $data->name,
@@ -25,8 +25,8 @@ final class CreateFeedbackFormAction
             'purpose' => $data->purpose,
             'status' => $data->status,
             'visibility' => $data->visibility,
-            'subject_type' => $data->subjectType,
-            'subject_id' => $data->subjectId,
+            'subject_type' => $subject?->getMorphClass(),
+            'subject_id' => $subject === null ? null : (string) $subject->getKey(),
             'is_anonymous_allowed' => $data->isAnonymousAllowed,
             'is_anonymity_optional' => $data->isAnonymityOptional,
             'is_login_required' => $data->isLoginRequired,

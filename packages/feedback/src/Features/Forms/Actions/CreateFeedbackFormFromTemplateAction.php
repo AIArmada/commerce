@@ -30,11 +30,13 @@ final class CreateFeedbackFormFromTemplateAction implements CreatesFormsFromTemp
     public function execute(FeedbackTemplate $template, array $overrides = []): FeedbackForm
     {
         return (new FeedbackForm)->getConnection()->transaction(function () use ($template, $overrides): FeedbackForm {
-            $template = OwnerWriteGuard::findOrFailForOwner(
-                FeedbackTemplate::class,
-                $template->id,
-                includeGlobal: (bool) config('feedback.owner.include_global_templates', false),
-            );
+            $template = FeedbackTemplate::ownerScopeConfig()->enabled
+                ? OwnerWriteGuard::findOrFailForOwner(
+                    FeedbackTemplate::class,
+                    $template->id,
+                    includeGlobal: (bool) config('feedback.owner.include_global_templates', false),
+                )
+                : FeedbackTemplate::query()->whereKey($template->id)->firstOrFail();
             $definition = $template->definition ?? [];
 
             $form = $this->createForm->execute(new CreateFeedbackFormData(

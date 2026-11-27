@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
-use Illuminate\Support\Facades\DB;
 
 final class DuplicateFeedbackFormAction
 {
@@ -19,8 +18,12 @@ final class DuplicateFeedbackFormAction
 
     public function execute(FeedbackForm $source, array $overrides = []): FeedbackForm
     {
-        return DB::transaction(function () use ($source, $overrides): FeedbackForm {
-            $source = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $source->id);
+        return $source->getConnection()->transaction(function () use ($source, $overrides): FeedbackForm {
+            if (FeedbackForm::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $source->id);
+            }
+
+            $source = FeedbackForm::query()->whereKey($source->id)->lockForUpdate()->firstOrFail();
             $form = $this->createForm->execute(new CreateFeedbackFormData(
                 name: $overrides['name'] ?? ($source->name . ' (Copy)'),
                 purpose: $overrides['purpose'] ?? $source->purpose,

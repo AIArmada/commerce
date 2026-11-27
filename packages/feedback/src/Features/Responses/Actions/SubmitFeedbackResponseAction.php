@@ -65,23 +65,25 @@ final class SubmitFeedbackResponseAction
             );
             $this->assertSubmittedQuestionsBelongToForm($form, $data);
 
-            $this->referenceGuard->resolveRespondent($data->respondentType, $data->respondentId);
+            $respondent = $this->referenceGuard->resolveRespondent($data->respondentType, $data->respondentId);
+            $respondentType = $respondent?->getMorphClass();
+            $respondentId = $respondent === null ? null : (string) $respondent->getKey();
             if ($data->invitationId !== null) {
-                $this->invitationLifecycle->assertUsable($data->invitationId, $form->id, $data->respondentType, $data->respondentId);
+                $this->invitationLifecycle->assertUsable($data->invitationId, $form->id, $respondentType, $respondentId);
             }
 
-            $existingResponse = $this->findExistingSubmittedResponse($form, $data);
+            $existingResponse = $this->findExistingSubmittedResponse($form, $respondentType, $respondentId);
 
             if ($existingResponse !== null) {
                 return $existingResponse;
             }
 
             try {
-                return (new FeedbackResponse)->getConnection()->transaction(function () use ($form, $data): FeedbackResponse {
+                return (new FeedbackResponse)->getConnection()->transaction(function () use ($form, $data, $respondentType, $respondentId): FeedbackResponse {
                     $response = $this->startResponse->execute(
                         formId: $form->id,
-                        respondentType: $data->respondentType,
-                        respondentId: $data->respondentId,
+                        respondentType: $respondentType,
+                        respondentId: $respondentId,
                         invitationId: $data->invitationId,
                         isAnonymous: $data->isAnonymous,
                         metadata: $data->metadata,
@@ -144,7 +146,7 @@ final class SubmitFeedbackResponseAction
                     throw $exception;
                 }
 
-                $existingResponse = $this->findExistingSubmittedResponse($form, $data);
+                $existingResponse = $this->findExistingSubmittedResponse($form, $respondentType, $respondentId);
 
                 if ($existingResponse === null) {
                     throw $exception;
@@ -157,11 +159,12 @@ final class SubmitFeedbackResponseAction
 
     private function findExistingSubmittedResponse(
         SubmissionFormDefinition $form,
-        SubmitFeedbackResponseData $data,
+        ?string $respondentType,
+        ?string $respondentId,
     ): ?FeedbackResponse {
         if (! $form->isOneResponsePerRespondent
-            || $data->respondentType === null
-            || $data->respondentId === null) {
+            || $respondentType === null
+            || $respondentId === null) {
             return null;
         }
 
@@ -170,8 +173,8 @@ final class SubmitFeedbackResponseAction
         return FeedbackResponse::query()
             ->lockForUpdate()
             ->where('feedback_form_id', $form->id)
-            ->where('respondent_type', $data->respondentType)
-            ->where('respondent_id', $data->respondentId)
+            ->where('respondent_type', $respondentType)
+            ->where('respondent_id', $respondentId)
             ->whereIn('status', [FeedbackResponseStatus::Submitted, FeedbackResponseStatus::Reviewed])
             ->first();
     }

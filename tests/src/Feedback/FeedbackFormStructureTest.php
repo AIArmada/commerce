@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Feedback\Enums\FeedbackFormStatus;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormFromTemplateAction;
 use AIArmada\Feedback\Features\Forms\Actions\DuplicateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
+use AIArmada\Feedback\Features\Forms\Actions\UpdateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackTemplate;
 
 it('saves, updates, creates from templates, and duplicates form structure', function (): void {
@@ -59,4 +61,24 @@ it('saves, updates, creates from templates, and duplicates form structure', func
         ->and($duplicate->sections()->count())->toBe(1)
         ->and($duplicate->questions()->count())->toBe(1)
         ->and($duplicate->questions()->firstOrFail()->options()->count())->toBe(1);
+});
+
+it('supports template creation duplication and form lifecycle when owner scoping is disabled', function (): void {
+    config(['feedback.owner.enabled' => false]);
+
+    $template = FeedbackTemplate::query()->create([
+        'name' => 'Unscoped Template',
+        'slug' => 'unscoped-template',
+        'purpose' => 'general',
+        'status' => 'published',
+        'definition' => [],
+    ]);
+    $form = app(CreateFeedbackFormFromTemplateAction::class)->execute($template);
+    $copy = app(DuplicateFeedbackFormAction::class)->execute($form);
+    $update = app(UpdateFeedbackFormAction::class);
+
+    expect($copy->id)->not->toBe($form->id)
+        ->and($update->execute($copy, ['status' => 'published'])->status)->toBe(FeedbackFormStatus::Published)
+        ->and($update->execute($copy, ['status' => 'closed'])->status)->toBe(FeedbackFormStatus::Closed)
+        ->and($update->execute($copy, ['status' => 'archived'])->status)->toBe(FeedbackFormStatus::Archived);
 });

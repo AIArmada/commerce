@@ -20,6 +20,7 @@ use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -529,3 +530,29 @@ it('honors the submitted anonymity choice when reusing a draft and extracting a 
     'anonymous at submission' => [false, true],
     'identified at submission' => [true, false],
 ]);
+
+it('uses a single canonical respondent identity for drafts and submissions', function (): void {
+    $originalMap = Relation::morphMap();
+
+    try {
+        Relation::morphMap(['feedback-test-user' => User::class], false);
+        $respondent = User::factory()->create();
+        $form = publishedFeedbackForm('Canonical Respondent', isOneResponsePerRespondent: true);
+        $start = app(StartFeedbackResponseAction::class);
+        $submit = app(SubmitFeedbackResponseAction::class);
+        $id = (string) $respondent->getKey();
+
+        $draft = $start->execute($form->id, User::class, $id);
+        $sameDraft = $start->execute($form->id, $respondent->getMorphClass(), $id);
+
+        $first = $submit->execute(new SubmitFeedbackResponseData($form->id, [], User::class, $id));
+        $second = $submit->execute(new SubmitFeedbackResponseData($form->id, [], $respondent->getMorphClass(), $id));
+
+        expect($sameDraft->is($draft))->toBeTrue()
+            ->and($first->is($draft))->toBeTrue()
+            ->and($second->is($first))->toBeTrue()
+            ->and($first->respondent_type)->toBe('feedback-test-user');
+    } finally {
+        Relation::morphMap($originalMap, false);
+    }
+});
