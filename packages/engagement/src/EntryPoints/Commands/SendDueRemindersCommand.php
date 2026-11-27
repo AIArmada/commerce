@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Console\Commands;
+namespace AIArmada\Engagement\EntryPoints\Commands;
 
 use AIArmada\Engagement\Actions\SendDueRemindersAction;
 use Illuminate\Console\Command;

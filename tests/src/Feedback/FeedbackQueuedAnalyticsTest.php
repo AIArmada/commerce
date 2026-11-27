@@ -8,7 +8,7 @@ use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Actions\RecalculateFeedbackFormAnalyticsAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Jobs\RecalculateFeedbackFormAnalyticsJob;
+use AIArmada\Feedback\EntryPoints\Jobs\RecalculateFeedbackFormAnalyticsJob;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackFormAnalytics;
 use AIArmada\Feedback\Models\FeedbackResponse;

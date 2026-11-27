@@ -13,7 +13,7 @@ use AIArmada\Feedback\Events\FeedbackResponseRejected;
 use AIArmada\Feedback\Events\FeedbackResponseReviewed;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Listeners\QueueFeedbackAnalyticsRecalculation;
+use AIArmada\Feedback\EntryPoints\Listeners\QueueFeedbackAnalyticsRecalculation;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackResponse;

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Listeners;
+namespace AIArmada\Feedback\EntryPoints\Listeners;
 
 use AIArmada\Feedback\Events\FeedbackResponseMarkedSpam;
 use AIArmada\Feedback\Events\FeedbackResponseRejected;
 use AIArmada\Feedback\Events\FeedbackResponseReviewed;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
-use AIArmada\Feedback\Jobs\RecalculateFeedbackFormAnalyticsJob;
+use AIArmada\Feedback\EntryPoints\Jobs\RecalculateFeedbackFormAnalyticsJob;
 
 final class QueueFeedbackAnalyticsRecalculation
 {

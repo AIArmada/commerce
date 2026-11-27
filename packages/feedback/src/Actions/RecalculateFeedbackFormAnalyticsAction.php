@@ -5,49 +5,59 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackFormAnalytics;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
-final class RecalculateFeedbackFormAnalyticsAction
+final readonly class RecalculateFeedbackFormAnalyticsAction
 {
     public function __construct(
-        private readonly CalculateFeedbackFormAnalyticsAction $calculate,
+        private CalculateFeedbackFormAnalyticsAction $calculate,
     ) {}
 
     public function execute(FeedbackForm $form): FeedbackFormAnalytics
     {
         $this->assertOwnerContextMatchesForm($form);
+        $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $form->id);
 
-        $data = $this->calculate->execute($form);
-        $analytics = FeedbackFormAnalytics::query()
-            ->where('feedback_form_id', $form->id)
-            ->first();
+        return DB::transaction(function () use ($guarded): FeedbackFormAnalytics {
+            $form = FeedbackForm::query()
+                ->whereKey($guarded->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if (! $analytics instanceof FeedbackFormAnalytics) {
-            $analytics = new FeedbackFormAnalytics;
-            $analytics->fill(['feedback_form_id' => $form->id]);
-        } elseif (
-            $analytics->owner_type !== $form->owner_type
-            || (string) $analytics->owner_id !== (string) $form->owner_id
-        ) {
-            throw new AuthorizationException('Feedback analytics owner does not match its form owner.');
-        }
+            $data = $this->calculate->execute($form);
+            $analytics = FeedbackFormAnalytics::query()
+                ->where('feedback_form_id', $form->id)
+                ->first();
 
-        $analytics->fill([
-            'total_responses' => $data->totalResponses,
-            'completed_responses' => $data->completedResponses,
-            'average_score' => $data->averageScore,
-            'max_score' => $data->maxScore,
-            'completion_rate' => $data->completionRate,
-            'pending_review' => $data->pendingReview,
-            'rejected' => $data->rejected,
-            'spam' => $data->spam,
-            'calculated_at' => CarbonImmutable::now(),
-        ])->save();
+            if (! $analytics instanceof FeedbackFormAnalytics) {
+                $analytics = new FeedbackFormAnalytics;
+                $analytics->fill(['feedback_form_id' => $form->id]);
+            } elseif (
+                $analytics->owner_type !== $form->owner_type
+                || (string) $analytics->owner_id !== (string) $form->owner_id
+            ) {
+                throw new AuthorizationException('Feedback analytics owner does not match its form owner.');
+            }
 
-        return $analytics;
+            $analytics->fill([
+                'total_responses' => $data->totalResponses,
+                'completed_responses' => $data->completedResponses,
+                'average_score' => $data->averageScore,
+                'max_score' => $data->maxScore,
+                'completion_rate' => $data->completionRate,
+                'pending_review' => $data->pendingReview,
+                'rejected' => $data->rejected,
+                'spam' => $data->spam,
+                'calculated_at' => CarbonImmutable::now(),
+            ])->save();
+
+            return $analytics;
+        });
     }
 
     private function assertOwnerContextMatchesForm(FeedbackForm $form): void

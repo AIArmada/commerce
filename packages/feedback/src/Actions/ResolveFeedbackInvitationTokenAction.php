@@ -11,8 +11,10 @@ use AIArmada\Feedback\Models\FeedbackInvitation;
 use Illuminate\Support\Facades\RateLimiter;
 use RuntimeException;
 
-final class ResolveFeedbackInvitationTokenAction
+final readonly class ResolveFeedbackInvitationTokenAction
 {
+    public function __construct(private ExpireFeedbackInvitationAction $expireInvitation) {}
+
     public function execute(string $rawToken): FeedbackInvitation
     {
         $tokenHash = hash('sha256', $rawToken);
@@ -66,9 +68,7 @@ final class ResolveFeedbackInvitationTokenAction
             )->toOwnerModel();
 
             OwnerContext::withOwner($owner, function () use ($invitation): void {
-                $invitation->forceFill([
-                    'status' => FeedbackInvitationStatus::Expired,
-                ])->save();
+                $this->expireInvitation->execute($invitation->id);
             });
 
             throw new RuntimeException('This invitation has expired.');

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Listeners;
+namespace AIArmada\Engagement\EntryPoints\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;

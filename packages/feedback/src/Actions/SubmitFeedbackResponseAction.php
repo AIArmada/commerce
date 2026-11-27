@@ -31,6 +31,7 @@ final class SubmitFeedbackResponseAction
         private readonly CalculateFeedbackResponseScoreAction $calculateResponseScore,
         private readonly ExtractFeedbackTestimonialAction $extractTestimonial,
         private readonly FeedbackSubmissionGuard $submissionGuard,
+        private readonly ExpireFeedbackInvitationAction $expireInvitation,
     ) {}
 
     public function execute(SubmitFeedbackResponseData $data): FeedbackResponse
@@ -43,7 +44,7 @@ final class SubmitFeedbackResponseAction
                 fn (Throwable $exception): bool => $exception instanceof DeadlockException,
             );
         } catch (FeedbackInvitationExpiredException $exception) {
-            $this->markInvitationExpired($exception->invitationId);
+            $this->expireInvitation->execute($exception->invitationId);
 
             throw $exception;
         }
@@ -103,7 +104,6 @@ final class SubmitFeedbackResponseAction
 
                     $visibleQuestions = $this->validateAnswers->execute($form, $submittedValues);
 
-                    $answerModels = [];
                     foreach ($visibleQuestions as $question) {
                         $value = $submittedValues[$question->key] ?? null;
 
@@ -120,7 +120,7 @@ final class SubmitFeedbackResponseAction
                             'score' => $score,
                         ]);
 
-                        $answerModels[] = $response->answers()->create($answerData);
+                        $response->answers()->create($answerData);
                     }
 
                     $response->forceFill([
@@ -195,24 +195,6 @@ final class SubmitFeedbackResponseAction
             ['23000', '23505'],
             true,
         );
-    }
-
-    private function markInvitationExpired(string $invitationId): void
-    {
-        DB::transaction(function () use ($invitationId): void {
-            $invitation = FeedbackInvitation::query()
-                ->lockForUpdate()
-                ->whereKey($invitationId)
-                ->first();
-
-            if ($invitation === null) {
-                return;
-            }
-
-            $guarded = OwnerWriteGuard::findOrFailForOwner(FeedbackInvitation::class, $invitation->id);
-
-            $guarded->forceFill(['status' => FeedbackInvitationStatus::Expired])->save();
-        });
     }
 
     private function assertSubmittedQuestionsBelongToForm(
