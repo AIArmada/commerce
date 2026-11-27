@@ -41,16 +41,11 @@ if ($unknownOptions !== []) {
 
 $options = getopt('', ['root:', 'json', 'diff-base:']);
 $root = realpath($options['root'] ?? dirname(__DIR__));
-if ($root === false) {
-    fwrite(STDERR, "Unable to resolve the package root.\n");
-    exit(2);
+$autoload = $root === false ? null : $root . '/vendor/autoload.php';
+if ($root !== false && ! is_file($autoload)) {
+    $autoload = dirname($root, 2) . '/vendor/autoload.php';
 }
-
-$autoload = is_file($root . '/vendor/autoload.php')
-    ? $root . '/vendor/autoload.php'
-    : dirname($root, 2) . '/vendor/autoload.php';
-
-if (! is_file($autoload)) {
+if ($autoload === null || ! is_file($autoload)) {
     fwrite(STDERR, "Run composer install (including dev dependencies) first.\n");
     exit(2);
 }

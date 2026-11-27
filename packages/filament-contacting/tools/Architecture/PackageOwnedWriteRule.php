@@ -24,15 +24,9 @@ final class PackageOwnedWriteRule implements Rule
     /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
     private array $catalog = ['features' => [], 'owners' => [], 'writes' => [], 'extensions' => []];
 
-    private readonly string $projectRoot;
-
-    public function __construct(?string $projectRoot = null)
+    public function __construct(private readonly string $projectRoot)
     {
-        $this->projectRoot = ($projectRoot !== null && mb_trim($projectRoot) !== '')
-            ? $projectRoot
-            : dirname(__DIR__, 2);
-
-        $cfgPath = mb_rtrim($this->projectRoot, '/') . '/tools/architecture.json';
+        $cfgPath = mb_rtrim($projectRoot, '/') . '/tools/architecture.json';
         if (is_file($cfgPath)) {
             $cfg = json_decode((string) file_get_contents($cfgPath), true);
             if (is_array($cfg)) {
@@ -44,12 +38,12 @@ final class PackageOwnedWriteRule implements Rule
 
         if ($this->layout === 'modular' && $this->pkgNs !== '') {
             $catalogClass = $this->pkgNs . '\\Platform\\FeatureCatalog';
-            $catalogFile = mb_rtrim($this->projectRoot, '/') . '/' . $this->sourceDir . '/Platform/FeatureCatalog.php';
+            $catalogFile = mb_rtrim($projectRoot, '/') . '/' . $this->sourceDir . '/Platform/FeatureCatalog.php';
             if (! class_exists($catalogClass) && is_file($catalogFile)) {
                 require_once $catalogFile;
             }
             if (class_exists($catalogClass)) {
-                $this->catalog = $catalogClass::scan($this->projectRoot, $this->pkgNs, $this->sourceDir);
+                $this->catalog = $catalogClass::scan($projectRoot, $this->pkgNs, $this->sourceDir);
             }
         }
     }

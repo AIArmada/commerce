@@ -6,20 +6,20 @@ namespace AIArmada\Feedback\Data;
 
 use Illuminate\Support\Collection;
 
-final class SubmitFeedbackResponseData
+final readonly class SubmitFeedbackResponseData
 {
     /**
      * @param  Collection<int, SubmittedAnswerData>  $answers
      */
     public function __construct(
-        public readonly string $formId,
-        public readonly Collection $answers,
-        public readonly ?string $respondentType = null,
-        public readonly ?string $respondentId = null,
-        public readonly ?string $invitationId = null,
-        public readonly bool $isAnonymous = false,
-        public readonly ?string $ipAddress = null,
-        public readonly ?string $userAgent = null,
-        public readonly array $metadata = [],
+        public string $formId,
+        public Collection $answers,
+        public ?string $respondentType = null,
+        public ?string $respondentId = null,
+        public ?string $invitationId = null,
+        public bool $isAnonymous = false,
+        public ?string $ipAddress = null,
+        public ?string $userAgent = null,
+        public array $metadata = [],
     ) {}
 }

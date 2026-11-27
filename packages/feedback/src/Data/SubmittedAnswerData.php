@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Data;
 
-final class SubmittedAnswerData
+final readonly class SubmittedAnswerData
 {
     public function __construct(
-        public readonly string $questionId,
-        public readonly string $questionKey,
-        public readonly mixed $value,
+        public string $questionId,
+        public string $questionKey,
+        public mixed $value,
     ) {}
 }

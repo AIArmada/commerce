@@ -43,6 +43,11 @@ jobs:
               - 'packages/filament-addressing/**'
               - 'packages/moderation/**'
               - 'packages/contacting/**'
+              - 'packages/engagement/**'
+              - 'packages/feedback/**'
+              - 'packages/filament-engagement/**'
+              - 'packages/filament-contacting/**'
+              - 'packages/filament-feedback/**'
               - '.github/workflows/ci.yml'
             tests:
               - '**/*.php'
@@ -220,7 +225,7 @@ jobs:
       - name: Verify package boundaries and write ownership
         run: |
           failed=0
-          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network signals filament-signals moderation contacting; do
+          for package in authz commerce-support filament-authz filament-commerce-support addressing filament-addressing affiliates affiliate-network filament-affiliates filament-affiliate-network signals filament-signals moderation contacting engagement feedback filament-engagement filament-contacting filament-feedback; do
             echo "::group::${package} boundaries"
             composer --working-dir="packages/${package}" arch:boundaries || failed=1
             echo "::endgroup::"

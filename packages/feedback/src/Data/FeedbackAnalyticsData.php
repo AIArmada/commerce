@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Data;
 
-final class FeedbackAnalyticsData
+final readonly class FeedbackAnalyticsData
 {
     public function __construct(
-        public readonly int $totalResponses,
-        public readonly int $completedResponses,
-        public readonly ?float $averageScore,
-        public readonly ?float $maxScore,
-        public readonly float $completionRate,
-        public readonly int $pendingReview,
-        public readonly int $rejected,
-        public readonly int $spam,
+        public int $totalResponses,
+        public int $completedResponses,
+        public ?float $averageScore,
+        public ?float $maxScore,
+        public float $completionRate,
+        public int $pendingReview,
+        public int $rejected,
+        public int $spam,
     ) {}
 }
