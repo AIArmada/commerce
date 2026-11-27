@@ -7,7 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\Integrations\PackageReturns;
+use AIArmada\Shipping\Features\Returns\Api\PackageReturnWorkflow;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
@@ -34,7 +34,7 @@ class ViewShipment extends ViewRecord
                 ->schema(fn (Shipment $record): array => [
                     Select::make('unit')
                         ->label('Package Unit')
-                        ->options(fn (): array => app(PackageReturns::class)->shippedUnits($record))
+                        ->options(fn (): array => app(PackageReturnWorkflow::class)->shippedUnits((string) $record->getKey()))
                         ->required(),
                     Select::make('reason')
                         ->options(collect(ReturnReason::cases())->mapWithKeys(fn (ReturnReason $reason): array => [
@@ -44,7 +44,7 @@ class ViewShipment extends ViewRecord
                 ])
                 ->action(function (Shipment $record, array $data): void {
                     [$itemId, $ordinal] = explode(':', $data['unit'], 2);
-                    $rma = app(PackageReturns::class)->request($record, $itemId, (int) $ordinal, $data['reason']);
+                    $rmaId = app(PackageReturnWorkflow::class)->request((string) $record->getKey(), $itemId, (int) $ordinal, $data['reason']);
 
                     $this->redirect(ReturnAuthorizationResource::getUrl('view', ['record' => $rma]));
                 }),

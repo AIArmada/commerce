@@ -485,7 +485,7 @@ Start a return from the original shipment. Approve the authorization, then submi
 
 ```php
 use AIArmada\Shipping\Features\Returns\Api\ApproveReturn;
-use AIArmada\Shipping\Integrations\PackageReturns;
+use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 
 $returns = app(PackageReturns::class);
 $rma = $returns->request($shipment, $orderItem->id, 1, 'damaged');

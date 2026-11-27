@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Shipping\Enums\ReturnReason;
-use AIArmada\Shipping\Integrations\PackageReturns;
+use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCancelled;
