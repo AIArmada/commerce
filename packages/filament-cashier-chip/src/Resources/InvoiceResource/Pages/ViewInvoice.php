@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages;
 
-use AIArmada\Chip\Actions\Purchases\MarkPurchaseAsPaid;
-use AIArmada\Chip\Actions\Purchases\ResendPurchaseInvoice;
+use AIArmada\Chip\Features\Collect\Api\PurchaseInvoiceOperations;
 use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use Filament\Actions\Action;
@@ -55,7 +54,7 @@ final class ViewInvoice extends ViewRecord
                     $record = $this->getRecord();
 
                     try {
-                        app(ResendPurchaseInvoice::class)->handle((string) $record->getKey());
+                        app(PurchaseInvoiceOperations::class)->resend((string) $record->getKey());
 
                         Notification::make()->title('Invoice resend requested')->success()->send();
                     } catch (Throwable $exception) {
@@ -101,7 +100,7 @@ final class ViewInvoice extends ViewRecord
                     $record = $this->getRecord();
 
                     try {
-                        app(MarkPurchaseAsPaid::class)->handle((string) $record->getKey());
+                        app(PurchaseInvoiceOperations::class)->markPaid((string) $record->getKey());
 
                         Notification::make()->title('Invoice Marked as Paid')->success()->send();
                         $this->refreshFormData(['status', 'marked_as_paid']);

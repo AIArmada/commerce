@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $purchase_id
+ * @property string|null $payment_type
  * @property string|null $type
  * @property string|null $status
  * @property int $amount

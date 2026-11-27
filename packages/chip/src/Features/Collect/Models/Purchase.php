@@ -42,6 +42,7 @@ use Illuminate\Support\Arr;
  * @property CarbonImmutable|null $updated_at
  * @property CarbonImmutable|null $failed_at
  * @property CarbonImmutable|null $refunded_at
+ * @property-read string|null $currency
  * @property-read Money|null $totalMoney
  * @property-read array<int, array{status: string, timestamp: CarbonImmutable|null, translated: string}> $timeline
  */

@@ -208,7 +208,9 @@ class SubscriptionItem extends Model
      */
     public function updateQuantity(int $quantity): static
     {
-        return app(UpdateSubscriptionItems::class)->updateItemQuantity($this, $quantity);
+        app(UpdateSubscriptionItems::class)->updateItemQuantity($this, $quantity);
+
+        return $this;
     }
 
     /**
@@ -219,7 +221,9 @@ class SubscriptionItem extends Model
      */
     public function swap(string $price, array $options = []): static
     {
-        return app(UpdateSubscriptionItems::class)->swapItem($this, $price, $options);
+        app(UpdateSubscriptionItems::class)->swapItem($this, $price, $options);
+
+        return $this;
     }
 
     /**

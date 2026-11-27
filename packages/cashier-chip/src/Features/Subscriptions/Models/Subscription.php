@@ -605,7 +605,9 @@ class Subscription extends Model
      */
     public function updateQuantity(int $quantity, ?string $price = null)
     {
-        return app(UpdateSubscriptionItems::class)->updateQuantity($this, $quantity, $price);
+        app(UpdateSubscriptionItems::class)->updateQuantity($this, $quantity, $price);
+
+        return $this;
     }
 
     /**
@@ -629,7 +631,9 @@ class Subscription extends Model
      */
     public function endTrial()
     {
-        return app(UpdateSubscriptionLifecycle::class)->endTrial($this);
+        app(UpdateSubscriptionLifecycle::class)->endTrial($this);
+
+        return $this;
     }
 
     /**
@@ -639,7 +643,9 @@ class Subscription extends Model
      */
     public function extendTrial(CarbonInterface $date)
     {
-        return app(UpdateSubscriptionLifecycle::class)->extendTrial($this, $date);
+        app(UpdateSubscriptionLifecycle::class)->extendTrial($this, $date);
+
+        return $this;
     }
 
     /**
@@ -649,7 +655,9 @@ class Subscription extends Model
      */
     public function swap(string | array $prices, array $options = [])
     {
-        return app(UpdateSubscriptionItems::class)->swap($this, $prices, $options);
+        app(UpdateSubscriptionItems::class)->swap($this, $prices, $options);
+
+        return $this;
     }
 
     /**
@@ -659,7 +667,9 @@ class Subscription extends Model
      */
     public function cancel()
     {
-        return app(UpdateSubscriptionLifecycle::class)->cancel($this);
+        app(UpdateSubscriptionLifecycle::class)->cancel($this);
+
+        return $this;
     }
 
     /**
@@ -669,7 +679,9 @@ class Subscription extends Model
      */
     public function cancelAt(DateTimeInterface | int $endsAt)
     {
-        return app(UpdateSubscriptionLifecycle::class)->cancelAt($this, $endsAt);
+        app(UpdateSubscriptionLifecycle::class)->cancelAt($this, $endsAt);
+
+        return $this;
     }
 
     /**
@@ -704,7 +716,9 @@ class Subscription extends Model
      */
     public function resume()
     {
-        return app(UpdateSubscriptionLifecycle::class)->resume($this);
+        app(UpdateSubscriptionLifecycle::class)->resume($this);
+
+        return $this;
     }
 
     /**
@@ -783,7 +797,9 @@ class Subscription extends Model
      */
     public function setRecurringToken(string $token)
     {
-        return app(UpdateSubscriptionLifecycle::class)->setRecurringToken($this, $token);
+        app(UpdateSubscriptionLifecycle::class)->setRecurringToken($this, $token);
+
+        return $this;
     }
 
     /**
@@ -920,7 +936,9 @@ class Subscription extends Model
      */
     public function addPrice(string $price, ?int $quantity = 1, array $options = []): static
     {
-        return app(UpdateSubscriptionItems::class)->addPrice($this, $price, $quantity, $options);
+        app(UpdateSubscriptionItems::class)->addPrice($this, $price, $quantity, $options);
+
+        return $this;
     }
 
     /**
@@ -932,7 +950,9 @@ class Subscription extends Model
      */
     public function removePrice(string $price): static
     {
-        return app(UpdateSubscriptionItems::class)->removePrice($this, $price);
+        app(UpdateSubscriptionItems::class)->removePrice($this, $price);
+
+        return $this;
     }
 
     /**
@@ -1063,7 +1083,9 @@ class Subscription extends Model
      */
     public function pause(): static
     {
-        return app(UpdateSubscriptionLifecycle::class)->pause($this);
+        app(UpdateSubscriptionLifecycle::class)->pause($this);
+
+        return $this;
     }
 
     /**
@@ -1073,7 +1095,9 @@ class Subscription extends Model
      */
     public function unpause(): static
     {
-        return app(UpdateSubscriptionLifecycle::class)->unpause($this);
+        app(UpdateSubscriptionLifecycle::class)->unpause($this);
+
+        return $this;
     }
 
     /**
