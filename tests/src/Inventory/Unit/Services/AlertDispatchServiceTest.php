@@ -170,6 +170,23 @@ describe('AlertDispatchService', function (): void {
         expect($level->metadata)->toHaveKey('last_acknowledged_at');
     });
 
+    it('preserves metadata written since the alert record was loaded', function (): void {
+        $level = InventoryLevel::factory()->create([
+            'inventoryable_type' => $this->item->getMorphClass(),
+            'inventoryable_id' => $this->item->getKey(),
+            'location_id' => $this->location->id,
+            'metadata' => ['initial' => true],
+        ]);
+
+        $level->fresh()->update(['metadata' => ['concurrent' => true]]);
+        $this->service->acknowledgeAlert($level, 'Reviewed');
+
+        expect($level->fresh()->metadata)->toMatchArray([
+            'concurrent' => true,
+            'acknowledged_note' => 'Reviewed',
+        ]);
+    });
+
     it('clear alert', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),

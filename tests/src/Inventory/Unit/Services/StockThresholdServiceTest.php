@@ -199,6 +199,22 @@ describe('StockThresholdService', function (): void {
             Event::assertDispatched(StockRestored::class);
         });
 
+        it('evaluates current stock instead of stale in-memory balances', function (): void {
+            $level = InventoryLevel::factory()->create([
+                'inventoryable_type' => $this->item->getMorphClass(),
+                'inventoryable_id' => $this->item->getKey(),
+                'location_id' => $this->location->id,
+                'quantity_on_hand' => 50,
+                'quantity_reserved' => 0,
+                'alert_status' => AlertStatus::None->value,
+            ]);
+
+            $level->fresh()->update(['quantity_on_hand' => 0]);
+
+            expect($this->service->evaluateThresholds($level))->toBe(AlertStatus::OutOfStock);
+            expect($level->fresh()->alert_status)->toBe(AlertStatus::OutOfStock->value);
+        });
+
         it('does not dispatch event when status unchanged', function (): void {
             $level = InventoryLevel::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Stock\Persistence;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Stock\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
@@ -144,24 +145,44 @@ final class LocationTreeService
     public function rebuildAllPaths(): int
     {
         return DB::transaction(function (): int {
-            $count = 0;
+            $query = InventoryLocation::query();
 
-            // First, handle root locations
-            $roots = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
-                ->whereNull('parent_id')
-                ->get();
-
-            foreach ($roots as $root) {
-                $root->path = $root->id;
-                $root->depth = 0;
-                $root->saveQuietly();
-                $count++;
-
-                $count += $this->rebuildChildPaths($root);
+            if (InventoryOwnerScope::isEnabled()) {
+                $owner = InventoryOwnerScope::resolveOwner();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $query->forOwner($owner, false);
             }
 
-            return $count;
-        });
+            $locations = $query->orderBy('id')->lockForUpdate()->get();
+            $byParent = $locations->groupBy(static fn (InventoryLocation $location): string => $location->parent_id ?? '');
+            $visited = [];
+
+            $rebuild = function (?string $parentId, string $parentPath, int $depth) use (&$rebuild, $byParent, &$visited): void {
+                foreach ($byParent->get($parentId ?? '', []) as $location) {
+                    if (isset($visited[$location->id]) || $depth > InventoryLocation::MAX_HIERARCHY_DEPTH) {
+                        throw new InvalidArgumentException('Invalid inventory location hierarchy.');
+                    }
+
+                    $visited[$location->id] = true;
+                    $path = $parentPath === '' ? $location->id : $parentPath . '/' . $location->id;
+                    $location->forceFill(['path' => $path, 'depth' => $depth]);
+
+                    if ($location->isDirty()) {
+                        $location->saveQuietly();
+                    }
+
+                    $rebuild($location->id, $path, $depth + 1);
+                }
+            };
+
+            $rebuild(null, '', 0);
+
+            if (count($visited) !== $locations->count()) {
+                throw new InvalidArgumentException('Inventory location hierarchy contains unreachable locations.');
+            }
+
+            return count($visited);
+        }, 3);
     }
 
     /**
@@ -271,25 +292,5 @@ final class LocationTreeService
         };
 
         return $build($parentId);
-    }
-
-    /**
-     * Recursively rebuild child paths.
-     */
-    private function rebuildChildPaths(InventoryLocation $parent): int
-    {
-        $count = 0;
-        $children = InventoryLocation::where('parent_id', $parent->id)->get();
-
-        foreach ($children as $child) {
-            $child->path = $parent->path . '/' . $child->id;
-            $child->depth = $parent->depth + 1;
-            $child->saveQuietly();
-            $count++;
-
-            $count += $this->rebuildChildPaths($child);
-        }
-
-        return $count;
     }
 }

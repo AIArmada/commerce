@@ -261,6 +261,18 @@ describe('rebuildAllPaths', function (): void {
     });
 });
 
+it('rejects unreachable hierarchy cycles without modifying the valid roots', function (): void {
+    $root = InventoryLocation::factory()->create(['parent_id' => null]);
+    $a = InventoryLocation::factory()->create(['parent_id' => null]);
+    $b = InventoryLocation::factory()->create(['parent_id' => $a->id]);
+
+    InventoryLocation::query()->whereKey($a->id)->update(['parent_id' => $b->id]);
+    InventoryLocation::query()->whereKey($root->id)->update(['path' => 'invalid-root']);
+
+    expect(fn () => $this->service->rebuildAllPaths())->toThrow(InvalidArgumentException::class);
+    expect($root->fresh()->path)->toBe('invalid-root');
+});
+
 describe('getLeafLocations', function (): void {
     it('returns locations without children', function (): void {
         $parent = InventoryLocation::factory()->create([
