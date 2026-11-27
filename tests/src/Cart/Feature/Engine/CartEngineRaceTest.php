@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Commerce\Tests\Cart\Support\InterleavingStorage;

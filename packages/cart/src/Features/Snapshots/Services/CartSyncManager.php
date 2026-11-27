@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\Snapshots\Services;
 
-use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
-use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
+use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 
 class CartSyncManager implements CartSnapshotSyncInterface
 {

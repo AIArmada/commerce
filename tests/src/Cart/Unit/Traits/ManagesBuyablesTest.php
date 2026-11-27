@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\BuyablePriceResolver;
+use AIArmada\Cart\Data\BuyablePriceData;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
-use AIArmada\Cart\Data\BuyablePriceData;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use Illuminate\Database\Eloquent\Model;

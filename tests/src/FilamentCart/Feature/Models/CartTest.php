@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem as CartItem;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

@@ -7,8 +7,8 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 use AIArmada\Cart\Actions\ClearLiveCart;
 use AIArmada\Cart\Actions\DestroyLiveCart;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
-use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
+use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
@@ -45,7 +45,7 @@ final class ViewCart extends ViewRecord
         $summary .= ' • Subtotal ' . $this->record->formatMoney($this->record->subtotal);
 
         if ($this->record->savings > 0) {
-                $summary .= ' • Savings ' . $this->record->formatMoney($this->record->savings);
+            $summary .= ' • Savings ' . $this->record->formatMoney($this->record->savings);
         }
 
         $summary .= ' • Total ' . $this->record->formatMoney($this->record->total);

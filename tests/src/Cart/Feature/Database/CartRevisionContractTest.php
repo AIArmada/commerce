@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Exceptions\CartConflictException;
-use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Storage\CartRevision;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

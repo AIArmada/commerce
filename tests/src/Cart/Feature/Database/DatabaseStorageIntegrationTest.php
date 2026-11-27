@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;

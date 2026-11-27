@@ -224,5 +224,4 @@ final class ConditionsTable
             ->defaultSort('name')
             ->poll('30s');
     }
-
 }

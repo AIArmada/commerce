@@ -6,8 +6,8 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
-use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Models\CartItem;
 use Illuminate\Support\Facades\DB;
 
 final class RecordingRulesFactory implements RulesFactoryInterface

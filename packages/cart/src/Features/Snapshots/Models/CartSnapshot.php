@@ -385,5 +385,4 @@ class CartSnapshot extends Model
     {
         return Attribute::get(fn (): string => $this->formatMoney($this->savings));
     }
-
 }

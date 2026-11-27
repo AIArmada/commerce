@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

@@ -262,5 +262,4 @@ final class CartsTable
             ->success()
             ->send();
     }
-
 }

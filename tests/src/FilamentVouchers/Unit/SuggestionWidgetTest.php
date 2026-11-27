@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\Vouchers\Enums\VoucherType;

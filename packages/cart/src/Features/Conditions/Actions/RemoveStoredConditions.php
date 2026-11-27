@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\Conditions\Actions;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
 use AIArmada\Cart\Features\Conditions\Models\Condition as StoredCondition;
-use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
-use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
-use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
-use AIArmada\Cart\Storage\CartRevision;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Storage\CartRevision;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cart\EntryPoints\Commands;
 
 use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
-use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
 use AIArmada\Cart\Features\LiveCart\Models\CartModel;
+use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
@@ -14,6 +14,7 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 final class ClearAbandonedCartsCommand extends Command
@@ -295,9 +296,9 @@ final class ClearAbandonedCartsCommand extends Command
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<CartSnapshot>
+     * @return Builder<CartSnapshot>
      */
-    private function abandonedSnapshotsQuery(int $minutes): \Illuminate\Database\Eloquent\Builder
+    private function abandonedSnapshotsQuery(int $minutes): Builder
     {
         $cutoff = CarbonImmutable::now()->subMinutes($minutes);
 
