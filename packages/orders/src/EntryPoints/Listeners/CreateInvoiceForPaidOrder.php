@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Listeners;
+namespace AIArmada\Orders\EntryPoints\Listeners;
 
 use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Events\OrderPaid;
 
-final class CreateInvoiceForPaidOrder
+final readonly class CreateInvoiceForPaidOrder
 {
     public function __construct(
         private CreateOrderInvoiceDoc $creator
@@ -19,8 +19,6 @@ final class CreateInvoiceForPaidOrder
             return;
         }
 
-        // Partial payments must not invoice the order as fully paid; the
-        // invoice waits until accepted payments cover the order total.
         if (! $event->order->isFullyPaid()) {
             return;
         }

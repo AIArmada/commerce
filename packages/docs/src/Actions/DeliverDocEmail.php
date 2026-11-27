@@ -21,10 +21,12 @@ final readonly class DeliverDocEmail
         $email = DocEmail::query()->withoutOwnerScope()->find($docEmailId);
         $doc = Doc::query()->withoutOwnerScope()->find($docId);
 
-        if (! $email instanceof DocEmail || ! $doc instanceof Doc
+        if (
+            ! $email instanceof DocEmail || ! $doc instanceof Doc
             || (string) $email->doc_id !== (string) $doc->getKey()
             || $email->getAttribute('owner_type') !== $doc->getAttribute('owner_type')
-            || (string) $email->getAttribute('owner_id') !== (string) $doc->getAttribute('owner_id')) {
+            || (string) $email->getAttribute('owner_id') !== (string) $doc->getAttribute('owner_id')
+        ) {
             return;
         }
 

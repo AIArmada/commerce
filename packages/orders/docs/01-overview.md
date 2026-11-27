@@ -125,7 +125,7 @@ packages/orders/
     ├── Events/             # 13+ lifecycle events
     │   └── Concerns/       # Event helper traits
     ├── Health/             # Health checks
-    ├── Listeners/          # Inventory deduction, invoice creation
+    ├── EntryPoints/Listeners/ # Inventory deduction, invoice creation
     ├── Models/             # Eloquent models
     ├── Policies/           # Authorization policies
     ├── Services/           # OrderService (public service API)

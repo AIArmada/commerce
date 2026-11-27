@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Orders\Listeners;
+namespace AIArmada\Orders\EntryPoints\Listeners;
 
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;

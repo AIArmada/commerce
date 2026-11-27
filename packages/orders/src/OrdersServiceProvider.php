@@ -68,7 +68,7 @@ final class OrdersServiceProvider extends PackageServiceProvider
 
         if (config('orders.integrations.docs.enabled', false)) {
             if (interface_exists(DocServiceInterface::class)) {
-                $dispatcher->listen(Events\OrderPaid::class, Listeners\CreateInvoiceForPaidOrder::class);
+                $dispatcher->listen(Events\OrderPaid::class, EntryPoints\Listeners\CreateInvoiceForPaidOrder::class);
             }
         }
 
@@ -96,12 +96,12 @@ final class OrdersServiceProvider extends PackageServiceProvider
         $dispatcher = $this->app->make(Dispatcher::class);
 
         if (config('orders.integrations.inventory.enabled', true)) {
-            $dispatcher->listen(Events\OrderProcessingStarted::class, Listeners\DeductInventoryOnPaymentConfirmed::class);
-            $dispatcher->listen(Events\OrderCancelInitiated::class, Listeners\ReleaseInventoryOnOrderCanceled::class);
+            $dispatcher->listen(Events\OrderProcessingStarted::class, EntryPoints\Listeners\DeductInventoryOnPaymentConfirmed::class);
+            $dispatcher->listen(Events\OrderCancelInitiated::class, EntryPoints\Listeners\ReleaseInventoryOnOrderCanceled::class);
         }
 
         // Registered unconditionally: the affiliates toggle is evaluated at
         // handle time, preserving the previous inline-call semantics.
-        $dispatcher->listen(Events\OrderFulfillmentRequired::class, Listeners\AttributeCommissionOnFulfillment::class);
+        $dispatcher->listen(Events\OrderFulfillmentRequired::class, EntryPoints\Listeners\AttributeCommissionOnFulfillment::class);
     }
 }

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\FilamentDocs\Jobs\GenerateDocPdfsJob;
+use AIArmada\FilamentDocs\EntryPoints\Jobs\GenerateDocPdfsJob;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;

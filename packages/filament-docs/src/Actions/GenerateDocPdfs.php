@@ -2,62 +2,44 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentDocs\Jobs;
+namespace AIArmada\FilamentDocs\Actions;
 
-use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-final class GenerateDocPdfsJob implements OwnerScopedJob, ShouldQueue
+final readonly class GenerateDocPdfs
 {
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
+    public function __construct(private DocService $docService) {}
 
     /**
      * @param  array<int, string>  $docIds
+     * @return array{generated: int, skipped: int, failed: int}
      */
-    public function __construct(
-        public readonly array $docIds,
-        public readonly OwnerJobContext $ownerContext,
-    ) {}
-
-    public function ownerContext(): OwnerJobContext
+    public function execute(array $docIds, OwnerJobContext $ownerContext): array
     {
-        return $this->ownerContext;
-    }
-
-    public function handle(): void
-    {
-        OwnerContext::withOwner(
-            OwnerJobContextMapper::resolve($this->ownerContext),
-            fn (): array => $this->generate(),
+        return OwnerContext::withOwner(
+            OwnerJobContextMapper::resolve($ownerContext),
+            fn (): array => $this->generate($docIds),
         );
     }
 
     /**
+     * @param  array<int, string>  $docIds
      * @return array{generated: int, skipped: int, failed: int}
      */
-    private function generate(): array
+    private function generate(array $docIds): array
     {
-        $docService = app(DocService::class);
         $generated = 0;
         $skipped = 0;
         $failed = 0;
 
-        foreach ($this->docIds as $docId) {
+        foreach ($docIds as $docId) {
             $doc = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
                 ->whereKey($docId)
                 ->first();
@@ -69,7 +51,7 @@ final class GenerateDocPdfsJob implements OwnerScopedJob, ShouldQueue
             }
 
             try {
-                $docService->generatePdf($doc, save: true);
+                $this->docService->generatePdf($doc, save: true);
                 $generated++;
             } catch (Throwable $exception) {
                 report($exception);

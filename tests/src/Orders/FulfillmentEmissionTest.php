@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\EntryPoints\Listeners\AttributeCommissionOnFulfillment;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Orders\Listeners\AttributeCommissionOnFulfillment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\PendingPayment;

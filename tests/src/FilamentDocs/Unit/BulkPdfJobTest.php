@@ -7,7 +7,8 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\FilamentDocs\Jobs\GenerateDocPdfsJob;
+use AIArmada\FilamentDocs\Actions\GenerateDocPdfs;
+use AIArmada\FilamentDocs\EntryPoints\Jobs\GenerateDocPdfsJob;
 use AIArmada\FilamentDocs\Support\DocBulkActions;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -99,7 +100,7 @@ it('generates pdfs only for docs inside the job owner scope (M4)', function (): 
         OwnerJobContextMapper::fromModel($ownerA),
     );
 
-    $job->handle();
+    $job->handle(app(GenerateDocPdfs::class));
 
     expect($docA->fresh()->pdf_path)->not()->toBeNull();
     expect($docB->fresh()->pdf_path)->toBeNull();
