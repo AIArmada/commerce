@@ -15,7 +15,7 @@ use AIArmada\Feedback\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackSection;
 use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 
 it('isolates all feedback models by owner', function (): void {
     $ownerA = User::query()->create([

@@ -16,7 +16,7 @@ use AIArmada\Feedback\Models\FeedbackQuestion;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackSection;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 
 it('deletes the complete feedback form aggregate', function (): void {
     $form = app(CreateFeedbackFormAction::class)

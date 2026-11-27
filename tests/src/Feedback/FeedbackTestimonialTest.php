@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Actions\ApproveFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\PublishFeedbackTestimonialAction;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Actions\ApproveFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 

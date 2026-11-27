@@ -9,7 +9,7 @@ use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

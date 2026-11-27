@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Feedback\Actions\ApproveFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\HideFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\PublishFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\RejectFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\ApproveFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\HideFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\RejectFeedbackTestimonialAction;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -56,7 +56,7 @@ final class FeedbackTestimonialResource extends Resource
                     ->numeric(2),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (FeedbackTestimonialStatus $state): string => match ($state->value) {
                         'pending' => 'gray',
                         'approved' => 'info',
                         'rejected' => 'danger',
@@ -99,7 +99,7 @@ final class FeedbackTestimonialResource extends Resource
                     ->action(function (FeedbackTestimonial $record): void {
                         app(PublishFeedbackTestimonialAction::class)->execute($record);
                     })
-                    ->visible(fn (FeedbackTestimonial $record): bool => $record->status === FeedbackTestimonialStatus::Approved)
+                    ->visible(fn (FeedbackTestimonial $record): bool => $record->status === FeedbackTestimonialStatus::Approved && $record->permission_given_at !== null)
                     ->requiresConfirmation(),
                 Action::make('hide')
                     ->label('Hide')

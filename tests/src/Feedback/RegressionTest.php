@@ -8,13 +8,13 @@ use AIArmada\Feedback\Actions\ArchiveFeedbackFormAction;
 use AIArmada\Feedback\Actions\CloseFeedbackFormAction;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Actions\DuplicateFeedbackFormAction;
-use AIArmada\Feedback\Actions\ExtractFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\HideFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\ExtractFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\HideFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Invitations\Actions\MarkFeedbackInvitationOpenedAction;
 use AIArmada\Feedback\Actions\MarkFeedbackResponseAsSpamAction;
 use AIArmada\Feedback\Actions\PublishFeedbackFormAction;
 use AIArmada\Feedback\Actions\RejectFeedbackResponseAction;
-use AIArmada\Feedback\Actions\RejectFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\RejectFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Invitations\Actions\ResolveFeedbackInvitationTokenAction;
 use AIArmada\Feedback\Actions\ReviewFeedbackResponseAction;
 use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
@@ -40,7 +40,7 @@ use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Models\FeedbackQuestion;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use AIArmada\Feedback\Support\AnswerValueNormalizer;
 use AIArmada\Feedback\Support\ScoreCalculator;
 use AIArmada\Feedback\Traits\ReceivesFeedback;
@@ -189,7 +189,7 @@ it('guards response, form, invitation, and testimonial lifecycle writes by owner
         fn () => app(MarkFeedbackInvitationOpenedAction::class)->execute($invitation),
         fn () => app(RejectFeedbackTestimonialAction::class)->execute($testimonial),
         fn () => app(HideFeedbackTestimonialAction::class)->execute($testimonial),
-        fn () => app(ExtractFeedbackTestimonialAction::class)->execute($response),
+        fn () => app(ExtractFeedbackTestimonialAction::class)->execute($response->id),
     ];
 
     foreach ($attempts as $attempt) {

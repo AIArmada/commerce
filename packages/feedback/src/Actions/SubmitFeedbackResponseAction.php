@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\Feedback\Features\Testimonials\Api\ExtractsTestimonials;
+
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
@@ -29,7 +31,7 @@ final class SubmitFeedbackResponseAction
         private readonly NormalizeFeedbackAnswerAction $normalizeAnswer,
         private readonly CalculateFeedbackAnswerScoreAction $calculateAnswerScore,
         private readonly CalculateFeedbackResponseScoreAction $calculateResponseScore,
-        private readonly ExtractFeedbackTestimonialAction $extractTestimonial,
+        private readonly ExtractsTestimonials $extractTestimonial,
         private readonly FeedbackSubmissionGuard $submissionGuard,
         private readonly FeedbackModelReferenceGuard $referenceGuard,
         private readonly ManagesInvitationLifecycle $invitationLifecycle,
@@ -136,7 +138,7 @@ final class SubmitFeedbackResponseAction
                     $this->calculateResponseScore->execute($response);
 
                     if (config('feedback.features.testimonials', true)) {
-                        $this->extractTestimonial->execute($response);
+                        $this->extractTestimonial->execute($response->id);
                     }
 
                     FeedbackResponseSubmitted::dispatch($response);

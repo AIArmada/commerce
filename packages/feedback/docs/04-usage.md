@@ -190,8 +190,8 @@ $questionKey)` return the calculated result objects directly.
 ## Testimonials
 
 ```php
-use AIArmada\Feedback\Actions\ApproveFeedbackTestimonialAction;
-use AIArmada\Feedback\Actions\PublishFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\ApproveFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
 
 app(ApproveFeedbackTestimonialAction::class)->execute($testimonial);
 app(PublishFeedbackTestimonialAction::class)->execute($testimonial);

@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Models;
+namespace AIArmada\Feedback\Features\Testimonials\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
+use AIArmada\Feedback\Models\FeedbackAnswer;
+use AIArmada\Feedback\Models\FeedbackResponse;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -99,6 +101,7 @@ final class FeedbackTestimonial extends Model
         return $query
             ->where('status', FeedbackTestimonialStatus::Published->value)
             ->whereNotNull('published_at')
+            ->whereNotNull('permission_given_at')
             ->whereNull('hidden_at');
     }
 

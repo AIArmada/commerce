@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Models;
 
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Actions\DeleteFeedbackAnswerDependentsAction;

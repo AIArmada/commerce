@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Policies;
+namespace AIArmada\Feedback\Features\Testimonials\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Model;
 
 final class FeedbackTestimonialPolicy

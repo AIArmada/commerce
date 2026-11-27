@@ -5,17 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Features\Testimonials\Api\ManagesTestimonialDependencies;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Illuminate\Support\Facades\DB;
 
 final readonly class DeleteFeedbackResponseDependentsAction
 {
+    public function __construct(private ManagesTestimonialDependencies $testimonials) {}
+
     public function execute(FeedbackResponse $response): void
     {
-        OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
+        if (FeedbackResponse::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(FeedbackResponse::class, $response->id);
+        }
 
         DB::transaction(function () use ($response): void {
-            $response->testimonials()->chunkById(200, fn ($testimonials): mixed => $testimonials->each->delete());
+            $this->testimonials->deleteForResponse($response->id);
             $response->answers()->chunkById(200, fn ($answers): mixed => $answers->each->delete());
         });
     }

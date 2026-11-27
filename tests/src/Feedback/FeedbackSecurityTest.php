@@ -15,7 +15,7 @@ use AIArmada\Feedback\Models\FeedbackQuestionOption;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use AIArmada\Feedback\Models\FeedbackSection;
 use AIArmada\Feedback\Models\FeedbackTemplate;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Auth\Access\AuthorizationException;
 
 it('does not mass assign feedback owner columns', function (string $modelClass): void {

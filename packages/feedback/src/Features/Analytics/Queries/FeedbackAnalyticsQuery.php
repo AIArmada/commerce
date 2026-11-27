@@ -14,7 +14,7 @@ use AIArmada\Feedback\Features\Analytics\Models\FeedbackFormAnalytics;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackResponse;
-use AIArmada\Feedback\Models\FeedbackTestimonial;
+use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
