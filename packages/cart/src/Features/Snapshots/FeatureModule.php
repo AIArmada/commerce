@@ -16,6 +16,8 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
+use AIArmada\Cart\Features\Snapshots\Actions\MarkCartAbandoned;
+use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\SyncCartOnEvent;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
@@ -29,6 +31,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(CartAbandonmentMarker::class, MarkCartAbandoned::class);
         $app->singleton(CartInstanceManager::class);
         $app->singleton(NormalizedCartSynchronizer::class);
         $app->singleton(CartSyncManager::class);

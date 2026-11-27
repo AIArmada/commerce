@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\Snapshots\Actions;
 
 use AIArmada\Cart\Events\CartAbandoned;
+use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use Carbon\CarbonImmutable;
 
-final readonly class MarkCartAbandoned
+final readonly class MarkCartAbandoned implements CartAbandonmentMarker
 {
-    public function execute(CartSnapshot $snapshot, CarbonImmutable $cutoff): bool
+    public function execute(string $snapshotId, CarbonImmutable $cutoff): bool
     {
-        $abandoned = $snapshot->getConnection()->transaction(function () use ($snapshot, $cutoff): ?CartSnapshot {
+        $abandoned = (new CartSnapshot)->getConnection()->transaction(function () use ($snapshotId, $cutoff): ?CartSnapshot {
             $cart = CartSnapshot::query()->forOwner(includeGlobal: false)
-                ->whereKey($snapshot->getKey())
+                ->whereKey($snapshotId)
                 ->where('items_count', '>', 0)
                 ->whereNotNull('checkout_started_at')
                 ->whereNull('checkout_abandoned_at')

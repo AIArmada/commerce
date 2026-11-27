@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\EntryPoints\Commands;
 
-use AIArmada\Cart\Features\LiveCart\Actions\DeleteAbandonedCarts;
-use AIArmada\Cart\Features\Snapshots\Actions\MarkCartAbandoned;
+use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
+use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
 use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -281,11 +281,11 @@ final class ClearAbandonedCartsCommand extends Command
 
         $marked = 0;
         $cutoff = CarbonImmutable::now()->subMinutes($minutes);
-        $action = app(MarkCartAbandoned::class);
+        $action = app(CartAbandonmentMarker::class);
 
         $this->abandonedSnapshotsQuery($minutes)->chunkById(500, function ($snapshots) use (&$marked, $action, $cutoff): void {
             foreach ($snapshots as $snapshot) {
-                if ($action->execute($snapshot, $cutoff)) {
+                if ($action->execute((string) $snapshot->getKey(), $cutoff)) {
                     $marked++;
                 }
             }
@@ -534,7 +534,7 @@ final class ClearAbandonedCartsCommand extends Command
         string | int | null $ownerId,
         bool $deleteMode = false,
     ): int {
-        return app(DeleteAbandonedCarts::class)->count($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
+        return app(AbandonedCartCleanup::class)->count($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
     }
 
     private function processForOwner(
@@ -552,6 +552,6 @@ final class ClearAbandonedCartsCommand extends Command
             return $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
         }
 
-        return app(DeleteAbandonedCarts::class)->execute($table, $useExpired, $days, $now, $batchSize, $ownerType, $ownerId, $deleteMode);
+        return app(AbandonedCartCleanup::class)->execute($table, $useExpired, $days, $now, $batchSize, $ownerType, $ownerId, $deleteMode);
     }
 }

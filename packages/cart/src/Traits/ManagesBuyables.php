@@ -13,7 +13,7 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\Cart\Support\BuyablePriceData;
+use AIArmada\Cart\Data\BuyablePriceData;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\BuyableLineData;

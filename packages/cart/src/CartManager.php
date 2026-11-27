@@ -7,7 +7,7 @@ namespace AIArmada\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
-use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Contracts\CartIdentityLookup;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartIdentifierResolver;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
@@ -243,7 +243,7 @@ class CartManager implements CartManagerInterface
             return $this->cartCaches[$key][$uuid];
         }
 
-        if (! $storage instanceof DatabaseStorage) {
+        if (! $storage instanceof CartIdentityLookup) {
             return null;
         }
 

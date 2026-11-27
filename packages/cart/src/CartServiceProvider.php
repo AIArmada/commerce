@@ -21,14 +21,11 @@ use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Platform\ExtensionRegistry;
 use AIArmada\Cart\Platform\FeatureCatalog;
 use AIArmada\Cart\Platform\FeatureModule;
-use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Database\ConnectionResolverInterface;
 use Laravel\Octane\Events\RequestReceived;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -62,7 +59,6 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->singleton(ConditionProviderRegistry::class);
         $this->app->alias(ConditionProviderRegistry::class, 'cart.condition_providers');
 
-        $this->registerStorage();
         $this->registerFactories();
         $this->registerConditionTypeHandlers();
         $this->registerCartManager();
@@ -136,37 +132,6 @@ final class CartServiceProvider extends PackageServiceProvider
 
             return $app->make($factoryClass ?: Services\BuiltInRulesFactory::class);
         });
-    }
-
-    protected function registerStorage(): void
-    {
-        $this->app->bind('cart.storage', function (Application $app) {
-            $connection = $app->make(ConnectionResolverInterface::class)->connection();
-
-            $storage = new DatabaseStorage(
-                $connection,
-                config('cart.database.table', 'carts'),
-                config('cart.database.ttl'),
-            );
-
-            if (config('cart.owner.enabled', false)) {
-                $owner = OwnerContext::resolve();
-                if ($owner !== null) {
-                    return $storage->withOwner($owner);
-                }
-
-                if (! OwnerContext::isExplicitGlobal()) {
-                    throw new RuntimeException(
-                        'Cart owner is enabled but no owner was resolved while resolving cart storage. ' .
-                        'Use ' . OwnerContext::class . '::withOwner(null, ...) for explicit global cart access.'
-                    );
-                }
-            }
-
-            return $storage;
-        });
-
-        $this->app->bind(StorageInterface::class, fn ($app) => $app->make('cart.storage'));
     }
 
     protected function registerCartManager(): void

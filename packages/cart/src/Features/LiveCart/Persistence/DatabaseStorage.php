@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\LiveCart\Persistence;
 
+use AIArmada\Cart\Contracts\CartIdentityLookup;
+use AIArmada\Cart\Data\CartIdentity;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Storage\CartRevision;
@@ -27,7 +29,7 @@ use JsonSerializable;
 use RuntimeException;
 use stdClass;
 
-final readonly class DatabaseStorage implements StorageInterface
+final readonly class DatabaseStorage implements CartIdentityLookup, StorageInterface
 {
     /**
      * @param  int|null  $ttl  Time-to-live in seconds (null = no expiration)
@@ -79,10 +81,8 @@ final readonly class DatabaseStorage implements StorageInterface
 
     /**
      * Resolve the identifier and instance for a cart row by its UUID.
-     *
-     * @return object{identifier: string, instance: string}|null
      */
-    public function findSnapshotById(string $uuid): ?object
+    public function findSnapshotById(string $uuid): ?CartIdentity
     {
         $query = $this->database->table($this->table)->where('id', $uuid);
 
@@ -91,7 +91,7 @@ final readonly class DatabaseStorage implements StorageInterface
         /** @var object{identifier: string, instance: string}|null $snapshot */
         $snapshot = $query->first(['identifier', 'instance']);
 
-        return $snapshot;
+        return $snapshot === null ? null : new CartIdentity($snapshot->identifier, $snapshot->instance);
     }
 
     /**

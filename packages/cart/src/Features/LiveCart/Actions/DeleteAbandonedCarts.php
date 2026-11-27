@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Features\LiveCart\Actions;
 
+use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
 use AIArmada\Cart\Support\CartOwnerScope;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
-final readonly class DeleteAbandonedCarts
+final readonly class DeleteAbandonedCarts implements AbandonedCartCleanup
 {
     public function count(
         string $table,
@@ -33,6 +35,10 @@ final readonly class DeleteAbandonedCarts
         string | int | null $ownerId,
         bool $deleteMode,
     ): int {
+        if ($batchSize < 1) {
+            throw new InvalidArgumentException('Cart cleanup batch size must be positive.');
+        }
+
         $processed = 0;
 
         while (true) {
@@ -66,6 +72,10 @@ final readonly class DeleteAbandonedCarts
         string | int | null $ownerId,
         bool $deleteMode,
     ): Builder {
+        if ($table !== config('cart.database.table', 'carts')) {
+            throw new InvalidArgumentException('Cart cleanup may only access the configured cart table.');
+        }
+
         $query = DB::table($table);
         CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
 
