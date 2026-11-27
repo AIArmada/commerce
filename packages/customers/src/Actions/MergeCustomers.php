@@ -7,8 +7,8 @@ namespace AIArmada\Customers\Actions;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Models\Addressable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
-use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
+use AIArmada\Contacting\Features\ContactMethods\Actions\MoveContactMethodAction;
+use AIArmada\Contacting\Features\SocialProfiles\Actions\MoveSocialProfileAction;
 use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
@@ -131,12 +131,7 @@ final class MergeCustomers
         $source->loadMissing('contactMethods');
 
         foreach ($source->contactMethods as $contactMethod) {
-            if ($contactMethod->is_primary && $this->targetHasPrimaryContactMethod($target, $contactMethod)) {
-                $contactMethod->is_primary = false;
-            }
-
-            $contactMethod->contactable()->associate($target);
-            $contactMethod->save();
+            app(MoveContactMethodAction::class)->execute($contactMethod, $target);
         }
     }
 
@@ -145,31 +140,8 @@ final class MergeCustomers
         $source->loadMissing('socialProfiles');
 
         foreach ($source->socialProfiles as $socialProfile) {
-            if ($socialProfile->is_primary && $this->targetHasPrimarySocialProfile($target, $socialProfile)) {
-                $socialProfile->is_primary = false;
-            }
-
-            $socialProfile->socialable()->associate($target);
-            $socialProfile->save();
+            app(MoveSocialProfileAction::class)->execute($socialProfile, $target);
         }
-    }
-
-    private function targetHasPrimaryContactMethod(Customer $target, ContactMethod $contactMethod): bool
-    {
-        return $target->contactMethods()
-            ->where('type', $contactMethod->type)
-            ->where('purpose', $contactMethod->purpose)
-            ->where('is_primary', true)
-            ->exists();
-    }
-
-    private function targetHasPrimarySocialProfile(Customer $target, SocialProfile $socialProfile): bool
-    {
-        return $target->socialProfiles()
-            ->where('platform', $socialProfile->platform)
-            ->where('purpose', $socialProfile->purpose)
-            ->where('is_primary', true)
-            ->exists();
     }
 
     private function mergeSegments(Customer $source, Customer $target): void

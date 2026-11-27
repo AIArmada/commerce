@@ -6,19 +6,20 @@ namespace AIArmada\Contacting\Features\ContactMethods\Actions;
 
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Support\PrimarySaveCancelled;
-use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
 final readonly class SynchronizePrimaryContactMethodAction
 {
-    /** @param Closure(): bool $persist */
-    public function execute(ContactMethod $record, Closure $persist): bool
+    public function execute(ContactMethod $record): bool
     {
         try {
-            return $record->getConnection()->transaction(function () use ($record, $persist): bool {
-                $this->demoteSiblings($record);
+            return $record->getConnection()->transaction(function () use ($record): bool {
+                if ($record->is_primary && (! $record->exists || $record->isDirty(['is_primary', 'contactable_type', 'contactable_id', 'type', 'purpose', 'owner_type', 'owner_id']))) {
+                    $record->prepareForPrimaryWrite();
+                    $this->demoteSiblings($record);
+                }
 
-                if (! $persist()) {
+                if (! $record->save()) {
                     throw new PrimarySaveCancelled;
                 }
 

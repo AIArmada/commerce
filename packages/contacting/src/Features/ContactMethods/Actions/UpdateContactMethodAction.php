@@ -99,7 +99,7 @@ final class UpdateContactMethodAction
                 $contactMethod->metadata = $data->metadata;
             }
 
-            if (! $contactMethod->save()) {
+            if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
                 throw new \RuntimeException('The contact write was cancelled.');
             }
         });

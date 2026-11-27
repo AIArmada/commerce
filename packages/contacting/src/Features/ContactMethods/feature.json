@@ -9,7 +9,8 @@
             "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\SetPrimaryContactMethodAction",
             "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\SynchronizePrimaryContactMethodAction",
             "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\UpdateContactMethodAction",
-            "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\DeleteContactMethodAction"
+            "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\DeleteContactMethodAction",
+            "AIArmada\\Contacting\\Features\\ContactMethods\\Actions\\MoveContactMethodAction"
         ]
     },
     "extensions": {}

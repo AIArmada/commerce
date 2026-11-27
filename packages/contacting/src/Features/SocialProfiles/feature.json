@@ -8,7 +8,8 @@
             "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\SetPrimarySocialProfileAction",
             "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\SynchronizePrimarySocialProfileAction",
             "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\UpdateSocialProfileAction",
-            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\DeleteSocialProfileAction"
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\DeleteSocialProfileAction",
+            "AIArmada\\Contacting\\Features\\SocialProfiles\\Actions\\MoveSocialProfileAction"
         ]
     },
     "extensions": {}

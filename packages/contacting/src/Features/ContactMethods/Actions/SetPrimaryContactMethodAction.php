@@ -17,7 +17,7 @@ final class SetPrimaryContactMethodAction
 
         $contactMethod->getConnection()->transaction(function () use ($contactMethod): void {
             $contactMethod->is_primary = true;
-            if (! $contactMethod->save()) {
+            if (! app(SynchronizePrimaryContactMethodAction::class)->execute($contactMethod)) {
                 throw new \RuntimeException('The contact write was cancelled.');
             }
         });

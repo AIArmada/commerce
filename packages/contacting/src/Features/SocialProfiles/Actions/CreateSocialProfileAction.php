@@ -59,7 +59,7 @@ final class CreateSocialProfileAction
         }
 
         $profile->getConnection()->transaction(function () use ($profile): void {
-            if (! $profile->save()) {
+            if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new \RuntimeException('The contact write was cancelled.');
             }
         });

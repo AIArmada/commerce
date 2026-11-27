@@ -6,19 +6,20 @@ namespace AIArmada\Contacting\Features\SocialProfiles\Actions;
 
 use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Contacting\Support\PrimarySaveCancelled;
-use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
 final readonly class SynchronizePrimarySocialProfileAction
 {
-    /** @param Closure(): bool $persist */
-    public function execute(SocialProfile $record, Closure $persist): bool
+    public function execute(SocialProfile $record): bool
     {
         try {
-            return $record->getConnection()->transaction(function () use ($record, $persist): bool {
-                $this->demoteSiblings($record);
+            return $record->getConnection()->transaction(function () use ($record): bool {
+                if ($record->is_primary && (! $record->exists || $record->isDirty(['is_primary', 'socialable_type', 'socialable_id', 'platform', 'purpose', 'owner_type', 'owner_id']))) {
+                    $record->prepareForPrimaryWrite();
+                    $this->demoteSiblings($record);
+                }
 
-                if (! $persist()) {
+                if (! $record->save()) {
                     throw new PrimarySaveCancelled;
                 }
 

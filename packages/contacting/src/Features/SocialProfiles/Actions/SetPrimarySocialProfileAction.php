@@ -17,7 +17,7 @@ final class SetPrimarySocialProfileAction
 
         $profile->getConnection()->transaction(function () use ($profile): void {
             $profile->is_primary = true;
-            if (! $profile->save()) {
+            if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new \RuntimeException('The contact write was cancelled.');
             }
         });

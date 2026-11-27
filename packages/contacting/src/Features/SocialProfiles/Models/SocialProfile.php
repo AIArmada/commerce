@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
 use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Features\SocialProfiles\Actions\NormalizeSocialProfileAction;
-use AIArmada\Contacting\Features\SocialProfiles\Actions\SynchronizePrimarySocialProfileAction;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;
@@ -183,33 +182,11 @@ final class SocialProfile extends Model
         });
     }
 
-    /**
-     * Save a primary social profile while serializing primary replacement per
-     * socialable scope. The partial unique is the database-level backstop.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
+    public function prepareForPrimaryWrite(): void
     {
-        $needsPrimarySync = $this->is_primary
-            && (! $this->exists
-                || $this->isDirty('is_primary')
-                || $this->isDirty('socialable_type')
-                || $this->isDirty('socialable_id')
-                || $this->isDirty('platform')
-                || $this->isDirty('purpose')
-                || $this->isDirty('owner_type')
-                || $this->isDirty('owner_id'));
-
-        if (! $needsPrimarySync) {
-            return parent::save($options);
-        }
-
         $this->guardAllowedPlatform();
         $this->guardSocialableOwner();
         $this->prepareOwnerForPrimarySync();
-
-        return app(SynchronizePrimarySocialProfileAction::class)->execute($this, fn (): bool => parent::save($options));
     }
 
     private function applyDefaultFlags(): void

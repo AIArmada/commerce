@@ -84,7 +84,7 @@ final class UpdateSocialProfileAction
                 $profile->metadata = $data->metadata;
             }
 
-            if (! $profile->save()) {
+            if (! app(SynchronizePrimarySocialProfileAction::class)->execute($profile)) {
                 throw new \RuntimeException('The contact write was cancelled.');
             }
         });

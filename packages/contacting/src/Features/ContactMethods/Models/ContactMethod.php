@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
 use AIArmada\Contacting\Features\ContactMethods\Actions\NormalizeContactMethodAction;
-use AIArmada\Contacting\Features\ContactMethods\Actions\SynchronizePrimaryContactMethodAction;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -173,33 +172,11 @@ final class ContactMethod extends Model
         });
     }
 
-    /**
-     * Save a primary contact method while serializing primary replacement per
-     * contactable scope. The partial unique is the database-level backstop.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function save(array $options = []): bool
+    public function prepareForPrimaryWrite(): void
     {
-        $needsPrimarySync = $this->is_primary
-            && (! $this->exists
-                || $this->isDirty('is_primary')
-                || $this->isDirty('contactable_type')
-                || $this->isDirty('contactable_id')
-                || $this->isDirty('type')
-                || $this->isDirty('purpose')
-                || $this->isDirty('owner_type')
-                || $this->isDirty('owner_id'));
-
-        if (! $needsPrimarySync) {
-            return parent::save($options);
-        }
-
         $this->guardAllowedType();
         $this->guardContactableOwner();
         $this->prepareOwnerForPrimarySync();
-
-        return app(SynchronizePrimaryContactMethodAction::class)->execute($this, fn (): bool => parent::save($options));
     }
 
     private function applyDefaultFlags(): void
