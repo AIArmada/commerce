@@ -10,12 +10,12 @@ use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Feedback\Features\Analytics\Actions\RecalculateFeedbackFormAnalyticsAction;
 use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 
-final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, ShouldBeUnique, ShouldQueue
+final class RecalculateFeedbackFormAnalyticsJob implements OwnerScopedJob, ShouldBeUniqueUntilProcessing, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;

@@ -13,6 +13,7 @@ use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 
@@ -117,4 +118,38 @@ it('queues recalculation with the response owner tuple', function (): void {
             && (string) $job->ownerId === (string) $owner->getKey()
             && $job->ownerIsGlobal === false;
     });
+});
+
+it('releases analytics job uniqueness before processing so subsequent changes can enqueue another refresh', function (): void {
+    $job = new RecalculateFeedbackFormAnalyticsJob('form-id', null, null, true);
+
+    expect($job)->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class);
+});
+
+it('does not enqueue analytics for rolled back response changes', function (): void {
+    Queue::fake();
+
+    DB::beginTransaction();
+
+    try {
+        event(new FeedbackResponseSubmitted('response-id', 'form-id', null, null));
+
+        Queue::assertNothingPushed();
+    } finally {
+        DB::rollBack();
+    }
+
+    Queue::assertNothingPushed();
+});
+
+it('enqueues analytics only after response changes commit', function (): void {
+    Queue::fake();
+
+    DB::transaction(function (): void {
+        event(new FeedbackResponseSubmitted('response-id', 'form-id', null, null));
+
+        Queue::assertNothingPushed();
+    });
+
+    Queue::assertPushed(RecalculateFeedbackFormAnalyticsJob::class, 1);
 });

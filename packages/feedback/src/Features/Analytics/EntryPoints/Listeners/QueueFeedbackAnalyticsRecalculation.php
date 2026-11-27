@@ -10,8 +10,9 @@ use AIArmada\Feedback\Events\FeedbackResponseReviewed;
 use AIArmada\Feedback\Events\FeedbackResponseStarted;
 use AIArmada\Feedback\Events\FeedbackResponseSubmitted;
 use AIArmada\Feedback\Features\Analytics\EntryPoints\Jobs\RecalculateFeedbackFormAnalyticsJob;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-final class QueueFeedbackAnalyticsRecalculation
+final class QueueFeedbackAnalyticsRecalculation implements ShouldHandleEventsAfterCommit
 {
     public function handle(
         FeedbackResponseStarted | FeedbackResponseSubmitted | FeedbackResponseReviewed | FeedbackResponseRejected | FeedbackResponseMarkedSpam $event,
