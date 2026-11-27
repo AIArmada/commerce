@@ -21,7 +21,9 @@ use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
 
@@ -78,15 +80,7 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 $recipient->newQuery()->whereKey($recipient->getKey())->lockForUpdate()->firstOrFail();
             }
 
-            $existing = Reminder::query()->forOwner()
-                ->where('recipient_type', $recipientIdentity['type'])
-                ->where('recipient_id', $recipientIdentity['id'])
-                ->where('remindable_type', $subjectIdentity['type'])
-                ->where('remindable_id', $subjectIdentity['id'])
-                ->where('reminder_type', $reminderType)
-                ->where('channel', $channel)
-                ->where('remind_at', $remindAt)
-                ->whereIn('status', ['pending', 'scheduled'])
+            $existing = $this->matchingReminder($recipientIdentity, $subjectIdentity, $reminderType, $remindAt, $channel)
                 ->lockForUpdate()
                 ->first();
 
@@ -115,7 +109,20 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
                 $reminder->notification_class = $notificationClass;
             }
 
-            $reminder->save();
+            try {
+                // A nested transaction provides a savepoint on PostgreSQL.
+                $reminder->getConnection()->transaction(fn () => $reminder->save());
+            } catch (UniqueConstraintViolationException $exception) {
+                $existing = $this->matchingReminder($recipientIdentity, $subjectIdentity, $reminderType, $remindAt, $channel)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing instanceof Reminder) {
+                    return $existing;
+                }
+
+                throw $exception;
+            }
 
             event(new ReminderCreated(
                 $reminder->id,
@@ -143,6 +150,24 @@ final readonly class ManageRemindersAction implements WritesReminderRecords
 
             return $reminder;
         });
+    }
+
+    /**
+     * @param  array{type: string, id: string}  $recipient
+     * @param  array{type: string, id: string}  $subject
+     * @return Builder<Reminder>
+     */
+    private function matchingReminder(array $recipient, array $subject, string $type, CarbonImmutable $due, ?string $channel): Builder
+    {
+        return Reminder::query()->forOwner()
+            ->where('recipient_type', $recipient['type'])
+            ->where('recipient_id', $recipient['id'])
+            ->where('remindable_type', $subject['type'])
+            ->where('remindable_id', $subject['id'])
+            ->where('reminder_type', $type)
+            ->where('channel', $channel)
+            ->where('remind_at', $due)
+            ->pending();
     }
 
     public function cancelReminder(CanInteract $recipient, Remindable $subject, string $reminderType, array $options = []): void

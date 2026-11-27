@@ -16,6 +16,7 @@ use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Features\Reminders\Queries\ReadDueRemindersQuery;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 
@@ -220,4 +221,29 @@ it('does not report successful reminder delivery when no delivery listener is re
         ->and($reminder->fresh()->status)->toBe(ReminderStatus::Failed)
         ->and($reminder->fresh()->sent_at)->toBeNull()
         ->and($reminder->fresh()->failure_reason)->toContain('No reminder delivery listener');
+});
+
+it('enforces one pending reminder per owner, due time and channel while retaining terminal history', function (): void {
+    config(['engagement.owner.enabled' => true]);
+    $owner = User::factory()->create();
+    $due = now()->addHour()->startOfSecond();
+
+    foreach ([null, $owner] as $context) {
+        OwnerContext::withOwner($context, function () use ($due): void {
+            foreach ([null, 'mail'] as $channel) {
+                $options = ['remind_at' => $due, 'channel' => $channel];
+                $first = $this->manager->setReminder($this->recipient, $this->subject, 'follow_up', $options);
+
+                expect($this->manager->setReminder($this->recipient, $this->subject, 'follow_up', $options)->id)->toBe($first->id)
+                    ->and(fn () => $first->getConnection()->transaction(fn () => $first->replicate()->save()))
+                    ->toThrow(UniqueConstraintViolationException::class);
+
+                $this->manager->cancelRecord($first);
+                $next = $this->manager->setReminder($this->recipient, $this->subject, 'follow_up', $options);
+
+                expect($next->id)->not->toBe($first->id)
+                    ->and($next->status)->toBe(ReminderStatus::Pending);
+            }
+        });
+    }
 });
