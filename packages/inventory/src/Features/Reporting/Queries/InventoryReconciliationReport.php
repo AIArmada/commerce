@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Reports;
+namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryOperation;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\Inventory\Reports\InventoryKpiService;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

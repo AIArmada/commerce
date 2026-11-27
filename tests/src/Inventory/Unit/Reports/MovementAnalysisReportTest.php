@@ -7,7 +7,7 @@ use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
-use AIArmada\Inventory\Reports\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

@@ -20,10 +20,10 @@ use AIArmada\Inventory\Exports\ExportService;
 use AIArmada\Inventory\Integrations\FulfillmentLocationService;
 use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\EntryPoints\Listeners\ReleaseInventoryOnCartClear;
-use AIArmada\Inventory\Reports\InventoryKpiService;
-use AIArmada\Inventory\Reports\InventoryReconciliationReport;
-use AIArmada\Inventory\Reports\MovementAnalysisReport;
-use AIArmada\Inventory\Reports\StockLevelReport;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryKpiService;
+use AIArmada\Inventory\Features\Reporting\Queries\InventoryReconciliationReport;
+use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Features\Valuation\Persistence\FifoCostService;
 use AIArmada\Inventory\Features\Valuation\Persistence\StandardCostService;
@@ -128,10 +128,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
      */
     private function registerReportServices(): void
     {
-        $this->app->singleton(InventoryKpiService::class);
-        $this->app->singleton(InventoryReconciliationReport::class);
-        $this->app->singleton(MovementAnalysisReport::class);
-        $this->app->singleton(StockLevelReport::class);
         $this->app->singleton(ExportService::class);
     }
 

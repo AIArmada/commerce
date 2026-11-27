@@ -9,3 +9,5 @@ Allocation actions (`AllocateStock`, `CommitStock`, `ReleaseStock`) live under `
 Stock levels, locations and movement ledger models live under `AIArmada\Inventory\Features\Stock\Models`.
 
 Stock threshold evaluation, alert persistence and location hierarchy services belong to `Features/Stock/Persistence`; use the feature-owned classes directly.
+
+Inventory reporting and reconciliation queries live under `AIArmada\Inventory\Features\Reporting\Queries`.

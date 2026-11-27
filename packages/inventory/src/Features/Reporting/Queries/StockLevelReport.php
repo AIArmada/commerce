@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Reports;
+namespace AIArmada\Inventory\Features\Reporting\Queries;
 
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;

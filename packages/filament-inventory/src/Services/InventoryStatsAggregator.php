@@ -6,8 +6,8 @@ namespace AIArmada\FilamentInventory\Services;
 
 use AIArmada\FilamentInventory\Persistence\InventoryStatsCache;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
-use AIArmada\Inventory\Reports\MovementAnalysisReport;
-use AIArmada\Inventory\Reports\StockLevelReport;
+use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
+use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 use Illuminate\Database\Eloquent\Builder;
 
 final class InventoryStatsAggregator

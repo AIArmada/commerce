@@ -10,7 +10,7 @@ use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryMovement;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
-use AIArmada\Inventory\Reports\StockLevelReport;
+use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
