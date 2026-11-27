@@ -611,3 +611,17 @@ it('prevents another actor from modifying bookmark collection membership', funct
         ->toThrow(AuthorizationException::class)
         ->and(BookmarkCollectionItem::query()->whereNull('removed_at')->count())->toBe(1);
 });
+
+it('replaces existing share parameters without rewriting unrelated query values', function (): void {
+    $subject = new class
+    {
+        public function shareUrl(): string
+        {
+            return 'https://example.test/event?tag=a&share=old&tag=b&%73hare=older&share%5B0%5D=bad&source=a%20b#details';
+        }
+    };
+
+    $url = app(ShareUrlGenerator::class)->generateShareUrl($subject, ['token' => 'new+token']);
+
+    expect($url)->toBe('https://example.test/event?tag=a&tag=b&source=a%20b&share=new%2Btoken#details');
+});
