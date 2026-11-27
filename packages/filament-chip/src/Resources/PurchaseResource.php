@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ListPurchases;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;

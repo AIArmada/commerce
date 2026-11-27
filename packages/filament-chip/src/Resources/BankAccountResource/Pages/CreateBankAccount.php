@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Pages;
 
-use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\Chip\Features\Payouts\Actions\CreateBankAccount as CreateBankAccountAction;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Exceptions\Halt;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 use Throwable;
 
@@ -27,43 +29,27 @@ final class CreateBankAccount extends CreateRecord
         return 'Register a new bank account for receiving payouts via CHIP Send.';
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
+    /** @param array<string, mixed> $data */
     #[Override]
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        $service = app(ChipSendService::class);
-
         try {
-            $bankAccount = $service->createBankAccount(
-                bankCode: $data['bank_code'],
-                accountNumber: $data['account_number'],
-                accountHolderName: $data['name'],
-                reference: $data['reference'],
+            return app(CreateBankAccountAction::class)->handle(
+                bankCode: (string) $data['bank_code'],
+                accountNumber: (string) $data['account_number'],
+                accountHolderName: (string) $data['name'],
+                reference: (string) $data['reference'],
             );
+        } catch (Throwable $exception) {
+            report($exception);
 
-            Notification::make()
-                ->title('Bank account created successfully')
-                ->body(sprintf('Account ID: %s', $bankAccount->id))
-                ->success()
-                ->send();
-
-            return array_merge($data, [
-                'id' => $bankAccount->id,
-                'status' => $bankAccount->status,
-            ]);
-        } catch (Throwable $e) {
             Notification::make()
                 ->title('Failed to create bank account')
-                ->body($e->getMessage())
+                ->body('The request could not be completed. Check its status before retrying.')
                 ->danger()
                 ->send();
 
-            $this->halt();
-
-            return $data;
+            throw new Halt;
         }
     }
 

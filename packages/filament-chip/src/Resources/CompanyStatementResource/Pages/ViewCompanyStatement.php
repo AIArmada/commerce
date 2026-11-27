@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages;
 
-use AIArmada\Chip\Models\CompanyStatement;
+use AIArmada\Chip\Features\Statements\Actions\CancelCompanyStatement;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -63,7 +65,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                         $downloadUrl = $statement->download_url;
 
                         if (is_string($downloadUrl) && $downloadUrl !== '') {
-                            redirect()->away($downloadUrl);
+                            $this->redirect($downloadUrl);
                         } else {
                             Notification::make()
                                 ->title('Download not available')
@@ -73,7 +75,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                         }
                     } catch (Throwable $e) {
                         Log::warning('filament-chip: company statement download failed', [
-                            'exception' => $e->getMessage(),
+                            'exception' => $e::class,
                         ]);
 
                         Notification::make()
@@ -104,10 +106,8 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                         return;
                     }
 
-                    $service = app(ChipCollectService::class);
-
                     try {
-                        $service->cancelCompanyStatement((string) $scoped->getKey());
+                        app(CancelCompanyStatement::class)->handle((string) $scoped->getKey());
                         Notification::make()
                             ->title('Statement request cancelled')
                             ->success()
@@ -115,7 +115,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                         $this->refreshFormData(['status']);
                     } catch (Throwable $e) {
                         Log::warning('filament-chip: company statement cancellation failed', [
-                            'exception' => $e->getMessage(),
+                            'exception' => $e::class,
                         ]);
 
                         Notification::make()
@@ -132,7 +132,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
     private function resolveScopedCompanyStatement(Model $record): ?CompanyStatement
     {
         return CompanyStatement::query()
-            ->forOwner()
+            ->forOwner(OwnerContext::CURRENT, false)
             ->whereKey($record->getKey())
             ->first();
     }

@@ -6,6 +6,7 @@ namespace AIArmada\Referrals\Models;
 
 use AIArmada\Referrals\Database\Factories\ReferralInviteFactory;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
+use AIArmada\Referrals\Persistence\DeleteReferralDependents;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -64,10 +65,8 @@ class ReferralInvite extends Model
             $invite->status ??= ReferralInviteStatus::Pending;
         });
 
-        static::deleting(function (self $invite): void {
-            foreach ($invite->rewards()->get() as $reward) {
-                $reward->delete();
-            }
+        static::deleted(function (self $invite): void {
+            app(DeleteReferralDependents::class)->forInvite($invite);
         });
 
         static::updating(function (self $invite): void {
@@ -173,27 +172,6 @@ class ReferralInvite extends Model
     {
         return $this->status === ReferralInviteStatus::Expired
             || ($this->expired_at !== null && $this->expired_at->lessThanOrEqualTo($at));
-    }
-
-    public function rotateTokenHash(string $hash): void
-    {
-        if (! $this->exists
-            || $this->status !== ReferralInviteStatus::Pending
-            || $this->getConnection()->transactionLevel() === 0) {
-            throw new LogicException('Only pending referral invites can rotate their token hash inside a transaction.');
-        }
-
-        $updated = $this->newQuery()
-            ->whereKey($this->getKey())
-            ->where('status', ReferralInviteStatus::Pending->value)
-            ->update(['token_hash' => $hash]);
-
-        if ($updated !== 1) {
-            throw new LogicException('The pending referral invite could not rotate its token hash.');
-        }
-
-        $this->setAttribute('token_hash', $hash);
-        $this->syncOriginalAttribute('token_hash');
     }
 
     protected static function newFactory(): ReferralInviteFactory

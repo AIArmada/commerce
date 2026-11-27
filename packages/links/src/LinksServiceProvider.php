@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Links;
 
-use AIArmada\Links\Console\Commands\PruneLinkClicksCommand;
 use AIArmada\Links\Contracts\BotDetectorInterface;
 use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Contracts\SlugGeneratorInterface;
 use AIArmada\Links\Contracts\UserAgentParserInterface;
+use AIArmada\Links\Drivers\DeviceDetectorUserAgentParser;
+use AIArmada\Links\EntryPoints\Commands\PruneLinkClicksCommand;
 use AIArmada\Links\Support\DefaultBotDetector;
 use AIArmada\Links\Support\DefaultLinkGate;
 use AIArmada\Links\Support\DefaultSlugGenerator;
-use AIArmada\Links\Support\DeviceDetectorUserAgentParser;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

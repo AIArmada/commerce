@@ -4,13 +4,17 @@ title: Referrals Troubleshooting
 
 # Referrals Troubleshooting
 
+## A referral write reports a shared-connection error
+
+Programs, invites, and rewards must use the same database connection. The optional voucher, affiliates, and rewards rails must resolve their local records to that same connection. A mismatch fails closed before the referral action writes, because the outer transaction cannot roll back a separate connection.
+
 ## Fulfilment reports an unavailable driver
 
 Check `referrals.fulfillment.drivers.<driver>.enabled`, install the optional package for that rail, and confirm its public classes can be autoloaded. Unknown, disabled, and unavailable drivers fail closed so a promised reward remains visible for repair.
 
 ## Manual fulfilment fails without a reference
 
-Set a non-empty reward metadata value using the configured `reference_metadata_key`, then retry the `Failed` reward. Manual reversal also requires the stored external reference.
+For manual rewards, supply the verified external reference directly to `FulfillReferralReward::run($reward, $reference)` and retry.
 
 ## The same contact cannot create another invite
 

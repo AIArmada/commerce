@@ -276,7 +276,7 @@
         "Tests\\src\\Chip\\Unit\\Data\\SendInstructionDataObjectTest": 6.7596,
         "Tests\\src\\Chip\\Unit\\Data\\SendLimitDataObjectTest": 1.89,
         "Tests\\src\\Chip\\Unit\\Data\\SendWebhookDataObjectTest": 2.4121,
-        "Tests\\src\\Chip\\Unit\\Data\\SpatieDataIntegrationTest": 34.2191,
+        "Tests\\src\\Chip\\Unit\\Data\\ProductCollectionTest": 34.2191,
         "Tests\\src\\Chip\\Unit\\Data\\TransactionDataObjectTest": 4.9283,
         "Tests\\src\\Chip\\Unit\\Data\\WebhookDataObjectTest": 15.2494,
         "Tests\\src\\Chip\\Unit\\Enums\\AdditionalEnumsTest": 31.195,

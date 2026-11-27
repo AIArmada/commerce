@@ -11,6 +11,7 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
 
@@ -37,6 +38,29 @@ it('dispatches PaymentSucceeded on purchase.paid', function (): void {
     Event::assertDispatched(PaymentSucceeded::class, function ($event) {
         return $event->billable->id === $this->user->id;
     });
+});
+
+it('does not expose recurring tokens on PaymentSucceeded event payloads', function (): void {
+    Event::fake([PaymentSucceeded::class]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-token-redaction',
+        'client_id' => 'test-client-id',
+        'status' => 'paid',
+        'recurring_token' => 'tok_event_secret',
+        'transaction_data' => [
+            'payment_method' => 'visa',
+            'extra' => ['masked_pan' => '**** **** **** 4242'],
+        ],
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+    ];
+
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
+
+    Event::assertDispatched(
+        PaymentSucceeded::class,
+        fn (PaymentSucceeded $event): bool => ! array_key_exists('recurring_token', $event->purchase),
+    );
 });
 
 it('dispatches PaymentFailed on purchase.payment_failure', function (): void {
@@ -187,8 +211,8 @@ it('resolves billable by owner context when chip_id is duplicated across tenants
         'email' => 'cashier-chip-owner-a-dup@example.com',
     ]);
 
-    OwnerContext::withOwner($ownerB, fn () => Cashier::chipCustomerDirectory()->link($ownerB, 'duplicated-client-id'));
-    OwnerContext::withOwner($ownerA, fn () => Cashier::chipCustomerDirectory()->link($ownerA, 'duplicated-client-id'));
+    OwnerContext::withOwner($ownerB, fn () => Cashier::chipCustomerDirectory()->link(new RecordReference($ownerB->getMorphClass(), (string) $ownerB->getKey()), 'duplicated-client-id'));
+    OwnerContext::withOwner($ownerA, fn () => Cashier::chipCustomerDirectory()->link(new RecordReference($ownerA->getMorphClass(), (string) $ownerA->getKey()), 'duplicated-client-id'));
 
     $purchaseData = [
         'id' => 'test-purchase-id-owner-a',

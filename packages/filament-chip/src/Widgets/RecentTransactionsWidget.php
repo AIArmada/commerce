@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class RecentTransactionsWidget extends BaseWidget
 {
+    use RequiresChipOwnerContext;
+
     protected static ?int $sort = 4;
 
     protected int | string | array $columnSpan = 'full';

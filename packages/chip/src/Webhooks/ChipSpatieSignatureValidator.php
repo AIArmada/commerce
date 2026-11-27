@@ -28,18 +28,35 @@ final class ChipSpatieSignatureValidator implements SignatureValidator
             return true;
         }
 
+        $bodyHash = hash('sha256', $request->getContent());
+        $cached = $request->attributes->get('chip_webhook_signature_validation');
+
+        if (is_array($cached)
+            && is_string($cached['body_hash'] ?? null)
+            && hash_equals($bodyHash, $cached['body_hash'])
+            && is_bool($cached['valid'] ?? null)) {
+            return $cached['valid'];
+        }
+
         /** @var WebhookService $webhookService */
         $webhookService = app(WebhookService::class);
 
         try {
-            return $webhookService->verifySignature($request);
+            $valid = $webhookService->verifySignature($request);
         } catch (Throwable $exception) {
             Log::channel(config('chip.logging.channel', 'stack'))
                 ->warning('CHIP webhook signature validation failed', [
                     'error' => $exception->getMessage(),
                 ]);
 
-            return false;
+            $valid = false;
         }
+
+        $request->attributes->set('chip_webhook_signature_validation', [
+            'body_hash' => $bodyHash,
+            'valid' => $valid,
+        ]);
+
+        return $valid;
     }
 }

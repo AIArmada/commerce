@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Resources;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentChip\Support\ChipOwnerAccess;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -42,6 +43,10 @@ abstract class BaseChipResource extends Resource
 
     final public static function getNavigationBadge(): ?string
     {
+        if (! ChipOwnerAccess::hasContext()) {
+            return null;
+        }
+
         $count = (int) OwnerCache::remember(
             OwnerContext::resolve(),
             'filament-chip.nav-badge.' . static::navigationSortKey(),

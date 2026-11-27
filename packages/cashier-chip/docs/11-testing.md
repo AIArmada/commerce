@@ -43,7 +43,7 @@ The package includes factories for testing subscriptions:
 ### Subscription Factory
 
 ```php
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 
 // Basic subscription
 $subscription = Subscription::factory()->create();
@@ -96,7 +96,7 @@ $subscription = Subscription::factory()
 ### Subscription Item Factory
 
 ```php
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 
 // Basic item
 $item = SubscriptionItem::factory()->create();
@@ -262,7 +262,7 @@ that owner, and another owner's context must not be able to read or process the 
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CashierChip\Subscription\RenewalAttempt;
+use AIArmada\CashierChip\Features\Subscriptions\Models\RenewalAttempt;
 
 $attempts = OwnerContext::withOwner($owner, fn () => RenewalAttempt::query()->get());
 ```

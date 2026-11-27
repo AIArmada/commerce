@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Tables;
 
+use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\ReferralRewardResource;
 use AIArmada\Referrals\Actions\FulfillReferralReward;
 use AIArmada\Referrals\Actions\ReverseReferralReward;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Models\ReferralReward;
-use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Throwable;
 
@@ -23,19 +24,24 @@ class ReferralRewardActions
     {
         return [
             Action::make('fulfill')
+                ->schema(fn (ReferralReward $record): array => $record->driver === 'manual' ? [
+                    TextInput::make('manual_reference')->label('Verified external reference')->required()->maxLength(255),
+                ] : [])
                 ->visible(fn (ReferralReward $record): bool => in_array(
                     $record->status,
                     [ReferralRewardStatus::Pending, ReferralRewardStatus::Failed],
                     true,
                 ))
-                ->action(function (ReferralReward $record): void {
+                ->authorize(fn (ReferralReward $record): bool => ReferralRewardResource::canEdit($record))
+                ->action(function (ReferralReward $record, array $data): void {
                     try {
-                        $reward = app(ReferralProgramGuard::class)->reward($record);
-                        $result = FulfillReferralReward::run($reward);
+                        $result = FulfillReferralReward::run((string) $record->getKey(), is_string($data['manual_reference'] ?? null) ? $data['manual_reference'] : null);
                     } catch (Throwable $exception) {
+                        report($exception);
+
                         Notification::make()
                             ->title('Referral reward fulfilment failed')
-                            ->body($exception->getMessage())
+                            ->body('The operation could not be completed. Check the application logs.')
                             ->danger()
                             ->send();
 
@@ -68,14 +74,16 @@ class ReferralRewardActions
                         ->maxLength(1000),
                 ])
                 ->visible(fn (ReferralReward $record): bool => $record->status === ReferralRewardStatus::Fulfilled)
+                ->authorize(fn (ReferralReward $record): bool => ReferralRewardResource::canEdit($record))
                 ->action(function (ReferralReward $record, array $data): void {
                     try {
-                        $reward = app(ReferralProgramGuard::class)->reward($record);
-                        ReverseReferralReward::run($reward, (string) ($data['reason'] ?? ''));
+                        ReverseReferralReward::run((string) $record->getKey(), (string) ($data['reason'] ?? ''));
                     } catch (Throwable $exception) {
+                        report($exception);
+
                         Notification::make()
                             ->title('Referral reward reversal failed')
-                            ->body($exception->getMessage())
+                            ->body('The operation could not be completed. Check the application logs.')
                             ->danger()
                             ->send();
 

@@ -10,7 +10,7 @@ use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePendingRefund;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Chip\Webhooks\ChipWebhookProfile;

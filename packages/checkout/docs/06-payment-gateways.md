@@ -184,7 +184,7 @@ Cashier processors resolve the frozen `billable_type`/`billable_id` to a
 concrete model class, enforce the session owner boundary, and then validate
 their own contract: the unified `cashier` processor requires
 `AIArmada\Cashier\Contracts\BillableContract`, while `cashier-chip` accepts a
-native `AIArmada\CashierChip\Contracts\BillableContract` model without the
+native `AIArmada\CashierChip\Billing\BillableModel` model without the
 unified package. A frozen identity that cannot be resolved fails the payment
 instead of falling back to a billable later associated with the session.
 

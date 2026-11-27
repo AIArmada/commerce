@@ -82,6 +82,14 @@ final class ChipWebhookOwnerResolver
     /**
      * @param  array<string, mixed>  $payload
      */
+    public static function brandIdFromPayload(array $payload): ?string
+    {
+        return self::extractBrandId($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     private static function extractBrandId(array $payload): ?string
     {
         $brandId = $payload['brand_id'] ?? null;

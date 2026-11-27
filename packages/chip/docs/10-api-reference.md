@@ -354,7 +354,7 @@ The dedicated CHIP Send webhook route verifies the raw request with the Send web
 ### SyncChipRecordsFromApiAction
 
 ```php
-use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
 
 $action = app(SyncChipRecordsFromApiAction::class);
 
@@ -367,7 +367,7 @@ $action->handle(
 ): array{processed: int, synced: int, skipped: int, failed: int, errors: array<int, string>}
 ```
 
-Fetches CHIP purchases from the remote API and stores them locally via `StoreWebhookData`. It does not reach into checkout or customer packages; downstream subscribers can consume the stable CHIP webhook event payload instead. Supports dry-run mode and status filtering.
+Fetches CHIP purchases from the remote API and stores them locally via `StoreChipWebhookPayload`. It does not reach into checkout or customer packages; downstream subscribers can consume the stable CHIP webhook event payload instead. Supports dry-run mode and status filtering.
 
 ## Support Classes
 
@@ -419,7 +419,7 @@ Extracts the CHIP purchase ID from webhook payloads. `fromPaymentPayload` handle
 ### WebhookOwnerBatchRunner
 
 ```php
-use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
+use AIArmada\Chip\Features\WebhookDelivery\Support\WebhookOwnerBatchRunner;
 
 $runner = app(WebhookOwnerBatchRunner::class);
 

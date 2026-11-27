@@ -286,3 +286,90 @@ it('avoids schema probes and redundant by-key selects while handling a webhook',
         ->and($byKeySelects)->toHaveCount(1)
         ->and(OwnerDedupWebhookProcessor::$processed)->toHaveCount(1);
 });
+
+final class FailingOnceWebhookProcessor extends CommerceWebhookProcessor
+{
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function processEvent(string $eventType, array $payload): void
+    {
+        throw new RuntimeException('delivery processing failed');
+    }
+}
+
+it('recovers a failed delivery when the provider redelivers the same event', function (): void {
+    OwnerDedupWebhookProcessor::reset();
+
+    $payload = [
+        'event_type' => 'payment.completed',
+        'id' => 'evt_failed_redelivery',
+        '__owner_type' => 'team',
+        '__owner_id' => 'owner-one',
+    ];
+
+    $failed = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    expect(fn () => (new FailingOnceWebhookProcessor($failed))->handle())
+        ->toThrow(RuntimeException::class);
+
+    $retry = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    (new OwnerDedupWebhookProcessor($retry))->handle();
+
+    $failed->refresh();
+
+    expect(OwnerDedupWebhookProcessor::$processed)->toHaveCount(1)
+        ->and($retry->fresh()?->processed_at)->not->toBeNull()
+        ->and($failed->status)->toBe('superseded')
+        ->and($failed->getAttribute('event_id'))->toStartWith('superseded:')
+        ->and($failed->getAttribute('exception'))->not->toBeNull();
+});
+
+it('does not release a processed holder for a stale redelivery', function (): void {
+    OwnerDedupWebhookProcessor::reset();
+
+    $payload = [
+        'event_type' => 'payment.completed',
+        'id' => 'evt_processed_redelivery',
+        '__owner_type' => 'team',
+        '__owner_id' => 'owner-one',
+    ];
+
+    $processed = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    (new OwnerDedupWebhookProcessor($processed))->handle();
+
+    $redelivery = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => $payload,
+        'exception' => null,
+    ]);
+
+    (new OwnerDedupWebhookProcessor($redelivery))->handle();
+
+    expect(OwnerDedupWebhookProcessor::$processed)->toHaveCount(1)
+        ->and($processed->fresh()?->status)->toBe('processed')
+        ->and($redelivery->fresh()?->processed_at)->not->toBeNull()
+        ->and($redelivery->fresh()?->getAttribute('event_id'))->toBeNull();
+});

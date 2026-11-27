@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Referrals\Actions;
 
 use AIArmada\Referrals\Models\ReferralProgram;
+use AIArmada\Referrals\Support\ReferralDatabase;
 use AIArmada\Referrals\Support\ReferralProgramAttributeNormalizer;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,7 +35,7 @@ final class UpdateReferralProgram
     {
         $normalizer = app(ReferralProgramAttributeNormalizer::class);
 
-        return DB::transaction(function () use ($program, $attributes, $normalizer): ReferralProgram {
+        return ReferralDatabase::connection()->transaction(function () use ($program, $attributes, $normalizer): ReferralProgram {
             $resolved = app(ReferralProgramGuard::class)->program($program, lock: true);
 
             $effective = array_replace($this->currentAttributes($resolved), $attributes);

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\ProductData;
-use AIArmada\Chip\Exceptions\ChipValidationException;
 use Akaunting\Money\Money;
 
 describe('Product data object', function (): void {
@@ -119,21 +118,21 @@ describe('Product data object', function (): void {
 
     it('rejects a discount above the line gross like the server', function (): void {
         expect(fn () => ProductData::lineTotalMinorUnits(100, '3', 500))
-            ->toThrow(ChipValidationException::class, 'discount cannot be larger than price times quantity');
+            ->toThrow(InvalidArgumentException::class, 'discount cannot be larger than price times quantity');
     });
 
     it('validates the discount bound even when a total price override is set', function (): void {
         // The server 400s product_subtotal_negative here (validation first).
         expect(fn () => ProductData::lineTotalMinorUnits(100, '3', 500, 0.0, 2500))
-            ->toThrow(ChipValidationException::class, 'discount cannot be larger than price times quantity');
+            ->toThrow(InvalidArgumentException::class, 'discount cannot be larger than price times quantity');
     });
 
     it('throws instead of saturating when a total exceeds the int range', function (): void {
         // 1025 x (2^53 - 1) is exact but unrepresentable as int64.
         expect(fn () => ProductData::lineTotalMinorUnits(1025, '9007199254740991'))
-            ->toThrow(ChipValidationException::class, 'exceeds the supported range')
+            ->toThrow(InvalidArgumentException::class, 'exceeds the supported range')
             ->and(fn () => ProductData::multiplyMinorUnits(1025, '9007199254740991'))
-            ->toThrow(ChipValidationException::class, 'exceeds the supported range');
+            ->toThrow(InvalidArgumentException::class, 'exceeds the supported range');
     });
 
     it('keeps both int64 edges representable', function (): void {

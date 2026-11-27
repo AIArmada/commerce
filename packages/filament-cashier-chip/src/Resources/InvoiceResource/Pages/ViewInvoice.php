@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Api\PurchaseInvoiceOperations;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Override;
+use Throwable;
 
 final class ViewInvoice extends ViewRecord
 {
@@ -34,25 +36,6 @@ final class ViewInvoice extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('download_pdf')
-                ->label('Download PDF')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->color('primary')
-                ->visible(function (): bool {
-                    /** @var Purchase $record */
-                    $record = $this->getRecord();
-
-                    return $record->status === 'paid';
-                })
-                ->action(function (): void {
-                    // PDF generation would be handled here
-                    Notification::make()
-                        ->title('PDF Generation')
-                        ->body('PDF download functionality requires a PDF renderer. Configure in cashier-chip config.')
-                        ->info()
-                        ->send();
-                }),
-
             Action::make('send_invoice')
                 ->label('Send Invoice')
                 ->icon('heroicon-o-paper-airplane')
@@ -69,12 +52,16 @@ final class ViewInvoice extends ViewRecord
                 ->action(function (): void {
                     /** @var Purchase $record */
                     $record = $this->getRecord();
-                    // Email sending would be handled here
-                    Notification::make()
-                        ->title('Invoice Sent')
-                        ->body('Invoice has been sent to ' . $record->client['email'])
-                        ->success()
-                        ->send();
+
+                    try {
+                        app(PurchaseInvoiceOperations::class)->resend((string) $record->getKey());
+
+                        Notification::make()->title('Invoice resend requested')->success()->send();
+                    } catch (Throwable $exception) {
+                        report($exception);
+
+                        Notification::make()->title('Unable to resend invoice')->danger()->send();
+                    }
                 }),
 
             Action::make('view_checkout')
@@ -95,24 +82,6 @@ final class ViewInvoice extends ViewRecord
                     return ! empty($record->checkout_url);
                 }),
 
-            Action::make('copy_checkout_url')
-                ->label('Copy Checkout URL')
-                ->icon('heroicon-o-clipboard-document')
-                ->color('gray')
-                ->visible(function (): bool {
-                    /** @var Purchase $record */
-                    $record = $this->getRecord();
-
-                    return ! empty($record->checkout_url) && $record->status !== 'paid';
-                })
-                ->action(function (): void {
-                    Notification::make()
-                        ->title('URL Copied')
-                        ->body('Checkout URL copied to clipboard.')
-                        ->success()
-                        ->send();
-                }),
-
             Action::make('mark_as_paid')
                 ->label('Mark as Paid')
                 ->icon('heroicon-o-check-circle')
@@ -129,16 +98,17 @@ final class ViewInvoice extends ViewRecord
                 ->action(function (): void {
                     /** @var Purchase $record */
                     $record = $this->getRecord();
-                    $record->status = 'paid';
-                    $record->marked_as_paid = true;
-                    $record->save();
 
-                    Notification::make()
-                        ->title('Invoice Marked as Paid')
-                        ->success()
-                        ->send();
+                    try {
+                        app(PurchaseInvoiceOperations::class)->markPaid((string) $record->getKey());
 
-                    $this->refreshFormData(['status', 'marked_as_paid']);
+                        Notification::make()->title('Invoice Marked as Paid')->success()->send();
+                        $this->refreshFormData(['status', 'marked_as_paid']);
+                    } catch (Throwable $exception) {
+                        report($exception);
+
+                        Notification::make()->title('Unable to confirm payment')->danger()->send();
+                    }
                 }),
         ];
     }

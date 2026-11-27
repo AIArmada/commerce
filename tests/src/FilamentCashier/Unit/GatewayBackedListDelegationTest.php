@@ -6,9 +6,10 @@ use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem as ChipSubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -24,6 +25,7 @@ use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     app()->register(CashierServiceProvider::class);
+    app()->register(CashierChipServiceProvider::class);
 
     config()->set('cashier.models.billable', ChipBillableUser::class);
     config()->set('cashier.gateways', [
@@ -111,6 +113,7 @@ it('lists subscriptions across billables in the current owner scope', function (
 
     foreach ([$admin, $other] as $billable) {
         $id = (string) Str::uuid();
+        $billable->linkChipCustomerToOwner($team);
 
         ChipSubscription::query()->create([
             'id' => $id,

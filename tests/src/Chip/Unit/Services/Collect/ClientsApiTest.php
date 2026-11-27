@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
-use AIArmada\Chip\Services\Collect\ClientsApi;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\Chip\Features\Collect\Actions\ClientsApi;
 
 beforeEach(function (): void {
     $this->client = Mockery::mock(ChipCollectClient::class);
@@ -41,6 +42,18 @@ describe('Collect Clients API', function (): void {
 
         expect($found->email)->toBe('buyer@example.com');
     });
+
+    it('rejects unsafe client identifiers before contacting CHIP', function (string $id): void {
+        $this->client->shouldNotReceive('get');
+
+        expect(fn () => $this->api->find($id))
+            ->toThrow(ChipValidationException::class, 'not allowed');
+    })->with([
+        'trailing newline' => ["client_123\n"],
+        'carriage return' => ["client_123\r"],
+        'path traversal' => ['../client_123'],
+        'encoded slash' => ['client%2F123'],
+    ]);
 
     it('lists clients with filters', function (): void {
         $this->client->shouldReceive('get')

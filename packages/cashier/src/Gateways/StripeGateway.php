@@ -221,6 +221,12 @@ class StripeGateway extends AbstractGateway
             throw new InvalidArgumentException('Refund amount must be a positive integer in minor units.');
         }
 
+        $maximum = max(1, (int) config('cashier.billing.max_amount_minor', 100_000_000));
+
+        if ($amount !== null && $amount > $maximum) {
+            throw new InvalidArgumentException(sprintf('Refund amount must not exceed %d minor units.', $maximum));
+        }
+
         return PaymentOperationLimiter::run(
             $this->name(),
             'refund',

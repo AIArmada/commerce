@@ -5,16 +5,19 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
-use AIArmada\Chip\Models\Client;
-use AIArmada\Chip\Models\CompanyStatement;
-use AIArmada\Chip\Models\Payment;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Services\LocalAnalyticsService;
+use AIArmada\Chip\Features\Collect\Api\PurchaseAnalytics;
+use AIArmada\Chip\Features\Collect\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Payment;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
+use AIArmada\FilamentChip\Actions\SendInstructionExporter;
 use AIArmada\FilamentChip\Pages\AnalyticsDashboardPage;
 use AIArmada\FilamentChip\Resources\ClientResource;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
@@ -80,7 +83,7 @@ it('clamps tampered analytics periods to the default range', function (): void {
         }
     };
 
-    app()->instance(LocalAnalyticsService::class, $recording);
+    app()->instance(PurchaseAnalytics::class, $recording);
 
     $page = new AnalyticsDashboardPage;
     $page->period = '999999';
@@ -310,4 +313,54 @@ it('caches distinct filter options per owner', function (): void {
     ));
 
     expect($distinctQueries)->toHaveCount(2);
+});
+
+it('scopes send instruction exports to the current owner', function (): void {
+    Schema::dropIfExists('tenants');
+    Schema::create('tenants', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $owner = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA = (clone $owner)->forceFill(['id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'name' => 'A']);
+    $ownerA->save();
+
+    $ownerB = (clone $owner)->forceFill(['id' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'name' => 'B']);
+    $ownerB->save();
+
+    config()->set('chip.owner.enabled', true);
+    config()->set('chip.owner.include_global', false);
+
+    foreach ([[1001, $ownerA], [1002, $ownerB]] as [$id, $ownerModel]) {
+        OwnerContext::withOwner($ownerModel, function () use ($id, $ownerModel): void {
+            SendInstruction::query()->create([
+                'id' => $id,
+                'bank_account_id' => 1,
+                'amount' => '10.00',
+                'email' => 'payout@example.com',
+                'description' => 'Payout',
+                'reference' => 'ref-' . $id,
+                'owner_type' => $ownerModel->getMorphClass(),
+                'owner_id' => (string) $ownerModel->getKey(),
+                'created_at' => CarbonImmutable::now(),
+                'updated_at' => CarbonImmutable::now(),
+            ]);
+        });
+    }
+
+    $count = OwnerContext::withOwner($ownerA, fn (): int => SendInstructionExporter::modifyQuery(SendInstruction::query())->count());
+
+    expect($count)->toBe(1);
 });

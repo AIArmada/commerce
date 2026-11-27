@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\Support\UnifiedInvoice;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManageSubscriptions;

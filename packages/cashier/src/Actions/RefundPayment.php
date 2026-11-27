@@ -23,6 +23,12 @@ final class RefundPayment
             throw new InvalidArgumentException('Cashier refund amount must be a positive integer in minor units.');
         }
 
+        $maximum = max(1, (int) config('cashier.billing.max_amount_minor', 100_000_000));
+
+        if ($amount !== null && $amount > $maximum) {
+            throw new InvalidArgumentException(sprintf('Cashier refund amount must not exceed %d minor units.', $maximum));
+        }
+
         $gatewayName = ActionGuard::gatewayName($gateway);
         $gateway = Cashier::gateway($gatewayName);
 
