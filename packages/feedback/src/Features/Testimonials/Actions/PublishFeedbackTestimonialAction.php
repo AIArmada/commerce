@@ -40,7 +40,7 @@ final readonly class PublishFeedbackTestimonialAction
                 'hidden_at' => null,
             ])->save();
 
-            FeedbackTestimonialPublished::dispatch($testimonial);
+            FeedbackTestimonialPublished::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 
             return $testimonial;
         });

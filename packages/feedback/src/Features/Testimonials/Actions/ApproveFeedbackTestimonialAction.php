@@ -30,7 +30,7 @@ final readonly class ApproveFeedbackTestimonialAction
                 'approved_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackTestimonialApproved::dispatch($testimonial);
+            FeedbackTestimonialApproved::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 
             return $testimonial;
         });

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Events;
 
-use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Illuminate\Foundation\Events\Dispatchable;
 
-final class FeedbackTestimonialRejected
+final readonly class FeedbackTestimonialRejected
 {
     use Dispatchable;
 
     public function __construct(
-        public FeedbackTestimonial $testimonial,
+        public string $testimonialId,
+        public ?string $ownerType,
+        public ?string $ownerId,
     ) {}
 }

@@ -40,7 +40,7 @@ final readonly class ExtractFeedbackTestimonialAction implements ExtractsTestimo
                 'status' => FeedbackTestimonialStatus::Pending,
             ]);
 
-            FeedbackTestimonialExtracted::dispatch($testimonial);
+            FeedbackTestimonialExtracted::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 
             return $testimonial->id;
         });

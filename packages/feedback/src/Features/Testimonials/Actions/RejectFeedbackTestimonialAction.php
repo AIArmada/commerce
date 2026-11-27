@@ -30,7 +30,7 @@ final readonly class RejectFeedbackTestimonialAction
                 'rejected_at' => CarbonImmutable::now(),
             ])->save();
 
-            FeedbackTestimonialRejected::dispatch($testimonial);
+            FeedbackTestimonialRejected::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 
             return $testimonial;
         });
