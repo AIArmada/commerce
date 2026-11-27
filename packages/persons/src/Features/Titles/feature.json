@@ -7,6 +7,9 @@
     ],
     "table:title_assignments": [
       "AIArmada\\Persons\\Features\\Titles\\Actions\\AssignTitleAction"
+    ],
+    "table:title_issuers": [
+      "AIArmada\\Persons\\Features\\Titles\\Actions\\SaveTitleIssuer"
     ]
   },
   "extensions": {}
