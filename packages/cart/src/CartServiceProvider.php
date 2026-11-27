@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Conditions\ConditionPresets;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
@@ -24,12 +22,9 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
-use AIArmada\Cart\Listeners\HandleUserLogin;
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Services\RulePresets;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSyncManager;
@@ -44,8 +39,6 @@ use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
-use Illuminate\Auth\Events\Attempting;
-use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionResolverInterface;
@@ -86,8 +79,6 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerFactories();
         $this->registerConditionTypeHandlers();
         $this->registerCartManager();
-        $this->registerMigrationService();
-        $this->registerActions();
         $this->registerSnapshotServices();
         $this->registerFeatures();
     }
@@ -99,11 +90,11 @@ final class CartServiceProvider extends PackageServiceProvider
         ]);
 
         $this->validateOwnerConfiguration();
-        $this->registerEventListeners();
-
         foreach ($this->modules as $module) {
             $module->boot($this->app);
         }
+
+        $this->registerEventListeners();
 
         $this->registerOctaneListeners();
 
@@ -249,41 +240,9 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->singleton(ConditionPipelineFactory::class);
     }
 
-    protected function registerMigrationService(): void
-    {
-        $this->app->singleton(CartMigrationService::class, fn (Application $app) => new CartMigrationService(
-            config('cart.migration', []),
-            migrationAction: $app->make(MigrateGuestCartToUserAction::class),
-        ));
-
-        $this->app->singleton(CartMergeStrategyRegistry::class, function () {
-            $registry = new CartMergeStrategyRegistry;
-            $registry->registerBuiltIns();
-
-            return $registry;
-        });
-    }
-
-    protected function registerActions(): void
-    {
-        $this->app->bind(MigrateGuestCartToUserAction::class, fn ($app) => new MigrateGuestCartToUserAction(
-            storage: null,
-            strategyRegistry: $app->make(CartMergeStrategyRegistry::class),
-        ));
-
-        $this->app->bind(MigrateCartOnLoginAction::class, fn ($app) => new MigrateCartOnLoginAction(
-            migrationAction: $app->make(MigrateGuestCartToUserAction::class),
-        ));
-    }
-
     protected function registerEventListeners(): void
     {
         $dispatcher = $this->app->make(Dispatcher::class);
-
-        if (config('cart.migration.auto_migrate_on_login', true)) {
-            $dispatcher->listen(Attempting::class, HandleUserLoginAttempt::class);
-            $dispatcher->listen(Login::class, HandleUserLogin::class);
-        }
 
         if (! config('cart.events', true)) {
             return;

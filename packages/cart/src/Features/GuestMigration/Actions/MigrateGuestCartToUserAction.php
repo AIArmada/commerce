@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Actions;
+namespace AIArmada\Cart\Features\GuestMigration\Actions;
 
 use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartLimits;
@@ -81,7 +81,9 @@ final class MigrateGuestCartToUserAction
             throw new InvalidArgumentException('A non-empty user identifier is required to migrate a guest cart.');
         }
 
-        $mergeStrategy = $strategy ?? $this->mergeStrategy ?? $this->strategyRegistry->resolveFromConfig();
+        $mergeStrategy = $strategy ?? $this->mergeStrategy ?? ($strategyName !== null
+            ? $this->strategyRegistry->get($strategyName)
+            : $this->strategyRegistry->resolveFromConfig());
         $resolvedStrategyName = $strategyName ?? $mergeStrategy::class;
 
         $guestStorage = $this->resolveGlobalStorage();
@@ -130,9 +132,10 @@ final class MigrateGuestCartToUserAction
 
     public function withMergeStrategy(CartMergeStrategyInterface $strategy): static
     {
-        $this->mergeStrategy = $strategy;
+        $action = clone $this;
+        $action->mergeStrategy = $strategy;
 
-        return $this;
+        return $action;
     }
 
     public function executeForUser(Model | int | string $user, string $instance, ?string $sessionId): object
@@ -238,7 +241,6 @@ final class MigrateGuestCartToUserAction
                     throw $exception;
                 }
 
-                usleep(25000 * $attempt);
             }
         }
     }

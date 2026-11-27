@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Services;
+namespace AIArmada\Cart\Features\GuestMigration\Services;
 
 use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
 use AIArmada\Cart\Enums\CartMergeStrategy;

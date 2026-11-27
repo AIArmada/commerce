@@ -43,7 +43,7 @@ keywords:
 
 ## Key surfaces
 - Models: `CartItem`, `CartModel`, `Condition`, `Snapshots/CartSnapshot`, `Snapshots/CartSnapshotItem`, `Snapshots/CartSnapshotCondition`
-- Actions/Services: `Actions/MigrateCartOnLoginAction`, `Actions/MigrateGuestCartToUserAction`, `Services/BuiltInRulesFactory`, `Services/CartConditionResolver`, `Services/CartFactory`, `Services/CartMergeStrategyRegistry`, `Services/CartMigrationService`, `Services/RulePresets`
+- Actions/Services: `Features/GuestMigration/Actions/MigrateCartOnLoginAction`, `Features/GuestMigration/Actions/MigrateGuestCartToUserAction`, `Services/BuiltInRulesFactory`, `Services/CartConditionResolver`, `Services/CartFactory`, `Features/GuestMigration/Services/CartMergeStrategyRegistry`, `Features/GuestMigration/Services/CartMigrationService`, `Services/RulePresets`
 - Config `cart.php`: `database`, `money`, `empty_cart_behavior`, `migration`, `events`, `dynamic_rules_factory`, `conditions`, `snapshots`, `owner`, `limits`, `performance`
 
 ## Docs map

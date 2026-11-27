@@ -21,12 +21,12 @@ declare(strict_types=1);
  * sessions/users via session manipulation for proper testing approach.
  */
 
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Listeners\HandleUserLogin;
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLogin;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

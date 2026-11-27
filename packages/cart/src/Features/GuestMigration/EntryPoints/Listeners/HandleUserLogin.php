@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Listeners;
+namespace AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners;
 
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Container\Container;

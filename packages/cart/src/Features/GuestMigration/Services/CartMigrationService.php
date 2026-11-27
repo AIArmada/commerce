@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Services;
+namespace AIArmada\Cart\Features\GuestMigration\Services;
 
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartIdentifierResolver;

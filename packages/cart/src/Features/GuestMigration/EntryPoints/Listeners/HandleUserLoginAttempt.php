@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Listeners;
+namespace AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners;
 
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Support\Facades\Auth;

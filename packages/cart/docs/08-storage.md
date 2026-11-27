@@ -269,7 +269,7 @@ Cart::setMetadata('object', new NonSerializableClass()); // Non-JSON objects
 Transfer carts between identifiers (e.g., guest to user):
 
 ```php
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 
 $migrationService = app(CartMigrationService::class);
 
@@ -313,7 +313,7 @@ before migration. It is 0 when migration fails or no guest items exist.
 ### Action-Based Migration
 
 ```php
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
 
 $action = app(MigrateGuestCartToUserAction::class);
 
@@ -338,7 +338,7 @@ $result = $action->executeForUser(
 ```
 
 ```php
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateCartOnLoginAction;
 
 $action = app(MigrateCartOnLoginAction::class);
 

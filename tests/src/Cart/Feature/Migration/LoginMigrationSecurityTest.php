@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Listeners\HandleUserLogin;
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLogin;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;

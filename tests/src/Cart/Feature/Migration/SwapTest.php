@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMigrationService;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Actions;
+namespace AIArmada\Cart\Features\GuestMigration\Actions;
 
 use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
 use Exception;
@@ -18,9 +18,10 @@ class MigrateCartOnLoginAction
 
     public function withMergeStrategy(CartMergeStrategyInterface $strategy): static
     {
-        $this->mergeStrategy = $strategy;
+        $action = clone $this;
+        $action->mergeStrategy = $strategy;
 
-        return $this;
+        return $action;
     }
 
     /**

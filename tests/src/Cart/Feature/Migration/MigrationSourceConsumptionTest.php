@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Features\GuestMigration\EntryPoints\Listeners\HandleUserLoginAttempt;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Support\Facades\Auth;
 
