@@ -26,7 +26,7 @@ use AIArmada\Inventory\Reports\InventoryKpiService;
 use AIArmada\Inventory\Reports\InventoryReconciliationReport;
 use AIArmada\Inventory\Reports\MovementAnalysisReport;
 use AIArmada\Inventory\Reports\StockLevelReport;
-use AIArmada\Inventory\Services\Batch\BatchService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use AIArmada\Inventory\Services\Costing\FifoCostService;
 use AIArmada\Inventory\Services\Costing\StandardCostService;
 use AIArmada\Inventory\Services\Costing\ValuationService;
@@ -70,7 +70,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->registerCoreServices();
-        $this->registerBatchSerialServices();
         $this->registerCostingServices();
         $this->registerAllocationServices();
         $this->registerReplenishmentServices();
@@ -132,14 +131,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(InventoryAllocationService::class);
         $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
-    }
-
-    /**
-     * Register batch and serial number services.
-     */
-    private function registerBatchSerialServices(): void
-    {
-        $this->app->singleton(BatchService::class);
     }
 
     /**

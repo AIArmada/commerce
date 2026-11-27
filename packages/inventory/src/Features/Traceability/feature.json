@@ -7,6 +7,10 @@
     ],
     "table:inventory_serial_history": [
       "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\SerialService"
+    ],
+    "table:inventory_batches": [
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchService",
+      "AIArmada\\Inventory\\Features\\Traceability\\Persistence\\BatchAllocationService"
     ]
   },
   "extensions": {}

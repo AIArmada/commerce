@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Actions;
+namespace AIArmada\Inventory\Features\Traceability\Actions;
 
 use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Services\Batch\BatchService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;

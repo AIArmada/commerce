@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Batch\BatchService;
-use AIArmada\Inventory\Services\Batch\ExpiryMonitorService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
+use AIArmada\Inventory\Features\Traceability\Queries\ExpiryMonitorService;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {

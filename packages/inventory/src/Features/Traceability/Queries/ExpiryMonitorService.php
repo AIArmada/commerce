@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Batch;
+namespace AIArmada\Inventory\Features\Traceability\Queries;
+
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;

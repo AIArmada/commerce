@@ -147,7 +147,7 @@ a read-only availability check or purchase context alone.
 ### Batch & Serial Operations
 
 ```php
-use AIArmada\Inventory\Actions\CreateBatch;
+use AIArmada\Inventory\Features\Traceability\Actions\CreateBatch;
 use AIArmada\Inventory\Features\Traceability\Actions\RecordSerial;
 use Carbon\CarbonImmutable;
 
@@ -200,7 +200,7 @@ CheckLowInventory::run($product, $level);
 ### Process Expired Batches
 
 ```php
-use AIArmada\Inventory\Actions\ProcessExpiredBatches;
+use AIArmada\Inventory\Features\Traceability\Actions\ProcessExpiredBatches;
 
 // Returns count of batches marked as expired
 ProcessExpiredBatches::run();
@@ -340,7 +340,7 @@ $available = InventoryAllocation::getTotalAvailable($product);
 ### Creating Batches
 
 ```php
-use AIArmada\Inventory\Services\Batch\BatchService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchService;
 use Carbon\CarbonImmutable;
 
 $batchService = app(BatchService::class);
@@ -358,7 +358,7 @@ $batch = $batchService->createBatch(
 ### FEFO Allocation
 
 ```php
-use AIArmada\Inventory\Services\Batch\BatchAllocationService;
+use AIArmada\Inventory\Features\Traceability\Persistence\BatchAllocationService;
 
 $batchAllocationService = app(BatchAllocationService::class);
 
