@@ -165,29 +165,6 @@ final class JntWebhookLog extends Model
     }
 
     /**
-     * Mark the webhook as processed.
-     */
-    public function markAsProcessed(): void
-    {
-        $this->update([
-            'processing_status' => self::STATUS_PROCESSED,
-            'processed_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    /**
-     * Mark the webhook as failed.
-     */
-    public function markAsFailed(string $error): void
-    {
-        $this->update([
-            'processing_status' => self::STATUS_FAILED,
-            'processing_error' => $error,
-            'processed_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    /**
      * @return array<string, string>
      */
     protected function casts(): array

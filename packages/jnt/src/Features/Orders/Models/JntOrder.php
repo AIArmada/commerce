@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\DB;
+use AIArmada\Jnt\Features\Orders\Persistence\DeleteOrderChildren;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -274,12 +274,7 @@ final class JntOrder extends Model implements Auditable
     protected static function booted(): void
     {
         self::deleting(function (JntOrder $order): void {
-            DB::transaction(static function () use ($order): void {
-                $order->items()->delete();
-                $order->parcels()->delete();
-                $order->trackingEvents()->delete();
-                $order->webhookLogs()->update(['order_id' => null]);
-            });
+            app(DeleteOrderChildren::class)->handle($order);
         });
     }
 

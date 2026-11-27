@@ -3,7 +3,12 @@
   "name": "Tracking",
   "owns": {
     "table:jnt_tracking_events": [
-      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\TrackingEventWriter"
+      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\TrackingEventWriter",
+      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\OrderTrackingCleanup"
+    ],
+    "table:webhook_calls": [
+      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\WebhookLogWriter",
+      "AIArmada\\Jnt\\Features\\Tracking\\Persistence\\OrderTrackingCleanup"
     ]
   },
   "extensions": {}

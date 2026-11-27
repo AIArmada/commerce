@@ -4,6 +4,12 @@
   "owns": {
     "table:jnt_orders": [
       "AIArmada\\Jnt\\Features\\Orders\\Actions\\CancelStoredJntOrder"
+    ],
+    "table:jnt_order_items": [
+      "AIArmada\\Jnt\\Features\\Orders\\Persistence\\DeleteOrderChildren"
+    ],
+    "table:jnt_order_parcels": [
+      "AIArmada\\Jnt\\Features\\Orders\\Persistence\\DeleteOrderChildren"
     ]
   },
   "extensions": {}

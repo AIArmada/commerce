@@ -12,6 +12,7 @@ use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
+use AIArmada\Jnt\Features\Tracking\Persistence\WebhookLogWriter;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use Carbon\CarbonImmutable;
@@ -173,18 +174,12 @@ final class ProcessTrackingWebhook
             $attributes['owner_id'] = $shipment->owner_id;
         }
 
-        JntWebhookLog::query()
-            ->withoutOwnerScope()
-            ->whereKey($this->webhookCall->getKey())
-            ->update($attributes);
+        app(WebhookLogWriter::class)->update((string) $this->webhookCall->getKey(), $attributes);
     }
 
     private function markWebhookLogAsFailed(string $error): void
     {
-        JntWebhookLog::query()
-            ->withoutOwnerScope()
-            ->whereKey($this->webhookCall->getKey())
-            ->update([
+        app(WebhookLogWriter::class)->update((string) $this->webhookCall->getKey(), [
                 'digest' => $this->extractDigest(),
                 'processing_status' => JntWebhookLog::STATUS_FAILED,
                 'processing_error' => $error,
