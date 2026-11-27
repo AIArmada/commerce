@@ -135,7 +135,7 @@ final class InventoryLocation extends Model implements Auditable
             );
         }
 
-        return self::firstOrCreate(
+        return InventoryOwnerScope::forMutation(self::query())->firstOrCreate(
             ['code' => self::DEFAULT_LOCATION_CODE],
             [
                 'name' => 'Default Location',

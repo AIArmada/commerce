@@ -24,7 +24,7 @@ final readonly class UpdateInventoryLevel
         }
 
         return DB::transaction(function () use ($level, $attributes): InventoryLevel {
-            $record = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            $record = InventoryOwnerScope::forMutation(InventoryLevel::query())
                 ->whereKey($level->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();

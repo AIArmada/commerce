@@ -41,7 +41,7 @@ final class ShipInventory
         }
 
         return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $reference, $note, $userId, $occurredAt): InventoryMovement {
-            $levelQuery = InventoryOwnerScope::applyToLocationQuery(
+            $levelQuery = InventoryOwnerScope::forMutation(
                 InventoryLevel::query()
                     ->where('inventoryable_type', $model->getMorphClass())
                     ->where('inventoryable_id', $model->getKey())

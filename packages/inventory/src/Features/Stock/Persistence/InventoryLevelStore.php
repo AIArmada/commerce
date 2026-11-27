@@ -15,14 +15,8 @@ final readonly class InventoryLevelStore
 {
     public function getOrCreate(Model $model, string $locationId): InventoryLevel
     {
-        if (InventoryOwnerScope::isEnabled()) {
-            $locationExists = InventoryOwnerScope::applyToLocationQuery(
-                InventoryLocation::query()->whereKey($locationId)
-            )->exists();
-
-            if (! $locationExists) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
+        if (! InventoryOwnerScope::forMutation(InventoryLocation::query())->whereKey($locationId)->exists()) {
+            throw new InvalidArgumentException('Invalid location for current owner');
         }
 
         $identity = [
@@ -32,7 +26,7 @@ final readonly class InventoryLevelStore
         ];
 
         try {
-            return InventoryLevel::firstOrCreate(
+            return InventoryOwnerScope::forMutation(InventoryLevel::query())->firstOrCreate(
                 $identity,
                 [
                     'quantity_on_hand' => 0,
@@ -48,7 +42,7 @@ final readonly class InventoryLevelStore
                 throw $exception;
             }
 
-            $level = InventoryLevel::query()->where($identity)->first();
+            $level = InventoryOwnerScope::forMutation(InventoryLevel::query())->where($identity)->first();
 
             if (! $level instanceof InventoryLevel) {
                 throw $exception;

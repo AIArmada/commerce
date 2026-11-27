@@ -42,7 +42,7 @@ final class AdjustInventory
 
         return DB::transaction(function () use ($model, $locationId, $newQuantity, $reason, $note, $userId, $occurredAt): InventoryMovement {
             $level = $this->levels->getOrCreate($model, $locationId);
-            $level = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            $level = InventoryOwnerScope::forMutation(InventoryLevel::query())
                 ->whereKey($level->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();

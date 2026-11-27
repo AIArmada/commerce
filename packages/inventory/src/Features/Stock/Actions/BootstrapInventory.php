@@ -32,18 +32,14 @@ final readonly class BootstrapInventory
         DB::transaction(function () use ($model, $minimumOnHand, $reason, $note): void {
             $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
 
-            if (InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            if (InventoryOwnerScope::forMutation(InventoryLevel::query())
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->exists()) {
                 return;
             }
 
-            $currentOnHand = $this->inventory->getTotalOnHand($model);
-
-            if ($currentOnHand < $minimumOnHand) {
-                $this->inventory->receiveAtDefault($model, $minimumOnHand - $currentOnHand, $reason, $note);
-            }
+            $this->inventory->receiveAtDefault($model, $minimumOnHand, $reason, $note);
         });
     }
 }

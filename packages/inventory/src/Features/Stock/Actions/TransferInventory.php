@@ -51,7 +51,7 @@ final class TransferInventory
             // acquire the rows in the same order for either transfer direction.
             $this->levels->getOrCreate($model, $toLocationId);
 
-            $levels = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            $levels = InventoryOwnerScope::forMutation(InventoryLevel::query())
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->whereIn('location_id', [$fromLocationId, $toLocationId])

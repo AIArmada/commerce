@@ -7,8 +7,10 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Features\Stock\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLocation;
+use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -81,5 +83,36 @@ describe('InventoryOwnerScope retention', function (): void {
             ->and(count($optimizedQueries))->toBe(1)
             ->and(mb_strtolower($legacyQueries[0]['query']))->toContain('exists')
             ->and(mb_strtolower($optimizedQueries[0]['query']))->not->toContain('exists');
+    });
+});
+
+it('does not allow tenants to mutate visible global stock', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $owner = InventoryItem::create(['name' => 'Tenant']);
+    $sku = InventoryItem::create(['name' => 'Stock item']);
+    [$location, $level] = OwnerContext::withOwner(null, function () use ($sku): array {
+        $location = InventoryLocation::getOrCreateDefault();
+        app(InventoryService::class)->receive($sku, $location->id, 10);
+
+        return [$location, InventoryLevel::query()->where('location_id', $location->id)->firstOrFail()];
+    });
+
+    OwnerContext::withOwner($owner, function () use ($sku, $location, $level): void {
+        expect(InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())->whereKey($level->id)->exists())->toBeTrue()
+            ->and(InventoryOwnerScope::forMutation(InventoryLevel::query())->whereKey($level->id)->exists())->toBeFalse();
+
+        expect(fn () => app(InventoryService::class)->receive($sku, $location->id, 5))
+            ->toThrow(InvalidArgumentException::class);
+        expect(fn () => app(UpdateInventoryLevel::class)->execute($level, ['quantity_on_hand' => 99]))
+            ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        $default = InventoryLocation::getOrCreateDefault();
+        expect($default->id)->not->toBe($location->id);
+    });
+
+    OwnerContext::withOwner(null, function () use ($level): void {
+        expect($level->fresh()->quantity_on_hand)->toBe(10);
     });
 });

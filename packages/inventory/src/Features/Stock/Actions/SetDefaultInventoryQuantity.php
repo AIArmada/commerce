@@ -31,7 +31,7 @@ final readonly class SetDefaultInventoryQuantity
             $location = InventoryLocation::getOrCreateDefault();
             $level = $this->inventory->getOrCreateLevel($item, $location->id);
 
-            $level = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
+            $level = InventoryOwnerScope::forMutation(InventoryLevel::query())
                 ->whereKey($level->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
