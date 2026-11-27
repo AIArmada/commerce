@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Models;
 
+use AIArmada\Feedback\Actions\DeleteFeedbackResponseDependentsAction;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Concerns\HasContactMethods;
@@ -64,8 +65,7 @@ final class FeedbackResponse extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $response): void {
-            $response->answers()->chunkById(200, fn ($answers): mixed => $answers->each->delete());
-            $response->testimonials()->chunkById(200, fn ($testimonials): mixed => $testimonials->each->delete());
+            app(DeleteFeedbackResponseDependentsAction::class)->execute($response);
         });
     }
 

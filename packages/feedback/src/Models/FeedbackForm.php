@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Models;
 
+use AIArmada\Feedback\Actions\DeleteFeedbackFormDependentsAction;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Enums\FeedbackFormStatus;
@@ -64,11 +65,7 @@ final class FeedbackForm extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $form): void {
-            $form->analytics()->delete();
-            $form->sections()->chunkById(200, fn ($sections): mixed => $sections->each->delete());
-            $form->questions()->chunkById(200, fn ($questions): mixed => $questions->each->delete());
-            $form->responses()->chunkById(200, fn ($responses): mixed => $responses->each->delete());
-            $form->invitations()->chunkById(200, fn ($invitations): mixed => $invitations->each->delete());
+            app(DeleteFeedbackFormDependentsAction::class)->execute($form);
         });
     }
 

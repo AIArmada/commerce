@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Models;
 
+use AIArmada\Feedback\Actions\DeleteFeedbackQuestionDependentsAction;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
@@ -59,8 +60,7 @@ final class FeedbackQuestion extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $question): void {
-            $question->options()->chunkById(200, fn ($options): mixed => $options->each->delete());
-            $question->answers()->chunkById(200, fn ($answers): mixed => $answers->each->delete());
+            app(DeleteFeedbackQuestionDependentsAction::class)->execute($question);
         });
     }
 

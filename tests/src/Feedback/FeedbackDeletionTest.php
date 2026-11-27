@@ -73,7 +73,7 @@ it('deletes the complete feedback form aggregate', function (): void {
         ->and(ContactMethod::query()->count())->toBe(0);
 });
 
-it('nulls testimonial answer references when deleting a question', function (): void {
+it('nulls testimonial answer references when deleting a question', function (bool $direct): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Question'));
     $question = app(SaveFeedbackFormStructureAction::class)->saveQuestion($form->id, [
@@ -98,14 +98,18 @@ it('nulls testimonial answer references when deleting a question', function (): 
         'status' => 'pending',
     ]);
 
-    app(DeleteFeedbackQuestionAction::class)->execute($question);
+    if ($direct) {
+        $question->delete();
+    } else {
+        app(DeleteFeedbackQuestionAction::class)->execute($question);
+    }
 
     expect($testimonial->fresh()->feedback_answer_id)->toBeNull()
         ->and(FeedbackAnswer::query()->count())->toBe(0)
         ->and(FeedbackQuestion::query()->count())->toBe(0);
-});
+})->with([true, false]);
 
-it('nulls question section references when deleting a section', function (): void {
+it('nulls question section references when deleting a section', function (bool $direct): void {
     $form = app(CreateFeedbackFormAction::class)
         ->execute(new CreateFeedbackFormData(name: 'Delete Section'));
     $structure = app(SaveFeedbackFormStructureAction::class);
@@ -117,8 +121,12 @@ it('nulls question section references when deleting a section', function (): voi
         'feedback_section_id' => $section->id,
     ]);
 
-    app(DeleteFeedbackSectionAction::class)->execute($section);
+    if ($direct) {
+        $section->delete();
+    } else {
+        app(DeleteFeedbackSectionAction::class)->execute($section);
+    }
 
     expect($question->fresh()->feedback_section_id)->toBeNull()
         ->and(FeedbackSection::query()->count())->toBe(0);
-});
+})->with([true, false]);
