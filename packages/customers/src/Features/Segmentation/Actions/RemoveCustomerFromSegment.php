@@ -28,7 +28,12 @@ final class RemoveCustomerFromSegment
         }
 
         $customer->getConnection()->transaction(function () use ($customer, $segment): void {
-            $customer = Customer::query()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
+            $customer = $customer->newQuery()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
+            $segment = $segment->newQuery()->whereKey($segment->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $this->shareOwner($customer, $segment)) {
+                throw new InvalidArgumentException('Customer and segment must share the same owner context.');
+            }
 
             if ($customer->segments()->detach($segment->id) === 0) {
                 return;

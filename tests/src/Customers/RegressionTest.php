@@ -928,6 +928,37 @@ it('rolls back customer merges when source deletion is vetoed', function (): voi
         ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse();
 });
 
+it('rolls back a merge when a contact transfer is vetoed', function (): void {
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Contact Veto']);
+    $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Contact Veto']);
+    $contact = $source->addContactMethod(ContactMethodData::email('merge-contact-veto@example.com'));
+
+    ContactMethod::saving(static fn (ContactMethod $record): bool => $record->getKey() !== $contact->getKey());
+
+    expect(fn () => app(MergeCustomers::class)->execute($target, $source))
+        ->toThrow(RuntimeException::class, 'Customer merge contact transfer was cancelled.');
+
+    expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
+        ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()
+        ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse();
+});
+
+it('rolls back contact transfers when merge metadata persistence is vetoed', function (): void {
+    $source = createRegressionTestCustomer(['first_name' => 'Source', 'last_name' => 'Metadata Veto', 'metadata' => ['test' => 'preserve']]);
+    $target = createRegressionTestCustomer(['first_name' => 'Target', 'last_name' => 'Metadata Veto']);
+    $contact = $source->addContactMethod(ContactMethodData::email('merge-metadata-veto@example.com'));
+
+    Customer::saving(static fn (Customer $record): bool => $record->getKey() !== $target->getKey());
+
+    expect(fn () => app(MergeCustomers::class)->execute($target, $source))
+        ->toThrow(RuntimeException::class, 'Customer merge metadata persistence was cancelled.');
+
+    expect(Customer::query()->whereKey($source->getKey())->exists())->toBeTrue()
+        ->and($source->contactMethods()->whereKey($contact->getKey())->exists())->toBeTrue()
+        ->and($target->contactMethods()->whereKey($contact->getKey())->exists())->toBeFalse()
+        ->and(empty($target->fresh()->metadata))->toBeTrue();
+});
+
 it('rolls back customer deletion when a dependent deletion is vetoed', function (): void {
     $customer = createRegressionTestCustomer(['first_name' => 'Dependent', 'last_name' => 'Veto']);
     $contact = $customer->addContactMethod(ContactMethodData::email('dependent-veto@example.com'));

@@ -10,6 +10,7 @@ use AIArmada\Customers\Features\Segmentation\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
 use AIArmada\Customers\Models\Customer;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -314,4 +315,20 @@ describe('SegmentationService', function (): void {
                 ->and($stats['marketing_opted_in'])->toBe(0);
         });
     });
+});
+
+it('rejects membership writes for a segment deleted after it was loaded', function (): void {
+    config()->set('customers.features.owner.enabled', false);
+    $customer = Customer::create(['first_name' => 'Stale', 'last_name' => 'Segment']);
+    $segment = Segment::create(['name' => 'Deleted Segment', 'slug' => 'deleted-segment']);
+    Segment::query()->whereKey($segment->id)->delete();
+
+    Event::fake([CustomerSegmentChanged::class]);
+
+    expect(fn () => app(AssignCustomerToSegment::class)->execute($customer, $segment))
+        ->toThrow(ModelNotFoundException::class);
+    expect(fn () => app(RemoveCustomerFromSegment::class)->execute($customer, $segment))
+        ->toThrow(ModelNotFoundException::class);
+
+    Event::assertNotDispatched(CustomerSegmentChanged::class);
 });

@@ -68,7 +68,9 @@ final class MergeCustomers
 
                 if (! empty($source->metadata) && empty($target->metadata)) {
                     $target->metadata = $source->metadata;
-                    $target->save();
+                    if (! $target->save()) {
+                        throw new RuntimeException('Customer merge metadata persistence was cancelled.');
+                    }
                 }
 
                 if (! $source->delete()) {
@@ -169,7 +171,9 @@ final class MergeCustomers
             }
 
             $contactMethod->contactable()->associate($target);
-            $contactMethod->save();
+            if (! $contactMethod->save()) {
+                throw new RuntimeException('Customer merge contact transfer was cancelled.');
+            }
         }
     }
 
@@ -183,7 +187,9 @@ final class MergeCustomers
             }
 
             $socialProfile->socialable()->associate($target);
-            $socialProfile->save();
+            if (! $socialProfile->save()) {
+                throw new RuntimeException('Customer merge social profile transfer was cancelled.');
+            }
         }
     }
 
