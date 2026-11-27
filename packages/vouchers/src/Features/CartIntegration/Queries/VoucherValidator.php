@@ -17,6 +17,7 @@ use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherValidation;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\Paused;
@@ -163,7 +164,7 @@ final class VoucherValidator implements VoucherValidation
             }
         }
 
-        return VoucherValidationResult::valid();
+        return VoucherValidationResult::valid(['voucher' => VoucherSnapshot::fromModel($voucher)->toArray()]);
     }
 
     protected function getUser(): ?Model

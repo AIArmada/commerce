@@ -300,3 +300,40 @@ it('prefers the exact owner voucher when a global voucher shares its code', func
         Voucher::clearBootedModels();
     }
 });
+
+it('removes directly registered discounts when the voucher value changes before checkout', function (): void {
+    $voucher = scopeVoucher(['value' => 500]);
+    $cart = new Cart(new InMemoryStorage, 'checkout-changed-value-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+    $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
+
+    $voucher->update(['value' => 100]);
+
+    $event = new class($cart)
+    {
+        public function __construct(public readonly Cart $cart) {}
+    };
+
+    app(ValidateVoucherOnCheckout::class)->handle($event);
+
+    expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
+        ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue()
+        ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
+});
+
+it('keeps an unchanged directly registered voucher at checkout', function (): void {
+    $voucher = scopeVoucher();
+    $cart = new Cart(new InMemoryStorage, 'checkout-unchanged-value-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+
+    $event = new class($cart)
+    {
+        public function __construct(public readonly Cart $cart) {}
+    };
+
+    app(ValidateVoucherOnCheckout::class)->handle($event);
+
+    expect($cart->getDynamicConditions())->not->toBeEmpty();
+});

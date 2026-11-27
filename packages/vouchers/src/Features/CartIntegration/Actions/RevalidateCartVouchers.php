@@ -30,6 +30,7 @@ final readonly class RevalidateCartVouchers
         }
 
         $conditionNames = [];
+        $conditionSnapshots = [];
 
         foreach ([$cart->getDynamicConditions(), $cart->getStoredConditions()] as $conditions) {
             foreach ($conditions as $condition) {
@@ -40,7 +41,9 @@ final readonly class RevalidateCartVouchers
                 $code = $condition->getAttributes()['voucher_code'] ?? null;
 
                 if (is_string($code) && mb_trim($code) !== '') {
-                    $conditionNames[$this->normalizeCode($code)][$condition->getName()] = true;
+                    $normalized = $this->normalizeCode($code);
+                    $conditionNames[$normalized][$condition->getName()] = true;
+                    $conditionSnapshots[$normalized][] = $condition->getAttributes()['voucher_data'] ?? null;
                 }
             }
         }
@@ -53,6 +56,16 @@ final readonly class RevalidateCartVouchers
 
             if (! $result->isValid) {
                 $invalidCodes[$code] = $result->reason ?? 'Voucher is no longer valid';
+
+                continue;
+            }
+
+            foreach ($conditionSnapshots[$code] ?? [] as $snapshot) {
+                if (! $this->matchesCurrentVoucher($snapshot, $result->getDetail('voucher'))) {
+                    $invalidCodes[$code] = 'Voucher terms have changed. Apply the voucher again.';
+
+                    break;
+                }
             }
         }
 
@@ -82,5 +95,19 @@ final readonly class RevalidateCartVouchers
         if (config('vouchers.checkout.block_on_invalid', false)) {
             throw VoucherValidationException::multipleInvalid($invalidCodes);
         }
+    }
+    private function matchesCurrentVoucher(mixed $snapshot, mixed $current): bool
+    {
+        if (! is_array($snapshot) || ! is_array($current)) {
+            return false;
+        }
+
+        foreach (['id', 'type', 'value', 'value_config', 'currency', 'max_discount', 'target_definition', 'credit_destination', 'credit_delay_hours'] as $field) {
+            if (! array_key_exists($field, $snapshot) || ! array_key_exists($field, $current) || $snapshot[$field] !== $current[$field]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -24,10 +24,12 @@ final readonly class VoucherValidationResult implements JsonSerializable
 
     /**
      * Create a successful validation result.
+     *
+     * @param  array<string, mixed>  $details
      */
-    public static function valid(): self
+    public static function valid(array $details = []): self
     {
-        return new self(isValid: true);
+        return new self(isValid: true, details: $details !== [] ? $details : null);
     }
 
     /**
