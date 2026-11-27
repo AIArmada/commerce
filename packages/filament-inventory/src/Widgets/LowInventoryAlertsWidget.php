@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
+use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;

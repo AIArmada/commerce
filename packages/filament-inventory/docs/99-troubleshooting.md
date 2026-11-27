@@ -104,7 +104,7 @@ protected function getHeaderWidgets(): array
 **Solution:** Clear the cache:
 
 ```php
-use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
+use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 
 app(InventoryStatsAggregator::class)->clearCache();
 ```

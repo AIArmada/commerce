@@ -7,7 +7,7 @@ namespace AIArmada\FilamentInventory;
 use AIArmada\FilamentInventory\Policies\InventoryAllocationPolicy;
 use AIArmada\FilamentInventory\Policies\InventoryLevelPolicy;
 use AIArmada\FilamentInventory\Policies\InventoryReorderSuggestionPolicy;
-use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
+use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 use AIArmada\FilamentInventory\Widgets\LowInventoryAlertsWidget;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;

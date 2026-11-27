@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
+use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;

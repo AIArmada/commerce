@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentInventory\Services;
+namespace AIArmada\FilamentInventory\Queries;
 
 use AIArmada\FilamentInventory\Persistence\InventoryStatsCache;
 use AIArmada\Inventory\Features\Reporting\Queries\MovementAnalysisReport;
@@ -10,11 +10,11 @@ use AIArmada\Inventory\Features\Reporting\Queries\StockLevelReport;
 use AIArmada\Inventory\Features\Stock\Models\InventoryLevel;
 use Illuminate\Database\Eloquent\Builder;
 
-final class InventoryStatsAggregator
+final readonly class InventoryStatsAggregator
 {
     public function __construct(
-        private readonly StockLevelReport $stockLevelReport,
-        private readonly MovementAnalysisReport $movementAnalysisReport,
+        private StockLevelReport $stockLevelReport,
+        private MovementAnalysisReport $movementAnalysisReport,
     ) {}
 
     /**

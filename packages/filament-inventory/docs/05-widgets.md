@@ -267,7 +267,7 @@ Stats are cached to improve performance:
 To clear the cache programmatically:
 
 ```php
-use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
+use AIArmada\FilamentInventory\Queries\InventoryStatsAggregator;
 
 app(InventoryStatsAggregator::class)->clearCache();
 ```

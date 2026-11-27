@@ -99,7 +99,10 @@ final class CartManagerWithInventory implements CartManagerInterface
 
     public function forOwner(Model $owner): static
     {
-        return new self($this->manager->forOwner($owner));
+        $decorator = new self($this->manager->forOwner($owner));
+        $decorator->allocationService = $this->allocationService;
+
+        return $decorator;
     }
 
     public function getOwnerType(): ?string

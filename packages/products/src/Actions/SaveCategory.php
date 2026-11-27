@@ -14,7 +14,18 @@ final readonly class SaveCategory
     /** @param array<string, mixed> $attributes */
     public function create(array $attributes): Category
     {
-        return DB::transaction(fn (): Category => Category::query()->create(Arr::except($attributes, ['id', 'owner_type', 'owner_id'])));
+        return DB::transaction(function () use ($attributes): Category {
+            $data = Arr::except($attributes, ['id', 'owner_type', 'owner_id']);
+
+            if (config('products.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                OwnerContext::assertResolvedOrExplicitGlobal($owner);
+                $data['owner_type'] = $owner?->getMorphClass();
+                $data['owner_id'] = $owner?->getKey();
+            }
+
+            return Category::query()->create($data);
+        }, 3);
     }
 
     /** @param array<string, mixed> $attributes */

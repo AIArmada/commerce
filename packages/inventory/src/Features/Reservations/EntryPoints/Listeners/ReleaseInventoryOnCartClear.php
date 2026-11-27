@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners;
 
+use AIArmada\Cart\Cart;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Queries\CartReservationIdentity;
 
 final readonly class ReleaseInventoryOnCartClear
 {
@@ -45,26 +47,14 @@ final readonly class ReleaseInventoryOnCartClear
      */
     private function getCartIdentifier(object $event): ?string
     {
-        // Try to get cart ID from event
-        if (property_exists($event, 'cartId')) {
-            return $event->cartId;
+        foreach (['cartId', 'cart_id'] as $property) {
+            if (isset($event->{$property}) && is_string($event->{$property}) && $event->{$property} !== '') {
+                return $event->{$property};
+            }
         }
 
-        if (property_exists($event, 'cart_id')) {
-            return $event->cart_id;
-        }
-
-        // Try to get from cart object
-        if (property_exists($event, 'cart')) {
-            $cart = $event->cart;
-
-            if (method_exists($cart, 'getId') && $cart->getId() !== null) {
-                return (string) $cart->getId();
-            }
-
-            if (method_exists($cart, 'getIdentifier') && method_exists($cart, 'instance')) {
-                return sprintf('%s_%s', $cart->getIdentifier(), $cart->instance());
-            }
+        if (isset($event->cart) && $event->cart instanceof Cart) {
+            return CartReservationIdentity::fromCart($event->cart);
         }
 
         return null;
