@@ -9,7 +9,6 @@ use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\States\ShipmentStatus;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -88,7 +87,6 @@ final class ShipmentsTable
                     Actions\PrintLabelAction::bulkAction(),
                     Actions\CancelShipmentAction::bulkAction(),
                     Actions\SyncTrackingAction::bulkAction(),
-                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

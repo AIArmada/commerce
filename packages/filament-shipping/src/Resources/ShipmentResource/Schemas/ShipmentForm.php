@@ -38,10 +38,13 @@ final class ShipmentForm
 
                         Select::make('status')
                             ->options(ShipmentStatus::options())
-                            ->required(),
+                            ->default('pending')
+                            ->disabled()
+                            ->dehydrated(false),
 
                         TextInput::make('tracking_number')
-                            ->maxLength(255),
+                            ->disabled()
+                            ->dehydrated(false),
                     ])
                     ->columns(2),
 

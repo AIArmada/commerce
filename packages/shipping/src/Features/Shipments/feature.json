@@ -10,7 +10,8 @@
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CreateShipment",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecordTrackingEvent",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\TrackingAggregator",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\MarkStoredShipmentPickedUp"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\MarkStoredShipmentPickedUp",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\WriteManualShipment"
     ],
     "table:shipment_events": [
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
