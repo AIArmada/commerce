@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Pages;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
-use AIArmada\FilamentGrowth\Support\ExperimentHelpers;
+use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use BackedEnum;
@@ -37,8 +37,8 @@ final class ExperimentResource extends Resource
     {
         $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
 
-        return ExperimentHelpers::applyOwnerSafeRelationCounts(
-            ExperimentHelpers::scopeExperiments(Experiment::query()),
+        return ExperimentAccess::applyOwnerSafeRelationCounts(
+            ExperimentAccess::scopeExperiments(Experiment::query()),
         )->with([
             'trackedProperty' => function ($query) use ($propertyColumns) {
                 $builder = $query instanceof Relation ? $query->getQuery() : $query;
@@ -78,7 +78,7 @@ final class ExperimentResource extends Resource
     public static function canCreate(): bool
     {
         return parent::canCreate()
-            && ExperimentHelpers::canCreateExperiment();
+            && ExperimentAccess::canCreateExperiment();
     }
 
     public static function canEdit(Model $record): bool
@@ -91,7 +91,7 @@ final class ExperimentResource extends Resource
             return false;
         }
 
-        return ExperimentHelpers::canMutateExperiment($record);
+        return ExperimentAccess::canMutateExperiment($record);
     }
 
     public static function canDelete(Model $record): bool
@@ -104,7 +104,7 @@ final class ExperimentResource extends Resource
             return false;
         }
 
-        return ExperimentHelpers::canMutateExperiment($record);
+        return ExperimentAccess::canMutateExperiment($record);
     }
 
     public static function canDeleteAny(): bool

@@ -143,7 +143,7 @@ Gate::define('growth.settings.manage', fn ($user) => $user->hasRole('admin'));
 ## Owner scoping expectations
 
 The package resolves readable and writable records through `OwnerUiScope` and the
-`ExperimentHelpers` support class, and the policies delegate to the same access rules.
+`ExperimentAccess` support class, and the policies delegate to the same access rules.
 
 That means:
 

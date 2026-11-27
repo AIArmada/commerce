@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Pages;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
-use AIArmada\FilamentGrowth\Support\ExperimentHelpers;
+use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
@@ -40,7 +40,7 @@ final class VariantResource extends Resource
         $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
 
         return OwnerUiScope::apply(Variant::query())
-            ->whereIn('experiment_id', ExperimentHelpers::scopeExperiments(Experiment::query())->select('id'))
+            ->whereIn('experiment_id', ExperimentAccess::scopeExperiments(Experiment::query())->select('id'))
             ->with([
                 'experiment:' . implode(',', array_values(array_unique([
                     'id',
@@ -92,7 +92,7 @@ final class VariantResource extends Resource
             return false;
         }
 
-        return ExperimentHelpers::canMutateVariant($record);
+        return ExperimentAccess::canMutateVariant($record);
     }
 
     public static function canDelete(Model $record): bool
@@ -105,7 +105,7 @@ final class VariantResource extends Resource
             return false;
         }
 
-        return ExperimentHelpers::canMutateVariant($record);
+        return ExperimentAccess::canMutateVariant($record);
     }
 
     public static function canDeleteAny(): bool

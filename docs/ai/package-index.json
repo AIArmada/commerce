@@ -724,7 +724,7 @@
   ],
   "use_when": "Experiment admin UI.",
   "skip_when": "Assignment math \u2014 see growth.",
-  "owner": "ExperimentHelpers owner-aware.",
+  "owner": "ExperimentAccess owner-aware.",
   "paired": "growth",
   "context": "packages/filament-growth/CONTEXT.md",
   "overview": "packages/filament-growth/docs/01-overview.md"

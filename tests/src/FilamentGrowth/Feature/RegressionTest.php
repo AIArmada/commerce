@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\ManageGrowthSettings;
 use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
-use AIArmada\FilamentGrowth\Support\ExperimentHelpers;
+use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
 use AIArmada\Growth\Models\Experiment;
@@ -361,7 +361,7 @@ it('hides bulk experiment delete when no experiment is writable', function (): v
     test()->actingAs(r2GrowthUser());
 
     expect(Experiment::query()->count())->toBe(0)
-        ->and(ExperimentHelpers::canDeleteAnyExperiment())->toBeFalse()
+        ->and(ExperimentAccess::canDeleteAnyExperiment())->toBeFalse()
         ->and(Gate::allows('deleteAny', Experiment::class))->toBeFalse();
 });
 
@@ -377,7 +377,7 @@ it('shows bulk experiment delete when a writable experiment exists', function ()
     test()->actingAs($actor);
 
     OwnerContext::withOwner($owner, function (): void {
-        expect(ExperimentHelpers::canDeleteAnyExperiment())->toBeTrue()
+        expect(ExperimentAccess::canDeleteAnyExperiment())->toBeTrue()
             ->and(Gate::allows('deleteAny', Experiment::class))->toBeTrue();
     });
 });

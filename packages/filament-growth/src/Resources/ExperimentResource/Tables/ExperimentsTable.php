@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
-use AIArmada\FilamentGrowth\Support\ExperimentHelpers;
+use AIArmada\FilamentGrowth\Authorization\ExperimentAccess;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
@@ -101,7 +101,7 @@ class ExperimentsTable
                 BulkActionGroup::make([
                     BulkAction::make('deleteSelected')
                         ->label('Delete Selected')
-                        ->visible(fn (): bool => ExperimentHelpers::canDeleteAnyExperiment())
+                        ->visible(fn (): bool => ExperimentAccess::canDeleteAnyExperiment())
                         ->requiresConfirmation()
                         ->action(function (Collection $records): void {
                             ExperimentsTable::deleteSelectedExperiments($records);
@@ -217,7 +217,7 @@ class ExperimentsTable
 
     private static function canEditRecord(Experiment $record): bool
     {
-        return ExperimentHelpers::canMutateExperiment($record);
+        return ExperimentAccess::canMutateExperiment($record);
     }
 
     private static function statusOperationalDescription(ExperimentStatus $status): string
@@ -238,7 +238,7 @@ class ExperimentsTable
     {
         DB::transaction(function () use ($records): void {
             foreach ($records as $record) {
-                if (! $record instanceof Experiment || ! ExperimentHelpers::canMutateExperiment($record)) {
+                if (! $record instanceof Experiment || ! ExperimentAccess::canMutateExperiment($record)) {
                     throw new RuntimeException('Global growth experiments can only be deleted from explicit global context.');
                 }
             }

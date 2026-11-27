@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentGrowth\Support;
+namespace AIArmada\FilamentGrowth\Authorization;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -13,7 +13,7 @@ use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
-final class ExperimentHelpers
+final class ExperimentAccess
 {
     /**
      * @param  Builder<Experiment>  $query

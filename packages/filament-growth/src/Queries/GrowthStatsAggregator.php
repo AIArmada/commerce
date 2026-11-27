@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentGrowth\Support;
+namespace AIArmada\FilamentGrowth\Queries;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
@@ -40,6 +40,7 @@ final class GrowthStatsAggregator
             ->addSelect(['id', 'tracked_property_id', 'owner_type', 'owner_id', 'name', 'module_type', 'status', 'goal_event_name', 'winner_metric', 'created_at', 'updated_at'])
             ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->limit(max(1, $statsExperimentLimit))
             ->get();
 

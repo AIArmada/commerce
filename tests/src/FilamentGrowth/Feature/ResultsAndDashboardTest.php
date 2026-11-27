@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\GrowthDashboard;
-use AIArmada\FilamentGrowth\Support\GrowthStatsAggregator;
+use AIArmada\FilamentGrowth\Queries\GrowthStatsAggregator;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
