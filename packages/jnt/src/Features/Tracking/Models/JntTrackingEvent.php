@@ -9,14 +9,13 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Data\TrackingStatus;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\ReadTrackingOrderOwner;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use AIArmada\Jnt\Support\InheritedOwnerGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
 
 /**
@@ -64,7 +63,6 @@ use InvalidArgumentException;
  * @property string|null $owner_id
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
- * @property-read JntOrder|null $order
  *
  * @method static Builder<static> forOwner(?Model $owner, bool $includeGlobal = true)
  */
@@ -85,25 +83,27 @@ final class JntTrackingEvent extends Model
             }
 
             // Always fetch parent order without scope to detect cross-owner writes.
-            $order = JntOrder::query()->withoutOwnerScope()->find($event->order_id);
+            $order = app(ReadTrackingOrderOwner::class)->findForEvent($event->order_id);
 
             if ($order === null) {
                 throw new InvalidArgumentException('Invalid order_id for JntTrackingEvent.');
             }
 
             if ($event->owner_type !== null || $event->owner_id !== null) {
-                if ($order->owner_type !== $event->owner_type
-                    || (string) $order->owner_id !== (string) $event->owner_id) {
+                if ($order->ownerType !== $event->owner_type
+                    || (string) $order->ownerId !== (string) $event->owner_id) {
                     throw new InvalidArgumentException(
                         'JntTrackingEvent order_id belongs to a different owner than the current context.',
                     );
                 }
 
+                InheritedOwnerGuard::assertMatchesContext($event->owner_type, $event->owner_id, JntTrackingEvent::class);
+
                 return;
             }
 
-            $event->owner_type = $order->owner_type;
-            $event->owner_id = $order->owner_id;
+            $event->owner_type = $order->ownerType;
+            $event->owner_id = $order->ownerId;
 
             InheritedOwnerGuard::assertMatchesContext($event->owner_type, $event->owner_id, JntTrackingEvent::class);
         });
@@ -162,16 +162,6 @@ final class JntTrackingEvent extends Model
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
         return $tables['tracking_events'] ?? $prefix . 'tracking_events';
-    }
-
-    /**
-     * Get the order that this tracking event belongs to.
-     *
-     * @return BelongsTo<JntOrder, $this>
-     */
-    public function order(): BelongsTo
-    {
-        return $this->belongsTo(JntOrder::class, 'order_id');
     }
 
     /**

@@ -314,13 +314,7 @@ describe('JntTrackingEvent model', function (): void {
         expect($event->getLocation())->toBe('City B, Country D');
     });
 
-    it('defines order relationship', function (): void {
-        $event = new JntTrackingEvent;
-        $relation = $event->order();
 
-        expect($relation)->toBeInstanceOf(BelongsTo::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntOrder::class);
-    });
 });
 
 describe('JntWebhookLog model', function (): void {
@@ -385,11 +379,5 @@ describe('JntWebhookLog model', function (): void {
         expect(JntWebhookLog::STATUS_FAILED)->toBe('failed');
     });
 
-    it('defines order relationship', function (): void {
-        $log = new JntWebhookLog;
-        $relation = $log->order();
 
-        expect($relation)->toBeInstanceOf(BelongsTo::class);
-        expect($relation->getRelated())->toBeInstanceOf(JntOrder::class);
-    });
 });

@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Tracking\Models;
 
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Api\ReadTrackingOrderOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
 use Throwable;
 
@@ -34,7 +31,6 @@ use Throwable;
  * @property string|null $owner_id
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
- * @property-read JntOrder|null $order
  *
  * @method static Builder<static> forOwner(?Model $owner, bool $includeGlobal = false)
  */
@@ -63,17 +59,7 @@ final class JntWebhookLog extends Model
             }
 
             try {
-                if (config('jnt.owner.enabled', false)) {
-                    /** @var JntOrder $order */
-                    $order = OwnerWriteGuard::findOrFailForOwner(
-                        modelClass: JntOrder::class,
-                        id: $log->order_id,
-                        owner: OwnerContext::CURRENT,
-                        includeGlobal: (bool) config('jnt.owner.include_global', false),
-                    );
-                } else {
-                    $order = JntOrder::query()->find($log->order_id);
-                }
+                $order = app(ReadTrackingOrderOwner::class)->findForLog($log->order_id);
             } catch (Throwable $exception) {
                 throw new InvalidArgumentException('Invalid order_id for JntWebhookLog.', previous: $exception);
             }
@@ -83,8 +69,8 @@ final class JntWebhookLog extends Model
             }
 
             if ($log->owner_type !== null || $log->owner_id !== null) {
-                if ($order->owner_type !== $log->owner_type
-                    || (string) $order->owner_id !== (string) $log->owner_id) {
+                if ($order->ownerType !== $log->owner_type
+                    || (string) $order->ownerId !== (string) $log->owner_id) {
                     throw new InvalidArgumentException(
                         'JntWebhookLog order_id belongs to a different owner than the current context.',
                     );
@@ -93,8 +79,8 @@ final class JntWebhookLog extends Model
                 return;
             }
 
-            $log->owner_type = $order->owner_type;
-            $log->owner_id = $order->owner_id;
+            $log->owner_type = $order->ownerType;
+            $log->owner_id = $order->ownerId;
         });
     }
 
@@ -128,16 +114,6 @@ final class JntWebhookLog extends Model
         $tables = config('jnt.database.tables', []);
 
         return $tables['webhook_calls'] ?? 'webhook_calls';
-    }
-
-    /**
-     * Get the order that this webhook log belongs to.
-     *
-     * @return BelongsTo<JntOrder, $this>
-     */
-    public function order(): BelongsTo
-    {
-        return $this->belongsTo(JntOrder::class, 'order_id');
     }
 
     /**

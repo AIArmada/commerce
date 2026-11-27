@@ -239,7 +239,8 @@ Child records automatically inherit owner from their parent:
 $order = JntOrder::query()->first();
 
 // Events inherit owner from order
-foreach ($order->trackingEvents as $event) {
+foreach (JntTrackingEvent::query()->where('order_id', $order->id)
+    ->where('owner_type', $order->owner_type)->where('owner_id', $order->owner_id)->cursor() as $event) {
     // $event->owner_type === $order->owner_type
     // $event->owner_id === $order->owner_id
 }

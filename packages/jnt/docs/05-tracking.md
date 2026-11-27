@@ -238,7 +238,9 @@ use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 // Get events for an order
 $order = JntOrder::find($orderId);
-$events = $order->trackingEvents()->latest('scan_time')->get();
+$events = JntTrackingEvent::query()->where('order_id', $order->id)
+    ->where('owner_type', $order->owner_type)->where('owner_id', $order->owner_id)
+    ->latest('scan_time')->get();
 
 foreach ($events as $event) {
     echo $event->scan_time;           // Event timestamp

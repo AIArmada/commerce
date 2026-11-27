@@ -437,7 +437,7 @@ it('handles API errors gracefully', function () {
 ```php
 // Eager load relationships
 $orders = JntOrder::query()
-    ->with(['items', 'parcels', 'trackingEvents'])
+    ->with(['items', 'parcels'])
     ->get();
 
 // Use select for specific columns
