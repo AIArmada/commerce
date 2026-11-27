@@ -9,7 +9,7 @@ use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Data\DiscountProposal;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Collection;
 

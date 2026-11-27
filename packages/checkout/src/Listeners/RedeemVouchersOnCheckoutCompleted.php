@@ -6,7 +6,7 @@ namespace AIArmada\Checkout\Listeners;
 
 use AIArmada\Checkout\Data\DiscountCommitment;
 use AIArmada\Checkout\Events\CheckoutCompleted;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 
 /**
  * Redeems voucher commitments only after checkout has created its order.

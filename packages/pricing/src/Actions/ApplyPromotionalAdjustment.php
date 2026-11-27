@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Actions;
 
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;

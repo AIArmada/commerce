@@ -9,7 +9,7 @@ use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Services\PromotionService;

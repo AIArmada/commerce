@@ -73,7 +73,7 @@ final class IssueVouchersFromPromotion
      */
     private function resolveVoucherService(): object
     {
-        $contract = 'AIArmada\\Vouchers\\Contracts\\VoucherServiceInterface';
+        $contract = 'AIArmada\\Vouchers\\Runtime\\VoucherServiceInterface';
 
         if (! interface_exists($contract)) {
             throw new RuntimeException('Voucher issuance requires the vouchers package to be installed.');

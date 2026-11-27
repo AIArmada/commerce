@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
 use Closure;

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherType;

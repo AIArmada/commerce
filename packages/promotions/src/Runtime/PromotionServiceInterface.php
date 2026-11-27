@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Promotions\Contracts;
+namespace AIArmada\Promotions\Runtime;
 
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Models\Promotion;

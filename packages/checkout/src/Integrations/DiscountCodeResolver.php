@@ -8,8 +8,8 @@ use AIArmada\Checkout\Data\ResolvedDiscountCode;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 
 final class DiscountCodeResolver

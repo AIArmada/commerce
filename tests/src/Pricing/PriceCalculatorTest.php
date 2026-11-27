@@ -16,7 +16,7 @@ use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
 use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
-use AIArmada\Promotions\Contracts\PromotionServiceInterface;
+use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Services\PromotionService;
