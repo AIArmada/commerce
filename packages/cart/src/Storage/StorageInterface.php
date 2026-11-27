@@ -103,11 +103,12 @@ interface StorageInterface
      * @param  string  $instance  Cart instance name
      * @param  array<string, mixed>  $items  Cart items array
      * @param  CartRevision  $expectedRevision  Revision the items were computed from; {@see CartRevision::none()} to create a new cart
+     * @param  array<string, mixed>|null  $metadata  Complete metadata replacement, or null to retain it
      * @return CartRevision The committed revision
      *
      * @throws CartConflictException When the expected revision no longer matches
      */
-    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision;
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision, ?array $metadata = null): CartRevision;
 
     /**
      * Atomically replace cart conditions, requiring the revision the

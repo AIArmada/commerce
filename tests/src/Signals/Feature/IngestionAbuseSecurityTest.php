@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
+use AIArmada\Signals\Features\Ingestion\Persistence\TrustedSignatureReplayStore;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 
@@ -246,4 +247,33 @@ it('deduplicates separately signed trusted retries by idempotency key', function
     postSignedSignalsOutcome($this, $payload, $secret, $timestamp + 1)->assertAccepted();
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(1);
+});
+
+it('rejects array write keys without failing in throttle middleware', function (): void {
+    $this->postJson('/api/signals/collect/browser-event', [
+        'write_key' => ['invalid'],
+        'event_name' => 'custom.clicked',
+    ])->assertUnprocessable();
+
+    expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
+});
+
+it('reserves a signed request atomically until its timestamp expires', function (): void {
+    $store = app(TrustedSignatureReplayStore::class);
+    $timestamp = (string) time();
+    $signature = hash('sha256', 'replay-test');
+
+    expect($store->reserve($timestamp, $signature, 600))->toBeTrue()
+        ->and($store->reserve($timestamp, $signature, 600))->toBeFalse();
+});
+
+it('uses the default cache store when the limiter store is blank', function (): void {
+    config()->set('cache.limiter', '');
+
+    $store = app(TrustedSignatureReplayStore::class);
+    $timestamp = (string) time();
+    $signature = hash('sha256', 'blank-limiter-store');
+
+    expect($store->reserve($timestamp, $signature, 600))->toBeTrue()
+        ->and($store->reserve($timestamp, $signature, 600))->toBeFalse();
 });

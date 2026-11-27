@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-it('uses request-scoped Context guard instead of static mutable listener state', function (): void {
+it('uses request-scoped Context guard instead of static mutable action state', function (): void {
     $repoRoot = dirname(__DIR__, 5);
-    $path = $repoRoot . '/packages/cart/src/Listeners/ApplyGlobalConditions.php';
+    $path = $repoRoot . '/packages/cart/src/Features/Conditions/Actions/ReconcileGlobalConditions.php';
 
     expect($path)->toBeFile();
 

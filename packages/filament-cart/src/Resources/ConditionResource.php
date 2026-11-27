@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\CreateCondition;
@@ -12,6 +12,7 @@ use AIArmada\FilamentCart\Resources\ConditionResource\Pages\EditCondition;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\ListConditions;
 use AIArmada\FilamentCart\Resources\ConditionResource\Schemas\ConditionForm;
 use AIArmada\FilamentCart\Resources\ConditionResource\Tables\ConditionsTable;
+use AIArmada\FilamentCart\Support\OwnerScopedCacheContext;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -98,9 +99,16 @@ final class ConditionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = (int) OwnerCache::remember(
-            Condition::resolveCurrentOwner(),
+        $context = OwnerScopedCacheContext::for(
             'filament-cart.nav.conditions-count',
+            (bool) config('cart.owner.include_global', false),
+            Condition::ownerScopingEnabled(),
+            Condition::resolveCurrentOwner(),
+        );
+
+        $count = (int) OwnerCache::remember(
+            $context->owner,
+            $context->key,
             30,
             fn (): int => self::getEloquentQuery()->where('is_active', true)->count(),
         );

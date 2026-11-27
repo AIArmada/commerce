@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cashier\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;

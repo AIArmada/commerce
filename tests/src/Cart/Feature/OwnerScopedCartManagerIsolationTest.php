@@ -2,13 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Conditions\Actions\ValidateStoredCondition;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Runtime\CartManagerInterface;
+use AIArmada\Cart\Services\CartFactory;
+use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartIdentifierResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     config()->set('cart.owner.enabled', true);
@@ -31,6 +37,20 @@ beforeEach(function (): void {
 });
 
 describe('owner-scoped ambient cart manager', function (): void {
+    it('resolves newly created carts through the current owner even with a retained factory', function (): void {
+        $factory = app(CartFactory::class);
+        $cartA = $factory->make('shared-factory-cart');
+
+        OwnerContext::withOwner($this->ownerB, function () use ($factory, $cartA): void {
+            $cartB = $factory->make('shared-factory-cart');
+
+            expect((string) $cartB->storage()->getOwnerId())->toBe((string) $this->ownerB->getKey());
+            expect(fn () => (new ValidateStoredCondition)->handle($cartA))->toThrow(AuthorizationException::class);
+        });
+
+        expect((string) $factory->make('shared-factory-cart')->storage()->getOwnerId())->toBe((string) $this->ownerA->getKey());
+    });
+
     it('resolves ambient carts for the current owner and restores the previous owner state', function (): void {
         // Resolve the facade while owner A is ambient. This is the historical
         // bug window: the manager used to retain A's storage for the lifecycle.
@@ -189,10 +209,11 @@ describe('owner-scoped ambient cart manager', function (): void {
             ->and((string) $snapshotA?->owner_id)->toBe((string) $this->ownerA->getKey())
             ->and((string) $snapshotB?->owner_id)->toBe((string) $this->ownerB->getKey());
 
-        // Snapshot resolution pins the cart to the snapshot owner even inside
-        // another owner's context.
         $resolvedB = OwnerContext::withOwner($this->ownerB, fn () => $snapshotB?->getCartInstance());
         $resolvedA = OwnerContext::withOwner($this->ownerA, fn () => $snapshotA?->getCartInstance());
+        $resolvedBInsideA = OwnerContext::withOwner($this->ownerA, fn () => $snapshotB?->getCartInstance());
+
+        expect($resolvedBInsideA)->toBeNull();
 
         expect($resolvedB)->not->toBeNull()
             ->and($resolvedB?->storage()->getOwnerType())->toBe($this->ownerB->getMorphClass())
@@ -203,5 +224,37 @@ describe('owner-scoped ambient cart manager', function (): void {
             ->and($resolvedA?->storage()->getOwnerType())->toBe($this->ownerA->getMorphClass())
             ->and($resolvedA?->get('item-a'))->not->toBeNull()
             ->and($resolvedA?->get('item-b'))->toBeNull();
+    });
+
+    it('rebinds pinned cart factories across an owner A to B to A cycle', function (): void {
+        $manager = app(CartManagerInterface::class);
+
+        $cartA = $manager->forOwner($this->ownerA);
+        $cartA->add('pinned-a', 'Pinned A', 1000, 1);
+
+        $cartB = $manager->forOwner($this->ownerB);
+        OwnerContext::withOwner($this->ownerB, fn () => $cartB->add('pinned-b', 'Pinned B', 2000, 1));
+
+        $cartAAgain = $manager->forOwner($this->ownerA);
+
+        expect($cartAAgain->get('pinned-a'))->not->toBeNull()
+            ->and($cartAAgain->get('pinned-b'))->toBeNull()
+            ->and($cartB->get('pinned-b'))->not->toBeNull()
+            ->and($cartB->get('pinned-a'))->toBeNull();
+    });
+
+    it('propagates the custom identifier resolver through forOwner', function (): void {
+        $resolver = app(CartIdentifierResolver::class);
+        $manager = new CartManager(
+            storage: app(StorageInterface::class),
+            eventsEnabled: false,
+            identifierResolver: $resolver,
+        );
+
+        $property = (new ReflectionClass($manager))->getProperty('identifierResolver');
+
+        $pinned = $manager->forOwner($this->ownerA);
+
+        expect($property->getValue($pinned))->toBe($resolver);
     });
 });

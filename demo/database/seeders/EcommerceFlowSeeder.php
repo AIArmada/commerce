@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Cart\Models\CartModel as Cart;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel as Cart;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;

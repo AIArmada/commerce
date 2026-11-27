@@ -6,7 +6,8 @@ namespace App\Http\Controllers;
 
 use AIArmada\Affiliates\Features\Identity\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Actions\StartCartCheckout;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Checkout\Facades\Checkout;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\WebhookReceived;
@@ -21,7 +22,8 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Shipping\Cart\ShippingCondition;
-use AIArmada\Signals\Features\Browser\EntryPoints\Http\SignalsBrowserContextManager;
+use AIArmada\Signals\Support\Http\SignalsBrowserContextManager;
+use AIArmada\Signals\Support\SignalIdentifier;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -400,7 +402,7 @@ final class ShopController extends Controller
         $snapshot = CartSnapshot::query()->forOwner()->where('identifier', $identifier)->first();
 
         if ($snapshot !== null) {
-            $snapshot->markCheckoutStarted();
+            app(StartCartCheckout::class)->execute($snapshot);
         }
 
         $items = Cart::getItems();
@@ -758,21 +760,17 @@ final class ShopController extends Controller
     private function resolveGrowthVisitorId(Request $request): ?string
     {
         if ($request->hasSession()) {
-            $stickyVisitorId = $request->session()->get('demo_growth_checkout_subject');
+            $stickyVisitorId = SignalIdentifier::normalize(
+                $request->session()->get('demo_growth_checkout_subject'),
+            );
 
-            if (is_scalar($stickyVisitorId)) {
-                $normalizedStickyVisitorId = mb_trim((string) $stickyVisitorId);
-
-                if ($normalizedStickyVisitorId !== '') {
-                    return $normalizedStickyVisitorId;
-                }
+            if ($stickyVisitorId !== null) {
+                return $stickyVisitorId;
             }
         }
 
         try {
-            /** @var SignalsBrowserContextManager $browserContextManager */
-            $browserContextManager = app(SignalsBrowserContextManager::class);
-            $browserContext = $browserContextManager->current($request) ?? $browserContextManager->resolveOrCreate($request);
+            $browserContext = app(SignalsBrowserContextManager::class)->resolveOrCreate($request);
 
             if ($browserContext->visitorId !== '') {
                 return $browserContext->visitorId;
@@ -780,21 +778,17 @@ final class ShopController extends Controller
         } catch (Throwable) {
         }
 
-        $configuredVisitorId = $request->cookie(
+        $configuredVisitorId = SignalIdentifier::normalize($request->cookie(
             (string) config('signals.integrations.browser.identifiers.visitor_cookie_name', 'sig_vid'),
-        );
+        ));
 
-        if (is_scalar($configuredVisitorId)) {
-            $normalizedConfiguredVisitorId = mb_trim((string) $configuredVisitorId);
-
-            if ($normalizedConfiguredVisitorId !== '') {
-                return $normalizedConfiguredVisitorId;
-            }
+        if ($configuredVisitorId !== null) {
+            return $configuredVisitorId;
         }
 
-        $cartIdentifier = Cart::getIdentifier();
+        $cartIdentifier = SignalIdentifier::normalize(Cart::getIdentifier());
 
-        if ($cartIdentifier !== '') {
+        if ($cartIdentifier !== null) {
             return $cartIdentifier;
         }
 
@@ -802,9 +796,7 @@ final class ShopController extends Controller
             return null;
         }
 
-        $sessionId = $request->session()->getId();
-
-        return is_string($sessionId) && $sessionId !== '' ? $sessionId : null;
+        return SignalIdentifier::normalize($request->session()->getId());
     }
 
     private function determineCheckoutPaymentGateway(): string
