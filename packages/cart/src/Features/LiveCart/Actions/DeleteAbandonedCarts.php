@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\LiveCart\Actions;
 
 use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
-use AIArmada\Cart\Support\CartOwnerScope;
+use AIArmada\Cart\Features\LiveCart\Persistence\CartOwnerScope;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;

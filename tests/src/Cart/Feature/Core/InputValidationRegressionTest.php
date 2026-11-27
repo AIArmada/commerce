@@ -7,7 +7,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Features\LiveCart\Actions\MarkCartConverted;
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

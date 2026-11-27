@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;

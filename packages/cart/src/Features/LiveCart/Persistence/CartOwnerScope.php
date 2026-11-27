@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Support;
+namespace AIArmada\Cart\Features\LiveCart\Persistence;
 
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;

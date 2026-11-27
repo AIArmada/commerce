@@ -6,7 +6,7 @@ namespace AIArmada\Cart\EntryPoints\Commands;
 
 use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
 use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;

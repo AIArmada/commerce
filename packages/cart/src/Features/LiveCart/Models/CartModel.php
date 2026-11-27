@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Models;
+namespace AIArmada\Cart\Features\LiveCart\Models;
 
 use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Features\LiveCart\Models\Concerns\HasCartOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;

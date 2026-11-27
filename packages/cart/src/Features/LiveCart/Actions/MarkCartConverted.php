@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\LiveCart\Actions;
 
 use AIArmada\Cart\Exceptions\CartConflictException;
-use AIArmada\Cart\Models\CartModel;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use Carbon\CarbonImmutable;
 
 final readonly class MarkCartConverted
