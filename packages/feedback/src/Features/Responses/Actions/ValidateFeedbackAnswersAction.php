@@ -23,7 +23,6 @@ final readonly class ValidateFeedbackAnswersAction
      */
     public function execute(array $questions, array $answerValues): array
     {
-
         $visibleQuestions = $this->visibilityEvaluator->filterHiddenQuestions(
             $questions,
             $answerValues,

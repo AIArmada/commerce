@@ -148,10 +148,6 @@ final class ValidationRuleBuilder
         return function (string $attribute, mixed $value, Closure $fail) use ($question, $requireArray): void {
             $allowed = $this->allowedOptionValues($question);
 
-            if ($allowed === []) {
-                return;
-            }
-
             if ($requireArray && ! is_array($value)) {
                 return;
             }
@@ -159,7 +155,7 @@ final class ValidationRuleBuilder
             $values = is_array($value) ? array_values($value) : [$value];
 
             foreach ($values as $entry) {
-                if (! is_scalar($entry) || ! in_array((string) $entry, $allowed, true)) {
+                if (! is_scalar($entry) || ($allowed !== [] && ! in_array((string) $entry, $allowed, true))) {
                     $fail('The selected value is invalid.');
 
                     return;

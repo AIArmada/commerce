@@ -96,3 +96,19 @@ it('validates literal question keys without interpreting dots or wildcards', fun
         ->and(fn () => $validate->execute([$question], []))
         ->toThrow(RuntimeException::class, 'Validation failed');
 })->with(['customer.age', '*', 'items.*']);
+
+it('rejects malformed choice payloads even when no options are configured', function (string $type): void {
+    $question = new QuestionDefinition(
+        id: 'question',
+        key: 'choice',
+        type: $type,
+        isRequired: true,
+        isScored: false,
+    );
+
+    $validate = app(ValidateFeedbackAnswersAction::class);
+
+    expect($validate->execute([$question], ['choice' => ['valid']]))->toBe([$question])
+        ->and(fn () => $validate->execute([$question], ['choice' => [['nested']]]))
+        ->toThrow(RuntimeException::class, 'Validation failed');
+})->with(['multiple_choice', 'ranking', 'matrix', 'likert']);
