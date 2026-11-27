@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Integrations;
+namespace AIArmada\Shipping\Features\Shipments\Queries;
 
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\PackageUnit;

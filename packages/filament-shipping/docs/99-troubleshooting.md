@@ -84,7 +84,7 @@ Common causes:
 
 Debug:
 ```php
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 
 $service = app(ShipmentService::class);
 

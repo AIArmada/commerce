@@ -148,7 +148,7 @@ $allRates = $engine->getAllRates($origin, $destination, $packages);
 ### Using ShipmentService
 
 ```php
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentItemData;
@@ -278,7 +278,7 @@ $due = $aggregator->getShipmentsNeedingUpdate(limit: 100);
 ## Generating Labels
 
 ```php
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 
 $service = app(ShipmentService::class);
 
@@ -296,7 +296,7 @@ file_put_contents('label.pdf', $label->getDecodedContent());
 ## Cancelling Shipments
 
 ```php
-use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 
 $service = app(ShipmentService::class);
 

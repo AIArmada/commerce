@@ -18,7 +18,7 @@ use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorization;
 use AIArmada\Shipping\Features\Returns\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
-use AIArmada\Shipping\Integrations\OrderShipmentUnits;
+use AIArmada\Shipping\Features\Shipments\Queries\OrderShipmentUnits;
 use AIArmada\Shipping\States\Cancelled;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCancelled;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
