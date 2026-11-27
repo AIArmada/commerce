@@ -26,7 +26,7 @@ final class ManageVoucherReservations implements VoucherReservations
         $sessionsKey = $this->reservationSessionsCacheKey((string) $voucher->id);
         $ttl = config('vouchers.reservation.ttl', 900); // 15 minutes default
 
-        $this->guardSessionIndex($sessionsKey, static function () use ($sessionsKey, $sessionId, $ttl, $cacheKey, $voucher): void {
+        $this->guardSessionIndex($sessionsKey, function () use ($sessionsKey, $sessionId, $ttl, $cacheKey, $voucher): void {
             Cache::put($cacheKey, [
                 'voucher_id' => $voucher->id,
                 'session_id' => $sessionId,
@@ -37,6 +37,11 @@ final class ManageVoucherReservations implements VoucherReservations
             if (! is_array($sessionIds)) {
                 $sessionIds = [];
             }
+
+            $sessionIds = array_values(array_filter(
+                $sessionIds,
+                fn (mixed $sid): bool => is_string($sid) && Cache::has($this->reservationCacheKey((string) $voucher->id, $sid)),
+            ));
 
             if (! in_array($sessionId, $sessionIds, true)) {
                 $sessionIds[] = $sessionId;

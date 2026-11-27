@@ -133,7 +133,7 @@ final class RecordVoucherUsage implements VoucherUsageRecorder
                     throw VoucherUsageLimitException::globalLimit($lockedVoucher->code);
                 }
             }
-            if ($lockedVoucher->usage_limit_per_user === 0) {
+            if ($lockedVoucher->usage_limit_per_user === 0 || ($lockedVoucher->usage_limit_per_user !== null && $redeemedBy === null)) {
                 throw VoucherUsageLimitException::userLimit($lockedVoucher->code);
             }
 

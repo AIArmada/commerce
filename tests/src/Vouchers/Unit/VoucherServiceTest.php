@@ -334,7 +334,7 @@ test('voucher service redeem records fixed discount amount', function (): void {
         ->and($usage?->discount_amount)->toBe(500)
         ->and($usage?->currency)->toBe('MYR')
         ->and($usage?->channel)->toBe('checkout')
-        ->and($usage?->redeemed_by_id)->toBe((string) $order->id)
+        ->and($usage?->redeemed_by_id)->toBe($order->customer_id)
         ->and($usage?->metadata)->toMatchArray([
             'order_id' => (string) $order->id,
             'order_number' => 'ORD-REDEEM-123',
@@ -342,7 +342,7 @@ test('voucher service redeem records fixed discount amount', function (): void {
             'discount_total' => 500,
             'grand_total' => 9500,
         ])
-        ->and($usage?->redeemedBy?->is($order))->toBeTrue();
+        ->and($usage?->redeemed_by_type)->toBe($order->customer_type);
 });
 
 test('voucher service redeem records the allocated checkout discount and voucher currency', function (): void {
@@ -585,4 +585,35 @@ test('it creates only one usage on duplicate commit', function (): void {
     }
 
     expect(VoucherUsage::where('voucher_id', $voucher->id)->count())->toBe(1);
+});
+
+test('checkout enforces a voucher limit against the customer rather than individual orders', function (): void {
+    $customer = \AIArmada\Commerce\Tests\Fixtures\Models\User::create([
+        'name' => 'Voucher customer',
+        'email' => 'voucher-customer@example.test',
+        'password' => 'secret',
+    ]);
+    $voucher = Voucher::create([
+        'code' => 'CUSTOMERLIMIT',
+        'name' => 'Customer limit',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'usage_limit_per_user' => 1,
+    ]);
+
+    $orders = Order::factory()->count(2)->create([
+        'customer_type' => $customer->getMorphClass(),
+        'customer_id' => $customer->getKey(),
+        'currency' => 'MYR',
+    ]);
+
+    $service = app(VoucherService::class);
+    $service->redeem($voucher->code, (string) $orders[0]->getKey(), 100, 'MYR');
+
+    expect(fn () => $service->redeem($voucher->code, (string) $orders[1]->getKey(), 100, 'MYR'))
+        ->toThrow(VoucherUsageLimitException::class);
+
+    expect($voucher->usages()->sole()->redeemed_by_id)->toBe((string) $customer->getKey());
 });

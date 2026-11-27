@@ -29,7 +29,6 @@ use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class VoucherService implements VoucherServiceInterface
 {
@@ -260,11 +259,12 @@ class VoucherService implements VoucherServiceInterface
             ? $voucher->type
             : VoucherType::tryFrom((string) $voucher->type);
 
-        $redeemedBy = $this->resolveRedeemedByOrder($orderId);
+        $order = $this->resolveOrder($orderId);
+        $redeemedBy = $order?->customer;
 
         // Calculate the discount amount based on voucher type
         $discount = $discountAmount ?? match ($voucherType) {
-            VoucherType::Percentage => $this->percentageRedeemDiscount($voucher, $redeemedBy),
+            VoucherType::Percentage => $this->percentageRedeemDiscount($voucher, $order),
             VoucherType::Fixed => (int) ($voucher->value ?? 0),
             default => 0,
         };
@@ -273,15 +273,15 @@ class VoucherService implements VoucherServiceInterface
             'order_id' => $orderId,
         ];
 
-        if ($redeemedBy instanceof Model) {
-            $orderNumber = $redeemedBy->getAttribute('order_number');
+        if ($order instanceof Order) {
+            $orderNumber = $order->getAttribute('order_number');
 
             if (is_string($orderNumber) && mb_trim($orderNumber) !== '') {
                 $metadata['order_number'] = mb_trim($orderNumber);
             }
 
             foreach (['subtotal', 'discount_total', 'grand_total'] as $attribute) {
-                $value = $redeemedBy->getAttribute($attribute);
+                $value = $order->getAttribute($attribute);
 
                 if (is_numeric($value)) {
                     $metadata[$attribute] = (int) $value;
@@ -336,14 +336,14 @@ class VoucherService implements VoucherServiceInterface
         return app(VoucherDiscountCalculator::class)->calculate(VoucherSnapshot::fromModel($voucher), (int) $subtotal);
     }
 
-    private function resolveRedeemedByOrder(string $orderId): ?Model
+    private function resolveOrder(string $orderId): ?Order
     {
-        if (! class_exists(Order::class) || ! Schema::hasTable((new Order)->getTable())) {
+        if (! class_exists(Order::class) || ! (new Order)->getConnection()->getSchemaBuilder()->hasTable((new Order)->getTable())) {
             return null;
         }
 
         return Order::query()
-            ->select(['id', 'order_number', 'subtotal', 'discount_total', 'grand_total'])
+            ->select(['id', 'order_number', 'subtotal', 'discount_total', 'grand_total', 'customer_type', 'customer_id'])
             ->find($orderId);
     }
 }
