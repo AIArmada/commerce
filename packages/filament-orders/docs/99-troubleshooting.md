@@ -143,7 +143,7 @@ if (config('app.debug')) {
 
 ## Cache Keys
 
-`AIArmada\FilamentOrders\Support\FilamentOrdersCache` writes owner-scoped keys
+`AIArmada\FilamentOrders\Persistence\FilamentOrdersCache` writes owner-scoped keys
 through `AIArmada\CommerceSupport\Persistence\OwnerCache`:
 
 | Logical key | TTL | Description |

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentOrders\Support;
+namespace AIArmada\FilamentOrders\Persistence;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
@@ -72,8 +72,6 @@ final class FilamentOrdersCache
         OwnerCache::forget($owner, 'filament-orders.stats.owner-only');
         OwnerCache::forget($owner, 'filament-orders.stats.with-global');
 
-        // A global order is included in every tenant's with-global view. Those
-        // keys cannot be enumerated safely; the short TTL bounds staleness.
     }
 
     /**
@@ -114,7 +112,6 @@ final class FilamentOrdersCache
         ];
 
         $selects = [
-            'COUNT(*) AS total_orders',
             'SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) AS today_orders',
             'SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) AS yesterday_orders',
             'SUM(CASE WHEN created_at >= ? AND created_at < ? AND paid_at IS NOT NULL THEN grand_total ELSE 0 END) AS today_revenue',

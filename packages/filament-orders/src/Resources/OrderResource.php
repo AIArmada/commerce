@@ -9,7 +9,7 @@ use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderForm;
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderInfolist;
 use AIArmada\FilamentOrders\Resources\OrderResource\Tables\OrdersTable;
-use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
+use AIArmada\FilamentOrders\Persistence\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;

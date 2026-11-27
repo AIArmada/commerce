@@ -27,7 +27,7 @@ php artisan vendor:publish --tag=docs-views
 ## Basic usage
 
 ```php
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Services\DocService;
 
 $doc = app(DocService::class)->create(DocData::from([

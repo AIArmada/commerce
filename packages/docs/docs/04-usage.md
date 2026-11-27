@@ -10,7 +10,7 @@ Use the `DocService` to create documents:
 
 ```php
 use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 $docService = app(DocService::class);
@@ -205,7 +205,7 @@ Payment recording is transactional, locks the document inside its owner scope, r
 `DocService` delegates HTML/PDF rendering and share-link generation to `DocRenderService`.
 
 ```php
-use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\RenderAudience;
 use AIArmada\Docs\Enums\ShareLinkAction;
 use AIArmada\Docs\Services\DocRenderService;

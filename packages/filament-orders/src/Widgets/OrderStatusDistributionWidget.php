@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Widgets;
 
-use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
+use AIArmada\FilamentOrders\Persistence\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
 use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;

@@ -45,7 +45,7 @@ keywords:
 - Pages: `OrderFulfillmentPage`, `OrderTimelinePage`
 - Widgets: `OrderStatsWidget`, `OrderStatusDistributionWidget`, `OrderTimelineWidget`, `RecentOrdersWidget`
 - Relation managers: `ItemsRelationManager`, `PaymentsRelationManager`, `RefundsRelationManager`, `NotesRelationManager`
-- Actions/Services: `Support/FilamentOrdersCache`
+- Actions/Services: `Persistence/FilamentOrdersCache`
 - Config `filament-orders.php` keys: `navigation.group`, `navigation.sort`, `pages.timeline`, `pages.fulfillment`, `pages.navigation_sort.{fulfillment,timeline}`, `payment_gateways`, `features.enable_invoice_download`
 
 ## Docs map

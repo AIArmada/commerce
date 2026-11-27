@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
-use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
+use AIArmada\FilamentOrders\Persistence\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

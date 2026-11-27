@@ -299,15 +299,9 @@ php artisan cache:clear
 
 ## Common Errors
 
-### Class Not Found: DocData
+### Document data namespace
 
-**Error:** `Class AIArmada\Docs\Data\DocData not found`
-
-**Solution:** Use correct namespace:
-```php
-use AIArmada\Docs\DataObjects\DocData; // Correct
-// NOT: use AIArmada\Docs\Data\DocData;
-```
+Use `AIArmada\Docs\Data\DocData` when creating a document.
 
 ### Migration Failed
 
