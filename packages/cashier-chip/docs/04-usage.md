@@ -15,10 +15,10 @@ task-specific guides for the exact billing flow you need.
 namespace App\Models;
 
 use AIArmada\CashierChip\Billing\Billable;
-use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Billing\BillableModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable implements BillableContract
+class User extends Authenticatable implements BillableModel
 {
     use Billable;
 }
@@ -61,12 +61,11 @@ integration auto-detects that package by default and fails loudly if it is unava
 [Configuration](03-configuration.md#integrations) for the explicit integration setting.
 
 ```php
-use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
-use AIArmada\CashierChip\Actions\ClaimRenewalAttempt;
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\ClaimRenewalAttempt;
 use AIArmada\CashierChip\Actions\RefundChipPayment;
-use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Features\Subscriptions\Actions\SyncChipPurchaseStatus;
 
 // One-off charge with rate limiting and error handling
 ChargeChipCustomer::run($user, 2500, $recurringToken, ['reference' => 'Order #123']);
@@ -75,7 +74,7 @@ ChargeChipCustomer::run($user, 2500, $recurringToken, ['reference' => 'Order #12
 $purchase = RefundChipPayment::run($purchaseId, 1000); // partial refund in cents
 
 // Create a subscription from a builder
-$subscription = CreateChipSubscription::run($builder, $recurringToken);
+$subscription = $builder->create($recurringToken);
 
 // Cancel a subscription immediately
 CancelChipSubscription::run($subscription);

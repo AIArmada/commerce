@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Pages;
 
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\Chip\Features\Payouts\Actions\DeleteBankAccount;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
 use Override;
 use Throwable;
 
@@ -48,42 +46,25 @@ final class ViewBankAccount extends ViewRecord
                 ->modalDescription('This will delete the bank account from CHIP Send. This cannot be undone.')
                 ->action(function (): void {
                     $record = $this->getRecord();
-                    $service = app(ChipSendService::class);
-                    $scopedRecord = $this->resolveScopedBankAccount($record);
-
-                    if ($scopedRecord === null) {
-                        Notification::make()
-                            ->title('Bank account is outside your owner scope')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
 
                     try {
-                        $service->deleteBankAccount((int) $scopedRecord->getKey());
+                        app(DeleteBankAccount::class)->handle((int) $record->getKey());
                         Notification::make()
                             ->title('Bank account deleted')
                             ->success()
                             ->send();
                         $this->redirect(self::getResource()::getUrl('index'));
                     } catch (Throwable $e) {
+                        report($e);
+
                         Notification::make()
                             ->title('Failed to delete account')
-                            ->body($e->getMessage())
+                            ->body('The operation could not be completed. Verify its status before retrying.')
                             ->danger()
                             ->send();
                     }
                 })
                 ->visible(fn (): bool => $this->getRecord()->getAttribute('deleted_at') === null),
         ];
-    }
-
-    private function resolveScopedBankAccount(Model $record): ?BankAccount
-    {
-        return BankAccount::query()
-            ->forOwner()
-            ->whereKey($record->getKey())
-            ->first();
     }
 }

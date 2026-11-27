@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\CreateSendInstruction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ListSendInstructions;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ViewSendInstruction;

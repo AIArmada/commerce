@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Pages;
 
-use AIArmada\Chip\Services\LocalAnalyticsService;
+use AIArmada\Chip\Features\Collect\Api\PurchaseAnalytics;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -62,7 +62,7 @@ class AnalyticsDashboardPage extends Page
             $this->period = '30';
         }
 
-        $service = app(LocalAnalyticsService::class);
+        $service = app(PurchaseAnalytics::class);
         $endDate = CarbonImmutable::now();
         $startDate = $endDate->subDays((int) $this->period);
 

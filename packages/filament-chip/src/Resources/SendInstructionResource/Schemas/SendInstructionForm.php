@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Schemas;
 
-use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -23,9 +24,11 @@ final class SendInstructionForm
                             ->label('Bank Account')
                             ->options(function (): array {
                                 return BankAccount::query()
-                                    ->forOwner()
+                                    ->forOwner(OwnerContext::CURRENT, false)
                                     ->where('status', 'verified')
-                                    ->get()
+                                    ->where('is_crediting_account', true)
+                                    ->whereNull('deleted_at')
+                                    ->get(['id', 'name', 'account_number', 'bank_code'])
                                     ->mapWithKeys(fn (BankAccount $account): array => [
                                         $account->id => sprintf(
                                             '%s - %s (%s)',

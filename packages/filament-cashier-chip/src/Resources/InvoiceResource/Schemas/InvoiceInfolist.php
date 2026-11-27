@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Schemas;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use Filament\Infolists\Components\RepeatableEntry;

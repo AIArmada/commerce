@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 
 final class PayoutAmountWidget extends ChartWidget
 {
+    use RequiresChipOwnerContext;
+
     protected ?string $heading = 'Payout Volume';
 
     protected ?string $description = 'Daily payout amounts over the last 30 days';

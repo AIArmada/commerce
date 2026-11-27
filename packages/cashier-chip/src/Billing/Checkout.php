@@ -133,10 +133,14 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
             if (method_exists($owner, 'chipId') && $owner->chipId()) {
                 $builder->clientId($owner->chipId());
             } else {
+                $email = method_exists($owner, 'chipEmail') ? $owner->chipEmail() : ($owner->email ?? null);
+                $fullName = method_exists($owner, 'chipName') ? $owner->chipName() : ($owner->name ?? null);
+                $phone = method_exists($owner, 'chipPhone') ? $owner->chipPhone() : ($owner->phone ?? null);
+
                 $builder->customer(
-                    email: $owner->email ?? '',
-                    fullName: $owner->name ?? null,
-                    phone: $owner->phone ?? null
+                    email: is_string($email) ? $email : '',
+                    fullName: is_string($fullName) ? $fullName : null,
+                    phone: is_string($phone) ? $phone : null,
                 );
             }
         }

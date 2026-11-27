@@ -79,7 +79,7 @@ When a webhook arrives, the package resolves the owner from the `brand_id` in th
 ## Querying with Owner Scope
 
 ```php
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 
 // Automatically scoped (global scope applied)
 $purchases = Purchase::query()->get();
@@ -125,7 +125,7 @@ class RetryWebhooksCommand extends Command
 ## Testing
 
 ```php
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 

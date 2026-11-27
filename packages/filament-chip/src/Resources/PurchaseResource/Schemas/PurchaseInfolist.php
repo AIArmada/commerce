@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Schemas;
 
-use AIArmada\Chip\Enums\PurchaseStatus;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Contracts\PurchaseStatus;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;

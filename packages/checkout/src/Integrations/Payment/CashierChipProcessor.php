@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Integrations\Payment;
 
+use AIArmada\CashierChip\Billing\BillableModel as ChipBillableContract;
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract as ChipBillableContract;
 use AIArmada\Checkout\Contracts\PaymentCompensationInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;

@@ -7,28 +7,27 @@ namespace AIArmada\Chip\Data;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
-final class SendLimitData extends ChipData
+final readonly class SendLimitData
 {
     public function __construct(
-        public readonly int $id,
-        public readonly string $currency,
-        public readonly string $fee_type,
-        public readonly string $transaction_type,
-        public readonly int | float $amount,
-        public readonly int | float $fee,
-        public readonly int | float $net_amount,
-        public readonly string $status,
-        public readonly int $approvals_required,
-        public readonly int $approvals_received,
-        public readonly ?string $from_settlement,
-        public readonly string $created_at,
-        public readonly string $updated_at,
+        public int $id,
+        public string $currency,
+        public string $fee_type,
+        public string $transaction_type,
+        public int | float $amount,
+        public int | float $fee,
+        public int | float $net_amount,
+        public string $status,
+        public int $approvals_required,
+        public int $approvals_received,
+        public ?string $from_settlement,
+        public string $created_at,
+        public string $updated_at,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
-
         return new self(
             id: (int) $data['id'],
             currency: (string) $data['currency'],

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Billable;
+use AIArmada\CashierChip\Billing\BillableModel;
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -262,7 +262,7 @@ it('limits explicit global context to global rows on owner-scoped billables', fu
     });
 });
 
-final class OwnedBillableCustomer extends Model implements BillableContract
+final class OwnedBillableCustomer extends Model implements BillableModel
 {
     use Billable;
     use HasOwner;

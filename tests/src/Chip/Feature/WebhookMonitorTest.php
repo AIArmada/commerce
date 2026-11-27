@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Models\Webhook;
-use AIArmada\Chip\Webhooks\WebhookMonitor;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
 use Carbon\CarbonImmutable;
 
 describe('WebhookMonitor without database', function (): void {

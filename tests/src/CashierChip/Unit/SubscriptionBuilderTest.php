@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use AIArmada\CashierChip\Billing\SubscriptionBuilder;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Carbon\Carbon;
@@ -44,6 +44,21 @@ describe('SubscriptionBuilder', function (): void {
         $result = $builder->quantity(5);
 
         $this->assertSame($builder, $result);
+    });
+
+    it('preserves product identity and unit price when updating quantity', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
+        $builder->price(['price' => 'price_123', 'product' => 'prod_123', 'unit_amount' => 1500]);
+
+        $builder->quantity(3);
+
+        expect($builder->getItems()['price_123'])->toBe([
+            'price' => 'price_123',
+            'product' => 'prod_123',
+            'unit_amount' => 1500,
+            'quantity' => 3,
+        ])->and($builder->getTotalAmount())->toBe(4500);
     });
 
     it('trial days', function (): void {

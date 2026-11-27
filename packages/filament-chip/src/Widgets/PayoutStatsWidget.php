@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
-use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentChip\Widgets\Concerns\RequiresChipOwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
@@ -14,6 +15,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class PayoutStatsWidget extends BaseWidget
 {
+    use RequiresChipOwnerContext;
+
     protected static ?int $sort = 10;
 
     /**

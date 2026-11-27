@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 use Override;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -44,10 +45,13 @@ abstract class ChipModel extends Model implements Auditable
         'owner_id',
     ];
 
-    abstract protected static function tableSuffix(): string;
+    protected static function tableSuffix(): string
+    {
+        throw new LogicException('CHIP models must declare a table.');
+    }
 
     #[Override]
-    final public function getTable(): string
+    public function getTable(): string
     {
         $prefix = (string) config('chip.database.table_prefix', 'chip_');
 

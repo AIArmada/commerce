@@ -36,6 +36,20 @@ final class ChipValidationException extends ChipApiException
         );
     }
 
+    public static function idempotencyReconciliationRequired(?Throwable $previous = null): self
+    {
+        return new self(
+            'Purchase idempotency key is already reserved and requires reconciliation.',
+            ['idempotency' => ['reconciliation_required']],
+            previous: $previous,
+        );
+    }
+
+    public function isIdempotencyReconciliationRequired(): bool
+    {
+        return in_array('reconciliation_required', $this->getValidationErrors()['idempotency'] ?? [], true);
+    }
+
     /**
      * @return array<string, mixed>
      */

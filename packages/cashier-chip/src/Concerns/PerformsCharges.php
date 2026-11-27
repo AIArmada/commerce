@@ -13,11 +13,13 @@ use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\RateLimiter;
+use InvalidArgumentException;
 use SensitiveParameter;
 use Throwable;
 
-trait PerformsCharges // @phpstan-ignore trait.unused
+trait PerformsCharges
 {
     /**
      * Make a "one off" charge on the customer for the given amount.
@@ -96,7 +98,12 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         // If we have a recurring token, charge it immediately
         if ($recurringToken) {
-            $purchase = Cashier::chip()->chargePurchase($purchase->id, $recurringToken);
+            $idempotencyKey = $options['idempotency_key'] ?? null;
+            $purchase = Cashier::chip()->chargePurchase(
+                $purchase->id,
+                $recurringToken,
+                is_string($idempotencyKey) && $idempotencyKey !== '' ? $idempotencyKey : null,
+            );
         }
 
         $payment = new Payment($purchase);
@@ -208,13 +215,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
     public function findPayment(string $id): ?Payment
     {
         try {
-            $purchaseData = Cashier::chip()->getPurchase($id);
-
-            if (is_array($purchaseData)) {
-                $purchase = PurchaseData::from($purchaseData);
-            } else {
-                $purchase = $purchaseData;
-            }
+            $purchase = Cashier::chip()->getPurchase($id);
 
             $purchaseClientId = $purchase->getClientId();
             $billableChipId = $this->chipId();
@@ -248,11 +249,31 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
     /**
      * Refund a customer for a charge.
-     *
-     * @param  array<string, mixed>  $options
      */
     public function refund(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {
+        if ($amount !== null) {
+            Cashier::assertAmountWithinBounds($amount);
+        }
+
+        $purchase = Cashier::chip()->getPurchase($purchaseId);
+        $billableChipId = $this->chipId();
+
+        if (! is_string($billableChipId)
+            || $billableChipId === ''
+            || ! is_string($purchase->getClientId())
+            || $purchase->getClientId() !== $billableChipId) {
+            throw new AuthorizationException('The purchase does not belong to this billable customer.');
+        }
+
+        if (! $purchase->isPaid() || ! $purchase->canBeRefunded()) {
+            throw new InvalidArgumentException('The purchase is not in a refundable state.');
+        }
+
+        if ($amount !== null && $amount > $purchase->getAmountInCents()) {
+            throw new InvalidArgumentException('Refund amount cannot exceed the purchase total.');
+        }
+
         return Cashier::chip()->refundPurchase($purchaseId, $amount);
     }
 

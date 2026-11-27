@@ -5,25 +5,30 @@ declare(strict_types=1);
 namespace AIArmada\Chip;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
-use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Clients\ChipSendClient;
-use AIArmada\Chip\Commands\ChipHealthCheckCommand;
-use AIArmada\Chip\Commands\CleanWebhooksCommand;
-use AIArmada\Chip\Commands\PruneIdempotencyStubsCommand;
-use AIArmada\Chip\Commands\RetryWebhooksCommand;
-use AIArmada\Chip\Commands\SyncChipRecordsFromApiCommand;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
+use AIArmada\Chip\Contracts\ChipSendTransport;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
+use AIArmada\Chip\EntryPoints\Commands\ChipHealthCheckCommand;
+use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Features\Collect\EntryPoints\Commands\PruneIdempotencyStubsCommand;
+use AIArmada\Chip\Features\Collect\EntryPoints\Commands\SyncChipRecordsFromApiCommand;
+use AIArmada\Chip\Features\Collect\Persistence\ChipCustomerDirectory;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\CleanWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Support\WebhookOwnerBatchRunner;
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\StoreWebhookData;
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Platform\ExtensionRegistry;
+use AIArmada\Chip\Platform\FeatureCatalog;
+use AIArmada\Chip\Platform\FeatureModule;
 use AIArmada\Chip\Services\ChipCollectService;
-use AIArmada\Chip\Services\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
-use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -39,6 +44,9 @@ use Spatie\WebhookClient\WebhookClientServiceProvider;
 final class ChipServiceProvider extends PackageServiceProvider
 {
     use ValidatesConfiguration;
+
+    /** @var list<FeatureModule> */
+    private array $modules = [];
 
     public function configurePackage(Package $package): void
     {
@@ -79,6 +87,24 @@ final class ChipServiceProvider extends PackageServiceProvider
         $this->registerMiddleware();
         $this->registerActions();
         $this->registerSupport();
+        $this->registerFeatureModules();
+    }
+
+    private function registerFeatureModules(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new InvalidArgumentException('Invalid CHIP feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     protected function configureSpatieWebhookClient(): void
@@ -115,7 +141,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             'store_headers' => [
                 'x-signature',
             ],
-            'process_webhook_job' => Webhooks\ProcessChipWebhook::class,
+            'process_webhook_job' => Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook::class,
         ];
 
         config([
@@ -147,6 +173,10 @@ final class ChipServiceProvider extends PackageServiceProvider
         $this->validateSendWebhookOwner();
         $this->configureWebhookRoutes();
         $this->registerEventListeners();
+
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     /**
@@ -160,6 +190,8 @@ final class ChipServiceProvider extends PackageServiceProvider
             ChipCustomerDirectoryInterface::class,
             ChipSendService::class,
             WebhookService::class,
+            ChipCollectTransport::class,
+            ChipSendTransport::class,
             ChipCollectClient::class,
             ChipSendClient::class,
             ChipGateway::class,
@@ -193,7 +225,7 @@ final class ChipServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(ChipCollectService::class, function ($app): ChipCollectService {
             return new ChipCollectService(
-                $app->make(ChipCollectClient::class),
+                $app->make(ChipCollectTransport::class),
                 $app->make(CacheRepository::class)
             );
         });
@@ -208,7 +240,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(ChipSendService::class, function ($app): ChipSendService {
             return new ChipSendService(
-                $app->make(ChipSendClient::class)
+                $app->make(ChipSendTransport::class)
             );
         });
 
@@ -285,6 +317,9 @@ final class ChipServiceProvider extends PackageServiceProvider
                 ])
             );
         });
+
+        $this->app->alias(ChipCollectClient::class, ChipCollectTransport::class);
+        $this->app->alias(ChipSendClient::class, ChipSendTransport::class);
     }
 
     private function resolveSendBaseUrl(string $environment): string

@@ -8,7 +8,7 @@ use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;

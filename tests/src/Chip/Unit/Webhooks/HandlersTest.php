@@ -16,7 +16,7 @@ describe('PurchasePaidHandler', function (): void {
         $payload = new EnrichedWebhookPayload(
             event: 'payment.paid',
             rawPayload: ['id' => 'purchase_123'],
-            localPurchase: null,
+            localPurchaseId: null,
         );
 
         $result = $handler->handle($payload);
@@ -34,7 +34,7 @@ describe('PurchaseCancelledHandler', function (): void {
         $payload = new EnrichedWebhookPayload(
             event: 'payment.cancelled',
             rawPayload: ['id' => 'purchase_456'],
-            localPurchase: null,
+            localPurchaseId: null,
         );
 
         $result = $handler->handle($payload);
@@ -52,7 +52,7 @@ describe('PurchaseRefundedHandler', function (): void {
         $payload = new EnrichedWebhookPayload(
             event: 'payment.refunded',
             rawPayload: ['id' => 'purchase_789'],
-            localPurchase: null,
+            localPurchaseId: null,
         );
 
         $result = $handler->handle($payload);
@@ -70,7 +70,7 @@ describe('PaymentFailedHandler', function (): void {
         $payload = new EnrichedWebhookPayload(
             event: 'purchase.payment_failure',
             rawPayload: ['id' => 'purchase_abc'],
-            localPurchase: null,
+            localPurchaseId: null,
         );
 
         $result = $handler->handle($payload);
