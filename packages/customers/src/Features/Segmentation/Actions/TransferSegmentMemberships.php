@@ -29,8 +29,23 @@ final class TransferSegmentMemberships
                 throw new InvalidArgumentException('Both customers must remain accessible during the transfer.');
             }
 
-            $relation = $source->segments();
-            $ids = $relation->pluck($relation->getRelated()->qualifyColumn($relation->getRelatedKeyName()))->all();
+            $source = $locked->find($source->getKey());
+            $target = $locked->find($target->getKey());
+
+            if (! $source instanceof Customer || ! $target instanceof Customer
+                || $source->owner_type !== $target->owner_type || $source->owner_id !== $target->owner_id) {
+                throw new InvalidArgumentException('Distinct persisted customers must share the same owner context.');
+            }
+
+            $ids = [];
+
+            foreach ($source->segments()->get() as $segment) {
+                if ($segment->owner_type !== $target->owner_type || $segment->owner_id !== $target->owner_id) {
+                    throw new InvalidArgumentException('Cannot transfer a segment outside the target owner context.');
+                }
+
+                $ids[] = $segment->getKey();
+            }
 
             if ($ids !== []) {
                 $target->segments()->syncWithoutDetaching($ids);

@@ -11,11 +11,9 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Events\CustomerUpdated;
-use AIArmada\Customers\Features\Segmentation\Actions\TransferCustomerGroupMemberships;
-use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
+use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipTransfer;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Features\Identity\Models\CustomerNote;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class MergeCustomers
@@ -38,12 +36,33 @@ final class MergeCustomers
         $owner = $source->owner ?? $target->owner ?? null;
 
         return OwnerContext::withOwner($owner, function () use ($source, $target): Customer {
-            DB::transaction(function () use ($source, $target): void {
+            $source->getConnection()->transaction(function () use ($source, $target): void {
+                $locked = Customer::query()
+                    ->whereKey([$source->getKey(), $target->getKey()])
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $source = $locked->find($source->getKey());
+                $target = $locked->find($target->getKey());
+
+                if (! $source instanceof Customer || ! $target instanceof Customer
+                    || ! $this->customersShareOwnerContext($source, $target)) {
+                    throw new InvalidArgumentException('Both customers must remain accessible in the same owner context.');
+                }
+
+                if (Customer::ownerScopeConfig()->enabled) {
+                    OwnerWriteGuard::findOrFailForOwner(Customer::class, $source->getKey());
+                    OwnerWriteGuard::findOrFailForOwner(Customer::class, $target->getKey());
+                }
+
+                // Validate notes before any address, contact or membership mutations.
+                $this->assertNotesShareOwner($source, $target);
+
                 $this->moveAddresses($source, $target);
                 $this->moveContactMethods($source, $target);
                 $this->moveSocialProfiles($source, $target);
-                app(TransferSegmentMemberships::class)->execute($source, $target);
-                app(TransferCustomerGroupMemberships::class)->execute($source, $target);
+                app(CustomerMembershipTransfer::class)->transfer((string) $source->getKey(), (string) $target->getKey());
                 $this->moveNotes($source, $target);
 
                 if (! empty($source->metadata) && empty($target->metadata)) {
@@ -183,9 +202,9 @@ final class MergeCustomers
             ->exists();
     }
 
-    private function moveNotes(Customer $source, Customer $target): void
+    private function assertNotesShareOwner(Customer $source, Customer $target): void
     {
-        $notes = $source->notes()->withoutOwnerScope()->get();
+        $notes = $source->notes()->withoutOwnerScope()->cursor();
 
         foreach ($notes as $note) {
             if (! $this->noteSharesOwnerWithTarget($note, $target)) {
@@ -193,6 +212,11 @@ final class MergeCustomers
             }
         }
 
+    }
+
+    private function moveNotes(Customer $source, Customer $target): void
+    {
+        $this->assertNotesShareOwner($source, $target);
         $source->notes()->update(['customer_id' => $target->id]);
     }
 
