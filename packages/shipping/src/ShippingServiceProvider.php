@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping;
 
-use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Contracts\PackageReturnVerifier;
 use AIArmada\Shipping\Contracts\ZoneRateReader;
@@ -12,22 +11,12 @@ use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
 use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
-use AIArmada\Shipping\Features\Rates\Api\EvaluateFreeShipping;
-use AIArmada\Shipping\Features\Rates\Api\ShopRates;
-use AIArmada\Shipping\Features\Rates\EntryPoints\Cart\ShippingConditionProvider;
-use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
-use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
-use AIArmada\Shipping\Features\Rates\Queries\ShippingZoneResolver;
 use AIArmada\Shipping\Features\Returns\Actions\PackageReturns;
 use AIArmada\Shipping\Features\Shipments\Actions\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Shipments\Actions\ShipmentService;
 use AIArmada\Shipping\Platform\ExtensionRegistry;
 use AIArmada\Shipping\Platform\FeatureCatalog;
 use AIArmada\Shipping\Platform\FeatureModule;
-use AIArmada\Shipping\Strategies\GeoZoneResolutionStrategy;
-use AIArmada\Shipping\Strategies\ThresholdFreeShippingPolicy;
-use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
-use AIArmada\Shipping\Support\ZoneResolutionStrategyRegistry;
 use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -66,57 +55,6 @@ final class ShippingServiceProvider extends PackageServiceProvider
         $this->app->bind('shipping.driver.manual', fn (Application $app): ManualShippingDriver => new ManualShippingDriver((array) $app->make('config')->get('shipping.drivers.manual', [])));
         $this->app->bind('shipping.driver.flat_rate', fn (Application $app): FlatRateShippingDriver => new FlatRateShippingDriver((array) $app->make('config')->get('shipping.drivers.flat_rate', [])));
         $this->app->bind('shipping.driver.zone', fn (Application $app): ZoneBasedShippingDriver => new ZoneBasedShippingDriver($app->make(ZoneRateReader::class), (array) $app->make('config')->get('shipping.drivers.zone', [])));
-
-        // Register free shipping policy registry with default threshold policy
-        $this->app->singleton(FreeShippingPolicyRegistry::class, function ($app): FreeShippingPolicyRegistry {
-            /** @var array<string, mixed> $config */
-            $config = (array) $app->make('config')->get('shipping.free_shipping', []);
-            $config['currency'] ??= (string) $app->make('config')->get('shipping.defaults.currency', 'MYR');
-
-            $registry = new FreeShippingPolicyRegistry;
-            $registry->register(new ThresholdFreeShippingPolicy($config));
-
-            return $registry;
-        });
-
-        // Register zone resolution strategy registry with default geo strategy
-        $this->app->singleton(ZoneResolutionStrategyRegistry::class, function (): ZoneResolutionStrategyRegistry {
-            $registry = new ZoneResolutionStrategyRegistry;
-            $registry->register(new GeoZoneResolutionStrategy);
-
-            return $registry;
-        });
-
-        // Scoped so per-request memoization cache never bleeds across Octane requests
-        $this->app->scoped(ShippingZoneResolver::class);
-        $this->app->bind(ZoneRateReader::class, fn (Application $app): ZoneRateReader => $app->make(ShippingZoneResolver::class));
-
-        $this->app->scoped(RateShoppingEngine::class, function ($app): RateShoppingEngine {
-            /** @var array<string, mixed> $config */
-            $config = (array) $app->make('config')->get('shipping.rate_shopping', []);
-
-            return new RateShoppingEngine($app->make(ShippingManager::class), $config);
-        });
-
-        $this->app->singleton(FreeShippingEvaluator::class, function ($app): FreeShippingEvaluator {
-            /** @var array<string, mixed> $config */
-            $config = (array) $app->make('config')->get('shipping.free_shipping', []);
-            $config['currency'] ??= (string) $app->make('config')->get('shipping.defaults.currency', 'MYR');
-
-            return new FreeShippingEvaluator(
-                $app->make(FreeShippingPolicyRegistry::class),
-                $config,
-            );
-        });
-
-        $this->app->bind(ShopRates::class, fn (Application $app): ShopRates => $app->make(RateShoppingEngine::class));
-        $this->app->bind(EvaluateFreeShipping::class, fn (Application $app): EvaluateFreeShipping => $app->make(FreeShippingEvaluator::class));
-
-        if (class_exists(ConditionProviderRegistry::class)) {
-            $this->app->scoped(ShippingConditionProvider::class);
-            $this->app->make(ConditionProviderRegistry::class)
-                ->register(ShippingConditionProvider::class);
-        }
 
         $this->registerOrdersIntegration();
     }

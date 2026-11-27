@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Strategies;
+namespace AIArmada\Shipping\Features\Rates\Strategies;
 
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use AIArmada\Shipping\Data\AddressData;

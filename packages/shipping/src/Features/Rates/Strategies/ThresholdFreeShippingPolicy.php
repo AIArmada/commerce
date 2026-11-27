@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Strategies;
+namespace AIArmada\Shipping\Features\Rates\Strategies;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Shipping\Contracts\FreeShippingPolicyInterface;

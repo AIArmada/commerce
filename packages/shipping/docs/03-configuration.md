@@ -241,7 +241,7 @@ from an address. The default `GeoZoneResolutionStrategy` matches by country, sta
 postcode. Register custom strategies in a service provider:
 
 ```php
-use AIArmada\Shipping\Support\ZoneResolutionStrategyRegistry;
+use AIArmada\Shipping\Platform\ZoneResolutionStrategyRegistry;
 use App\Shipping\Strategies\B2BZoneResolutionStrategy;
 
 $registry = app(ZoneResolutionStrategyRegistry::class);
@@ -257,7 +257,7 @@ The `FreeShippingPolicyRegistry` manages pluggable free-shipping evaluation poli
 `ThresholdFreeShippingPolicy` evaluates based on cart subtotal. Register custom policies in a service provider:
 
 ```php
-use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
+use AIArmada\Shipping\Platform\FreeShippingPolicyRegistry;
 use App\Shipping\Policies\MemberFreeShippingPolicy;
 
 $registry = app(FreeShippingPolicyRegistry::class);

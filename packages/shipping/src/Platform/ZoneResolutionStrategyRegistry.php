@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Support;
+namespace AIArmada\Shipping\Platform;
 
 use AIArmada\Shipping\Contracts\ZoneResolutionStrategyInterface;
 use InvalidArgumentException;

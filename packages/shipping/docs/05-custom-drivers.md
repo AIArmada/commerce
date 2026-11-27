@@ -497,7 +497,7 @@ class MemberFreeShippingPolicy implements FreeShippingPolicyInterface
 Register in a service provider:
 
 ```php
-use AIArmada\Shipping\Support\FreeShippingPolicyRegistry;
+use AIArmada\Shipping\Platform\FreeShippingPolicyRegistry;
 
 $registry = app(FreeShippingPolicyRegistry::class);
 $registry->register(new MemberFreeShippingPolicy());
@@ -542,7 +542,7 @@ class B2BZoneResolutionStrategy implements ZoneResolutionStrategyInterface
 Register in a service provider:
 
 ```php
-use AIArmada\Shipping\Support\ZoneResolutionStrategyRegistry;
+use AIArmada\Shipping\Platform\ZoneResolutionStrategyRegistry;
 
 $registry = app(ZoneResolutionStrategyRegistry::class);
 $registry->register(new B2BZoneResolutionStrategy());
