@@ -367,7 +367,7 @@ $action->handle(
 ): array{processed: int, synced: int, skipped: int, failed: int, errors: array<int, string>}
 ```
 
-Fetches CHIP purchases from the remote API and stores them locally via `StoreWebhookData`. It does not reach into checkout or customer packages; downstream subscribers can consume the stable CHIP webhook event payload instead. Supports dry-run mode and status filtering.
+Fetches CHIP purchases from the remote API and stores them locally via `StoreChipWebhookPayload`. It does not reach into checkout or customer packages; downstream subscribers can consume the stable CHIP webhook event payload instead. Supports dry-run mode and status filtering.
 
 ## Support Classes
 

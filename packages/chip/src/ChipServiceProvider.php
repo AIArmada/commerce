@@ -18,7 +18,7 @@ use AIArmada\Chip\Contracts\ChipSendTransport;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\StoreWebhookData;
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipCustomerDirectory;

@@ -115,7 +115,7 @@ Typed events include:
 - `PaymentRefunded`
 - payout events
 
-If `chip.webhooks.store_webhooks` is enabled, `AIArmada\Chip\Listeners\StoreWebhookData` persists purchase payloads plus purchase-related payment payloads such as `payment.refunded`.
+If `chip.webhooks.store_webhooks` is enabled, `AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData` persists purchase payloads plus purchase-related payment payloads such as `payment.refunded`.
 
 The typed events emitted by `WebhookEventDispatcher` are the integration seam for downstream packages. `PurchaseEvent` and payment events expose stable IDs, amounts, currencies, statuses, customer details, references, metadata, and the original payload. CHIP does not generate documents or link checkout customers; those subscribers belong to their owning packages.
 

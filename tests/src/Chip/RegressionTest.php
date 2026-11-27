@@ -18,7 +18,7 @@ use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\EntryPoints\Http\Controllers\SendWebhookController;
 use AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\StoreWebhookData;
+use AIArmada\Chip\Actions\StoreChipWebhookPayload;
 use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\Chip\Models\Client;
@@ -284,7 +284,7 @@ describe('sync runs under explicit context when scoped', function (): void {
 
         Chip::shouldReceive('getPurchase')->andThrow(new Exception('api down'));
 
-        $action = new SyncChipRecordsFromApiAction(new StoreWebhookData);
+        $action = new SyncChipRecordsFromApiAction(new StoreChipWebhookPayload);
 
         $summary = $action->handle(['purchase-missing-1']);
 

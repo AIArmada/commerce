@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController;
 use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\StoreWebhookData;
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\Chip\Testing\WebhookFactory;

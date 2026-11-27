@@ -2,56 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Listeners;
+namespace AIArmada\Chip\Actions;
 
-use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Store CHIP webhook data in the database.
- *
- * Maps webhook payload fields directly to database columns.
- * No fabrication - only stores what CHIP sends.
- */
-final class StoreWebhookData
+final readonly class StoreChipWebhookPayload
 {
-    public function handle(WebhookReceived $event): void
-    {
-        if (! config('chip.webhooks.store_webhooks', true)) {
-            return;
-        }
-
-        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
-            Log::channel(config('chip.logging.channel', 'stack'))
-                ->warning('CHIP webhook store_webhooks skipped because owner context is missing while owner scoping is enabled', [
-                    'event_type' => $event->eventType,
-                    'id' => $event->payload['id'] ?? null,
-                    'brand_id' => $event->payload['brand_id'] ?? null,
-                ]);
-
-            return;
-        }
-
-        $payload = $event->payload;
-        $payloadType = $payload['type'] ?? null;
-
-        // Only process purchase-related webhooks
-        if ($payloadType === 'purchase') {
-            $this->storePurchasePayload($payload);
-
-            return;
-        }
-
-        if ($payloadType === 'payment' && data_get($payload, 'related_to.type') === 'purchase') {
-            $this->storePayment($payload);
-        }
-    }
-
     /**
      * Store a purchase resource returned by the CHIP API.
      *
@@ -68,9 +30,11 @@ final class StoreWebhookData
             return;
         }
 
-        $this->storePurchase($payload);
-        $this->storeClient($payload);
-        $this->storePayment($payload);
+        DB::transaction(function () use ($payload): void {
+            $this->storePurchase($payload);
+            $this->storeClient($payload);
+            $this->storePayment($payload);
+        });
     }
 
     /**
@@ -253,7 +217,7 @@ final class StoreWebhookData
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function storePayment(array $payload): void
+    public function storePayment(array $payload): void
     {
         $owner = $this->resolveOwner();
 

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Listeners\StoreWebhookData;
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 
 describe('StoreWebhookData Listener', function (): void {
     beforeEach(function (): void {
-        $this->listener = new StoreWebhookData;
+        $this->listener = app(StoreWebhookData::class);
         Config::set('chip.webhooks.store_webhooks', true);
     });
 
