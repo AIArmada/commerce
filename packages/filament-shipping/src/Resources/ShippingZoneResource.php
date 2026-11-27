@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
@@ -53,7 +54,7 @@ class ShippingZoneResource extends Resource
         }
 
         /** @var Builder<ShippingZone> $scoped */
-        $scoped = $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
+        $scoped = $query->forOwner($owner, includeGlobal: ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false));
 
         return $scoped;
     }

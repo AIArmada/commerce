@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Schemas\ShippingRateForm;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Tables\ShippingRatesTable;
@@ -52,8 +55,12 @@ class ShippingRateResource extends Resource
             return $query->whereRaw('0 = 1');
         }
 
-        return $query->whereHas('zone', /** @phpstan-ignore-next-line */ function (Builder $q) use ($owner): void {
-            $q->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false)); // @phpstan-ignore method.notFound
+        return $query->whereHas('zone', function (Builder $q) use ($owner): void {
+            OwnerQuery::applyToEloquentBuilder(
+                $q->withoutGlobalScope(OwnerScope::class),
+                $owner,
+                ! OwnerScopeOverride::suppressIncludeGlobal() && (bool) config('shipping.features.owner.include_global', false),
+            );
         });
     }
 
