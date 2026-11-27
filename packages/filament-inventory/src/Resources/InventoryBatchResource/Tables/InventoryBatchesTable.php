@@ -8,7 +8,7 @@ use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -98,7 +98,7 @@ final class InventoryBatchesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteTraceabilityBulkAction::make(),
                 ]),
             ]);
     }

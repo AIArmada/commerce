@@ -7,7 +7,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
 use AIArmada\Inventory\Features\Traceability\Actions\UpdateTraceabilityDetails;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use Filament\Actions\DeleteAction;
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,7 +25,7 @@ final class EditInventoryBatch extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteTraceabilityAction::make(),
         ];
     }
 }

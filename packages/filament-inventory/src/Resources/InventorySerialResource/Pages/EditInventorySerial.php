@@ -7,7 +7,7 @@ namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource;
 use AIArmada\Inventory\Features\Traceability\Actions\UpdateTraceabilityDetails;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
-use Filament\Actions\DeleteAction;
+use AIArmada\FilamentInventory\Actions\DeleteTraceabilityAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,7 +25,7 @@ final class EditInventorySerial extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteTraceabilityAction::make(),
         ];
     }
 }
