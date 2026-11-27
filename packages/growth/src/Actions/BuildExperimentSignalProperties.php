@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Growth\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Growth\Enums\ResolveStrategy;
 use AIArmada\Growth\Models\Assignment;
@@ -201,11 +203,13 @@ final class BuildExperimentSignalProperties
 
         $owner = OwnerContext::fromTypeAndId($assignment->owner_type, $assignment->owner_id);
 
-        if ($owner === null) {
-            return $query->globalOnly();
-        }
-
-        return $query->forOwner($owner, includeGlobal: false);
+        return OwnerQuery::applyToEloquentBuilder(
+            $query->withoutGlobalScope(OwnerScope::class),
+            $owner,
+            false,
+            $config->ownerTypeColumn,
+            $config->ownerIdColumn,
+        );
     }
 
     private function matchesAssignmentOwner(Assignment $assignment, Model $model): bool
