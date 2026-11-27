@@ -85,9 +85,9 @@ class SendInstruction extends ChipIntegerModel
         };
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'send_instructions';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'send_instructions';
     }
 
     /**

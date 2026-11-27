@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\CompanyStatementResource\Schemas;
 
-use AIArmada\Chip\Models\CompanyStatement;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;

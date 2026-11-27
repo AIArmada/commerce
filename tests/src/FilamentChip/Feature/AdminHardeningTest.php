@@ -6,7 +6,7 @@ use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Models\Client;
-use AIArmada\Chip\Models\CompanyStatement;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\LocalAnalyticsService;

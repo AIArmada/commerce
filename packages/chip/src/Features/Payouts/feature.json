@@ -8,7 +8,9 @@
     ],
     "table:chip_send_instructions": [
       "AIArmada\\Chip\\Features\\Payouts\\Actions\\CreateSendInstruction"
-    ]
+    ],
+    "table:chip_send_limits": [],
+    "table:chip_send_webhooks": []
   },
   "extensions": {}
 }

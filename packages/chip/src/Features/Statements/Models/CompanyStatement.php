@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\Statements\Models;
+
+use AIArmada\Chip\Models\ChipModel;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -74,9 +76,9 @@ class CompanyStatement extends ChipModel
         };
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'company_statements';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'company_statements';
     }
 
     /**

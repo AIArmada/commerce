@@ -58,9 +58,9 @@ class BankAccount extends ChipIntegerModel
         return (string) str($this->status ?? 'unknown')->headline();
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'bank_accounts';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'bank_accounts';
     }
 
     /**

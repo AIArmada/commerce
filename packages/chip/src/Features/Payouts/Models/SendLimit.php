@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Models;
+namespace AIArmada\Chip\Features\Payouts\Models;
+
+use AIArmada\Chip\Models\ChipIntegerModel;
 
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -76,9 +78,9 @@ class SendLimit extends ChipIntegerModel
         };
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'send_limits';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'send_limits';
     }
 
     /**

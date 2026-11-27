@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages;
 
-use AIArmada\Chip\Models\CompanyStatement;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource;
