@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
@@ -31,7 +32,7 @@ final class RebuildAllSegments
         $results = [];
 
         foreach ($segments as $segment) {
-            $results[$segment->name] = $this->rebuildSegment($segment);
+            $results[$segment->name] = OwnerContext::withOwner($owner, fn (): int => $this->rebuildSegment($segment));
         }
 
         return $results;
@@ -76,6 +77,10 @@ final class RebuildAllSegments
      */
     public function rebuildSegment(Segment $segment): int
     {
+        if (Segment::ownerScopeConfig()->enabled) {
+            $segment = OwnerWriteGuard::findOrFailForOwner(Segment::class, $segment->getKey());
+        }
+
         $segmentOwner = OwnerContext::fromTypeAndId($segment->owner_type, $segment->owner_id);
 
         return OwnerContext::withOwner($segmentOwner, fn (): int => $segment->getConnection()->transaction(function () use ($segment, $segmentOwner): int {

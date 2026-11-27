@@ -22,11 +22,19 @@ final class TransferSegmentMemberships
             OwnerWriteGuard::findOrFailForOwner(Customer::class, $target->getKey());
         }
 
-        $relation = $source->segments();
-        $ids = $relation->pluck($relation->getRelated()->qualifyColumn($relation->getRelatedKeyName()))->all();
+        $source->getConnection()->transaction(function () use ($source, $target): void {
+            $locked = Customer::query()->whereKey([$source->getKey(), $target->getKey()])->orderBy('id')->lockForUpdate()->get();
 
-        if ($ids !== []) {
-            $target->segments()->syncWithoutDetaching($ids);
-        }
+            if ($locked->count() !== 2) {
+                throw new InvalidArgumentException('Both customers must remain accessible during the transfer.');
+            }
+
+            $relation = $source->segments();
+            $ids = $relation->pluck($relation->getRelated()->qualifyColumn($relation->getRelatedKeyName()))->all();
+
+            if ($ids !== []) {
+                $target->segments()->syncWithoutDetaching($ids);
+            }
+        });
     }
 }

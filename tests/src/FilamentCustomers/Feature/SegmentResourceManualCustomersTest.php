@@ -50,3 +50,16 @@ it('syncManualCustomers rejects syncing when the segment record is outside curre
         $customerInScope->id,
     ])))->toThrow(HttpException::class);
 });
+
+it('rejects manual changes to automatic segment memberships', function (): void {
+    $owner = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
+
+    OwnerContext::withOwner($owner, function (): void {
+        $customer = Customer::factory()->create();
+        $segment = Segment::factory()->automatic()->create();
+        $segment->customers()->attach($customer->getKey());
+
+        expect(fn () => SegmentForm::syncManualCustomers($segment, []))->toThrow(HttpException::class);
+        expect($segment->customers()->whereKey($customer->getKey())->exists())->toBeTrue();
+    });
+});
