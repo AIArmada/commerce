@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\EntryPoints\Listeners;
+namespace AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;

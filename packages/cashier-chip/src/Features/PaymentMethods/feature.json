@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "PaymentMethods",
+  "owns": {
+    "table:cashier_chip_payment_methods": [
+      "AIArmada\\CashierChip\\Features\\PaymentMethods\\Persistence\\PaymentMethodStore"
+    ]
+  },
+  "extensions": {}
+}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Payment;
 
 use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Model;

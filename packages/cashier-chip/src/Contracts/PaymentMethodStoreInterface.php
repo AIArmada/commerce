@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Contracts;
 
-use AIArmada\CashierChip\Payment\StoredPaymentMethod;
+use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 

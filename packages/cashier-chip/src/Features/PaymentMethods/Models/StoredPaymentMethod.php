@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Payment;
+namespace AIArmada\CashierChip\Features\PaymentMethods\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -38,6 +38,8 @@ final class StoredPaymentMethod extends Model
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected $hidden = ['recurring_token'];
 
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
 

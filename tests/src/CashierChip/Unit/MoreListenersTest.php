@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaymentFailure;
-use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePreauthorized;
+use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaymentFailure;
+use AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Subscription\Subscription;

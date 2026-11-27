@@ -7,13 +7,11 @@ namespace AIArmada\CashierChip;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
-use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
-use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePreauthorized;
+use AIArmada\CashierChip\Features\PaymentMethods\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Commands\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaid;
 use AIArmada\CashierChip\Features\Subscriptions\EntryPoints\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
-use AIArmada\CashierChip\Payment\PaymentMethodStore;
 use AIArmada\CashierChip\Platform\ExtensionRegistry;
 use AIArmada\CashierChip\Platform\FeatureCatalog;
 use AIArmada\CashierChip\Platform\FeatureModule;
@@ -50,7 +48,6 @@ final class CashierChipServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->bindInvoiceRenderer();
-        $this->bindPaymentMethodStore();
         $this->bindCustomerOwnerResolver();
         $this->registerFeatureModules();
     }
@@ -118,12 +115,6 @@ final class CashierChipServiceProvider extends PackageServiceProvider
 
             return $app->make(DefaultCustomerOwnerResolver::class);
         });
-    }
-
-    protected function bindPaymentMethodStore(): void
-    {
-        $this->app->singleton(PaymentMethodStore::class, fn (): PaymentMethodStore => new PaymentMethodStore);
-        $this->app->alias(PaymentMethodStore::class, PaymentMethodStoreInterface::class);
     }
 
     protected function registerEventListeners(): void

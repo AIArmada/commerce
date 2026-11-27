@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CashierChip\Payment;
+namespace AIArmada\CashierChip\Features\PaymentMethods\Persistence;
+
+use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
 
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -13,7 +15,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class PaymentMethodStore implements PaymentMethodStoreInterface
 {
@@ -59,8 +61,12 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
         bool $makeDefault = false,
     ): StoredPaymentMethod {
         $this->assertBillableWriteAllowed($billable);
+        if (mb_trim($recurringToken) === '') {
+            throw new InvalidArgumentException('Recurring token must not be empty.');
+        }
 
-        return DB::transaction(function () use ($billable, $recurringToken, $attributes, $makeDefault): StoredPaymentMethod {
+        return $billable->getConnection()->transaction(function () use ($billable, $recurringToken, $attributes, $makeDefault): StoredPaymentMethod {
+            $this->lockBillable($billable);
             $paymentMethod = $this->findForBillable($billable, $recurringToken);
 
             if ($paymentMethod === null) {
@@ -97,7 +103,8 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
     {
         $this->assertBillableWriteAllowed($billable);
 
-        return DB::transaction(function () use ($billable, $recurringToken): ?StoredPaymentMethod {
+        return $billable->getConnection()->transaction(function () use ($billable, $recurringToken): ?StoredPaymentMethod {
+            $this->lockBillable($billable);
             $paymentMethod = $this->findForBillable($billable, $recurringToken);
 
             if ($paymentMethod === null) {
@@ -121,36 +128,45 @@ final class PaymentMethodStore implements PaymentMethodStoreInterface
     {
         $this->assertBillableWriteAllowed($billable);
 
-        $paymentMethod = $this->findForBillable($billable, $recurringToken);
+        $billable->getConnection()->transaction(function () use ($billable, $recurringToken): void {
+            $this->lockBillable($billable);
+            $paymentMethod = $this->findForBillable($billable, $recurringToken);
 
-        if ($paymentMethod === null) {
-            if ($this->findAnyForBillable($billable, $recurringToken) !== null) {
-                throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+            if ($paymentMethod === null) {
+                if ($this->findAnyForBillable($billable, $recurringToken) !== null) {
+                    throw new AuthorizationException('Payment method is not accessible for the current owner context.');
+                }
+
+                return;
             }
 
-            return;
-        }
+            $wasDefault = $paymentMethod->is_default;
+            $paymentMethod->delete();
 
-        $wasDefault = $paymentMethod->is_default;
+            if ($wasDefault) {
+                $nextPaymentMethod = $this->allForBillable($billable)->first();
 
-        $paymentMethod->delete();
-
-        if (! $wasDefault) {
-            return;
-        }
-
-        $nextPaymentMethod = $this->allForBillable($billable)->first();
-
-        if ($nextPaymentMethod instanceof StoredPaymentMethod) {
-            $this->setDefaultForBillable($billable, $nextPaymentMethod->recurring_token);
-        }
+                if ($nextPaymentMethod instanceof StoredPaymentMethod) {
+                    $nextPaymentMethod->is_default = true;
+                    $nextPaymentMethod->save();
+                }
+            }
+        });
     }
 
     public function deleteAllForBillable(Model $billable): void
     {
         $this->assertBillableWriteAllowed($billable);
 
-        $this->queryForBillable($billable)->delete();
+        $billable->getConnection()->transaction(function () use ($billable): void {
+            $this->lockBillable($billable);
+            $this->queryForBillable($billable)->delete();
+        });
+    }
+
+    private function lockBillable(Model $billable): void
+    {
+        $billable->newQuery()->whereKey($billable->getKey())->lockForUpdate()->firstOrFail();
     }
 
     /**
