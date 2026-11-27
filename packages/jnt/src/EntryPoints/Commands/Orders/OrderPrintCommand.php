@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\EntryPoints\Commands\Orders;
 
 use AIArmada\Jnt\Data\PrintWaybillData;
+use AIArmada\Jnt\Drivers\LocalWaybillWriter;
 use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Services\JntExpressService;
 
@@ -17,9 +18,9 @@ class OrderPrintCommand extends JntCommand
 
     protected $description = 'Print waybill for a J&T Express order';
 
-    public function handle(JntExpressService $jnt): int
+    public function handle(JntExpressService $jnt, LocalWaybillWriter $writer): int
     {
-        return $this->withErrorHandling(function () use ($jnt): int {
+        return $this->withErrorHandling(function () use ($jnt, $writer): int {
             $orderId = $this->argument('order-id');
             $trackingNumber = $this->option('tracking-number');
             $path = $this->option('path');
@@ -44,7 +45,7 @@ class OrderPrintCommand extends JntCommand
                 $filename = self::safeFilename((string) $orderId);
                 $fullPath = $directory . DIRECTORY_SEPARATOR . $filename;
 
-                if ($waybill->savePdf($fullPath)) {
+                if ($writer->write($waybill, $fullPath)) {
                     $this->success('Waybill saved successfully');
                     $this->line('Location: ' . $fullPath);
                     $this->line('Size: ' . $waybill->getFormattedSize());

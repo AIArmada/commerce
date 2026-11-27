@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Jnt\Data\PrintWaybillData;
+use AIArmada\Jnt\Drivers\LocalWaybillWriter;
 
 describe('PrintWaybillData', function (): void {
     it('creates from API array with base64 content (single parcel)', function (): void {
@@ -294,7 +295,7 @@ describe('PrintWaybillData', function (): void {
         $tempFile = sys_get_temp_dir() . '/test_waybill_' . uniqid() . '.pdf';
 
         try {
-            $result = $data->savePdf($tempFile);
+            $result = (new LocalWaybillWriter)->write($data, $tempFile);
 
             expect($result)->toBeTrue()
                 ->and(file_exists($tempFile))->toBeTrue()
@@ -307,7 +308,7 @@ describe('PrintWaybillData', function (): void {
     });
 
     it('creates directory when saving PDF', function (): void {
-        $pdfContent = 'PDF content';
+        $pdfContent = '%PDF-1.4 content';
         $data = new PrintWaybillData(
             orderId: 'ORDER-123',
             trackingNumber: null,
@@ -320,7 +321,7 @@ describe('PrintWaybillData', function (): void {
         $tempFile = $tempDir . '/waybill.pdf';
 
         try {
-            $result = $data->savePdf($tempFile);
+            $result = (new LocalWaybillWriter)->write($data, $tempFile);
 
             expect($result)->toBeTrue()
                 ->and(is_dir($tempDir))->toBeTrue()
@@ -345,7 +346,21 @@ describe('PrintWaybillData', function (): void {
             isMultiParcel: true
         );
 
-        expect($data->savePdf('/tmp/test.pdf'))->toBeFalse();
+        expect((new LocalWaybillWriter)->write($data, '/tmp/test.pdf'))->toBeFalse();
+    });
+
+    it('counts binary bytes rather than characters', function (): void {
+        $data = new PrintWaybillData(orderId: 'ORDER-123', base64Content: base64_encode("%PDF-1.4 \xC3\xA9"));
+
+        expect($data->getPdfSize())->toBe(strlen("%PDF-1.4 \xC3\xA9"));
+    });
+
+    it('rejects non-PDF content without creating a file', function (): void {
+        $path = sys_get_temp_dir() . '/jnt_invalid_' . uniqid() . '.pdf';
+        $data = new PrintWaybillData(orderId: 'ORDER-123', base64Content: base64_encode('not a PDF'));
+
+        expect((new LocalWaybillWriter)->write($data, $path))->toBeFalse()
+            ->and(file_exists($path))->toBeFalse();
     });
 
     it('handles empty base64 content', function (): void {

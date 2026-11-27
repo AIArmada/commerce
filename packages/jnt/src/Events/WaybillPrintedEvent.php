@@ -62,8 +62,4 @@ final class WaybillPrintedEvent
         return $this->waybill->getFormattedSize();
     }
 
-    public function savePdf(string $path): bool
-    {
-        return $this->waybill->savePdf($path);
-    }
 }
