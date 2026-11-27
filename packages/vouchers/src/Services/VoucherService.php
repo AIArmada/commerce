@@ -8,6 +8,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Actions\RemoveVoucherFromWallet;
 use AIArmada\Vouchers\Actions\UpdateVoucher;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
@@ -227,16 +228,7 @@ class VoucherService implements VoucherServiceInterface
      */
     public function removeFromWallet(string $code, Model $holder): bool
     {
-        $voucher = $this->voucherQuery()
-            ->where('code', $this->normalizeCode($code))
-            ->firstOrFail();
-
-        /** @var VoucherModel $voucher */
-        return VoucherWallet::where('voucher_id', $voucher->id)
-            ->where('holder_type', $holder->getMorphClass())
-            ->where('holder_id', $holder->getKey())
-            ->whereNull('redeemed_at')
-            ->delete() > 0;
+        return app(RemoveVoucherFromWallet::class)->handle($code, $holder);
     }
 
     /**

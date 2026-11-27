@@ -185,7 +185,7 @@ Throws `ManualRedemptionNotAllowedException` if not allowed.
 Redeem a voucher after successful order completion (checkout path).
 
 ```php
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 
 app(VoucherServiceInterface::class)->redeem(
     code: $code,

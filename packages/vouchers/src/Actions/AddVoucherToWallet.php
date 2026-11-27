@@ -35,10 +35,10 @@ final class AddVoucherToWallet
             // Serialize concurrent claims per voucher. The row lock also
             // enforces the one-active-entry rule on drivers without partial
             // unique index support (PostgreSQL and SQLite).
-            $this->voucherQuery()
+            $voucher = $this->voucherQuery()
                 ->whereKey($voucher->id)
                 ->lockForUpdate()
-                ->first();
+                ->firstOrFail();
 
             // An already-active entry is returned as-is; a redeemed entry
             // does not block a fresh claim.
@@ -53,7 +53,7 @@ final class AddVoucherToWallet
             }
 
             try {
-                return VoucherWallet::create([
+                return $voucher->getConnection()->transaction(fn (): VoucherWallet => VoucherWallet::create([
                     'voucher_id' => $voucher->id,
                     'holder_type' => $holder->getMorphClass(),
                     'holder_id' => $holder->getKey(),
@@ -61,7 +61,7 @@ final class AddVoucherToWallet
                     'owner_id' => $voucher->owner_id,
                     'claimed_at' => CarbonImmutable::now(),
                     'metadata' => $metadata,
-                ]);
+                ]));
             } catch (QueryException $exception) {
                 if (! $this->isUniqueConstraintViolation($exception)) {
                     throw $exception;

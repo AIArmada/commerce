@@ -36,7 +36,7 @@ The `aiarmada/promotions` package owns automatic and code-based discount campaig
 - **Model** — `Promotion`
 - **Actions** — `CreatePromotion`, `DeactivatePromotion`, `IssueVouchersFromPromotion`
 - **Events** — `PromotionCreated`, `PromotionApplied`, `PromotionRemoved`, `PromotionDeactivated`
-- **Contracts** — `PromotionServiceInterface`
+- **Runtime** — `PromotionServiceInterface`
 - **Listeners** — `MarkPromotionAsUsedOnFulfillment`
 - **Support** — `PromotionPerformanceInsights`
 - **Core surfaces** — promotion targeting evaluation, usage-limit enforcement, code and automatic promotion flows

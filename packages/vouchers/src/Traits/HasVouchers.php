@@ -6,6 +6,7 @@ namespace AIArmada\Vouchers\Traits;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Actions\AddVoucherToWallet;
+use AIArmada\Vouchers\Actions\RemoveVoucherFromWallet;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -56,12 +57,7 @@ trait HasVouchers
      */
     public function removeVoucherFromWallet(string $voucherCode): bool
     {
-        $voucher = $this->voucherQueryByCode($voucherCode)->firstOrFail();
-
-        return $this->voucherWallets()
-            ->where('voucher_id', $voucher->id)
-            ->whereNull('redeemed_at')
-            ->delete() > 0;
+        return app(RemoveVoucherFromWallet::class)->handle($voucherCode, $this);
     }
 
     /**
