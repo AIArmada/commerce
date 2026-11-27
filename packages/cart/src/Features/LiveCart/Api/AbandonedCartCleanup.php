@@ -8,6 +8,9 @@ use Carbon\CarbonInterface;
 
 interface AbandonedCartCleanup
 {
+    /** @return list<array<string, string|int|null>> */
+    public function owners(string $table): array;
+
     public function count(
         string $table,
         bool $useExpired,

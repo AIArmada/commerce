@@ -6,6 +6,8 @@ namespace AIArmada\Cart\Features\LiveCart\Actions;
 
 use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
 use AIArmada\Cart\Features\LiveCart\Persistence\CartOwnerScope;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,16 @@ use InvalidArgumentException;
 
 final readonly class DeleteAbandonedCarts implements AbandonedCartCleanup
 {
+    public function owners(string $table): array
+    {
+        $this->assertTable($table);
+        $columns = OwnerTupleColumns::forModelClass(CartModel::class);
+
+        return DB::table($table)
+            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
+            ->distinct()->get()->map(fn (object $row): array => (array) $row)->values()->all();
+    }
+
     public function count(
         string $table,
         bool $useExpired,
@@ -72,8 +84,10 @@ final readonly class DeleteAbandonedCarts implements AbandonedCartCleanup
         string | int | null $ownerId,
         bool $deleteMode,
     ): Builder {
-        if ($table !== config('cart.database.table', 'carts')) {
-            throw new InvalidArgumentException('Cart cleanup may only access the configured cart table.');
+        $this->assertTable($table);
+
+        if ($days < 0) {
+            throw new InvalidArgumentException('Cart cleanup age must not be negative.');
         }
 
         $query = DB::table($table);
@@ -91,5 +105,11 @@ final readonly class DeleteAbandonedCarts implements AbandonedCartCleanup
 
         return $query->whereNull('abandoned_at')
             ->where('updated_at', '<', $now->copy()->subDays($days));
+    }
+    private function assertTable(string $table): void
+    {
+        if ($table !== config('cart.database.table', 'carts')) {
+            throw new InvalidArgumentException('Cart cleanup may only access the configured cart table.');
+        }
     }
 }

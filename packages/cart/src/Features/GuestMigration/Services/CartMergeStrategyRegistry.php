@@ -68,9 +68,9 @@ final class CartMergeStrategyRegistry
         return isset($this->handlers[$name]);
     }
 
-    public function resolveFromConfig(): CartMergeStrategyInterface
+    public function resolveFromConfig(?string $configuredName = null): CartMergeStrategyInterface
     {
-        $strategy = config('cart.migration.merge_strategy', 'add_quantities');
+        $strategy = $configuredName ?? config('cart.migration.merge_strategy', 'add_quantities');
 
         if ($this->has($strategy)) {
             return $this->get($strategy);

@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Cart\EntryPoints\Commands;
 
 use AIArmada\Cart\Features\LiveCart\Api\AbandonedCartCleanup;
-use AIArmada\Cart\Features\LiveCart\Models\CartModel;
-use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
-use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Api\AbandonmentSweep;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 final class ClearAbandonedCartsCommand extends Command
 {
@@ -51,6 +47,12 @@ final class ClearAbandonedCartsCommand extends Command
         }
 
         $days = (int) $this->option('days');
+
+        if ($days < 0) {
+            $this->error('The abandonment age must not be negative.');
+
+            return self::FAILURE;
+        }
         $useExpired = $this->option('expired');
         $dryRun = $this->option('dry-run');
         $deleteMode = (bool) $this->option('delete');
@@ -161,7 +163,7 @@ final class ClearAbandonedCartsCommand extends Command
         }
 
         if (
-            CartSnapshot::ownerScopingEnabled()
+            (bool) config('cart.owner.enabled', false)
             && OwnerContext::resolve() === null
             && ! OwnerContext::isExplicitGlobal()
         ) {
@@ -202,12 +204,8 @@ final class ClearAbandonedCartsCommand extends Command
         bool $forceThreshold,
         bool $strictOwnerTuples,
     ): int {
-        $columns = OwnerTupleColumns::forModelClass(CartSnapshot::class);
-        $owners = OwnerContext::withOwner(null, fn () => CartSnapshot::query()
-            ->withoutOwnerScope()
-            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
-            ->distinct()
-            ->get());
+        $columns = new OwnerTupleColumns;
+        $owners = app(AbandonmentSweep::class)->owners();
 
         $ownerBatches = [];
         $totalCandidates = 0;
@@ -222,8 +220,8 @@ final class ClearAbandonedCartsCommand extends Command
             if ($parsed->isUnresolved()) {
                 $message = sprintf(
                     'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
-                    $row->{$columns->ownerTypeColumn} ?? 'null',
-                    $row->{$columns->ownerIdColumn} === null ? 'null' : (string) $row->{$columns->ownerIdColumn},
+                    $row[$columns->ownerTypeColumn] ?? 'null',
+                    $row[$columns->ownerIdColumn] === null ? 'null' : (string) $row[$columns->ownerIdColumn],
                 );
 
                 if ($strictOwnerTuples) {
@@ -243,7 +241,7 @@ final class ClearAbandonedCartsCommand extends Command
             $totalCandidates += $count;
         }
 
-        if ($owners->isEmpty()) {
+        if ($owners === []) {
             $count = (int) OwnerContext::withOwner(null, fn (): int => $this->countAbandonedSnapshots($minutes));
             $ownerBatches[] = ['owner' => null, 'count' => $count];
             $totalCandidates += $count;
@@ -271,7 +269,7 @@ final class ClearAbandonedCartsCommand extends Command
 
     private function countAbandonedSnapshots(int $minutes): int
     {
-        return $this->abandonedSnapshotsQuery($minutes)->count();
+        return app(AbandonmentSweep::class)->count(CarbonImmutable::now()->subMinutes($minutes));
     }
 
     private function processAbandonedSnapshots(int $minutes, bool $dryRun): int
@@ -280,39 +278,7 @@ final class ClearAbandonedCartsCommand extends Command
             return $this->countAbandonedSnapshots($minutes);
         }
 
-        $marked = 0;
-        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
-        $action = app(CartAbandonmentMarker::class);
-
-        $this->abandonedSnapshotsQuery($minutes)->chunkById(500, function ($snapshots) use (&$marked, $action, $cutoff): void {
-            foreach ($snapshots as $snapshot) {
-                if ($action->execute((string) $snapshot->getKey(), $cutoff)) {
-                    $marked++;
-                }
-            }
-        });
-
-        return $marked;
-    }
-
-    /**
-     * @return Builder<CartSnapshot>
-     */
-    private function abandonedSnapshotsQuery(int $minutes): Builder
-    {
-        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
-
-        return CartSnapshot::query()->forOwner()
-            ->where('items_count', '>', 0)
-            ->whereNotNull('checkout_started_at')
-            ->whereNull('checkout_abandoned_at')
-            ->where(function ($query) use ($cutoff): void {
-                $query->where('last_activity_at', '<', $cutoff)
-                    ->orWhere(function ($fallback) use ($cutoff): void {
-                        $fallback->whereNull('last_activity_at')
-                            ->where('checkout_started_at', '<', $cutoff);
-                    });
-            });
+        return app(AbandonmentSweep::class)->execute(CarbonImmutable::now()->subMinutes($minutes));
     }
 
     private function handleAllOwners(
@@ -325,16 +291,10 @@ final class ClearAbandonedCartsCommand extends Command
         bool $strictOwnerTuples,
         bool $deleteMode = false,
     ): int {
-        $columns = OwnerTupleColumns::forModelClass(CartModel::class);
-        $owners = DB::table($table)
-            ->select([
-                $columns->ownerTypeColumn,
-                $columns->ownerIdColumn,
-            ])
-            ->distinct()
-            ->get();
+        $columns = OwnerTupleColumns::forConfigKey('cart.owner');
+        $owners = app(AbandonedCartCleanup::class)->owners($table);
 
-        if ($owners->isEmpty()) {
+        if ($owners === []) {
             return OwnerContext::withOwner(null, fn (): int => $this->handleForOwner(
                 table: $table,
                 useExpired: $useExpired,
@@ -362,8 +322,8 @@ final class ClearAbandonedCartsCommand extends Command
                 if ($strictOwnerTuples) {
                     $this->error(sprintf(
                         'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
-                        $row->{$columns->ownerTypeColumn} ?? 'null',
-                        $row->{$columns->ownerIdColumn} === null ? 'null' : (string) $row->{$columns->ownerIdColumn},
+                        $row[$columns->ownerTypeColumn] ?? 'null',
+                        $row[$columns->ownerIdColumn] === null ? 'null' : (string) $row[$columns->ownerIdColumn],
                     ));
 
                     return self::FAILURE;
@@ -371,8 +331,8 @@ final class ClearAbandonedCartsCommand extends Command
 
                 $this->warn(sprintf(
                     'Skipping malformed owner tuple while clearing abandoned carts (owner_type: %s, owner_id: %s).',
-                    $row->{$columns->ownerTypeColumn} ?? 'null',
-                    $row->{$columns->ownerIdColumn} === null ? 'null' : (string) $row->{$columns->ownerIdColumn},
+                    $row[$columns->ownerTypeColumn] ?? 'null',
+                    $row[$columns->ownerIdColumn] === null ? 'null' : (string) $row[$columns->ownerIdColumn],
                 ));
 
                 continue;

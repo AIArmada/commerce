@@ -81,10 +81,10 @@ final class MigrateGuestCartToUserAction
             throw new InvalidArgumentException('A non-empty user identifier is required to migrate a guest cart.');
         }
 
-        $mergeStrategy = $strategy ?? $this->mergeStrategy ?? ($strategyName !== null
-            ? $this->strategyRegistry->get($strategyName)
-            : $this->strategyRegistry->resolveFromConfig());
-        $resolvedStrategyName = $strategyName ?? $mergeStrategy::class;
+        $mergeStrategy = $strategy ?? $this->mergeStrategy ?? $this->strategyRegistry->resolveFromConfig($strategyName);
+        $resolvedStrategyName = $strategyName !== null && $this->strategyRegistry->has($strategyName)
+            ? $strategyName
+            : ($strategyName !== null ? 'add_quantities' : $mergeStrategy::class);
 
         $guestStorage = $this->resolveGlobalStorage();
         $targetStorage = $this->resolveStorage();
