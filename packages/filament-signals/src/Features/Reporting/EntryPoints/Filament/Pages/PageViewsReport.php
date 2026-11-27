@@ -94,7 +94,7 @@ final class PageViewsReport extends ReportPage implements HasTable
                     ->query(function (Builder $query, array $data): Builder {
                         $segmentId = is_string($data['value'] ?? null) ? $data['value'] : null;
 
-                        return $query->forReportSegment($segmentId);
+                        return SignalEvent::applyReportSegment($query, $segmentId);
                     }),
                 Filter::make('occurred_at')
                     ->label('Date Range')

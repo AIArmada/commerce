@@ -106,7 +106,8 @@ final class AcquisitionReport extends ReportPage implements HasTable
                     ->badge(),
                 TextColumn::make('acquisition_campaign')
                     ->label('Campaign')
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->searchAcquisitionCampaign(
+                    ->searchable(query: fn (Builder $query, string $search): Builder => SignalEvent::applyAcquisitionCampaignSearch(
+                        $query,
                         $search,
                         $this->attributionModel !== '' ? $this->attributionModel : null,
                         $this->savedReportId !== '' ? $this->savedReportId : null,

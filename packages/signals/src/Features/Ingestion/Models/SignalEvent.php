@@ -116,7 +116,7 @@ final class SignalEvent extends Model
      * @param  Builder<SignalEvent>  $query
      * @return Builder<SignalEvent>
      */
-    public function scopeSearchAcquisitionCampaign(Builder $query, string $search, ?string $attributionModel = null, ?string $savedReportId = null): Builder
+    public static function applyAcquisitionCampaignSearch(Builder $query, string $search, ?string $attributionModel = null, ?string $savedReportId = null): Builder
     {
         return app(AcquisitionReportService::class)->applyCampaignSearch($query, $search, $attributionModel, $savedReportId);
     }
@@ -145,7 +145,7 @@ final class SignalEvent extends Model
      * @param  Builder<SignalEvent>  $query
      * @return Builder<SignalEvent>
      */
-    public function scopeForReportSegment(Builder $query, ?string $segmentId): Builder
+    public static function applyReportSegment(Builder $query, ?string $segmentId): Builder
     {
         return app(SignalSegmentReportFilter::class)->applyToEventQuery($query, $segmentId);
     }
