@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Features\Orders\Models;
 
-use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
-use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
-
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Enums\TrackingStatus;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use AIArmada\Jnt\Features\Tracking\Support\JntStatusMapper;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;

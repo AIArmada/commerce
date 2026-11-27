@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Features\Tracking\Models;
 
-use AIArmada\Jnt\Features\Orders\Models\JntOrder;
-
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Api\PrintableLabel;
+use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use Filament\Actions\Action;
 use Filament\Actions\Action as NotificationAction;
 use Filament\Actions\BulkAction;

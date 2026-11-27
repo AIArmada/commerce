@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Features\Shipments\Actions\UpdateShipmentStatus;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
+use AIArmada\Shipping\Features\Shipments\Actions\UpdateShipmentStatus;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentEvent;
 use AIArmada\Shipping\States\Delivered;

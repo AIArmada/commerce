@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Rates\Api;
 
+use DateTimeImmutable;
+
 final readonly class RateQuote
 {
     public function __construct(
@@ -17,7 +19,7 @@ final readonly class RateQuote
         public ?array $restrictions = null,
         public bool $calculatedLocally = false,
         public ?string $quoteId = null,
-        public ?\DateTimeImmutable $expiresAt = null,
+        public ?DateTimeImmutable $expiresAt = null,
         public ?string $note = null,
     ) {}
 }

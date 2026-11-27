@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\LabelData;
+use AIArmada\Shipping\Features\Shipments\Actions\GenerateLabel;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentLabel;
 use AIArmada\Shipping\ShippingManager;

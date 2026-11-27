@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Features\Rates\Actions;
 
 use AIArmada\Shipping\Data\AddressData;
-use AIArmada\Shipping\Features\Rates\Api\RateAddress;
 use AIArmada\Shipping\Data\PackageData;
-use AIArmada\Shipping\Features\Rates\Api\RatePackage;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Features\Rates\Api\RateQuote;
 use AIArmada\Shipping\Features\Rates\Api\CalculateRates;
+use AIArmada\Shipping\Features\Rates\Api\RateAddress;
+use AIArmada\Shipping\Features\Rates\Api\RatePackage;
+use AIArmada\Shipping\Features\Rates\Api\RateQuote;
 use AIArmada\Shipping\ShippingManager;
+use DateTimeImmutable;
 use Throwable;
 
 /**
@@ -83,7 +84,7 @@ final class CalculateShippingRate implements CalculateRates
             restrictions: $rate->restrictions,
             calculatedLocally: $rate->calculatedLocally,
             quoteId: $rate->quoteId,
-            expiresAt: $rate->expiresAt === null ? null : \DateTimeImmutable::createFromInterface($rate->expiresAt),
+            expiresAt: $rate->expiresAt === null ? null : DateTimeImmutable::createFromInterface($rate->expiresAt),
             note: $rate->note,
         );
     }

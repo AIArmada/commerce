@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Support\PackageUnit;
-use AIArmada\Shipping\Integrations\OrderShipmentUnits;
 use AIArmada\Shipping\Features\Shipments\Models\ShipmentItem;
+use AIArmada\Shipping\Integrations\OrderShipmentUnits;
 use Illuminate\Support\Collection;
 
 it('only demands shippable components when verifying a mixed package shipment', function (): void {

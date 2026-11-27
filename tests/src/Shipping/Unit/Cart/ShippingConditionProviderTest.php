@@ -7,8 +7,8 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Shipping\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Data\RateQuoteData;
-use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
+use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Queries\RateShoppingEngine;
 
 // ============================================

@@ -10,8 +10,8 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
-use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Features\Shipments\Models\Shipment;
+use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Services\ShipmentService;
 use AIArmada\Shipping\ShippingManager;
 

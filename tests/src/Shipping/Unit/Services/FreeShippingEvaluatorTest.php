@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 use AIArmada\Shipping\Features\Rates\Api\FreeShippingResult;
+use AIArmada\Shipping\Features\Rates\Queries\FreeShippingEvaluator;
 
 // ============================================
 // FreeShippingEvaluator Tests

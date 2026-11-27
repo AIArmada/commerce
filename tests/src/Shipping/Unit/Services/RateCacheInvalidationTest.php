@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Concurrency;
 use Illuminate\Support\Str;
 use Mockery;
+use ReflectionMethod;
 
 function rateCacheAddresses(): array
 {
@@ -84,7 +85,7 @@ it('separates rate cache keys by effective global visibility', function (): void
 
     [$origin, $destination, $packages] = rateCacheAddresses();
     $engine = new RateShoppingEngine(Mockery::mock(ShippingManager::class));
-    $method = new \ReflectionMethod($engine, 'buildCacheKey');
+    $method = new ReflectionMethod($engine, 'buildCacheKey');
 
     OwnerContext::withOwner(null, function () use ($method, $engine, $origin, $destination, $packages): void {
         $inclusive = $method->invoke($engine, $origin, $destination, $packages);
