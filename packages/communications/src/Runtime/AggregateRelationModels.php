@@ -4,31 +4,33 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Runtime;
 
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
-
-/** Internal Eloquent relation and audit composition. */
+/**
+ * Internal Eloquent relation and audit composition.
+ *
+ * @phpstan-type RelatedCommunicationAttachment \AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment
+ * @phpstan-type RelatedCommunicationBatch \AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch
+ * @phpstan-type RelatedCommunicationContent \AIArmada\Communications\Features\Aggregate\Models\CommunicationContent
+ * @phpstan-type RelatedCommunicationRecipient \AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient
+ * @phpstan-type RelatedCommunicationReference \AIArmada\Communications\Features\Aggregate\Models\CommunicationReference
+ * @phpstan-type RelatedCommunicationThread \AIArmada\Communications\Features\Aggregate\Models\CommunicationThread
+ */
 interface AggregateRelationModels
 {
-    /** @return class-string<CommunicationBatch> */
+    /** @return class-string<RelatedCommunicationBatch> */
     public function batch(): string;
 
-    /** @return class-string<CommunicationThread> */
+    /** @return class-string<RelatedCommunicationThread> */
     public function thread(): string;
 
-    /** @return class-string<CommunicationRecipient> */
+    /** @return class-string<RelatedCommunicationRecipient> */
     public function recipient(): string;
 
-    /** @return class-string<CommunicationContent> */
+    /** @return class-string<RelatedCommunicationContent> */
     public function content(): string;
 
-    /** @return class-string<CommunicationReference> */
+    /** @return class-string<RelatedCommunicationReference> */
     public function reference(): string;
 
-    /** @return class-string<CommunicationAttachment> */
+    /** @return class-string<RelatedCommunicationAttachment> */
     public function attachment(): string;
 }

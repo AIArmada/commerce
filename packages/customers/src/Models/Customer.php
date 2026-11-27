@@ -22,9 +22,6 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
-use AIArmada\Customers\Features\Identity\Models\CustomerNote;
-use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Runtime\CustomerNoteRelationModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -72,9 +69,13 @@ use Spatie\Tags\HasTags;
  * @property-read Model|null $person
  * @property-read Model|null $owner
  * @property-read Collection<int, Address> $addresses
- * @property-read Collection<int, Segment> $segments
- * @property-read Collection<int, CustomerNote> $notes
- * @property-read Collection<int, CustomerGroup> $groups
+ * @property-read Collection<int, RelatedSegment> $segments
+ * @property-read Collection<int, RelatedCustomerNote> $notes
+ * @property-read Collection<int, RelatedCustomerGroup> $groups
+ *
+ * @phpstan-type RelatedCustomerNote \AIArmada\Customers\Features\Identity\Models\CustomerNote
+ * @phpstan-type RelatedCustomerGroup \AIArmada\Customers\Features\Segmentation\Models\CustomerGroup
+ * @phpstan-type RelatedSegment \AIArmada\Customers\Features\Segmentation\Models\Segment
  */
 class Customer extends Model implements Auditable, HasMedia
 {
@@ -334,7 +335,7 @@ class Customer extends Model implements Auditable, HasMedia
     /**
      * Get the customer's notes.
      *
-     * @return HasMany<CustomerNote, $this>
+     * @return HasMany<RelatedCustomerNote, $this>
      */
     public function notes(): HasMany
     {

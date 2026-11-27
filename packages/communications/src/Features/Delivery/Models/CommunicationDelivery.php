@@ -7,10 +7,7 @@ namespace AIArmada\Communications\Features\Delivery\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Delivery\Api\DeliveryDependentsCleaner;
-use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Runtime\AggregateRelationModels;
 use AIArmada\Communications\Runtime\TrackingRelationModel;
@@ -68,12 +65,16 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Communication $communication
- * @property-read CommunicationRecipient|null $recipient
- * @property-read CommunicationContent|null $content
+ * @property-read RelatedCommunicationRecipient|null $recipient
+ * @property-read RelatedCommunicationContent|null $content
  * @property-read Collection<int, CommunicationAttempt> $attempts
  * @property-read Collection<int, CommunicationEvent> $events
- * @property-read Collection<int, CommunicationTrackingToken> $trackingTokens
+ * @property-read Collection<int, RelatedCommunicationTrackingToken> $trackingTokens
  * @property-read Model|Eloquent $owner
+ *
+ * @phpstan-type RelatedCommunicationContent \AIArmada\Communications\Features\Aggregate\Models\CommunicationContent
+ * @phpstan-type RelatedCommunicationRecipient \AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient
+ * @phpstan-type RelatedCommunicationTrackingToken \AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken
  */
 final class CommunicationDelivery extends Model
 {
@@ -165,7 +166,7 @@ final class CommunicationDelivery extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationRecipient, $this>
+     * @return BelongsTo<RelatedCommunicationRecipient, $this>
      */
     public function recipient(): BelongsTo
     {
@@ -173,7 +174,7 @@ final class CommunicationDelivery extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationContent, $this>
+     * @return BelongsTo<RelatedCommunicationContent, $this>
      */
     public function content(): BelongsTo
     {
@@ -197,7 +198,7 @@ final class CommunicationDelivery extends Model
     }
 
     /**
-     * @return HasMany<CommunicationTrackingToken, $this>
+     * @return HasMany<RelatedCommunicationTrackingToken, $this>
      */
     public function trackingTokens(): HasMany
     {

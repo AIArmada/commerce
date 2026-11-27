@@ -8,6 +8,7 @@ use AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers\Affiliati
 use AIArmada\Persons\Enums\AffiliationType;
 use AIArmada\Persons\Features\Affiliations\Actions\SaveAffiliation;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\PersonsServiceProvider;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -23,6 +24,9 @@ final class TestPersonExtraRelationManager extends RelationManager
 }
 
 beforeEach(function (): void {
+    $this->app->register(PersonsServiceProvider::class);
+    $this->app->register(\AIArmada\FilamentPersons\FilamentPersonsServiceProvider::class);
+
     $base = dirname(__DIR__, 3) . '/packages/persons/database/migrations/';
     $migrations = glob($base . '*.php') ?: [];
 

@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 
 test('CreateCommunicationAction creates communication and dispatches event', function (): void {
-    Event::fake();
+    Event::fake([CommunicationCreated::class]);
 
     $action = app(CreateCommunicationAction::class);
 

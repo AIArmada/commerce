@@ -21,6 +21,7 @@ use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\PersonsServiceProvider;
 use Filament\Actions\EditAction;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
@@ -32,6 +33,9 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
+    $this->app->register(PersonsServiceProvider::class);
+    $this->app->register(\AIArmada\FilamentPersons\FilamentPersonsServiceProvider::class);
+
     $base = dirname(__DIR__, 3) . '/packages/persons/database/migrations/';
     $migrations = glob($base . '*.php') ?: [];
 

@@ -19,6 +19,7 @@ use AIArmada\Customers\Features\Identity\Models\CustomerNote;
 use AIArmada\Customers\Features\Identity\Services\CustomerResolver;
 use AIArmada\Customers\Features\Identity\Traits\HasCustomerProfile;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\SaveSegment;
 use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Services\SegmentationService;
@@ -687,7 +688,7 @@ describe('slug conflict handling', function (): void {
         });
 
         try {
-            expect(fn (): Segment => OwnerContext::withOwner($owner, fn (): Segment => Segment::query()->create([
+            expect(fn (): Segment => OwnerContext::withOwner($owner, fn (): Segment => app(SaveSegment::class)->create([
                 'name' => 'Race Loser',
                 'slug' => $slug,
             ])))->toThrow(ValidationException::class);

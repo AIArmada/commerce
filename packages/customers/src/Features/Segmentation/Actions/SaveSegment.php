@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Queries\AssertSegmentSlugAvailable;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -63,8 +64,18 @@ final readonly class SaveSegment
     private function persist(Segment $segment): void
     {
         try {
-            $segment->getConnection()->transaction(fn (): bool => $segment->save());
+            $segment->getConnection()->transaction(function () use ($segment): void {
+                if (! $segment->save()) {
+                    throw new RuntimeException('Segment persistence was cancelled.');
+                }
+            });
         } catch (UniqueConstraintViolationException $exception) {
+            if (str_contains((string) ($exception->errorInfo[2] ?? ''), 'customers_segments_owner_slug_unique')) {
+                throw ValidationException::withMessages([
+                    'slug' => 'The segment slug has already been taken within this owner scope.',
+                ]);
+            }
+
             app(AssertSegmentSlugAvailable::class)->execute($segment);
 
             throw $exception;

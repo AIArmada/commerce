@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Runtime;
 
-use AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference;
-
-/** Internal Eloquent relation and audit composition. */
+/**
+ * Internal Eloquent relation and audit composition.
+ *
+ * @phpstan-type RelatedCommunicationPreference \AIArmada\Communications\Features\RecipientRouting\Models\CommunicationPreference
+ */
 interface PreferenceAuditModel
 {
-    /** @return class-string<CommunicationPreference> */
+    /** @return class-string<RelatedCommunicationPreference> */
     public function preference(): string;
 }

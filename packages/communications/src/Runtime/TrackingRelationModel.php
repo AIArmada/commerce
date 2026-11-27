@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Runtime;
 
-use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
-
-/** Internal Eloquent relation and audit composition. */
+/**
+ * Internal Eloquent relation and audit composition.
+ *
+ * @phpstan-type RelatedCommunicationTrackingToken \AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken
+ */
 interface TrackingRelationModel
 {
-    /** @return class-string<CommunicationTrackingToken> */
+    /** @return class-string<RelatedCommunicationTrackingToken> */
     public function token(): string;
 }

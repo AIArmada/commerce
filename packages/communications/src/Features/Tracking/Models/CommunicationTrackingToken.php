@@ -6,7 +6,6 @@ namespace AIArmada\Communications\Features\Tracking\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Runtime\DeliveryRelationModels;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -32,8 +31,10 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read CommunicationDelivery $delivery
+ * @property-read RelatedCommunicationDelivery $delivery
  * @property-read Model|Eloquent $owner
+ *
+ * @phpstan-type RelatedCommunicationDelivery \AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery
  */
 final class CommunicationTrackingToken extends Model
 {
@@ -76,7 +77,7 @@ final class CommunicationTrackingToken extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationDelivery, $this>
+     * @return BelongsTo<RelatedCommunicationDelivery, $this>
      */
     public function delivery(): BelongsTo
     {

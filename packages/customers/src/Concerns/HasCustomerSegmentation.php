@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
-use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Runtime\SegmentationRelationModels;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @phpstan-type RelatedCustomerGroup \AIArmada\Customers\Features\Segmentation\Models\CustomerGroup
+ * @phpstan-type RelatedSegment \AIArmada\Customers\Features\Segmentation\Models\Segment
+ */
 trait HasCustomerSegmentation
 {
     /**
      * Get the customer's segments.
      *
-     * @return BelongsToMany<Segment, $this>
+     * @return BelongsToMany<RelatedSegment, $this>
      */
     public function segments(): BelongsToMany
     {
@@ -33,7 +35,7 @@ trait HasCustomerSegmentation
     /**
      * Get the customer's group memberships.
      *
-     * @return BelongsToMany<CustomerGroup, $this>
+     * @return BelongsToMany<RelatedCustomerGroup, $this>
      */
     public function groups(): BelongsToMany
     {

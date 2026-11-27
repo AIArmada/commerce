@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
-use AIArmada\CommerceSupport\Features\ReferenceData\Api\ReferenceDataApi;
+use AIArmada\FilamentPersons\Queries\LanguageOptions;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
@@ -37,7 +37,7 @@ final class NamesRelationManager extends RelationManager
      */
     public static function getLanguageOptions(): array
     {
-        return app(ReferenceDataApi::class)->languageOptions();
+        return app(LanguageOptions::class)->get();
     }
 
     public function form(Schema $schema): Schema

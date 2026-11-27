@@ -9,7 +9,6 @@ use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Features\Identity\Api\PersonDependentsCleaner;
-use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Runtime\PersonNameRelationModel;
 use AIArmada\Persons\Runtime\PersonTitleFormatting;
 use AIArmada\Persons\Support\ModelResolver;
@@ -50,11 +49,13 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property string|null $verified_by
  * @property CarbonImmutable|null $rejected_at
  * @property CarbonImmutable|null $last_state_change_at
- * @property-read EloquentCollection<int, PersonName> $names
+ * @property-read EloquentCollection<int, RelatedPersonName> $names
  * @property-read string $formatted_name
  *
  * Person is the shared, global human-identity root. It deliberately has no
  * owner scope; tenant-owned profiles link to it without changing that rule.
+ *
+ * @phpstan-type RelatedPersonName \AIArmada\Persons\Features\Identity\Models\PersonName
  */
 class Person extends Model implements Sortable
 {
@@ -144,7 +145,7 @@ class Person extends Model implements Sortable
     }
 
     /**
-     * @return HasMany<PersonName, $this>
+     * @return HasMany<RelatedPersonName, $this>
      */
     public function names(): HasMany
     {
@@ -250,10 +251,10 @@ class Person extends Model implements Sortable
     private function primaryNameValues(): array
     {
         if ($this->relationLoaded('names')) {
-            /** @var EloquentCollection<int, PersonName> $names */
+            /** @var EloquentCollection<int, RelatedPersonName> $names */
             $names = $this->getRelation('names');
         } else {
-            /** @var EloquentCollection<int, PersonName> $names */
+            /** @var EloquentCollection<int, RelatedPersonName> $names */
             $names = $this->names()->where('is_primary', true)->get();
         }
 
