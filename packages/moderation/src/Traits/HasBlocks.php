@@ -24,7 +24,6 @@ trait HasBlocks
     {
         static::deleting(function (Model $model): void {
             app(ExpireDeletedEntityBlocksAction::class)->execute($model);
-            });
         });
     }
 

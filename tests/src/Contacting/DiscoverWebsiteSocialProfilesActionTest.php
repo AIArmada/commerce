@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\Contacting\Actions\DiscoverWebsiteSocialProfilesAction;
+use AIArmada\Contacting\Contracts\PublicHtmlFetcher;
 use Illuminate\Support\Facades\Http;
 
 test('discover website social profiles extracts direct social urls and html anchor links', function (): void {
@@ -25,4 +26,19 @@ test('discover website social profiles extracts direct social urls and html anch
 
     $fetched = app(DiscoverWebsiteSocialProfilesAction::class)->handle('https://ilmu360.example');
     expect($fetched)->toHaveCount(2);
+});
+
+test('social profile discovery accepts a substituted public HTML driver', function (): void {
+    app()->instance(PublicHtmlFetcher::class, new class implements PublicHtmlFetcher
+    {
+        public function fetch(string $url): ?string
+        {
+            return '<a href="https://www.instagram.com/ilmu360official">Instagram</a>';
+        }
+    });
+
+    $profiles = app(DiscoverWebsiteSocialProfilesAction::class)->handle('https://example.com');
+
+    expect($profiles)->toHaveCount(1)
+        ->and($profiles[0]['handle'])->toBe('ilmu360official');
 });
