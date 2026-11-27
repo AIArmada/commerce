@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
 use AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages\Concerns\InteractsWithSavedSignalReportState;
+use AIArmada\Signals\Features\Ingestion\Api\AcquisitionReportRead;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\AcquisitionReportService;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Reporting\Api\ReportConfiguration;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
@@ -71,7 +71,7 @@ final class AcquisitionReport extends ReportPage implements HasTable
      */
     public function getSummary(): array
     {
-        return app(AcquisitionReportService::class)->summary(
+        return app(AcquisitionReportRead::class)->summary(
             $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
             $this->dateFrom,
             $this->dateTo,
@@ -84,7 +84,7 @@ final class AcquisitionReport extends ReportPage implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(app(AcquisitionReportService::class)->getTableQuery(
+            ->query(SignalEvent::acquisitionRows(
                 $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
                 $this->dateFrom,
                 $this->dateTo,
@@ -106,7 +106,7 @@ final class AcquisitionReport extends ReportPage implements HasTable
                     ->badge(),
                 TextColumn::make('acquisition_campaign')
                     ->label('Campaign')
-                    ->searchable(query: fn (Builder $query, string $search): Builder => app(AcquisitionReportService::class)->applyCampaignSearch(
+                    ->searchable(query: fn (Builder $query, string $search): Builder => SignalEvent::applyAcquisitionCampaignSearch(
                         $query,
                         $search,
                         $this->attributionModel !== '' ? $this->attributionModel : null,

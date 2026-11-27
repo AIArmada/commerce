@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Features\Reporting\EntryPoints\Filament\Pages;
 
+use AIArmada\Signals\Features\Ingestion\Api\DevicesReportRead;
 use AIArmada\Signals\Features\Ingestion\Api\TelemetryRead;
-use AIArmada\Signals\Features\Ingestion\Extensions\DevicesReportService;
+use AIArmada\Signals\Features\Ingestion\Models\SignalSession;
 use AIArmada\Signals\Features\Reporting\Api\SegmentOptions;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
@@ -52,7 +53,7 @@ final class DevicesReport extends ReportPage implements HasTable
      */
     public function getSummary(): array
     {
-        return app(DevicesReportService::class)->summary(
+        return app(DevicesReportRead::class)->summary(
             $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
             $this->dateFrom,
             $this->dateTo,
@@ -74,15 +75,14 @@ final class DevicesReport extends ReportPage implements HasTable
 
     public function table(Table $table): Table
     {
-        $service = app(DevicesReportService::class);
         $propertyId = $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null;
         $excludeBots = ! $this->includeBots;
 
         $query = match ($this->activeTab) {
-            'browser' => $service->getBrowserQuery($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
-            'os' => $service->getOsQuery($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
-            'brand_model' => $service->getBrandModelQuery($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
-            default => $service->getDeviceTypeQuery($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
+            'browser' => SignalSession::browserRows($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
+            'os' => SignalSession::operatingSystemRows($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
+            'brand_model' => SignalSession::brandModelRows($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
+            default => SignalSession::deviceTypeRows($propertyId, $this->dateFrom, $this->dateTo, $this->signalSegmentId !== '' ? $this->signalSegmentId : null, $excludeBots),
         };
 
         $columns = match ($this->activeTab) {
