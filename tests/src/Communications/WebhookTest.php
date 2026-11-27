@@ -120,6 +120,22 @@ test('signature middleware rejects stale webhook timestamps', function (): void 
     $response->assertStatus(401);
 });
 
+test('signature middleware rejects a replay with a replaced timestamp', function (): void {
+    Queue::fake();
+
+    $timestamp = CarbonImmutable::now()->timestamp;
+    $body = json_encode(['event' => 'delivery.delivered'], JSON_THROW_ON_ERROR);
+    $signature = hash_hmac('sha256', ($timestamp - 600) . '.' . $body, 'test-secret');
+
+    $this->call('POST', 'communications/webhooks/sendgrid', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+        'HTTP_X_WEBHOOK_TIMESTAMP' => (string) $timestamp,
+    ], $body)->assertUnauthorized();
+
+    Queue::assertNothingPushed();
+});
+
 test('signature middleware aborts on missing signature when secret is set', function (): void {
     Config::set('communications.webhooks.providers.sendgrid.secret', 'test-secret');
 
@@ -180,7 +196,8 @@ test('signature middleware accepts valid signature', function (): void {
 
     $payload = ['event' => 'delivery.delivered', 'delivery_id' => 'test-id'];
     $body = json_encode($payload);
-    $signature = hash_hmac('sha256', $body, $secret);
+    $timestamp = (string) CarbonImmutable::now()->timestamp;
+    $signature = hash_hmac('sha256', $timestamp . '.' . $body, $secret);
 
     $request = Request::create(
         'communications/webhooks/sendgrid',
@@ -191,7 +208,7 @@ test('signature middleware accepts valid signature', function (): void {
         [
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_Webhook_Signature' => $signature,
-            'HTTP_X_Webhook_Timestamp' => (string) CarbonImmutable::now()->timestamp,
+            'HTTP_X_Webhook_Timestamp' => $timestamp,
         ],
         $body
     );
@@ -396,7 +413,7 @@ function postSignedCommunicationsWebhook(
 ) {
     $timestamp ??= CarbonImmutable::now()->timestamp;
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
-    $signature = hash_hmac('sha256', $body, 'test-secret');
+    $signature = hash_hmac('sha256', $timestamp . '.' . $body, 'test-secret');
 
     return $testCase->call(
         'POST',

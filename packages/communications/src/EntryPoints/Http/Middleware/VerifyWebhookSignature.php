@@ -62,7 +62,7 @@ final class VerifyWebhookSignature
             abort(401, 'Missing webhook signature.');
         }
 
-        $expected = hash_hmac($this->registrar->getAlgorithm($provider), $request->getContent(), $secret);
+        $expected = hash_hmac($this->registrar->getAlgorithm($provider), $timestampValue . '.' . $request->getContent(), $secret);
 
         if (! hash_equals($expected, $signature)) {
             abort(401, 'Invalid webhook signature.');

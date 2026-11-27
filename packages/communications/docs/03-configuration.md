@@ -197,8 +197,10 @@ use AIArmada\Communications\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 ```
 
 The default middleware fails closed unless the provider is configured and sends
-the configured signature header as the HMAC of the raw request body plus a
-recent numeric `X-Webhook-Timestamp`. Replayed timestamps outside the
+the configured signature header as the hexadecimal HMAC of the exact numeric
+`X-Webhook-Timestamp`, followed by a literal `.` and the raw request body.
+For example, `hash_hmac('sha256', $timestamp . '.' . $body, $secret)`.
+Replayed timestamps outside the
 configured tolerance are rejected before dispatch. Each provider entry accepts
 an optional `algorithm` (any `hash_hmac_algos()` value, default `sha256`) and
 an optional `signature_header` (default `X-Webhook-Signature`).

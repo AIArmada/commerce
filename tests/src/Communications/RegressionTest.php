@@ -153,7 +153,7 @@ function regressionSignedWebhookPost(object $testCase, array $payload, array $op
     $header = $options['header'] ?? 'HTTP_X_WEBHOOK_SIGNATURE';
     $timestamp = $options['timestamp'] ?? CarbonImmutable::now()->timestamp;
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
-    $signature = hash_hmac($algorithm, $body, $secret);
+    $signature = hash_hmac($algorithm, $timestamp . '.' . $body, $secret);
 
     return $testCase->call(
         'POST',
