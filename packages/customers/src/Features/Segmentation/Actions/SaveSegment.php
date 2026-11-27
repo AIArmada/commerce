@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Features\Segmentation\Queries\AssertSegmentSlugAvailable;
 use Illuminate\Database\UniqueConstraintViolationException;
+use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SaveSegment
 {
@@ -34,6 +36,27 @@ final readonly class SaveSegment
             $this->persist($locked);
 
             return $locked;
+        });
+    }
+
+    public function delete(Segment $segment): bool
+    {
+        if (! $segment->exists || $segment->getKey() === null) {
+            throw new InvalidArgumentException('Segment must be persisted.');
+        }
+
+        return $segment->getConnection()->transaction(function () use ($segment): bool {
+            if (Segment::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(Segment::class, $segment->getKey());
+            }
+
+            $locked = $segment->newQuery()->whereKey($segment->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $locked->delete()) {
+                throw new RuntimeException('Segment deletion was cancelled.');
+            }
+
+            return true;
         });
     }
 

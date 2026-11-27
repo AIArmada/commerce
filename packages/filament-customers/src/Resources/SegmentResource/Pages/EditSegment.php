@@ -29,7 +29,8 @@ class EditSegment extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->using(fn (Segment $record): bool => app(SaveSegment::class)->delete($record)),
         ];
     }
 }

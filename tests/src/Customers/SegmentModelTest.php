@@ -7,6 +7,7 @@ use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Features\Segmentation\Actions\AssignCustomerToSegment;
 use AIArmada\Customers\Features\Segmentation\Actions\RebuildAllSegments;
 use AIArmada\Customers\Features\Segmentation\Actions\RemoveCustomerFromSegment;
+use AIArmada\Customers\Features\Segmentation\Actions\SaveSegment;
 use AIArmada\Customers\Features\Segmentation\Models\Segment;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -387,4 +388,18 @@ describe('Segment Model', function (): void {
             expect($matching->every(fn ($c) => $c->status->value === 'active'))->toBeTrue();
         });
     });
+});
+
+it('preserves segment memberships if deletion is cancelled', function (): void {
+    $segment = Segment::create(['name' => 'Deletion veto', 'slug' => 'deletion-veto']);
+    $customer = Customer::create(['first_name' => 'Segment', 'last_name' => 'Veto']);
+    app(AssignCustomerToSegment::class)->execute($customer, $segment);
+
+    Segment::deleting(static fn (Segment $record): bool => $record->getKey() !== $segment->getKey());
+
+    expect(fn () => app(SaveSegment::class)->delete($segment))
+        ->toThrow(RuntimeException::class, 'Segment deletion was cancelled.');
+
+    expect(Segment::query()->whereKey($segment->getKey())->exists())->toBeTrue()
+        ->and($segment->customers()->whereKey($customer->getKey())->exists())->toBeTrue();
 });

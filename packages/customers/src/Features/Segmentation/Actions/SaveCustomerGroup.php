@@ -6,6 +6,8 @@ namespace AIArmada\Customers\Features\Segmentation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
+use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class SaveCustomerGroup
 {
@@ -34,10 +36,22 @@ final readonly class SaveCustomerGroup
 
     public function delete(CustomerGroup $group): bool
     {
-        if (CustomerGroup::ownerScopeConfig()->enabled) {
-            OwnerWriteGuard::findOrFailForOwner(CustomerGroup::class, $group->getKey());
+        if (! $group->exists || $group->getKey() === null) {
+            throw new InvalidArgumentException('Customer group must be persisted.');
         }
 
-        return $group->getConnection()->transaction(fn (): bool => (bool) $group->newQuery()->whereKey($group->getKey())->lockForUpdate()->firstOrFail()->delete());
+        return $group->getConnection()->transaction(function () use ($group): bool {
+            if (CustomerGroup::ownerScopeConfig()->enabled) {
+                OwnerWriteGuard::findOrFailForOwner(CustomerGroup::class, $group->getKey());
+            }
+
+            $locked = $group->newQuery()->whereKey($group->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $locked->delete()) {
+                throw new RuntimeException('Customer group deletion was cancelled.');
+            }
+
+            return true;
+        });
     }
 }

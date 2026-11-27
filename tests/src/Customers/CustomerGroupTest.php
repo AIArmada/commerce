@@ -211,3 +211,17 @@ describe('CustomerGroup Model', function (): void {
         });
     });
 });
+
+it('preserves group memberships if deletion is cancelled', function (): void {
+    $group = app(SaveCustomerGroup::class)->create(['name' => 'Deletion veto']);
+    $customer = Customer::create(['first_name' => 'Group', 'last_name' => 'Veto']);
+    app(ManageCustomerGroupMembership::class)->add($group, $customer);
+
+    CustomerGroup::deleting(static fn (CustomerGroup $record): bool => $record->getKey() !== $group->getKey());
+
+    expect(fn () => app(SaveCustomerGroup::class)->delete($group))
+        ->toThrow(RuntimeException::class, 'Customer group deletion was cancelled.');
+
+    expect(CustomerGroup::query()->whereKey($group->getKey())->exists())->toBeTrue()
+        ->and($group->members()->whereKey($customer->getKey())->exists())->toBeTrue();
+});
