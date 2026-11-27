@@ -56,7 +56,7 @@ title: Engagement Overview
 |---|---|---|
 | `EngagementManager` | `DefaultEngagementManager` | Central facade: follow, bookmark, respond, react, remind, share |
 | `ManageSubscriptionsAction` | `ManageSubscriptionsAction` | Subscribe, unsubscribe, mute, match subscriptions |
-| `ReminderManager` | `DefaultReminderManager` | Set, cancel, due reminders, mark sent/failed |
+| `ManageRemindersAction` | `ManageRemindersAction` | Set, cancel, due reminders, mark sent/failed |
 | `EngagementStateResolver` | `DefaultEngagementStateResolver` | Query state: isFollowing, isBookmarked, responseFor, reactionFor |
 | `UpdateEngagementCountersAction` | `UpdateEngagementCountersAction` | Count followers, bookmarks, responses, reactions |
 | `EngagementPolicyResolver` | `DefaultEngagementPolicyResolver` | Resolve engagement policies per model |

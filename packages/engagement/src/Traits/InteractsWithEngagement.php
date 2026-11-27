@@ -7,7 +7,6 @@ namespace AIArmada\Engagement\Traits;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
-use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,8 +32,4 @@ trait InteractsWithEngagement
         return app(EngagementStateResolver::class);
     }
 
-    protected function engagementReminderManager(): ReminderManager
-    {
-        return app(ReminderManager::class);
-    }
 }

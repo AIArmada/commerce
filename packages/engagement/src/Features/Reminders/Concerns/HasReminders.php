@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Traits;
+namespace AIArmada\Engagement\Features\Reminders\Concerns;
 
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
+use AIArmada\Engagement\Traits\ReceivesEngagement;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

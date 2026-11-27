@@ -6,9 +6,9 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\ReminderStatus;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Support\ModelResolver;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use BackedEnum;
@@ -97,7 +97,7 @@ final class ReminderResource extends Resource
                     ))
                     ->action(function (Reminder $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(ReminderManager::class)->cancelReminder(
+                        app(ManageRemindersAction::class)->cancelReminder(
                             $record->recipient,
                             $record->remindable,
                             $record->reminder_type,
@@ -108,7 +108,7 @@ final class ReminderResource extends Resource
                     ->label('Mark Sent')
                     ->action(function (Reminder $record): void {
                         $record = ActionRecordResolver::resolve($record);
-                        app(ReminderManager::class)->markSent($record);
+                        app(ManageRemindersAction::class)->markSent($record);
                     })
                     ->requiresConfirmation(),
             ]);

@@ -2,30 +2,28 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Services;
+namespace AIArmada\Engagement\Features\Reminders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderCancelled;
 use AIArmada\Engagement\Events\ReminderCreated;
 use AIArmada\Engagement\Events\ReminderFailed;
 use AIArmada\Engagement\Events\ReminderScheduled;
 use AIArmada\Engagement\Events\ReminderSent;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Support\EngagementModelGuard;
 use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class DefaultReminderManager implements ReminderManager
+final readonly class ManageRemindersAction
 {
     public function __construct(
         private readonly EngagementPolicyResolver $policy,
@@ -52,7 +50,7 @@ final class DefaultReminderManager implements ReminderManager
         $recipientIdentity = EngagementModelGuard::identity($recipient, 'recipient');
         $subjectIdentity = EngagementModelGuard::identity($subject, 'subject');
 
-        return DB::transaction(function () use (
+        return (new Reminder)->getConnection()->transaction(function () use (
             $recipientIdentity,
             $subjectIdentity,
             $reminderType,
@@ -143,9 +141,9 @@ final class DefaultReminderManager implements ReminderManager
         return Reminder::query()
             ->whereIn('status', ['pending', 'scheduled'])
             ->where('remind_at', '<=', $now)
-            ->where(function ($query): void {
+            ->where(function ($query) use ($now): void {
                 $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', CarbonImmutable::now());
+                    ->orWhere('expires_at', '>', $now);
             })
             ->orderBy('remind_at')
             ->cursor();
@@ -153,9 +151,11 @@ final class DefaultReminderManager implements ReminderManager
 
     public function markSent(Reminder $reminder): void
     {
-        $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
+        if (Reminder::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
+        }
 
-        DB::transaction(function () use ($reminder): void {
+        (new Reminder)->getConnection()->transaction(function () use ($reminder): void {
             $lockedReminder = Reminder::query()
                 ->pending()
                 ->whereKey($reminder->getKey())
@@ -173,9 +173,11 @@ final class DefaultReminderManager implements ReminderManager
 
     public function markFailed(Reminder $reminder, string $reason): void
     {
-        $reminder = OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
+        if (Reminder::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(Reminder::class, $reminder->getKey());
+        }
 
-        DB::transaction(function () use ($reminder, $reason): void {
+        (new Reminder)->getConnection()->transaction(function () use ($reminder, $reason): void {
             $lockedReminder = Reminder::query()
                 ->pending()
                 ->whereKey($reminder->getKey())

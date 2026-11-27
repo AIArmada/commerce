@@ -10,7 +10,7 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Enums\ReminderStatus;
@@ -25,7 +25,7 @@ use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Notifications\EngagementReminderNotification;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
@@ -117,7 +117,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
     CarbonImmutable::setTestNow($now);
 
     try {
-        $reminder = app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'event', [
+        $reminder = app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'event', [
             'offset_minutes' => 30,
             'anchor_type' => 'start',
         ]);
@@ -128,7 +128,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
             ->and($reminder->offset_minutes)->toBe(30)
             ->and($reminder->anchor_type)->toBe('start');
 
-        $due = collect(app(ReminderManager::class)->dueReminders($now->addMinutes(31)));
+        $due = collect(app(ManageRemindersAction::class)->dueReminders($now->addMinutes(31)));
 
         expect($due)->not->toBeEmpty();
     } finally {
@@ -137,7 +137,7 @@ it('resolves offset reminders to an absolute remind_at', function (): void {
 });
 
 it('rejects offset reminders without an anchor', function (): void {
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'event', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'event', [
         'offset_minutes' => 30,
     ]))->toThrow(InvalidArgumentException::class);
 });
@@ -172,14 +172,14 @@ it('rejects offsets that cannot be anchored', function (): void {
     };
     $subject->setAttribute($subject->getKeyName(), (string) Str::uuid());
 
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $subject, 'event', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $subject, 'event', [
         'offset_minutes' => 15,
         'anchor_type' => 'start',
     ]))->toThrow(InvalidArgumentException::class);
 });
 
 it('rejects providing both remind_at and offset_minutes', function (): void {
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'event', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'event', [
         'remind_at' => CarbonImmutable::now()->addHour(),
         'offset_minutes' => 15,
         'anchor_type' => 'start',
@@ -247,20 +247,20 @@ it('only accepts allowlisted reminder notification classes', function (): void {
         }
     });
 
-    expect(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+    expect(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->addHour(),
         'notification_class' => $unlisted,
     ]))->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+        ->and(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
             'remind_at' => CarbonImmutable::now()->addHour(),
             'notification_class' => stdClass::class,
         ]))->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+        ->and(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
             'remind_at' => CarbonImmutable::now()->addHour(),
             'notification_class' => 'App\\Notifications\\DoesNotExist',
         ]))->toThrow(InvalidArgumentException::class);
 
-    $reminder = app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+    $reminder = app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->addHour(),
         'notification_class' => EngagementReminderNotification::class,
     ]);
@@ -293,7 +293,7 @@ it('refuses to dispatch a reminder with a non-allowlisted stored class', functio
         }
     });
 
-    $reminder = app(ReminderManager::class)->setReminder($this->actor, $this->subject, 'follow_up', [
+    $reminder = app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->subMinute(),
     ]);
     $reminder->forceFill(['notification_class' => $unlisted])->save();
@@ -314,12 +314,12 @@ it('records a failed reminder and continues past dispatch failures', function ()
         'password' => 'secret',
     ]);
 
-    $bad = app(ReminderManager::class)->setReminder($recipient, $subject, 'follow_up', [
+    $bad = app(ManageRemindersAction::class)->setReminder($recipient, $subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->subMinutes(5),
     ]);
     $bad->forceFill(['notification_class' => stdClass::class])->save();
 
-    $good = app(ReminderManager::class)->setReminder($recipient, $subject, 'follow_up', [
+    $good = app(ManageRemindersAction::class)->setReminder($recipient, $subject, 'follow_up', [
         'remind_at' => CarbonImmutable::now()->subMinutes(4),
     ]);
 
@@ -445,7 +445,7 @@ it('returns bounded collections from the state resolver', function (): void {
 
     expect($resolved)->toBeInstanceOf(Collection::class)->and($resolved->count())->toBe(2);
 
-    $reminders = app(ReminderManager::class);
+    $reminders = app(ManageRemindersAction::class);
 
     foreach (['state_one', 'state_two', 'state_three'] as $type) {
         $reminders->setReminder($this->actor, $this->subject, $type, [
@@ -472,7 +472,7 @@ it('rejects overlong free-form inputs at manager boundaries', function (): void 
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => app(ManageSubscriptionsAction::class)->subscribe($this->actor, $this->subject, $long))
         ->toThrow(InvalidArgumentException::class)
-        ->and(fn () => app(ReminderManager::class)->setReminder($this->actor, $this->subject, $long, ['remind_at' => CarbonImmutable::now()->addHour()]))
+        ->and(fn () => app(ManageRemindersAction::class)->setReminder($this->actor, $this->subject, $long, ['remind_at' => CarbonImmutable::now()->addHour()]))
         ->toThrow(InvalidArgumentException::class)
         ->and(fn () => $manager->bookmark($this->actor, $this->subject, ['notes' => str_repeat('n', 70000)]))
         ->toThrow(InvalidArgumentException::class)
@@ -534,7 +534,7 @@ it('exposes subject-approved match context via subscriptionMatchContext', functi
 
 it('dedupes identical pending reminders', function (): void {
     $at = CarbonImmutable::now()->addHour();
-    $manager = app(ReminderManager::class);
+    $manager = app(ManageRemindersAction::class);
 
     $first = $manager->setReminder($this->actor, $this->subject, 'follow_up', ['remind_at' => $at]);
     $second = $manager->setReminder($this->actor, $this->subject, 'follow_up', ['remind_at' => $at]);

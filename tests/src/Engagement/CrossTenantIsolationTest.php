@@ -19,7 +19,7 @@ use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
 use Illuminate\Auth\Access\AuthorizationException;

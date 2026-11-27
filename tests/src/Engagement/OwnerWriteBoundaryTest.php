@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Features\Subscriptions\Models\Subscription;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use Illuminate\Auth\Access\AuthorizationException;
 
 it('rejects foreign owner mutations and reminder events', function (): void {
@@ -46,9 +46,9 @@ it('rejects foreign owner mutations and reminder events', function (): void {
             ->toThrow(AuthorizationException::class)
             ->and(fn (): Subscription => app(ManageSubscriptionsAction::class)->unmuteSubscription($subscription))
             ->toThrow(AuthorizationException::class)
-            ->and(fn (): mixed => app(ReminderManager::class)->markSent($reminder))
+            ->and(fn (): mixed => app(ManageRemindersAction::class)->markSent($reminder))
             ->toThrow(AuthorizationException::class)
-            ->and(fn (): mixed => app(ReminderManager::class)->markFailed($reminder, 'spoofed'))
+            ->and(fn (): mixed => app(ManageRemindersAction::class)->markFailed($reminder, 'spoofed'))
             ->toThrow(AuthorizationException::class)
             ->and(fn (): mixed => event(new ReminderDue($reminder)))
             ->toThrow(AuthorizationException::class);

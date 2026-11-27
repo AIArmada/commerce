@@ -12,7 +12,7 @@ use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Reactable;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
@@ -42,7 +42,7 @@ use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
 use AIArmada\Engagement\Support\EngagementModelGuard;
@@ -56,7 +56,7 @@ final class DefaultEngagementManager implements EngagementManager
 {
     public function __construct(
         private readonly EngagementPolicyResolver $policy,
-        private readonly ReminderManager $reminderManager,
+        private readonly ManageRemindersAction $reminderManager,
         private readonly ShareUrlGenerator $shareUrlGenerator,
     ) {}
 

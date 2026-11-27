@@ -10,7 +10,7 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\Followable;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Contracts\Respondable;
 use AIArmada\Engagement\Contracts\Shareable;
 use AIArmada\Engagement\Contracts\Subscribable;
@@ -25,7 +25,7 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
     public function __construct(
         private readonly EngagementManager $engagementManager,
         private readonly ManageSubscriptionsAction $subscriptionManager,
-        private readonly ReminderManager $reminderManager,
+        private readonly ManageRemindersAction $reminderManager,
         private readonly EngagementStateResolver $stateResolver,
     ) {}
 

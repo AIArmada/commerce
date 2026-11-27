@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\EntryPoints\Commands;
+namespace AIArmada\Engagement\Features\Reminders\EntryPoints\Commands;
 
-use AIArmada\Engagement\Actions\SendDueRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Actions\SendDueRemindersAction;
 use Illuminate\Console\Command;
 
 final class SendDueRemindersCommand extends Command

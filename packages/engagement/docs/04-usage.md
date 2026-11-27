@@ -223,15 +223,15 @@ class Event extends Model implements HasSubscriptionMatchContext, Subscribable
 ```php
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Remindable;
-use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Traits\CanSetReminders;
-use AIArmada\Engagement\Traits\HasReminders;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Concerns\CanSetReminders;
+use AIArmada\Engagement\Features\Reminders\Concerns\HasReminders;
 
 class User extends Model implements CanInteract { use CanSetReminders; }
 class Occurrence extends Model implements Remindable { use HasReminders; }
 
 // Set a reminder for an absolute time
-$reminder = app(ReminderManager::class)->setReminder(
+$reminder = app(ManageRemindersAction::class)->setReminder(
     recipient: $user,
     subject: $occurrence,
     reminderType: 'before_start',
@@ -243,7 +243,7 @@ $reminder = app(ReminderManager::class)->setReminder(
 
 // Or schedule it relative to a subject anchor (resolved immediately via
 // Remindable::reminderAnchorTime() minus the offset)
-$reminder = app(ReminderManager::class)->setReminder(
+$reminder = app(ManageRemindersAction::class)->setReminder(
     recipient: $user,
     subject: $occurrence,
     reminderType: 'before_start',
@@ -255,10 +255,10 @@ $reminder = app(ReminderManager::class)->setReminder(
 );
 
 // Cancel reminder
-app(ReminderManager::class)->cancelReminder($user, $occurrence, 'before_start');
+app(ManageRemindersAction::class)->cancelReminder($user, $occurrence, 'before_start');
 
 // The engagement:send-due-reminders command detects due reminders
-$due = app(ReminderManager::class)->dueReminders();
+$due = app(ManageRemindersAction::class)->dueReminders();
 ```
 
 Schedule `engagement:send-due-reminders` in your console kernel. Engagement owns due detection and the `ReminderDue`/`ReminderSent` lifecycle; when `aiarmada/communications` is installed, the due event is delivered through `DispatchManagedNotificationAction` and receives an `engagement_reminder` communication reference. Without communications, host applications may provide their own `ReminderDue` listener.

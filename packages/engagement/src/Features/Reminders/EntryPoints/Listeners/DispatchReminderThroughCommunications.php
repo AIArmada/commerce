@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\EntryPoints\Listeners;
+namespace AIArmada\Engagement\Features\Reminders\EntryPoints\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Actions\AttachCommunicationReferenceAction;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Engagement\Events\ReminderDue;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use InvalidArgumentException;

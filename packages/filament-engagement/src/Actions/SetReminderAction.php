@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Actions;
 
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\FilamentEngagement\Support\ActionRecordResolver;
 use AIArmada\FilamentEngagement\Support\AuthenticatedUser;
 use Filament\Actions\Action;
@@ -25,7 +25,7 @@ final class SetReminderAction
             ])
             ->action(function (array $data, $record): void {
                 $record = ActionRecordResolver::resolveOrFail($record);
-                app(ReminderManager::class)->setReminder(AuthenticatedUser::resolve(), $record, $data['reminder_type'], $data);
+                app(ManageRemindersAction::class)->setReminder(AuthenticatedUser::resolve(), $record, $data['reminder_type'], $data);
             });
     }
 }

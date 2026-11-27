@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Engagement\Actions;
+namespace AIArmada\Engagement\Features\Reminders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,7 +18,7 @@ use Throwable;
 final readonly class SendDueRemindersAction
 {
     public function __construct(
-        private ReminderManager $reminderManager,
+        private ManageRemindersAction $reminderManager,
     ) {}
 
     public function execute(): int

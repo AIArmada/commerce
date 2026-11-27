@@ -6,19 +6,19 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationReference;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Events\ReminderFailed;
 use AIArmada\Engagement\Events\ReminderSent;
-use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Features\Reminders\Models\Reminder;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->manager = app(ReminderManager::class);
+    $this->manager = app(ManageRemindersAction::class);
     $this->recipient = new EngagementActor;
     $this->subject = new EngagementSubject;
 });
@@ -146,7 +146,7 @@ it('processes due reminders across owners', function (): void {
                 'password' => 'secret',
             ]);
 
-            app(ReminderManager::class)->setReminder($recipient, $subject, 'follow_up', [
+            app(ManageRemindersAction::class)->setReminder($recipient, $subject, 'follow_up', [
                 'remind_at' => now()->subMinute(),
             ]);
         });

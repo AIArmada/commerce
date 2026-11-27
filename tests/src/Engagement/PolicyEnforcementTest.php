@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
-use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
 use AIArmada\Engagement\Features\Subscriptions\Actions\ManageSubscriptionsAction;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
@@ -56,7 +56,7 @@ beforeEach(function (): void {
 it('enforces every engagement policy decision', function (): void {
     $manager = app(EngagementManager::class);
     $subscriptions = app(ManageSubscriptionsAction::class);
-    $reminders = app(ReminderManager::class);
+    $reminders = app(ManageRemindersAction::class);
 
     expect(fn () => $manager->follow($this->actor, $this->subject))
         ->toThrow(AuthorizationException::class)
