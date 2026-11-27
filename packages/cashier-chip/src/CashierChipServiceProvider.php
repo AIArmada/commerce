@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\EntryPoints\Commands\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
@@ -13,6 +14,7 @@ use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaid;
 use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\EntryPoints\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Payment\PaymentMethodStore;
+use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
@@ -42,6 +44,7 @@ final class CashierChipServiceProvider extends PackageServiceProvider
     {
         $this->bindInvoiceRenderer();
         $this->bindPaymentMethodStore();
+        $this->bindCustomerOwnerResolver();
     }
 
     public function bootingPackage(): void
@@ -68,6 +71,23 @@ final class CashierChipServiceProvider extends PackageServiceProvider
             }
 
             throw new RuntimeException('Docs package is required for invoice rendering. Install aiarmada/docs.');
+        });
+    }
+
+    private function bindCustomerOwnerResolver(): void
+    {
+        $this->app->bind(CustomerOwnerResolverInterface::class, function ($app): CustomerOwnerResolverInterface {
+            $configured = config('cashier-chip.features.owner.customer_resolver');
+
+            if (is_string($configured) && $configured !== '' && class_exists($configured)) {
+                $resolved = $app->make($configured);
+
+                if ($resolved instanceof CustomerOwnerResolverInterface) {
+                    return $resolved;
+                }
+            }
+
+            return $app->make(DefaultCustomerOwnerResolver::class);
         });
     }
 

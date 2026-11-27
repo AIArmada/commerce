@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources;
 
 use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
-use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -97,17 +96,7 @@ abstract class BaseCashierChipResource extends Resource
 
     public static function customerOwnerResolver(): CustomerOwnerResolverInterface
     {
-        $configured = config('cashier-chip.features.owner.customer_resolver');
-
-        if (is_string($configured) && $configured !== '' && class_exists($configured)) {
-            $resolved = app($configured);
-
-            if ($resolved instanceof CustomerOwnerResolverInterface) {
-                return $resolved;
-            }
-        }
-
-        return app(DefaultCustomerOwnerResolver::class);
+        return app(CustomerOwnerResolverInterface::class);
     }
 
     protected static function pollingInterval(): string

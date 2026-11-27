@@ -7,7 +7,8 @@ namespace AIArmada\FilamentCashierChip\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
-use AIArmada\FilamentCashierChip\Actions\SyncCustomersToChip;
+use AIArmada\CashierChip\Actions\SyncCustomersToChip;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,8 +27,14 @@ final class SyncCustomersToChipJob implements ShouldQueue
 
     public function handle(SyncCustomersToChip $action): void
     {
+        $owner = OwnerJobContextMapper::resolve($this->ownerContext);
+
+        if ((bool) config('cashier-chip.features.owner.enabled', false) && $owner === null && ! $this->ownerContext?->isExplicitGlobal()) {
+            throw new NoCurrentOwnerException('An explicit owner context is required for queued CHIP customer sync.');
+        }
+
         OwnerContext::withOwner(
-            OwnerJobContextMapper::resolve($this->ownerContext),
+            $owner,
             fn (): array => $action->handle($this->chunkSize),
         );
     }

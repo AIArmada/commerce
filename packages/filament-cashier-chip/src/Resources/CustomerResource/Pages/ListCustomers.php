@@ -55,7 +55,19 @@ final class ListCustomers extends ListRecords
                         return;
                     }
 
-                    SyncCustomersToChipJob::dispatch(self::ownerJobContext());
+                    $context = self::ownerJobContext();
+
+                    if ((bool) config('cashier-chip.features.owner.enabled', false) && $context === null) {
+                        Notification::make()
+                            ->title('Sync Unavailable')
+                            ->body('Select an owner before syncing customers.')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    SyncCustomersToChipJob::dispatch($context);
 
                     Notification::make()
                         ->title('Customer Sync Queued')

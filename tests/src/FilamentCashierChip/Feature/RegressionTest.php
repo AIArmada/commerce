@@ -12,7 +12,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCashierChip\Actions\SyncCustomersToChip;
+use AIArmada\CashierChip\Actions\SyncCustomersToChip;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Invoices;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions;
@@ -407,6 +408,14 @@ it('sync action refuses models without CHIP support', function (): void {
     } finally {
         Cashier::useCustomerModel(User::class);
     }
+});
+
+it('rejects an ownerless sync job instead of escalating it to global access', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    regression_bindOwner(null);
+
+    expect(fn () => (new SyncCustomersToChipJob)->handle(app(SyncCustomersToChip::class)))
+        ->toThrow(NoCurrentOwnerException::class);
 });
 
 it('sync job links unlinked customers and skips unsupported models', function (): void {
