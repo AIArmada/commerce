@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use SensitiveParameter;
 
-trait ManagesPaymentMethods // @phpstan-ignore trait.unused
+trait ManagesPaymentMethods
 {
     /**
      * @return MorphMany<StoredPaymentMethod, $this>

@@ -14,7 +14,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-trait ManagesCustomer // @phpstan-ignore trait.unused
+trait ManagesCustomer
 {
     /**
      * Retrieve the CHIP customer ID.

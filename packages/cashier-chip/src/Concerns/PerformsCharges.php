@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use SensitiveParameter;
 use Throwable;
 
-trait PerformsCharges // @phpstan-ignore trait.unused
+trait PerformsCharges
 {
     /**
      * Make a "one off" charge on the customer for the given amount.

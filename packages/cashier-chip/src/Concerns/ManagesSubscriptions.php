@@ -12,7 +12,7 @@ use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-trait ManagesSubscriptions // @phpstan-ignore trait.unused
+trait ManagesSubscriptions
 {
     /**
      * Get the model-level generic trial end timestamp, if the billable model supports it.

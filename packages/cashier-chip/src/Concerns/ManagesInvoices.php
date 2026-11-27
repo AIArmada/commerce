@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 use RuntimeException;
 use Throwable;
 
-trait ManagesInvoices // @phpstan-ignore trait.unused
+trait ManagesInvoices
 {
     /**
      * Stored tab items for later invoicing (in-memory).
