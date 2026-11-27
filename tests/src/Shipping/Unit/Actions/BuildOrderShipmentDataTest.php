@@ -2,13 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Shipping\Features\Shipments\Api\BuildShipmentFromOrder;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
-
-uses(TestCase::class);
 
 // ============================================
 // Order shipment data tests
