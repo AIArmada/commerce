@@ -10,5 +10,7 @@ final readonly class OwnedFormIdentity
         public string $id,
         public ?string $ownerType,
         public ?string $ownerId,
+        public string $name,
+        public string $purpose,
     ) {}
 }

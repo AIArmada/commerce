@@ -10,7 +10,6 @@ use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
-use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Features\Responses\Actions\DeleteFeedbackResponseDependentsAction;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -48,7 +47,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property-read FeedbackForm $form
- * @property-read FeedbackInvitation|null $invitation
  * @property-read Collection<int, FeedbackAnswer> $answers
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $respondent
@@ -109,11 +107,6 @@ final class FeedbackResponse extends Model
     public function form(): BelongsTo
     {
         return $this->belongsTo(FeedbackForm::class, 'feedback_form_id');
-    }
-
-    public function invitation(): BelongsTo
-    {
-        return $this->belongsTo(FeedbackInvitation::class, 'feedback_invitation_id');
     }
 
     public function answers(): HasMany

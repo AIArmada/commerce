@@ -7,6 +7,7 @@ namespace AIArmada\Feedback\Features\Responses\Queries;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Feedback\Enums\FeedbackFormPurpose;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
+use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Responses\Api\ReadsTestimonialSource;
 use AIArmada\Feedback\Features\Responses\Api\TestimonialSource;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
@@ -16,6 +17,8 @@ use LogicException;
 
 final readonly class ReadTestimonialSourceQuery implements ReadsTestimonialSource
 {
+    public function __construct(private ReadsOwnedFormIdentity $forms) {}
+
     public function lockForExtraction(string $responseId): ?TestimonialSource
     {
         if ((new FeedbackResponse)->getConnection()->transactionLevel() === 0) {
@@ -29,7 +32,7 @@ final readonly class ReadTestimonialSourceQuery implements ReadsTestimonialSourc
         $response = FeedbackResponse::query()->whereKey($responseId)->lockForUpdate()->firstOrFail();
 
         if (! in_array($response->status, [FeedbackResponseStatus::Submitted, FeedbackResponseStatus::Reviewed], true)
-            || $response->form?->purpose !== FeedbackFormPurpose::TestimonialCollection->value) {
+            || $this->forms->find($response->feedback_form_id)?->purpose !== FeedbackFormPurpose::TestimonialCollection->value) {
             return null;
         }
 

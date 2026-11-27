@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Feedback\Features\Responses\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Features\Forms\Api\ReadsOwnedFormIdentity;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Support\ScoreCalculator;
@@ -13,6 +14,7 @@ final class CalculateFeedbackResponseScoreAction
 {
     public function __construct(
         private readonly ScoreCalculator $scores,
+        private readonly ReadsOwnedFormIdentity $forms,
     ) {}
 
     public function execute(FeedbackResponse $response): FeedbackResponse
@@ -27,9 +29,12 @@ final class CalculateFeedbackResponseScoreAction
             $answers = FeedbackAnswer::query()
                 ->where('feedback_response_id', $response->id)
                 ->whereNotNull('score')
-                ->with('question.options')
                 ->get();
 
+            $questions = $this->forms->questionDefinitions(
+                $response->feedback_form_id,
+                $answers->pluck('feedback_question_id')->unique()->values()->all(),
+            );
             $totalScore = 0.0;
             $maxScore = 0.0;
             $seenQuestions = [];
@@ -37,14 +42,14 @@ final class CalculateFeedbackResponseScoreAction
             foreach ($answers as $answer) {
                 $totalScore += (float) $answer->score;
 
-                $question = $answer->question;
+                $question = $questions[$answer->feedback_question_id] ?? null;
 
                 if ($question === null || isset($seenQuestions[$question->id])) {
                     continue;
                 }
 
                 $seenQuestions[$question->id] = true;
-                $maxScore += $this->scores->calculateMaxScore($question->definition()) ?? 0.0;
+                $maxScore += $this->scores->calculateMaxScore($question) ?? 0.0;
             }
 
             $response->forceFill([
