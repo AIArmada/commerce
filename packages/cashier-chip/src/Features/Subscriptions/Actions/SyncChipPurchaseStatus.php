@@ -62,11 +62,11 @@ final class SyncChipPurchaseStatus
         PaymentFailed::dispatch($billable, $purchaseData->toArray());
 
         if ($subscriptionType = $this->getSubscriptionType($purchase)) {
-            $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
+            $subscription = $this->findSubscriptionForWebhook($billable, $subscriptionType);
 
             if ($subscription instanceof Subscription) {
                 DB::transaction(function () use ($subscription, $purchaseData): void {
-                    $locked = Subscription::query()->whereKey($subscription->getKey())->lockForUpdate()->first();
+                    $locked = Subscription::query()->forOwner(includeGlobal: false)->whereKey($subscription->getKey())->lockForUpdate()->first();
 
                     if (! $locked instanceof Subscription || $locked->canceled() || in_array($locked->chip_status, [SubscriptionStatus::Canceled, SubscriptionStatus::Paused, SubscriptionStatus::IncompleteExpired, SubscriptionStatus::Unpaid], true) || $this->alreadyProcessed($purchaseData->id)) {
                         return;
@@ -121,7 +121,7 @@ final class SyncChipPurchaseStatus
      */
     private function syncSubscriptionPayment(Model $billable, string $subscriptionType, PurchaseData $purchaseData): void
     {
-        $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
+        $subscription = $this->findSubscriptionForWebhook($billable, $subscriptionType);
 
         if (! $subscription instanceof Subscription) {
             return;
@@ -142,7 +142,7 @@ final class SyncChipPurchaseStatus
         try {
             /** @var array{mismatch: bool, expected_amount?: int, actual_amount?: int, expected_currency?: string, actual_currency?: string, period_key?: string|null}|null $outcome */
             $outcome = DB::transaction(function () use ($billable, $subscription, $purchaseId, $actualAmount, $actualCurrency): ?array {
-                $locked = Subscription::query()->lockForUpdate()->find($subscription->id);
+                $locked = Subscription::query()->forOwner(includeGlobal: false)->lockForUpdate()->find($subscription->id);
 
                 if (! $locked instanceof Subscription) {
                     return null;
@@ -254,6 +254,20 @@ final class SyncChipPurchaseStatus
                 $outcome['actual_currency'],
             );
         });
+    }
+
+    private function findSubscriptionForWebhook(Model $billable, string $subscriptionType): ?Subscription
+    {
+        if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
+            return null;
+        }
+
+        return Subscription::query()->forOwner(includeGlobal: false)
+            ->where('billable_type', $billable->getMorphClass())
+            ->where('billable_id', (string) $billable->getKey())
+            ->where('type', $subscriptionType)
+            ->latest('created_at')
+            ->first();
     }
 
     private function alreadyProcessed(string $purchaseId): bool

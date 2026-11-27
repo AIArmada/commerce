@@ -185,20 +185,6 @@ final class Cashier
         return in_array(Billable::class, class_uses_recursive($subject), true);
     }
 
-    public static function findSubscriptionForWebhook(Model $billable, string $subscriptionType): ?Subscription
-    {
-        $query = Subscription::query()
-            ->where('billable_type', $billable->getMorphClass())
-            ->where('billable_id', (string) $billable->getKey())
-            ->where('type', $subscriptionType);
-
-        if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
-            return null;
-        }
-
-        return $query->first();
-    }
-
     /**
      * Get the CHIP Collect service client.
      */

@@ -555,3 +555,19 @@ it('keeps the default flag when the same saved payment method is selected repeat
     expect($store->defaultForBillable($reference)?->recurringToken())->toBe('tok_repeat_default')
         ->and(collect($store->allForBillable($reference))->where('is_default', true)->count())->toBe(1);
 });
+
+it('excludes paused subscriptions from active queries and entitlement checks even during trial', function (): void {
+    $user = $this->createUser(['chip_id' => 'cli_pause_entitlement']);
+    $subscription = $this->createTrustedSubscription($user, [
+        'type' => 'paused-trial',
+        'chip_id' => 'sub_pause_entitlement',
+        'chip_status' => SubscriptionStatus::Paused,
+        'trial_ends_at' => CarbonImmutable::now()->addDay(),
+        'next_billing_at' => CarbonImmutable::now()->addDay(),
+    ]);
+
+    expect($subscription->active())->toBeFalse()
+        ->and($subscription->valid())->toBeFalse()
+        ->and(Subscription::query()->whereActive()->whereKey($subscription->getKey())->exists())->toBeFalse()
+        ->and($user->subscribed('paused-trial'))->toBeFalse();
+});

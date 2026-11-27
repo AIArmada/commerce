@@ -276,7 +276,7 @@ class Subscription extends Model
      */
     public function valid(): bool
     {
-        return $this->active() || $this->onTrial() || $this->onGracePeriod();
+        return ! $this->paused() && ($this->active() || $this->onTrial() || $this->onGracePeriod());
     }
 
     /**
@@ -332,7 +332,7 @@ class Subscription extends Model
      */
     public function active(): bool
     {
-        return ! $this->ended() &&
+        return ! $this->ended() && ! $this->paused() &&
             (! Cashier::$deactivateIncomplete || $this->chip_status !== SubscriptionStatus::Incomplete) &&
             $this->chip_status !== SubscriptionStatus::IncompleteExpired &&
             (! Cashier::$deactivatePastDue || $this->chip_status !== SubscriptionStatus::PastDue) &&
@@ -351,7 +351,7 @@ class Subscription extends Model
                         ->where('ends_at', '>', CarbonImmutable::now());
                 });
         })->where('chip_status', '!=', SubscriptionStatus::IncompleteExpired)
-            ->where('chip_status', '!=', SubscriptionStatus::Unpaid);
+            ->whereNotIn('chip_status', [SubscriptionStatus::Unpaid, SubscriptionStatus::Paused]);
 
         if (Cashier::$deactivatePastDue) {
             $query->where('chip_status', '!=', SubscriptionStatus::PastDue);
