@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Data;
 
 use AIArmada\Docs\Enums\DocType;
+use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
 
 final readonly class DocData
 {
+    public ?DateTimeImmutable $issueDate;
+
+    public ?DateTimeImmutable $dueDate;
+
     /**
      * @param  array<int, array<string, mixed>>  $items
      * @param  array<string, mixed>|null  $customerData
@@ -26,8 +31,8 @@ final readonly class DocData
         public ?string $docableType = null,
         public ?string $docableId = null,
         public ?string $status = null,
-        public ?DateTimeInterface $issueDate = null,
-        public ?DateTimeInterface $dueDate = null,
+        ?DateTimeInterface $issueDate = null,
+        ?DateTimeInterface $dueDate = null,
         public array $items = [],
         public ?int $subtotalMinor = null,
         public ?int $totalMinor = null,
@@ -43,7 +48,10 @@ final readonly class DocData
         public ?array $metadata = null,
         public ?array $pdfOptions = null,
         public ?bool $generatePdf = false,
-    ) {}
+    ) {
+        $this->issueDate = $issueDate === null ? null : DateTimeImmutable::createFromInterface($issueDate);
+        $this->dueDate = $dueDate === null ? null : DateTimeImmutable::createFromInterface($dueDate);
+    }
 
     /**
      * @param  array<string, mixed>  $data

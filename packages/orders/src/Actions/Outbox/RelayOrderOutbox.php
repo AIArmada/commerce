@@ -13,10 +13,9 @@ use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\Support\OutboxRelayOptions;
 use Carbon\CarbonImmutable;
-use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Lorisleiva\Actions\Concerns\AsAction;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -24,20 +23,18 @@ use Throwable;
  * (crash between commit and dispatch). Delivery is at-least-once:
  * consumers of the replayable events must be idempotent.
  */
-final class RelayOrderOutbox
+final readonly class RelayOrderOutbox
 {
-    use AsAction;
-
-    public string $commandSignature = 'orders:outbox-relay {--limit= : Maximum rows to relay}';
-
-    public string $commandDescription = 'Relay pending order outbox messages missed by live dispatch.';
-
     /**
      * @return array{relayed: int, failed: int, dead: int, skipped: int, suppressed: int}
      */
-    public function handle(?int $limit = null): array
+    public function execute(?int $limit = null): array
     {
         $limit ??= (int) config('orders.outbox.batch_limit', 100);
+        if ($limit < 1) {
+            throw new InvalidArgumentException('The outbox relay limit must be a positive integer.');
+        }
+
         $graceCutoff = CarbonImmutable::now()->subSeconds((int) config('orders.outbox.relay_grace_seconds', 60));
         $options = OutboxRelayOptions::fromConfig();
 
@@ -57,6 +54,7 @@ final class RelayOrderOutbox
                     });
             })
             ->orderBy('created_at')
+            ->orderBy('id')
             ->limit($limit)
             ->get();
 
@@ -65,23 +63,6 @@ final class RelayOrderOutbox
         }
 
         return $counts;
-    }
-
-    public function asCommand(Command $command): void
-    {
-        $limit = $command->option('limit');
-
-        // No signature default: the config value wins unless overridden.
-        $result = $this->handle($limit !== null ? (int) $limit : null);
-
-        $command->info(sprintf(
-            'Outbox relay complete — relayed: %d, failed: %d, dead: %d, skipped: %d, suppressed: %d.',
-            $result['relayed'],
-            $result['failed'],
-            $result['dead'],
-            $result['skipped'],
-            $result['suppressed'],
-        ));
     }
 
     /**

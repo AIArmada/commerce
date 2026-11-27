@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Orders;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
-use AIArmada\Orders\Actions\Outbox\RelayOrderOutbox;
-use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\EntryPoints\Commands\RelayOrderOutboxCommand;
+use AIArmada\Orders\EntryPoints\Commands\SweepOrderOutboxCommand;
 use AIArmada\Orders\Notifications\PaymentConfirmationNotification;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\Support\OrderHandlerRegistrar;
@@ -27,8 +27,8 @@ final class OrdersServiceProvider extends PackageServiceProvider
             ->hasTranslations()
             ->hasViews()
             ->hasCommands([
-                RelayOrderOutbox::class,
-                SweepOrderOutbox::class,
+                RelayOrderOutboxCommand::class,
+                SweepOrderOutboxCommand::class,
             ])
             ->runsMigrations()
             ->discoversMigrations();
