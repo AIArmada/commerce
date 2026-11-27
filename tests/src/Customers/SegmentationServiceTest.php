@@ -100,7 +100,7 @@ describe('SegmentationService', function (): void {
 
     describe('evaluateCustomer', function (): void {
         it('evaluates customer for all automatic segments', function (): void {
-            Event::fake();
+            Event::fake([CustomerSegmentChanged::class]);
 
             $segment = Segment::create([
                 'name' => 'Evaluate ' . uniqid(),

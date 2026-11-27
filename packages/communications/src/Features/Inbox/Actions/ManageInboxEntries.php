@@ -4,28 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Inbox\Actions;
 
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
-use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Inbox\Models\NotificationInbox;
+use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class ManageInboxEntries
 {
     public function __construct(
         private readonly PayloadRedactor $redactor,
-    ) {}
+    ) {
+    }
 
     public function create(
         MorphMany | Model $recipient,
@@ -207,11 +208,14 @@ final class ManageInboxEntries
             throw new InvalidArgumentException('Inbox references must be persisted.');
         }
 
-        if (! in_array(HasOwnerScopeConfig::class, class_uses_recursive($model), true)) {
+        if (! method_exists($model, 'ownerScopeConfig')) {
             return;
         }
 
-        if (! $model::ownerScopeConfig()->enabled) {
+        /** @var OwnerScopeConfig $config */
+        $config = $model::ownerScopeConfig();
+
+        if (! $config->enabled) {
             return;
         }
 

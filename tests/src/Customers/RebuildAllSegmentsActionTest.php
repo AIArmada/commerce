@@ -121,7 +121,7 @@ describe('RebuildAllSegments', function (): void {
         });
 
         it('fires events for added customers', function (): void {
-            Event::fake();
+            Event::fake([CustomerSegmentChanged::class]);
 
             $segment = Segment::create([
                 'name' => 'Event Add ' . uniqid(),
@@ -150,7 +150,7 @@ describe('RebuildAllSegments', function (): void {
         });
 
         it('fires events for removed customers', function (): void {
-            Event::fake();
+            Event::fake([CustomerSegmentChanged::class]);
 
             $segment = Segment::create([
                 'name' => 'Event Remove ' . uniqid(),
