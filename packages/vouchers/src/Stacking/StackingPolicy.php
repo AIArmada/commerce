@@ -21,9 +21,7 @@ use Illuminate\Support\Collection;
  *     $policy->resolveConflict($vouchers, $cart)              // Collection
  *     $policy->getApplicationOrder($vouchers, $cart)          // Collection
  *
- * StackingPolicy defines the behavior (mode, rules) and delegates rule
- * evaluation to StackingEngine. StackingDecision is the immutable result
- * returned from rule evaluation.
+ * StackingPolicy evaluates configured rules in priority order.
  */
 class StackingPolicy implements StackingPolicyInterface
 {
@@ -85,6 +83,30 @@ class StackingPolicy implements StackingPolicyInterface
             );
         }
 
+        $rules = [];
+
+        foreach ($this->rules as $config) {
+            $type = $config['type'] ?? null;
+            $ruleType = is_string($type) ? StackingRuleType::tryFrom($type) : null;
+
+            if ($ruleType === null) {
+                return StackingDecision::deny('Unknown voucher stacking rule.');
+            }
+
+            $class = $ruleType->getRuleClass();
+            $rules[] = ['rule' => new $class, 'config' => $config];
+        }
+
+        usort($rules, static fn (array $left, array $right): int => $left['rule']->getPriority() <=> $right['rule']->getPriority());
+
+        foreach ($rules as $entry) {
+            $decision = $entry['rule']->evaluate($newVoucher, $existingVouchers, $cart, $entry['config']);
+
+            if ($decision->isDenied()) {
+                return $decision;
+            }
+        }
+
         return StackingDecision::allow();
     }
 
@@ -92,26 +114,25 @@ class StackingPolicy implements StackingPolicyInterface
         Collection $vouchers,
         Cart $cart
     ): Collection {
-        if ($vouchers->isEmpty()) {
-            return $vouchers;
+        $accepted = $vouchers->take(0);
+
+        // Select a valid subset using the same rules used at application time.
+        // Auto-optimization prefers higher estimated savings; it is not an
+        // exhaustive combinatorial search.
+        if ($this->autoOptimize) {
+            $subtotal = $cart->getRawSubtotalWithoutConditions();
+            $vouchers = $vouchers->sortByDesc(
+                static fn (VoucherCondition $voucher): int => abs($voucher->getCalculatedValue($subtotal))
+            );
         }
 
-        $maxVouchers = $this->getMaxVouchers();
-
-        if ($maxVouchers === 0) {
-            return $vouchers->take(0)->values();
+        foreach ($vouchers as $voucher) {
+            if ($this->canAdd($voucher, $accepted, $cart)->isAllowed()) {
+                $accepted->push($voucher);
+            }
         }
 
-        if ($maxVouchers < 0) {
-            return $vouchers;
-        }
-
-        if ($vouchers->count() <= $maxVouchers) {
-            return $vouchers;
-        }
-
-        // ponytail: best-combination removed with StackingEngine; return first N
-        return $vouchers->take($maxVouchers)->values();
+        return $accepted->values();
     }
 
     public function getApplicationOrder(

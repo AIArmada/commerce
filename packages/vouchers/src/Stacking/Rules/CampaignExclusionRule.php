@@ -64,6 +64,8 @@ final class CampaignExclusionRule implements StackingRuleInterface
     {
         $voucherData = $voucher->getVoucher();
 
-        return $voucherData->metadata['campaign_id'] ?? null;
+        $campaignId = $voucherData->metadata['campaign_id'] ?? null;
+
+        return is_string($campaignId) && $campaignId !== '' ? $campaignId : null;
     }
 }

@@ -68,8 +68,6 @@ final class MaxDiscountPercentageRule implements StackingRuleInterface
 
     private function getCartSubtotal(Cart $cart): int
     {
-        $subtotal = $cart->subtotal();
-
-        return (int) $subtotal->getAmount();
+        return $cart->getRawSubtotalWithoutConditions();
     }
 }

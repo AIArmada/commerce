@@ -66,7 +66,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             $conflicting = $decision->conflictsWith;
 
             if (! $policy->isAutoReplaceEnabled() || $conflicting === null) {
-                throw new InvalidVoucherException('Cart already has the maximum number of vouchers');
+                throw new InvalidVoucherException($decision->getReason());
             }
 
             $remaining = $existingVouchers->reject(
@@ -74,7 +74,7 @@ final class ApplyVoucherToCart implements CartVoucherApplicator
             )->values();
 
             if ($remaining->count() === $existingVouchers->count() || $policy->canAdd($voucherCondition, $remaining, $cart)->isDenied()) {
-                throw new InvalidVoucherException('Cart already has the maximum number of vouchers');
+                throw new InvalidVoucherException($decision->getReason());
             }
         }
 
