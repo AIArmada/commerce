@@ -7,6 +7,7 @@ namespace AIArmada\Contacting\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
+use AIArmada\Contacting\Actions\SynchronizePrimaryContactMethodAction;
 use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Carbon\CarbonImmutable;
@@ -200,7 +201,7 @@ final class ContactMethod extends Model
         $this->prepareOwnerForPrimarySync();
 
         return DB::transaction(function () use ($options): bool {
-            $this->syncSiblingPrimaryFlags();
+            app(SynchronizePrimaryContactMethodAction::class)->execute($this);
 
             return parent::save($options);
         });
@@ -268,40 +269,6 @@ final class ContactMethod extends Model
         if (! in_array($this->type, $allowedValues, true)) {
             throw new InvalidArgumentException(sprintf('Unsupported contact method type "%s".', $this->type));
         }
-    }
-
-    private function syncSiblingPrimaryFlags(): void
-    {
-        if (! $this->is_primary) {
-            return;
-        }
-
-        if ($this->contactable_type === null || $this->contactable_id === null) {
-            return;
-        }
-
-        $this->contactable()->lockForUpdate()->firstOrFail();
-
-        // The surrounding save transaction rolls this demotion back if a
-        // later model guard or the database constraint rejects the write.
-        ContactMethod::query()
-            ->where('contactable_type', $this->contactable_type)
-            ->where('contactable_id', $this->contactable_id)
-            ->where('type', $this->type)
-            ->where('purpose', $this->purpose)
-            ->where('id', '!=', $this->id)
-            ->where(function (Builder $query): void {
-                if ($this->owner_type === null) {
-                    $query->whereNull('owner_type')->whereNull('owner_id');
-
-                    return;
-                }
-
-                $query->where('owner_type', $this->owner_type)
-                    ->where('owner_id', $this->owner_id);
-            })
-            ->lockForUpdate()
-            ->update(['is_primary' => false]);
     }
 
     private function prepareOwnerForPrimarySync(): void

@@ -7,6 +7,7 @@ namespace AIArmada\Contacting\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Actions\SynchronizePrimarySocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
 use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
@@ -210,7 +211,7 @@ final class SocialProfile extends Model
         $this->prepareOwnerForPrimarySync();
 
         return DB::transaction(function () use ($options): bool {
-            $this->syncSiblingPrimaryFlags();
+            app(SynchronizePrimarySocialProfileAction::class)->execute($this);
 
             return parent::save($options);
         });
@@ -273,40 +274,6 @@ final class SocialProfile extends Model
         if (SocialPlatform::tryFrom($this->platform) === null) {
             throw new InvalidArgumentException(sprintf('Unsupported social platform "%s".', $this->platform));
         }
-    }
-
-    private function syncSiblingPrimaryFlags(): void
-    {
-        if (! $this->is_primary) {
-            return;
-        }
-
-        if ($this->socialable_type === null || $this->socialable_id === null) {
-            return;
-        }
-
-        $this->socialable()->lockForUpdate()->firstOrFail();
-
-        // The surrounding save transaction rolls this demotion back if a
-        // later model guard or the database constraint rejects the write.
-        SocialProfile::query()
-            ->where('socialable_type', $this->socialable_type)
-            ->where('socialable_id', $this->socialable_id)
-            ->where('platform', $this->platform)
-            ->where('purpose', $this->purpose)
-            ->whereKeyNot($this->getKey())
-            ->where(function (Builder $query): void {
-                if ($this->owner_type === null) {
-                    $query->whereNull('owner_type')->whereNull('owner_id');
-
-                    return;
-                }
-
-                $query->where('owner_type', $this->owner_type)
-                    ->where('owner_id', $this->owner_id);
-            })
-            ->lockForUpdate()
-            ->update(['is_primary' => false]);
     }
 
     private function prepareOwnerForPrimarySync(): void

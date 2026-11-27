@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Models\SocialProfile;
 use Carbon\CarbonImmutable;
@@ -28,6 +29,8 @@ final class UpdateSocialProfileAction
 
     public function execute(SocialProfile $profile, SocialProfileData | array $data): SocialProfile
     {
+        $profile = OwnerWriteGuard::findOrFailForOwner(SocialProfile::class, $profile->getKey());
+
         if (is_array($data)) {
             $data = SocialProfileData::from($data);
         }

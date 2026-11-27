@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
 use Carbon\CarbonImmutable;
@@ -29,6 +30,8 @@ final class UpdateContactMethodAction
 
     public function execute(ContactMethod $contactMethod, ContactMethodData | array $data): ContactMethod
     {
+        $contactMethod = OwnerWriteGuard::findOrFailForOwner(ContactMethod::class, $contactMethod->getKey());
+
         if (is_array($data)) {
             $data = ContactMethodData::from($data);
         }

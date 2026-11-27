@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Concerns;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Actions\CreateContactMethodAction;
+use AIArmada\Contacting\Actions\DeleteContactMethodsForEntityAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -19,21 +18,7 @@ trait HasContactMethods
     protected static function bootHasContactMethods(): void
     {
         static::deleting(function (Model $model): void {
-            /** @phpstan-ignore-next-line dynamic relationship from trait */
-            $model->contactMethods()->withoutOwnerScope()->chunkById(100, function (Collection $contactMethods): void {
-                foreach ($contactMethods as $contactMethod) {
-                    /** @var ContactMethod $contactMethod */
-                    $owner = $contactMethod->getRelationValue('owner');
-
-                    if ($owner === null && $contactMethod->getAttribute('owner_type') !== null) {
-                        $owner = $contactMethod->owner;
-                    }
-
-                    OwnerContext::withOwner($owner instanceof Model ? $owner : null, function () use ($contactMethod): void {
-                        $contactMethod->delete();
-                    });
-                }
-            });
+            app(DeleteContactMethodsForEntityAction::class)->execute($model);
         });
     }
 
