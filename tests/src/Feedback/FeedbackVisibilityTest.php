@@ -10,7 +10,6 @@ use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
 use AIArmada\Feedback\Support\VisibilityRuleEvaluator;
-use Illuminate\Support\Collection;
 
 it('excludes hidden questions from submission validation', function (): void {
     $form = app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(
@@ -41,17 +40,17 @@ it('excludes hidden questions from submission validation', function (): void {
 
     app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($condition->id, $condition->key, 'hide'),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($condition->id, $condition->key, 'show'),
-        ]),
+        ],
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'Validation failed')
         ->and($followUp->fresh()->visibility_rules['show_if']['operator'])->toBe('=');

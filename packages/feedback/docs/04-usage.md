@@ -135,13 +135,13 @@ use AIArmada\Feedback\Data\SubmittedAnswerData;
 $response = app(SubmitFeedbackResponseAction::class)->execute(
     new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: collect([
+        answers: [
             new SubmittedAnswerData(
                 questionId: $question->id,
                 questionKey: 'overall_rating',
                 value: 5,
             ),
-        ]),
+        ],
     )
 );
 ```
@@ -165,7 +165,7 @@ later submissions create additional submitted responses.
 $response = app(SubmitFeedbackResponseAction::class)->execute(
     new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: collect([...]),
+        answers: [...],
         isAnonymous: true,
     )
 );

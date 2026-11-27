@@ -8,7 +8,6 @@ use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
-use Illuminate\Support\Collection;
 
 it('submits and scores each supported question type', function (
     string $type,
@@ -40,9 +39,9 @@ it('submits and scores each supported question type', function (
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($question->id, $question->key, $value),
-        ]),
+        ],
         isAnonymous: true,
     ));
 

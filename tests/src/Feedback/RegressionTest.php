@@ -45,7 +45,6 @@ use AIArmada\Feedback\Traits\ReceivesFeedback;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -140,10 +139,10 @@ it('aggregates per-question NPS and CSAT over answer scores', function (): void 
 
     app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($nps->id, $nps->key, 10),
             new SubmittedAnswerData($csat->id, $csat->key, 2),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
@@ -203,7 +202,7 @@ it('returns the reviewed response on resubmit but allows resubmit after rejectio
     $form = regressionPublishedForm('Review Resubmit Form', ['isOneResponsePerRespondent' => true]);
     $data = fn (): SubmitFeedbackResponseData => new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -240,10 +239,10 @@ it('sums per-question maxima for the response max score', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($rating->id, $rating->key, 4),
             new SubmittedAnswerData($choice->id, $choice->key, 'high'),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
@@ -316,9 +315,9 @@ it('rejects choice values outside the defined options', function (): void {
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($single->id, $single->key, 'hacker'),
-            new SubmittedAnswerData($multi->id, $multi->key, ['ok', 'hacker']),
+            new SubmittedAnswerData($multi->id, $multi->key, ['ok', 'hacker'],
         ]),
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'Validation failed');
@@ -334,12 +333,12 @@ it('accepts scalar and array matrix answers within the defined options', functio
 
     $scalar = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($matrix->id, $matrix->key, 'good')]),
+        answers: [new SubmittedAnswerData($matrix->id, $matrix->key, 'good')],
         isAnonymous: true,
     ));
     $array = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($matrix->id, $matrix->key, ['good'])]),
+        answers: [new SubmittedAnswerData($matrix->id, $matrix->key, ['good'])],
         isAnonymous: true,
     ));
 
@@ -347,7 +346,7 @@ it('accepts scalar and array matrix answers within the defined options', functio
         ->and($array->status)->toBe(FeedbackResponseStatus::Submitted)
         ->and(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
             formId: $form->id,
-            answers: new Collection([new SubmittedAnswerData($matrix->id, $matrix->key, 'evil')]),
+            answers: [new SubmittedAnswerData($matrix->id, $matrix->key, 'evil')],
             isAnonymous: true,
         )))->toThrow(RuntimeException::class, 'Validation failed');
 });
@@ -425,7 +424,7 @@ it('rejects disabled question types at submission validation', function (): void
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($question->id, $question->key, 'x')]),
+        answers: [new SubmittedAnswerData($question->id, $question->key, 'x')],
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'Validation failed');
 });
@@ -464,10 +463,10 @@ it('extracts testimonials only from sanitized long or short text answers', funct
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($email->id, $email->key, 'user@example.com'),
             new SubmittedAnswerData($story->id, $story->key, '<b>Great</b> product<script>alert(1)</script>'),
-        ]),
+        ],
         isAnonymous: true,
     ));
 
@@ -489,7 +488,7 @@ it('skips testimonial extraction for non-text answers and missing forms', functi
     ]);
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([new SubmittedAnswerData($question->id, $question->key, 'a@example.com')]),
+        answers: [new SubmittedAnswerData($question->id, $question->key, 'a@example.com')],
         isAnonymous: true,
     ));
 
@@ -509,7 +508,7 @@ it('persists response metadata from the submission payload', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         isAnonymous: true,
         metadata: ['source' => 'repair'],
     ));
@@ -574,7 +573,7 @@ it('truncates overlong IP addresses on submit', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         isAnonymous: true,
         ipAddress: str_repeat('1', 300),
     ));
@@ -593,7 +592,7 @@ it('persists invitation expiry when submission fails on an expired invitation', 
 
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         invitationId: $invitation->id,
         isAnonymous: true,
     )))->toThrow(RuntimeException::class, 'expired');
@@ -693,10 +692,10 @@ it('averages per-question scores over answers on the trait', function (): void {
 
     app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection([
+        answers: [
             new SubmittedAnswerData($q1->id, $q1->key, 10),
             new SubmittedAnswerData($q2->id, $q2->key, 0),
-        ]),
+        ],
         isAnonymous: true,
     ));
 

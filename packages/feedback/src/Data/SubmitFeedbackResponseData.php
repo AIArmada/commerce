@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Data;
 
-use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 final readonly class SubmitFeedbackResponseData
 {
     /**
-     * @param  Collection<int, SubmittedAnswerData>  $answers
+     * @param  list<SubmittedAnswerData>  $answers
      */
     public function __construct(
         public string $formId,
-        public Collection $answers,
+        public array $answers,
         public ?string $respondentType = null,
         public ?string $respondentId = null,
         public ?string $invitationId = null,
@@ -21,5 +21,15 @@ final readonly class SubmitFeedbackResponseData
         public ?string $ipAddress = null,
         public ?string $userAgent = null,
         public array $metadata = [],
-    ) {}
+    ) {
+        if (! array_is_list($answers)) {
+            throw new InvalidArgumentException('Submitted answers must be a list.');
+        }
+
+        foreach ($answers as $answer) {
+            if (! $answer instanceof SubmittedAnswerData) {
+                throw new InvalidArgumentException('Each submitted answer must be a SubmittedAnswerData instance.');
+            }
+        }
+    }
 }

@@ -13,7 +13,6 @@ use AIArmada\Feedback\Data\SubmittedAnswerData;
 use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
-use Illuminate\Support\Collection;
 
 it('calculates known NPS, CSAT, distribution, and completion values', function (): void {
     $createForm = app(CreateFeedbackFormAction::class);
@@ -35,9 +34,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
     foreach ([10, 8, 5] as $score) {
         $submit->execute(new SubmitFeedbackResponseData(
             formId: $npsForm->id,
-            answers: new Collection([
+            answers: [
                 new SubmittedAnswerData($npsQuestion->id, $npsQuestion->key, $score),
-            ]),
+            ],
             isAnonymous: true,
         ));
     }
@@ -57,9 +56,9 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
     foreach ([5, 3, 2] as $score) {
         $submit->execute(new SubmitFeedbackResponseData(
             formId: $csatForm->id,
-            answers: new Collection([
+            answers: [
                 new SubmittedAnswerData($csatQuestion->id, $csatQuestion->key, $score),
-            ]),
+            ],
             isAnonymous: true,
         ));
     }

@@ -18,7 +18,6 @@ use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use AIArmada\Feedback\Features\Forms\Models\FeedbackForm;
 use AIArmada\Feedback\Features\Invitations\Models\FeedbackInvitation;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -35,7 +34,7 @@ it('rejects an invitation issued for another form', function (): void {
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
             formId: $formB->id,
-            answers: new Collection,
+            answers: [],
             invitationId: $invitation->id,
             isAnonymous: true,
         ),
@@ -57,9 +56,9 @@ it('rejects question ids from another form', function (): void {
     expect(fn () => app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
             formId: $formB->id,
-            answers: collect([
+            answers: [
                 new SubmittedAnswerData($questionA->id, $questionA->key, 'Injected'),
-            ]),
+            ],
             isAnonymous: true,
         ),
     ))->toThrow(RuntimeException::class, 'outside the selected form');
@@ -78,9 +77,9 @@ it('submits and scores answers inside the current owner scope', function (): voi
     $response = app(SubmitFeedbackResponseAction::class)->execute(
         new SubmitFeedbackResponseData(
             formId: $form->id,
-            answers: collect([
+            answers: [
                 new SubmittedAnswerData($question->id, $question->key, 8),
-            ]),
+            ],
             isAnonymous: true,
         ),
     );
@@ -104,7 +103,7 @@ it('reuses one submitted response per respondent', function (): void {
     );
     $data = new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -163,7 +162,7 @@ it('submits an existing open draft', function (): void {
 
     $response = app(SubmitFeedbackResponseAction::class)->execute(new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     ));
@@ -186,7 +185,7 @@ it('allows multiple submitted responses when one-response mode is disabled', fun
     $form = publishedFeedbackForm('Multiple Response Form');
     $data = new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -219,7 +218,7 @@ it('returns one submitted response when submissions race', function (): void {
     $form = publishedFeedbackForm('Concurrent Form', isOneResponsePerRespondent: true);
     $data = new SubmitFeedbackResponseData(
         formId: $form->id,
-        answers: new Collection,
+        answers: [],
         respondentType: $respondent->getMorphClass(),
         respondentId: (string) $respondent->getKey(),
     );
@@ -478,4 +477,11 @@ it('rejects a targeted invitation used by a different respondent', function (): 
         respondentId: (string) $other->getKey(),
         invitationId: $invitation->id,
     ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+});
+
+it('rejects invalid submission answer lists at the DTO boundary', function (): void {
+    expect(fn () => new SubmitFeedbackResponseData('form-id', ['invalid']))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn () => new SubmitFeedbackResponseData('form-id', ['answer' => new SubmittedAnswerData('question-id', 'key', 'value')]))
+        ->toThrow(InvalidArgumentException::class);
 });
