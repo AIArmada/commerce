@@ -18,23 +18,21 @@ use AIArmada\Engagement\Events\ResponseChanged;
 use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Features\Counters\Api\ReadsEngagementCounters;
 use AIArmada\Engagement\Features\Counters\Models\EngagementCounter;
-use AIArmada\Engagement\Features\Interactions\Models\Bookmark;
-use AIArmada\Engagement\Features\Interactions\Models\Follow;
-use AIArmada\Engagement\Features\Interactions\Models\Reaction;
-use AIArmada\Engagement\Features\Interactions\Models\Response;
+use AIArmada\Engagement\Features\Interactions\Api\ReadsInteractionCounts;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 
 final readonly class UpdateEngagementCountersAction implements ReadsEngagementCounters
 {
+    public function __construct(private ReadsInteractionCounts $interactions) {}
+
     public function count(string $subjectType, string $subjectId, string $counterType, ?string $counterKey = null): int
     {
         return match ($counterType) {
-            'followers' => $this->countFollowersByIdentity($subjectType, $subjectId),
-            'bookmarks' => $this->countBookmarksByIdentity($subjectType, $subjectId),
-            'responses' => $this->countResponsesByIdentity($subjectType, $subjectId, $counterKey),
-            'reactions' => $this->countReactionsByIdentity($subjectType, $subjectId, $counterKey),
+            'followers' => $this->interactions->countFollowersByIdentity($subjectType, $subjectId),
+            'bookmarks' => $this->interactions->countBookmarksByIdentity($subjectType, $subjectId),
+            'responses' => $this->interactions->countResponsesByIdentity($subjectType, $subjectId, $counterKey),
+            'reactions' => $this->interactions->countReactionsByIdentity($subjectType, $subjectId, $counterKey),
             default => $this->valueByIdentity($subjectType, $subjectId, $counterType, $counterKey ?? ''),
         };
     }
@@ -58,67 +56,26 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     public function countFollowers(mixed $subject): int
     {
-        return $this->countFollowersByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+        return $this->interactions->countFollowersByIdentity($subject->getMorphClass(), (string) $subject->getKey());
     }
 
     public function countBookmarks(mixed $subject): int
     {
-        return $this->countBookmarksByIdentity($subject->getMorphClass(), (string) $subject->getKey());
+        return $this->interactions->countBookmarksByIdentity($subject->getMorphClass(), (string) $subject->getKey());
     }
 
     public function countResponses(mixed $subject, ?string $responseType = null): int
     {
-        return $this->countResponsesByIdentity(
+        return $this->interactions->countResponsesByIdentity(
             $subject->getMorphClass(),
             (string) $subject->getKey(),
             $responseType,
         );
     }
 
-    private function countBookmarksByIdentity(string $subjectType, string $subjectId): int
-    {
-        return Bookmark::query()
-            ->where('bookmarkable_type', $subjectType)
-            ->where('bookmarkable_id', $subjectId)
-            ->where('status', 'active')
-            ->count();
-    }
-
-    private function countFollowersByIdentity(string $subjectType, string $subjectId): int
-    {
-        return Follow::query()
-            ->where('followable_type', $subjectType)
-            ->where('followable_id', $subjectId)
-            ->where('status', 'active')
-            ->count();
-    }
-
-    private function countResponsesByIdentity(string $subjectType, string $subjectId, ?string $responseType = null): int
-    {
-        $query = Response::query()
-            ->where('respondable_type', $subjectType)
-            ->where('respondable_id', $subjectId)
-            ->where('status', 'active');
-
-        if ($responseType !== null) {
-            $query->where('response_type', $responseType);
-        }
-
-        return $query->count();
-    }
-
     public function countReactions(mixed $subject, ?string $reactionType = null): int
     {
-        $query = Reaction::query()
-            ->where('reactable_type', $subject->getMorphClass())
-            ->where('reactable_id', $subject->getKey())
-            ->where('status', 'active');
-
-        if ($reactionType !== null) {
-            $query->where('reaction_type', $reactionType);
-        }
-
-        return $query->count();
+        return $this->interactions->countReactionsByIdentity($subject->getMorphClass(), (string) $subject->getKey(), $reactionType);
     }
 
     public function recalculate(mixed $subject): void
@@ -126,7 +83,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         $subjectType = $subject->getMorphClass();
         $subjectId = $subject->getKey();
 
-        $counters = $this->aggregateCounters($subjectType, (string) $subjectId);
+        $counters = $this->interactions->aggregateCounters($subjectType, (string) $subjectId);
 
         foreach ($counters as $type => $count) {
             EngagementCounter::query()->updateOrCreate(
@@ -145,52 +102,6 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
         $this->recalculateResponses($subject);
         $this->recalculateReactions($subject);
-    }
-
-    /**
-     * Compute base counters in one database round trip.
-     *
-     * Keyed response and reaction counters are reconciled separately so direct
-     * writes cannot leave per-type values stale.
-     *
-     * @return array<string, int>
-     */
-    private function aggregateCounters(string $subjectType, string $subjectId): array
-    {
-        $followers = Follow::query()
-            ->where('followable_type', $subjectType)
-            ->where('followable_id', $subjectId)
-            ->where('status', 'active')
-            ->selectRaw('COUNT(*) as followers');
-        $bookmarks = Bookmark::query()
-            ->where('bookmarkable_type', $subjectType)
-            ->where('bookmarkable_id', $subjectId)
-            ->where('status', 'active')
-            ->selectRaw('COUNT(*) as bookmarks');
-        $responses = Response::query()
-            ->where('respondable_type', $subjectType)
-            ->where('respondable_id', $subjectId)
-            ->where('status', 'active')
-            ->selectRaw('COUNT(*) as responses');
-        $reactions = Reaction::query()
-            ->where('reactable_type', $subjectType)
-            ->where('reactable_id', $subjectId)
-            ->where('status', 'active')
-            ->selectRaw('COUNT(*) as reactions');
-
-        $totals = DB::query()
-            ->selectSub($followers, 'followers')
-            ->selectSub($bookmarks, 'bookmarks')
-            ->selectSub($responses, 'responses')
-            ->selectSub($reactions, 'reactions')
-            ->first();
-
-        return [
-            'followers' => (int) ($totals->followers ?? 0),
-            'bookmarks' => (int) ($totals->bookmarks ?? 0),
-            'responses' => (int) ($totals->responses ?? 0),
-            'reactions' => (int) ($totals->reactions ?? 0),
-        ];
     }
 
     public function recalculateBookmarks(mixed $subject): void
@@ -213,7 +124,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
                 'counter_key' => '',
             ],
             [
-                'count_value' => $this->countFollowersByIdentity($subjectType, $subjectId),
+                'count_value' => $this->interactions->countFollowersByIdentity($subjectType, $subjectId),
                 'recalculated_at' => CarbonImmutable::now(),
             ],
         );
@@ -221,7 +132,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
 
     private function recalculateBookmarksByIdentity(string $subjectType, string $subjectId): void
     {
-        $count = $this->countBookmarksByIdentity($subjectType, $subjectId);
+        $count = $this->interactions->countBookmarksByIdentity($subjectType, $subjectId);
 
         EngagementCounter::query()->updateOrCreate(
             [
@@ -254,7 +165,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
                         'counter_key' => $counterKey,
                     ],
                     [
-                        'count_value' => $this->countResponsesByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
+                        'count_value' => $this->interactions->countResponsesByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
                         'recalculated_at' => CarbonImmutable::now(),
                     ],
                 );
@@ -263,7 +174,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
             return;
         }
 
-        $counts = $this->groupedResponseCounts($subjectType, $subjectId);
+        $counts = $this->interactions->groupedResponseCounts($subjectType, $subjectId);
         $now = CarbonImmutable::now();
 
         EngagementCounter::query()->updateOrCreate(
@@ -293,26 +204,6 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
                 ],
             );
         }
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    private function groupedResponseCounts(string $subjectType, string $subjectId): array
-    {
-        /** @var array<string, int> $counts */
-        $counts = Response::query()
-            ->where('respondable_type', $subjectType)
-            ->where('respondable_id', $subjectId)
-            ->where('status', 'active')
-            ->select('response_type')
-            ->selectRaw('COUNT(*) as aggregate')
-            ->groupBy('response_type')
-            ->pluck('aggregate', 'response_type')
-            ->map(static fn (mixed $value): int => (int) $value)
-            ->all();
-
-        return $counts;
     }
 
     /**
@@ -350,7 +241,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
                         'counter_key' => $counterKey,
                     ],
                     [
-                        'count_value' => $this->countReactionsByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
+                        'count_value' => $this->interactions->countReactionsByIdentity($subjectType, $subjectId, $counterKey === '' ? null : $counterKey),
                         'recalculated_at' => CarbonImmutable::now(),
                     ],
                 );
@@ -359,7 +250,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
             return;
         }
 
-        $counts = $this->groupedReactionCounts($subjectType, $subjectId);
+        $counts = $this->interactions->groupedReactionCounts($subjectType, $subjectId);
         $now = CarbonImmutable::now();
 
         EngagementCounter::query()->updateOrCreate(
@@ -392,26 +283,6 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
     }
 
     /**
-     * @return array<string, int>
-     */
-    private function groupedReactionCounts(string $subjectType, string $subjectId): array
-    {
-        /** @var array<string, int> $counts */
-        $counts = Reaction::query()
-            ->where('reactable_type', $subjectType)
-            ->where('reactable_id', $subjectId)
-            ->where('status', 'active')
-            ->select('reaction_type')
-            ->selectRaw('COUNT(*) as aggregate')
-            ->groupBy('reaction_type')
-            ->pluck('aggregate', 'reaction_type')
-            ->map(static fn (mixed $value): int => (int) $value)
-            ->all();
-
-        return $counts;
-    }
-
-    /**
      * @param  array<string, int>  $counts
      * @return array<int, string>
      */
@@ -429,20 +300,6 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         return array_values(array_unique(array_merge(array_keys($counts), $storedKeys)));
     }
 
-    private function countReactionsByIdentity(string $subjectType, string $subjectId, ?string $reactionType = null): int
-    {
-        $query = Reaction::query()
-            ->where('reactable_type', $subjectType)
-            ->where('reactable_id', $subjectId)
-            ->where('status', 'active');
-
-        if ($reactionType !== null) {
-            $query->where('reaction_type', $reactionType);
-        }
-
-        return $query->count();
-    }
-
     /**
      * Apply one lifecycle transition to the cached counters without a full
      * recount. Events fire inside the originating write transaction, so the
@@ -457,7 +314,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
         }
 
         try {
-            DB::transaction(function () use ($subjectType, $subjectId, $counterType, $counterKey, $delta): void {
+            (new EngagementCounter)->getConnection()->transaction(function () use ($subjectType, $subjectId, $counterType, $counterKey, $delta): void {
                 $this->adjustLockedCounter($subjectType, $subjectId, $counterType, $counterKey, $delta);
             });
         } catch (QueryException $exception) {
@@ -465,7 +322,7 @@ final readonly class UpdateEngagementCountersAction implements ReadsEngagementCo
                 throw $exception;
             }
 
-            DB::transaction(function () use ($subjectType, $subjectId, $counterType, $counterKey, $delta): void {
+            (new EngagementCounter)->getConnection()->transaction(function () use ($subjectType, $subjectId, $counterType, $counterKey, $delta): void {
                 $this->adjustLockedCounter($subjectType, $subjectId, $counterType, $counterKey, $delta);
             });
         }

@@ -27,6 +27,10 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(ReadsEngagementCounters::class, UpdateEngagementCountersAction::class);
+    }
+
+    public function boot(Application $app): void
+    {
         $service = $app->make(UpdateEngagementCountersAction::class);
         $dispatcher = $app->make(Dispatcher::class);
 
@@ -43,6 +47,4 @@ final class FeatureModule implements FeatureModuleContract
         $dispatcher->listen(ResponseChanged::class, $service->onResponseChanged(...));
         $dispatcher->listen(ResponseCancelled::class, $service->onResponseCancelled(...));
     }
-
-    public function boot(Application $app): void {}
 }
