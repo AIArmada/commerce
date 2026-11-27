@@ -256,3 +256,12 @@ it('rejects array write keys without failing in throttle middleware', function (
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 });
+
+it('reserves a signed request atomically until its timestamp expires', function (): void {
+    $store = app(\AIArmada\Signals\Features\Ingestion\Persistence\TrustedSignatureReplayStore::class);
+    $timestamp = (string) time();
+    $signature = hash('sha256', 'replay-test');
+
+    expect($store->reserve($timestamp, $signature, 600))->toBeTrue()
+        ->and($store->reserve($timestamp, $signature, 600))->toBeFalse();
+});

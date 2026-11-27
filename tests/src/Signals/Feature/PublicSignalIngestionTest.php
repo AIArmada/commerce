@@ -124,3 +124,20 @@ it('rejects invalid event names before writing any events', function (array $pay
     'array' => [['event_name' => ['invalid']]],
     'too long' => [['event_name' => str_repeat('x', 256)]],
 ]);
+
+it('applies browser event and payload policy at the direct untrusted boundary', function (): void {
+    $property = publicIngestionProperty();
+    $ingestion = app(SignalIngestion::class);
+
+    foreach ([
+        ['event_name' => 'order.paid'],
+        ['event_name' => 'custom.click', 'properties' => ['orderId' => 'untrusted']],
+        ['event_name' => 'custom.click', 'properties' => ['value' => str_repeat('x', 2048)]],
+    ] as $payload) {
+        expect(fn () => $ingestion->handle($property->id, $payload, false))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+
+    expect(SignalEvent::query()->count())->toBe(0);
+    expect($ingestion->handle($property->id, ['event_name' => 'custom.click'], false)->revenueMinor)->toBe(0);
+});
