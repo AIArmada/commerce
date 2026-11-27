@@ -222,5 +222,4 @@ class ExperimentsTable
             ExperimentStatus::Archived => 'Archived',
         };
     }
-
 }

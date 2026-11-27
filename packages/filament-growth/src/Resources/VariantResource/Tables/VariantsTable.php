@@ -97,7 +97,6 @@ class VariantsTable
         return $experiment instanceof Experiment ? (string) $experiment->name : '—';
     }
 
-
     private static function canDeleteAnyVariant(): bool
     {
         return Gate::allows('deleteAny', Variant::class);
