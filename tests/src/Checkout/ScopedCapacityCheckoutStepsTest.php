@@ -10,7 +10,7 @@ use AIArmada\Checkout\Steps\ReserveScopedCapacityStep;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Data\ScopedCapacityLine;
 use AIArmada\Inventory\InventoryServiceProvider;
-use AIArmada\Inventory\Models\CapacityHold;
+use AIArmada\Inventory\Features\ScopedCapacity\Models\CapacityHold;
 use Illuminate\Support\Str;
 
 final class TestCapacityCheckoutProvider implements ScopedCapacityCheckoutProviderInterface

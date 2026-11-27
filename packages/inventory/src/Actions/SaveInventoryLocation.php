@@ -20,7 +20,17 @@ final readonly class SaveInventoryLocation
             $query = $this->ownedQuery();
             $this->assertParent($query, $attributes);
 
-            return InventoryLocation::query()->create($this->editable($attributes));
+            $location = new InventoryLocation($this->editable($attributes));
+
+            if (InventoryOwnerScope::isEnabled()) {
+                $owner = InventoryOwnerScope::resolveOwner();
+                $location->owner_type = $owner?->getMorphClass();
+                $location->owner_id = $owner?->getKey();
+            }
+
+            $location->save();
+
+            return $location;
         });
     }
 

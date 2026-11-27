@@ -39,15 +39,21 @@ use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
 use AIArmada\Inventory\Services\Stock\DemandForecastService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Services\Stock\ReplenishmentService;
-use AIArmada\Inventory\Services\Stock\ScopedCapacityReservationService;
+use AIArmada\Inventory\Platform\ExtensionRegistry;
+use AIArmada\Inventory\Platform\FeatureCatalog;
+use AIArmada\Inventory\Platform\FeatureModule;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 use Illuminate\Support\Facades\Event;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class InventoryServiceProvider extends PackageServiceProvider
 {
+    /** @var list<FeatureModule> */
+    private array $modules = [];
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -70,6 +76,7 @@ final class InventoryServiceProvider extends PackageServiceProvider
         $this->registerReplenishmentServices();
         $this->registerReportServices();
         $this->registerIntegrationServices();
+        $this->registerFeatureModules();
     }
 
     public function packageBooted(): void
@@ -77,6 +84,10 @@ final class InventoryServiceProvider extends PackageServiceProvider
         $this->registerCartIntegration();
         $this->registerPaymentIntegration();
         $this->registerOrdersIntegration();
+
+        foreach ($this->modules as $module) {
+            $module->boot($this->app);
+        }
     }
 
     /**
@@ -106,7 +117,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
             CheckoutReservationServiceInterface::class,
             CheckoutReservationService::class,
             ScopedCapacityReservationServiceInterface::class,
-            ScopedCapacityReservationService::class,
             'inventory',
             'inventory.allocations',
         ];
@@ -184,7 +194,23 @@ final class InventoryServiceProvider extends PackageServiceProvider
         // Checkout reservation group service
         $this->app->singleton(CheckoutReservationService::class);
         $this->app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
-        $this->app->bind(ScopedCapacityReservationServiceInterface::class, ScopedCapacityReservationService::class);
+    }
+
+    private function registerFeatureModules(): void
+    {
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule');
+
+            if (! $module instanceof FeatureModule) {
+                throw new RuntimeException('Invalid inventory feature module: ' . $feature);
+            }
+
+            $module->register($this->app);
+            $this->modules[] = $module;
+        }
     }
 
     /**

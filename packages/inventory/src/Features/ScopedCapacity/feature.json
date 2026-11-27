@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "ScopedCapacity",
+  "owns": {
+    "table:inventory_capacity_pools": [
+      "AIArmada\\Inventory\\Features\\ScopedCapacity\\Persistence\\ScopedCapacityReservations"
+    ],
+    "table:inventory_capacity_holds": [
+      "AIArmada\\Inventory\\Features\\ScopedCapacity\\Persistence\\ScopedCapacityReservations"
+    ]
+  },
+  "extensions": {}
+}

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\ScopedCapacity\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Data\ScopedCapacityLine;
 use AIArmada\Inventory\Data\ScopedCapacityOutcome;
-use AIArmada\Inventory\Models\CapacityHold;
-use AIArmada\Inventory\Models\CapacityPool;
+use AIArmada\Inventory\Features\ScopedCapacity\Models\CapacityHold;
+use AIArmada\Inventory\Features\ScopedCapacity\Models\CapacityPool;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,7 +26,7 @@ use RuntimeException;
  * serialized via a distributed cache lock. No date, media, ticketing or other
  * domain interpretation exists in this service.
  */
-final class ScopedCapacityReservationService implements ScopedCapacityReservationServiceInterface
+final class ScopedCapacityReservations implements ScopedCapacityReservationServiceInterface
 {
     /** @param list<ScopedCapacityLine> $lines */
     public function reserve(string $reference, array $lines, int $ttlSeconds): ScopedCapacityOutcome
@@ -367,7 +367,12 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
     /** @return array{owner_type: string|null, owner_id: string|null} */
     private function owner(): array
     {
-        $model = (bool) config('inventory.owner.enabled', false) ? OwnerContext::resolve() : null;
+        $enabled = (bool) config('inventory.owner.enabled', false);
+        $model = $enabled ? OwnerContext::resolve() : null;
+
+        if ($enabled) {
+            OwnerContext::assertResolvedOrExplicitGlobal($model);
+        }
 
         return [
             'owner_type' => $model?->getMorphClass(),
