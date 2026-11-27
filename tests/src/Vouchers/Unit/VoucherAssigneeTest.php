@@ -11,7 +11,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\ExpireVoucher;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;

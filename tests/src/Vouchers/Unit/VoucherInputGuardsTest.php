@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Vouchers\Features\Wallet\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -205,6 +205,24 @@ describe('wallet claim hardening', function (): void {
 });
 
 describe('usage recording guards', function (): void {
+    it('rejects a supplied voucher identity with a different code', function (): void {
+        $first = guardVoucher();
+        $second = guardVoucher();
+
+        expect(fn () => RecordVoucherUsage::run($first->code, Money::MYR(100), voucherModel: $second))
+            ->toThrow(\AIArmada\Vouchers\Exceptions\VoucherNotFoundException::class);
+
+        expect(VoucherUsage::query()->whereIn('voucher_id', [$first->id, $second->id])->count())->toBe(0);
+    });
+
+    it('enforces a zero per-user usage limit', function (): void {
+        $voucher = guardVoucher(['usage_limit_per_user' => 0]);
+        $user = guardWalletUser();
+
+        expect(fn () => RecordVoucherUsage::run($voucher->code, Money::MYR(100), redeemedBy: $user))
+            ->toThrow(\AIArmada\Vouchers\Exceptions\VoucherUsageLimitException::class);
+    });
+
     it('rejects usage in a different currency than the voucher', function (): void {
         $voucher = guardVoucher(['currency' => 'MYR']);
 

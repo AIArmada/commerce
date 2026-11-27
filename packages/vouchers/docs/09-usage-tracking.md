@@ -253,7 +253,7 @@ class VoucherDashboardController extends Controller
 The `RecordVoucherUsage` action is the canonical way to persist a voucher redemption. It handles limit checking, state transitions (marks voucher as `Depleted` when the global limit is reached), and dispatches `VoucherUsageRecorded`.
 
 ```php
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use Akaunting\Money\Money;
 
 $usage = RecordVoucherUsage::run(

@@ -3,7 +3,11 @@
   "name": "Lifecycle",
   "owns": {
     "table:vouchers": [
-      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherApplication"
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherApplication",
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"
+    ],
+    "table:voucher_usage": [
+      "AIArmada\\Vouchers\\Features\\Lifecycle\\Actions\\RecordVoucherUsage"
     ]
   },
   "extensions": {}

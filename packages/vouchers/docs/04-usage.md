@@ -92,7 +92,7 @@ RemoveVoucherFromCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMME
 ### RecordVoucherUsage
 
 ```php
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Features\Lifecycle\Actions\RecordVoucherUsage;
 use Akaunting\Money\Money;
 
 $usage = RecordVoucherUsage::run(

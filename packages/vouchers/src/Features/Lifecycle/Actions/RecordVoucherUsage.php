@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Actions;
+namespace AIArmada\Vouchers\Features\Lifecycle\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Concerns\ResolvesVoucherAssignee;
@@ -14,6 +14,7 @@ use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use Akaunting\Money\Money;
@@ -26,7 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Record usage of a voucher.
  */
-final class RecordVoucherUsage
+final class RecordVoucherUsage implements VoucherUsageRecorder
 {
     use AsAction;
     use QueriesVouchers;
@@ -47,20 +48,16 @@ final class RecordVoucherUsage
         ?VoucherModel $voucherModel = null
     ): VoucherUsage {
         return DB::transaction(function () use ($code, $discountAmount, $channel, $metadata, $redeemedBy, $notes, $voucherModel): VoucherUsage {
-            $voucher = $this->resolveVoucher($code, $voucherModel);
-
             /** @var VoucherModel|null $lockedVoucher */
             $lockedVoucher = $this->voucherQuery()
-                ->whereKey($voucher->id)
+                ->where('code', $this->normalizeCode($code))
+                ->when($voucherModel !== null, fn ($query) => $query->whereKey($voucherModel->getKey()))
                 ->lockForUpdate()
                 ->first();
 
             if (! $lockedVoucher) {
                 throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
             }
-
-            // Recipient-bound vouchers refuse unattributed and foreign
-            // redeemers. Unmarked vouchers skip this check entirely.
             $assignee = $this->resolveAssignee($lockedVoucher);
 
             if ($assignee !== null
@@ -94,25 +91,23 @@ final class RecordVoucherUsage
                     return $existingUsage;
                 }
             }
-
-            // Expired or revoked vouchers record no further new usage. The
-            // row lock serializes this check against concurrent revocation.
             if ($lockedVoucher->isExpired() || $lockedVoucher->status instanceof Expired) {
                 throw VoucherExpiredException::withCode($lockedVoucher->code);
             }
 
             $this->assertCurrencyMatches($lockedVoucher, $discountAmount);
 
-            // Check global usage limit
+            if ((int) $discountAmount->getAmount() < 0) {
+                throw ValidationException::withMessages(['discount_amount' => 'Voucher discount cannot be negative.']);
+            }
+            $currentUses = $lockedVoucher->times_used;
+
             if ($lockedVoucher->usage_limit !== null) {
-                $currentUses = VoucherUsage::where('voucher_id', $lockedVoucher->id)->count();
                 if ($currentUses >= $lockedVoucher->usage_limit) {
                     throw VoucherUsageLimitException::globalLimit($lockedVoucher->code);
                 }
             }
-
-            // Check per-user usage limit
-            if ($redeemedBy !== null && $lockedVoucher->usage_limit_per_user) {
+            if ($redeemedBy !== null && $lockedVoucher->usage_limit_per_user !== null) {
                 $currentUserUses = VoucherUsage::where('voucher_id', $lockedVoucher->id)
                     ->where('redeemed_by_type', $redeemedBy->getMorphClass())
                     ->where('redeemed_by_id', $redeemedBy->getKey())
@@ -150,14 +145,8 @@ final class RecordVoucherUsage
             if (! $usage->wasRecentlyCreated) {
                 return $usage;
             }
-
-            // Update status to depleted if usage limit reached
-            // Note: applied_count tracks cart applications (incremented by IncrementVoucherAppliedCount
-            // listener on VoucherApplied event). Do NOT increment it here — that would double-count
-            // any voucher that is both applied to a cart and then redeemed, corrupting conversion
-            // rate and abandoned count statistics.
             if ($lockedVoucher->usage_limit !== null) {
-                $newUsageCount = VoucherUsage::where('voucher_id', $lockedVoucher->id)->count();
+                $newUsageCount = $currentUses + 1;
                 if ($newUsageCount >= $lockedVoucher->usage_limit) {
                     $lockedVoucher->status->transitionTo(Depleted::class);
                     $lockedVoucher->save();
@@ -199,41 +188,6 @@ final class RecordVoucherUsage
                 return hash('sha256', (string) $value);
             }
         }
-
-        // Without caller-provided context there is nothing to dedupe on;
-        // the usage is recorded without an idempotency key by design.
         return null;
-    }
-
-    private function findVoucher(string $code): VoucherModel
-    {
-        $normalizedCode = $this->normalizeCode($code);
-
-        $voucher = $this->voucherQuery()
-            ->where('code', $normalizedCode)
-            ->first();
-
-        if (! $voucher) {
-            throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
-        }
-
-        return $voucher;
-    }
-
-    private function resolveVoucher(string $code, ?VoucherModel $voucherModel): VoucherModel
-    {
-        if ($voucherModel === null) {
-            return $this->findVoucher($code);
-        }
-
-        $voucher = $this->voucherQuery()
-            ->whereKey($voucherModel->getKey())
-            ->first();
-
-        if (! $voucher) {
-            throw new VoucherNotFoundException("Voucher with code '{$code}' not found.");
-        }
-
-        return $voucher;
     }
 }

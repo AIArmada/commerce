@@ -7,7 +7,7 @@ namespace AIArmada\Vouchers\Services;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Runtime\WalletClaim;
 use AIArmada\Vouchers\Actions\CreateVoucher;
-use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\Vouchers\Runtime\VoucherUsageRecorder;
 use AIArmada\Vouchers\Runtime\WalletRemoval;
 use AIArmada\Vouchers\Actions\UpdateVoucher;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
@@ -143,7 +143,7 @@ class VoucherService implements VoucherServiceInterface
         ?string $notes = null,
         ?VoucherModel $voucherModel = null
     ): void {
-        RecordVoucherUsage::run(
+        app(VoucherUsageRecorder::class)->handle(
             code: $code,
             discountAmount: $discountAmount,
             channel: $channel,
