@@ -36,7 +36,7 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
-use Spatie\LaravelData\Optional;
+use AIArmada\Contacting\Data\MissingValue;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\File;
@@ -214,7 +214,7 @@ class Customer extends Model implements Auditable, HasMedia
             return null;
         }
 
-        $countryCode = $data->countryCode instanceof Optional ? null : $data->countryCode;
+        $countryCode = $data->countryCode instanceof MissingValue ? null : $data->countryCode;
 
         $normalized = app(NormalizeContactMethodAction::class)->execute(
             $data->type,

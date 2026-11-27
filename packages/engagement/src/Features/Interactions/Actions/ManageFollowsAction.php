@@ -57,6 +57,10 @@ final readonly class ManageFollowsAction
                     return $existing;
                 }
 
+                if ($existing && $existing->status === FollowStatus::Blocked) {
+                    throw new AuthorizationException('This follow is blocked.');
+                }
+
                 if ($existing && $existing->status !== FollowStatus::Active) {
                     $existing->update([
                         'status' => 'active',

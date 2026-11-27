@@ -51,7 +51,7 @@ final readonly class SynchronizePrimarySocialProfileAction
             ->where('purpose', $record->purpose)
             ->where('is_primary', true)
             ->when($record->exists, fn (Builder $query): Builder => $query->whereKeyNot($record->getKey()))
-            ->where(function (Builder $query): void {
+            ->where(function (Builder $query) use ($record): void {
                 if ($record->owner_type === null) {
                     $query->whereNull('owner_type')->whereNull('owner_id');
 
