@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Features\Lifecycle;
 
 use AIArmada\Vouchers\Events\VoucherApplied;
+use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Features\Lifecycle\Persistence\VoucherLookupCache;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
 use AIArmada\Vouchers\Features\Lifecycle\Actions\GenerateVoucherBatch;
@@ -34,6 +35,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(VoucherUsageRecorder::class, RecordVoucherUsage::class);
         $app->bind(VoucherCreator::class, CreateVoucher::class);
+        $app->singleton(AffiliateIntegrationRegistrar::class);
         $app->singleton(VoucherLookup::class, VoucherLookupCache::class);
         $app->bind(VoucherBatchIssuer::class, GenerateVoucherBatch::class);
         $app->bind(VoucherAvailability::class, ChangeVoucherAvailability::class);
@@ -46,5 +48,6 @@ final class FeatureModule implements FeatureModuleContract
     public function boot(Application $app): void
     {
         $app->make(Dispatcher::class)->listen(VoucherApplied::class, IncrementVoucherAppliedCount::class);
+        $app->make(AffiliateIntegrationRegistrar::class)->register();
     }
 }

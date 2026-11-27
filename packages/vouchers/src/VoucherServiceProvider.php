@@ -18,7 +18,6 @@ use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
-use AIArmada\Vouchers\Features\Lifecycle\EntryPoints\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\VoucherAffiliateRemovalGuard;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
@@ -51,7 +50,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(Services\VoucherDiscountCalculator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
-        $this->app->singleton(AffiliateIntegrationRegistrar::class);
 
         if (interface_exists(AffiliateRemovalGuard::class)) {
             $this->app->tag([VoucherAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);
@@ -117,8 +115,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
             $module->boot($this->app);
         }
 
-        $this->app->make(AffiliateIntegrationRegistrar::class)->register();
-
         if (class_exists(ConditionProviderRegistry::class)) {
             $this->app->make(ConditionProviderRegistry::class)
                 ->register(VoucherConditionProvider::class);
@@ -166,7 +162,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
             StackingPolicyInterface::class,
             Services\VoucherDiscountCalculator::class,
             VoucherRulesFactory::class,
-            AffiliateIntegrationRegistrar::class,
             'voucher',
         ];
     }

@@ -130,33 +130,11 @@ final class ValidatePromoCodeAction
     }
 
     private function resolveVoucherData(
-        VoucherValidationResult | array $validation,
+        VoucherValidationResult $validation,
         string $code,
         VoucherServiceInterface $voucherService,
     ): ?VoucherData {
-        if ($validation instanceof VoucherValidationResult) {
-            if (! $validation->isValid) {
-                return null;
-            }
-
-            return $voucherService->find($code);
-        }
-
-        if (is_array($validation)) {
-            if (! ($validation['valid'] ?? false)) {
-                return null;
-            }
-
-            $voucherArray = $validation['voucher'] ?? null;
-
-            if (! is_array($voucherArray)) {
-                return null;
-            }
-
-            return VoucherData::fromArray($voucherArray);
-        }
-
-        return null;
+        return $validation->isValid ? $voucherService->find($code) : null;
     }
 
     private function calculateDiscount(VoucherData $voucherData, int $subtotal, array | Cart $context): int

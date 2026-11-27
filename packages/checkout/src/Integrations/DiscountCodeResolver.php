@@ -10,7 +10,6 @@ use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Runtime\PromotionServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
 
 final class DiscountCodeResolver
 {
@@ -59,15 +58,7 @@ final class DiscountCodeResolver
         $validationContext = $this->cartResolver()->resolveVoucherValidationContext($session);
         $validation = $voucherService->validate($code, $validationContext);
 
-        if (is_array($validation)) {
-            $voucher = $validation['voucher'] ?? null;
-
-            return ($validation['valid'] ?? false) && is_array($voucher)
-                ? $voucher
-                : null;
-        }
-
-        if (! $validation instanceof VoucherValidationResult || ! $validation->isValid) {
+        if (! $validation->isValid) {
             return null;
         }
 

@@ -58,9 +58,8 @@ interface VoucherServiceInterface
      * Validate a voucher for checkout.
      *
      * @param  mixed  $cart  Cart object or context array
-     * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}|VoucherValidationResult
      */
-    public function validate(string $code, mixed $cart): array | VoucherValidationResult;
+    public function validate(string $code, mixed $cart): VoucherValidationResult;
 
     /**
      * Get remaining uses for a voucher.

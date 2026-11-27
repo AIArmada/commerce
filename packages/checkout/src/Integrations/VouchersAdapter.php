@@ -168,18 +168,13 @@ final class VouchersAdapter implements DiscountProvider
     }
 
     /**
-     * @param  array{valid: bool, message: string|null, voucher: array<string, mixed>|null}|VoucherValidationResult  $validation
      * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}
      */
     private function normalizeValidationResult(
-        array | VoucherValidationResult $validation,
+        VoucherValidationResult $validation,
         VoucherServiceInterface $voucherService,
         string $code
     ): array {
-        if (is_array($validation)) {
-            return $validation;
-        }
-
         $voucher = null;
 
         if ($validation->isValid) {
