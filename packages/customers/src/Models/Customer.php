@@ -9,16 +9,15 @@ use AIArmada\Addressing\Features\AddressLifecycle\Models\Address;
 use AIArmada\Addressing\Features\AddressLifecycle\Traits\HasAddresses;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\MissingValue;
-use AIArmada\Contacting\Features\ContactMethods\Actions\CreateContactMethodAction;
 use AIArmada\Contacting\Features\ContactMethods\Concerns\HasContactMethods;
 use AIArmada\Contacting\Features\ContactMethods\Models\ContactMethod;
 use AIArmada\Contacting\Features\SocialProfiles\Concerns\HasSocialProfiles;
-use AIArmada\Contacting\Features\SocialProfiles\Models\SocialProfile;
 use AIArmada\Customers\Concerns\HasCustomerLifecycle;
 use AIArmada\Customers\Concerns\HasCustomerSegmentation;
 use AIArmada\Customers\Enums\CustomerStatus;
@@ -78,7 +77,9 @@ class Customer extends Model implements Auditable, HasMedia
 {
     use HasAddresses;
     use HasCommerceAudit;
-    use HasContactMethods;
+    use HasContactMethods {
+        addContactMethod as private createCanonicalContactMethod;
+    }
     use HasCustomerLifecycle;
     use HasCustomerSegmentation;
     use HasFactory;
@@ -151,6 +152,10 @@ class Customer extends Model implements Auditable, HasMedia
 
     public function addContactMethod(ContactMethodData | array $data): ContactMethod
     {
+        if (static::ownerScopeConfig()->enabled) {
+            OwnerWriteGuard::findOrFailForOwner(static::class, $this->getKey());
+        }
+
         if (is_array($data)) {
             $data = ContactMethodData::from($data);
         }
@@ -165,7 +170,7 @@ class Customer extends Model implements Auditable, HasMedia
             $this->assertContactEmailIsUnique($data->value);
 
             try {
-                return app(CreateContactMethodAction::class)->execute($this, $data);
+                return $this->createCanonicalContactMethod($data);
             } catch (UniqueConstraintViolationException) {
                 throw ValidationException::withMessages([
                     'email' => 'The email has already been taken within the current owner scope.',
@@ -181,7 +186,7 @@ class Customer extends Model implements Auditable, HasMedia
             }
         }
 
-        return app(CreateContactMethodAction::class)->execute($this, $data);
+        return $this->createCanonicalContactMethod($data);
     }
 
     private function findExistingContactEmail(string $email): ?ContactMethod
@@ -402,8 +407,6 @@ class Customer extends Model implements Auditable, HasMedia
             $customer->notes()->delete();
             $customer->segments()->detach();
             $customer->groups()->detach();
-            $customer->contactMethods()->get()->each(fn (ContactMethod $contactMethod): bool => $contactMethod->delete());
-            $customer->socialProfiles()->get()->each(fn (SocialProfile $socialProfile): bool => $socialProfile->delete());
             $customer->media()->get()->each(fn (Media $medium): bool => (bool) $medium->delete());
         });
     }
