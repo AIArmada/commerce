@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Traits;
 
-use AIArmada\Persons\Features\Affiliations\Models\Affiliation;
+use AIArmada\Persons\Runtime\AffiliationRelationModel;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 trait HasAffiliations
 {
     /**
-     * @return MorphMany<Affiliation, $this>
+     * @return MorphMany<\AIArmada\Persons\Features\Affiliations\Models\Affiliation, $this>
      */
     public function affiliations(): MorphMany
     {
-        return $this->morphMany(Affiliation::class, 'affiliatable');
+        return $this->morphMany(app(AffiliationRelationModel::class)->affiliation(), 'affiliatable');
     }
 }

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Persons\Models;
 
+use AIArmada\Persons\Runtime\PersonNameRelationModel;
 use AIArmada\CommerceSupport\Concerns\ParsesPostgresTimestamps;
 use AIArmada\Persons\Enums\AssignmentStatus;
 use AIArmada\Persons\Enums\Gender;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Features\Identity\Api\PersonDependentsCleaner;
-use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Runtime\PersonTitleFormatting;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
@@ -49,7 +49,7 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property string|null $verified_by
  * @property CarbonImmutable|null $rejected_at
  * @property CarbonImmutable|null $last_state_change_at
- * @property-read EloquentCollection<int, PersonName> $names
+ * @property-read EloquentCollection<int, \AIArmada\Persons\Features\Identity\Models\PersonName> $names
  * @property-read string $formatted_name
  *
  * Person is the shared, global human-identity root. It deliberately has no
@@ -143,11 +143,11 @@ class Person extends Model implements Sortable
     }
 
     /**
-     * @return HasMany<PersonName, $this>
+     * @return HasMany<\AIArmada\Persons\Features\Identity\Models\PersonName, $this>
      */
     public function names(): HasMany
     {
-        return $this->hasMany(PersonName::class, 'person_id');
+        return $this->hasMany(app(PersonNameRelationModel::class)->name(), 'person_id');
     }
 
     /**
@@ -257,8 +257,8 @@ class Person extends Model implements Sortable
         }
 
         return $names
-            ->filter(static fn (PersonName $name): bool => $name->is_primary)
-            ->map(static fn (PersonName $name): string => mb_trim($name->full_name))
+            ->filter(static fn ($name): bool => $name->is_primary)
+            ->map(static fn ($name): string => mb_trim($name->full_name))
             ->filter(static fn (string $name): bool => $name !== '')
             ->values()
             ->all();

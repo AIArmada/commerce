@@ -11,13 +11,16 @@ use AIArmada\Customers\Features\Identity\Actions\MergeCustomers;
 use AIArmada\Customers\Features\Identity\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Features\Identity\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Features\Identity\Api\CustomerDependentsCleaner;
+use AIArmada\Customers\Features\Identity\Queries\CustomerNoteRelationModelResolver;
 use AIArmada\Customers\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Customers\Runtime\CustomerNoteRelationModel;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(CustomerNoteRelationModel::class, CustomerNoteRelationModelResolver::class);
         $app->bind(CustomerDependentsCleaner::class, CleanupCustomerDependents::class);
         $app->bind(CreateCustomer::class);
         $app->bind(UpdateCustomerProfile::class);

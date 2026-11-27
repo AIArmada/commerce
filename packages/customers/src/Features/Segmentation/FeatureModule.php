@@ -15,13 +15,16 @@ use AIArmada\Customers\Features\Segmentation\Actions\TransferCustomerMemberships
 use AIArmada\Customers\Features\Segmentation\Actions\TransferSegmentMemberships;
 use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipCleaner;
 use AIArmada\Customers\Features\Segmentation\Api\CustomerMembershipTransfer;
+use AIArmada\Customers\Features\Segmentation\Queries\SegmentationRelationModelsResolver;
 use AIArmada\Customers\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Customers\Runtime\SegmentationRelationModels;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(SegmentationRelationModels::class, SegmentationRelationModelsResolver::class);
         $app->bind(CustomerMembershipCleaner::class, CleanupCustomerMemberships::class);
         $app->bind(CustomerMembershipTransfer::class, TransferCustomerMemberships::class);
         $app->bind(AssignCustomerToSegment::class);

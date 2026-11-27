@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
-use AIArmada\Customers\Features\Segmentation\Models\CustomerGroup;
-use AIArmada\Customers\Features\Segmentation\Models\Segment;
+use AIArmada\Customers\Runtime\SegmentationRelationModels;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -14,7 +13,7 @@ trait HasCustomerSegmentation
     /**
      * Get the customer's segments.
      *
-     * @return BelongsToMany<Segment, $this>
+     * @return BelongsToMany<\AIArmada\Customers\Features\Segmentation\Models\Segment, $this>
      */
     public function segments(): BelongsToMany
     {
@@ -22,7 +21,7 @@ trait HasCustomerSegmentation
         $prefix = config('customers.database.table_prefix', 'customer_');
 
         return $this->belongsToMany(
-            Segment::class,
+            app(SegmentationRelationModels::class)->segment(),
             $tables['segment_customer'] ?? $prefix . 'segment_customer',
             'customer_id',
             'segment_id',
@@ -32,7 +31,7 @@ trait HasCustomerSegmentation
     /**
      * Get the customer's group memberships.
      *
-     * @return BelongsToMany<CustomerGroup, $this>
+     * @return BelongsToMany<\AIArmada\Customers\Features\Segmentation\Models\CustomerGroup, $this>
      */
     public function groups(): BelongsToMany
     {
@@ -40,7 +39,7 @@ trait HasCustomerSegmentation
         $prefix = config('customers.database.table_prefix', 'customer_');
 
         return $this->belongsToMany(
-            CustomerGroup::class,
+            app(SegmentationRelationModels::class)->group(),
             $tables['group_members'] ?? $prefix . 'group_members',
             'customer_id',
             'group_id',
