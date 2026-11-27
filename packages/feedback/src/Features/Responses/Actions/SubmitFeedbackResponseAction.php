@@ -135,7 +135,7 @@ final class SubmitFeedbackResponseAction
                         $this->invitationLifecycle->submit($data->invitationId);
                     }
 
-                    $this->calculateResponseScore->execute($response);
+                    $response = $this->calculateResponseScore->execute($response);
 
                     if (config('feedback.features.testimonials', true)) {
                         $this->extractTestimonial->execute($response->id);

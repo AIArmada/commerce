@@ -45,7 +45,8 @@ it('submits and scores each supported question type', function (
         isAnonymous: true,
     ));
 
-    expect((float) $response->fresh()->score)->toBe($expectedScore);
+    expect((float) $response->score)->toBe($expectedScore)
+        ->and((float) $response->fresh()->score)->toBe($expectedScore);
 })->with([
     'short text map' => [
         'short_text', 'excellent', 5.0, [], [], ['map' => ['excellent' => 5]],
