@@ -49,7 +49,9 @@ final class JntSpatieSignatureValidator extends CommerceSignatureValidator
 
     protected function getPayloadForSigning(Request $request): string
     {
-        return (string) $request->input('bizContent', '');
+        $payload = $request->input('bizContent', '');
+
+        return is_string($payload) ? $payload : '';
     }
 
     protected function computeSignature(string $payload, string $secret): string

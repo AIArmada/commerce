@@ -58,6 +58,20 @@ describe('JntWebhookProfile', function (): void {
         $profile->shouldProcess($request);
     })->throws(JntValidationException::class);
 
+    it('enforces byte limits for multibyte payloads', function (): void {
+        $content = json_encode(['billCode' => 'JNT123', 'details' => [], 'pad' => '收件'], JSON_UNESCAPED_UNICODE);
+        config()->set('jnt.webhooks.max_biz_content_bytes', mb_strlen($content));
+        $request = Request::create('/webhook', 'POST', ['bizContent' => $content]);
+
+        expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);
+    });
+
+    it('rejects malformed identifiers before queueing', function (): void {
+        $request = Request::create('/webhook', 'POST', ['bizContent' => json_encode(['billCode' => ['invalid'], 'details' => []])]);
+
+        expect(fn () => (new JntWebhookProfile)->shouldProcess($request))->toThrow(JntValidationException::class);
+    });
+
     it('throws when details is not an array', function (): void {
         $request = Request::create('/webhook', 'POST', [
             'bizContent' => json_encode([

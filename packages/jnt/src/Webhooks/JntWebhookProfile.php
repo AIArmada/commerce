@@ -26,8 +26,8 @@ class JntWebhookProfile extends CommerceWebhookProfile
 
         $maxBytes = max(1, (int) config('jnt.webhooks.max_biz_content_bytes', 1048576));
 
-        if (mb_strlen($bizContent) > $maxBytes) {
-            throw JntValidationException::fieldTooLong('bizContent', $maxBytes, mb_strlen($bizContent));
+        if (strlen($bizContent) > $maxBytes) {
+            throw JntValidationException::fieldTooLong('bizContent', $maxBytes, strlen($bizContent));
         }
 
         $decoded = json_decode($bizContent, true);
@@ -36,12 +36,16 @@ class JntWebhookProfile extends CommerceWebhookProfile
             throw JntValidationException::invalidFormat('bizContent', 'valid JSON', $bizContent);
         }
 
-        if (! isset($decoded['billCode'])) {
+        if (! isset($decoded['billCode']) || ! is_string($decoded['billCode']) || $decoded['billCode'] === '') {
             throw JntValidationException::requiredFieldMissing('billCode');
         }
 
-        if (! isset($decoded['details']) || ! is_array($decoded['details'])) {
+        if (! isset($decoded['details']) || ! is_array($decoded['details']) || ! array_is_list($decoded['details'])) {
             throw JntValidationException::invalidFieldValue('details', $decoded['details'] ?? null, 'array');
+        }
+
+        if (isset($decoded['txlogisticId']) && ! is_string($decoded['txlogisticId'])) {
+            throw JntValidationException::invalidFieldValue('txlogisticId', $decoded['txlogisticId'], 'string');
         }
 
         $maxDetails = max(1, (int) config('jnt.webhooks.max_details', 500));

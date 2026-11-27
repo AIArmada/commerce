@@ -36,6 +36,15 @@ describe('webhook payload hardening', function (): void {
         Queue::assertNothingPushed();
     });
 
+    it('rejects oversized persisted webhook content before decoding', function (): void {
+        config(['jnt.webhooks.max_biz_content_bytes' => 64]);
+        $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
+        $processor = new ProcessJntWebhook($webhookCall);
+        $method = new ReflectionMethod($processor, 'decodeBizContent');
+
+        expect($method->invoke($processor, ['bizContent' => json_encode(['billCode' => 'JNTBIG', 'details' => [], 'pad' => str_repeat('x', 128)])]))->toBeNull();
+    });
+
     it('rejects excessive detail counts with 422', function (): void {
         Queue::fake();
         config(['jnt.webhooks.max_details' => 2]);
