@@ -6,33 +6,31 @@ namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
-use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-final class ApplyVoucherToCart
+final class ApplyVoucherToCart implements CartVoucherApplicator
 {
     use AsAction;
-    use QueriesVouchers;
-
-    public function __construct(
-        private readonly VoucherService $voucherService,
-    ) {}
+    use NormalizesVoucherCodes;
 
     public function handle(
         Cart $cart,
         string $code,
         ?StackingPolicyInterface $policy = null,
+        int $order = 100,
     ): VoucherCondition {
         $code = $this->normalizeCode($code);
 
-        $validationResult = ValidateVoucherCode::run($code, $cart);
+        $validationResult = Voucher::validate($code, $cart);
         if (! $validationResult->isValid) {
             throw new InvalidVoucherException(
                 "Voucher '{$code}' cannot be applied: {$validationResult->reason}"
@@ -45,14 +43,14 @@ final class ApplyVoucherToCart
             );
         }
 
-        $voucherData = $this->voucherService->find($code);
+        $voucherData = Voucher::find($code);
         if ($voucherData === null) {
             throw new InvalidVoucherException(
                 "Voucher '{$code}' not found",
             );
         }
 
-        $voucherCondition = new VoucherCondition($voucherData);
+        $voucherCondition = new VoucherCondition($voucherData, $order);
         $existingVouchers = collect($this->getAppliedVoucherConditions($cart));
 
         $policy ??= app(StackingPolicyInterface::class);
@@ -62,13 +60,20 @@ final class ApplyVoucherToCart
             $cart,
         );
 
+        $conflicting = null;
+
         if ($decision->isDenied()) {
-            if ($policy->isAutoReplaceEnabled() && $decision->hasConflict()) {
-                $conflicting = $decision->conflictsWith;
-                if ($conflicting !== null) {
-                    RemoveVoucherFromCart::run($cart, $conflicting->getVoucherCode());
-                }
-            } else {
+            $conflicting = $decision->conflictsWith;
+
+            if (! $policy->isAutoReplaceEnabled() || $conflicting === null) {
+                throw new InvalidVoucherException('Cart already has the maximum number of vouchers');
+            }
+
+            $remaining = $existingVouchers->reject(
+                static fn (VoucherCondition $existing): bool => $existing->getVoucherCode() === $conflicting->getVoucherCode()
+            )->values();
+
+            if ($remaining->count() === $existingVouchers->count() || $policy->canAdd($voucherCondition, $remaining, $cart)->isDenied()) {
                 throw new InvalidVoucherException('Cart already has the maximum number of vouchers');
             }
         }
@@ -87,6 +92,10 @@ final class ApplyVoucherToCart
                 "Voucher '{$code}' cannot be applied: {$exception->getMessage()}",
                 previous: $exception
             );
+        }
+
+        if ($conflicting !== null) {
+            RemoveVoucherFromCart::run($cart, $conflicting->getVoucherCode());
         }
 
         VoucherApplied::dispatch($cart, $voucherData);

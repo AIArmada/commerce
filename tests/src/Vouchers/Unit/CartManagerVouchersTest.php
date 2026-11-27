@@ -56,3 +56,27 @@ it('proxies voucher interactions via cart manager wrapper', function (): void {
     expect(Cart::hasVoucher('STACK10'))->toBeTrue();
     expect(Cart::getAppliedVoucherCodes())->toBe(['STACK10']);
 });
+
+it('rejects vouchers when stacking is disabled even if auto replacement is enabled', function (): void {
+    $voucherData = VoucherData::fromArray([
+        'id' => 'blocked',
+        'code' => 'BLOCKED',
+        'name' => 'Blocked',
+        'type' => 'fixed',
+        'value' => 100,
+        'currency' => 'USD',
+    ]);
+
+    Voucher::shouldReceive('validate')->once()->andReturn(VoucherValidationResult::valid());
+    Voucher::shouldReceive('find')->once()->andReturn($voucherData);
+
+    $cart = new CartWithVouchers(Cart::getCurrentCart());
+    $cart->setStackingPolicy(new \AIArmada\Vouchers\Stacking\StackingPolicy(
+        rules: [['type' => 'max_vouchers', 'value' => 0]],
+        autoReplace: true,
+    ));
+
+    expect(fn () => $cart->applyVoucher('BLOCKED'))
+        ->toThrow(\AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+    expect($cart->hasVoucher())->toBeFalse();
+});

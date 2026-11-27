@@ -7,8 +7,8 @@ namespace AIArmada\Vouchers\Traits;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
-use AIArmada\Vouchers\Events\VoucherApplied;
-use AIArmada\Vouchers\Events\VoucherRemoved;
+use AIArmada\Vouchers\Runtime\CartVoucherApplicator;
+use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherStackingException;
 use AIArmada\Vouchers\Facades\Voucher;
@@ -17,8 +17,6 @@ use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
-use Illuminate\Support\Facades\Event;
-use Throwable;
 
 /**
  * HasVouchers trait adds voucher management capabilities to the Cart.
@@ -66,101 +64,15 @@ trait InteractsWithVouchers
      */
     public function applyVoucher(string $code, int $order = 100): self
     {
-        $cart = $this->getUnderlyingCart();
-
-        $validationResult = Voucher::validate($code, $cart);
-
-        if (! $validationResult->isValid) {
-            throw new InvalidVoucherException(
-                "Voucher '{$code}' cannot be applied: {$validationResult->reason}"
-            );
-        }
-
-        if ($this->hasVoucher($code)) {
-            throw new InvalidVoucherException(
-                "Voucher '{$code}' is already applied to this cart"
-            );
-        }
-
-        $voucherData = Voucher::find($code);
-
-        if ($voucherData === null) {
-            throw new InvalidVoucherException(
-                "Voucher '{$code}' not found"
-            );
-        }
-
-        $voucherCondition = new VoucherCondition($voucherData, $order);
-        $existingVouchers = collect($this->getAppliedVouchers());
-        $policy = $this->getStackingPolicy();
-        $decision = $policy->canAdd(
-            $voucherCondition,
-            $existingVouchers,
-            $cart,
-        );
-
-        if ($decision->isDenied()) {
-            if ($policy->isAutoReplaceEnabled() && $decision->hasConflict()) {
-                $conflicting = $decision->conflictsWith;
-                if ($conflicting !== null) {
-                    $this->removeVoucher($conflicting->getVoucherCode());
-                }
-            } else {
-                throw new InvalidVoucherException(
-                    'Cart already has the maximum number of vouchers'
-                );
-            }
-        }
-
-        $this->ensureVoucherRulesFactory($cart);
-
-        try {
-            $cart->registerDynamicCondition(
-                $voucherCondition->toCartCondition(),
-                null,
-                $voucherCondition->getRuleFactoryKey(),
-                $voucherCondition->getRuleFactoryContext()
-            );
-        } catch (Throwable $exception) {
-            throw new InvalidVoucherException(
-                "Voucher '{$code}' cannot be applied: {$exception->getMessage()}",
-                previous: $exception
-            );
-        }
-
-        if ($this instanceof CartWithVouchers) {
-            Event::dispatch(new VoucherApplied($cart, $voucherData));
-        }
+        app(CartVoucherApplicator::class)->handle($this->getUnderlyingCart(), $code, $this->getStackingPolicy(), $order);
 
         return $this;
     }
 
-    /**
-     * Remove a voucher from the cart by code.
-     *
-     * @param  string  $code  The voucher code to remove
-     */
+    /** Remove a voucher from the cart by code. */
     public function removeVoucher(string $code): self
     {
-        $voucherCondition = $this->getVoucherCondition($code);
-
-        if ($voucherCondition === null) {
-            return $this;
-        }
-
-        $cart = $this->getUnderlyingCart();
-        $conditionName = $voucherCondition->getName();
-
-        if ($cart->getDynamicConditions()->has($conditionName)) {
-            $cart->removeDynamicCondition($conditionName);
-            $cart->removeCondition($conditionName);
-        } else {
-            $cart->removeCondition($conditionName);
-        }
-
-        if ($this instanceof CartWithVouchers) {
-            Event::dispatch(new VoucherRemoved($cart, $voucherCondition->getVoucher()));
-        }
+        app(CartVoucherRemoval::class)->handle($this->getUnderlyingCart(), $code);
 
         return $this;
     }

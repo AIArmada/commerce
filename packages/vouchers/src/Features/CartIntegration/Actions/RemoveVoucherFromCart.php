@@ -8,12 +8,14 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Events\VoucherRemoved;
-use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Runtime\CartVoucherRemoval;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-final class RemoveVoucherFromCart
+final class RemoveVoucherFromCart implements CartVoucherRemoval
 {
     use AsAction;
+    use NormalizesVoucherCodes;
 
     public function handle(Cart $cart, string $code): void
     {
@@ -27,15 +29,11 @@ final class RemoveVoucherFromCart
 
         if ($cart->getDynamicConditions()->has($conditionName)) {
             $cart->removeDynamicCondition($conditionName);
-        } else {
-            $cart->removeCondition($conditionName);
         }
 
-        $voucherData = Voucher::find($code);
+        $cart->removeCondition($conditionName);
 
-        if ($voucherData !== null) {
-            VoucherRemoved::dispatch($cart, $voucherData);
-        }
+        VoucherRemoved::dispatch($cart, $voucherCondition->getVoucher());
     }
 
     private function findVoucherCondition(Cart $cart, string $code): ?VoucherCondition
@@ -66,14 +64,4 @@ final class RemoveVoucherFromCart
         return null;
     }
 
-    private function normalizeCode(string $code): string
-    {
-        $normalized = mb_trim($code);
-
-        if (config('vouchers.code.auto_uppercase', true)) {
-            $normalized = mb_strtoupper($normalized);
-        }
-
-        return $normalized;
-    }
 }
