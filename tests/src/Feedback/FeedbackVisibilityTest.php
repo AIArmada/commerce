@@ -9,6 +9,7 @@ use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 use AIArmada\Feedback\Features\Responses\Actions\SubmitFeedbackResponseAction;
+use AIArmada\Feedback\Features\Responses\Actions\ValidateFeedbackAnswersAction;
 use AIArmada\Feedback\Support\VisibilityRuleEvaluator;
 
 it('excludes hidden questions from submission validation', function (): void {
@@ -77,3 +78,21 @@ it('evaluates supported visibility operators', function (): void {
     expect($evaluator->isVisible($question, ['tags' => ['vip', 'new']]))->toBeTrue()
         ->and($evaluator->isVisible($question, ['tags' => ['new']]))->toBeFalse();
 });
+
+it('validates literal question keys without interpreting dots or wildcards', function (string $key): void {
+    $question = new QuestionDefinition(
+        id: 'question',
+        key: $key,
+        type: 'number',
+        isRequired: true,
+        isScored: false,
+    );
+
+    $validate = app(ValidateFeedbackAnswersAction::class);
+
+    expect($validate->execute([$question], [$key => 42]))->toBe([$question])
+        ->and(fn () => $validate->execute([$question], [$key => 'not a number']))
+        ->toThrow(RuntimeException::class, 'Validation failed')
+        ->and(fn () => $validate->execute([$question], []))
+        ->toThrow(RuntimeException::class, 'Validation failed');
+})->with(['customer.age', '*', 'items.*']);

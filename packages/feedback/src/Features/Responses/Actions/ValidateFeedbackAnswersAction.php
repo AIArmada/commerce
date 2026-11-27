@@ -10,11 +10,11 @@ use AIArmada\Feedback\Support\VisibilityRuleEvaluator;
 use Illuminate\Support\Facades\Validator;
 use RuntimeException;
 
-final class ValidateFeedbackAnswersAction
+final readonly class ValidateFeedbackAnswersAction
 {
     public function __construct(
-        private readonly ValidationRuleBuilder $ruleBuilder,
-        private readonly VisibilityRuleEvaluator $visibilityEvaluator,
+        private ValidationRuleBuilder $ruleBuilder,
+        private VisibilityRuleEvaluator $visibilityEvaluator,
     ) {}
 
     /**
@@ -24,22 +24,30 @@ final class ValidateFeedbackAnswersAction
     public function execute(array $questions, array $answerValues): array
     {
 
-        $evaluatedValues = $answerValues;
-
         $visibleQuestions = $this->visibilityEvaluator->filterHiddenQuestions(
             $questions,
-            $evaluatedValues,
+            $answerValues,
         );
 
         $rules = [];
+        $values = [];
+        $attributes = [];
 
-        foreach ($visibleQuestions as $question) {
-            $rules["answers.{$question->key}"] = $this->ruleBuilder->build($question);
+        foreach ($visibleQuestions as $index => $question) {
+            $attribute = "answers.{$index}";
+            $rules[$attribute] = $this->ruleBuilder->build($question);
+            $attributes[$attribute] = $question->key;
+
+            if (array_key_exists($question->key, $answerValues)) {
+                $values[$index] = $answerValues[$question->key];
+            }
         }
 
         $validator = Validator::make(
-            ['answers' => $evaluatedValues],
+            ['answers' => $values],
             $rules,
+            [],
+            $attributes,
         );
 
         if ($validator->fails()) {
