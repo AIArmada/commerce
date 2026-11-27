@@ -10,7 +10,7 @@ use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Vouchers\Cart\VoucherConditionProvider;
+use AIArmada\Vouchers\Features\CartIntegration\Extensions\VoucherConditionProvider;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
@@ -168,7 +168,7 @@ describe('VoucherConditionProvider getConditionsFor', function (): void {
 
         expect($conditions)->toHaveCount(1);
         expect($conditions[0])->toBeInstanceOf(CartCondition::class);
-        expect($conditions[0]->getName())->toBe('SAVE10');
+        expect($conditions[0]->getName())->toBe('voucher_SAVE10');
         expect($conditions[0]->getType())->toBe('voucher');
         expect($conditions[0]->getValue())->toBe('-10%');
     });
@@ -352,15 +352,16 @@ describe('VoucherConditionProvider validate', function (): void {
     });
 
     it('returns true for valid voucher condition', function (): void {
-        $cart = createCartForVoucherConditionTest();
+        $cart = createCartForVoucherConditionTest(['voucher_codes' => ['VALID']]);
         $condition = new CartCondition(
-            name: 'VALID',
+            name: 'voucher_VALID',
             type: 'voucher',
             target: [
                 'scope' => ConditionScope::CART->value,
                 'phase' => ConditionPhase::CART_SUBTOTAL->value,
                 'application' => ConditionApplication::AGGREGATE->value,
             ],
+            attributes: ['voucher_code' => 'VALID'],
             value: '-10%'
         );
 
@@ -375,15 +376,16 @@ describe('VoucherConditionProvider validate', function (): void {
     });
 
     it('returns false for invalid voucher condition', function (): void {
-        $cart = createCartForVoucherConditionTest();
+        $cart = createCartForVoucherConditionTest(['voucher_codes' => ['EXPIRED']]);
         $condition = new CartCondition(
-            name: 'EXPIRED',
+            name: 'voucher_EXPIRED',
             type: 'voucher',
             target: [
                 'scope' => ConditionScope::CART->value,
                 'phase' => ConditionPhase::CART_SUBTOTAL->value,
                 'application' => ConditionApplication::AGGREGATE->value,
             ],
+            attributes: ['voucher_code' => 'EXPIRED'],
             value: '-10%'
         );
 
@@ -435,7 +437,7 @@ describe('VoucherConditionProvider edge cases', function (): void {
 
         // Only the valid voucher should create a condition
         expect($conditions)->toHaveCount(1);
-        expect($conditions[0]->getName())->toBe('VALID');
+        expect($conditions[0]->getName())->toBe('voucher_VALID');
     });
 
     it('handles fixed voucher with decimal value', function (): void {
@@ -486,4 +488,17 @@ describe('VoucherConditionProvider edge cases', function (): void {
         expect($conditions)->toHaveCount(1);
         expect($conditions[0]->getValue())->toBe('-12.5%');
     });
+});
+
+it('does not recreate a removed metadata voucher or duplicate normalized codes', function (): void {
+    $cart = createCartForVoucherConditionTest(['voucher_codes' => ['SAVE10', ' save10 ']]);
+    $voucher = createVoucherData();
+    $this->voucherService->shouldReceive('find')->with('SAVE10')->once()->andReturn($voucher);
+    $this->voucherService->shouldReceive('validate')->with('SAVE10', $cart)->once()->andReturn(createValidValidationResult());
+
+    $conditions = $this->provider->getConditionsFor($cart);
+    expect($conditions)->toHaveCount(1);
+
+    $cart->setMetadata('voucher_codes', []);
+    expect($this->provider->validate($conditions[0], $cart))->toBeFalse();
 });

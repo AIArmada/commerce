@@ -6,7 +6,7 @@ namespace AIArmada\Vouchers\Features\CartIntegration\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
-use AIArmada\Vouchers\Runtime\VoucherReservations;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\Cache;

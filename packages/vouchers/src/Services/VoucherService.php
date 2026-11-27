@@ -18,7 +18,7 @@ use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Runtime\VoucherCreator;
 use AIArmada\Vouchers\Runtime\VoucherDeletion;
 use AIArmada\Vouchers\Runtime\VoucherLookup;
-use AIArmada\Vouchers\Runtime\VoucherReservations;
+use AIArmada\Vouchers\Features\CartIntegration\Api\VoucherReservations;
 use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Runtime\VoucherSnapshot;
 use AIArmada\Vouchers\Runtime\VoucherUpdater;

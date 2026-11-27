@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Vouchers\Cart;
+namespace AIArmada\Vouchers\Features\CartIntegration\Extensions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
@@ -10,9 +10,10 @@ use AIArmada\Cart\Conditions\Enums\ConditionApplication;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Runtime\ConditionProviderInterface;
+use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherType;
-use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\Runtime\VoucherServiceInterface;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 
 /**
@@ -23,12 +24,14 @@ use AIArmada\Vouchers\Support\VoucherCartMetadata;
  */
 final readonly class VoucherConditionProvider implements ConditionProviderInterface
 {
+    use NormalizesVoucherCodes;
+
     private const string CONDITION_TYPE = 'voucher';
 
     private const int PRIORITY = 100;
 
     public function __construct(
-        private VoucherService $voucherService
+        private VoucherServiceInterface $voucherService
     ) {}
 
     /**
@@ -43,14 +46,11 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
     {
         $conditions = [];
 
-        /** @var array<string> $voucherCodes */
-        $voucherCodes = $cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES, []);
+        foreach ($this->metadataCodes($cart) as $code) {
+            if ($this->hasDirectCondition($cart, $code)) {
+                continue;
+            }
 
-        if (empty($voucherCodes)) {
-            return [];
-        }
-
-        foreach ($voucherCodes as $code) {
             $voucher = $this->voucherService->find($code);
 
             if ($voucher === null) {
@@ -84,10 +84,47 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
             return true;
         }
 
-        $code = $condition->getName();
+        $code = $condition->getAttribute('voucher_code');
+
+        if (! is_string($code) || ! in_array($this->normalizeCode($code), $this->metadataCodes($cart), true)
+            || $this->hasDirectCondition($cart, $this->normalizeCode($code))) {
+            return false;
+        }
+
         $validationResult = $this->voucherService->validate($code, $cart);
 
         return $validationResult->isValid;
+    }
+
+    /** @return list<string> */
+    private function metadataCodes(Cart $cart): array
+    {
+        $raw = $cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES, []);
+        $codes = [];
+
+        if (is_array($raw)) {
+            foreach ($raw as $code) {
+                if (is_string($code) && mb_trim($code) !== '') {
+                    $codes[] = $this->normalizeCode($code);
+                }
+            }
+        }
+
+        return array_values(array_unique($codes));
+    }
+
+    private function hasDirectCondition(Cart $cart, string $code): bool
+    {
+        foreach ($cart->getDynamicConditions() as $condition) {
+            $candidate = $condition->getAttribute('voucher_code');
+
+            if ($condition->getType() === self::CONDITION_TYPE && is_string($candidate)
+                && $this->normalizeCode($candidate) === $code) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -119,7 +156,7 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
         }
 
         return new CartCondition(
-            name: $voucher->code,
+            name: 'voucher_' . $voucher->code,
             type: self::CONDITION_TYPE,
             target: $this->buildTargetDefinition($voucher),
             value: $value,
@@ -188,6 +225,7 @@ final readonly class VoucherConditionProvider implements ConditionProviderInterf
     {
         return [
             'voucher_id' => $voucher->id,
+            'voucher_data' => $voucher->toArray(),
             'voucher_code' => $voucher->code,
             'voucher_type' => $voucher->type->value,
             'description' => $voucher->description,

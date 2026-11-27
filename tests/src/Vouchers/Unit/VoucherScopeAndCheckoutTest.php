@@ -258,3 +258,17 @@ describe('voucher code uniqueness', function (): void {
         }
     });
 });
+
+it('removes a voucher from metadata and all cart condition stores together', function (): void {
+    $voucher = scopeVoucher();
+    $cart = new Cart(new InMemoryStorage, 'checkout-remove-' . uniqid());
+
+    ApplyVoucherToCart::run($cart, $voucher->code);
+    $cart->setMetadata(VoucherCartMetadata::VOUCHER_CODES, [$voucher->code]);
+
+    app(\AIArmada\Vouchers\Runtime\CartVoucherRemoval::class)->handle($cart, $voucher->code);
+
+    expect($cart->getMetadata(VoucherCartMetadata::VOUCHER_CODES))->toBe([])
+        ->and($cart->getDynamicConditions()->isEmpty())->toBeTrue()
+        ->and($cart->getStoredConditions()->isEmpty())->toBeTrue();
+});

@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers;
 
 use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
-use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
-use AIArmada\Vouchers\Cart\VoucherConditionProvider;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Facades\Voucher;
@@ -60,10 +58,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
             (array) config('vouchers.stacking', [])
         ));
 
-        if (class_exists(ConditionProviderRegistry::class)) {
-            $this->app->singleton(VoucherConditionProvider::class);
-        }
-
         $this->app->resolving(CartConditionResolver::class, function (CartConditionResolver $resolver): void {
             $resolver->register(function (mixed $payload) {
                 if ($payload instanceof VoucherCondition) {
@@ -112,11 +106,6 @@ final class VoucherServiceProvider extends PackageServiceProvider
     {
         foreach ($this->modules as $module) {
             $module->boot($this->app);
-        }
-
-        if (class_exists(ConditionProviderRegistry::class)) {
-            $this->app->make(ConditionProviderRegistry::class)
-                ->register(VoucherConditionProvider::class);
         }
 
         $this->app->extend('cart', function (CartManagerInterface $manager): CartManagerInterface {
