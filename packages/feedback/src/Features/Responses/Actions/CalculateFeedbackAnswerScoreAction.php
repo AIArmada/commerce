@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Features\Responses\Actions;
 
-use AIArmada\Feedback\Features\Forms\Models\FeedbackQuestion;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 use AIArmada\Feedback\Support\ScoreCalculator;
 
 final class CalculateFeedbackAnswerScoreAction
@@ -13,7 +13,7 @@ final class CalculateFeedbackAnswerScoreAction
         private readonly ScoreCalculator $calculator,
     ) {}
 
-    public function execute(FeedbackQuestion $question, mixed $value): ?float
+    public function execute(QuestionDefinition $question, mixed $value): ?float
     {
         return $this->calculator->calculateScore($question, $value);
     }

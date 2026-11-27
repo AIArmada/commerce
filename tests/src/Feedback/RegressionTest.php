@@ -300,7 +300,7 @@ it('scores preloaded choice questions without extra queries', function (): void 
     DB::listen(function () use (&$queries): void {
         $queries++;
     });
-    $score = app(ScoreCalculator::class)->calculateScore($question, ['a', 'b']);
+    $score = app(ScoreCalculator::class)->calculateScore($question->definition(), ['a', 'b']);
 
     expect($score)->toBe(7.0)
         ->and($queries)->toBe(0);

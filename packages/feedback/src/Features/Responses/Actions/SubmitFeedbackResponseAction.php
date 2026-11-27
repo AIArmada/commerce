@@ -107,8 +107,9 @@ final class SubmitFeedbackResponseAction
                             continue;
                         }
 
-                        $normalized = $this->normalizeAnswer->execute($question, $value);
-                        $score = $this->calculateAnswerScore->execute($question, $value);
+                        $definition = $question->definition();
+                        $normalized = $this->normalizeAnswer->execute($definition, $value);
+                        $score = $this->calculateAnswerScore->execute($definition, $value);
 
                         $answerData = array_merge($normalized, [
                             'feedback_response_id' => $response->id,

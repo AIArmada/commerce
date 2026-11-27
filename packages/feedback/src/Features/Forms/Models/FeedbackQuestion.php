@@ -7,6 +7,7 @@ namespace AIArmada\Feedback\Features\Forms\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Feedback\Features\Forms\Actions\DeleteFeedbackQuestionDependentsAction;
+use AIArmada\Feedback\Features\Forms\Api\QuestionDefinition;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackAnswer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -84,6 +85,26 @@ final class FeedbackQuestion extends Model
             'settings' => 'array',
             'metadata' => 'array',
         ];
+    }
+
+    public function definition(): QuestionDefinition
+    {
+        $this->loadMissing('options');
+
+        return new QuestionDefinition(
+            id: $this->id,
+            key: $this->key,
+            type: $this->type,
+            isRequired: $this->is_required,
+            isScored: $this->is_scored,
+            settings: $this->settings ?? [],
+            visibilityRules: $this->visibility_rules ?? [],
+            scoringRules: $this->scoring_rules ?? [],
+            options: $this->options->map(static fn (FeedbackQuestionOption $option): array => [
+                'value' => $option->value,
+                'score' => $option->score !== null ? (float) $option->score : null,
+            ])->values()->all(),
+        );
     }
 
     public function form(): BelongsTo

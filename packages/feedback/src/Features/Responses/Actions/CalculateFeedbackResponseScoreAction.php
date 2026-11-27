@@ -44,7 +44,7 @@ final class CalculateFeedbackResponseScoreAction
                 }
 
                 $seenQuestions[$question->id] = true;
-                $maxScore += $this->scores->calculateMaxScore($question) ?? 0.0;
+                $maxScore += $this->scores->calculateMaxScore($question->definition()) ?? 0.0;
             }
 
             $response->forceFill([
