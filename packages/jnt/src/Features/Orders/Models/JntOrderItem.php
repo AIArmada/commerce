@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Models;
+namespace AIArmada\Jnt\Features\Orders\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -20,12 +20,13 @@ use OwenIt\Auditing\Contracts\Auditable;
 /**
  * @property string $id
  * @property string $order_id
- * @property int $sequence
- * @property string $tracking_number
- * @property string|null $actual_weight
- * @property string|null $length
- * @property string|null $width
- * @property string|null $height
+ * @property string $name
+ * @property string|null $english_name
+ * @property string|null $description
+ * @property int $quantity
+ * @property int $weight_grams
+ * @property int $unit_price_minor
+ * @property string $currency
  * @property array<string, mixed>|null $metadata
  * @property string|null $owner_type
  * @property string|null $owner_id
@@ -35,7 +36,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  *
  * @method static Builder<static> forOwner(?Model $owner, bool $includeGlobal = true)
  */
-final class JntOrderParcel extends Model implements Auditable
+final class JntOrderItem extends Model implements Auditable
 {
     use HasCommerceAudit;
     use HasOwner;
@@ -47,29 +48,32 @@ final class JntOrderParcel extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(function (JntOrderParcel $parcel): void {
-            // Always fetch parent order without scope to detect cross-owner writes.
-            $order = JntOrder::query()->withoutOwnerScope()->find($parcel->order_id);
+        static::creating(function (JntOrderItem $item): void {
+            // Always fetch the parent order without scope to allow cross-owner detection.
+            $order = JntOrder::query()->withoutOwnerScope()->find($item->order_id);
 
             if ($order === null) {
-                throw new InvalidArgumentException('Invalid order_id for JntOrderParcel.');
+                throw new InvalidArgumentException('Invalid order_id for JntOrderItem.');
             }
 
-            if ($parcel->owner_type !== null || $parcel->owner_id !== null) {
-                if ($order->owner_type !== $parcel->owner_type
-                    || (string) $order->owner_id !== (string) $parcel->owner_id) {
+            if ($item->owner_type !== null || $item->owner_id !== null) {
+                // Owner was already set (e.g. by auto-assign from context).
+                // Validate that the parent order belongs to the same owner.
+                if ($order->owner_type !== $item->owner_type
+                    || (string) $order->owner_id !== (string) $item->owner_id) {
                     throw new InvalidArgumentException(
-                        'JntOrderParcel order_id belongs to a different owner than the current context.',
+                        'JntOrderItem order_id belongs to a different owner than the current context.',
                     );
                 }
 
                 return;
             }
 
-            $parcel->owner_type = $order->owner_type;
-            $parcel->owner_id = $order->owner_id;
+            // Propagate owner from parent order.
+            $item->owner_type = $order->owner_type;
+            $item->owner_id = $order->owner_id;
 
-            InheritedOwnerGuard::assertMatchesContext($parcel->owner_type, $parcel->owner_id, JntOrderParcel::class);
+            InheritedOwnerGuard::assertMatchesContext($item->owner_type, $item->owner_id, JntOrderItem::class);
         });
     }
 
@@ -78,12 +82,13 @@ final class JntOrderParcel extends Model implements Auditable
      */
     protected $fillable = [
         'order_id',
-        'sequence',
-        'tracking_number',
-        'actual_weight',
-        'length',
-        'width',
-        'height',
+        'name',
+        'english_name',
+        'description',
+        'quantity',
+        'weight_grams',
+        'unit_price_minor',
+        'currency',
         'metadata',
         'owner_type',
         'owner_id',
@@ -94,11 +99,11 @@ final class JntOrderParcel extends Model implements Auditable
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        return $tables['order_parcels'] ?? $prefix . 'order_parcels';
+        return $tables['order_items'] ?? $prefix . 'order_items';
     }
 
     /**
-     * Get the order that owns this parcel.
+     * Get the order that owns this item.
      *
      * @return BelongsTo<JntOrder, $this>
      */
@@ -108,15 +113,19 @@ final class JntOrderParcel extends Model implements Auditable
     }
 
     /**
-     * Get the volume (length * width * height) in cubic centimeters.
+     * Get the weight in kilograms.
      */
-    public function getVolume(): ?float
+    public function getWeightInKilograms(): float
     {
-        if ($this->length === null || $this->width === null || $this->height === null) {
-            return null;
-        }
+        return $this->weight_grams / 1000;
+    }
 
-        return (float) $this->length * (float) $this->width * (float) $this->height;
+    /**
+     * Get the total price for this item.
+     */
+    public function getTotalPriceMinor(): int
+    {
+        return $this->unit_price_minor * $this->quantity;
     }
 
     /**
@@ -125,7 +134,9 @@ final class JntOrderParcel extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'sequence' => 'integer',
+            'quantity' => 'integer',
+            'weight_grams' => 'integer',
+            'unit_price_minor' => 'integer',
             'metadata' => 'array',
         ];
     }

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Models;
+namespace AIArmada\Jnt\Features\Tracking\Models;
+
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;

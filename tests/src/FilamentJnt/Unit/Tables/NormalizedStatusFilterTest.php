@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\FilamentJnt\Resources\JntOrderResource\Tables\JntOrderTable;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Tables\JntTrackingEventTable;
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 
 uses(FilamentJntTestCase::class);
 

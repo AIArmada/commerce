@@ -6,7 +6,7 @@ namespace AIArmada\Jnt\Features\Orders\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use Carbon\CarbonImmutable;
 use DomainException;

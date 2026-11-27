@@ -155,7 +155,7 @@ $orders = JntOrder::query()->forOwner(OwnerContext::resolve())->get();
 Use `forOwner()` to explicitly scope queries:
 
 ```php
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 // Query specific owner's orders
 $orders = JntOrder::query()

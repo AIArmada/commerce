@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;

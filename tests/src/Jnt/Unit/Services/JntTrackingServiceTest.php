@@ -6,7 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;

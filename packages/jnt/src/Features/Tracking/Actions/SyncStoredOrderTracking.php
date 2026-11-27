@@ -6,7 +6,7 @@ namespace AIArmada\Jnt\Features\Tracking\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Features\Tracking\Api\SyncStoredTracking;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 use DomainException;
 

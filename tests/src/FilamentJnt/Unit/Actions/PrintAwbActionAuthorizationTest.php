@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use Livewire\Component;
 use Mockery\MockInterface;

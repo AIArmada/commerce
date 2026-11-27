@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 describe('JntOrderStatusChanged event', function (): void {
     it('captures order and status data', function (): void {

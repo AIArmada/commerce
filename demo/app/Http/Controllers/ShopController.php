@@ -14,7 +14,7 @@ use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\Enums\ProductStatus;

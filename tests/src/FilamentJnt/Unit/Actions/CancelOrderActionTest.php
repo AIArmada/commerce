@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\CancelOrderAction;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 
 uses(FilamentJntTestCase::class);

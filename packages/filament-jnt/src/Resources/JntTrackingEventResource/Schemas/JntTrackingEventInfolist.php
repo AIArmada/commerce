@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Schemas;
 
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Features\Reporting\Queries;
 
 use AIArmada\Jnt\Features\Reporting\Api\DashboardStats;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 final readonly class JntStatsAggregator implements DashboardStats
 {

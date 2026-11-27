@@ -6,7 +6,7 @@ namespace AIArmada\FilamentJnt\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Enums\CancellationReason;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Features\Orders\Api\CancelStoredOrder;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;

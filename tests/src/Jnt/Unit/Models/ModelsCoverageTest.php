@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Models\JntOrder;
-use AIArmada\Jnt\Models\JntOrderItem;
-use AIArmada\Jnt\Models\JntOrderParcel;
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntWebhookLog;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderItem;
+use AIArmada\Jnt\Features\Orders\Models\JntOrderParcel;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;

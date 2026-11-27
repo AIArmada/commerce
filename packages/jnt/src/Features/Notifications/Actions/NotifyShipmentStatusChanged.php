@@ -9,7 +9,7 @@ use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Notifications\OrderDeliveredNotification;
 use AIArmada\Jnt\Notifications\OrderProblemNotification;
 use AIArmada\Jnt\Notifications\OrderShippedNotification;

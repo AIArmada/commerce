@@ -10,7 +10,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
 
 uses(FilamentJntTestCase::class);

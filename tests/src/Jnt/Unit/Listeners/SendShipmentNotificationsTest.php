@@ -6,7 +6,7 @@ use AIArmada\Jnt\EntryPoints\Listeners\SendShipmentNotifications;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Notifications\Actions\NotifyShipmentStatusChanged;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 use Illuminate\Support\Facades\Notification;
 

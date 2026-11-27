@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Features\Tracking\Persistence;
 
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 
 final class TrackingEventWriter
 {

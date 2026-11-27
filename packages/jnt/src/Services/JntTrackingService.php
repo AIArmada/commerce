@@ -10,7 +10,7 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Features\Tracking\Persistence\TrackingEventWriter;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Support\TrackingEventHash;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;

@@ -156,7 +156,7 @@ foreach ($result['events'] as $event) {
 Sync tracking events to your database:
 
 ```php
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 
 $trackingService = app(JntTrackingService::class);
@@ -233,8 +233,8 @@ Schedule::call(function () {
 When tracking is synced, events are stored in `jnt_tracking_events`:
 
 ```php
-use AIArmada\Jnt\Models\JntTrackingEvent;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 
 // Get events for an order
 $order = JntOrder::find($orderId);

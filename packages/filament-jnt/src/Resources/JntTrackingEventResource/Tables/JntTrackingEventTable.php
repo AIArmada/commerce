@@ -6,7 +6,7 @@ namespace AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Tables;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\Jnt\Enums\TrackingStatus;
-use AIArmada\Jnt\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;

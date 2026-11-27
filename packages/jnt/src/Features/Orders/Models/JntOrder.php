@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Jnt\Models;
+namespace AIArmada\Jnt\Features\Orders\Models;
+
+use AIArmada\Jnt\Features\Tracking\Models\JntTrackingEvent;
+use AIArmada\Jnt\Features\Tracking\Models\JntWebhookLog;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;

@@ -7,7 +7,7 @@ use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Models\Payment as ChipPayment;
 use AIArmada\Chip\Models\Purchase as ChipPurchase;
 use AIArmada\Chip\Testing\WebhookSimulator;
-use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
