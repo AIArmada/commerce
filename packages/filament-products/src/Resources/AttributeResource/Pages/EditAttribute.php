@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeResource\Pages;
 
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\AttributeResource;
 use AIArmada\Products\Actions\SaveAttribute;
@@ -20,7 +21,7 @@ final class EditAttribute extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Attribute $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
         ];
     }
 

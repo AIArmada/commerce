@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
 use AIArmada\Products\Actions\SaveCategory;
@@ -22,7 +23,7 @@ final class EditCategory extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Category $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
         ];
     }
 

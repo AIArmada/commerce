@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 
+use AIArmada\Products\Actions\DeleteCatalogRecord;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CollectionResource;
 use AIArmada\Products\Actions\SaveCollection;
@@ -21,7 +22,7 @@ final class EditCollection extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Collection $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
         ];
     }
 

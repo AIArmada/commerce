@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
+use AIArmada\Products\Actions\SetDefaultAttributeSet;
 use AIArmada\Products\Models\AttributeSet;
 use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
@@ -487,9 +488,12 @@ describe('AttributeSet Model', function (): void {
             $set1 = AttributeSet::create(['name' => 'Set 1', 'code' => 'set1', 'is_default' => true]);
             $set2 = AttributeSet::create(['name' => 'Set 2', 'code' => 'set2', 'is_default' => false]);
 
-            $set2->setAsDefault();
+            app(SetDefaultAttributeSet::class)->execute($set2);
 
             $set1->refresh();
+            $set2->refresh();
+
+            app(SetDefaultAttributeSet::class)->execute($set2);
             $set2->refresh();
 
             expect($set1->is_default)->toBeFalse()

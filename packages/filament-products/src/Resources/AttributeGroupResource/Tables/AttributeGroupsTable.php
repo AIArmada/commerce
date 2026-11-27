@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Tables;
 
+use AIArmada\Products\Actions\DeleteCatalogRecord;
+use AIArmada\Products\Models\AttributeGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -60,7 +62,7 @@ class AttributeGroupsTable
             ])
             ->actions([
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->using(fn (AttributeGroup $record): bool => app(DeleteCatalogRecord::class)->execute($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
