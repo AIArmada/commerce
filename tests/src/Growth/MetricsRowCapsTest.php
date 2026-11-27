@@ -14,6 +14,7 @@ use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Features\Ingestion\Models\SignalEvent;
 use AIArmada\Signals\Features\Ingestion\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -217,8 +218,9 @@ it('uses stable event ids to break timestamp ties in single and batch windows', 
         ->and($batch['results'][(string) $experiment->getKey()]['totals']['revenue_minor'])->toBe($expected);
 });
 
-it('reuses identical batch snapshots without repeating queries', function (): void {
+it('reuses batch snapshots without repeating queries only in an authorized owner context', function (): void {
     $owner = metricsCapOwner();
+    $otherOwner = metricsCapOwner();
     $experiment = metricsCapExperiment($owner);
     $assignment = metricsCapAssignment($owner, $experiment, 'identity:batch-cache');
     metricsCapEvent($owner, $experiment, $assignment, 'order.paid', 1000);
@@ -249,6 +251,11 @@ it('reuses identical batch snapshots without repeating queries', function (): vo
         expect($firstQueryCount)->toBeGreaterThan(0)
             ->and($queries)->toBe($firstQueryCount)
             ->and($second)->toBe($first);
+
+        expect(fn (): array => OwnerContext::withOwner(
+            $otherOwner,
+            fn (): array => app(AggregateExperimentMetrics::class)->handleMany(new EloquentCollection([$experiment])),
+        ))->toThrow(AuthorizationException::class);
     } finally {
         $consoleProperty->setValue(app(), $wasRunningInConsole);
     }

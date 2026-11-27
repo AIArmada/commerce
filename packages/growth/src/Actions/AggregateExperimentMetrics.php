@@ -7,6 +7,7 @@ namespace AIArmada\Growth\Actions;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\Growth\Enums\ResolveStrategy;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
@@ -161,16 +162,17 @@ final class AggregateExperimentMetrics
      */
     public function handleMany(EloquentCollection $experiments): array
     {
-        $batchCacheKey = $this->batchCacheKey($experiments);
+        $experiments = $experiments->map(static fn (Experiment $experiment): Experiment => clone $experiment);
+        $experiments->loadMissing('trackedProperty');
+        $this->reloadMissingTrackedProperties($experiments);
+        $owner = $this->assertBatchExperimentsVisible($experiments);
+
+        $batchCacheKey = $this->batchCacheKey($experiments, $owner);
         $cachedBatch = $this->cachedBatchResults($batchCacheKey);
 
         if ($cachedBatch !== null) {
             return $cachedBatch;
         }
-
-        $experiments->loadMissing('trackedProperty');
-        $this->reloadMissingTrackedProperties($experiments);
-        $this->assertBatchExperimentsVisible($experiments);
 
         $checkoutStartedEventName = (string) config('growth.integrations.signals.checkout_started_event_name', 'checkout.started');
         $refundEventName = (string) config('growth.integrations.signals.refund_event_name', 'order.refunded');
@@ -267,14 +269,6 @@ final class AggregateExperimentMetrics
 
         foreach ($experiments as $experiment) {
             $experimentId = (string) $experiment->getKey();
-            $cachedResults = $this->cachedResults($experimentId);
-
-            if (is_array($cachedResults)) {
-                $results[$experimentId] = $cachedResults;
-
-                continue;
-            }
-
             $trackedProperty = $experiment->trackedProperty;
 
             if (! $trackedProperty instanceof TrackedProperty) {
@@ -603,7 +597,7 @@ final class AggregateExperimentMetrics
     /**
      * @param  EloquentCollection<int, Experiment>  $experiments
      */
-    private function assertBatchExperimentsVisible(EloquentCollection $experiments): void
+    private function assertBatchExperimentsVisible(EloquentCollection $experiments): ?Model
     {
         $message = 'Growth experiment is not accessible in the current owner scope.';
         $experimentConfig = Experiment::ownerScopeConfig();
@@ -626,11 +620,11 @@ final class AggregateExperimentMetrics
                 }
             }
 
-            return;
+            return $owner;
         }
 
         if (! $propertyConfig->enabled) {
-            return;
+            return null;
         }
 
         $owner = OwnerContext::resolveConfigured($propertyConfig);
@@ -644,6 +638,8 @@ final class AggregateExperimentMetrics
                 throw new AuthorizationException($message);
             }
         }
+
+        return $owner;
     }
 
     private function ownerTupleVisible(?string $ownerType, ?string $ownerId, ?Model $owner, bool $includeGlobal): bool
@@ -667,7 +663,7 @@ final class AggregateExperimentMetrics
     /**
      * @param  EloquentCollection<int, Experiment>  $experiments
      */
-    private function batchCacheKey(EloquentCollection $experiments): string
+    private function batchCacheKey(EloquentCollection $experiments, ?Model $owner): string
     {
         $experimentIds = $experiments
             ->pluck('id')
@@ -676,7 +672,12 @@ final class AggregateExperimentMetrics
             ->values()
             ->all();
 
-        return hash('sha256', implode('|', $experimentIds) . '|' . $this->maxAssignmentRows() . '|' . $this->maxEventRows());
+        return hash('sha256', implode('|', [
+            OwnerScopeKey::forOwner($owner),
+            $this->maxAssignmentRows(),
+            $this->maxEventRows(),
+            ...$experimentIds,
+        ]));
     }
 
     /**
