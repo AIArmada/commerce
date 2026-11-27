@@ -84,7 +84,9 @@ final class RetryWebhooksCommand extends Command
             try {
                 $result = $retryManager->retry($webhook);
 
-                if ($result->isSuccess()) {
+                if ($result->isSkipped()) {
+                    $this->line("  Skipped: {$result->message}");
+                } elseif ($result->isSuccess()) {
                     $this->info('  ✓ Retry succeeded');
                     $succeeded++;
                 } else {

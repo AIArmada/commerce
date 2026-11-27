@@ -10,7 +10,6 @@ use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
@@ -50,7 +49,11 @@ class WebhookRetryManager
 
     public function retry(Webhook $webhook): WebhookResult
     {
-        $retryOwner = $this->resolveRetryOwner($webhook);
+        $retryOwner = OwnerContext::resolve();
+
+        if ((bool) config('chip.owner.enabled', false)) {
+            OwnerContext::assertResolvedOrExplicitGlobal($retryOwner);
+        }
 
         $executeRetry = function () use ($webhook, $retryOwner): WebhookResult {
             $claimed = DB::transaction(function () use ($webhook): ?Webhook {
@@ -105,9 +108,7 @@ class WebhookRetryManager
             }
         };
 
-        return $retryOwner instanceof Model
-            ? OwnerContext::withOwner($retryOwner, $executeRetry)
-            : $executeRetry();
+        return $executeRetry();
     }
 
     /**
@@ -120,7 +121,7 @@ class WebhookRetryManager
         $backoffSchedule = $this->backoffSchedule;
 
         return Webhook::query()
-            ->forOwner()
+            ->forOwner(OwnerContext::CURRENT, false)
             ->where('status', 'failed')
             ->where('retry_count', '<', $maxAttempts)
             ->where(function ($query) use ($now, $maxAttempts, $backoffSchedule): void {
@@ -168,22 +169,5 @@ class WebhookRetryManager
             ->addSeconds($this->getNextRetryDelay($webhook));
 
         return $nextEligibleAt->lessThanOrEqualTo($now);
-    }
-
-    private function resolveRetryOwner(Webhook $webhook): ?Model
-    {
-        if (is_string($webhook->owner_type ?? null) && $webhook->owner_type !== '' && (is_string($webhook->owner_id ?? null) || is_int($webhook->owner_id ?? null))) {
-            return OwnerContext::fromTypeAndIdOrFail($webhook->owner_type, $webhook->owner_id);
-        }
-
-        $payload = is_array($webhook->payload) ? $webhook->payload : [];
-        $payloadOwnerType = $payload['__owner_type'] ?? null;
-        $payloadOwnerId = $payload['__owner_id'] ?? null;
-
-        if (! is_string($payloadOwnerType) || $payloadOwnerType === '' || (! is_string($payloadOwnerId) && ! is_int($payloadOwnerId))) {
-            return null;
-        }
-
-        return OwnerContext::fromTypeAndIdOrFail($payloadOwnerType, $payloadOwnerId);
     }
 }

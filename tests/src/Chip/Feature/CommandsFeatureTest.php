@@ -209,6 +209,34 @@ describe('RetryWebhooksCommand', function (): void {
             ->assertSuccessful();
     });
 
+    it('does not switch tenant context when asked to retry another owner delivery', function (): void {
+        config()->set('chip.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Retry Caller',
+            'email' => 'retry-caller@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Retry Target',
+            'email' => 'retry-target@example.com',
+            'password' => 'secret',
+        ]);
+
+        $webhook = OwnerContext::withOwner($ownerB, fn () => Webhook::forceCreate([
+            'event_type' => 'purchase.paid',
+            'payload' => ['id' => 'retry-target'],
+            'status' => 'failed',
+            'retry_count' => 0,
+        ]));
+
+        $result = OwnerContext::withOwner($ownerA, fn () => app(WebhookRetryManager::class)->retry($webhook));
+
+        expect($result->isSkipped())->toBeTrue()
+            ->and(OwnerContext::withOwner($ownerB, fn () => $webhook->fresh()->retry_count))->toBe(0);
+    });
+
     it('treats limit as a global cap across owners', function (): void {
         config()->set('chip.owner.enabled', true);
 
