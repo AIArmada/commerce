@@ -30,7 +30,7 @@ uses(RefreshDatabase::class);
 
 describe('CreateVoucher Action', function (): void {
     it('creates a voucher with provided data', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'code' => 'TEST20',
@@ -46,7 +46,7 @@ describe('CreateVoucher Action', function (): void {
     });
 
     it('generates a code if not provided', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'type' => VoucherType::Fixed,
@@ -58,7 +58,7 @@ describe('CreateVoucher Action', function (): void {
     });
 
     it('normalizes the code to uppercase', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'code' => 'lowercase-code',
@@ -70,7 +70,7 @@ describe('CreateVoucher Action', function (): void {
     });
 
     it('creates voucher with all optional fields', function (): void {
-        $action = new CreateVoucher;
+        $action = app(CreateVoucher::class);
 
         $voucher = $action->handle([
             'code' => 'FULL-VOUCHER',
