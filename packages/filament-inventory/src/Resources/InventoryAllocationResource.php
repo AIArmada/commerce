@@ -10,7 +10,7 @@ use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ListI
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ViewInventoryAllocation;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Schemas\InventoryAllocationInfolist;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Tables\InventoryAllocationsTable;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Reservations\Models;
 
-use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;
+use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Models\InventoryLocation;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
 

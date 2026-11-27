@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\Actions;
 
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;

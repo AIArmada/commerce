@@ -6,7 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Table
 
 use AIArmada\FilamentInventory\Actions\ReleaseAllocationAction;
 use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;

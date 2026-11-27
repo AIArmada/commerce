@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Features\Reservations\EntryPoints\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Features\Reservations\Queries\ExpiredReservations;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;

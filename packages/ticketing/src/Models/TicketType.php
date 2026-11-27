@@ -6,7 +6,7 @@ namespace AIArmada\Ticketing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Seating\Enums\SeatingMode;
@@ -294,7 +294,7 @@ class TicketType extends Model
      */
     public function inventoryAllocations(): MorphMany
     {
-        $class = 'AIArmada\Inventory\Models\InventoryAllocation';
+        $class = 'AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation';
 
         if (! class_exists($class)) {
             /** @var MorphMany<InventoryAllocation, $this> */

@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Events;
 
 use AIArmada\CommerceSupport\Contracts\Events\InventoryEventInterface;
 use AIArmada\Inventory\Events\Concerns\HasInventoryEventData;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;

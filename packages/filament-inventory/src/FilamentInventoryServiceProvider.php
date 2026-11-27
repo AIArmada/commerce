@@ -10,7 +10,7 @@ use AIArmada\FilamentInventory\Policies\InventoryReorderSuggestionPolicy;
 use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
 use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 use AIArmada\FilamentInventory\Widgets\LowInventoryAlertsWidget;
-use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Features\Replenishment\Models\InventoryReorderSuggestion;
 use Filament\Facades\Filament;

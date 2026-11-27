@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Features\Reservations\Models\InventoryAllocation;
 use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
