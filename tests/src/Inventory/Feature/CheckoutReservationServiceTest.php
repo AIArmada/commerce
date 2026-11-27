@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Actions\UpdateInventoryLevel;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
@@ -31,6 +32,26 @@ describe('CheckoutReservationService', function (): void {
         ]);
 
         $this->inventoryService->receive($this->item, $this->location->id, 10);
+    });
+
+    it('does not allow an operator edit to reduce on-hand stock below reservations', function (): void {
+        $this->reservationService->reserve('ref-operator-edit', [
+            new ReservationLine(productId: $this->item->getKey(), quantity: 4),
+        ], 900);
+
+        $level = $this->inventoryService->getLevel($this->item, $this->location->id);
+        $action = app(UpdateInventoryLevel::class);
+
+        expect(fn () => $action->execute($level, ['quantity_on_hand' => 3]))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect($level->fresh()->quantity_on_hand)->toBe(10)
+            ->and($level->fresh()->quantity_reserved)->toBe(4);
+
+        $updated = $action->execute($level, ['quantity_on_hand' => 6, 'quantity_reserved' => 0]);
+
+        expect($updated->quantity_on_hand)->toBe(6)
+            ->and($updated->quantity_reserved)->toBe(4);
     });
 
     it('reserve creates group and allocations', function (): void {

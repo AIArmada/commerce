@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Services\PriceCalculator;
 use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
@@ -19,6 +20,7 @@ use AIArmada\Pricing\Support\TierResolver;
 use AIArmada\Pricing\Tests\Concerns\EnsuresPricingSchema;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 uses(EnsuresPricingSchema::class);
 
@@ -242,4 +244,45 @@ it('rejects malformed owner tuples on pricing writes', function (): void {
 
     expect(fn () => OwnerContext::withOwner(null, static fn () => $priceList->save()))
         ->toThrow(InvalidArgumentException::class);
+});
+
+it('rejects cross-owner pricing references using morph aliases', function (): void {
+    config([
+        'pricing.features.owner.enabled' => true,
+        'pricing.features.owner.include_global' => false,
+        'pricing.features.owner.auto_assign_on_create' => true,
+    ]);
+
+    $ownerA = User::query()->create(['name' => 'Alias Owner A', 'email' => 'pricing-alias-a@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Alias Owner B', 'email' => 'pricing-alias-b@example.com', 'password' => 'secret']);
+    bindPricingOwner($ownerB);
+
+    $target = PriceList::query()->create(['name' => 'Target B', 'slug' => 'alias-target-b', 'currency' => 'MYR']);
+
+    bindPricingOwner($ownerA);
+    $list = PriceList::query()->create(['name' => 'List A', 'slug' => 'alias-list-a', 'currency' => 'MYR']);
+    $previousMorphMap = Relation::morphMap();
+
+    try {
+        Relation::morphMap(['pricing-owner-test-list' => PriceList::class]);
+
+        expect(fn () => Price::query()->create([
+            'price_list_id' => $list->id,
+            'priceable_type' => 'pricing-owner-test-list',
+            'priceable_id' => $target->id,
+            'amount' => 100,
+            'currency' => 'MYR',
+        ]))->toThrow(AuthorizationException::class);
+
+        expect(fn () => PriceTier::query()->create([
+            'price_list_id' => $list->id,
+            'tierable_type' => 'pricing-owner-test-list',
+            'tierable_id' => $target->id,
+            'min_quantity' => 2,
+            'amount' => 100,
+            'currency' => 'MYR',
+        ]))->toThrow(AuthorizationException::class);
+    } finally {
+        Relation::morphMap($previousMorphMap, false);
+    }
 });

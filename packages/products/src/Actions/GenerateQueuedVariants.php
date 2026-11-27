@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Strategies\MatrixVariantGenerator;
 
@@ -13,7 +14,15 @@ final readonly class GenerateQueuedVariants
 
     public function execute(string $productId): void
     {
-        $product = Product::query()->forOwner()->whereKey($productId)->first();
+        $query = Product::query();
+
+        if (config('products.features.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            OwnerContext::assertResolvedOrExplicitGlobal($owner, 'Variant generation requires an owner context.');
+            $query->forOwner($owner, false);
+        }
+
+        $product = $query->whereKey($productId)->first();
 
         if ($product !== null) {
             $this->generator->generateSynchronously($product);

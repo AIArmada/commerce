@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Support\Arr;
@@ -15,6 +16,13 @@ final readonly class UpdateInventoryLevel
     /** @param array<string, mixed> $attributes */
     public function execute(InventoryLevel $level, array $attributes): InventoryLevel
     {
+        if (InventoryOwnerScope::isEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                InventoryOwnerScope::resolveOwner(),
+                'Inventory mutations require an owner context or explicit global context.',
+            );
+        }
+
         return DB::transaction(function () use ($level, $attributes): InventoryLevel {
             $record = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
                 ->whereKey($level->getKey())

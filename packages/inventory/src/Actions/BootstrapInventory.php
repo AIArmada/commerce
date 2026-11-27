@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -19,6 +20,13 @@ final readonly class BootstrapInventory
     {
         if ($minimumOnHand < 1 || ! Schema::hasTable((new InventoryLevel)->getTable())) {
             return;
+        }
+
+        if (InventoryOwnerScope::isEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                InventoryOwnerScope::resolveOwner(),
+                'Inventory mutations require an owner context or explicit global context.',
+            );
         }
 
         DB::transaction(function () use ($model, $minimumOnHand, $reason, $note): void {
