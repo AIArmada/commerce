@@ -39,7 +39,9 @@ use AIArmada\Communications\Platform\FeatureCatalog;
 use AIArmada\Communications\Platform\FeatureModule;
 use AIArmada\Communications\Features\RecipientRouting\Queries\CommunicationDestinationResolver;
 use AIArmada\Communications\Services\CommunicationManagerService;
-use AIArmada\Communications\Services\CommunicationRecorderService;
+use AIArmada\Communications\Features\Delivery\Actions\RecordDeliveryOutcome;
+use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
+use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
 use AIArmada\Communications\Services\DeliveryFencingService;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Services\NullContentRenderer;
@@ -110,8 +112,9 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
     public function registeringPackage(): void
     {
         $this->app->singleton(CommunicationManager::class, CommunicationManagerService::class);
-        $this->app->singleton(CommunicationRecorder::class, CommunicationRecorderService::class);
+        $this->app->singleton(CommunicationRecorder::class, RecordDeliveryOutcome::class);
         $this->app->bind(CommunicationCreator::class, CreateCommunicationAction::class);
+        $this->app->bind(CommunicationStatusRecalculator::class, RecalculateCommunicationStatusAction::class);
         $this->app->singleton(DeliveryFencing::class, DeliveryFencingService::class);
         $this->app->singleton(DestinationProtector::class, DestinationProtectorService::class);
         $this->app->singleton(PayloadRedactor::class, PayloadRedactorService::class);

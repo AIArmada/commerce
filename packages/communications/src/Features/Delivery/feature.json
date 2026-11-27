@@ -13,7 +13,8 @@
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\DispatchManagedNotificationAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationSendingAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationSentAction",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationFailureAction"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordNotificationFailureAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordDeliveryOutcome"
     ],
     "table:communication_attempts": [
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",

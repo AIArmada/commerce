@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Aggregate\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Events\CommunicationCompleted;
 use AIArmada\Communications\Events\CommunicationFailed;
@@ -13,64 +14,72 @@ use BackedEnum;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 
-final class RecalculateCommunicationStatusAction
+final readonly class RecalculateCommunicationStatusAction implements CommunicationStatusRecalculator
 {
-    public function handle(string $communicationId): Communication
+    public function handle(string $communicationId): void
     {
-        $communication = Communication::query()->findOrFail($communicationId);
-
         if (Communication::ownerScopeConfig()->enabled) {
             OwnerWriteGuard::findOrFailForOwner(Communication::class, $communicationId);
         }
 
-        $statuses = $communication->deliveries()
-            ->pluck('status')
-            ->map(fn (mixed $status): string => $status instanceof BackedEnum ? $status->value : (string) $status);
+        $model = new Communication;
 
-        if ($statuses->isEmpty()) {
-            $communication->status = CommunicationStatus::Draft;
-            $communication->save();
+        $model->getConnection()->transaction(function () use ($communicationId, $model): void {
+            $communication = $model->newQuery()->whereKey($communicationId)->lockForUpdate()->firstOrFail();
 
-            return $communication;
-        }
+            if ($communication->cancelled_at !== null || in_array($communication->status, [CommunicationStatus::Cancelled, CommunicationStatus::Expired], true)) {
+                return;
+            }
 
-        $terminalStatuses = ['delivered', 'read', 'clicked', 'replied', 'bounced', 'complained', 'failed', 'cancelled', 'expired', 'suppressed'];
-        $successStatuses = ['delivered', 'opened', 'read', 'clicked', 'replied'];
+            $statuses = $communication->deliveries()
+                ->select('status')
+                ->distinct()
+                ->pluck('status')
+                ->map(fn (mixed $status): string => $status instanceof BackedEnum ? $status->value : (string) $status)
+                ->all();
 
-        $allTerminal = $statuses->every(fn (string $status): bool => in_array($status, $terminalStatuses, true));
-        $anySuccess = $statuses->contains(fn (string $status): bool => in_array($status, $successStatuses, true));
-        $anyFailed = $statuses->contains(fn (string $status): bool => $status === 'failed');
-        $anyCancelled = $statuses->contains(fn (string $status): bool => $status === 'cancelled');
+            if ($statuses === []) {
+                return;
+            }
 
-        $communication->status = match (true) {
-            $allTerminal && ! $anyFailed && ! $anyCancelled => CommunicationStatus::Completed,
-            $allTerminal && $anyFailed && ! $anySuccess => CommunicationStatus::Failed,
-            $allTerminal && $anyFailed => CommunicationStatus::PartiallyCompleted,
-            $allTerminal && $anyCancelled && ! $anySuccess && ! $anyFailed => CommunicationStatus::Cancelled,
-            default => CommunicationStatus::Processing,
-        };
+            $success = ['sent', 'received', 'delivered', 'opened', 'read', 'clicked', 'replied'];
+            $failure = ['bounced', 'complained', 'failed', 'cancelled', 'expired', 'suppressed', 'unsubscribed'];
+            $allSettled = array_diff($statuses, $success, $failure) === [];
+            $anySuccess = array_intersect($statuses, $success) !== [];
+            $anyFailure = array_intersect($statuses, $failure) !== [];
 
-        if ($communication->status === CommunicationStatus::Completed && $communication->completed_at === null) {
-            $communication->completed_at = CarbonImmutable::now();
-        } elseif ($communication->status === CommunicationStatus::Failed && $communication->failed_at === null) {
-            $communication->failed_at = CarbonImmutable::now();
-        } elseif ($communication->status === CommunicationStatus::Cancelled && $communication->cancelled_at === null) {
-            $communication->cancelled_at = CarbonImmutable::now();
-        }
+            $status = match (true) {
+                ! $allSettled => CommunicationStatus::Processing,
+                $statuses === ['cancelled'] => CommunicationStatus::Cancelled,
+                $statuses === ['expired'] => CommunicationStatus::Expired,
+                $anySuccess && $anyFailure => CommunicationStatus::PartiallyCompleted,
+                $anySuccess => CommunicationStatus::Completed,
+                default => CommunicationStatus::Failed,
+            };
 
-        $communication->save();
+            $changed = $communication->status !== $status;
+            $communication->status = $status;
 
-        if ($communication->status === CommunicationStatus::Completed) {
-            Event::dispatch(new CommunicationCompleted(
-                communicationId: $communication->id,
-            ));
-        } elseif ($communication->status === CommunicationStatus::Failed) {
-            Event::dispatch(new CommunicationFailed(
-                communicationId: $communication->id,
-                failureMessage: 'All deliveries failed',
-            ));
-        }
+            if ($status === CommunicationStatus::Completed) {
+                $communication->completed_at ??= CarbonImmutable::now();
+            } elseif ($status === CommunicationStatus::Failed) {
+                $communication->failed_at ??= CarbonImmutable::now();
+            } elseif ($status === CommunicationStatus::Cancelled) {
+                $communication->cancelled_at ??= CarbonImmutable::now();
+            }
 
-        return $communication;
+            if ($communication->isDirty()) {
+                $communication->save();
+            }
+
+            if ($changed && $status === CommunicationStatus::Completed) {
+                $model->getConnection()->afterCommit(fn () => Event::dispatch(new CommunicationCompleted(communicationId: $communication->id)));
+            } elseif ($changed && $status === CommunicationStatus::Failed) {
+                $model->getConnection()->afterCommit(fn () => Event::dispatch(new CommunicationFailed(
+                    communicationId: $communication->id,
+                    failureMessage: 'All deliveries failed',
+                )));
+            }
+        });
     }
 }

@@ -186,7 +186,7 @@ test('delivery attempt payloads are redacted before persistence', function (): v
     ]);
 });
 
-test('CommunicationRecorderService marks sending and sent', function (): void {
+test('RecordDeliveryOutcome marks sending and sent', function (): void {
     $recorder = app(CommunicationRecorder::class);
     $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,
@@ -222,7 +222,7 @@ test('CommunicationRecorderService marks sending and sent', function (): void {
     expect($freshDelivery->provider_message_id)->toBe('msg_123');
 });
 
-test('CommunicationRecorderService records failure', function (): void {
+test('RecordDeliveryOutcome records failure', function (): void {
     $recorder = app(CommunicationRecorder::class);
     $communication = (new Communication)->forceFill([
         'direction' => CommunicationDirection::Outbound,

@@ -2,18 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Services;
+namespace AIArmada\Communications\Features\Delivery\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
+use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 
-class CommunicationRecorderService implements CommunicationRecorder
+final readonly class RecordDeliveryOutcome implements CommunicationRecorder
 {
+    public function __construct(private CommunicationStatusRecalculator $recalculator) {}
+
     public function markSending(string $communicationId, string $deliveryId): void
     {
         $delivery = $this->deliveryForCommunication($communicationId, $deliveryId);
@@ -36,7 +39,7 @@ class CommunicationRecorderService implements CommunicationRecorder
         $delivery->sending_at = CarbonImmutable::now();
         $delivery->save();
 
-        $this->recalculateCommunicationStatus($communicationId);
+        $this->recalculator->handle($communicationId);
     }
 
     public function markSent(string $communicationId, string $deliveryId, array $result): void
@@ -52,7 +55,7 @@ class CommunicationRecorderService implements CommunicationRecorder
         $delivery->provider_message_id = $result['provider_message_id'] ?? $delivery->provider_message_id;
         $delivery->save();
 
-        $this->recalculateCommunicationStatus($communicationId);
+        $this->recalculator->handle($communicationId);
     }
 
     public function markFailed(string $communicationId, string $deliveryId, string $failureMessage): void
@@ -68,7 +71,7 @@ class CommunicationRecorderService implements CommunicationRecorder
         $delivery->failure_message = $failureMessage;
         $delivery->save();
 
-        $this->recalculateCommunicationStatus($communicationId);
+        $this->recalculator->handle($communicationId);
     }
 
     private function deliveryForCommunication(string $communicationId, string $deliveryId): ?CommunicationDelivery
@@ -90,42 +93,6 @@ class CommunicationRecorderService implements CommunicationRecorder
         }
 
         return $delivery;
-    }
-
-    private function recalculateCommunicationStatus(string $communicationId): void
-    {
-        $communication = Communication::query()->find($communicationId);
-
-        if ($communication === null || $communication->cancelled_at !== null || $communication->status === CommunicationStatus::Cancelled) {
-            return;
-        }
-
-        $deliveries = $communication->deliveries()->get(['status']);
-
-        if ($deliveries->isEmpty()) {
-            return;
-        }
-
-        $allSent = $deliveries->every(fn (CommunicationDelivery $d) => in_array($d->status->value, [
-            'sent', 'delivered', 'opened', 'read', 'clicked', 'replied',
-        ], true));
-
-        $anyFailed = $deliveries->contains(fn (CommunicationDelivery $d) => $d->status->value === 'failed');
-
-        $communication->status = match (true) {
-            $allSent => CommunicationStatus::Completed,
-            $anyFailed && $deliveries->some(fn (CommunicationDelivery $d) => $d->status->value === 'sent') => CommunicationStatus::PartiallyCompleted,
-            $anyFailed => CommunicationStatus::Failed,
-            default => CommunicationStatus::Processing,
-        };
-
-        if ($communication->status === CommunicationStatus::Completed) {
-            $communication->completed_at = CarbonImmutable::now();
-        } elseif ($communication->status === CommunicationStatus::Failed) {
-            $communication->failed_at = CarbonImmutable::now();
-        }
-
-        $communication->save();
     }
 
     private function isAlreadySettledForSending(CommunicationDelivery $delivery): bool

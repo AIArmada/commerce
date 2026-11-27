@@ -784,3 +784,19 @@ test('communication recorder cannot mutate a delivery belonging to another commu
 
     expect($delivery->fresh()->status)->toBe(DeliveryStatus::Sending);
 });
+
+test('aggregate reconciliation preserves cancellation and classifies all rejected deliveries as failure', function (): void {
+    $action = app(\AIArmada\Communications\Contracts\CommunicationStatusRecalculator::class);
+    $communication = regressionCommunication();
+    regressionDelivery($communication, ['status' => DeliveryStatus::Bounced]);
+    regressionDelivery($communication, ['status' => DeliveryStatus::Suppressed]);
+
+    $action->handle($communication->id);
+    expect($communication->fresh()->status)->toBe(CommunicationStatus::Failed);
+
+    $cancelled = regressionCommunication(['status' => CommunicationStatus::Cancelled, 'cancelled_at' => CarbonImmutable::now()]);
+    regressionDelivery($cancelled, ['status' => DeliveryStatus::Sent]);
+
+    $action->handle($cancelled->id);
+    expect($cancelled->fresh()->status)->toBe(CommunicationStatus::Cancelled);
+});

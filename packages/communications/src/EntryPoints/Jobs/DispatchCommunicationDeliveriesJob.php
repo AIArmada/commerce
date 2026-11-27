@@ -7,7 +7,7 @@ namespace AIArmada\Communications\EntryPoints\Jobs;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Communications\Features\Aggregate\Actions\RecalculateCommunicationStatusAction;
+use AIArmada\Communications\Contracts\CommunicationStatusRecalculator;
 use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
@@ -58,7 +58,7 @@ final class DispatchCommunicationDeliveriesJob implements OwnerScopedJob, Should
             });
 
         if ($transitioned > 0) {
-            app(RecalculateCommunicationStatusAction::class)->handle($this->communicationId);
+            app(CommunicationStatusRecalculator::class)->handle($this->communicationId);
         }
     }
 }
