@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "124fda7d03cc1b33603e4e1c19b493eb",
+    "content-hash": "4e895f7432c9cc135ffa3b5307103118",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -8550,13 +8550,16 @@
             "dist": {
                 "type": "path",
                 "url": "packages/authz",
-                "reference": "50e417df1b089769cf84c6b7668b6acc4020fda9"
+                "reference": "3495d58f44e2aa06ef60a343f526dedd23f480bf"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.5",
                 "spatie/laravel-package-tools": "^1.93.3",
                 "spatie/laravel-permission": "^8.3.2"
+            },
+            "require-dev": {
+                "nikic/php-parser": "^5"
             },
             "suggest": {
                 "aiarmada/filament-authz": "Optional integration"
@@ -8577,6 +8580,21 @@
                     "src/helpers.php"
                 ]
             },
+            "scripts": {
+                "arch:boundaries": [
+                    "@php tools/package-check.php"
+                ],
+                "arch:boundaries:diff": [
+                    "@php tools/package-check.php --diff-base=main"
+                ],
+                "arch:writes": [
+                    "@php ../../vendor/bin/phpstan analyse -c tools/package-phpstan.neon --autoload-file=tools/Architecture/PackageOwnedWriteRule.php --no-progress"
+                ],
+                "arch:check": [
+                    "@arch:boundaries",
+                    "@arch:writes"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -8591,7 +8609,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/commerce-support",
-                "reference": "bacd862f86a1ba221a250beefa01c68554424289"
+                "reference": "e55c73b2c646ac1841bfb21b8f2cfa3fe9fd92a9"
             },
             "require": {
                 "akaunting/laravel-money": "^6.0.3",
@@ -8611,10 +8629,13 @@
                 "spatie/laravel-model-states": "^2.14.3",
                 "spatie/laravel-package-tools": "^1.93.3",
                 "spatie/laravel-settings": "^3.10.1",
-                "spatie/laravel-sluggable": "^4.0.6",
+                "spatie/laravel-sluggable": "^6.0",
                 "spatie/laravel-tags": "^4.12.0",
                 "spatie/laravel-translatable": "^6.15.0",
                 "spatie/laravel-webhook-client": "^3.7.0"
+            },
+            "require-dev": {
+                "nikic/php-parser": "^5"
             },
             "suggest": {
                 "filament/filament": "Required to use the optional Commerce Navigation Filament plugin.",
@@ -8636,6 +8657,21 @@
                     "AIArmada\\CommerceSupport\\": "src/",
                     "AIArmada\\CommerceSupport\\Database\\Seeders\\": "database/seeders/"
                 }
+            },
+            "scripts": {
+                "arch:boundaries": [
+                    "@php tools/package-check.php"
+                ],
+                "arch:boundaries:diff": [
+                    "@php tools/package-check.php --diff-base=main"
+                ],
+                "arch:writes": [
+                    "@php ../../vendor/bin/phpstan analyse -c tools/package-phpstan.neon --autoload-file=tools/Architecture/PackageOwnedWriteRule.php --no-progress"
+                ],
+                "arch:check": [
+                    "@arch:boundaries",
+                    "@arch:writes"
+                ]
             },
             "license": [
                 "MIT"
@@ -16582,28 +16618,28 @@
         },
         {
             "name": "spatie/laravel-sluggable",
-            "version": "4.0.6",
+            "version": "6.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-sluggable.git",
-                "reference": "8bdb6cc508459b22328f2743fda18883957da0a1"
+                "reference": "d0137c02bb85477d04ddd5da49f34c4d71087ff9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-sluggable/zipball/8bdb6cc508459b22328f2743fda18883957da0a1",
-                "reference": "8bdb6cc508459b22328f2743fda18883957da0a1",
+                "url": "https://api.github.com/repos/spatie/laravel-sluggable/zipball/d0137c02bb85477d04ddd5da49f34c4d71087ff9",
+                "reference": "d0137c02bb85477d04ddd5da49f34c4d71087ff9",
                 "shasum": ""
             },
             "require": {
-                "illuminate/database": "^12.0|^13.0",
-                "illuminate/support": "^12.0|^13.0",
-                "php": "^8.3"
+                "illuminate/database": "^13.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.4"
             },
             "require-dev": {
                 "larastan/larastan": "^3.0",
                 "laravel/pint": "^1.24",
-                "orchestra/testbench": "^10.0|^11.0",
-                "pestphp/pest": "^4.0",
+                "orchestra/testbench": "^11.0",
+                "pestphp/pest": "^5.0",
                 "spatie/laravel-translatable": "^6.0"
             },
             "type": "library",
@@ -16648,7 +16684,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-sluggable/issues",
-                "source": "https://github.com/spatie/laravel-sluggable/tree/4.0.6"
+                "source": "https://github.com/spatie/laravel-sluggable/tree/6.0.0"
             },
             "funding": [
                 {
@@ -16656,8 +16692,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-27T14:24:52+00:00",
-            "published-time": "2026-10-27T14:26:29+00:00"
+            "time": "2026-11-13T13:00:30+00:00",
+            "published-time": "2026-11-13T13:01:27+00:00"
         },
         {
             "name": "spatie/laravel-tags",

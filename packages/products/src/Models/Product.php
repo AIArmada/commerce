@@ -36,7 +36,6 @@ use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -49,7 +48,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\HasSlugWithUuids;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Tags\HasTags;
 use Throwable;
@@ -109,9 +108,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
-    use HasSlug;
+    use HasSlugWithUuids;
     use HasTags;
-    use HasUuids;
     use InteractsWithMedia;
     use LogsCommerceActivity;
 
