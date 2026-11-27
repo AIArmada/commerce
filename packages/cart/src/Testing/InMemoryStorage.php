@@ -193,8 +193,6 @@ class InMemoryStorage implements StorageInterface
                 if ($attempt >= self::MAX_METADATA_ATTEMPTS) {
                     throw $exception;
                 }
-
-                usleep(25000 * $attempt);
             }
         }
     }
@@ -235,8 +233,6 @@ class InMemoryStorage implements StorageInterface
                 if ($attempt >= self::MAX_METADATA_ATTEMPTS) {
                     throw $exception;
                 }
-
-                usleep(25000 * $attempt);
             }
         }
     }

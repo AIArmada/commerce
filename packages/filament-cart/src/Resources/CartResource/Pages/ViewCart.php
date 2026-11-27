@@ -77,7 +77,7 @@ final class ViewCart extends ViewRecord
                 app(ClearLiveCart::class)->execute($this->record);
                 $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
             })
-            ->visible(fn () => ! $this->record->isEmpty());
+            ->visible(fn (): bool => $this->record instanceof Cart && ! $this->record->isEmpty());
 
         $actions[] = Actions\Action::make('export_cart')
             ->label('Export Cart')

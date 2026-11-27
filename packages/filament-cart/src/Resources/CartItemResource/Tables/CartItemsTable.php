@@ -100,11 +100,11 @@ final class CartItemsTable
 
                 Filter::make('has_conditions')
                     ->label('Has Conditions')
-                    ->query(fn (Builder $query): Builder => /** @phpstan-ignore method.notFound */ $query->withConditions()),
+                    ->query(fn (Builder $query): Builder => $query->withConditions()),
 
                 Filter::make('no_conditions')
                     ->label('No Conditions')
-                    ->query(fn (Builder $query): Builder => /** @phpstan-ignore method.notFound */ $query->withoutConditions()),
+                    ->query(fn (Builder $query): Builder => $query->withoutConditions()),
 
                 Filter::make('price_range')
                     ->form([

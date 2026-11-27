@@ -74,6 +74,11 @@ class Condition extends Model implements Auditable
     use HasUuids;
     use LogsCommerceActivity;
 
+    protected static function newFactory(): ConditionFactory
+    {
+        return ConditionFactory::new();
+    }
+
     protected static string $ownerScopeConfigKey = 'cart.owner';
 
     /** @var list<string> */

@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Throwable;
@@ -43,11 +42,11 @@ use Throwable;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property string $owner_scope
- * @property Carbon|null $last_activity_at
- * @property Carbon|null $checkout_started_at
- * @property Carbon|null $checkout_abandoned_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonImmutable|null $last_activity_at
+ * @property CarbonImmutable|null $checkout_started_at
+ * @property CarbonImmutable|null $checkout_abandoned_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
 class CartSnapshot extends Model
 {
