@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Drivers;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Data\EventCartLineData;

@@ -48,7 +48,8 @@ The primary synchronization listener that updates normalized models when cart st
 - For all other events: Synchronizes current cart state to database
 
 ```php
-use AIArmada\Cart\Contracts\CartSnapshotSyncInterface;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
+use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 
 final class SyncCartOnEvent
 {
@@ -60,8 +61,7 @@ final class SyncCartOnEvent
             $this->syncManager->deleteByIdentity(
                 instance: $event->instance,
                 identifier: $event->identifier,
-                ownerType: $event->owner_type,
-                ownerId: $event->owner_id,
+                identity: CartOwnerIdentity::fromTypeAndId($event->owner_type, $event->owner_id),
             );
             return;
         }
@@ -70,6 +70,10 @@ final class SyncCartOnEvent
     }
 }
 ```
+
+The destroyed event identity is a claim, not an authorization grant. A tenant
+identity must match the ambient owner context, and a global identity requires
+explicit global context. Malformed tuples are rejected before any delete.
 
 ### ApplyGlobalConditions
 
@@ -103,16 +107,31 @@ Handles cleanup when guest carts merge with authenticated user carts.
 Core service that transforms cart state into normalized database records.
 
 ```php
-use AIArmada\Cart\Snapshots\NormalizedCartSynchronizer;
+use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
 
 $synchronizer = app(NormalizedCartSynchronizer::class);
 
 // Sync a cart to database
 $synchronizer->syncFromCart($cart);
 
-// Delete normalized cart with explicit owner tuple
-$synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId);
+// Delete the normalized cart in the ambient owner scope
+$synchronizer->deleteNormalizedCart($identifier, $instance);
+
+// Delete with an explicit owner claim (must match the ambient owner)
+$synchronizer->deleteNormalizedCart(
+    $identifier,
+    $instance,
+    CartOwnerIdentity::fromTypeAndId($ownerType, $ownerId),
+);
+
+// Delete a global snapshot from explicit global context
+$synchronizer->deleteNormalizedCart($identifier, $instance, CartOwnerIdentity::global());
 ```
+
+A sync reads one coherent live cart snapshot for items, conditions, metadata,
+and timestamps. If the live cart row is absent, the normalized projection is
+removed instead of being recreated as an empty cart.
 
 **Synchronization Process:**
 
@@ -140,15 +159,23 @@ $synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId
 High-level manager that coordinates synchronization.
 
 ```php
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
 
 $manager = app(CartSyncManager::class);
 
 // Sync a cart
 $manager->sync($cart);
 
-// Delete by identity in explicit owner scope
-$manager->deleteByIdentity($instance, $identifier, $ownerType, $ownerId);
+// Delete by identity in the ambient owner scope
+$manager->deleteByIdentity($instance, $identifier);
+
+// Delete by identity with an owner claim that must match the ambient owner
+$manager->deleteByIdentity(
+    $instance,
+    $identifier,
+    CartOwnerIdentity::fromTypeAndId($ownerType, $ownerId),
+);
 ```
 
 ### CartInstanceManager
@@ -156,7 +183,7 @@ $manager->deleteByIdentity($instance, $identifier, $ownerType, $ownerId);
 Resolves live cart instances from stored identifiers.
 
 ```php
-use AIArmada\Cart\Snapshots\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 
 $manager = app(CartInstanceManager::class);
 
@@ -167,7 +194,7 @@ $cart = $manager->resolve($instance, $identifier);
 This is useful when you need to perform operations on the actual cart from a snapshot record:
 
 ```php
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 
 $cartModel = CartSnapshot::find($id);
 $liveCart = $cartModel->getCartInstance();
@@ -209,7 +236,7 @@ Force-sync carts when needed (e.g., after data repairs):
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 
 // Get the cart
 $cart = Cart::getCartInstance('default');
@@ -247,7 +274,7 @@ app(CartSyncManager::class)->sync(Cart::getCartInstance('default'));
 The `CartSnapshot` model stores a complete read projection of cart state:
 
 ```php
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 
 $cart = CartSnapshot::find($id);
 
@@ -326,7 +353,9 @@ $condition->isItemLevel();  // bool
 
 ### Transactional Sync
 
-All synchronization operations run in database transactions:
+Synchronization runs in a database transaction. Snapshot and high-value
+notifications are dispatched after the outermost transaction commits, under
+the owner context captured during synchronization.
 
 ```php
 DB::transaction(function () use ($cart): void {
@@ -355,7 +384,7 @@ Syncs are idempotent — running the same sync multiple times produces the same 
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 
 $cart = Cart::getCartInstance('default');
 $identifier = $cart->getIdentifier();

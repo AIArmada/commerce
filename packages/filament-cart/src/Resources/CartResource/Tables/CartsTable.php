@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Tables;
 
-use AIArmada\Cart\Snapshots\CartInstanceManager;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Actions\ClearLiveCart;
+use AIArmada\Cart\Features\Snapshots\Actions\DestroyLiveCart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Support\CartMoney;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentCart\Resources\CartResource;
 use Exception;
 use Filament\Actions\Action;
@@ -143,11 +143,11 @@ final class CartsTable
 
                 Filter::make('has_items')
                     ->label('Has Items')
-                    ->query(fn (Builder $query): Builder => /** @phpstan-ignore method.notFound */ $query->notEmpty()),
+                    ->query(fn (Builder $query): Builder => $query->where('items_count', '>', 0)),
 
                 Filter::make('has_savings')
                     ->label('Has Savings')
-                    ->query(fn (Builder $query): Builder => /** @phpstan-ignore method.notFound */ $query->withSavings()),
+                    ->query(fn (Builder $query): Builder => $query->where('savings', '>', 0)),
 
                 Filter::make('high_quantity')
                     ->label('10+ Units')
@@ -155,7 +155,7 @@ final class CartsTable
 
                 Filter::make('recent')
                     ->label('Recent (7 days)')
-                    ->query(fn (Builder $query): Builder => /** @phpstan-ignore method.notFound */ $query->recent()),
+                    ->query(fn (Builder $query): Builder => $query->where('updated_at', '>=', now()->subDays(7))),
 
                 Filter::make('created_today')
                     ->label('Created Today')
@@ -172,11 +172,7 @@ final class CartsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Cart $record): void {
-                            $cart = self::authorizeCart($record);
-
-                            app(CartInstanceManager::class)
-                                ->resolveForSnapshot($cart)
-                                ->clear();
+                            app(ClearLiveCart::class)->execute($record);
                         })
                         ->visible(fn (Cart $record): bool => $record->items_count > 0)
                         ->successNotificationTitle('Cart cleared'),
@@ -189,11 +185,7 @@ final class CartsTable
                     DeleteAction::make()
                         ->icon(Heroicon::OutlinedXMark)
                         ->using(function (Cart $record): void {
-                            $cart = self::authorizeCart($record);
-
-                            app(CartInstanceManager::class)
-                                ->resolveForSnapshot($cart)
-                                ->destroy();
+                            app(DestroyLiveCart::class)->execute($record);
                         })
                         ->successNotificationTitle('Cart deleted'),
                 ])
@@ -239,13 +231,10 @@ final class CartsTable
             /** @var Cart $record */
             foreach ($chunk as $record) {
                 try {
-                    $cart = self::authorizeCart($record);
-                    $instance = app(CartInstanceManager::class)->resolveForSnapshot($cart);
-
                     if ($operation === 'delete') {
-                        $instance->destroy();
+                        app(DestroyLiveCart::class)->execute($record);
                     } else {
-                        $instance->clear();
+                        app(ClearLiveCart::class)->execute($record);
                     }
 
                     $processed++;
@@ -272,22 +261,5 @@ final class CartsTable
             ->body("{$processed} " . str('cart')->plural($processed) . " {$label}.")
             ->success()
             ->send();
-    }
-
-    private static function authorizeCart(Cart $cart): Cart
-    {
-        if (! Cart::ownerScopingEnabled()) {
-            return $cart;
-        }
-
-        /** @var Cart $validated */
-        $validated = OwnerWriteGuard::findOrFailForOwner(
-            Cart::class,
-            (string) $cart->getKey(),
-            includeGlobal: false,
-            message: 'Cart is not accessible in the current owner scope.',
-        );
-
-        return $validated;
     }
 }

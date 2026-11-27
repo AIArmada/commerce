@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Products\Enums\ProductStatus;

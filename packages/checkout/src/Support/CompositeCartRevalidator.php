@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Support;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Orders\Support\CartLineSnapshot;

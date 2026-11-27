@@ -10,6 +10,7 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Models\CartItem;
 use Closure;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -149,13 +150,40 @@ trait ManagesDynamicConditions
     public function removeDynamicCondition(string $name): static
     {
         $this->initializeDynamicConditions();
+        $condition = $this->dynamicConditions->getCondition($name);
         $this->dynamicConditions->forget($name);
 
-        // Also remove it from active conditions if it was applied
-        $this->removeCondition($name);
+        try {
+            if ($condition !== null && $condition->getTargetDefinition()->scope === ConditionScope::ITEMS) {
+                $removedItems = $this->removeMatchingItemConditions(
+                    fn (CartItem $item, CartCondition $applied): bool => $applied->getName() === $name
+                        && $this->matchesDynamicCondition($condition, $applied),
+                    static function (array $metadata) use ($name): array {
+                        if (is_array($metadata['dynamic_conditions'] ?? null)) {
+                            unset($metadata['dynamic_conditions'][$name]);
+                        }
 
-        // Remove from metadata storage
-        $this->removeDynamicConditionMetadata($name);
+                        return $metadata;
+                    },
+                );
+            } else {
+                $this->removeDynamicConditionMetadata($name);
+                $removedItems = [];
+            }
+        } catch (Throwable $exception) {
+            if ($condition !== null) {
+                $this->dynamicConditions->put($name, $condition);
+            }
+
+            throw $exception;
+        }
+
+        $this->invalidatePipelineCache();
+        $this->dispatchItemConditionRemovals($removedItems);
+
+        if ($condition !== null && $this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($name))) {
+            $this->removeCondition($name);
+        }
 
         return $this;
     }
@@ -198,6 +226,7 @@ trait ManagesDynamicConditions
     public function markDynamicConditionsDirty(): void
     {
         $this->dynamicConditionsDirty = true;
+        $this->invalidatePipelineCache();
     }
 
     /**
@@ -671,16 +700,14 @@ trait ManagesDynamicConditions
     {
         try {
             $shouldApply = $condition->shouldApply($this);
-            Log::info('Condition evaluation result', [
-                'name' => $condition->getName(),
-                'shouldApply' => $shouldApply,
-            ]);
         } catch (Throwable $exception) {
             $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
                 'scope' => $condition->getTargetDefinition()->scope->value,
             ]);
 
-            $this->removeCondition($condition->getName());
+            if ($this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($condition->getName()))) {
+                $this->removeCondition($condition->getName());
+            }
 
             return;
         }
@@ -695,7 +722,9 @@ trait ManagesDynamicConditions
             return;
         }
 
-        $this->removeCondition($condition->getName());
+        if ($this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($condition->getName()))) {
+            $this->removeCondition($condition->getName());
+        }
     }
 
     /**
@@ -713,7 +742,9 @@ trait ManagesDynamicConditions
                     'scope' => ConditionScope::ITEMS->value,
                     'item_id' => $item->id,
                 ]);
-                $this->removeItemCondition($item->id, $condition->getName());
+                if ($this->matchesDynamicCondition($condition, $item->conditions->getCondition($condition->getName()))) {
+                    $this->removeItemCondition($item->id, $condition->getName());
+                }
 
                 continue;
             }
@@ -727,8 +758,17 @@ trait ManagesDynamicConditions
                 continue;
             }
 
-            $this->removeItemCondition($item->id, $condition->getName());
+            if ($this->matchesDynamicCondition($condition, $item->conditions->getCondition($condition->getName()))) {
+                $this->removeItemCondition($item->id, $condition->getName());
+            }
         }
+    }
+
+    private function matchesDynamicCondition(CartCondition $definition, ?CartCondition $applied): bool
+    {
+        return $applied !== null
+            && $applied->getAttribute('condition_id') === $definition->getAttribute('condition_id')
+            && $applied->getAttribute('is_global') === $definition->getAttribute('is_global');
     }
 
     /**

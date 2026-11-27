@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "LiveCart",
+  "owns": {
+    "table:carts": [
+      "AIArmada\\Cart\\Features\\LiveCart\\Persistence\\DatabaseStorage",
+      "AIArmada\\Cart\\Features\\LiveCart\\Actions\\MarkCartConverted",
+      "AIArmada\\Cart\\Features\\LiveCart\\Actions\\DeleteAbandonedCarts"
+    ]
+  },
+  "extensions": {}
+}

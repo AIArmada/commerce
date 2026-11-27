@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Cart\Features\GuestMigration\Actions;
+
+use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
+use Exception;
+use Illuminate\Database\Eloquent\Model;
+
+class MigrateCartOnLoginAction
+{
+    private ?CartMergeStrategyInterface $mergeStrategy = null;
+
+    public function __construct(
+        private readonly MigrateGuestCartToUserAction $migrationAction,
+    ) {}
+
+    public function withMergeStrategy(CartMergeStrategyInterface $strategy): static
+    {
+        $action = clone $this;
+        $action->mergeStrategy = $strategy;
+
+        return $action;
+    }
+
+    /**
+     * @return array{success: bool, itemsMerged: int, message: string}
+     */
+    public function execute(mixed $user, ?string $instance = 'default', ?string $sessionId = null): array
+    {
+        if ($sessionId === null || $sessionId === '') {
+            return [
+                'success' => false,
+                'itemsMerged' => 0,
+                'message' => 'No guest session to migrate',
+            ];
+        }
+
+        try {
+            $action = $this->migrationAction;
+
+            if ($this->mergeStrategy !== null) {
+                $action = $action->withMergeStrategy($this->mergeStrategy);
+            }
+
+            $userId = $user instanceof Model
+                ? $user->getKey()
+                : (is_object($user) && isset($user->id) ? $user->id : $user);
+
+            if (! is_int($userId) && ! is_string($userId)) {
+                return [
+                    'success' => false,
+                    'itemsMerged' => 0,
+                    'message' => 'Cannot migrate cart: the user has no usable ID.',
+                ];
+            }
+
+            $result = $action->executeForUser($userId, $instance, $sessionId);
+
+            return [
+                'success' => (bool) $result->success,
+                'itemsMerged' => (int) $result->itemsMerged,
+                'message' => (string) $result->message,
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'itemsMerged' => 0,
+                'message' => 'Migration failed: ' . $e->getMessage(),
+            ];
+        }
+    }
+}

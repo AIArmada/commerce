@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Database\Factories;
 
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\Cart\Models\Condition;
+use AIArmada\Cart\Features\Conditions\Models\Condition;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
-use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Features\GuestMigration\Actions\MigrateGuestCartToUserAction;
+use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
@@ -117,4 +117,16 @@ it('keeps a losing consumer from leaving any target cart behind', function (call
         ->and($store->getItems('cart07-loser-guest', 'default'))->toBe([])
         // v1 seed -> v2 the single committed consumption.
         ->and($store->getVersion('cart07-loser-guest', 'default'))->toBe(2);
+})->with('cart07 in-memory storages');
+
+it('leaves the source unchanged when a merge resolves to the same cart', function (callable $factory): void {
+    $store = $factory();
+    $store->putItems('same-identity', 'default', ['a' => cart07BackendItem('a', 2)], CartRevision::none());
+    $before = $store->getSnapshot('same-identity', 'default');
+
+    $action = new MigrateGuestCartToUserAction(app(CartMergeStrategyRegistry::class), $store);
+
+    expect($action->execute('same-identity', 'default', 'same-identity'))->toBeFalse()
+        ->and($store->getSnapshot('same-identity', 'default'))->toEqual($before)
+        ->and($store->isExpired('same-identity', 'default'))->toBeFalse();
 })->with('cart07 in-memory storages');

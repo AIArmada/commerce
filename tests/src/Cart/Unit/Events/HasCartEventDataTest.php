@@ -39,6 +39,11 @@ describe('HasCartEventData trait', function (): void {
             {
                 return 'test-cart-id';
             }
+
+            public function toArray(): array
+            {
+                return [];
+            }
         };
     });
 
@@ -78,6 +83,11 @@ describe('HasCartEventData trait', function (): void {
             {
                 return 'test-cart-id';
             }
+
+            public function toArray(): array
+            {
+                return [];
+            }
         };
 
         expect($this->event->getEventId())->not->toBe($event2->getEventId());
@@ -96,7 +106,7 @@ describe('HasCartEventData trait', function (): void {
             ->and($metadata)->toHaveKeys(['event_id', 'occurred_at']);
     });
 
-    it('returns empty array from toEventPayload by default', function (): void {
+    it('returns the explicitly empty event payload', function (): void {
         $payload = $this->event->toEventPayload();
 
         expect($payload)->toBeArray()

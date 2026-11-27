@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Support;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Runtime\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
 
 final class CheckoutCartResolver

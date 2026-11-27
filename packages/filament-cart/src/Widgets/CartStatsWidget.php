@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\FilamentCart\Support\OwnerScopedCacheContext;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -23,10 +24,15 @@ final class CartStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $owner = Cart::resolveCurrentOwner();
+        $context = OwnerScopedCacheContext::for(
+            'filament-cart.stats',
+            Cart::includeGlobalRecords(),
+            Cart::ownerScopingEnabled(),
+            Cart::resolveCurrentOwner(),
+        );
 
         /** @var array<int, Stat> $stats */
-        $stats = OwnerCache::remember($owner, 'filament-cart.stats', 60, fn (): array => $this->buildStats());
+        $stats = OwnerCache::remember($context->owner, $context->key, 60, fn (): array => $this->buildStats());
 
         return $stats;
     }

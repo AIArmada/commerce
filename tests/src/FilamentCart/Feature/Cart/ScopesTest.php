@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 
 it('filters active carts with scopeNotEmpty', function (): void {
     $empty = Cart::factory()->empty()->create();

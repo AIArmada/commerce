@@ -12,12 +12,14 @@ use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerInterface;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Target;
-use AIArmada\Cart\Contracts\CartConditionConvertible;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;
 use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Runtime\CartConditionConvertible;
+use Closure;
 use Traversable;
 
 trait ManagesConditions
@@ -198,6 +200,15 @@ trait ManagesConditions
      */
     public function addItemCondition(string $itemId, CartCondition $condition): bool
     {
+        if ($condition->isDynamic()) {
+            throw new InvalidCartConditionException(
+                sprintf(
+                    'Cannot add dynamic condition "%s" to an item using addItemCondition(). Register item-scoped dynamic conditions at cart scope with registerDynamicCondition() instead.',
+                    $condition->getName()
+                )
+            );
+        }
+
         $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($itemId, $condition): ?CartCollection {
             if (! $cartItems->has($itemId)) {
                 return null;
@@ -263,6 +274,75 @@ trait ManagesConditions
         }
 
         return true;
+    }
+
+    /**
+     * Remove several item conditions in one cart mutation.
+     *
+     * @param  array<string, array<string, string|null>>  $expectedConditionIds  item id => condition name => expected condition id
+     */
+    public function removeItemConditions(array $expectedConditionIds): bool
+    {
+        if ($expectedConditionIds === []) {
+            return false;
+        }
+
+        $removed = $this->removeMatchingItemConditions(static function (CartItem $item, CartCondition $condition) use ($expectedConditionIds): bool {
+            $expected = $expectedConditionIds[$item->id] ?? [];
+            $name = $condition->getName();
+
+            return array_key_exists($name, $expected)
+                && $expected[$name] === $condition->getAttribute('condition_id');
+        });
+        $this->dispatchItemConditionRemovals($removed);
+
+        return $removed !== [];
+    }
+
+    /**
+     * @param  Closure(CartItem, CartCondition): bool  $matches
+     * @param  (Closure(array<string, mixed>): array<string, mixed>)|null  $mutateMetadata
+     * @return list<array{string, CartCondition}>
+     */
+    private function removeMatchingItemConditions(Closure $matches, ?Closure $mutateMetadata = null): array
+    {
+        $removed = [];
+        $mutated = $this->mutateItems(function (CartCollection $items) use ($matches, &$removed): ?CartCollection {
+            $removed = [];
+
+            foreach ($items as $item) {
+                $updated = $item;
+
+                foreach ($item->conditions as $condition) {
+                    if ($matches($item, $condition)) {
+                        $removed[] = [$item->id, $condition];
+                        $updated = $updated->removeCondition($condition->getName());
+                    }
+                }
+
+                if ($updated !== $item) {
+                    $items->put($item->id, $updated);
+                }
+            }
+
+            return $removed === [] ? null : $items;
+        }, evaluateDynamicConditions: false, mutateMetadata: $mutateMetadata);
+
+        if ($mutated === null) {
+            return [];
+        }
+
+        $this->invalidatePipelineCache();
+
+        return $removed;
+    }
+
+    /** @param list<array{string, CartCondition}> $removed */
+    private function dispatchItemConditionRemovals(array $removed): void
+    {
+        foreach ($removed as $index => [$itemId, $condition]) {
+            $this->dispatchEvent(new ItemConditionRemoved($condition, $this, $itemId, syncSnapshot: $index === 0));
+        }
     }
 
     /**
