@@ -14,7 +14,6 @@ use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Enums\CatalogStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -23,7 +22,7 @@ use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\HasSlugWithUuids;
 use Spatie\Sluggable\SlugOptions;
 
 /**
@@ -59,8 +58,7 @@ class Collection extends Model implements Auditable, HasMedia
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
-    use HasSlug;
-    use HasUuids;
+    use HasSlugWithUuids;
     use InteractsWithMedia;
     use LogsCommerceActivity;
 
