@@ -9,6 +9,11 @@ use AIArmada\Cart\Features\LiveCart\Actions\MarkCartConverted;
 use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Testing\InMemoryStorage;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -81,6 +86,31 @@ it('marks carts converted exactly once', function (): void {
     app(MarkCartConverted::class)->execute($cart);
 
     expect($cart->refresh()->checked_out_at)->toEqual($first);
+});
+
+it('requires the cart conversion write to run in the cart owner scope', function (): void {
+    config(['cart.owner.enabled' => true]);
+
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+
+    $cart = OwnerContext::withOwner($ownerA, fn (): CartModel => CartModel::query()->create([
+        'identifier' => 'convert-owner-cart',
+        'instance' => 'default',
+    ]));
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
+
+    expect(fn () => app(MarkCartConverted::class)->execute($cart))
+        ->toThrow(AuthorizationException::class);
+
+    expect($cart->refresh()->checked_out_at)->toBeNull();
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
+
+    app(MarkCartConverted::class)->execute($cart);
+
+    expect($cart->refresh()->checked_out_at)->not->toBeNull();
 });
 
 it('locks the fixed-value unit contract', function (): void {

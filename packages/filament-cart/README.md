@@ -126,7 +126,7 @@ event listeners. Filament Cart consumes the resulting read model and provides
 the UI adapter:
 
 - `AIArmada\\Cart\\Features\\Snapshots\\EntryPoints\\Listeners\\SyncCartOnEvent` — Creates/updates normalized records
-- `AIArmada\\Cart\\Listeners\\ApplyGlobalConditions` — Applies global conditions
+- `AIArmada\\Cart\\Features\\Conditions\\EntryPoints\\Listeners\\ApplyGlobalConditions` — Applies global conditions
 - `AIArmada\\Cart\\Features\\Snapshots\\EntryPoints\\Listeners\\CleanupSnapshotOnCartMerged` — Handles merge cleanup
 
 ## Dynamic Conditions

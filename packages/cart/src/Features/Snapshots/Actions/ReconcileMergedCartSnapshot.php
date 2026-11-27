@@ -10,6 +10,8 @@ use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Closure;
+use Illuminate\Database\Eloquent\Model;
 
 final readonly class ReconcileMergedCartSnapshot
 {
@@ -31,57 +33,169 @@ final readonly class ReconcileMergedCartSnapshot
 
         $hasLiveTarget = $event->targetCart->storage()->getSnapshot($targetIdentifier, $instance) !== null;
 
+        if ($hasLiveTarget) {
+            $this->syncManager->sync($event->targetCart, force: true);
+        }
+
         (new CartSnapshot)->getConnection()->transaction(function () use ($sourceIdentifier, $targetIdentifier, $instance, $owner, $hasLiveTarget): void {
-            $source = OwnerContext::withOwner(null, fn () => CartSnapshot::query()
-                ->forOwner(null, false)
-                ->where('identifier', $sourceIdentifier)
-                ->where('instance', $instance)
-                ->lockForUpdate()
-                ->first());
+            $source = $this->findSnapshot($sourceIdentifier, $instance, null)
+                ?? ($owner !== null ? $this->findSnapshot($sourceIdentifier, $instance, $owner) : null);
 
             if (! $source instanceof CartSnapshot) {
                 return;
             }
 
-            $target = CartSnapshot::query()
-                ->forOwner($owner, false)
-                ->where('identifier', $targetIdentifier)
-                ->where('instance', $instance)
-                ->lockForUpdate()
-                ->first();
+            $sourceOwner = $this->snapshotOwner($source);
+            $target = $this->findSnapshot($targetIdentifier, $instance, $owner);
 
             if ($target instanceof CartSnapshot && $source->is($target)) {
                 return;
             }
 
             if ($target instanceof CartSnapshot) {
-                if ($hasLiveTarget) {
-                    CartSnapshotCondition::query()->where('cart_id', $source->id)->delete();
-                    CartSnapshotItem::query()->where('cart_id', $source->id)->delete();
-                } else {
-                    CartSnapshotItem::query()->where('cart_id', $source->id)
-                        ->update(['cart_id' => $target->id]);
-
-                    CartSnapshotCondition::query()->where('cart_id', $source->id)
-                        ->update(['cart_id' => $target->id]);
+                if (! $hasLiveTarget) {
+                    $this->transferChildren($source, $target);
                 }
 
-                OwnerContext::withOwner(null, fn (): bool => (bool) $source->delete());
+                $this->deleteSnapshot($source, $sourceOwner);
 
                 return;
             }
 
-            $source->identifier = $targetIdentifier;
+            if ($hasLiveTarget) {
+                $this->deleteSnapshot($source, $sourceOwner);
 
-            if (CartSnapshot::ownerScopingEnabled() && $owner !== null) {
-                $source->assignOwner($owner);
+                return;
             }
 
-            $source->save();
-        });
+            if ($this->sameOwner($sourceOwner, $owner)) {
+                $source->identifier = $targetIdentifier;
+                $this->withOwnerContext($sourceOwner, fn (): bool => $source->save());
 
-        if ($hasLiveTarget) {
-            $this->syncManager->sync($event->targetCart, force: true);
+                return;
+            }
+
+            $target = $this->createOwnedTarget($source, $owner, $targetIdentifier);
+            $this->transferChildren($source, $target);
+            $this->deleteSnapshot($source, $sourceOwner);
+        });
+    }
+
+    private function findSnapshot(string $identifier, string $instance, ?Model $owner): ?CartSnapshot
+    {
+        return $this->withOwnerContext($owner, fn (): ?CartSnapshot => CartSnapshot::query()
+            ->forOwner($owner, false)
+            ->where('identifier', $identifier)
+            ->where('instance', $instance)
+            ->lockForUpdate()
+            ->first());
+    }
+
+    private function snapshotOwner(CartSnapshot $snapshot): ?Model
+    {
+        $config = CartSnapshot::ownerScopeConfig();
+
+        return OwnerContext::fromTypeAndId(
+            $snapshot->getAttribute($config->ownerTypeColumn),
+            $snapshot->getAttribute($config->ownerIdColumn),
+        );
+    }
+
+    private function sameOwner(?Model $left, ?Model $right): bool
+    {
+        if ($left === null || $right === null) {
+            return $left === $right;
         }
+
+        return $left->getMorphClass() === $right->getMorphClass()
+            && (string) $left->getKey() === (string) $right->getKey();
+    }
+
+    private function deleteSnapshot(CartSnapshot $source, ?Model $sourceOwner): void
+    {
+        $this->withOwnerContext($sourceOwner, function () use ($source): void {
+            CartSnapshotCondition::query()->where('cart_id', $source->id)->delete();
+            CartSnapshotItem::query()->where('cart_id', $source->id)->delete();
+            $source->delete();
+        });
+    }
+
+    private function transferChildren(CartSnapshot $source, CartSnapshot $target): void
+    {
+        $targetId = (string) $target->getKey();
+
+        $targetItemIds = CartSnapshotItem::query()
+            ->where('cart_id', $targetId)
+            ->pluck('item_id')
+            ->all();
+
+        foreach (CartSnapshotItem::query()->where('cart_id', $source->id)->get() as $sourceItem) {
+            if (in_array($sourceItem->item_id, $targetItemIds, true)) {
+                CartSnapshotCondition::query()->where('cart_item_id', $sourceItem->id)->delete();
+                $sourceItem->delete();
+
+                continue;
+            }
+
+            $sourceItem->cart_id = $targetId;
+            $sourceItem->save();
+        }
+
+        $targetConditionKeys = CartSnapshotCondition::query()
+            ->where('cart_id', $targetId)
+            ->get()
+            ->mapWithKeys(fn (CartSnapshotCondition $condition): array => [
+                $this->conditionKey($condition) => true,
+            ]);
+
+        foreach (CartSnapshotCondition::query()->where('cart_id', $source->id)->get() as $sourceCondition) {
+            $key = $this->conditionKey($sourceCondition);
+
+            if ($targetConditionKeys->has($key)) {
+                $sourceCondition->delete();
+
+                continue;
+            }
+
+            $sourceCondition->cart_id = $targetId;
+            $sourceCondition->save();
+        }
+    }
+
+    private function conditionKey(CartSnapshotCondition $condition): string
+    {
+        if ($condition->cart_item_id === null) {
+            return 'cart:' . $condition->name;
+        }
+
+        return 'item:' . ($condition->item_id ?? '') . ':' . $condition->name;
+    }
+
+    private function createOwnedTarget(CartSnapshot $source, ?Model $owner, string $targetIdentifier): CartSnapshot
+    {
+        return $this->withOwnerContext($owner, function () use ($source, $owner, $targetIdentifier): CartSnapshot {
+            $target = $source->replicate();
+            $config = CartSnapshot::ownerScopeConfig();
+            $target->setAttribute($config->ownerTypeColumn, null);
+            $target->setAttribute($config->ownerIdColumn, null);
+            $target->identifier = $targetIdentifier;
+
+            if ($owner !== null) {
+                $target->assignOwner($owner);
+            }
+
+            $target->save();
+
+            return $target;
+        });
+    }
+
+    private function withOwnerContext(?Model $owner, Closure $callback): mixed
+    {
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return $callback();
+        }
+
+        return OwnerContext::withOwner($owner, $callback);
     }
 }

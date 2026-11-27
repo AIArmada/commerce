@@ -182,7 +182,8 @@ final class ClearAbandonedCartsCommand extends Command
             );
         }
 
-        $candidateCount = $this->countAbandonedSnapshots($minutes);
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
+        $candidateCount = $this->countAbandonedSnapshots($cutoff);
 
         if (! $dryRun && ! $forceThreshold && $candidateCount > $maxAffected) {
             $this->error("Refusing to mark {$candidateCount} snapshots: exceeds --max-affected={$maxAffected}. Use --force-threshold to proceed.");
@@ -190,7 +191,7 @@ final class ClearAbandonedCartsCommand extends Command
             return self::FAILURE;
         }
 
-        $marked = $this->processAbandonedSnapshots($minutes, $dryRun);
+        $marked = $this->processAbandonedSnapshots($cutoff, $dryRun);
 
         $this->info("Marked {$marked} snapshot(s) as abandoned.");
 
@@ -204,8 +205,9 @@ final class ClearAbandonedCartsCommand extends Command
         bool $forceThreshold,
         bool $strictOwnerTuples,
     ): int {
-        $columns = new OwnerTupleColumns;
-        $owners = app(AbandonmentSweep::class)->owners();
+        $columns = OwnerTupleColumns::forConfigKey('cart.owner');
+        $owners = OwnerContext::withOwner(null, fn (): array => app(AbandonmentSweep::class)->owners());
+        $cutoff = CarbonImmutable::now()->subMinutes($minutes);
 
         $ownerBatches = [];
         $totalCandidates = 0;
@@ -236,13 +238,13 @@ final class ClearAbandonedCartsCommand extends Command
             }
 
             $owner = $parsed->toOwnerModel();
-            $count = (int) OwnerContext::withOwner($owner, fn (): int => $this->countAbandonedSnapshots($minutes));
+            $count = (int) OwnerContext::withOwner($owner, fn (): int => $this->countAbandonedSnapshots($cutoff));
             $ownerBatches[] = ['owner' => $owner, 'count' => $count];
             $totalCandidates += $count;
         }
 
         if ($owners === []) {
-            $count = (int) OwnerContext::withOwner(null, fn (): int => $this->countAbandonedSnapshots($minutes));
+            $count = (int) OwnerContext::withOwner(null, fn (): int => $this->countAbandonedSnapshots($cutoff));
             $ownerBatches[] = ['owner' => null, 'count' => $count];
             $totalCandidates += $count;
         }
@@ -258,7 +260,7 @@ final class ClearAbandonedCartsCommand extends Command
         foreach ($ownerBatches as $batch) {
             $totalMarked += (int) OwnerContext::withOwner(
                 $batch['owner'],
-                fn (): int => $this->processAbandonedSnapshots($minutes, $dryRun),
+                fn (): int => $this->processAbandonedSnapshots($cutoff, $dryRun),
             );
         }
 
@@ -267,18 +269,18 @@ final class ClearAbandonedCartsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function countAbandonedSnapshots(int $minutes): int
+    private function countAbandonedSnapshots(CarbonImmutable $cutoff): int
     {
-        return app(AbandonmentSweep::class)->count(CarbonImmutable::now()->subMinutes($minutes));
+        return app(AbandonmentSweep::class)->count($cutoff);
     }
 
-    private function processAbandonedSnapshots(int $minutes, bool $dryRun): int
+    private function processAbandonedSnapshots(CarbonImmutable $cutoff, bool $dryRun): int
     {
         if ($dryRun) {
-            return $this->countAbandonedSnapshots($minutes);
+            return $this->countAbandonedSnapshots($cutoff);
         }
 
-        return app(AbandonmentSweep::class)->execute(CarbonImmutable::now()->subMinutes($minutes));
+        return app(AbandonmentSweep::class)->execute($cutoff);
     }
 
     private function handleAllOwners(
@@ -292,7 +294,7 @@ final class ClearAbandonedCartsCommand extends Command
         bool $deleteMode = false,
     ): int {
         $columns = OwnerTupleColumns::forConfigKey('cart.owner');
-        $owners = app(AbandonedCartCleanup::class)->owners($table);
+        $owners = OwnerContext::withOwner(null, fn (): array => app(AbandonedCartCleanup::class)->owners($table));
 
         if ($owners === []) {
             return OwnerContext::withOwner(null, fn (): int => $this->handleForOwner(
@@ -340,9 +342,14 @@ final class ClearAbandonedCartsCommand extends Command
 
             $owner_type = $parsed->owner_type;
             $owner_id = $parsed->owner_id;
+            $owner = $parsed->toOwnerModel();
 
-            $count = $this->countForOwner($table, $useExpired, $days, $now, $owner_type, $owner_id, $deleteMode);
+            $count = OwnerContext::withOwner(
+                $owner,
+                fn (): int => $this->countForOwner($table, $useExpired, $days, $now, $owner_type, $owner_id, $deleteMode),
+            );
             $ownerBatches[] = [
+                'owner' => $owner,
                 'owner_type' => $owner_type,
                 'owner_id' => $owner_id,
                 'count' => $count,
@@ -369,16 +376,19 @@ final class ClearAbandonedCartsCommand extends Command
                     continue;
                 }
 
-                $processedCount += $this->processForOwner(
-                    table: $table,
-                    useExpired: $useExpired,
-                    days: $days,
-                    now: $now,
-                    dryRun: true,
-                    batchSize: $batchSize,
-                    deleteMode: $deleteMode,
-                    ownerType: $batch['owner_type'],
-                    ownerId: $batch['owner_id'],
+                $processedCount += OwnerContext::withOwner(
+                    $batch['owner'],
+                    fn (): int => $this->processForOwner(
+                        table: $table,
+                        useExpired: $useExpired,
+                        days: $days,
+                        now: $now,
+                        dryRun: true,
+                        batchSize: $batchSize,
+                        deleteMode: $deleteMode,
+                        ownerType: $batch['owner_type'],
+                        ownerId: $batch['owner_id'],
+                    ),
                 );
             }
 
@@ -401,16 +411,19 @@ final class ClearAbandonedCartsCommand extends Command
                 continue;
             }
 
-            $processedCount += $this->processForOwner(
-                table: $table,
-                useExpired: $useExpired,
-                days: $days,
-                now: $now,
-                dryRun: false,
-                batchSize: $batchSize,
-                deleteMode: $deleteMode,
-                ownerType: $batch['owner_type'],
-                ownerId: $batch['owner_id'],
+            $processedCount += OwnerContext::withOwner(
+                $batch['owner'],
+                fn (): int => $this->processForOwner(
+                    table: $table,
+                    useExpired: $useExpired,
+                    days: $days,
+                    now: $now,
+                    dryRun: false,
+                    batchSize: $batchSize,
+                    deleteMode: $deleteMode,
+                    ownerType: $batch['owner_type'],
+                    ownerId: $batch['owner_id'],
+                ),
             );
         }
 

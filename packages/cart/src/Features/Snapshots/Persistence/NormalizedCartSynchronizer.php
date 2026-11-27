@@ -6,12 +6,15 @@ namespace AIArmada\Cart\Features\Snapshots\Persistence;
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Conditions\CartCondition as BaseCartCondition;
+use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Events\CartSnapshotSynced;
 use AIArmada\Cart\Events\HighValueCartDetected;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem;
 use AIArmada\Cart\Models\CartItem as BaseCartItem;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
@@ -30,29 +33,44 @@ class NormalizedCartSynchronizer
 {
     public function syncFromCart(BaseCart $cart): void
     {
+        $cart->evaluateDynamicConditionsIfDirty();
+
+        $storageSnapshot = $cart->storageSnapshot();
+
+        if ($storageSnapshot === null) {
+            $this->deleteNormalizedCart($cart->getIdentifier(), $cart->instance());
+
+            return;
+        }
+
         // Concurrent first-syncs race the snapshot unique key; the loser retries
         // once in a fresh transaction, where firstOrNew() finds the winner's row.
         try {
-            (new CartSnapshot)->getConnection()->transaction(fn () => $this->syncFromCartInTransaction($cart));
+            $events = (new CartSnapshot)->getConnection()->transaction(fn (): array => $this->syncFromCartInTransaction($cart, $storageSnapshot));
         } catch (QueryException $exception) {
             if (! $this->isUniqueViolation($exception)) {
                 throw $exception;
             }
 
-            (new CartSnapshot)->getConnection()->transaction(fn () => $this->syncFromCartInTransaction($cart));
+            $events = (new CartSnapshot)->getConnection()->transaction(fn (): array => $this->syncFromCartInTransaction($cart, $storageSnapshot));
         }
+
+        $this->dispatchSnapshotEvents($events);
     }
 
-    private function syncFromCartInTransaction(BaseCart $cart): void
+    /**
+     * @return array{snapshot: ?CartSnapshotData, highValue: ?CartSnapshotData}
+     */
+    private function syncFromCartInTransaction(BaseCart $cart, CartStorageSnapshot $storageSnapshot): array
     {
         $identifier = $cart->getIdentifier();
         $instance = $cart->instance();
 
         $owner = $this->resolveSourceOwner($cart);
 
-        $items = $cart->getItems();
-        $conditions = $cart->getStoredConditions();
-        $metadata = $cart->getAllMetadata();
+        $items = $cart->itemsFromStorageSnapshot($storageSnapshot);
+        $conditions = $cart->conditionsFromStorageSnapshot($storageSnapshot);
+        $metadata = $storageSnapshot->metadata;
 
         $currency = $this->resolveCurrency();
 
@@ -67,17 +85,23 @@ class NormalizedCartSynchronizer
             $cartModel->assignOwner($owner);
         }
 
+        $initialAmount = (int) $items->sum(
+            static fn (BaseCartItem $item): int => $item->getRawSubtotal()
+        );
+        $subtotalWithoutConditions = (int) $items->sum(
+            static fn (BaseCartItem $item): int => $item->getRawSubtotalWithoutConditions()
+        );
+
         $cartModel->items = $items->isEmpty() ? null : $items->toArray();
         $cartModel->conditions = $conditions->isEmpty() ? null : $conditions->toArray();
         $cartModel->metadata = $metadata === [] ? null : $metadata;
-        $cartModel->items_count = $cart->countItems();
-        $cartModel->quantity = $cart->getTotalQuantity();
-        $cartModel->last_activity_at = $this->resolveLastActivityAt($cart, $metadata, $cartModel->last_activity_at);
+        $cartModel->items_count = $items->count();
+        $cartModel->quantity = (int) $items->sum('quantity');
+        $cartModel->last_activity_at = $this->resolveLastActivityAt($metadata, $cartModel->last_activity_at, $storageSnapshot);
         $cartModel->checkout_started_at = $this->resolveMetadataTimestamp($metadata, 'checkout_started_at', $cartModel->checkout_started_at);
         $cartModel->checkout_abandoned_at = $this->resolveMetadataTimestamp($metadata, 'checkout_abandoned_at', $cartModel->checkout_abandoned_at);
-        $pipelineResult = $cart->evaluateConditionPipeline(conditions: $conditions);
+        $pipelineResult = $cart->evaluateConditionPipeline(conditions: $conditions, initialAmount: $initialAmount);
 
-        $subtotalWithoutConditions = (int) $cart->subtotalWithoutConditions()->getAmount();
         $cartModel->subtotal = $subtotalWithoutConditions;
         $cartModel->total = $pipelineResult->total();
         $cartModel->savings = max(0, $subtotalWithoutConditions - $cartModel->total);
@@ -105,26 +129,54 @@ class NormalizedCartSynchronizer
             $itemsDirty = true;
         }
 
-        if (! $conditionsDirty && ! $isNew && $conditions->isEmpty() && $this->hasChildRows(CartSnapshotCondition::class, $cartModel)) {
-            $conditionsDirty = true;
+        $cleanupCartLevelConditions = false;
+
+        if (! $conditionsDirty && ! $isNew && $conditions->isEmpty() && $this->hasCartLevelChildRows($cartModel)) {
+            $cleanupCartLevelConditions = true;
         }
 
-        if ($itemsDirty || $conditionsDirty) {
-            $itemModels = $itemsDirty
+        if ($itemsDirty || $conditionsDirty || $cleanupCartLevelConditions) {
+            $itemIdMap = $itemsDirty
                 ? $this->syncItems($cartModel, $items)
-                : $this->existingItemModels($cartModel);
+                : $this->itemIdMap($cartModel);
 
-            $this->syncConditions($cartModel, $conditions, $itemModels, $items->all());
+            if ($cleanupCartLevelConditions) {
+                CartSnapshotCondition::query()
+                    ->where('cart_id', $cartModel->id)
+                    ->whereNull('cart_item_id')
+                    ->delete();
+            }
+
+            if ($itemsDirty || $conditionsDirty) {
+                $this->syncConditions($cartModel, $conditions, $itemIdMap, $items->all());
+            }
         }
 
-        if ($hasMaterialChanges) {
-            event(CartSnapshotSynced::fromSnapshot($cartModel->toSnapshotData()));
-        }
-
+        $snapshotData = $cartModel->toSnapshotData();
+        $highValueData = null;
         $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
 
         if ($highValueThreshold > 0 && $previousTotal < $highValueThreshold && $cartModel->total >= $highValueThreshold) {
-            event(HighValueCartDetected::fromSnapshot($cartModel->toSnapshotData()));
+            $highValueData = $snapshotData;
+        }
+
+        return [
+            'snapshot' => $hasMaterialChanges ? $snapshotData : null,
+            'highValue' => $highValueData,
+        ];
+    }
+
+    /**
+     * @param  array{snapshot: ?CartSnapshotData, highValue: ?CartSnapshotData}  $events
+     */
+    private function dispatchSnapshotEvents(array $events): void
+    {
+        if ($events['snapshot'] !== null) {
+            event(CartSnapshotSynced::fromSnapshot($events['snapshot']));
+        }
+
+        if ($events['highValue'] !== null) {
+            event(HighValueCartDetected::fromSnapshot($events['highValue']));
         }
     }
 
@@ -187,16 +239,50 @@ class NormalizedCartSynchronizer
     public function deleteNormalizedCart(
         string $identifier,
         string $instance,
-        ?string $ownerType = null,
-        string | int | null $ownerId = null,
+        ?CartOwnerIdentity $identity = null,
     ): void {
-        $hasExplicitOwnerTuple = func_num_args() >= 3;
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            $this->deleteSnapshotRow($identifier, $instance, null);
 
-        $owner = $hasExplicitOwnerTuple
-            ? OwnerContext::fromTypeAndId($ownerType, $ownerId)
-            : CartSnapshot::resolveCurrentOwner();
+            return;
+        }
 
-        $delete = function (?EloquentModel $scopedOwner) use ($identifier, $instance): void {
+        if ($identity === null) {
+            $owner = CartSnapshot::resolveCurrentOwner();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                CartSnapshot::class . ' requires an owner context or explicit global context.',
+            );
+
+            OwnerContext::withOwner($owner, fn () => $this->deleteSnapshotRow($identifier, $instance, $owner));
+
+            return;
+        }
+
+        $owner = OwnerContext::fromTypeAndId($identity->ownerType, $identity->ownerId);
+
+        if ($identity->isGlobal()) {
+            if (! OwnerContext::isExplicitGlobal()) {
+                throw new AuthorizationException('Global cart snapshot deletion requires explicit global owner context.');
+            }
+        } else {
+            $ambient = OwnerContext::resolve();
+
+            if ($ambient === null
+                || $ambient->getMorphClass() !== $identity->ownerType
+                || (string) $ambient->getKey() !== (string) $identity->ownerId
+            ) {
+                throw new AuthorizationException('Cart snapshot can only be deleted inside the owner scope of the source cart.');
+            }
+        }
+
+        OwnerContext::withOwner($owner, fn () => $this->deleteSnapshotRow($identifier, $instance, $owner));
+    }
+
+    private function deleteSnapshotRow(string $identifier, string $instance, ?EloquentModel $scopedOwner): void
+    {
+        (new CartSnapshot)->getConnection()->transaction(function () use ($identifier, $instance, $scopedOwner): void {
             $cartModel = CartSnapshot::query()->forOwner($scopedOwner, false)
                 ->where('identifier', $identifier)
                 ->where('instance', $instance)
@@ -212,36 +298,7 @@ class NormalizedCartSynchronizer
             CartSnapshotCondition::query()->where('cart_id', $cartModel->id)->delete();
             CartSnapshotItem::query()->where('cart_id', $cartModel->id)->delete();
             $cartModel->delete();
-        };
-
-        $runDelete = static function (?EloquentModel $scopedOwner) use ($delete): void {
-            (new CartSnapshot)->getConnection()->transaction(fn () => $delete($scopedOwner));
-        };
-
-        if (CartSnapshot::ownerScopingEnabled() && $hasExplicitOwnerTuple && $ownerType === null && $ownerId === null) {
-            OwnerContext::withOwner(null, function () use ($runDelete): void {
-                $runDelete(null);
-            });
-
-            return;
-        }
-
-        if (CartSnapshot::ownerScopingEnabled() && $hasExplicitOwnerTuple) {
-            OwnerContext::withOwner($owner, function () use ($owner, $runDelete): void {
-                $runDelete($owner);
-            });
-
-            return;
-        }
-
-        if (CartSnapshot::ownerScopingEnabled()) {
-            OwnerContext::assertResolvedOrExplicitGlobal(
-                $owner,
-                CartSnapshot::class . ' requires an owner context or explicit global context.',
-            );
-        }
-
-        $runDelete($owner);
+        });
     }
 
     /**
@@ -269,16 +326,15 @@ class NormalizedCartSynchronizer
     }
 
     /**
-     * @return array<string, CartSnapshotItem>
+     * @return array<string, string>
      */
-    private function existingItemModels(CartSnapshot $cartModel): array
+    private function itemIdMap(CartSnapshot $cartModel): array
     {
         $this->assertSnapshotScope($cartModel);
 
         return CartSnapshotItem::query()
             ->where('cart_id', $cartModel->id)
-            ->get()
-            ->keyBy('item_id')
+            ->pluck('id', 'item_id')
             ->all();
     }
 
@@ -292,9 +348,19 @@ class NormalizedCartSynchronizer
         return $model::query()->where('cart_id', $cartModel->id)->exists();
     }
 
+    private function hasCartLevelChildRows(CartSnapshot $cartModel): bool
+    {
+        $this->assertSnapshotScope($cartModel);
+
+        return CartSnapshotCondition::query()
+            ->where('cart_id', $cartModel->id)
+            ->whereNull('cart_item_id')
+            ->exists();
+    }
+
     /**
      * @param  Collection<int, BaseCartItem>  $items
-     * @return array<string, CartSnapshotItem>
+     * @return array<string, string>
      */
     private function syncItems(CartSnapshot $cartModel, Collection $items): array
     {
@@ -350,20 +416,21 @@ class NormalizedCartSynchronizer
             ->whereNotIn('id', $persistedIds)
             ->delete();
 
-        return CartSnapshotItem::query()
-            ->where('cart_id', $cartModel->id)
-            ->whereIn('id', $persistedIds)
-            ->get()
-            ->keyBy('item_id')
-            ->all();
+        $itemIdMap = [];
+
+        foreach ($rows as $row) {
+            $itemIdMap[$row['item_id']] = $row['id'];
+        }
+
+        return $itemIdMap;
     }
 
     /**
      * @param  Collection<int, BaseCartCondition>  $conditions
-     * @param  array<string, CartSnapshotItem>  $itemModels
+     * @param  array<string, string>  $itemIds
      * @param  array<int, BaseCartItem>  $originalItems
      */
-    private function syncConditions(CartSnapshot $cartModel, Collection $conditions, array $itemModels, array $originalItems): void
+    private function syncConditions(CartSnapshot $cartModel, Collection $conditions, array $itemIds, array $originalItems): void
     {
         $this->assertSnapshotScope($cartModel);
 
@@ -388,7 +455,7 @@ class NormalizedCartSynchronizer
         foreach ($originalItems as $item) {
             \assert($item instanceof BaseCartItem);
 
-            if (! isset($itemModels[$item->id])) {
+            if (! isset($itemIds[$item->id])) {
                 continue;
             }
 
@@ -400,7 +467,7 @@ class NormalizedCartSynchronizer
                     existing: $existing,
                     cartModel: $cartModel,
                     condition: $condition,
-                    cartItemModel: $itemModels[$item->id],
+                    cartItemId: $itemIds[$item->id],
                     itemId: $item->id,
                     now: $now,
                 );
@@ -441,11 +508,11 @@ class NormalizedCartSynchronizer
         Collection $existing,
         CartSnapshot $cartModel,
         BaseCartCondition $condition,
-        ?CartSnapshotItem $cartItemModel,
+        ?string $cartItemId,
         ?string $itemId,
         CarbonImmutable $now,
     ): void {
-        $key = $this->conditionKey($condition->getName(), $itemId, $cartItemModel?->id);
+        $key = $this->conditionKey($condition->getName(), $itemId, $cartItemId);
         $existingCondition = $existing->get($key);
         $id = (string) ($existingCondition?->getKey() ?? Str::uuid());
         $persistedIds[] = $id;
@@ -455,7 +522,7 @@ class NormalizedCartSynchronizer
         $rows[] = [
             'id' => $id,
             'cart_id' => $cartModel->id,
-            'cart_item_id' => $cartItemModel?->id,
+            'cart_item_id' => $cartItemId,
             'name' => $condition->getName(),
             'item_id' => $itemId,
             'type' => $data['type'],
@@ -512,15 +579,15 @@ class NormalizedCartSynchronizer
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function resolveLastActivityAt(BaseCart $cart, array $metadata, ?DateTimeInterface $existingLastActivityAt): ?CarbonImmutable
+    private function resolveLastActivityAt(array $metadata, ?DateTimeInterface $existingLastActivityAt, CartStorageSnapshot $storageSnapshot): ?CarbonImmutable
     {
         if (array_key_exists('last_activity_at', $metadata)) {
             return $this->parseTimestamp($metadata['last_activity_at']);
         }
 
-        return $this->parseTimestamp($cart->getUpdatedAt())
-            ?? $this->parseTimestamp($existingLastActivityAt)
-            ?? $this->parseTimestamp($cart->getCreatedAt());
+        return $this->parseTimestamp($existingLastActivityAt)
+            ?? $this->parseTimestamp($storageSnapshot->updatedAt)
+            ?? $this->parseTimestamp($storageSnapshot->createdAt);
     }
 
     /**

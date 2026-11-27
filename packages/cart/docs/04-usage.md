@@ -620,4 +620,9 @@ Key options for `cart:clear-abandoned`:
 > When `cart.owner.enabled` is `true` and no owner context is resolved, the
 > command fails unless `--all-owners` is passed. `--mark-only` additionally
 > requires `--confirm-all-owners`, so run `--dry-run` first.
+>
+> Multi-owner runs take one cutoff for the whole run. Live-cart cleanup uses
+> keyset batches: rows that no longer match the delete predicate are kept while
+> later batches continue. With `cart.owner.enabled` disabled, cleanup applies
+> no owner predicate.
 

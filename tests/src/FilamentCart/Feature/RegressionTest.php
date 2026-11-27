@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\Cart\Features\Conditions\EntryPoints\Jobs\RemoveConditionFromAllCartsJob;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
+use AIArmada\Cart\Features\LiveCart\Models\CartModel;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Pending;
@@ -142,6 +143,17 @@ describe('purchaser email validation', function (): void {
         $owner = User::factory()->create();
 
         $event = OwnerContext::withOwner($owner, function (): CartAbandoned {
+            $liveCart = CartModel::query()->create([
+                'identifier' => 'abandoned-bad-email',
+                'instance' => 'default',
+                'items' => [
+                    'offer-1' => ['id' => 'offer-1', 'name' => 'Offer', 'price' => 1000, 'quantity' => 1],
+                ],
+                'conditions' => [],
+                'metadata' => [],
+                'version' => 1,
+            ]);
+
             $cart = Cart::factory()->create([
                 'identifier' => 'abandoned-bad-email',
                 'instance' => 'default',
@@ -155,7 +167,7 @@ describe('purchaser email validation', function (): void {
             ]);
 
             CheckoutSession::create([
-                'cart_id' => $cart->id,
+                'cart_id' => $liveCart->id,
                 'billing_data' => ['email' => 'not-an-email'],
                 'payment_data' => [],
                 'status' => Pending::class,

@@ -63,7 +63,7 @@ it('rejects reserved custom condition identity attributes', function (string $at
         'value' => '-10%',
         'attributes' => [$attribute => 'forged'],
     ]))->toThrow(Exception::class, 'is reserved');
-})->with(['condition_id', 'is_global', 'definition_hash']);
+})->with(['condition_id', 'condition_name', 'is_global', 'definition_hash', '__provider']);
 
 it('rejects fractional custom condition order strings', function (): void {
     expect(fn (): mixed => $this->action->applyCustom((string) $this->snapshot->getKey(), [

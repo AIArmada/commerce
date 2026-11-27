@@ -15,7 +15,6 @@ interface CartSnapshotSyncInterface
     public function deleteByIdentity(
         string $instance,
         string $identifier,
-        ?string $ownerType = null,
-        string | int | null $ownerId = null,
+        ?CartOwnerIdentity $identity = null,
     ): void;
 }

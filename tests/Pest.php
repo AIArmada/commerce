@@ -134,6 +134,7 @@ pest()->extend(TestCase::class)->in(
     'src/Cart/Feature/Core',
     'src/Cart/Feature/Database',
     'src/Cart/Feature/Events',
+    'src/Cart/Feature/LiveCart',
     'src/Cart/Feature/Metadata',
     'src/Cart/Feature/Migration',
     'src/Cart/Feature/Money',

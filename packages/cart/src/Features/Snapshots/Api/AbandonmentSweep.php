@@ -8,7 +8,11 @@ use Carbon\CarbonImmutable;
 
 interface AbandonmentSweep
 {
-    /** @return list<array{owner_type: ?string, owner_id: string|int|null}> */
+    /**
+     * Enumerate snapshot owner tuples from explicit global context.
+     *
+     * @return list<array{owner_type: ?string, owner_id: string|int|null}>
+     */
     public function owners(): array;
 
     public function count(CarbonImmutable $cutoff): int;

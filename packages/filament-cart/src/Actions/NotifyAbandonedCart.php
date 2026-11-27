@@ -6,11 +6,13 @@ namespace AIArmada\FilamentCart\Actions;
 
 use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Notifications\CartAbandonedNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Notification;
+use Throwable;
 
 final readonly class NotifyAbandonedCart
 {
@@ -20,7 +22,11 @@ final readonly class NotifyAbandonedCart
             return;
         }
 
-        $owner = OwnerContext::fromTypeAndId($event->ownerType, $event->ownerId);
+        try {
+            $owner = OwnerContext::fromTypeAndIdOrFail($event->ownerType, $event->ownerId);
+        } catch (Throwable) {
+            return;
+        }
 
         $cart = OwnerContext::withOwner($owner, function () use ($event, $owner): ?CartSnapshot {
             return CartSnapshot::query()->forOwner($owner, false)->find($event->cartId);
@@ -30,7 +36,13 @@ final readonly class NotifyAbandonedCart
             return;
         }
 
-        $session = $this->findLatestSession($cart, $owner);
+        $liveCartId = $this->resolveLiveCartId($cart, $owner);
+
+        if ($liveCartId === null) {
+            return;
+        }
+
+        $session = $this->findLatestSession($liveCartId, $owner);
 
         if ($session === null) {
             return;
@@ -59,12 +71,21 @@ final readonly class NotifyAbandonedCart
         ]));
     }
 
-    private function findLatestSession(CartSnapshot $cart, ?Model $owner): ?CheckoutSession
+    private function resolveLiveCartId(CartSnapshot $snapshot, ?Model $owner): ?string
     {
-        return OwnerContext::withOwner($owner, function () use ($cart, $owner): ?CheckoutSession {
+        return OwnerContext::withOwner($owner, function () use ($snapshot): ?string {
+            $cart = app(CartInstanceManager::class)->resolve($snapshot->instance, $snapshot->identifier);
+
+            return $cart->getId();
+        });
+    }
+
+    private function findLatestSession(string $liveCartId, ?Model $owner): ?CheckoutSession
+    {
+        return OwnerContext::withOwner($owner, function () use ($liveCartId, $owner): ?CheckoutSession {
             return CheckoutSession::query()
                 ->forOwner($owner, false)
-                ->where('cart_id', $cart->getKey())
+                ->where('cart_id', $liveCartId)
                 ->latest()
                 ->first();
         });

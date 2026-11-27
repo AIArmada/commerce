@@ -8,7 +8,11 @@ use Carbon\CarbonInterface;
 
 interface AbandonedCartCleanup
 {
-    /** @return list<array<string, string|int|null>> */
+    /**
+     * Enumerate cart owner tuples from explicit global context.
+     *
+     * @return list<array<string, string|int|null>>
+     */
     public function owners(string $table): array;
 
     public function count(

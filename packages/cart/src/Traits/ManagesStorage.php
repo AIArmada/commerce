@@ -10,6 +10,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\CartRevision;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -58,6 +59,30 @@ trait ManagesStorage
     protected function getItemsFromStorage(): CartCollection
     {
         return $this->hydrateItems($this->storage->getItems($this->getIdentifier(), $this->instance()));
+    }
+
+    /**
+     * Read the complete cart content together with the revision it was read at.
+     */
+    public function storageSnapshot(): ?CartStorageSnapshot
+    {
+        return $this->storage->getSnapshot($this->getIdentifier(), $this->instance());
+    }
+
+    /**
+     * Hydrate items from one coherent storage snapshot without another live read.
+     */
+    public function itemsFromStorageSnapshot(CartStorageSnapshot $snapshot): CartCollection
+    {
+        return $this->hydrateItems($snapshot->items);
+    }
+
+    /**
+     * Hydrate conditions from one coherent storage snapshot without another live read.
+     */
+    public function conditionsFromStorageSnapshot(CartStorageSnapshot $snapshot): CartConditionCollection
+    {
+        return $this->hydrateConditions($snapshot->conditions);
     }
 
     /**

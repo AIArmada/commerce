@@ -48,20 +48,25 @@ final readonly class ReadSnapshotConditions implements SnapshotConditionLookup
     /** @return iterable<SnapshotConditionMatch> */
     public function matchingStoredCondition(string $conditionId, bool $allOwners = false): iterable
     {
-        return $this->matching('attributes->condition_id', $conditionId, $allOwners);
+        return $this->matching(
+            CartSnapshotCondition::query()->whereJsonContains('attributes', ['condition_id' => $conditionId]),
+            $allOwners,
+        );
     }
 
     /** @return iterable<SnapshotConditionMatch> */
     public function matchingNamedCondition(string $name): iterable
     {
-        return $this->matching('name', $name, false);
+        return $this->matching(CartSnapshotCondition::query()->where('name', $name), false);
     }
 
-    /** @return iterable<SnapshotConditionMatch> */
-    private function matching(string $column, string $value, bool $allOwners): iterable
+    /**
+     * @param  Builder<CartSnapshotCondition>  $matchingConditions
+     * @return iterable<SnapshotConditionMatch>
+     */
+    private function matching(Builder $matchingConditions, bool $allOwners): iterable
     {
         $snapshots = $this->snapshotQuery($allOwners);
-        $matchingConditions = CartSnapshotCondition::query()->where($column, $value);
 
         $snapshots->whereIn('id', (clone $matchingConditions)->select('cart_id'));
 

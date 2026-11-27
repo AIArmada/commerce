@@ -7,6 +7,7 @@ use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
@@ -101,16 +102,18 @@ describe('CartSyncManager', function (): void {
     });
 
     it('deletes by identity', function (): void {
-        $this->synchronizer->shouldReceive('deleteNormalizedCart')->with('user-123', 'default', null, null)->once();
+        $this->synchronizer->shouldReceive('deleteNormalizedCart')->with('user-123', 'default', null)->once();
 
         $this->manager->deleteByIdentity('default', 'user-123');
     });
 
     it('deletes by identity with explicit owner tuple', function (): void {
+        $identity = CartOwnerIdentity::fromTypeAndId('App\\Models\\Tenant', 'tenant-1');
+
         $this->synchronizer->shouldReceive('deleteNormalizedCart')
-            ->with('user-123', 'default', 'App\\Models\\Tenant', 'tenant-1')
+            ->with('user-123', 'default', $identity)
             ->once();
 
-        $this->manager->deleteByIdentity('default', 'user-123', 'App\\Models\\Tenant', 'tenant-1');
+        $this->manager->deleteByIdentity('default', 'user-123', $identity);
     });
 });

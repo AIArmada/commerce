@@ -61,6 +61,14 @@ use RuntimeException;
  */
 class Condition extends Model implements Auditable
 {
+    public const array RESERVED_ATTRIBUTE_KEYS = [
+        'condition_id',
+        'condition_name',
+        'is_global',
+        'definition_hash',
+        '__provider',
+    ];
+
     use HasCommerceAudit;
 
     /** @use HasFactory<ConditionFactory> */

@@ -3,18 +3,37 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart as BaseCart;
+use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\CartSnapshotSynced;
 use AIArmada\Cart\Events\HighValueCartDetected;
+use AIArmada\Cart\Features\LiveCart\Persistence\DatabaseStorage;
+use AIArmada\Cart\Features\Snapshots\EntryPoints\Listeners\SyncCartOnEvent;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotCondition as CartCondition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshotItem as CartItem;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
+use AIArmada\Cart\Features\Snapshots\Services\CartSyncManager;
+use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+
+function normalizedSynchronizerSnapshot(
+    array $items = [],
+    array $conditions = [],
+    array $metadata = [],
+    ?string $createdAt = null,
+    ?string $updatedAt = null,
+): CartStorageSnapshot {
+    return new CartStorageSnapshot('cart-id', 1, $items, $conditions, $metadata, $createdAt, $updatedAt);
+}
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::create(2025, 1, 15, 12, 0, 0));
@@ -37,6 +56,7 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getConditions')->andReturn([]);
         $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot());
 
         $cart = new BaseCart($this->storage, 'user-123', null, 'default');
 
@@ -78,6 +98,32 @@ describe('NormalizedCartSynchronizer', function (): void {
         ]);
         $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot(
+            items: [
+                'item-1' => [
+                    'id' => 'item-1',
+                    'name' => 'Product A',
+                    'quantity' => 2,
+                    'price' => 1000,
+                    'attributes' => ['color' => 'red'],
+                    'conditions' => [],
+                ],
+            ],
+            conditions: [
+                'Promo Code' => [
+                    'name' => 'Promo Code',
+                    'type' => 'discount',
+                    'target_definition' => [
+                        'scope' => 'cart',
+                        'phase' => 'cart_subtotal',
+                        'application' => 'aggregate',
+                    ],
+                    'value' => '-10%',
+                    'order' => 1,
+                    'attributes' => ['is_global' => true],
+                ],
+            ],
+        ));
 
         $cart = new BaseCart($this->storage, 'user-123', null, 'default');
 
@@ -130,6 +176,7 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getConditions')->andReturn([]);
         $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot());
 
         $baseCart = new BaseCart($this->storage, 'user-123', null, 'default');
 
@@ -193,17 +240,115 @@ describe('NormalizedCartSynchronizer', function (): void {
             'quantity' => 1,
         ]);
 
-        $this->synchronizer->deleteNormalizedCart(
+        OwnerContext::withOwner($ownerA, fn () => $this->synchronizer->deleteNormalizedCart(
             identifier: 'collision-user',
             instance: 'default',
-            ownerType: $ownerA->getMorphClass(),
-            ownerId: $ownerA->getKey(),
-        );
+            identity: CartOwnerIdentity::fromTypeAndId($ownerA->getMorphClass(), $ownerA->getKey()),
+        ));
 
         expect(Cart::query()->withoutOwnerScope()->find($ownerACart->id))->toBeNull();
         expect(Cart::query()->withoutOwnerScope()->find($ownerBCart->id))->not->toBeNull();
         expect(CartItem::query()->where('cart_id', $ownerACart->id)->count())->toBe(0);
         expect(CartItem::query()->where('cart_id', $ownerBCart->id)->count())->toBe(1);
+    });
+
+    it('rejects a snapshot deletion claim outside the matching owner context', function (): void {
+        config()->set('cart.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Delete Claim A',
+            'email' => 'delete-claim-a@example.com',
+            'password' => 'secret',
+        ]);
+        $ownerB = User::query()->create([
+            'name' => 'Delete Claim B',
+            'email' => 'delete-claim-b@example.com',
+            'password' => 'secret',
+        ]);
+
+        $snapshot = OwnerContext::withOwner($ownerA, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'claim-cart',
+        ]));
+
+        expect(fn () => OwnerContext::withOwner($ownerB, fn () => $this->synchronizer->deleteNormalizedCart(
+            identifier: 'claim-cart',
+            instance: 'default',
+            identity: CartOwnerIdentity::fromTypeAndId($ownerA->getMorphClass(), $ownerA->getKey()),
+        )))->toThrow(AuthorizationException::class);
+
+        expect(Cart::query()->withoutOwnerScope()->whereKey($snapshot->id)->exists())->toBeTrue();
+    });
+
+    it('requires explicit global context to delete a global snapshot claim', function (): void {
+        config()->set('cart.owner.enabled', true);
+
+        $owner = User::query()->create([
+            'name' => 'Global Delete Owner',
+            'email' => 'global-delete-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        $snapshot = OwnerContext::withOwner(null, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'global-claim-cart',
+        ]));
+
+        expect(fn () => OwnerContext::withOwner($owner, fn () => $this->synchronizer->deleteNormalizedCart(
+            identifier: 'global-claim-cart',
+            instance: 'default',
+            identity: CartOwnerIdentity::global(),
+        )))->toThrow(AuthorizationException::class);
+
+        expect(Cart::query()->withoutOwnerScope()->whereKey($snapshot->id)->exists())->toBeTrue();
+
+        OwnerContext::withOwner(null, fn () => $this->synchronizer->deleteNormalizedCart(
+            identifier: 'global-claim-cart',
+            instance: 'default',
+            identity: CartOwnerIdentity::global(),
+        ));
+
+        expect(Cart::query()->withoutOwnerScope()->whereKey($snapshot->id)->exists())->toBeFalse();
+    });
+
+    it('resolves the ambient owner when no deletion identity is supplied', function (): void {
+        config()->set('cart.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Ambient Delete A',
+            'email' => 'ambient-delete-a@example.com',
+            'password' => 'secret',
+        ]);
+        $ownerB = User::query()->create([
+            'name' => 'Ambient Delete B',
+            'email' => 'ambient-delete-b@example.com',
+            'password' => 'secret',
+        ]);
+
+        $snapshotA = OwnerContext::withOwner($ownerA, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'ambient-cart',
+        ]));
+        $snapshotB = OwnerContext::withOwner($ownerB, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'ambient-cart',
+        ]));
+
+        OwnerContext::withOwner($ownerA, fn () => $this->synchronizer->deleteNormalizedCart('ambient-cart', 'default'));
+
+        expect(Cart::query()->withoutOwnerScope()->whereKey($snapshotA->id)->exists())->toBeFalse()
+            ->and(Cart::query()->withoutOwnerScope()->whereKey($snapshotB->id)->exists())->toBeTrue();
+    });
+
+    it('rejects malformed destroyed owner tuples before deleting', function (): void {
+        $syncManager = new CartSyncManager(
+            $this->synchronizer,
+            app(CartInstanceManager::class),
+        );
+
+        expect(fn () => (new SyncCartOnEvent($syncManager))
+            ->handle(new CartDestroyed('malformed-cart', 'default', null, 'users', null)))
+            ->toThrow(InvalidArgumentException::class);
     });
 
     it('does not overwrite another owners cart snapshot when owner mode is enabled', function (): void {
@@ -232,6 +377,7 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getConditions')->andReturn([]);
         $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot());
 
         // The synchronizer derives the snapshot owner from the source cart
         // storage and validates it against the ambient owner context.
@@ -269,6 +415,17 @@ describe('NormalizedCartSynchronizer', function (): void {
         ]);
         $this->storage->shouldReceive('getCreatedAt')->andReturn(now()->subDay()->toIso8601String());
         $this->storage->shouldReceive('getUpdatedAt')->andReturn(now()->subMinutes(45)->toIso8601String());
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot(
+            metadata: [
+                'email' => 'buyer@example.com',
+                'last_step' => 'payment',
+                'last_activity_at' => now()->subMinutes(45)->toIso8601String(),
+                'checkout_started_at' => now()->subHours(2)->toIso8601String(),
+                'checkout_abandoned_at' => now()->subHour()->toIso8601String(),
+            ],
+            createdAt: now()->subDay()->toIso8601String(),
+            updatedAt: now()->subMinutes(45)->toIso8601String(),
+        ));
 
         $cart = new BaseCart($this->storage, 'user-456', null, 'default');
 
@@ -301,6 +458,10 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
         $this->storage->shouldReceive('getCreatedAt')->andReturn(now()->subDay()->toIso8601String());
         $this->storage->shouldReceive('getUpdatedAt')->andReturn(now()->subMinutes(15)->toIso8601String());
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot(
+            createdAt: now()->subDay()->toIso8601String(),
+            updatedAt: now()->subMinutes(15)->toIso8601String(),
+        ));
 
         $cart = new BaseCart($this->storage, 'user-789', null, 'default');
 
@@ -329,6 +490,10 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
         $this->storage->shouldReceive('getCreatedAt')->andReturn(CarbonImmutable::now()->subDay());
         $this->storage->shouldReceive('getUpdatedAt')->andReturn(CarbonImmutable::now()->subMinutes(10));
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot(
+            createdAt: CarbonImmutable::now()->subDay()->toIso8601String(),
+            updatedAt: CarbonImmutable::now()->subMinutes(10)->toIso8601String(),
+        ));
 
         $cart = new BaseCart($this->storage, 'user-immutable', null, 'default');
 
@@ -339,6 +504,77 @@ describe('NormalizedCartSynchronizer', function (): void {
         expect($cartModel->last_activity_at?->toDateTimeString())->toBe(Carbon::now()->subHour()->toDateTimeString())
             ->and($cartModel->checkout_started_at?->toDateTimeString())->toBe(Carbon::now()->subHours(3)->toDateTimeString())
             ->and($cartModel->checkout_abandoned_at?->toDateTimeString())->toBe(Carbon::now()->subHours(2)->toDateTimeString());
+    });
+
+    it('reads one live snapshot per sync and does not re-fetch children after upsert', function (): void {
+        config(['cart.events' => false, 'cart.owner.enabled' => false]);
+
+        $storage = new DatabaseStorage(app('db')->connection(), 'carts');
+        $cart = new BaseCart($storage, 'query-budget-cart', null, 'default');
+        $cart->add('sku-1', 'Product', 1000, 1);
+
+        $synchronizer = new NormalizedCartSynchronizer;
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $synchronizer->syncFromCart($cart);
+
+        $firstQueries = DB::getQueryLog();
+        DB::flushQueryLog();
+
+        $synchronizer->syncFromCart($cart);
+
+        $secondQueries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $childFetches = static fn (array $queries): array => array_values(array_filter(
+            $queries,
+            static fn (array $query): bool => str_starts_with(mb_ltrim($query['query']), 'select *')
+                && (str_contains($query['query'], 'cart_snapshot_items') || str_contains($query['query'], 'cart_snapshot_conditions')),
+        ));
+        $childWrites = static fn (array $queries): array => array_values(array_filter(
+            $queries,
+            static fn (array $query): bool => (str_starts_with(mb_ltrim($query['query']), 'insert')
+                || str_starts_with(mb_ltrim($query['query']), 'update')
+                || str_starts_with(mb_ltrim($query['query']), 'delete'))
+                && (str_contains($query['query'], 'cart_snapshot_items') || str_contains($query['query'], 'cart_snapshot_conditions')),
+        ));
+
+        expect($childFetches($firstQueries))->toHaveCount(2)
+            ->and($childFetches($secondQueries))->toBe([])
+            ->and($childWrites($secondQueries))->toBe([])
+            ->and(count($secondQueries))->toBeLessThanOrEqual(3);
+    });
+
+    it('dispatches snapshot events only for committed syncs', function (): void {
+        config(['cart.events' => false, 'cart.owner.enabled' => false]);
+
+        $storage = new DatabaseStorage(app('db')->connection(), 'carts');
+        $cart = new BaseCart($storage, 'rollback-sync-cart', null, 'default');
+        $cart->add('sku-1', 'Product', 1000, 1);
+
+        Event::fake([CartSnapshotSynced::class]);
+
+        $fail = true;
+        $listener = 'eloquent.saving: ' . Cart::class;
+        Event::listen($listener, static function () use (&$fail): void {
+            if ($fail) {
+                throw new RuntimeException('forced snapshot failure');
+            }
+        });
+
+        expect(fn () => (new NormalizedCartSynchronizer)->syncFromCart($cart))
+            ->toThrow(RuntimeException::class, 'forced snapshot failure');
+
+        $fail = false;
+
+        expect(Cart::query()->where('identifier', 'rollback-sync-cart')->exists())->toBeFalse();
+        Event::assertNotDispatched(CartSnapshotSynced::class);
+
+        (new NormalizedCartSynchronizer)->syncFromCart($cart);
+
+        Event::assertDispatched(CartSnapshotSynced::class);
     });
 
     it('emits snapshot and high-value events only when material fields change', function (): void {
@@ -359,6 +595,18 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getConditions')->andReturn([]);
         $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getSnapshot')->andReturn(normalizedSynchronizerSnapshot(
+            items: [
+                'item-1' => [
+                    'id' => 'item-1',
+                    'name' => 'Product A',
+                    'quantity' => 1,
+                    'price' => 1500,
+                    'attributes' => [],
+                    'conditions' => [],
+                ],
+            ],
+        ));
 
         $cart = new BaseCart($this->storage, 'high-value-user', null, 'default');
 

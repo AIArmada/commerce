@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Features\LiveCart\Actions;
 
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Features\LiveCart\Models\CartModel;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 
 final readonly class MarkCartConverted
@@ -18,14 +19,28 @@ final readonly class MarkCartConverted
      */
     public function execute(CartModel $cart): void
     {
-        if ($cart->checked_out_at !== null) {
-            return;
-        }
-
         if (! $cart->exists) {
+            if ($cart->checked_out_at !== null) {
+                return;
+            }
+
             $cart->checked_out_at = CarbonImmutable::now();
             $cart->save();
 
+            return;
+        }
+
+        if (CartModel::ownerScopingEnabled()) {
+            /** @var CartModel $cart */
+            $cart = OwnerWriteGuard::findOrFailForOwner(
+                CartModel::class,
+                (string) $cart->getKey(),
+                includeGlobal: false,
+                message: 'Cart is not accessible in the current owner scope.',
+            );
+        }
+
+        if ($cart->checked_out_at !== null) {
             return;
         }
 

@@ -9,7 +9,8 @@ use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 
 class CartInstanceManager
 {
@@ -29,11 +30,38 @@ class CartInstanceManager
 
     public function resolveForSnapshot(CartSnapshotData $snapshot): Cart
     {
-        $owner = OwnerTupleParser::fromTypeAndId(
-            $snapshot->ownerType,
-            $snapshot->ownerId,
-        )->toOwnerModel();
+        $this->assertSnapshotOwner($snapshot);
 
-        return OwnerContext::withOwner($owner, fn () => $this->resolve($snapshot->instance, $snapshot->identifier));
+        return $this->resolve($snapshot->instance, $snapshot->identifier);
+    }
+
+    private function assertSnapshotOwner(CartSnapshotData $snapshot): void
+    {
+        if (! (bool) config('cart.owner.enabled', false)) {
+            return;
+        }
+
+        $ambient = OwnerContext::resolve();
+
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $ambient,
+            'Cart snapshots require an owner context or explicit global context.',
+        );
+
+        $snapshotOwner = OwnerContext::fromTypeAndId($snapshot->ownerType, $snapshot->ownerId);
+
+        if (! $this->sameOwner($ambient, $snapshotOwner)) {
+            throw new AuthorizationException('Cart snapshot is not accessible in the current owner scope.');
+        }
+    }
+
+    private function sameOwner(?Model $left, ?Model $right): bool
+    {
+        if ($left === null || $right === null) {
+            return $left === $right;
+        }
+
+        return $left->getMorphClass() === $right->getMorphClass()
+            && (string) $left->getKey() === (string) $right->getKey();
     }
 }

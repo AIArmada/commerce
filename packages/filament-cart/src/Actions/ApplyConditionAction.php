@@ -94,7 +94,7 @@ final class ApplyConditionAction extends Action
                     ->label('Condition')
                     ->placeholder('Search conditions...')
                     ->getSearchResultsUsing(fn (string $search): array => self::searchConditionOptions($search, forItems: true))
-                    ->getOptionLabelUsing(fn ($value): ?string => self::resolveConditionLabel($value))
+                    ->getOptionLabelUsing(fn ($value): ?string => self::resolveConditionLabel($value, forItems: true))
                     ->required()
                     ->searchable()
                     ->helperText('Only item-level conditions are shown'),
@@ -149,13 +149,13 @@ final class ApplyConditionAction extends Action
             ->all();
     }
 
-    private static function resolveConditionLabel(mixed $value): ?string
+    private static function resolveConditionLabel(mixed $value, bool $forItems = false): ?string
     {
         if (! is_string($value) && ! is_int($value)) {
             return null;
         }
 
-        $condition = self::getScopedConditionQuery(forItems: false)->find($value);
+        $condition = self::getScopedConditionQuery($forItems)->find($value);
 
         if (! $condition instanceof Condition) {
             return null;
@@ -174,7 +174,9 @@ final class ApplyConditionAction extends Action
         $query = Condition::query()->active();
 
         if ($forItems) {
-            $query->forItems();
+            $query
+                ->forItems()
+                ->where('is_dynamic', false);
         }
 
         if (! Condition::ownerScopingEnabled()) {

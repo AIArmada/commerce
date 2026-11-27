@@ -10,6 +10,10 @@ use AIArmada\Cart\Runtime\CartInstanceManager;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 describe('CartInstanceManager', function (): void {
     it('resolves cart instance with rules factory', function (): void {
@@ -56,7 +60,9 @@ describe('CartInstanceManager', function (): void {
         expect($result)->toBe($cart);
     });
 
-    it('resolves a cart instance within the snapshot owner context', function (): void {
+    it('resolves a snapshot only inside the matching ambient owner context', function (): void {
+        config()->set('cart.owner.enabled', true);
+
         $rulesFactory = Mockery::mock(RulesFactoryInterface::class);
 
         $storage = Mockery::mock(StorageInterface::class);
@@ -66,8 +72,11 @@ describe('CartInstanceManager', function (): void {
 
         $cart = new Cart($storage, 'session-123');
 
-        $owner = new User;
-        $owner->id = 'owner-123';
+        $owner = User::query()->create([
+            'name' => 'Snapshot Owner',
+            'email' => 'snapshot-instance-owner@example.com',
+            'password' => 'secret',
+        ]);
 
         $snapshot = new CartSnapshot;
         $snapshot->instance = 'default';
@@ -78,18 +87,38 @@ describe('CartInstanceManager', function (): void {
         $facadeMock = Mockery::mock();
         $facadeMock->shouldReceive('getCartInstance')
             ->with('default', 'session-123')
-            ->andReturnUsing(function () use ($cart, $owner) {
-                expect(OwnerContext::resolve()?->getMorphClass())->toBe($owner->getMorphClass());
-                expect((string) OwnerContext::resolve()?->getKey())->toBe((string) $owner->getKey());
-
-                return $cart;
-            });
+            ->andReturn($cart);
 
         CartFacade::swap($facadeMock);
 
         $manager = new CartInstanceManager($rulesFactory);
-        $result = $manager->resolveForSnapshot($snapshot->toSnapshotData());
+
+        expect(fn () => $manager->resolveForSnapshot($snapshot->toSnapshotData()))
+            ->toThrow(AuthorizationException::class);
+
+        $result = OwnerContext::withOwner($owner, fn () => $manager->resolveForSnapshot($snapshot->toSnapshotData()));
 
         expect($result)->toBe($cart);
+    });
+
+    it('rejects writable snapshot resolution for global snapshots in tenant context', function (): void {
+        config()->set('cart.owner.enabled', true);
+
+        $owner = User::query()->create([
+            'name' => 'Tenant Owner',
+            'email' => 'tenant-instance-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        $snapshot = new CartSnapshot;
+        $snapshot->instance = 'default';
+        $snapshot->identifier = 'global-session';
+        $snapshot->owner_type = null;
+        $snapshot->owner_id = null;
+
+        $manager = new CartInstanceManager(Mockery::mock(RulesFactoryInterface::class));
+
+        expect(fn () => OwnerContext::withOwner($owner, fn () => $manager->resolveForSnapshot($snapshot->toSnapshotData())))
+            ->toThrow(AuthorizationException::class);
     });
 });

@@ -8,6 +8,7 @@ use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Features\Snapshots\EntryPoints\Jobs\SyncNormalizedCartJob;
 use AIArmada\Cart\Features\Snapshots\Persistence\NormalizedCartSynchronizer;
 use AIArmada\Cart\Runtime\CartInstanceManager;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
 use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 
 class CartSyncManager implements CartSnapshotSyncInterface
@@ -46,9 +47,8 @@ class CartSyncManager implements CartSnapshotSyncInterface
     public function deleteByIdentity(
         string $instance,
         string $identifier,
-        ?string $ownerType = null,
-        string | int | null $ownerId = null,
+        ?CartOwnerIdentity $identity = null,
     ): void {
-        $this->synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId);
+        $this->synchronizer->deleteNormalizedCart($identifier, $instance, $identity);
     }
 }

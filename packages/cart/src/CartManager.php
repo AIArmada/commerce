@@ -205,6 +205,7 @@ final class CartManager implements CartManagerInterface
             eventsEnabled: $this->eventsEnabled,
             conditionResolver: $this->conditionResolver,
             cartFactory: $this->cartFactoryFor($scopedStorage),
+            identifierResolver: $this->identifierResolver,
         );
     }
 

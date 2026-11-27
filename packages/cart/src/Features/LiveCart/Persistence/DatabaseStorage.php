@@ -113,7 +113,7 @@ final readonly class DatabaseStorage implements CartIdentityLookup, StorageInter
     public function getSnapshot(string $identifier, string $instance): ?CartStorageSnapshot
     {
         /** @var stdClass|null $row */
-        $row = $this->baseQuery($identifier, $instance)->first(['id', 'version', 'items', 'conditions', 'metadata']);
+        $row = $this->baseQuery($identifier, $instance)->first(['id', 'version', 'items', 'conditions', 'metadata', 'created_at', 'updated_at']);
 
         if ($row === null) {
             return null;
@@ -125,6 +125,8 @@ final readonly class DatabaseStorage implements CartIdentityLookup, StorageInter
             items: $this->decodeData($row->items, 'items'),
             conditions: $this->decodeData($row->conditions, 'conditions'),
             metadata: $this->decodeData($row->metadata, 'metadata'),
+            createdAt: is_string($row->created_at ?? null) ? $row->created_at : null,
+            updatedAt: is_string($row->updated_at ?? null) ? $row->updated_at : null,
         );
     }
 

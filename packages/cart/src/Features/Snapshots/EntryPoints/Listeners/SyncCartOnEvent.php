@@ -14,6 +14,7 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
+use AIArmada\Cart\Runtime\CartOwnerIdentity;
 use AIArmada\Cart\Runtime\CartSnapshotSyncInterface;
 
 /**
@@ -42,8 +43,7 @@ final class SyncCartOnEvent
             $this->syncManager->deleteByIdentity(
                 instance: $event->instance,
                 identifier: $event->identifier,
-                ownerType: $event->owner_type,
-                ownerId: $event->owner_id,
+                identity: CartOwnerIdentity::fromTypeAndId($event->owner_type, $event->owner_id),
             );
 
             return;

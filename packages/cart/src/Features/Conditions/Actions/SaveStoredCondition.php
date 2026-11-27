@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Features\Conditions\Actions;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use InvalidArgumentException;
 
 final readonly class SaveStoredCondition
 {
@@ -53,6 +54,18 @@ final readonly class SaveStoredCondition
      */
     private function normalize(array $data): array
     {
+        if (array_key_exists('attributes', $data)) {
+            if (! is_array($data['attributes'])) {
+                throw new InvalidArgumentException('Condition attributes must be an array.');
+            }
+
+            foreach (Condition::RESERVED_ATTRIBUTE_KEYS as $reserved) {
+                if (array_key_exists($reserved, $data['attributes'])) {
+                    throw new InvalidArgumentException("Condition attribute [{$reserved}] is reserved.");
+                }
+            }
+        }
+
         if (array_key_exists('rules', $data)) {
             $data['rules'] = Condition::normalizeRulesDefinition(
                 $data['rules'],

@@ -13,6 +13,7 @@ use AIArmada\FilamentCart\Resources\CartResource\RelationManagers\ItemsRelationM
 use AIArmada\FilamentCart\Resources\CartResource\Schemas\CartForm;
 use AIArmada\FilamentCart\Resources\CartResource\Schemas\CartInfolist;
 use AIArmada\FilamentCart\Resources\CartResource\Tables\CartsTable;
+use AIArmada\FilamentCart\Support\OwnerScopedCacheContext;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -87,9 +88,16 @@ final class CartResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = (int) OwnerCache::remember(
-            Cart::resolveCurrentOwner(),
+        $context = OwnerScopedCacheContext::for(
             'filament-cart.nav.carts-count',
+            Cart::includeGlobalRecords(),
+            Cart::ownerScopingEnabled(),
+            Cart::resolveCurrentOwner(),
+        );
+
+        $count = (int) OwnerCache::remember(
+            $context->owner,
+            $context->key,
             30,
             fn (): int => self::getEloquentQuery()->count(),
         );

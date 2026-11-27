@@ -71,11 +71,7 @@ final readonly class RemoveStoredConditions
                 try {
                     $remove = function () use ($match, $snapshot): bool {
                         $cart = $this->cartInstances->resolveForSnapshot($snapshot);
-                        $conditionRemoved = false;
-
-                        foreach ($match->conditions as $snapshotCondition) {
-                            $conditionRemoved = $this->removeConditionFromCart($cart, $snapshotCondition) || $conditionRemoved;
-                        }
+                        $conditionRemoved = $this->removeConditionsFromCart($cart, $match->conditions);
 
                         if ($conditionRemoved) {
                             $this->syncManager->sync($cart, force: true);
@@ -189,6 +185,45 @@ final readonly class RemoveStoredConditions
         $this->syncManager->sync($cart, force: true);
     }
 
+    /**
+     * @param  list<SnapshotConditionData>  $snapshotConditions
+     */
+    private function removeConditionsFromCart(Cart $cart, array $snapshotConditions): bool
+    {
+        $removed = false;
+        $itemConditions = [];
+        $dynamicNames = [];
+
+        foreach ($snapshotConditions as $snapshotCondition) {
+            if ($snapshotCondition->cartLevel) {
+                $removed = $this->removeConditionFromCart($cart, $snapshotCondition) || $removed;
+
+                continue;
+            }
+
+            $dynamicName = $this->matchingDynamicDefinitionName($cart, $snapshotCondition);
+
+            if ($dynamicName !== null) {
+                $dynamicNames[$dynamicName] = true;
+            }
+
+            if ($snapshotCondition->itemId !== null) {
+                $itemConditions[$snapshotCondition->itemId][$snapshotCondition->name] = $snapshotCondition->conditionId;
+            }
+        }
+
+        foreach (array_keys($dynamicNames) as $dynamicName) {
+            $cart->removeDynamicCondition((string) $dynamicName);
+            $removed = true;
+        }
+
+        if ($itemConditions !== []) {
+            $removed = $cart->removeItemConditions($itemConditions) || $removed;
+        }
+
+        return $removed;
+    }
+
     private function removeConditionFromCart(Cart $cart, SnapshotConditionData $snapshotCondition): bool
     {
         $conditionName = $snapshotCondition->name;
@@ -199,11 +234,11 @@ final readonly class RemoveStoredConditions
             $dynamic = $cart->getDynamicConditions()->getCondition($conditionName);
             $removed = false;
 
-            if ($stored !== null && $stored->getAttribute('condition_id') === $conditionId) {
+            if ($stored !== null && $this->matchesConditionId($stored->getAttribute('condition_id'), $conditionId)) {
                 $removed = $cart->removeCondition($conditionName);
             }
 
-            if ($dynamic !== null && $dynamic->getAttribute('condition_id') === $conditionId) {
+            if ($dynamic !== null && $this->matchesConditionId($dynamic->getAttribute('condition_id'), $conditionId)) {
                 $cart->removeDynamicCondition($conditionName);
                 $removed = true;
             }
@@ -212,6 +247,13 @@ final readonly class RemoveStoredConditions
         }
 
         $removed = false;
+        $dynamicName = $this->matchingDynamicDefinitionName($cart, $snapshotCondition);
+
+        if ($dynamicName !== null) {
+            $cart->removeDynamicCondition($dynamicName);
+            $removed = true;
+        }
+
         foreach ($cart->getItems() as $item) {
             if ($snapshotCondition->itemId !== null && $item->id !== $snapshotCondition->itemId) {
                 continue;
@@ -219,7 +261,7 @@ final readonly class RemoveStoredConditions
 
             $condition = $item->getConditions()->getCondition($conditionName);
 
-            if ($condition === null || $condition->getAttribute('condition_id') !== $conditionId) {
+            if ($condition === null || ! $this->matchesConditionId($condition->getAttribute('condition_id'), $conditionId)) {
                 continue;
             }
 
@@ -227,5 +269,33 @@ final readonly class RemoveStoredConditions
         }
 
         return $removed;
+    }
+
+    private function matchingDynamicDefinitionName(Cart $cart, SnapshotConditionData $snapshotCondition): ?string
+    {
+        if ($snapshotCondition->conditionId === null) {
+            return null;
+        }
+
+        foreach ($cart->getDynamicConditions() as $definition) {
+            if ($definition->getName() !== $snapshotCondition->name) {
+                continue;
+            }
+
+            if ($this->matchesConditionId($definition->getAttribute('condition_id'), $snapshotCondition->conditionId)) {
+                return $definition->getName();
+            }
+        }
+
+        return null;
+    }
+
+    private function matchesConditionId(mixed $actual, ?string $expected): bool
+    {
+        if ($expected === null) {
+            return $actual === null;
+        }
+
+        return $actual !== null && (string) $actual === $expected;
     }
 }

@@ -8,7 +8,9 @@ use AIArmada\Cart\Features\Snapshots\Api\AbandonmentSweep;
 use AIArmada\Cart\Features\Snapshots\Api\CartAbandonmentMarker;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 
 final readonly class SweepAbandonedSnapshots implements AbandonmentSweep
@@ -17,14 +19,24 @@ final readonly class SweepAbandonedSnapshots implements AbandonmentSweep
 
     public function owners(): array
     {
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return [];
+        }
+
+        if (! OwnerContext::isExplicitGlobal()) {
+            throw new AuthorizationException('Cart snapshot owner enumeration requires explicit global owner context.');
+        }
+
+        $columns = OwnerTupleColumns::forModelClass(CartSnapshot::class);
+
         return OwnerContext::withOwner(null, fn (): array => CartSnapshot::query()
             ->withoutOwnerScope()
-            ->select(['owner_type', 'owner_id'])
+            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
             ->distinct()
             ->get()
             ->map(fn (CartSnapshot $row): array => [
-                'owner_type' => $row->owner_type,
-                'owner_id' => $row->owner_id,
+                'owner_type' => $row->getAttribute($columns->ownerTypeColumn),
+                'owner_id' => $row->getAttribute($columns->ownerIdColumn),
             ])->values()->all());
     }
 

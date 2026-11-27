@@ -198,6 +198,15 @@ trait ManagesConditions
      */
     public function addItemCondition(string $itemId, CartCondition $condition): bool
     {
+        if ($condition->isDynamic()) {
+            throw new InvalidCartConditionException(
+                sprintf(
+                    'Cannot add dynamic condition "%s" to an item using addItemCondition(). Register item-scoped dynamic conditions at cart scope with registerDynamicCondition() instead.',
+                    $condition->getName()
+                )
+            );
+        }
+
         $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($itemId, $condition): ?CartCollection {
             if (! $cartItems->has($itemId)) {
                 return null;
@@ -260,6 +269,63 @@ trait ManagesConditions
         // Dispatch item-level condition removed event
         if ($removedCondition) {
             $this->dispatchEvent(new ItemConditionRemoved($removedCondition, $this, $itemId));
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove several item conditions in one cart mutation.
+     *
+     * @param  array<string, array<string, string|null>>  $expectedConditionIds  item id => condition name => expected condition id
+     */
+    public function removeItemConditions(array $expectedConditionIds): bool
+    {
+        $removed = [];
+
+        $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($expectedConditionIds, &$removed): ?CartCollection {
+            $changed = false;
+
+            foreach ($expectedConditionIds as $itemId => $conditions) {
+                if (! $cartItems->has($itemId)) {
+                    continue;
+                }
+
+                $item = $cartItems->get($itemId);
+                assert($item !== null, 'Item should exist since we checked has()');
+                $itemChanged = false;
+
+                foreach ($conditions as $conditionName => $conditionId) {
+                    $condition = $item->conditions->getCondition($conditionName);
+
+                    if ($condition === null || $condition->getAttribute('condition_id') !== $conditionId) {
+                        continue;
+                    }
+
+                    $removed[$itemId][$conditionName] = $condition;
+                    $item = $item->removeCondition($conditionName);
+                    $itemChanged = true;
+                }
+
+                if ($itemChanged) {
+                    $cartItems->put($itemId, $item);
+                    $changed = true;
+                }
+            }
+
+            return $changed ? $cartItems : null;
+        });
+
+        if (! $mutated) {
+            return false;
+        }
+
+        $this->invalidatePipelineCache();
+
+        foreach ($removed as $itemId => $conditions) {
+            foreach ($conditions as $condition) {
+                $this->dispatchEvent(new ItemConditionRemoved($condition, $this, $itemId));
+            }
         }
 
         return true;

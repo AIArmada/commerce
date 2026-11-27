@@ -35,6 +35,19 @@ final class ApplyStoredCondition
         $condition = $conditionModel->createCondition($customName);
 
         $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
+
+        if ($conditionModel->isDynamic()) {
+            $factoryKeys = $conditionModel->getRuleFactoryKeys();
+
+            $cartInstance->registerDynamicCondition(
+                $condition,
+                ruleFactoryKey: count($factoryKeys) === 1 ? $factoryKeys[0] : $factoryKeys,
+                metadata: ['context' => $conditionModel->getRuleContext()],
+            );
+
+            return $condition;
+        }
+
         $cartInstance->addCondition($condition);
 
         return $condition;
@@ -51,6 +64,11 @@ final class ApplyStoredCondition
     ): CartCondition {
         $cart = $this->snapshots->requireOwnedSnapshot($snapshotId);
         $conditionModel = $this->findStoredCondition($conditionId, forItems: true);
+
+        if ($conditionModel->isDynamic()) {
+            throw new Exception('Dynamic item-level conditions cannot be applied to a single item.');
+        }
+
         $condition = $conditionModel->createCondition($customName);
 
         $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
@@ -189,7 +207,7 @@ final class ApplyStoredCondition
             throw new Exception('Custom condition attributes must be an array.');
         }
 
-        foreach (['condition_id', 'is_global', 'definition_hash'] as $reserved) {
+        foreach (Condition::RESERVED_ATTRIBUTE_KEYS as $reserved) {
             if (array_key_exists($reserved, $attributes)) {
                 throw new Exception("Custom condition attribute [{$reserved}] is reserved.");
             }

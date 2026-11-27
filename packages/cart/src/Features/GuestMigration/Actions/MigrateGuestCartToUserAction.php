@@ -8,8 +8,8 @@ use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
-use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Features\GuestMigration\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartLimits;
@@ -33,6 +33,7 @@ final class MigrateGuestCartToUserAction
     public function __construct(
         private readonly CartMergeStrategyRegistry $strategyRegistry,
         ?StorageInterface $storage = null,
+        private readonly ?CartFactory $cartFactory = null,
     ) {
         $this->storage = $storage;
     }
@@ -74,6 +75,16 @@ final class MigrateGuestCartToUserAction
      */
     public function execute(int | string $userId, string $instance, string $sessionId, ?CartMergeStrategyInterface $strategy = null, ?string $strategyName = null): bool
     {
+        return $this->migrate($userId, $instance, $sessionId, $strategy, $strategyName) !== null;
+    }
+
+    private function migrate(
+        int | string $userId,
+        string $instance,
+        string $sessionId,
+        ?CartMergeStrategyInterface $strategy = null,
+        ?string $strategyName = null,
+    ): ?array {
         $guestIdentifier = $sessionId;
         $userIdentifier = (string) $userId;
 
@@ -107,7 +118,7 @@ final class MigrateGuestCartToUserAction
         );
 
         if ($merged === null) {
-            return false;
+            return null;
         }
 
         if (config('cart.events', true)) {
@@ -121,10 +132,12 @@ final class MigrateGuestCartToUserAction
                 hadConflicts: $this->hasMergeConflicts($merged['guestItems'], $merged['userItems']),
                 mergeStrategy: $mergeStrategy,
                 strategyName: $resolvedStrategyName,
+                guestStorage: $guestStorage,
+                targetStorage: $targetStorage,
             );
         }
 
-        return true;
+        return $merged;
     }
 
     public function withMergeStrategy(CartMergeStrategyInterface $strategy): static
@@ -158,12 +171,12 @@ final class MigrateGuestCartToUserAction
         }
 
         try {
-            $guestItems = $this->resolveGlobalStorage()->getItems($sessionId, $instance);
-            $success = $this->execute($userId, $instance, $sessionId);
+            $merged = $this->migrate($userId, $instance, $sessionId);
+            $success = $merged !== null;
 
             return (object) [
                 'success' => $success,
-                'itemsMerged' => $success ? $this->sumItemQuantities($guestItems) : 0,
+                'itemsMerged' => $merged !== null ? $this->sumItemQuantities($merged['guestItems']) : 0,
                 'conflicts' => collect(),
                 'message' => $success ? 'Cart migration completed successfully' : 'No items to migrate',
             ];
@@ -367,13 +380,14 @@ final class MigrateGuestCartToUserAction
         bool $hadConflicts,
         CartMergeStrategyInterface $mergeStrategy,
         string $strategyName,
+        StorageInterface $guestStorage,
+        StorageInterface $targetStorage,
     ): void {
-        $cartManager = Cart::getFacadeRoot();
-        $targetCartInstance = $cartManager->getCartInstance($instance, $userIdentifier);
+        $factory = $this->cartFactory ?? app(CartFactory::class);
 
         event(new CartMerged(
-            targetCart: $targetCartInstance,
-            sourceCart: $cartManager->getCartInstance($instance, $guestIdentifier),
+            targetCart: $factory->withStorage($targetStorage)->make($userIdentifier, $instance),
+            sourceCart: $factory->withStorage($guestStorage)->make($guestIdentifier, $instance),
             totalItemsMerged: $totalItemsMerged,
             mergeStrategy: $strategyName,
             hadConflicts: $hadConflicts,

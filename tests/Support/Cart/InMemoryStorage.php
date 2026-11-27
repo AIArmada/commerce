@@ -118,6 +118,8 @@ final class InMemoryStorage implements StorageInterface
             items: $cart['items'],
             conditions: $cart['conditions'],
             metadata: $cart['metadata'],
+            createdAt: $cart['created_at'],
+            updatedAt: $cart['updated_at'],
         );
     }
 
