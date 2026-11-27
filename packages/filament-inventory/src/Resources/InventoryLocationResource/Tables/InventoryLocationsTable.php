@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryLocationResource\Tables;
 
+use AIArmada\Inventory\Actions\SaveInventoryLocation;
+use AIArmada\Inventory\Models\InventoryLocation;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -85,6 +87,7 @@ final class InventoryLocationsTable
                     ->icon(Heroicon::OutlinedPencil),
 
                 DeleteAction::make()
+                    ->using(fn (InventoryLocation $record): bool => app(SaveInventoryLocation::class)->delete($record))
                     ->icon(Heroicon::OutlinedTrash)
                     ->requiresConfirmation(),
             ])

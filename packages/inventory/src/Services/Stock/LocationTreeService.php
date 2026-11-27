@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services\Stock;
 
+use AIArmada\Inventory\Actions\SaveInventoryLocation;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -119,54 +120,14 @@ final class LocationTreeService
         ?TemperatureZone $zone = null,
         bool $isHazmatCertified = false
     ): InventoryLocation {
-        return DB::transaction(function () use ($name, $code, $parent, $zone, $isHazmatCertified): InventoryLocation {
-            if (InventoryOwnerScope::isEnabled()) {
-                $owner = InventoryOwnerScope::resolveOwner();
-
-                if ($parent !== null) {
-                    $parentIsAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($parent->getKey()))->exists();
-
-                    if (! $parentIsAllowed) {
-                        throw new InvalidArgumentException('Invalid parent location for current owner');
-                    }
-
-                    if ($owner !== null) {
-                        if ($parent->owner_type !== $owner->getMorphClass() || $parent->owner_id !== $owner->getKey()) {
-                            throw new InvalidArgumentException('Parent location must belong to current owner');
-                        }
-                    } else {
-                        if ($parent->owner_type !== null || $parent->owner_id !== null) {
-                            throw new InvalidArgumentException('Parent location must be global in global-only context');
-                        }
-                    }
-                }
-            }
-
-            $location = new InventoryLocation([
-                'name' => $name,
-                'code' => $code,
-                'is_active' => true,
-                'temperature_zone' => $zone?->value,
-                'is_hazmat_certified' => $isHazmatCertified,
-            ]);
-
-            if (InventoryOwnerScope::isEnabled()) {
-                $owner = InventoryOwnerScope::resolveOwner();
-                $location->owner_type = $owner?->getMorphClass();
-                $location->owner_id = $owner?->getKey();
-            }
-
-            if ($parent !== null) {
-                $location->parent_id = $parent->id;
-                $location->depth = $parent->depth + 1;
-            } else {
-                $location->depth = 0;
-            }
-
-            $location->save();
-
-            return $location;
-        });
+        return app(SaveInventoryLocation::class)->create([
+            'name' => $name,
+            'code' => $code,
+            'parent_id' => $parent?->id,
+            'is_active' => true,
+            'temperature_zone' => $zone?->value,
+            'is_hazmat_certified' => $isHazmatCertified,
+        ]);
     }
 
     /**
@@ -174,42 +135,7 @@ final class LocationTreeService
      */
     public function moveLocation(InventoryLocation $location, ?InventoryLocation $newParent): InventoryLocation
     {
-        if ($newParent !== null && $location->isAncestorOf($newParent)) {
-            throw new InvalidArgumentException('Cannot move a location to its own descendant');
-        }
-
-        if (InventoryOwnerScope::isEnabled()) {
-            $owner = InventoryOwnerScope::resolveOwner();
-
-            $locationIsAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($location->getKey()))->exists();
-            if (! $locationIsAllowed) {
-                throw new InvalidArgumentException('Invalid location for current owner');
-            }
-
-            if ($newParent !== null) {
-                $newParentIsAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query()->whereKey($newParent->getKey()))->exists();
-                if (! $newParentIsAllowed) {
-                    throw new InvalidArgumentException('Invalid new parent for current owner');
-                }
-
-                if ($owner !== null) {
-                    if ($newParent->owner_type !== $owner->getMorphClass() || $newParent->owner_id !== $owner->getKey()) {
-                        throw new InvalidArgumentException('New parent must belong to current owner');
-                    }
-                } else {
-                    if ($newParent->owner_type !== null || $newParent->owner_id !== null) {
-                        throw new InvalidArgumentException('New parent must be global in global-only context');
-                    }
-                }
-            }
-        }
-
-        return DB::transaction(function () use ($location, $newParent): InventoryLocation {
-            $location->parent_id = $newParent?->id;
-            $location->save();
-
-            return $location->fresh() ?? $location;
-        });
+        return app(SaveInventoryLocation::class)->update($location, ['parent_id' => $newParent?->id]);
     }
 
     /**
