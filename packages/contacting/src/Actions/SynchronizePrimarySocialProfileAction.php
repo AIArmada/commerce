@@ -5,11 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Actions;
 
 use AIArmada\Contacting\Models\SocialProfile;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
 final readonly class SynchronizePrimarySocialProfileAction
 {
-    public function execute(SocialProfile $record): void
+    /** @param Closure(): bool $persist */
+    public function execute(SocialProfile $record, Closure $persist): bool
+    {
+        return $record->getConnection()->transaction(function () use ($record, $persist): bool {
+            $this->demoteSiblings($record);
+
+            return $persist();
+        });
+    }
+
+    private function demoteSiblings(SocialProfile $record): void
     {
         if (! $record->is_primary) {
             return;

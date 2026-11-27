@@ -5,11 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Actions;
 
 use AIArmada\Contacting\Models\ContactMethod;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
 final readonly class SynchronizePrimaryContactMethodAction
 {
-    public function execute(ContactMethod $record): void
+    /** @param Closure(): bool $persist */
+    public function execute(ContactMethod $record, Closure $persist): bool
+    {
+        return $record->getConnection()->transaction(function () use ($record, $persist): bool {
+            $this->demoteSiblings($record);
+
+            return $persist();
+        });
+    }
+
+    private function demoteSiblings(ContactMethod $record): void
     {
         if (! $record->is_primary) {
             return;

@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -210,11 +209,7 @@ final class SocialProfile extends Model
         $this->guardSocialableOwner();
         $this->prepareOwnerForPrimarySync();
 
-        return DB::transaction(function () use ($options): bool {
-            app(SynchronizePrimarySocialProfileAction::class)->execute($this);
-
-            return parent::save($options);
-        });
+        return app(SynchronizePrimarySocialProfileAction::class)->execute($this, fn (): bool => parent::save($options));
     }
 
     private function applyDefaultFlags(): void
