@@ -6,10 +6,9 @@ namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
+use AIArmada\Chip\Features\WebhookDelivery\Api\PublicKeyCache;
 use Closure;
-use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -194,14 +193,7 @@ class WebhookService
      */
     private function rememberPublicKey(string $cacheKey, Closure $fetch): string
     {
-        $ttl = config('chip.cache.ttl.public_key', 86400);
-        $store = Cache::getStore();
-
-        if (! $store instanceof LockProvider) {
-            return Cache::remember($cacheKey, $ttl, $fetch);
-        }
-
-        return Cache::lock($cacheKey . ':lock', 10)->block(5, static fn (): string => Cache::remember($cacheKey, $ttl, $fetch));
+        return app(PublicKeyCache::class)->remember($cacheKey, $fetch);
     }
 
     public function parsePayload(string $payload): object

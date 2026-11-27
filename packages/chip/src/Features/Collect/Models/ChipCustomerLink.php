@@ -43,9 +43,9 @@ class ChipCustomerLink extends ChipModel
         return $this->morphTo();
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'customers';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'customers';
     }
 
     /**

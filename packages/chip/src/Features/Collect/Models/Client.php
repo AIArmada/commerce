@@ -106,9 +106,9 @@ class Client extends ChipModel
         });
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'clients';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'clients';
     }
 
     /**

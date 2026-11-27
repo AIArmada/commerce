@@ -122,9 +122,9 @@ class Payment extends ChipModel
         return $this->belongsTo(Purchase::class, 'purchase_id');
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'payments';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'payments';
     }
 
     /**

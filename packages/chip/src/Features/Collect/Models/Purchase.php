@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Features\Collect\Models;
 
+use AIArmada\Chip\Features\Collect\Actions\DeletePurchasePayments;
 use AIArmada\Chip\Models\ChipModel;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
@@ -228,15 +229,15 @@ class Purchase extends ChipModel
         });
     }
 
-    protected static function tableSuffix(): string
+    public function getTable(): string
     {
-        return 'purchases';
+        return (string) config('chip.database.table_prefix', 'chip_') . 'purchases';
     }
 
     protected static function booted(): void
     {
         static::deleting(function (self $purchase): void {
-            $purchase->payments()->delete();
+            app(DeletePurchasePayments::class)->handle($purchase);
         });
     }
 
