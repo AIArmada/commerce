@@ -176,7 +176,7 @@ class Subscription extends Model implements SubscriptionRecord
         /** @var class-string<SubscriptionItem> $model */
         $model = Cashier::$subscriptionItemModel;
 
-        return $this->hasMany($model);
+        return $this->hasMany($model, 'subscription_id');
     }
 
     /**

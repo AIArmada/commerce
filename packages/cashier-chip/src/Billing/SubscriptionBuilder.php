@@ -370,29 +370,26 @@ class SubscriptionBuilder
         // Calculate the total amount from items
         $amount = $this->calculateTotalAmount();
 
-        // Apply coupon discount if present
         $couponId = $this->couponId ?? $this->promotionCodeId;
 
-        if ($couponId) {
-            $this->validateCouponForCheckout($couponId);
-
-            $coupon = $this->retrieveCoupon($couponId);
-
-            if ($coupon) {
-                $discount = $coupon->calculateDiscount($amount);
-                $amount = max(0, $amount - $discount);
-            }
+        if (isset($sessionOptions['products'])) {
+            throw new InvalidArgumentException('Subscription checkout products must be defined by subscription prices.');
         }
 
+        $sessionMetadata = is_array($sessionOptions['metadata'] ?? null) ? $sessionOptions['metadata'] : [];
+        unset($sessionOptions['metadata'], $sessionOptions['recurring'], $sessionOptions['products']);
+
         // Build the checkout session
-        $metadata = array_merge($this->metadata, [
+        $metadata = array_merge($this->metadata, $sessionMetadata, [
             'subscription_type' => $this->type,
             'billing_interval' => $this->billingInterval,
             'billing_interval_count' => $this->billingIntervalCount,
             'items' => json_encode($this->items),
         ]);
 
-        if ($this->trialExpires) {
+        unset($metadata['trial_ends_at'], $metadata['coupon_id'], $metadata['coupon_discount']);
+
+        if (! $this->skipTrial && $this->trialExpires) {
             $metadata['trial_ends_at'] = $this->trialExpires->toIso8601String();
         }
 

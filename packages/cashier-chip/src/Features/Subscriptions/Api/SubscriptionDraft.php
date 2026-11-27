@@ -30,10 +30,18 @@ final readonly class SubscriptionDraft
             throw new InvalidArgumentException('At least one price is required when starting subscriptions.');
         }
 
+        $prices = [];
+
         foreach ($items as $item) {
             if (! is_string($item['price'] ?? null) || mb_trim($item['price']) === '') {
                 throw new InvalidArgumentException('A non-empty price identifier is required.');
             }
+
+            if (isset($prices[$item['price']])) {
+                throw new InvalidArgumentException('Subscription price identifiers must be unique.');
+            }
+
+            $prices[$item['price']] = true;
 
             if (! is_int($item['quantity'] ?? 1) || ($item['quantity'] ?? 1) < 1) {
                 throw new InvalidArgumentException('Subscription quantity must be a positive integer.');

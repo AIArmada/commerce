@@ -114,7 +114,7 @@ final readonly class StoreChipWebhookPayload implements PurchaseMirror
 
                 // Status
                 'status' => $payload['status'],
-                'total_minor' => is_numeric($payload['purchase']['total'] ?? null) ? (int) $payload['purchase']['total'] : $purchase->total_minor ?? 0,
+                'total_minor' => is_numeric($payload['purchase']['total'] ?? null) ? (int) $payload['purchase']['total'] : (int) ($purchase->getAttribute('total_minor') ?? 0),
                 'viewed_on' => $payload['viewed_on'] ?? null,
 
                 // Flags

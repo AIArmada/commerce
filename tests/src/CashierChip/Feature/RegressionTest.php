@@ -24,6 +24,7 @@ use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
@@ -405,6 +406,35 @@ describe('RepairRegression renewal idempotency', function (): void {
 });
 
 describe('RepairRegression security', function (): void {
+    it('applies a subscription checkout coupon exactly once and protects subscription metadata', function (): void {
+        $this->app->instance(VoucherService::class, new RepairFakeVoucherService([
+            'CHECKOUT200' => regressionVoucher('CHECKOUT200', Active::class),
+        ]));
+
+        $user = $this->createUser(['chip_id' => 'cli_checkout_coupon']);
+        $checkout = $user->newSubscription('default')
+            ->price(['price' => 'price_monthly', 'unit_amount' => 1000])
+            ->trialDays(14)
+            ->skipTrial()
+            ->withCoupon('CHECKOUT200')
+            ->checkout([
+                'metadata' => ['subscription_type' => 'other', 'trial_ends_at' => '2099-01-01', 'note' => 'preserved'],
+                'recurring' => false,
+            ]);
+
+        $purchase = $this->fakeChip->getFakeClient()->getPurchases()[$checkout->id()];
+
+        expect($purchase['purchase']['total'])->toBe(800)
+            ->and($purchase['force_recurring'])->toBeTrue();
+
+        $metadata = $purchase['purchase']['metadata'] ?? $purchase['metadata'];
+
+        expect($metadata['subscription_type'])->toBe('default')
+            ->and($metadata['coupon_discount'])->toBe(200)
+            ->and($metadata['note'])->toBe('preserved')
+            ->and($metadata)->not->toHaveKey('trial_ends_at');
+    });
+
     it('rejects expired coupons at subscription creation', function (): void {
         $this->app->instance(VoucherService::class, new RepairFakeVoucherService([
             'DEAD' => regressionVoucher('DEAD', Paused::class, ['duration' => 'once']),
