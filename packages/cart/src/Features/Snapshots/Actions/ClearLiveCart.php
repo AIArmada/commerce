@@ -24,6 +24,6 @@ final readonly class ClearLiveCart
             );
         }
 
-        $this->cartInstances->resolveForSnapshot($snapshot)->clear();
+        $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData())->clear();
     }
 }

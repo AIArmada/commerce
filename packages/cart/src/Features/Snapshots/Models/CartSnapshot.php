@@ -235,7 +235,7 @@ class CartSnapshot extends Model
     public function getCartInstance(): ?BaseCart
     {
         try {
-            return app(CartInstanceManager::class)->resolveForSnapshot($this);
+            return app(CartInstanceManager::class)->resolveForSnapshot($this->toSnapshotData());
         } catch (Throwable $exception) {
             Log::warning('Failed to resolve cart instance', [
                 'identifier' => $this->identifier,

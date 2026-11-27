@@ -33,7 +33,7 @@ final class ApplyStoredCondition
         $conditionModel = $this->findStoredCondition($conditionId, forItems: false);
         $condition = $conditionModel->createCondition($customName);
 
-        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
+        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart->toSnapshotData());
         $cartInstance->addCondition($condition);
 
         return $condition;
@@ -52,7 +52,7 @@ final class ApplyStoredCondition
         $conditionModel = $this->findStoredCondition($conditionId, forItems: true);
         $condition = $conditionModel->createCondition($customName);
 
-        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
+        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart->toSnapshotData());
         if (! $cartInstance->addItemCondition($itemId, $condition)) {
             throw new Exception('Item not found in cart');
         }
@@ -80,7 +80,7 @@ final class ApplyStoredCondition
     {
         $cart = $this->authorizeCart($cart);
         $validated = $this->validateCustomData($data);
-        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart);
+        $cartInstance = $this->cartInstanceManager->resolveForSnapshot($cart->toSnapshotData());
 
         $rulesDefinition = Condition::normalizeRulesDefinition(
             $data['dynamic_rules'] ?? null,

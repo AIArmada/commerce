@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Features\Conditions\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as CartModel;
@@ -385,10 +386,10 @@ describe('RemoveStoredConditions action', function (): void {
 
         $cartManager = Mockery::mock(CartInstanceManager::class);
         $cartManager->shouldReceive('resolveForSnapshot')
-            ->with(Mockery::on(fn ($snapshot) => $snapshot instanceof CartModel && $snapshot->id === $snapshotA->id))
+            ->with(Mockery::on(fn ($snapshot) => $snapshot instanceof CartSnapshotData && $snapshot->id === $snapshotA->id))
             ->andReturn($cartA);
         $cartManager->shouldReceive('resolveForSnapshot')
-            ->with(Mockery::on(fn ($snapshot) => $snapshot instanceof CartModel && $snapshot->id === $snapshotB->id))
+            ->with(Mockery::on(fn ($snapshot) => $snapshot instanceof CartSnapshotData && $snapshot->id === $snapshotB->id))
             ->andReturn($cartB);
 
         $syncManager = Mockery::mock(CartSyncManager::class);

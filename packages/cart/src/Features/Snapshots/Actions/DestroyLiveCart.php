@@ -24,6 +24,6 @@ final readonly class DestroyLiveCart
             );
         }
 
-        $this->cartInstances->resolveForSnapshot($snapshot)->destroy();
+        $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData())->destroy();
     }
 }

@@ -70,7 +70,7 @@ final class RemoveStoredConditions
 
                 try {
                     $remove = function () use ($snapshot, $conditionsByCart): bool {
-                        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
+                        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
                         $conditionRemoved = false;
 
                         foreach ($conditionsByCart->get($snapshot->id, collect()) as $snapshotCondition) {
@@ -138,7 +138,7 @@ final class RemoveStoredConditions
         }
 
         $snapshot = $this->authorizeSnapshot($snapshot);
-        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
+        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
         $removed = $this->removeConditionFromCart($cart, $snapshotCondition);
 
         if ($removed) {
@@ -156,7 +156,7 @@ final class RemoveStoredConditions
     public function clearAll(CartSnapshot $snapshot): void
     {
         $snapshot = $this->authorizeSnapshot($snapshot);
-        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
+        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
 
         $cart->clearConditions();
 
@@ -175,7 +175,7 @@ final class RemoveStoredConditions
     public function clearByType(CartSnapshot $snapshot, string $type): void
     {
         $snapshot = $this->authorizeSnapshot($snapshot);
-        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
+        $cart = $this->cartInstances->resolveForSnapshot($snapshot->toSnapshotData());
         $cart->removeConditionsByType($type);
         $this->syncManager->sync($cart, force: true);
     }

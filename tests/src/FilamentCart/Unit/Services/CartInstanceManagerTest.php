@@ -88,7 +88,7 @@ describe('CartInstanceManager', function (): void {
         CartFacade::swap($facadeMock);
 
         $manager = new CartInstanceManager($rulesFactory);
-        $result = $manager->resolveForSnapshot($snapshot);
+        $result = $manager->resolveForSnapshot($snapshot->toSnapshotData());
 
         expect($result)->toBe($cart);
     });
