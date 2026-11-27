@@ -55,9 +55,9 @@ describe('carrier safety guards', function (): void {
     });
 
     it('rejects carrier payloads with missing required keys', function (): void {
-        expect(fn () => OrderData::fromApiArray(['billCode' => 'X']))->toThrow(JntValidationException::class);
-        expect(fn () => TrackingData::fromApiArray(['details' => []]))->toThrow(JntValidationException::class);
-        expect(fn () => TrackingDetailData::fromApiArray(['scanTime' => 'now']))->toThrow(JntValidationException::class);
+        expect(fn () => OrderData::fromApiArray(['billCode' => 'X']))->toThrow(InvalidArgumentException::class);
+        expect(fn () => TrackingData::fromApiArray(['details' => []]))->toThrow(InvalidArgumentException::class);
+        expect(fn () => TrackingDetailData::fromApiArray(['scanTime' => 'now']))->toThrow(InvalidArgumentException::class);
 
         $detail = TrackingDetailData::fromApiArray([
             'scanTime' => '2024-01-15 10:30:00',

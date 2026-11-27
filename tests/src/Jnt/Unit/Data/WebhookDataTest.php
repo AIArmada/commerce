@@ -6,7 +6,7 @@ use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Services\WebhookService;
+use AIArmada\Jnt\Features\Tracking\Support\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 

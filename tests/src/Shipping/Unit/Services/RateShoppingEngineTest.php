@@ -447,7 +447,8 @@ describe('RateShoppingEngine', function (): void {
         $cacheRepository->shouldReceive('getStore')
             ->andReturn(new stdClass); // Not taggable
 
-        $cacheRepository->shouldReceive('get')->once()->andReturn('test-generation');
+        $cacheRepository->shouldReceive('get')->with('shipping:rates:configuration-generation')->once()->andReturn('configuration-generation');
+        $cacheRepository->shouldReceive('get')->with('shipping:rates:generation:' . hash('sha256', 'shipping|shipping:rates'))->once()->andReturn('test-generation');
 
         Cache::shouldReceive('store')
             ->once()

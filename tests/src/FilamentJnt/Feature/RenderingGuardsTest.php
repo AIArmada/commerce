@@ -82,7 +82,9 @@ it('caps infolist repeatable state via config', function (): void {
         ]);
     }
 
-    $events = $order->trackingEvents()
+    $events = JntTrackingEvent::query()->where('order_id', $order->id)
+        ->where('owner_type', $order->owner_type)
+        ->where('owner_id', $order->owner_id)
         ->latest('scan_time')
         ->limit((int) config('filament-jnt.infolist.tracking_events_limit', 50))
         ->get();
