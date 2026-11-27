@@ -269,7 +269,6 @@ describe('RemoveStoredConditions action', function (): void {
 
     it('removes shared global conditions across owner snapshots when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
-        config()->set('cart.owner.enabled', true);
 
         $ownerA = User::query()->create([
             'name' => 'Owner A',
@@ -389,8 +388,12 @@ describe('RemoveStoredConditions action', function (): void {
             ->andReturn($cartB);
 
         $syncManager = Mockery::mock(CartSyncManager::class);
-        $syncManager->shouldReceive('sync')->with($cartA, true)->once();
-        $syncManager->shouldReceive('sync')->with($cartB, true)->once();
+        $syncManager->shouldReceive('sync')->with($cartA, true)->once()->andReturnUsing(function () use ($ownerA): void {
+            expect(OwnerContext::resolve()?->getKey())->toBe($ownerA->getKey());
+        });
+        $syncManager->shouldReceive('sync')->with($cartB, true)->once()->andReturnUsing(function () use ($ownerB): void {
+            expect(OwnerContext::resolve()?->getKey())->toBe($ownerB->getKey());
+        });
 
         $service = new RemoveStoredConditions($cartManager, $syncManager);
 

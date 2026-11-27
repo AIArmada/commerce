@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Features\Conditions\Actions\ApplyStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\DeleteStoredCondition;
+use AIArmada\Cart\Features\Conditions\Actions\SaveStoredCondition;
 use AIArmada\Cart\Features\Conditions\Models\Condition;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
@@ -84,4 +86,21 @@ it('rejects a stored condition owned by another tenant before resolving the cart
 
     expect(fn () => $action->apply($cartA, $conditionB->id))
         ->toThrow(AuthorizationException::class, 'Condition is not accessible in the current owner scope.');
+});
+
+it('prevents cross-owner stored condition edits and deletes', function (): void {
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
+    $condition = OwnerContext::withOwner($ownerB, fn (): Condition => Condition::factory()->create());
+
+    OwnerContext::withOwner($ownerA, function () use ($condition): void {
+        expect(fn () => app(SaveStoredCondition::class)->update($condition, ['name' => 'tampered']))
+            ->toThrow(AuthorizationException::class);
+        expect(fn () => app(DeleteStoredCondition::class)->execute($condition))
+            ->toThrow(AuthorizationException::class);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($condition): void {
+        expect($condition->fresh()->name)->not->toBe('tampered');
+    });
 });

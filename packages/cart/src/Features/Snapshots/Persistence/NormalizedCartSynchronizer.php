@@ -105,16 +105,6 @@ class NormalizedCartSynchronizer
         ]);
         $cartModel->save();
 
-        if ($hasMaterialChanges) {
-            event(CartSnapshotSynced::fromCart($cartModel));
-        }
-
-        $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
-
-        if ($highValueThreshold > 0 && $previousTotal < $highValueThreshold && $cartModel->total >= $highValueThreshold) {
-            event(HighValueCartDetected::fromCart($cartModel));
-        }
-
         if (! $itemsDirty && ! $isNew && $items->isEmpty() && $this->hasChildRows(CartSnapshotItem::class, $cartModel)) {
             $itemsDirty = true;
         }
@@ -129,6 +119,16 @@ class NormalizedCartSynchronizer
                 : $this->existingItemModels($cartModel);
 
             $this->syncConditions($cartModel, $conditions, $itemModels, $items->all());
+        }
+
+        if ($hasMaterialChanges) {
+            event(CartSnapshotSynced::fromCart($cartModel));
+        }
+
+        $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
+
+        if ($highValueThreshold > 0 && $previousTotal < $highValueThreshold && $cartModel->total >= $highValueThreshold) {
+            event(HighValueCartDetected::fromCart($cartModel));
         }
     }
 

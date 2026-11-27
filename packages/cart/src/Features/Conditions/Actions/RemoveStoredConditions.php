@@ -69,19 +69,33 @@ final class RemoveStoredConditions
                 $cartsProcessed++;
 
                 try {
-                    $cart = $this->cartInstances->resolveForSnapshot($snapshot);
-                    $conditionRemoved = false;
+                    $remove = function () use ($snapshot, $conditionsByCart): bool {
+                        $cart = $this->cartInstances->resolveForSnapshot($snapshot);
+                        $conditionRemoved = false;
 
-                    foreach ($conditionsByCart->get($snapshot->id, collect()) as $snapshotCondition) {
-                        if (! $snapshotCondition instanceof CartSnapshotCondition) {
-                            continue;
+                        foreach ($conditionsByCart->get($snapshot->id, collect()) as $snapshotCondition) {
+                            if (! $snapshotCondition instanceof CartSnapshotCondition) {
+                                continue;
+                            }
+
+                            $conditionRemoved = $this->removeConditionFromCart($cart, $snapshotCondition) || $conditionRemoved;
                         }
 
-                        $conditionRemoved = $this->removeConditionFromCart($cart, $snapshotCondition) || $conditionRemoved;
-                    }
+                        if ($conditionRemoved) {
+                            $this->syncManager->sync($cart, force: true);
+                        }
 
-                    if ($conditionRemoved) {
-                        $this->syncManager->sync($cart, force: true);
+                        return $conditionRemoved;
+                    };
+
+                    $removed = CartSnapshot::ownerScopingEnabled()
+                        ? OwnerContext::withOwner(
+                            OwnerContext::fromTypeAndId($snapshot->owner_type, $snapshot->owner_id),
+                            $remove,
+                        )
+                        : $remove();
+
+                    if ($removed) {
                         $cartsUpdated++;
                     }
                 } catch (Exception $exception) {
