@@ -169,7 +169,7 @@ describe('webhook payload hardening', function (): void {
 
         expect($order->refresh()->status)->toBe('delivered')
             ->and($order->last_status_code)->toBe('602')
-            ->and($order->trackingEvents()->count())->toBe(2);
+            ->and(JntTrackingEvent::query()->where('order_id', $order->id)->count())->toBe(2);
     });
 
     it('dedupes replayed webhooks through the canonical event hash', function (): void {

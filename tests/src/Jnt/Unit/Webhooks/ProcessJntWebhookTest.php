@@ -212,7 +212,7 @@ describe('ProcessJntWebhook', function (): void {
         ]);
 
         expect($shipment->refresh()->status)->toBe('pending')
-            ->and($shipment->trackingEvents()->count())->toBe(0);
+            ->and(JntTrackingEvent::query()->where('order_id', $shipment->id)->count())->toBe(0);
 
         Event::assertNotDispatched(TrackingUpdatedEvent::class);
     });

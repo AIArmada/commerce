@@ -121,7 +121,17 @@ class SyncOrderTracking
 
                 // Fire status changed event if status actually changed
                 if ($previousStatusCode !== $order->last_status_code) {
-                    DB::afterCommit(static fn () => event(new JntOrderStatusChanged((string) $order->getKey(), $order->order_id, $order->tracking_number, $order->owner_type, $order->owner_id, $currentStatus, $previousStatusCode)));
+                    $statusChanged = new JntOrderStatusChanged(
+                        (string) $order->getKey(),
+                        $order->order_id,
+                        $order->tracking_number,
+                        $order->owner_type,
+                        $order->owner_id,
+                        $order->getNormalizedStatus(),
+                        $previousStatusCode,
+                    );
+
+                    DB::afterCommit(static fn () => event($statusChanged));
                 }
 
                 return $order->fresh() ?? $order;
