@@ -45,43 +45,47 @@ final readonly class ReadSnapshotConditions implements SnapshotConditionLookup
         );
     }
 
-    public function matchingStoredCondition(string $conditionId, bool $allOwners = false): array
+    /** @return iterable<SnapshotConditionMatch> */
+    public function matchingStoredCondition(string $conditionId, bool $allOwners = false): iterable
     {
         return $this->matching('attributes->condition_id', $conditionId, $allOwners);
     }
 
-    public function matchingNamedCondition(string $name): array
+    /** @return iterable<SnapshotConditionMatch> */
+    public function matchingNamedCondition(string $name): iterable
     {
         return $this->matching('name', $name, false);
     }
 
-    /** @return list<SnapshotConditionMatch> */
-    private function matching(string $column, string $value, bool $allOwners): array
+    /** @return iterable<SnapshotConditionMatch> */
+    private function matching(string $column, string $value, bool $allOwners): iterable
     {
         $snapshots = $this->snapshotQuery($allOwners);
-        $conditions = CartSnapshotCondition::query()
-            ->whereIn('cart_id', (clone $snapshots)->select('id'))
-            ->where($column, $value)
-            ->get()
-            ->groupBy('cart_id');
+        $matchingConditions = CartSnapshotCondition::query()->where($column, $value);
 
-        if ($conditions->isEmpty()) {
-            return [];
+        $snapshots->whereIn('id', (clone $matchingConditions)->select('cart_id'));
+
+        foreach ($snapshots->lazyById(200)->chunk(200) as $batch) {
+            $conditions = (clone $matchingConditions)
+                ->whereIn('cart_id', $batch->pluck('id')->all())
+                ->get()
+                ->groupBy('cart_id');
+
+            foreach ($batch as $snapshot) {
+                $matched = $conditions->get($snapshot->id);
+
+                if ($matched === null || $matched->isEmpty()) {
+                    continue;
+                }
+
+                yield new SnapshotConditionMatch(
+                    $snapshot->toSnapshotData(),
+                    $matched->map(fn (CartSnapshotCondition $condition): SnapshotConditionData => $this->conditionData($condition))
+                        ->values()
+                        ->all(),
+                );
+            }
         }
-
-        $matches = [];
-
-        foreach ($snapshots->whereIn('id', $conditions->keys())->get() as $snapshot) {
-            $matches[] = new SnapshotConditionMatch(
-                $snapshot->toSnapshotData(),
-                $conditions->get($snapshot->id, collect())
-                    ->map(fn (CartSnapshotCondition $condition): SnapshotConditionData => $this->conditionData($condition))
-                    ->values()
-                    ->all(),
-            );
-        }
-
-        return $matches;
     }
 
     /** @return Builder<CartSnapshot> */

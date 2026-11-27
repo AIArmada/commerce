@@ -12,9 +12,9 @@ interface SnapshotConditionLookup
 
     public function requireOwnedCondition(string $snapshotConditionId): SnapshotConditionMatch;
 
-    /** @return list<SnapshotConditionMatch> */
-    public function matchingStoredCondition(string $conditionId, bool $allOwners = false): array;
+    /** @return iterable<SnapshotConditionMatch> */
+    public function matchingStoredCondition(string $conditionId, bool $allOwners = false): iterable;
 
-    /** @return list<SnapshotConditionMatch> */
-    public function matchingNamedCondition(string $name): array;
+    /** @return iterable<SnapshotConditionMatch> */
+    public function matchingNamedCondition(string $name): iterable;
 }

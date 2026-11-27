@@ -15,12 +15,12 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-final class RemoveStoredConditions
+final readonly class RemoveStoredConditions
 {
     public function __construct(
-        private readonly CartInstanceManager $cartInstances,
-        private readonly CartSnapshotSyncInterface $syncManager,
-        private readonly SnapshotConditionLookup $snapshots,
+        private CartInstanceManager $cartInstances,
+        private CartSnapshotSyncInterface $syncManager,
+        private SnapshotConditionLookup $snapshots,
     ) {}
 
     /**
