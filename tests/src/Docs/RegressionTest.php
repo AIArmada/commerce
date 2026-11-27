@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Actions\DeliverDocEmail;
 use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Enums\DocPaymentStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Http\Controllers\DocPreviewController;
-use AIArmada\Docs\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
@@ -160,14 +161,29 @@ test('queued sends dispatch a job that marks the email sent', function (): void 
     Queue::assertPushed(SendDocEmailJob::class, fn (SendDocEmailJob $job): bool => $job->docEmailId === $email->id);
 
     Mail::fake();
-    (new SendDocEmailJob((string) $email->id, (string) $doc->id, attachPdf: false))->handle();
+    (new SendDocEmailJob((string) $email->id, (string) $doc->id, attachPdf: false))->handle(app(DeliverDocEmail::class));
 
     expect($email->fresh()->status)->toBe(EmailStatus::Sent)
         ->and($email->fresh()->sent_at)->not->toBeNull();
 
     // Idempotent redelivery does not resend.
-    (new SendDocEmailJob((string) $email->id, (string) $doc->id, attachPdf: false))->handle();
+    (new SendDocEmailJob((string) $email->id, (string) $doc->id, attachPdf: false))->handle(app(DeliverDocEmail::class));
     Mail::assertSent(DocMail::class, 1);
+});
+
+test('queued document email cannot deliver a different document', function (): void {
+    config()->set('docs.email.queue_enabled', true);
+    Queue::fake();
+    Mail::fake();
+
+    $doc = Doc::factory()->create();
+    $otherDoc = Doc::factory()->create();
+    $email = app(DocEmailService::class)->send($doc, 'queued@example.test');
+
+    (new SendDocEmailJob((string) $email->id, (string) $otherDoc->id, attachPdf: false))->handle(app(DeliverDocEmail::class));
+
+    Mail::assertNothingSent();
+    expect($email->fresh()->status)->toBe(EmailStatus::Queued);
 });
 
 // --- sequence first-use race ---

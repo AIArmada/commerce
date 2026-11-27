@@ -6,9 +6,9 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\CreateAction;
@@ -125,7 +125,7 @@ final class PaymentsRelationManager extends RelationManager
         DocsOwnerScope::assertCanMutateRecord($doc, 'Document not found.');
 
         try {
-            return app(DocPaymentRecorder::class)->record($doc, array_merge($data, [
+            return app(RecordDocPayment::class)->execute($doc, array_merge($data, [
                 'currency' => $doc->currency,
             ]));
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {

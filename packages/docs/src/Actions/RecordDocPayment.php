@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Docs\Services;
+namespace AIArmada\Docs\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -17,15 +17,12 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Throwable;
 
-/**
- * Records document payments and owns the payment-balance transition.
- */
-final class DocPaymentRecorder
+final readonly class RecordDocPayment
 {
     /**
      * @param  array<string, mixed>  $paymentData
      */
-    public function record(Doc $doc, array $paymentData): DocPayment
+    public function execute(Doc $doc, array $paymentData): DocPayment
     {
         return DB::transaction(function () use ($doc, $paymentData): DocPayment {
             $owner = config('docs.owner.enabled', false) ? OwnerContext::resolve() : null;
@@ -140,7 +137,6 @@ final class DocPaymentRecorder
             try {
                 return CarbonImmutable::parse($value);
             } catch (Throwable) {
-                // Fall through to the invalid-argument throw below.
             }
         }
 

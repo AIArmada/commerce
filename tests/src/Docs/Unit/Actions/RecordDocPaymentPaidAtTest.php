@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 
@@ -16,7 +16,7 @@ it('records the submitted payment date instead of always stamping now', function
 
     $paidAt = CarbonImmutable::now()->subDays(3)->startOfDay();
 
-    $payment = app(DocPaymentRecorder::class)->record($doc, [
+    $payment = app(RecordDocPayment::class)->execute($doc, [
         'amount_minor' => 100,
         'currency' => 'MYR',
         'payment_method' => 'cash',
@@ -33,7 +33,7 @@ it('stamps now when no payment date is submitted', function (): void {
         'currency' => 'MYR',
     ]);
 
-    $payment = app(DocPaymentRecorder::class)->record($doc, [
+    $payment = app(RecordDocPayment::class)->execute($doc, [
         'amount_minor' => 100,
         'currency' => 'MYR',
         'payment_method' => 'cash',
@@ -49,7 +49,7 @@ it('rejects an unparseable payment date', function (): void {
         'currency' => 'MYR',
     ]);
 
-    expect(fn (): mixed => app(DocPaymentRecorder::class)->record($doc, [
+    expect(fn (): mixed => app(RecordDocPayment::class)->execute($doc, [
         'amount_minor' => 100,
         'currency' => 'MYR',
         'payment_method' => 'cash',

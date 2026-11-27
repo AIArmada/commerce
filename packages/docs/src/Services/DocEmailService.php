@@ -6,8 +6,8 @@ namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\EntryPoints\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Enums\EmailStatus;
-use AIArmada\Docs\Jobs\SendDocEmailJob;
 use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;

@@ -42,7 +42,7 @@ final class DocsServiceProvider extends PackageServiceProvider
                 $app->make(Numbering\DocumentNumberRegistry::class),
                 $app->make(SequenceManager::class),
                 $app->make(Services\DocTotals::class),
-                $app->make(Services\DocPaymentRecorder::class),
+                $app->make(Actions\RecordDocPayment::class),
             );
         });
 
@@ -63,7 +63,7 @@ final class DocsServiceProvider extends PackageServiceProvider
             RichContentRendererInterface::class,
             SequenceManager::class,
             Services\DocTotals::class,
-            Services\DocPaymentRecorder::class,
+            Actions\RecordDocPayment::class,
             'doc',
             Numbering\DocumentNumberRegistry::class,
         ];

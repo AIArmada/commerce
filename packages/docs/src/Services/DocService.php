@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocType;
@@ -40,7 +41,7 @@ final class DocService implements DocServiceInterface
         protected DocumentNumberRegistry $numberRegistry,
         protected SequenceManager $sequenceManager,
         protected DocTotals $totals,
-        protected DocPaymentRecorder $paymentRecorder,
+        protected RecordDocPayment $paymentRecorder,
     ) {}
 
     /**
@@ -410,7 +411,7 @@ final class DocService implements DocServiceInterface
      */
     public function recordPayment(Doc $doc, array $paymentData): DocPayment
     {
-        return $this->paymentRecorder->record($doc, $paymentData);
+        return $this->paymentRecorder->execute($doc, $paymentData);
     }
 
     /**

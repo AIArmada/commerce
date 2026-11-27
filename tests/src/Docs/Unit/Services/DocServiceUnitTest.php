@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Actions\RecordDocPayment;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\DocumentNumberRegistry;
-use AIArmada\Docs\Services\DocPaymentRecorder;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\DocTotals;
 use AIArmada\Docs\Services\SequenceManager;
@@ -25,7 +25,7 @@ beforeEach(function (): void {
         $this->numberRegistry,
         $this->sequenceManager,
         new DocTotals,
-        new DocPaymentRecorder,
+        new RecordDocPayment,
     );
 });
 
