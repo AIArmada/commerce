@@ -11,7 +11,6 @@ use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -26,34 +25,23 @@ final readonly class ExpireReferralInvites
 
         $typeColumn = (string) config('referrals.owner.owner_type_column', 'owner_type');
         $idColumn = (string) config('referrals.owner.owner_id_column', 'owner_id');
-        // Cross-tenant enumeration is this command's whole job: the scheduled
-        // sweep must reach every owner's due invites, so it reads owner tuples
-        // unscoped and then re-enters each owner's context (OwnerContext::withOwner)
-        // for the actual expiry work, which stays owner-scoped.
+        // Enumerate owner tuples without widening the per-owner write scope.
         $ownerTuples = ReferralProgram::query()
             ->withoutOwnerScope()
             ->select([$typeColumn . ' as owner_type', $idColumn . ' as owner_id'])
             ->distinct()
-            ->get();
+            ->cursor();
 
-        /** @var Collection<int, ReferralProgram> $ownerTuples */
-        // Each per-owner pass is a WRITE pass, and `include_global` is read
-        // visibility only: a host that opts into seeing global programs must
-        // not have the sweep reach for their invites, because the guard
-        // resolves writes with includeGlobal=false and would refuse the row
-        // mid-sweep. Suppressing the override for the whole iteration keeps
-        // every pass on rows it can actually write, and removes any
-        // dependence on the order the owner tuples happen to come back in.
-        // Mirrors OwnerBatchRunner::collectForOwners().
+        // Global visibility is read-only outside an explicit global pass.
         return OwnerScopeOverride::withoutIncludeGlobal(
             fn (): int => $this->expireEveryOwner($ownerTuples, $now),
         );
     }
 
     /**
-     * @param  Collection<int, ReferralProgram>  $ownerTuples
+     * @param  iterable<ReferralProgram>  $ownerTuples
      */
-    private function expireEveryOwner(Collection $ownerTuples, CarbonImmutable $now): int
+    private function expireEveryOwner(iterable $ownerTuples, CarbonImmutable $now): int
     {
         $expiredCount = 0;
 
@@ -93,11 +81,7 @@ final readonly class ExpireReferralInvites
 
     private function expireCurrentOwner(CarbonImmutable $now): int
     {
-        // Invites are not owner-scoped rows themselves: the program is the
-        // tenant boundary. Constrain the due scan to programs visible in
-        // THIS owner context (OwnerScope applies under the per-owner
-        // withOwner() entered above, including explicit-global). Each invite
-        // is re-resolved and locked within its own transaction below.
+        // Programs define the tenant boundary for invites.
         $dueInvites = ReferralInvite::query()
             ->whereIn('program_id', ReferralProgram::query()->select('id'))
             ->whereIn('status', [ReferralInviteStatus::Pending->value, ReferralInviteStatus::Accepted->value])
@@ -107,8 +91,6 @@ final readonly class ExpireReferralInvites
 
         $count = 0;
 
-        // Each invite expires in its own transaction so one bad row cannot
-        // roll back the owner's whole batch.
         foreach ($dueInvites as $dueInvite) {
             $count += DB::transaction(function () use ($dueInvite, $now): int {
                 $guard = app(ReferralProgramGuard::class);

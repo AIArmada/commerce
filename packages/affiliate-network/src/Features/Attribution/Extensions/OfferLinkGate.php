@@ -37,7 +37,7 @@ final class OfferLinkGate implements FallbackRedirectGateInterface, LinkGateInte
 
         $offerLink = $this->attribution->findLinkByIdUnscoped((string) $link->subjectId);
 
-        if (! $offerLink instanceof OfferLinkRecord) {
+        if (! $offerLink instanceof OfferLinkRecord || $offerLink->linkId !== $link->id) {
             return 'link_unknown';
         }
 
@@ -78,7 +78,7 @@ final class OfferLinkGate implements FallbackRedirectGateInterface, LinkGateInte
 
         $offerLink = $this->attribution->findLinkByIdUnscoped((string) $link->subjectId);
 
-        if (! $offerLink instanceof OfferLinkRecord) {
+        if (! $offerLink instanceof OfferLinkRecord || $offerLink->linkId !== $link->id) {
             return null;
         }
 

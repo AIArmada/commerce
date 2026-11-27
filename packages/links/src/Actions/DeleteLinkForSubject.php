@@ -16,12 +16,18 @@ final readonly class DeleteLinkForSubject
             $link = Link::query()
                 ->withoutOwnerScope()
                 ->whereKey($linkId)
-                ->where('subject_type', $subjectType)
-                ->where('subject_id', $subjectId)
                 ->lockForUpdate()
                 ->first();
 
-            return $link === null || (bool) $link->delete();
+            if ($link === null) {
+                return true;
+            }
+
+            if ($link->subject_type !== $subjectType || $link->subject_id !== $subjectId) {
+                return false;
+            }
+
+            return (bool) $link->delete();
         });
     }
 }

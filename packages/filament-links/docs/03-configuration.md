@@ -27,7 +27,7 @@ All settings live in `config/filament-links.php`.
 
 ```php
 'staff_roles' => ['super_admin', 'admin'],
-'protected_subject_types' => ['affiliate_link'],
+'protected_subject_types' => ['affiliate_link', 'affiliate_offer_link'],
 ```
 
 ## Resources
