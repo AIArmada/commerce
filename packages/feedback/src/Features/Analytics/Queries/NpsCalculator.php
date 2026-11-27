@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Analytics;
+namespace AIArmada\Feedback\Features\Analytics\Queries;
 
 use AIArmada\Feedback\Data\NpsResultData;
 use AIArmada\Feedback\Models\FeedbackAnswer;

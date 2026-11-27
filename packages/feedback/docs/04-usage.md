@@ -174,8 +174,8 @@ $response = app(SubmitFeedbackResponseAction::class)->execute(
 ## NPS / CSAT
 
 ```php
-use AIArmada\Feedback\Analytics\NpsCalculator;
-use AIArmada\Feedback\Analytics\CsatCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
 
 $nps = app(NpsCalculator::class)->calculate($form);
 $csat = app(CsatCalculator::class)->calculate($form);
@@ -184,7 +184,7 @@ $csat = app(CsatCalculator::class)->calculate($form);
 $npsForQuestion = app(NpsCalculator::class)->calculate($form, 'recommendation');
 ```
 
-`FeedbackAnalyticsService::nps($form, $questionKey)` and `csat($form,
+`FeedbackAnalyticsQuery::nps($form, $questionKey)` and `csat($form,
 $questionKey)` return the calculated result objects directly.
 
 ## Testimonials
@@ -267,8 +267,8 @@ $invitation = app(ResolveFeedbackInvitationTokenAction::class)->execute($rawToke
 `summaryForForm()` reads the `feedback_form_analytics` aggregate row and falls back to live calculation. The dashboard is owner-keyed via `OwnerCache::remember(..., config('feedback.analytics.dashboard_cache_ttl', 30))`, and submissions queue `RecalculateFeedbackFormAnalyticsJob::forResponse($response)` to refresh the aggregate:
 
 ```php
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
-$data = app(FeedbackAnalyticsService::class)->summaryForForm($form);
-$dashboard = app(FeedbackAnalyticsService::class)->dashboard();
+$data = app(FeedbackAnalyticsQuery::class)->summaryForForm($form);
+$dashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
 ```

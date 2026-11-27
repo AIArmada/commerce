@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Support;
 
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 
 /**
  * Request-scoped memo for the analytics dashboard payload.
@@ -22,6 +22,6 @@ final class FeedbackDashboardMemo
      */
     public function dashboard(): array
     {
-        return $this->dashboard ??= app(FeedbackAnalyticsService::class)->dashboard();
+        return $this->dashboard ??= app(FeedbackAnalyticsQuery::class)->dashboard();
     }
 }

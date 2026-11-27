@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Analytics;
+namespace AIArmada\Feedback\Features\Analytics\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;

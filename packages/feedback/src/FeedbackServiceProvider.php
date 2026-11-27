@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback;
 
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
 use AIArmada\Feedback\Contracts\AnswerNormalizer;
-use AIArmada\Feedback\Contracts\FeedbackAnalyticsCalculator;
 use AIArmada\Feedback\Contracts\InvitationUrlGenerator;
 use AIArmada\Feedback\Events\FeedbackResponseMarkedSpam;
 use AIArmada\Feedback\Events\FeedbackResponseRejected;
@@ -51,7 +49,6 @@ final class FeedbackServiceProvider extends PackageServiceProvider
 
         $this->app->bind(InvitationUrlGenerator::class, DefaultInvitationUrlGenerator::class);
         $this->app->bind(AnswerNormalizer::class, AnswerValueNormalizer::class);
-        $this->app->bind(FeedbackAnalyticsCalculator::class, FeedbackAnalyticsService::class);
     }
 
     public function bootingPackage(): void

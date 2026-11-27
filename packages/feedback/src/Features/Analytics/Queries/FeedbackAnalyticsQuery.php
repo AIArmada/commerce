@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Feedback\Analytics;
+namespace AIArmada\Feedback\Features\Analytics\Queries;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Feedback\Contracts\FeedbackAnalyticsCalculator;
 use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Data\NpsResultData;
@@ -20,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-final class FeedbackAnalyticsService implements FeedbackAnalyticsCalculator
+final class FeedbackAnalyticsQuery
 {
     public function __construct(
         private readonly NpsCalculator $npsCalculator,
@@ -138,9 +137,11 @@ final class FeedbackAnalyticsService implements FeedbackAnalyticsCalculator
                     'response_trend' => (clone $submittedResponseQuery)
                         ->selectRaw($this->trendDateExpression() . ' as date, COUNT(*) as count')
                         ->groupBy('date')
-                        ->orderBy('date')
+                        ->whereNotNull('submitted_at')
+                        ->orderByDesc('date')
                         ->limit(30)
                         ->pluck('count', 'date')
+                        ->reverse()
                         ->toArray(),
                     'average_rating' => (clone $submittedResponseQuery)
                         ->whereNotNull('score')

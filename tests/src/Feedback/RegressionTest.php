@@ -21,9 +21,9 @@ use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Actions\SendFeedbackInvitationAction;
 use AIArmada\Feedback\Actions\StartFeedbackResponseAction;
 use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
-use AIArmada\Feedback\Analytics\CsatCalculator;
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
-use AIArmada\Feedback\Analytics\NpsCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
+use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\CsatResultData;
 use AIArmada\Feedback\Data\NpsResultData;
@@ -265,7 +265,7 @@ it('separates completed responses from pending review', function (): void {
         'feedback_form_id' => $form->id, 'status' => 'draft', 'is_anonymous' => true,
     ]);
 
-    $live = app(FeedbackAnalyticsService::class)->calculateLive($form);
+    $live = app(FeedbackAnalyticsQuery::class)->calculateLive($form);
 
     expect($live->totalResponses)->toBe(3)
         ->and($live->completedResponses)->toBe(2)
@@ -279,7 +279,7 @@ it('calculates live analytics in a single query', function (): void {
     DB::listen(function () use (&$queries): void {
         $queries++;
     });
-    app(FeedbackAnalyticsService::class)->calculateLive($form);
+    app(FeedbackAnalyticsQuery::class)->calculateLive($form);
 
     expect($queries)->toBe(1);
 });
@@ -536,8 +536,8 @@ it('throttles invitation resolution per client IP across tokens', function (): v
 it('returns calculated NPS and CSAT results from the analytics service', function (): void {
     $form = regressionPublishedForm('Service Results');
 
-    expect(app(FeedbackAnalyticsService::class)->nps($form))->toBeInstanceOf(NpsResultData::class)
-        ->and(app(FeedbackAnalyticsService::class)->csat($form))->toBeInstanceOf(CsatResultData::class);
+    expect(app(FeedbackAnalyticsQuery::class)->nps($form))->toBeInstanceOf(NpsResultData::class)
+        ->and(app(FeedbackAnalyticsQuery::class)->csat($form))->toBeInstanceOf(CsatResultData::class);
 });
 
 it('builds the dashboard response trend on sqlite', function (): void {
@@ -549,7 +549,7 @@ it('builds the dashboard response trend on sqlite', function (): void {
         'submitted_at' => CarbonImmutable::now(),
     ]);
 
-    $dashboard = app(FeedbackAnalyticsService::class)->dashboard();
+    $dashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
 
     expect($dashboard['response_trend'])->toBeArray()
         ->and(array_sum($dashboard['response_trend']))->toBe(1);

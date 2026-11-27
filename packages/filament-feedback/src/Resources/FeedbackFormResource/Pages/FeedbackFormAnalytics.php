@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\Pages;
 
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
 use AIArmada\Feedback\Data\FeedbackAnalyticsData;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
@@ -37,7 +37,7 @@ final class FeedbackFormAnalytics extends Page
 
     public function getAnalytics(): FeedbackAnalyticsData
     {
-        return app(FeedbackAnalyticsService::class)->summaryForForm($this->getForm());
+        return app(FeedbackAnalyticsQuery::class)->summaryForForm($this->getForm());
     }
 
     /**
@@ -45,7 +45,7 @@ final class FeedbackFormAnalytics extends Page
      */
     public function getLatestComments(): Collection
     {
-        return app(FeedbackAnalyticsService::class)->latestComments($this->getForm());
+        return app(FeedbackAnalyticsQuery::class)->latestComments($this->getForm());
     }
 
     private function getForm(): FeedbackForm

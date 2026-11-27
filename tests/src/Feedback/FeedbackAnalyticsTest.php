@@ -7,10 +7,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Actions\SubmitFeedbackResponseAction;
-use AIArmada\Feedback\Analytics\CsatCalculator;
-use AIArmada\Feedback\Analytics\FeedbackAnalyticsService;
-use AIArmada\Feedback\Analytics\NpsCalculator;
-use AIArmada\Feedback\Analytics\RatingDistributionCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\CsatCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\FeedbackAnalyticsQuery;
+use AIArmada\Feedback\Features\Analytics\Queries\NpsCalculator;
+use AIArmada\Feedback\Features\Analytics\Queries\RatingDistributionCalculator;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Data\SubmitFeedbackResponseData;
 use AIArmada\Feedback\Data\SubmittedAnswerData;
@@ -73,7 +73,7 @@ it('calculates known NPS, CSAT, distribution, and completion values', function (
         'is_anonymous' => true,
     ]);
 
-    $analytics = app(FeedbackAnalyticsService::class);
+    $analytics = app(FeedbackAnalyticsQuery::class);
     $nps = app(NpsCalculator::class)->calculate($npsForm);
     $csat = app(CsatCalculator::class)->calculate($csatForm);
 
@@ -95,11 +95,11 @@ it('keys the dashboard cache by owner', function (): void {
         'password' => 'secret',
     ]);
 
-    $defaultDashboard = app(FeedbackAnalyticsService::class)->dashboard();
+    $defaultDashboard = app(FeedbackAnalyticsQuery::class)->dashboard();
     $otherDashboard = OwnerContext::withOwner($otherOwner, function (): array {
         app(CreateFeedbackFormAction::class)->execute(new CreateFeedbackFormData(name: 'Other Dashboard Form'));
 
-        return app(FeedbackAnalyticsService::class)->dashboard();
+        return app(FeedbackAnalyticsQuery::class)->dashboard();
     });
 
     expect($defaultDashboard['overview']['total_forms'])->toBe(0)
