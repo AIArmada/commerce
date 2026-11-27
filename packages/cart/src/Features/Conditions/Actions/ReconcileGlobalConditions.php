@@ -124,40 +124,17 @@ final readonly class ReconcileGlobalConditions
      */
     private function removeDeactivatedGlobalConditions(Cart $cart, array $activeGlobalNames): void
     {
-        // Get all condition names that are currently marked as global in the cart
-        $globalConditionNames = [];
+        $activeNames = array_fill_keys($activeGlobalNames, true);
 
-        // Check cart-level conditions
+        foreach ($cart->getDynamicConditions() as $condition) {
+            if ($condition->getAttribute('is_global') === true && ! isset($activeNames[$condition->getName()])) {
+                $cart->removeDynamicCondition($condition->getName());
+            }
+        }
+
         foreach ($cart->getStoredConditions() as $condition) {
-            if ($condition->getAttribute('is_global') === true) {
-                $globalConditionNames[] = $condition->getName();
-            }
-        }
-
-        // Check dynamic conditions (they're stored separately)
-        foreach ($cart->getDynamicConditions() as $dynamicCondition) {
-            if ($dynamicCondition->getAttribute('is_global') === true) {
-                $globalConditionNames[] = $dynamicCondition->getName();
-            }
-        }
-
-        if ($globalConditionNames === []) {
-            return; // No global conditions in cart, nothing to check
-        }
-
-        // Find conditions that are marked as global in cart but no longer active in database
-        $deactivatedConditionNames = array_diff($globalConditionNames, $activeGlobalNames);
-
-        // Remove deactivated conditions from cart
-        foreach ($deactivatedConditionNames as $conditionName) {
-            // Try removing from regular conditions
-            if ($cart->getStoredConditions()->has($conditionName)) {
-                $cart->removeCondition($conditionName);
-            }
-
-            // Try removing from dynamic conditions
-            if ($cart->getDynamicConditions()->has($conditionName)) {
-                $cart->removeDynamicCondition($conditionName);
+            if ($condition->getAttribute('is_global') === true && ! isset($activeNames[$condition->getName()])) {
+                $cart->removeCondition($condition->getName());
             }
         }
     }

@@ -152,16 +152,19 @@ trait ManagesDynamicConditions
         $condition = $this->dynamicConditions->getCondition($name);
         $this->dynamicConditions->forget($name);
 
-        if ($condition?->getTargetDefinition()->scope === ConditionScope::ITEMS) {
-            foreach ($this->getItemsFromStorage() as $item) {
-                if ($item->conditions->has($name)) {
-                    $this->removeItemCondition($item->id, $name);
+        if ($condition !== null) {
+            if ($condition->getTargetDefinition()->scope === ConditionScope::ITEMS) {
+                foreach ($this->getItemsFromStorage() as $item) {
+                    if ($this->matchesDynamicCondition($condition, $item->conditions->getCondition($name))) {
+                        $this->removeItemCondition($item->id, $name);
+                    }
                 }
             }
-        }
 
-        // Also remove it from active conditions if it was applied
-        $this->removeCondition($name);
+            if ($this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($name))) {
+                $this->removeCondition($name);
+            }
+        }
 
         // Remove from metadata storage
         $this->removeDynamicConditionMetadata($name);
@@ -687,7 +690,9 @@ trait ManagesDynamicConditions
                 'scope' => $condition->getTargetDefinition()->scope->value,
             ]);
 
-            $this->removeCondition($condition->getName());
+            if ($this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($condition->getName()))) {
+                $this->removeCondition($condition->getName());
+            }
 
             return;
         }
@@ -702,7 +707,9 @@ trait ManagesDynamicConditions
             return;
         }
 
-        $this->removeCondition($condition->getName());
+        if ($this->matchesDynamicCondition($condition, $this->getConditionsFromStorage()->getCondition($condition->getName()))) {
+            $this->removeCondition($condition->getName());
+        }
     }
 
     /**
@@ -720,7 +727,9 @@ trait ManagesDynamicConditions
                     'scope' => ConditionScope::ITEMS->value,
                     'item_id' => $item->id,
                 ]);
-                $this->removeItemCondition($item->id, $condition->getName());
+                if ($this->matchesDynamicCondition($condition, $item->conditions->getCondition($condition->getName()))) {
+                    $this->removeItemCondition($item->id, $condition->getName());
+                }
 
                 continue;
             }
@@ -734,8 +743,17 @@ trait ManagesDynamicConditions
                 continue;
             }
 
-            $this->removeItemCondition($item->id, $condition->getName());
+            if ($this->matchesDynamicCondition($condition, $item->conditions->getCondition($condition->getName()))) {
+                $this->removeItemCondition($item->id, $condition->getName());
+            }
         }
+    }
+
+    private function matchesDynamicCondition(CartCondition $definition, ?CartCondition $applied): bool
+    {
+        return $applied !== null
+            && $applied->getAttribute('condition_id') === $definition->getAttribute('condition_id')
+            && $applied->getAttribute('is_global') === $definition->getAttribute('is_global');
     }
 
     /**
