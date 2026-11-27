@@ -313,7 +313,7 @@ class NormalizedCartSynchronizer
 
         $now = CarbonImmutable::now();
         $rows = [];
-        $itemIds = [];
+        $persistedIds = [];
 
         foreach ($items as $item) {
             \assert($item instanceof BaseCartItem);
@@ -322,9 +322,10 @@ class NormalizedCartSynchronizer
             $conditions = $item->conditions->isEmpty() ? null : $item->conditions->toArray();
 
             $existingItem = $existing->get($item->id);
-            $itemIds[] = $item->id;
+            $id = (string) ($existingItem?->id ?? Str::uuid());
+            $persistedIds[] = $id;
             $rows[] = [
-                'id' => $existingItem?->id ?? (string) Str::uuid(),
+                'id' => $id,
                 'cart_id' => $cartModel->id,
                 'item_id' => $item->id,
                 'name' => $item->name,
@@ -346,12 +347,12 @@ class NormalizedCartSynchronizer
 
         CartSnapshotItem::query()
             ->where('cart_id', $cartModel->id)
-            ->whereNotIn('item_id', $itemIds)
+            ->whereNotIn('id', $persistedIds)
             ->delete();
 
         return CartSnapshotItem::query()
             ->where('cart_id', $cartModel->id)
-            ->whereIn('item_id', $itemIds)
+            ->whereIn('id', $persistedIds)
             ->get()
             ->keyBy('item_id')
             ->all();

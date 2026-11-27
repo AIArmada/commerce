@@ -29,7 +29,9 @@ final readonly class ReconcileMergedCartSnapshot
             );
         }
 
-        $changed = (new CartSnapshot)->getConnection()->transaction(function () use ($sourceIdentifier, $targetIdentifier, $instance, $owner): bool {
+        $hasLiveTarget = $event->targetCart->storage()->getSnapshot($targetIdentifier, $instance) !== null;
+
+        (new CartSnapshot)->getConnection()->transaction(function () use ($sourceIdentifier, $targetIdentifier, $instance, $owner, $hasLiveTarget): void {
             $source = OwnerContext::withOwner(null, fn () => CartSnapshot::query()
                 ->forOwner(null, false)
                 ->where('identifier', $sourceIdentifier)
@@ -38,7 +40,7 @@ final readonly class ReconcileMergedCartSnapshot
                 ->first());
 
             if (! $source instanceof CartSnapshot) {
-                return false;
+                return;
             }
 
             $target = CartSnapshot::query()
@@ -49,19 +51,24 @@ final readonly class ReconcileMergedCartSnapshot
                 ->first();
 
             if ($target instanceof CartSnapshot && $source->is($target)) {
-                return false;
+                return;
             }
 
             if ($target instanceof CartSnapshot) {
-                CartSnapshotItem::query()->where('cart_id', $source->id)
-                    ->update(['cart_id' => $target->id]);
+                if ($hasLiveTarget) {
+                    CartSnapshotCondition::query()->where('cart_id', $source->id)->delete();
+                    CartSnapshotItem::query()->where('cart_id', $source->id)->delete();
+                } else {
+                    CartSnapshotItem::query()->where('cart_id', $source->id)
+                        ->update(['cart_id' => $target->id]);
 
-                CartSnapshotCondition::query()->where('cart_id', $source->id)
-                    ->update(['cart_id' => $target->id]);
+                    CartSnapshotCondition::query()->where('cart_id', $source->id)
+                        ->update(['cart_id' => $target->id]);
+                }
 
                 OwnerContext::withOwner(null, fn (): bool => (bool) $source->delete());
 
-                return true;
+                return;
             }
 
             $source->identifier = $targetIdentifier;
@@ -71,16 +78,10 @@ final readonly class ReconcileMergedCartSnapshot
             }
 
             $source->save();
-
-            return true;
         });
 
-        if ($changed && (
-            $event->targetCart->countItems() > 0
-            || $event->targetCart->getStoredConditions()->isNotEmpty()
-            || $event->targetCart->getAllMetadata() !== []
-        )) {
-            $this->syncManager->sync($event->targetCart);
+        if ($hasLiveTarget) {
+            $this->syncManager->sync($event->targetCart, force: true);
         }
     }
 }

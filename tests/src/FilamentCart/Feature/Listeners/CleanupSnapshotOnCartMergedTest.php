@@ -722,3 +722,52 @@ it('does not delete a snapshot when a merge resolves to the same identity', func
 
     expect(CartSnapshot::query()->whereKey($snapshot->getKey())->exists())->toBeTrue();
 });
+
+it('reconciles overlapping guest and user items from the live merged cart without duplicate rows', function (): void {
+    $source = CartSnapshot::create(['identifier' => 'overlap-guest', 'instance' => 'default', 'currency' => 'MYR']);
+    $target = CartSnapshot::create(['identifier' => 'overlap-user', 'instance' => 'default', 'currency' => 'MYR']);
+
+    foreach ([$source, $target] as $snapshot) {
+        $snapshot->cartItems()->create([
+            'item_id' => 'shared-product',
+            'name' => 'Shared Product',
+            'price' => 1000,
+            'quantity' => 1,
+        ]);
+    }
+
+    Cart::storage()->putItems('overlap-user', 'default', [
+        'shared-product' => ['id' => 'shared-product', 'name' => 'Shared Product', 'price' => 1000, 'quantity' => 2, 'attributes' => [], 'conditions' => []],
+    ], CartRevision::none());
+
+    (new CleanupSnapshotOnCartMerged)->handle(new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'overlap-user'),
+        sourceCart: Cart::getCartInstance('default', 'overlap-guest'),
+        totalItemsMerged: 1,
+        mergeStrategy: 'add_quantities',
+        hadConflicts: true,
+    ));
+
+    expect(CartSnapshot::query()->whereKey($source->id)->exists())->toBeFalse()
+        ->and($target->cartItems()->count())->toBe(1)
+        ->and($target->cartItems()->first()->quantity)->toBe(2)
+        ->and($target->refresh()->quantity)->toBe(2);
+});
+
+it('refreshes the merged target even when the guest snapshot was never created', function (): void {
+    Cart::storage()->putItems('unsynced-target', 'default', [
+        'product-1' => ['id' => 'product-1', 'name' => 'Product', 'price' => 1000, 'quantity' => 3, 'attributes' => [], 'conditions' => []],
+    ], CartRevision::none());
+
+    (new CleanupSnapshotOnCartMerged)->handle(new CartMerged(
+        targetCart: Cart::getCartInstance('default', 'unsynced-target'),
+        sourceCart: Cart::getCartInstance('default', 'unsynced-source'),
+        totalItemsMerged: 3,
+        mergeStrategy: 'add_quantities',
+    ));
+
+    $target = CartSnapshot::query()->where('identifier', 'unsynced-target')->firstOrFail();
+
+    expect($target->quantity)->toBe(3)
+        ->and($target->cartItems()->count())->toBe(1);
+});
