@@ -47,7 +47,7 @@ final class UpdateContactMethodAction
             $result = $this->normalizer->normalize(
                 $data->type,
                 $data->value,
-                $countryCode ?? $contactMethod->country_code ?? config('contacting.defaults.country_code'),
+                $countryCode ?? config('contacting.defaults.country_code'),
             );
 
             if ($data->type === 'email' && $result['normalized_value'] === null) {
@@ -69,7 +69,7 @@ final class UpdateContactMethodAction
 
             if (! $data->displayValue instanceof MissingValue && $data->displayValue !== null) {
                 $contactMethod->display_value = $data->displayValue;
-            } elseif ($contactMethod->isDirty(['value', 'country_code']) || $contactMethod->display_value === null) {
+            } elseif ($contactMethod->isDirty(['type', 'value', 'country_code']) || $contactMethod->display_value === null) {
                 $contactMethod->display_value = $result['display_value'];
             }
 

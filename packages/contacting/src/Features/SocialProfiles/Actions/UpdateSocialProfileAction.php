@@ -39,11 +39,20 @@ final class UpdateSocialProfileAction
 
             $profile = SocialProfile::query()->whereKey($profile->getKey())->lockForUpdate()->firstOrFail();
 
-            $result = $this->normalizer->normalize(
-                $data->platform,
-                $data->handle instanceof MissingValue ? $profile->handle : $data->handle,
-                $data->url instanceof MissingValue ? $profile->url : $data->url,
-            );
+            $handleProvided = ! $data->handle instanceof MissingValue;
+            $urlProvided = ! $data->url instanceof MissingValue;
+            $platformChanged = $data->platform !== $profile->platform;
+            $handleChanged = $handleProvided && $data->handle !== $profile->handle;
+            $urlChanged = $urlProvided && $data->url !== $profile->url;
+
+            $handle = $data->handle instanceof MissingValue
+                ? ($urlChanged ? null : $profile->handle)
+                : $data->handle;
+            $url = $data->url instanceof MissingValue
+                ? ($handleChanged || $platformChanged ? null : $profile->url)
+                : $data->url;
+
+            $result = $this->normalizer->normalize($data->platform, $handle, $url);
 
             $profile->platform = $data->platform;
 
@@ -53,7 +62,7 @@ final class UpdateSocialProfileAction
 
             $profile->label = $data->label instanceof MissingValue ? $profile->label : $data->label;
             $profile->handle = $result['handle'];
-            $profile->url = $result['normalized_url'] ?? $profile->url;
+            $profile->url = $result['normalized_url'];
             $profile->normalized_url = $result['normalized_url'];
             $profile->display_name = $data->displayName instanceof MissingValue ? $profile->display_name : $data->displayName;
             $profile->external_id = $data->externalId instanceof MissingValue ? $profile->external_id : $data->externalId;

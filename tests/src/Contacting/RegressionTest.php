@@ -489,3 +489,62 @@ it('keeps owner-specific primaries when moving contacts to a parent with global 
         ->and(ContactMethod::withoutOwnerScope()->findOrFail($globalMethod->id)->is_primary)->toBeTrue()
         ->and(SocialProfile::withoutOwnerScope()->findOrFail($globalProfile->id)->is_primary)->toBeTrue();
 });
+
+it('recomputes the contact display when its type changes without changing its raw value', function (): void {
+    $customer = regressionCustomer('contact-type');
+    $method = $customer->addContactMethod(new ContactMethodData(
+        type: 'other',
+        value: 'example.com',
+        displayValue: 'Old custom display',
+    ));
+
+    $updated = app(UpdateContactMethodAction::class)->execute($method, new ContactMethodData(
+        type: 'website',
+        value: 'example.com',
+    ));
+
+    expect($updated->normalized_value)->toBe('https://example.com')
+        ->and($updated->display_value)->toBe('https://example.com');
+});
+
+it('uses the configured phone country consistently when the explicit country is cleared', function (): void {
+    config()->set('contacting.defaults.country_code', 'MY');
+    $customer = regressionCustomer('phone-country');
+    $method = $customer->addContactMethod(ContactMethodData::phone('0123456789', 'GB'));
+
+    $updated = app(UpdateContactMethodAction::class)->execute($method, ContactMethodData::phone('0123456789'));
+
+    expect($updated->country_code)->toBeNull()
+        ->and($updated->normalized_value)->toBe('+60123456789');
+});
+
+it('regenerates the social URL when the handle changes and extracts the handle when the URL changes', function (): void {
+    $customer = regressionCustomer('social-identity');
+    $profile = $customer->addSocialProfile(new SocialProfileData(platform: 'instagram', handle: 'initial'));
+
+    $action = app(UpdateSocialProfileAction::class);
+    $updated = $action->execute($profile, new SocialProfileData(platform: 'instagram', handle: 'replacement'));
+
+    expect($updated->handle)->toBe('replacement')
+        ->and($updated->url)->toBe((new SocialProfileConfig)->buildUrl('instagram', 'replacement'));
+
+    $updated = $action->execute($updated, new SocialProfileData(platform: 'instagram', url: 'https://instagram.com/another'));
+
+    expect($updated->handle)->toBe('another')
+        ->and($updated->url)->toBe('https://instagram.com/another');
+});
+
+it('does not retain a stale social URL when both identity fields are explicitly cleared', function (): void {
+    $customer = regressionCustomer('clear-social');
+    $profile = $customer->addSocialProfile(new SocialProfileData(platform: 'instagram', handle: 'initial'));
+
+    $updated = app(UpdateSocialProfileAction::class)->execute($profile, new SocialProfileData(
+        platform: 'instagram',
+        handle: null,
+        url: null,
+    ));
+
+    expect($updated->handle)->toBeNull()
+        ->and($updated->url)->toBeNull()
+        ->and($updated->normalized_url)->toBeNull();
+});

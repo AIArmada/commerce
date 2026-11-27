@@ -196,7 +196,7 @@ final class ContactMethod extends Model
     private function normalizeForSave(): void
     {
         $displayValueWasExplicitlyChanged = $this->isDirty('display_value');
-        $contactValueChanged = $this->isDirty(['value', 'country_code']);
+        $contactValueChanged = $this->isDirty(['type', 'value', 'country_code']);
 
         if ($this->country_code !== null) {
             $this->country_code = mb_strtoupper($this->country_code);
@@ -205,7 +205,7 @@ final class ContactMethod extends Model
         $normalized = app(ContactMethodNormalizer::class)->normalize(
             $this->type,
             $this->value,
-            $this->country_code,
+            $this->country_code ?? config('contacting.defaults.country_code'),
         );
 
         $this->normalized_value = $normalized['normalized_value'];
