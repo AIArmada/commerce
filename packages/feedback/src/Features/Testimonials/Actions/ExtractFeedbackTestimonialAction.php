@@ -9,6 +9,7 @@ use AIArmada\Feedback\Events\FeedbackTestimonialExtracted;
 use AIArmada\Feedback\Features\Responses\Api\ReadsTestimonialSource;
 use AIArmada\Feedback\Features\Testimonials\Api\ExtractsTestimonials;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
+use RuntimeException;
 
 final readonly class ExtractFeedbackTestimonialAction implements ExtractsTestimonials
 {
@@ -23,13 +24,13 @@ final readonly class ExtractFeedbackTestimonialAction implements ExtractsTestimo
                 return null;
             }
 
-            $existing = FeedbackTestimonial::query()->where('feedback_response_id', $source->responseId)->first();
+            $existing = FeedbackTestimonial::query()->forOwner()->where('feedback_response_id', $source->responseId)->first();
 
             if ($existing !== null) {
                 return $existing->id;
             }
 
-            $testimonial = FeedbackTestimonial::create([
+            $testimonial = new FeedbackTestimonial([
                 'feedback_response_id' => $source->responseId,
                 'feedback_answer_id' => $source->answerId,
                 'subject_type' => $source->subjectType,
@@ -39,6 +40,10 @@ final readonly class ExtractFeedbackTestimonialAction implements ExtractsTestimo
                 'quote' => $source->quote,
                 'status' => FeedbackTestimonialStatus::Pending,
             ]);
+
+            if (! $testimonial->save()) {
+                throw new RuntimeException('Testimonial extraction was cancelled.');
+            }
 
             FeedbackTestimonialExtracted::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 

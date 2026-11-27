@@ -81,7 +81,7 @@ final class FeedbackTestimonialResource extends Resource
                     ->action(function (FeedbackTestimonial $record): void {
                         app(ApproveFeedbackTestimonialAction::class)->execute($record);
                     })
-                    ->visible(fn (FeedbackTestimonial $record): bool => $record->status === FeedbackTestimonialStatus::Pending)
+                    ->visible(fn (FeedbackTestimonial $record): bool => in_array($record->status, [FeedbackTestimonialStatus::Pending, FeedbackTestimonialStatus::Hidden], true))
                     ->requiresConfirmation(),
                 Action::make('reject')
                     ->label('Reject')

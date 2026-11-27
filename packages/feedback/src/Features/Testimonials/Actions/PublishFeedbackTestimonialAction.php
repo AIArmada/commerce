@@ -34,11 +34,13 @@ final readonly class PublishFeedbackTestimonialAction
                 throw new RuntimeException('Permission has not been given for this testimonial.');
             }
 
-            $testimonial->forceFill([
+            if (! $testimonial->forceFill([
                 'status' => FeedbackTestimonialStatus::Published,
                 'published_at' => CarbonImmutable::now(),
                 'hidden_at' => null,
-            ])->save();
+            ])->save()) {
+                throw new RuntimeException('The testimonial publish write was cancelled.');
+            }
 
             FeedbackTestimonialPublished::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 

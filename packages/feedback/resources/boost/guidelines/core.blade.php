@@ -7,3 +7,5 @@ Testimonial extraction reads a locked, detached source from the Responses featur
 Subject-level score and NPS reads use the Responses feature's ReadsSubjectFeedbackMetrics API and include submitted and reviewed responses only.
 
 Create subject-bound forms through the Forms feature's CreatesFormsFromTemplates API. It accepts a template slug and explicit subject identity, rejects ambiguous slugs, and returns the new form ID rather than an ORM model.
+
+Testimonial mutations use exact owner scope for extraction and only dispatch lifecycle events after a successful save. Cancelled writes are failures. Hidden testimonials may be approved again before republication.

@@ -6,15 +6,23 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
+use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
+use AIArmada\Feedback\Events\FeedbackTestimonialApproved;
+use AIArmada\Feedback\Events\FeedbackTestimonialHidden;
+use AIArmada\Feedback\Events\FeedbackTestimonialPublished;
+use AIArmada\Feedback\Events\FeedbackTestimonialRejected;
 use AIArmada\Feedback\Features\Forms\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Features\Forms\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Features\Responses\Models\FeedbackResponse;
 use AIArmada\Feedback\Features\Testimonials\Actions\ApproveFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\HideFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Actions\PublishFeedbackTestimonialAction;
+use AIArmada\Feedback\Features\Testimonials\Actions\RejectFeedbackTestimonialAction;
 use AIArmada\Feedback\Features\Testimonials\Api\ExtractsTestimonials;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Event;
 
 it('requires approval and permission before a testimonial is public', function (): void {
     $testimonial = FeedbackTestimonial::query()->create([
@@ -88,3 +96,28 @@ it('extracts only completed responses and never duplicates a testimonial', funct
             ->and(FeedbackTestimonial::query()->where('feedback_response_id', $response->id)->count())->toBe(0);
     }
 })->with(FeedbackResponseStatus::cases());
+
+it('does not dispatch testimonial lifecycle events when persistence is cancelled', function (string $action, FeedbackTestimonialStatus $initial, string $event): void {
+    $testimonial = FeedbackTestimonial::query()->create([
+        'quote' => 'Cancelled testimonial transition',
+        'status' => $initial,
+        'permission_given_at' => CarbonImmutable::now(),
+    ]);
+    Event::fake([$event]);
+    FeedbackTestimonial::saving(static fn (FeedbackTestimonial $record): ?bool => $record->isDirty('status') ? false : null);
+
+    try {
+        expect(fn () => app($action)->execute($testimonial))->toThrow(RuntimeException::class, 'write was cancelled');
+
+        expect($testimonial->fresh()->status)->toBe($initial);
+        Event::assertNotDispatched($event);
+    } finally {
+        FeedbackTestimonial::flushEventListeners();
+        FeedbackTestimonial::clearBootedModels();
+    }
+})->with([
+    [ApproveFeedbackTestimonialAction::class, FeedbackTestimonialStatus::Pending, FeedbackTestimonialApproved::class],
+    [HideFeedbackTestimonialAction::class, FeedbackTestimonialStatus::Published, FeedbackTestimonialHidden::class],
+    [PublishFeedbackTestimonialAction::class, FeedbackTestimonialStatus::Approved, FeedbackTestimonialPublished::class],
+    [RejectFeedbackTestimonialAction::class, FeedbackTestimonialStatus::Pending, FeedbackTestimonialRejected::class],
+]);

@@ -9,6 +9,7 @@ use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Events\FeedbackTestimonialApproved;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 final readonly class ApproveFeedbackTestimonialAction
 {
@@ -25,10 +26,12 @@ final readonly class ApproveFeedbackTestimonialAction
                 return $testimonial;
             }
 
-            $testimonial->forceFill([
+            if (! $testimonial->forceFill([
                 'status' => FeedbackTestimonialStatus::Approved,
                 'approved_at' => CarbonImmutable::now(),
-            ])->save();
+            ])->save()) {
+                throw new RuntimeException('The testimonial approve write was cancelled.');
+            }
 
             FeedbackTestimonialApproved::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 

@@ -9,6 +9,7 @@ use AIArmada\Feedback\Enums\FeedbackTestimonialStatus;
 use AIArmada\Feedback\Events\FeedbackTestimonialHidden;
 use AIArmada\Feedback\Features\Testimonials\Models\FeedbackTestimonial;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 final readonly class HideFeedbackTestimonialAction
 {
@@ -25,10 +26,12 @@ final readonly class HideFeedbackTestimonialAction
                 return $testimonial;
             }
 
-            $testimonial->forceFill([
+            if (! $testimonial->forceFill([
                 'status' => FeedbackTestimonialStatus::Hidden,
                 'hidden_at' => CarbonImmutable::now(),
-            ])->save();
+            ])->save()) {
+                throw new RuntimeException('The testimonial hide write was cancelled.');
+            }
 
             FeedbackTestimonialHidden::dispatch($testimonial->id, $testimonial->owner_type, $testimonial->owner_id);
 
