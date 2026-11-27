@@ -34,10 +34,8 @@ final readonly class ManageBookmarkCollectionItemsAction
                     : Bookmark::query()->whereKey($bookmarkId)->firstOrFail();
                 $this->assertBookmarker($bookmark, $identity);
 
-                $this->assertBookmarker($bookmark, $identity);
-
-            $collection = BookmarkCollection::ownerScopeConfig()->enabled
-                ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collectionId)
+                $collection = BookmarkCollection::ownerScopeConfig()->enabled
+                    ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collectionId)
                     : BookmarkCollection::query()->whereKey($collectionId)->firstOrFail();
 
                 $item = BookmarkCollectionItem::query()
@@ -103,8 +101,10 @@ final readonly class ManageBookmarkCollectionItemsAction
             $bookmark = Bookmark::ownerScopeConfig()->enabled
                 ? OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey())
                 : Bookmark::query()->whereKey($bookmark->getKey())->firstOrFail();
+            $this->assertBookmarker($bookmark, $identity);
+
             $collection = BookmarkCollection::ownerScopeConfig()->enabled
-                    ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey())
+                ? OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey())
                 : BookmarkCollection::query()->whereKey($collection->getKey())->firstOrFail();
             $item = BookmarkCollectionItem::query()
                 ->where('bookmark_collection_id', $collection->getKey())
