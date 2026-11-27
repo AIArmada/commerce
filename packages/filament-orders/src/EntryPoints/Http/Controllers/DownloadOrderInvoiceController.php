@@ -10,13 +10,11 @@ use AIArmada\Orders\Models\Order;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPdf\PdfBuilder;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 final readonly class DownloadOrderInvoiceController
 {
-    public function __construct(private GenerateInvoice $generateInvoice) {}
-
-    public function __invoke(string $order): PdfBuilder | StreamedResponse
+    public function __invoke(string $order): PdfBuilder | Response
     {
         if ((bool) config('orders.owner.enabled', false) && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
             abort(404);
@@ -30,6 +28,6 @@ final readonly class DownloadOrderInvoiceController
 
         abort_unless($user && Gate::forUser($user)->allows('view', $record), 403);
 
-        return $this->generateInvoice->download($record);
+        return app(GenerateInvoice::class)->download($record);
     }
 }
