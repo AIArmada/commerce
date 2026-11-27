@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
+use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
-use AIArmada\Jnt\Drivers\JntShippingDriver;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;

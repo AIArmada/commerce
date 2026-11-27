@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
+use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Services\WebhookService;
-use AIArmada\Jnt\EntryPoints\Jobs\ProcessJntWebhook;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Spatie\WebhookClient\Models\WebhookCall;
 
@@ -60,7 +62,7 @@ describe('webhook payload hardening', function (): void {
     });
 
     it('rejects a non-string tracking number before querying or dispatching', function (): void {
-        \Illuminate\Support\Facades\Event::fake([\AIArmada\Jnt\Events\TrackingUpdatedEvent::class]);
+        Event::fake([TrackingUpdatedEvent::class]);
 
         $webhookCall = Mockery::mock(WebhookCall::class)->makePartial();
         $webhookCall->id = 1000;
@@ -72,7 +74,7 @@ describe('webhook payload hardening', function (): void {
         ]);
 
         expect(JntTrackingEvent::query()->withoutOwnerScope()->count())->toBe(0);
-        \Illuminate\Support\Facades\Event::assertNotDispatched(\AIArmada\Jnt\Events\TrackingUpdatedEvent::class);
+        Event::assertNotDispatched(TrackingUpdatedEvent::class);
     });
 
     it('tolerates malformed scan times while syncing the rest', function (): void {

@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Features\Orders\Actions\CancelOrder;
-use AIArmada\Jnt\Features\Orders\Actions\CreateOrder;
-use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
-use AIArmada\Jnt\Features\Waybills\Actions\PrintWaybill;
 use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;
@@ -13,6 +9,10 @@ use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\CancellationReason;
+use AIArmada\Jnt\Features\Orders\Actions\CancelOrder;
+use AIArmada\Jnt\Features\Orders\Actions\CreateOrder;
+use AIArmada\Jnt\Features\Tracking\Actions\TrackParcel;
+use AIArmada\Jnt\Features\Waybills\Actions\PrintWaybill;
 use AIArmada\Jnt\Services\JntExpressService;
 use Spatie\LaravelData\DataCollection;
 

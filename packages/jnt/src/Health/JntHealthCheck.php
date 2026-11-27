@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Health;
 
 use AIArmada\CommerceSupport\Health\CommerceHealthCheck;
-use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Drivers\JntClient;
+use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use Spatie\Health\Checks\Result;
 use Throwable;
 

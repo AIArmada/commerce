@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\EntryPoints\Commands\Orders;
 
-use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Data\PrintWaybillData;
+use AIArmada\Jnt\EntryPoints\Commands\JntCommand;
 use AIArmada\Jnt\Services\JntExpressService;
 
 class OrderPrintCommand extends JntCommand

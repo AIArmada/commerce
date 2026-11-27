@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\EntryPoints\Commands;
 
+use AIArmada\Jnt\Drivers\JntClient;
 use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
-use AIArmada\Jnt\Drivers\JntClient;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Throwable;
