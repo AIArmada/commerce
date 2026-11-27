@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Models;
 
+use AIArmada\Communications\Runtime\DeliveryRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\RecipientRole;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\Communication;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -37,7 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Communication $communication
  * @property-read Model|Eloquent $recipient
- * @property-read Collection<int, CommunicationDelivery> $deliveries
+ * @property-read Collection<int, \AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery> $deliveries
  * @property-read Collection<int, CommunicationContent> $contents
  * @property-read Model|Eloquent $owner
  */
@@ -93,11 +93,11 @@ final class CommunicationRecipient extends Model
     }
 
     /**
-     * @return HasMany<CommunicationDelivery, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery, $this>
      */
     public function deliveries(): HasMany
     {
-        return $this->hasMany(CommunicationDelivery::class, 'recipient_id');
+        return $this->hasMany(app(DeliveryRelationModels::class)->delivery(), 'recipient_id');
     }
 
     /**

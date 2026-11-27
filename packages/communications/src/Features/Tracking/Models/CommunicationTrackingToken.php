@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Tracking\Models;
 
+use AIArmada\Communications\Runtime\DeliveryRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -31,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read CommunicationDelivery $delivery
+ * @property-read \AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery $delivery
  * @property-read Model|Eloquent $owner
  */
 final class CommunicationTrackingToken extends Model
@@ -75,10 +75,10 @@ final class CommunicationTrackingToken extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationDelivery, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery, $this>
      */
     public function delivery(): BelongsTo
     {
-        return $this->belongsTo(CommunicationDelivery::class, 'delivery_id');
+        return $this->belongsTo(app(DeliveryRelationModels::class)->delivery(), 'delivery_id');
     }
 }

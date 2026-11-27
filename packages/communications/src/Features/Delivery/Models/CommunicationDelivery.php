@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Delivery\Models;
 
+use AIArmada\Communications\Runtime\TrackingRelationModel;
+use AIArmada\Communications\Runtime\AggregateRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\DeliveryStatus;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
 use AIArmada\Communications\Features\Delivery\Api\DeliveryDependentsCleaner;
-use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -66,11 +65,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Communication $communication
- * @property-read CommunicationRecipient|null $recipient
- * @property-read CommunicationContent|null $content
+ * @property-read \AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient|null $recipient
+ * @property-read \AIArmada\Communications\Features\Aggregate\Models\CommunicationContent|null $content
  * @property-read Collection<int, CommunicationAttempt> $attempts
  * @property-read Collection<int, CommunicationEvent> $events
- * @property-read Collection<int, CommunicationTrackingToken> $trackingTokens
+ * @property-read Collection<int, \AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken> $trackingTokens
  * @property-read Model|Eloquent $owner
  */
 final class CommunicationDelivery extends Model
@@ -163,19 +162,19 @@ final class CommunicationDelivery extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationRecipient, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient, $this>
      */
     public function recipient(): BelongsTo
     {
-        return $this->belongsTo(CommunicationRecipient::class, 'recipient_id');
+        return $this->belongsTo(app(AggregateRelationModels::class)->recipient(), 'recipient_id');
     }
 
     /**
-     * @return BelongsTo<CommunicationContent, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Aggregate\Models\CommunicationContent, $this>
      */
     public function content(): BelongsTo
     {
-        return $this->belongsTo(CommunicationContent::class, 'content_id');
+        return $this->belongsTo(app(AggregateRelationModels::class)->content(), 'content_id');
     }
 
     /**
@@ -195,11 +194,11 @@ final class CommunicationDelivery extends Model
     }
 
     /**
-     * @return HasMany<CommunicationTrackingToken, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken, $this>
      */
     public function trackingTokens(): HasMany
     {
-        return $this->hasMany(CommunicationTrackingToken::class, 'delivery_id');
+        return $this->hasMany(app(TrackingRelationModel::class)->token(), 'delivery_id');
     }
 
     protected static function booted(): void

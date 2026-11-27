@@ -5,27 +5,24 @@ declare(strict_types=1);
 namespace AIArmada\Communications\Features\Tracking\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\TrackingInteractionType;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Delivery\Api\TrackingDeliveryEvents;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
 final class RecordTrackingInteractionAction
 {
     public function __construct(
-        private readonly PayloadRedactor $redactor,
+        private readonly TrackingDeliveryEvents $deliveries,
     ) {}
 
     public function handle(
         string $tokenId,
         TrackingInteractionType | string $interactionType,
         ?array $metadata = null,
-    ): CommunicationEvent {
+    ): string {
         $interaction = $interactionType instanceof TrackingInteractionType
             ? $interactionType
             : TrackingInteractionType::tryFrom($interactionType);
@@ -36,7 +33,7 @@ final class RecordTrackingInteractionAction
             );
         }
 
-        return DB::transaction(function () use ($interaction, $metadata, $tokenId): CommunicationEvent {
+        return (new CommunicationTrackingToken)->getConnection()->transaction(function () use ($interaction, $metadata, $tokenId): string {
             $trackingToken = CommunicationTrackingToken::query()
                 ->lockForUpdate()
                 ->findOrFail($tokenId);
@@ -53,26 +50,16 @@ final class RecordTrackingInteractionAction
                 throw new RuntimeException("Tracking token {$tokenId} has expired.");
             }
 
-            $delivery = $trackingToken->delivery()->firstOrFail();
-
             if ($trackingToken->first_used_at === null) {
                 $trackingToken->first_used_at = CarbonImmutable::now();
             }
 
             $trackingToken->last_used_at = CarbonImmutable::now();
-            $trackingToken->save();
+            if (! $trackingToken->save()) {
+                throw new RuntimeException('Tracking token update was cancelled.');
+            }
 
-            $event = new CommunicationEvent;
-            $event->communication_id = $delivery->communication_id;
-            $event->delivery_id = $delivery->id;
-            $event->event = $interaction->value;
-            $event->source = CommunicationEventSource::Tracking;
-            $event->occurred_at = CarbonImmutable::now();
-            $event->received_at = CarbonImmutable::now();
-            $event->metadata = $metadata !== null ? $this->redactor->redact($metadata) : null;
-            $event->save();
-
-            return $event;
+            return $this->deliveries->record($trackingToken->delivery_id, $interaction->value, $metadata);
         });
     }
 }

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Aggregate\Models;
 
+use AIArmada\Communications\Runtime\TemplateRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Communications\Features\Templates\Models\CommunicationTemplate;
-use AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion;
 use AIArmada\Communications\Models\Communication;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -38,8 +37,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Communication $communication
  * @property-read CommunicationRecipient|null $recipient
- * @property-read CommunicationTemplate|null $template
- * @property-read CommunicationTemplateVersion|null $templateVersion
+ * @property-read \AIArmada\Communications\Features\Templates\Models\CommunicationTemplate|null $template
+ * @property-read \AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion|null $templateVersion
  * @property-read Model|Eloquent $owner
  */
 final class CommunicationContent extends Model
@@ -99,18 +98,18 @@ final class CommunicationContent extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationTemplate, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Templates\Models\CommunicationTemplate, $this>
      */
     public function template(): BelongsTo
     {
-        return $this->belongsTo(CommunicationTemplate::class, 'template_id');
+        return $this->belongsTo(app(TemplateRelationModels::class)->template(), 'template_id');
     }
 
     /**
-     * @return BelongsTo<CommunicationTemplateVersion, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Templates\Models\CommunicationTemplateVersion, $this>
      */
     public function templateVersion(): BelongsTo
     {
-        return $this->belongsTo(CommunicationTemplateVersion::class, 'template_version_id');
+        return $this->belongsTo(app(TemplateRelationModels::class)->version(), 'template_version_id');
     }
 }

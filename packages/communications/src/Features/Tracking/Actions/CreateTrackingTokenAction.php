@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Features\Tracking\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\PayloadRedactor;
 use AIArmada\Communications\Data\CreatedTrackingTokenData;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Api\TrackingDeliveryEvents;
 use AIArmada\Communications\Features\Tracking\Models\CommunicationTrackingToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
@@ -20,6 +19,7 @@ final class CreateTrackingTokenAction
     public function __construct(
         private readonly PayloadRedactor $redactor,
         private readonly DestinationProtector $protector,
+        private readonly TrackingDeliveryEvents $deliveries,
     ) {}
 
     public function handle(
@@ -29,15 +29,13 @@ final class CreateTrackingTokenAction
         ?string $expiresAt = null,
         ?array $metadata = null,
     ): CreatedTrackingTokenData {
-        $delivery = CommunicationDelivery::ownerScopeConfig()->enabled
-            ? OwnerWriteGuard::findOrFailForOwner(CommunicationDelivery::class, $deliveryId)
-            : CommunicationDelivery::query()->findOrFail($deliveryId);
+        $this->deliveries->assertAccessible($deliveryId);
 
         $token = Str::random(64);
         $tokenHash = hash('sha256', $token);
 
         $trackingToken = new CommunicationTrackingToken;
-        $trackingToken->delivery_id = $delivery->id;
+        $trackingToken->delivery_id = $deliveryId;
         $trackingToken->kind = $kind;
         $trackingToken->token_hash = $tokenHash;
 

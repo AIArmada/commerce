@@ -41,11 +41,13 @@ test('RecordTrackingInteractionAction handle records interaction with valid toke
 
     $action = app(RecordTrackingInteractionAction::class);
 
-    $event = $action->handle(
+    $eventId = $action->handle(
         tokenId: $token->id,
         interactionType: 'click',
         metadata: ['url' => 'https://example.com'],
     );
+
+    $event = CommunicationEvent::query()->findOrFail($eventId);
 
     expect($event)->toBeInstanceOf(CommunicationEvent::class);
     expect($event->event)->toBe('click');

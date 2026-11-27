@@ -34,7 +34,8 @@
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\ReplayWebhookEvent",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\CleanupDeliveryDependents",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RedactDeliveryPayloadAction"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RedactDeliveryPayloadAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordDeliveryTrackingEvent"
     ]
   },
   "extensions": {}

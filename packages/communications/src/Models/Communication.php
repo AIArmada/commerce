@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Models;
 
+use AIArmada\Communications\Runtime\DeliveryRelationModels;
+use AIArmada\Communications\Runtime\AggregateRelationModels;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Communications\Enums\CommunicationCategory;
@@ -11,14 +13,6 @@ use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
 use AIArmada\Communications\Enums\CommunicationStatus;
 use AIArmada\Communications\Features\Aggregate\Api\CommunicationDependentsCleaner;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationContent;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationReference;
-use AIArmada\Communications\Features\Aggregate\Models\CommunicationThread;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -59,18 +53,18 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read CommunicationBatch|null $batch
- * @property-read CommunicationThread|null $thread
+ * @property-read \AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch|null $batch
+ * @property-read \AIArmada\Communications\Features\Aggregate\Models\CommunicationThread|null $thread
  * @property-read Communication|null $parent
  * @property-read Collection<int, Communication> $children
  * @property-read Model|Eloquent $subject
  * @property-read Model|Eloquent $sender
- * @property-read Collection<int, CommunicationRecipient> $recipients
- * @property-read Collection<int, CommunicationContent> $contents
- * @property-read Collection<int, CommunicationDelivery> $deliveries
- * @property-read Collection<int, CommunicationEvent> $events
- * @property-read Collection<int, CommunicationReference> $references
- * @property-read Collection<int, CommunicationAttachment> $attachments
+ * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient> $recipients
+ * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationContent> $contents
+ * @property-read Collection<int, \AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery> $deliveries
+ * @property-read Collection<int, \AIArmada\Communications\Features\Delivery\Models\CommunicationEvent> $events
+ * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationReference> $references
+ * @property-read Collection<int, \AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment> $attachments
  * @property-read Model|Eloquent $owner
  */
 final class Communication extends Model
@@ -129,19 +123,19 @@ final class Communication extends Model
     }
 
     /**
-     * @return BelongsTo<CommunicationBatch, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Aggregate\Models\CommunicationBatch, $this>
      */
     public function batch(): BelongsTo
     {
-        return $this->belongsTo(CommunicationBatch::class, 'batch_id');
+        return $this->belongsTo(app(AggregateRelationModels::class)->batch(), 'batch_id');
     }
 
     /**
-     * @return BelongsTo<CommunicationThread, $this>
+     * @return BelongsTo<\AIArmada\Communications\Features\Aggregate\Models\CommunicationThread, $this>
      */
     public function thread(): BelongsTo
     {
-        return $this->belongsTo(CommunicationThread::class, 'thread_id');
+        return $this->belongsTo(app(AggregateRelationModels::class)->thread(), 'thread_id');
     }
 
     /**
@@ -177,51 +171,51 @@ final class Communication extends Model
     }
 
     /**
-     * @return HasMany<CommunicationRecipient, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationRecipient, $this>
      */
     public function recipients(): HasMany
     {
-        return $this->hasMany(CommunicationRecipient::class, 'communication_id');
+        return $this->hasMany(app(AggregateRelationModels::class)->recipient(), 'communication_id');
     }
 
     /**
-     * @return HasMany<CommunicationContent, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationContent, $this>
      */
     public function contents(): HasMany
     {
-        return $this->hasMany(CommunicationContent::class, 'communication_id');
+        return $this->hasMany(app(AggregateRelationModels::class)->content(), 'communication_id');
     }
 
     /**
-     * @return HasMany<CommunicationDelivery, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery, $this>
      */
     public function deliveries(): HasMany
     {
-        return $this->hasMany(CommunicationDelivery::class, 'communication_id');
+        return $this->hasMany(app(DeliveryRelationModels::class)->delivery(), 'communication_id');
     }
 
     /**
-     * @return HasMany<CommunicationEvent, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Delivery\Models\CommunicationEvent, $this>
      */
     public function events(): HasMany
     {
-        return $this->hasMany(CommunicationEvent::class, 'communication_id');
+        return $this->hasMany(app(DeliveryRelationModels::class)->event(), 'communication_id');
     }
 
     /**
-     * @return HasMany<CommunicationReference, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationReference, $this>
      */
     public function references(): HasMany
     {
-        return $this->hasMany(CommunicationReference::class, 'communication_id');
+        return $this->hasMany(app(AggregateRelationModels::class)->reference(), 'communication_id');
     }
 
     /**
-     * @return HasMany<CommunicationAttachment, $this>
+     * @return HasMany<\AIArmada\Communications\Features\Aggregate\Models\CommunicationAttachment, $this>
      */
     public function attachments(): HasMany
     {
-        return $this->hasMany(CommunicationAttachment::class, 'communication_id');
+        return $this->hasMany(app(AggregateRelationModels::class)->attachment(), 'communication_id');
     }
 
     protected static function booted(): void
