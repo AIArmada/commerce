@@ -48,7 +48,7 @@ to an allowed outcome.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `referrals.fulfillment.default_driver` | `manual` | Fallback driver if a reward row has no driver. Unknown, disabled, or unavailable drivers fail closed. |
+| `referrals.fulfillment.default_driver` | `manual` | Default when validating a new reward specification. Frozen reward rows use their explicit driver; unknown, disabled, or unavailable drivers fail closed. |
 | `referrals.fulfillment.drivers.manual.enabled` | `true` | Registers the manual adapter. |
 | `referrals.fulfillment.drivers.voucher.enabled` | `true` | Enables voucher adapter registration when `aiarmada/vouchers` is available. |
 | `referrals.fulfillment.drivers.affiliate_cash.enabled` | `true` | Enables affiliate cash adapter registration when `aiarmada/affiliates` is available. |

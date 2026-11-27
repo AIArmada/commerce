@@ -44,6 +44,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
         $spec = $reward->spec;
         $data = is_array($spec['voucher'] ?? null) ? $spec['voucher'] : [];
         $data['code'] = $code;
+        unset($data['owner_type'], $data['owner_id']);
         $data['currency'] = $reward->currency ?? $data['currency'] ?? config('referrals.defaults.currency', 'MYR');
 
         // Explicit limits take precedence over submitted voucher settings.
@@ -80,7 +81,9 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
                 return ReferralFulfillmentResult::failed('The vouchers create action did not return a voucher model.');
             }
         } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('Voucher issuance failed: ' . $exception->getMessage());
+            report($exception);
+
+            return ReferralFulfillmentResult::failed('Voucher issuance failed.');
         }
 
         return ReferralFulfillmentResult::fulfilled((string) $voucher->getAttribute('code'));
@@ -116,8 +119,15 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
     private function matchesFrozenValue(Model $voucher, ReferralRewardContext $reward): bool
     {
-        return ($reward->amountMinor === null || (int) $voucher->getAttribute('value') === $reward->amountMinor)
-            && ($reward->currency === null || $voucher->getAttribute('currency') === $reward->currency);
+        $spec = $reward->spec['voucher'] ?? [];
+        $expectedValue = $reward->amountMinor ?? ($spec['value'] ?? null);
+        $type = $voucher->getAttribute('type');
+        $type = $type instanceof \BackedEnum ? $type->value : $type;
+
+        return is_int($expectedValue)
+            && (int) $voucher->getAttribute('value') === $expectedValue
+            && $type === ($spec['type'] ?? null)
+            && $voucher->getAttribute('currency') === $reward->currency;
     }
 
     public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
@@ -161,7 +171,9 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
             $action->handle($code);
         } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('Voucher expiry failed: ' . $exception->getMessage());
+            report($exception);
+
+            return ReferralFulfillmentResult::failed('Voucher expiry failed.');
         }
 
         return ReferralFulfillmentResult::fulfilled($code);

@@ -32,9 +32,7 @@ final class ReferralRewardFulfillmentRouter implements ReferralRewardFulfillment
 
     private function adapter(ReferralRewardContext $reward): ReferralRewardFulfillment
     {
-        $driver = $reward->driver !== ''
-            ? $reward->driver
-            : (string) config('referrals.fulfillment.default_driver', 'manual');
+        $driver = $reward->driver;
         $driverConfig = config('referrals.fulfillment.drivers.' . $driver);
         $adapterClass = $this->drivers[$driver] ?? null;
 

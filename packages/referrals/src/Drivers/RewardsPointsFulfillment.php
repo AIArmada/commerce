@@ -66,7 +66,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         // exactly one award instead of leaving orphaned cross-side rows.
         $roleValue = $reward->side === 'referrer' ? 'sharer' : 'participant';
         $onlyRole = $roleClass::from($roleValue);
-        $spec = is_array($reward->spec) ? $reward->spec : [];
+        $spec = $reward->spec;
         $familyKey = $spec['family_key'] ?? null;
 
         if ($familyKey !== null && ! is_string($familyKey)) {
@@ -225,11 +225,8 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
 
     private function stampVerifiedReversal(ReferralRewardContext $reward, string $businessKey): ReferralFulfillmentResult
     {
-        $metadata = is_array($reward->metadata) ? $reward->metadata : [];
-        $metadata['rewards_reversal'] = 'verified_corrections_sweep';
-        $metadata['rewards_reversal_business_key'] = $businessKey;
         return ReferralFulfillmentResult::fulfilled($reward->externalReference ?? $businessKey, [
-            'rewards_reversal' => $metadata['rewards_reversal'],
+            'rewards_reversal' => 'verified_corrections_sweep',
             'rewards_reversal_business_key' => $businessKey,
         ]);
     }

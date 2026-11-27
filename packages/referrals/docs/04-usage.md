@@ -122,6 +122,8 @@ The manual rail records that reference in referrals. The host must perform and v
 
 ### Vouchers
 
+Voucher ownership follows the referral program; specs cannot supply owner IDs. The validated reward freezes voucher currency and value before qualification.
+
 Install `aiarmada/vouchers`, enable the voucher driver, and put the input fields accepted by the vouchers package's `CreateVoucher` action in the `voucher` array. The adapter sets a deterministic code, currency, and idempotency marker. It stores the issued code as `external_reference`. Reversal uses vouchers' `ExpireVoucher` action, which expires the code rather than deleting the voucher.
 
 Every referral-issued voucher is **single-use and beneficiary-bound**: the adapter forces `usage_limit = 1` and `usage_limit_per_user = 1` (both alias spellings) and writes `metadata.assignee = ['type' => frozen beneficiary type, 'id' => frozen beneficiary id]`, the marker the vouchers package enforces at validation and at usage recording. The voucher is worth exactly the frozen `amount_minor`. A spec that asks for a different usage limit, a `value` that differs from `amount_minor`, or its own `metadata.assignee` is rejected at program creation; a legacy frozen spec is normalized to 1/1 at issuance. A replay returns the same code only when the existing voucher is single-use and bound to the frozen beneficiary — an unlimited or unbound voucher fails closed.

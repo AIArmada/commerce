@@ -1570,3 +1570,18 @@ it('does not expire an already qualified invite when its original claim deadline
         ->and($reissued->invite->status)->toBe(ReferralInviteStatus::Qualified)
         ->and($reissued->token)->toBeNull();
 });
+
+it('rejects voucher ownership overrides and freezes the voucher currency', function (): void {
+    $validator = app(ReferralRewardSpecValidator::class);
+    $spec = ['driver' => 'voucher', 'voucher' => ['type' => 'fixed', 'value' => 500]];
+    expect($validator->validate($spec, 'MYR')['currency'])->toBe('MYR');
+
+    $forged = $spec;
+    $forged['voucher']['owner_id'] = 'another-owner';
+    expect(fn () => $validator->validate($forged, 'MYR'))->toThrow(InvalidArgumentException::class);
+
+    $mismatch = $spec;
+    $mismatch['currency'] = 'MYR';
+    $mismatch['voucher']['currency'] = 'USD';
+    expect(fn () => $validator->validate($mismatch, 'MYR'))->toThrow(InvalidArgumentException::class);
+});

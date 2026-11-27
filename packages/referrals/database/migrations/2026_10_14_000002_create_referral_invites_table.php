@@ -30,6 +30,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
+            $table->unique(['id', 'program_id'], 'referral_invites_program_identity_unique');
             $table->index(['program_id', 'invitee_hash', 'status'], 'referral_invites_claim_lookup_idx');
             $table->index(['program_id', 'referrer_type', 'referrer_id', 'status'], 'referral_invites_referrer_cap_idx');
             $table->index(['program_id', 'status', 'expired_at'], 'referral_invites_expiry_idx');
