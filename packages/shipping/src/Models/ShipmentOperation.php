@@ -61,6 +61,8 @@ final class ShipmentOperation extends Model
         // index is intentionally not used: repeat operations legitimately
         // produce multiple completed rows per (shipment, operation type).
         return DB::transaction(function () use ($shipment, $operationType, $reference): self {
+            Shipment::query()->whereKey($shipment->getKey())->lockForUpdate()->firstOrFail();
+
             $existing = self::query()
                 ->where('shipment_id', $shipment->getKey())
                 ->where('operation_type', $operationType)

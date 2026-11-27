@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Features\Returns\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Returns\Api\RejectReturn;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaRejected;
@@ -19,6 +20,10 @@ final class RejectReturnAuthorization implements RejectReturn
     public function execute(string $authorizationId, string $reason, ?string $actorId = null): string
     {
         return DB::transaction(function () use ($authorizationId, $reason, $actorId): string {
+            if ((bool) config('shipping.features.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(ReturnAuthorization::class, $authorizationId);
+            }
+
             $rma = ReturnAuthorization::query()->lockForUpdate()->findOrFail($authorizationId);
             if (! $rma->isPending()) {
                 throw new RuntimeException("Return authorization {$rma->rma_number} is not pending.");

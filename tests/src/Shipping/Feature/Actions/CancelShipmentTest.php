@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Features\Shipments\Actions\CancelShipment;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Data\CarrierOperationResult;
 use AIArmada\Shipping\Enums\ShipmentOperationStatus;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Models\Shipment;
@@ -30,6 +31,7 @@ describe('CancelShipment Action', function (): void {
         expect($cancelled->status)->toBeInstanceOf(Cancelled::class);
         expect($cancelled->events)->toHaveCount(1);
         expect($cancelled->events->first()->description)->toBe('Customer request');
+        expect($cancelled->operations()->where('operation_type', 'cancel')->firstOrFail()->status())->toBe(ShipmentOperationStatus::Succeeded);
     });
 
     it('cancels a pending shipment', function (): void {
@@ -62,6 +64,29 @@ describe('CancelShipment Action', function (): void {
 
         expect(fn () => CancelShipment::run($shipment))
             ->toThrow(ShipmentNotCancellableException::class);
+    });
+
+    it('preserves a definite carrier cancellation rejection', function (): void {
+        $shipment = Shipment::create([
+            'reference' => 'TEST-CANCEL-REJECTED',
+            'carrier_code' => 'null',
+            'tracking_number' => 'TRACK-REJECTED',
+            'status' => Pending::class,
+            'origin_address' => ['name' => 'Origin'],
+            'destination_address' => ['name' => 'Dest'],
+        ]);
+
+        $driver = Mockery::mock(ShippingDriverInterface::class);
+        $driver->shouldReceive('cancelShipment')->once()->with('TRACK-REJECTED')
+            ->andReturn(CarrierOperationResult::failed('Carrier rejected cancellation'));
+
+        $manager = Mockery::mock(ShippingManager::class);
+        $manager->shouldReceive('driver')->with('null')->andReturn($driver);
+
+        expect(fn () => (new CancelShipment($manager))->handle($shipment))
+            ->toThrow(RuntimeException::class, 'Carrier rejected cancellation');
+        expect($shipment->refresh()->status)->toBeInstanceOf(Pending::class);
+        expect($shipment->operations()->where('operation_type', 'cancel')->firstOrFail()->status())->toBe(ShipmentOperationStatus::Failed);
     });
 
     it('does not mark shipment cancelled when carrier throws unknown', function (): void {

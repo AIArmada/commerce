@@ -57,7 +57,6 @@ final class CancelShipment
                 try {
                     $result = $driver->cancelShipment($shipment->tracking_number);
                     $operation->complete($result);
-
                 } catch (Throwable $e) {
                     $operation->complete(
                         CarrierOperationResult::unknown($e->getMessage()),
@@ -80,6 +79,8 @@ final class CancelShipment
 
                     throw new RuntimeException($result->error ?? 'The carrier rejected shipment cancellation.');
                 }
+            } else {
+                $operation->complete(CarrierOperationResult::succeeded());
             }
 
             return DB::transaction(function () use ($shipment, $reason) {
