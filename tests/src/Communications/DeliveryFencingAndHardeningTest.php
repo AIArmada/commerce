@@ -20,6 +20,18 @@ use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 
+test('payload redaction reads current configuration for each operation', function (): void {
+    $redactor = app(PayloadRedactor::class);
+
+    config()->set('communications.redaction.exact_keys', ['custom_field']);
+    expect($redactor->redactRequest(['nested' => ['CUSTOM_FIELD' => 'value']]))
+        ->toBe(['nested' => ['CUSTOM_FIELD' => '**[REDACTED]**']]);
+
+    config()->set('communications.redaction.exact_keys', []);
+    expect($redactor->redactResponse(['nested' => ['CUSTOM_FIELD' => 'value']]))
+        ->toBe(['nested' => ['CUSTOM_FIELD' => 'value']]);
+});
+
 test('payload redactor handles integer list keys, redacts sensitive subtrees, and honors config keys', function (): void {
     config()->set('communications.redaction.sensitive_substrings', ['credential']);
     config()->set('communications.redaction.exact_keys', ['x-custom-secret']);
