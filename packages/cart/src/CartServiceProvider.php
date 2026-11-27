@@ -208,6 +208,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app['events']->listen(RequestReceived::class, static function (): void {
             app()->forgetInstance('cart.storage');
             app()->forgetInstance('cart');
+            Facades\Cart::clearResolvedInstance('cart');
             app()->forgetInstance(CartFactory::class);
             ConditionPresets::restoreOctaneDefaults();
             RulePresets::restoreOctaneDefaults();
