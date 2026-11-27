@@ -6,8 +6,10 @@ namespace AIArmada\Persons\Features\Titles\Actions;
 
 use AIArmada\Persons\Enums\TitleUsagePosition;
 use AIArmada\Persons\Features\Titles\Models\Title;
+use AIArmada\Persons\Features\Titles\Models\TitleCategory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 use RuntimeException;
 
@@ -21,6 +23,7 @@ final class ReorderTitleAction
         return DB::transaction(function () use ($attributes): Title {
             $title = new Title;
             $title->fill($attributes);
+            $this->lockCategories([(string) $title->category_id]);
 
             $titles = $this->scope($title)->lockForUpdate()->get();
             $ordered = $this->insertAt($titles, $title, (int) ($attributes['sort_order'] ?? 1));
@@ -43,6 +46,20 @@ final class ReorderTitleAction
     public function update(Title $title, array $attributes): Title
     {
         return DB::transaction(function () use ($title, $attributes): Title {
+            $originalCategory = (string) $title->getRawOriginal('category_id');
+            $requestedCategory = array_key_exists('category_id', $attributes)
+                ? (string) $attributes['category_id']
+                : $originalCategory;
+
+            $this->lockCategories([$originalCategory, $requestedCategory]);
+
+            $current = $title->newQuery()->whereKey($title->getKey())->lockForUpdate()->firstOrFail();
+
+            if ((string) $current->category_id !== $originalCategory) {
+                throw ValidationException::withMessages(['category_id' => 'The title category has changed. Reload the title before editing it.']);
+            }
+
+            $title->setRawAttributes($current->getAttributes(), true);
             $oldScope = $this->scopeValues($title->getRawOriginal('category_id'), $title->getRawOriginal('usage_position'));
 
             $title->fill($attributes);
@@ -88,6 +105,21 @@ final class ReorderTitleAction
 
             return $title;
         });
+    }
+
+    /** @param list<string> $categoryIds */
+    private function lockCategories(array $categoryIds): void
+    {
+        $categoryIds = array_values(array_unique($categoryIds));
+        $categories = TitleCategory::query()
+            ->whereKey($categoryIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get(['id']);
+
+        if ($categories->count() !== count($categoryIds)) {
+            throw ValidationException::withMessages(['category_id' => 'The selected title category does not exist.']);
+        }
     }
 
     /** @return array{category_id: string, usage_position: string} */

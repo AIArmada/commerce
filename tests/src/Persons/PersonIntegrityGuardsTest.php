@@ -17,6 +17,7 @@ use AIArmada\Persons\Features\Identity\Actions\SavePersonName;
 use AIArmada\Persons\Features\Identity\Models\PersonName;
 use AIArmada\Persons\Features\Titles\Actions\AssignTitleAction;
 use AIArmada\Persons\Features\Titles\Actions\DeleteTitle;
+use AIArmada\Persons\Features\Titles\Actions\ReorderTitleAction;
 use AIArmada\Persons\Features\Titles\Models\Title;
 use AIArmada\Persons\Features\Titles\Models\TitleAssignment;
 use AIArmada\Persons\Features\Titles\Models\TitleCategory;
@@ -25,6 +26,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     persons_register_morph_map('person');
@@ -304,4 +306,59 @@ it('rejects invalid credential dates and cross-person assignment writes', functi
 
     expect($action->update($person, $assignment, ['status' => 'revoked'])->status)->toBe(AssignmentStatus::Revoked);
     expect($action->delete($person, $assignment))->toBeTrue();
+});
+
+it('preserves the current title order when updating an outdated record without an ordering change', function (): void {
+    $category = TitleCategory::create(['code' => 'stale-order', 'name' => 'Stale Order', 'sort_order' => 1]);
+    $action = app(ReorderTitleAction::class);
+    $first = $action->create([
+        'category_id' => $category->id,
+        'name' => 'First',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $stale = $first->fresh();
+    $second = $action->create([
+        'category_id' => $category->id,
+        'name' => 'Second',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+
+    $updated = $action->update($stale, ['name' => 'Renamed']);
+
+    expect($updated->name)->toBe('Renamed')
+        ->and($updated->sort_order)->toBe(2)
+        ->and($second->fresh()->sort_order)->toBe(1);
+});
+
+it('rejects a title update when its category has changed since it was loaded', function (): void {
+    $source = TitleCategory::create(['code' => 'source-order', 'name' => 'Source', 'sort_order' => 1]);
+    $target = TitleCategory::create(['code' => 'target-order', 'name' => 'Target', 'sort_order' => 2]);
+    $action = app(ReorderTitleAction::class);
+    $title = $action->create([
+        'category_id' => $source->id,
+        'name' => 'Movable',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]);
+    $stale = $title->fresh();
+    $action->update($title, ['category_id' => $target->id]);
+
+    expect(fn () => $action->update($stale, ['name' => 'Outdated']))
+        ->toThrow(ValidationException::class);
+
+    expect($title->fresh()->category_id)->toBe($target->id)
+        ->and($title->fresh()->name)->toBe('Movable');
+});
+
+it('rejects ordering a title in a missing category', function (): void {
+    expect(fn () => app(ReorderTitleAction::class)->create([
+        'category_id' => (string) Str::uuid(),
+        'name' => 'Orphan',
+        'usage_position' => TitleUsagePosition::BeforeName,
+        'sort_order' => 1,
+    ]))->toThrow(ValidationException::class);
+
+    expect(Title::query()->where('name', 'Orphan')->exists())->toBeFalse();
 });
