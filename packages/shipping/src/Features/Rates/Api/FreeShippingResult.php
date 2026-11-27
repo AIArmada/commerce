@@ -9,14 +9,14 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 /**
  * Result of free shipping evaluation.
  */
-class FreeShippingResult
+final readonly class FreeShippingResult
 {
     public function __construct(
-        public readonly bool $applies,
-        public readonly ?string $message = null,
-        public readonly ?int $remainingAmount = null,
-        public readonly ?string $currency = null,
-        public readonly bool $nearThreshold = false,
+        public bool $applies,
+        public ?string $message = null,
+        public ?int $remainingAmount = null,
+        public ?string $currency = null,
+        public bool $nearThreshold = false,
     ) {}
 
     public function getFormattedRemaining(): ?string
