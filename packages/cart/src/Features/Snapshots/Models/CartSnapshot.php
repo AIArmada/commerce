@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Features\Snapshots\Models;
 
 use AIArmada\Cart\Cart as BaseCart;
+use AIArmada\Cart\Data\CartSnapshotData;
 use AIArmada\Cart\Database\Factories\CartSnapshotFactory;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Support\CartMoney;
@@ -144,6 +145,25 @@ class CartSnapshot extends Model
                 $cart->setAttribute('currency', CartMoney::currency());
             }
         });
+    }
+
+    public function toSnapshotData(): CartSnapshotData
+    {
+        return new CartSnapshotData(
+            id: (string) $this->getKey(),
+            identifier: $this->identifier,
+            instance: $this->instance,
+            ownerType: $this->owner_type,
+            ownerId: $this->owner_id,
+            subtotal: $this->subtotal,
+            total: $this->total,
+            quantity: $this->quantity,
+            itemsCount: $this->items_count,
+            currency: $this->currency,
+            updatedAt: $this->updated_at,
+            checkoutStartedAt: $this->checkout_started_at,
+            checkoutAbandonedAt: $this->checkout_abandoned_at,
+        );
     }
 
     protected static function newFactory(): Factory

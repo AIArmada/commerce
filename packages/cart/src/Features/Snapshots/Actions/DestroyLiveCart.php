@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Cart\Actions;
+namespace AIArmada\Cart\Features\Snapshots\Actions;
 
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 
-final readonly class ClearLiveCart
+final readonly class DestroyLiveCart
 {
     public function __construct(private CartInstanceManager $cartInstances) {}
 
@@ -24,6 +24,6 @@ final readonly class ClearLiveCart
             );
         }
 
-        $this->cartInstances->resolveForSnapshot($snapshot)->clear();
+        $this->cartInstances->resolveForSnapshot($snapshot)->destroy();
     }
 }

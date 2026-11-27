@@ -43,7 +43,7 @@ final readonly class MarkCartAbandoned implements CartAbandonmentMarker
             return false;
         }
 
-        event(CartAbandoned::fromCart($abandoned));
+        event(CartAbandoned::fromSnapshot($abandoned->toSnapshotData()));
 
         return true;
     }

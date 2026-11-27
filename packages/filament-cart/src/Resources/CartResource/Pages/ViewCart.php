@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
-use AIArmada\Cart\Actions\ClearLiveCart;
-use AIArmada\Cart\Actions\DestroyLiveCart;
+use AIArmada\Cart\Features\Snapshots\Actions\ClearLiveCart;
+use AIArmada\Cart\Features\Snapshots\Actions\DestroyLiveCart;
 use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot as Cart;
 use AIArmada\FilamentCart\EntryPoints\Http\DownloadCart;
 use AIArmada\FilamentCart\Resources\CartResource;

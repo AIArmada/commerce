@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Events;
 
-use AIArmada\Cart\Features\Snapshots\Models\CartSnapshot;
+use AIArmada\Cart\Data\CartSnapshotData;
 use Carbon\CarbonImmutable;
 
 final readonly class CartAbandoned
@@ -25,22 +25,22 @@ final readonly class CartAbandoned
         public string $occurredAt,
     ) {}
 
-    public static function fromCart(CartSnapshot $cart): self
+    public static function fromSnapshot(CartSnapshotData $cart): self
     {
-        $occurredAt = $cart->checkout_abandoned_at?->toAtomString() ?? CarbonImmutable::now()->toAtomString();
+        $occurredAt = $cart->checkoutAbandonedAt?->format(DATE_ATOM) ?? CarbonImmutable::now()->toAtomString();
 
         return new self(
-            sourceEventId: sprintf('cart-abandoned:%s:%s', $cart->id, $cart->checkout_abandoned_at?->getTimestamp() ?? time()),
+            sourceEventId: sprintf('cart-abandoned:%s:%s', $cart->id, $cart->checkoutAbandonedAt?->getTimestamp() ?? time()),
             cartId: (string) $cart->id,
             cartIdentifier: $cart->identifier,
             cartInstance: $cart->instance,
-            ownerType: $cart->owner_type,
-            ownerId: $cart->owner_id,
+            ownerType: $cart->ownerType,
+            ownerId: $cart->ownerId,
             subtotalMinor: $cart->subtotal,
             totalMinor: $cart->total,
             totalQuantity: $cart->quantity,
-            uniqueItemCount: $cart->items_count,
-            itemCount: $cart->items_count,
+            uniqueItemCount: $cart->itemsCount,
+            itemCount: $cart->itemsCount,
             currency: $cart->currency,
             occurredAt: $occurredAt,
         );

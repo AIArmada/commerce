@@ -119,13 +119,13 @@ class NormalizedCartSynchronizer
         }
 
         if ($hasMaterialChanges) {
-            event(CartSnapshotSynced::fromCart($cartModel));
+            event(CartSnapshotSynced::fromSnapshot($cartModel->toSnapshotData()));
         }
 
         $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
 
         if ($highValueThreshold > 0 && $previousTotal < $highValueThreshold && $cartModel->total >= $highValueThreshold) {
-            event(HighValueCartDetected::fromCart($cartModel));
+            event(HighValueCartDetected::fromSnapshot($cartModel->toSnapshotData()));
         }
     }
 

@@ -32,7 +32,7 @@ final readonly class StartCartCheckout
         });
 
         if ($started !== null) {
-            event(CartCheckoutStarted::fromCart($started));
+            event(CartCheckoutStarted::fromSnapshot($started->toSnapshotData()));
         }
     }
 }

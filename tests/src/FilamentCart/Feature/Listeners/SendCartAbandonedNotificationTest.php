@@ -60,7 +60,7 @@ it('delivers abandoned cart notifications using the event owner context', functi
             'status' => Pending::class,
         ]);
 
-        return CartAbandoned::fromCart($cart);
+        return CartAbandoned::fromSnapshot($cart->toSnapshotData());
     });
 
     OwnerContext::withOwner(null, function () use ($event): void {

@@ -161,7 +161,7 @@ describe('purchaser email validation', function (): void {
                 'status' => Pending::class,
             ]);
 
-            return CartAbandoned::fromCart($cart);
+            return CartAbandoned::fromSnapshot($cart->toSnapshotData());
         });
 
         OwnerContext::withOwner(null, function () use ($event): void {
