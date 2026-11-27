@@ -5,16 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Delivery\Actions\ApplyProviderEventAction;
-use AIArmada\Communications\Features\Delivery\Actions\TransitionDeliveryAction;
-use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationDelivery;
+use AIArmada\Communications\Features\Delivery\Api\WebhookReplay;
 use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
-use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
-use Throwable;
 
 final class ReplayWebhookEventsCommand extends Command
 {
@@ -28,12 +23,6 @@ final class ReplayWebhookEventsCommand extends Command
         {--batch=100 : Number of events to process per batch}';
 
     protected $description = 'Replay webhook events to re-apply delivery status updates';
-
-    public function __construct(
-        private readonly CommunicationAuditRecorder $auditRecorder,
-    ) {
-        parent::__construct();
-    }
 
     public function handle(): int
     {
@@ -109,9 +98,9 @@ final class ReplayWebhookEventsCommand extends Command
         $bar = $this->output->createProgressBar($count);
         $bar->start();
 
-        $query->chunkById((int) $this->option('batch'), function ($events) use (&$replayed, &$skipped, &$failed, $bar): void {
+        $query->chunkById(max(1, (int) $this->option('batch')), function ($events) use (&$replayed, &$skipped, &$failed, $bar): void {
             foreach ($events as $event) {
-                $result = $this->replayEvent($event);
+                $result = app(WebhookReplay::class)->replay($event->id, (bool) $this->option('force'));
                 match ($result) {
                     'replayed' => $replayed++,
                     'skipped' => $skipped++,
@@ -130,53 +119,4 @@ final class ReplayWebhookEventsCommand extends Command
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    private function replayEvent(CommunicationEvent $event): string
-    {
-        if (! in_array($event->event, ApplyProviderEventAction::DELIVERY_EVENTS, true)) {
-            return 'skipped';
-        }
-
-        /** @var CommunicationDelivery|null $delivery */
-        $delivery = CommunicationDelivery::query()->find($event->delivery_id);
-
-        if ($delivery === null) {
-            return 'skipped';
-        }
-
-        try {
-            $target = ApplyProviderEventAction::EVENT_STATUS_MAP[$event->event];
-            $transitions = app(TransitionDeliveryAction::class);
-
-            if ($this->option('force')) {
-                $transitions->handle($delivery, $target, force: true);
-            } else {
-                $transitions->applyProviderStatus($delivery, $target);
-            }
-
-            $event->processed_at = CarbonImmutable::now();
-            $event->save();
-
-            $this->auditRecorder->recordWebhookReplay(
-                communicationId: $event->communication_id ?? 'unknown',
-                actorType: 'system',
-                actorId: 'replay-command',
-                reason: 'Webhook event replayed via command',
-                metadata: [
-                    'event_id' => $event->id,
-                    'delivery_id' => $event->delivery_id,
-                    'provider' => $event->provider,
-                    'event_type' => $event->event,
-                    'replayed_at' => CarbonImmutable::now()->toIso8601String(),
-                ],
-            );
-
-            return 'replayed';
-        } catch (Throwable $e) {
-            $event->failed_at = CarbonImmutable::now();
-            $event->failure_message = $e->getMessage();
-            $event->save();
-
-            return 'failed';
-        }
-    }
 }

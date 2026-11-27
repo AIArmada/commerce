@@ -20,11 +20,14 @@
     "table:communication_attempts": [
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\StartDeliveryAttemptAction",
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\CompleteDeliveryAttemptAction",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PersistDeliveryFencingAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData"
     ],
     "table:communication_events": [
       "AIArmada\\Communications\\Features\\Delivery\\Actions\\ApplyProviderEventAction",
-      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordProviderEventAction"
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\RecordProviderEventAction",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\PruneDeliveryData",
+      "AIArmada\\Communications\\Features\\Delivery\\Actions\\ReplayWebhookEvent"
     ]
   },
   "extensions": {}

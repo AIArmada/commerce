@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Communications\EntryPoints\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationAttempt;
-use AIArmada\Communications\Features\Delivery\Models\CommunicationEvent;
+use AIArmada\Communications\Features\Delivery\Api\DeliveryRetention;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Throwable;
@@ -71,36 +68,20 @@ final class PruneCommunicationDataCommand extends Command
 
         $this->info("Pruning data before: {$before->toDateTimeString()}");
 
-        $attemptQuery = CommunicationAttempt::query()
-            ->where('created_at', '<', $before);
+        $dryRun = (bool) $this->option('dry-run');
+        $counts = app(DeliveryRetention::class)->prune($before, $dryRun);
+        $attemptCount = $counts['attempts'];
+        $eventCount = $counts['events'];
 
-        $eventQuery = CommunicationEvent::query()
-            ->where('created_at', '<', $before);
-
-        $attemptCount = $attemptQuery->count();
-        $eventCount = $eventQuery->count();
-
-        if ($this->option('dry-run')) {
+        if ($dryRun) {
             $this->info("Would prune {$attemptCount} attempts and {$eventCount} events.");
 
             return self::SUCCESS;
         }
-
-        $this->deleteInChunks($attemptQuery);
-        $this->deleteInChunks($eventQuery);
 
         $this->info("Pruned {$attemptCount} attempts and {$eventCount} events.");
 
         return self::SUCCESS;
     }
 
-    /**
-     * @param  Builder<covariant Model>  $query
-     */
-    private function deleteInChunks(Builder $query): void
-    {
-        $query->chunkById(100, function (Collection $records) use ($query): void {
-            $query->whereKey($records->modelKeys())->delete();
-        });
-    }
 }
