@@ -816,7 +816,6 @@ it('persists a refund identity and prevents duplicate increments even without th
         ->and($purchase->payments()->whereKey($refundId)->count())->toBe(1);
 });
 
-
 it('rejects reuse of a remote payment identifier for a different purchase', function (): void {
     $first = regressionPurchase();
     $second = regressionPurchase();
