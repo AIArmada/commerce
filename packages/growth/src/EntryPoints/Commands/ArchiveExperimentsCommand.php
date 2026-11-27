@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Console\Commands;
+namespace AIArmada\Growth\EntryPoints\Commands;
 
 use AIArmada\Growth\Actions\ArchiveExperiments;
 use Carbon\CarbonImmutable;

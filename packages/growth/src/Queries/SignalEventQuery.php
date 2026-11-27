@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Growth\Support\Queries;
+namespace AIArmada\Growth\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ScopeSignalQueryToOwner;
