@@ -259,7 +259,7 @@ foreach ($trackingData->events as $event) {
 ### Bulk Tracking Sync
 
 ```php
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 
 $aggregator = app(TrackingAggregator::class);
 

@@ -72,7 +72,7 @@ dd(Shipping::getAvailableDrivers());
 **Solutions**:
 1. Manually trigger tracking sync:
    ```php
-   use AIArmada\Shipping\Services\TrackingAggregator;
+   use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 
    $aggregator = app(TrackingAggregator::class);
 

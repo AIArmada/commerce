@@ -8,13 +8,15 @@
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\UpdateShipmentStatus",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecalculateShipmentWeight",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CreateShipment",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecordTrackingEvent"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecordTrackingEvent",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\TrackingAggregator"
     ],
     "table:shipment_events": [
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\ShipShipment",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\CancelShipment",
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\UpdateShipmentStatus",
-      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecordTrackingEvent"
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\RecordTrackingEvent",
+      "AIArmada\\Shipping\\Features\\Shipments\\Actions\\TrackingAggregator"
     ],
     "table:shipment_labels": [
       "AIArmada\\Shipping\\Features\\Shipments\\Actions\\GenerateLabel"

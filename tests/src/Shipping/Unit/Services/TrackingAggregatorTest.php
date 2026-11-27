@@ -7,7 +7,7 @@ use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\AwaitingPickup;
 use AIArmada\Shipping\States\Delivered;

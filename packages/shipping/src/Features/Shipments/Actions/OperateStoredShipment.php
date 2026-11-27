@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Shipping\Features\Shipments\Api\ShipmentOperations;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 use DomainException;
 
 final class OperateStoredShipment implements ShipmentOperations

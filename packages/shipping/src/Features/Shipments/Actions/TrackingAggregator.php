@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Shipping\Services;
+namespace AIArmada\Shipping\Features\Shipments\Actions;
 
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Data\TrackingEventData;
@@ -26,6 +26,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -77,16 +78,24 @@ class TrackingAggregator
 
         $trackingData = $driver->track($shipment->tracking_number);
 
-        $newEvents = $this->processTrackingEvents($shipment, $trackingData->events);
+        return DB::transaction(function () use ($shipment, $trackingData): Shipment {
+            $locked = Shipment::query()->lockForUpdate()->findOrFail($shipment->getKey());
 
-        $shipment->update(['last_tracking_sync' => CarbonImmutable::now()]);
+            if ($locked->tracking_number !== $shipment->tracking_number || $locked->carrier_code !== $shipment->carrier_code) {
+                return $locked;
+            }
 
-        if ($newEvents->isNotEmpty()) {
-            $this->updateShipmentStatus($shipment);
-            event(new TrackingUpdated($shipment, $newEvents));
-        }
+            $newEvents = $this->processTrackingEvents($locked, $trackingData->events);
 
-        return $shipment->refresh();
+            $locked->update(['last_tracking_sync' => CarbonImmutable::now()]);
+
+            if ($newEvents->isNotEmpty()) {
+                $this->updateShipmentStatus($locked);
+                event(new TrackingUpdated($locked, $newEvents));
+            }
+
+            return $locked->refresh();
+        });
     }
 
     /**
@@ -237,7 +246,7 @@ class TrackingAggregator
             return;
         }
 
-        if (! $shipment->status->equals($statusClass)) {
+        if (! $shipment->status->equals($statusClass) && $shipment->status->canTransitionTo($statusClass)) {
             $oldStatus = $shipment->status;
             $shipment->status->transitionTo($statusClass);
 

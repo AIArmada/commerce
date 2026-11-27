@@ -36,6 +36,8 @@ final class RecordTrackingEvent
     public function handle(Shipment $shipment, TrackingEventData $eventData, ?StatusMapperInterface $mapper = null): ?ShipmentEvent
     {
         return DB::transaction(function () use ($shipment, $eventData, $mapper): ?ShipmentEvent {
+            $shipment = Shipment::query()->lockForUpdate()->findOrFail($shipment->getKey());
+
             $exists = $shipment->events()
                 ->where('carrier_event_code', $eventData->code)
                 ->where('occurred_at', $eventData->timestamp)
@@ -63,7 +65,11 @@ final class RecordTrackingEvent
                 'raw_data' => $eventData->raw,
             ]);
 
-            $this->updateShipmentStatus($shipment, $normalizedStatus, CarbonImmutable::make($event->occurred_at));
+            $latest = $shipment->events()->latest('occurred_at')->first();
+
+            if ($latest !== null && $latest->is($event)) {
+                $this->updateShipmentStatus($shipment, $normalizedStatus, CarbonImmutable::make($event->occurred_at));
+            }
 
             event(new TrackingUpdated($shipment, collect([$event])));
 
@@ -79,7 +85,7 @@ final class RecordTrackingEvent
             return;
         }
 
-        if ($shipment->status->equals($statusClass)) {
+        if ($shipment->status->equals($statusClass) || ! $shipment->status->canTransitionTo($statusClass)) {
             return;
         }
 

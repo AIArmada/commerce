@@ -10,7 +10,7 @@ use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Services\TrackingAggregator;
+use AIArmada\Shipping\Features\Shipments\Actions\TrackingAggregator;
 use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\InTransit;
 use Carbon\CarbonImmutable;
