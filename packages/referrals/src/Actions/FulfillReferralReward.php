@@ -10,6 +10,7 @@ use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Events\ReferralRewardFulfilled;
 use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Persistence\ReferralRewardContextMapper;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ final class FulfillReferralReward
             }
 
             try {
-                $result = app(ReferralRewardFulfillment::class)->fulfill($lockedReward);
+                $result = app(ReferralRewardFulfillment::class)->fulfill(ReferralRewardContextMapper::map($lockedReward, $invite->qualification_business_key));
             } catch (Throwable $exception) {
                 $failure = $exception instanceof ReferralFulfillmentException
                     ? $exception
@@ -63,6 +64,9 @@ final class FulfillReferralReward
                 return ['reward' => $lockedReward, 'fulfilled' => false];
             }
 
+            $metadata = array_replace($lockedReward->metadata ?? [], $result->metadata);
+            unset($metadata['fulfillment_failure']);
+            $lockedReward->metadata = $metadata;
             $lockedReward->status = ReferralRewardStatus::Fulfilled;
             $lockedReward->fulfilled_at ??= CarbonImmutable::now();
 

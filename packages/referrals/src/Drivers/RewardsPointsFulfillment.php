@@ -6,8 +6,7 @@ namespace AIArmada\Referrals\Drivers;
 
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
-use AIArmada\Referrals\Enums\ReferralRewardSide;
-use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Data\ReferralRewardContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -15,7 +14,7 @@ use Throwable;
 
 final class RewardsPointsFulfillment implements ReferralRewardFulfillment
 {
-    public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
+    public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
     {
         $readerClass = 'AIArmada\\Rewards\\Contracts\\RewardSourceFactReader';
         $factClass = 'AIArmada\\Rewards\\Support\\RewardSourceFact';
@@ -28,7 +27,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('The rewards entitlement job API is unavailable.');
         }
 
-        $businessKey = 'referrals:qualified:' . $reward->invite_id . ':' . $reward->side->value;
+        $businessKey = 'referrals:qualified:' . $reward->inviteId . ':' . $reward->side;
 
         try {
             $reader = app($readerClass);
@@ -42,8 +41,8 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         }
 
         $recipientTypes = config('rewards.recipient_types', []);
-        $expectedRecipientId = (string) $reward->beneficiary_id;
-        $sourceRecipientId = $reward->side === ReferralRewardSide::Referrer
+        $expectedRecipientId = (string) $reward->beneficiaryId;
+        $sourceRecipientId = $reward->side === 'referrer'
             ? $fact->sharerId
             : $fact->actorId;
 
@@ -54,8 +53,8 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
             || ! $fact->isValid
             || $fact->isCancelled
             || ! is_array($recipientTypes)
-            || ! is_string($reward->beneficiary_type)
-            || ! in_array($reward->beneficiary_type, $recipientTypes, true)
+            || ! is_string($reward->beneficiaryType)
+            || ! in_array($reward->beneficiaryType, $recipientTypes, true)
             || (string) $sourceRecipientId !== $expectedRecipientId) {
             return ReferralFulfillmentResult::failed('The host rewards source fact does not match the frozen referral beneficiary and outcome.');
         }
@@ -65,7 +64,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         // recipient, family) tuple evaluates one candidate instead of the
         // whole fact's every-side fan-out, so each side's fulfilment creates
         // exactly one award instead of leaving orphaned cross-side rows.
-        $roleValue = $reward->side === ReferralRewardSide::Referrer ? 'sharer' : 'participant';
+        $roleValue = $reward->side === 'referrer' ? 'sharer' : 'participant';
         $onlyRole = $roleClass::from($roleValue);
         $spec = is_array($reward->spec) ? $reward->spec : [];
         $familyKey = $spec['family_key'] ?? null;
@@ -86,13 +85,13 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
                     $businessKey,
                     onlyRecipientId: $expectedRecipientId,
                     onlyRole: $onlyRole,
-                    onlyRecipientType: (string) $reward->beneficiary_type,
+                    onlyRecipientType: (string) $reward->beneficiaryType,
                     onlyFamilyKey: $familyKey,
                 );
 
                 $awards = $awardClass::query()
                     ->where('source_business_key', $businessKey)
-                    ->where('recipient_type', (string) $reward->beneficiary_type)
+                    ->where('recipient_type', (string) $reward->beneficiaryType)
                     ->where('recipient_id', $expectedRecipientId)
                     ->where('component', 'points')
                     ->where('beneficiary_role', $roleValue)
@@ -127,9 +126,9 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         return ReferralFulfillmentResult::fulfilled($businessKey);
     }
 
-    public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
+    public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
     {
-        $businessKey = 'referrals:qualified:' . $reward->invite_id . ':' . $reward->side->value;
+        $businessKey = 'referrals:qualified:' . $reward->inviteId . ':' . $reward->side;
 
         $awardClass = 'AIArmada\\Rewards\\Models\\RewardAward';
         $correctionsClass = 'AIArmada\\Rewards\\Actions\\ApplyRewardSourceCorrectionsAction';
@@ -138,7 +137,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('The rewards corrections API is unavailable.');
         }
 
-        $roleValue = $reward->side === ReferralRewardSide::Referrer ? 'sharer' : 'participant';
+        $roleValue = $reward->side === 'referrer' ? 'sharer' : 'participant';
 
         $liveAwardIds = $this->liveSideAwardIds($reward, $roleValue, $businessKey);
 
@@ -165,9 +164,9 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
                     'business_key' => $businessKey,
                     'reason' => 'referral-reversal',
                     'evidence' => [
-                        'referral_reward_id' => (string) $reward->getKey(),
-                        'invite_id' => (string) $reward->invite_id,
-                        'side' => $reward->side->value,
+                        'referral_reward_id' => (string) $reward->id,
+                        'invite_id' => (string) $reward->inviteId,
+                        'side' => $reward->side,
                         'reason' => $reason,
                     ],
                 ],
@@ -195,7 +194,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
      *
      * @phpstan-impure
      */
-    private function liveSideAwards(ReferralReward $reward, string $roleValue, string $businessKey): bool
+    private function liveSideAwards(ReferralRewardContext $reward, string $roleValue, string $businessKey): bool
     {
         return $this->liveSideAwardIds($reward, $roleValue, $businessKey) !== [];
     }
@@ -203,7 +202,7 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
     /**
      * @return list<string>
      */
-    private function liveSideAwardIds(ReferralReward $reward, string $roleValue, string $businessKey): array
+    private function liveSideAwardIds(ReferralRewardContext $reward, string $roleValue, string $businessKey): array
     {
         /** @var class-string $awardClass */
         $awardClass = 'AIArmada\\Rewards\\Models\\RewardAward';
@@ -211,8 +210,8 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         /** @var list<string> $ids */
         $ids = $awardClass::query()
             ->where('source_business_key', $businessKey)
-            ->where('recipient_type', (string) $reward->beneficiary_type)
-            ->where('recipient_id', (string) $reward->beneficiary_id)
+            ->where('recipient_type', (string) $reward->beneficiaryType)
+            ->where('recipient_id', (string) $reward->beneficiaryId)
             ->where('component', 'points')
             ->where('beneficiary_role', $roleValue)
             ->whereIn('status', ['held', 'pending_review', 'approved', 'fulfilled'])
@@ -224,15 +223,15 @@ final class RewardsPointsFulfillment implements ReferralRewardFulfillment
         return $ids;
     }
 
-    private function stampVerifiedReversal(ReferralReward $reward, string $businessKey): ReferralFulfillmentResult
+    private function stampVerifiedReversal(ReferralRewardContext $reward, string $businessKey): ReferralFulfillmentResult
     {
         $metadata = is_array($reward->metadata) ? $reward->metadata : [];
         $metadata['rewards_reversal'] = 'verified_corrections_sweep';
         $metadata['rewards_reversal_business_key'] = $businessKey;
-        $reward->metadata = $metadata;
-        $reward->save();
-
-        return ReferralFulfillmentResult::fulfilled($reward->external_reference ?? $businessKey);
+        return ReferralFulfillmentResult::fulfilled($reward->externalReference ?? $businessKey, [
+            'rewards_reversal' => $metadata['rewards_reversal'],
+            'rewards_reversal_business_key' => $businessKey,
+        ]);
     }
 
     /**

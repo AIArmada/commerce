@@ -23,6 +23,7 @@ use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
 use AIArmada\Referrals\Data\ReferralInviteCreationResult;
+use AIArmada\Referrals\Data\ReferralRewardContext;
 use AIArmada\Referrals\Enums\ReferralInviteStatus;
 use AIArmada\Referrals\Enums\ReferralProgramStatus;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -958,7 +959,7 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
     {
         public function __construct(private readonly AwardRecipient $affiliate) {}
 
-        public function resolve(ReferralReward $reward): ?AwardRecipient
+        public function resolve(ReferralRewardContext $reward): ?AwardRecipient
         {
             return $this->affiliate;
         }
@@ -1004,18 +1005,18 @@ it('delegates fulfilment and reversal to the bound rail only once', function ():
 
         public int $reverseCalls = 0;
 
-        public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
+        public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
         {
             $this->fulfilCalls++;
 
             return ReferralFulfillmentResult::fulfilled('fake-rail-reference');
         }
 
-        public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
+        public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
         {
             $this->reverseCalls++;
 
-            return ReferralFulfillmentResult::fulfilled($reward->external_reference);
+            return ReferralFulfillmentResult::fulfilled($reward->externalReference);
         }
     };
     app()->instance(ReferralRewardFulfillment::class, $rail);

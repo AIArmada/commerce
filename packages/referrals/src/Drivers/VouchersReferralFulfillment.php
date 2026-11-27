@@ -6,13 +6,13 @@ namespace AIArmada\Referrals\Drivers;
 
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
-use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Data\ReferralRewardContext;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 {
-    public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
+    public function fulfill(ReferralRewardContext $reward): ReferralFulfillmentResult
     {
         $createAction = 'AIArmada\\Vouchers\\Actions\\CreateVoucher';
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
@@ -21,7 +21,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
             return ReferralFulfillmentResult::failed('The vouchers package public API is unavailable.');
         }
 
-        $code = 'REF' . mb_strtoupper(mb_substr(hash('sha256', $reward->idempotency_key), 0, 24));
+        $code = 'REF' . mb_strtoupper(mb_substr(hash('sha256', $reward->idempotencyKey), 0, 24));
         /** @var Model $voucherModel */
         $voucherModel = app($voucherClass);
         $existing = $voucherModel->newQuery()->where('code', $code)->first();
@@ -31,7 +31,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
             $metadata = $existing->getAttribute('metadata');
 
             if (is_array($metadata)
-                && ($metadata[$marker] ?? null) === $reward->idempotency_key
+                && ($metadata[$marker] ?? null) === $reward->idempotencyKey
                 && $this->isSingleUse($existing)
                 && $this->isBoundToBeneficiary($existing, $reward)) {
                 return ReferralFulfillmentResult::fulfilled($code);
@@ -53,17 +53,17 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
         $data['max_uses_per_user'] = 1;
 
         // The voucher is worth exactly the frozen promise.
-        if ($reward->amount_minor !== null) {
-            $data['value'] = (int) $reward->amount_minor;
+        if ($reward->amountMinor !== null) {
+            $data['value'] = (int) $reward->amountMinor;
         }
 
         $metadata = is_array($data['metadata'] ?? null) ? $data['metadata'] : [];
-        $metadata[$marker] = $reward->idempotency_key;
+        $metadata[$marker] = $reward->idempotencyKey;
         // The beneficiary binding the vouchers package enforces at validation
         // and at usage recording.
         $metadata['assignee'] = [
-            'type' => (string) $reward->beneficiary_type,
-            'id' => (string) $reward->beneficiary_id,
+            'type' => (string) $reward->beneficiaryType,
+            'id' => (string) $reward->beneficiaryId,
         ];
         $data['metadata'] = $metadata;
 
@@ -100,7 +100,7 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
     /**
      * The voucher's assignee marker names exactly the frozen beneficiary.
      */
-    private function isBoundToBeneficiary(Model $voucher, ReferralReward $reward): bool
+    private function isBoundToBeneficiary(Model $voucher, ReferralRewardContext $reward): bool
     {
         $metadata = $voucher->getAttribute('metadata');
 
@@ -110,15 +110,15 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
         $assignee = $metadata['assignee'];
 
-        return ($assignee['type'] ?? null) === (string) $reward->beneficiary_type
-            && (string) ($assignee['id'] ?? '') === (string) $reward->beneficiary_id;
+        return ($assignee['type'] ?? null) === (string) $reward->beneficiaryType
+            && (string) ($assignee['id'] ?? '') === (string) $reward->beneficiaryId;
     }
 
-    public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
+    public function reverse(ReferralRewardContext $reward, string $reason): ReferralFulfillmentResult
     {
         $expireAction = 'AIArmada\\Vouchers\\Actions\\ExpireVoucher';
         $voucherClass = 'AIArmada\\Vouchers\\Models\\Voucher';
-        $code = $reward->external_reference;
+        $code = $reward->externalReference;
 
         if (! is_string($code) || $code === '' || ! class_exists($expireAction) || ! class_exists($voucherClass)) {
             return ReferralFulfillmentResult::failed('Voucher reversal requires an issued voucher code and the vouchers package.');
@@ -130,6 +130,14 @@ final class VouchersReferralFulfillment implements ReferralRewardFulfillment
 
         if (! $voucher instanceof Model) {
             return ReferralFulfillmentResult::failed('The issued referral voucher could not be found.');
+        }
+
+        $metadata = $voucher->getAttribute('metadata');
+
+        if (! is_array($metadata)
+            || ($metadata['referrals_reward_idempotency_key'] ?? null) !== $reward->idempotencyKey
+            || ! $this->isBoundToBeneficiary($voucher, $reward)) {
+            return ReferralFulfillmentResult::failed('The issued voucher does not belong to this referral reward.');
         }
 
         $status = $voucher->getAttribute('status');

@@ -10,6 +10,7 @@ use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Events\ReferralRewardReversed;
 use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use AIArmada\Referrals\Models\ReferralReward;
+use AIArmada\Referrals\Persistence\ReferralRewardContextMapper;
 use AIArmada\Referrals\Support\ReferralProgramGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +49,7 @@ final class ReverseReferralReward
                 throw new LogicException('Only fulfilled referral rewards can be reversed.');
             }
 
-            $result = app(ReferralRewardFulfillment::class)->reverse($lockedReward, $reason);
+            $result = app(ReferralRewardFulfillment::class)->reverse(ReferralRewardContextMapper::map($lockedReward, $invite->qualification_business_key), $reason);
 
             if (! $result->success) {
                 throw new ReferralFulfillmentException($result->reason ?? 'The fulfilment adapter refused the reversal.');
@@ -60,7 +61,7 @@ final class ReverseReferralReward
                 throw new ReferralFulfillmentException('The reversal adapter returned a different external reference.');
             }
 
-            $metadata = is_array($lockedReward->metadata) ? $lockedReward->metadata : [];
+            $metadata = array_replace($lockedReward->metadata ?? [], $result->metadata);
             $metadata['reversal_reason'] = $reason;
             $lockedReward->metadata = $metadata;
             $lockedReward->status = ReferralRewardStatus::Reversed;
