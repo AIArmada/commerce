@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use AIArmada\Inventory\Models\InventoryValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -6,7 +6,7 @@ namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Carbon\CarbonImmutable;

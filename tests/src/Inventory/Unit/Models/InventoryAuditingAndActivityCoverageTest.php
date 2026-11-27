@@ -7,15 +7,15 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Features\Traceability\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryCostLayer;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Features\Traceability\Models\InventorySerial;
-use AIArmada\Inventory\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
-use AIArmada\Inventory\Models\InventoryValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use OwenIt\Auditing\Contracts\Auditable;
 
 it('inventory models are auditable and activity loggable', function (): void {

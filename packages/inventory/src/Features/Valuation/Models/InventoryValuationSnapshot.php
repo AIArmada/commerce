@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Models;
+namespace AIArmada\Inventory\Features\Valuation\Models;
+
+use AIArmada\Inventory\Models\InventoryLocation;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Features\Valuation\Persistence;
 
-use AIArmada\Inventory\Models\InventoryStandardCost;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryStandardCost;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;

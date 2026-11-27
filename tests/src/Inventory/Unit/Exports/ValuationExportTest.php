@@ -6,7 +6,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Exports\ExportableInterface;
 use AIArmada\Inventory\Exports\ValuationExport;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryValuationSnapshot;
+use AIArmada\Inventory\Features\Valuation\Models\InventoryValuationSnapshot;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
