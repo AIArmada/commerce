@@ -768,7 +768,11 @@ class Subscription extends Model implements SubscriptionRecord
         $amount = $amount ?? $this->renewalAmount();
         Cashier::assertAmountWithinBounds($amount);
 
-        $recurringTokenId = $customer->defaultPaymentMethod()?->id();
+        $recurringTokenId = $this->recurringToken();
+
+        if ($recurringTokenId === null || $recurringTokenId === '') {
+            throw new InvalidArgumentException('A recurring payment token is required to charge a subscription.');
+        }
 
         return $customer->chargeWithRecurringToken(
             $amount,
@@ -1135,9 +1139,19 @@ class Subscription extends Model implements SubscriptionRecord
     {
         $this->loadMissing('items');
 
-        return $this->items->sum(function (SubscriptionItem $item): int {
-            return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
-        });
+        $total = 0;
+
+        foreach ($this->items as $item) {
+            $amount = $item->totalAmount();
+
+            if ($amount > PHP_INT_MAX - $total) {
+                throw new InvalidArgumentException('Subscription total exceeds the supported range.');
+            }
+
+            $total += $amount;
+        }
+
+        return $total;
     }
 
     /**

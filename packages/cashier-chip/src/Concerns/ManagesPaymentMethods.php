@@ -6,12 +6,12 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Data\StoredPaymentMethodData;
-use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Support\PaymentMethodMetadata;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
@@ -20,11 +20,11 @@ use SensitiveParameter;
 trait ManagesPaymentMethods
 {
     /**
-     * @return MorphMany<StoredPaymentMethod, $this>
+     * @return MorphMany<Model, $this>
      */
     public function storedPaymentMethods(): MorphMany
     {
-        /** @var class-string<StoredPaymentMethod> $model */
+        /** @var class-string<Model> $model */
         $model = app('cashier-chip.models.stored-payment-method');
 
         return $this->morphMany($model, 'billable')

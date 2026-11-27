@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 use Override;
 
 /**
@@ -247,7 +248,14 @@ class SubscriptionItem extends Model
      */
     public function totalAmount(): int
     {
-        return ($this->unit_amount ?? 0) * ($this->quantity ?? 1);
+        $amount = $this->unit_amount ?? 0;
+        $quantity = $this->quantity ?? 1;
+
+        if ($amount < 0 || $quantity < 1 || $amount > intdiv(PHP_INT_MAX, $quantity)) {
+            throw new InvalidArgumentException('Subscription item total exceeds the supported range.');
+        }
+
+        return $amount * $quantity;
     }
 
     /**

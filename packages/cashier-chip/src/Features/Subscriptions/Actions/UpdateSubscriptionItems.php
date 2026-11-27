@@ -79,7 +79,7 @@ final readonly class UpdateSubscriptionItems
                     'owner_type' => $subscription->owner_type,
                     'owner_id' => $subscription->owner_id,
                     'chip_id' => Str::orderedUuid()->toString(),
-                    'chip_product' => $options['product'] ?? null,
+                    'chip_product' => (is_array($priceValue) ? ($priceValue['product'] ?? null) : null) ?? $options['product'] ?? $existingByPrice->get($price)?->chip_product,
                     'chip_price' => $price,
                     'quantity' => $quantity,
                     'unit_amount' => $unitAmount !== null ? (int) $unitAmount : null,
@@ -108,8 +108,15 @@ final readonly class UpdateSubscriptionItems
     {
         $subscription->guardAgainstIncomplete();
 
+        if (mb_trim($price) === '' || (isset($options['unit_amount']) && (int) $options['unit_amount'] < 0)) {
+            throw new InvalidArgumentException('A non-empty price and non-negative unit amount are required.');
+        }
+
+        $quantity = max(1, $quantity ?? 1);
+
         return $subscription->getConnection()->transaction(function () use ($subscription, $price, $quantity, $options): Subscription {
-            $subscription->loadMissing('items');
+            $subscription->load('items');
+            $wasSinglePrice = $subscription->hasSinglePrice();
 
             if ($subscription->items->contains('chip_price', $price)) {
                 throw SubscriptionUpdateFailure::duplicatePrice((string) $subscription->getKey(), $subscription->type, $price);
@@ -127,7 +134,7 @@ final readonly class UpdateSubscriptionItems
 
             $subscription->unsetRelation('items');
 
-            if ($subscription->hasSinglePrice()) {
+            if ($wasSinglePrice) {
                 $subscription->fill([
                     'chip_price' => null,
                     'quantity' => null,

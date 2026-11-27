@@ -102,7 +102,8 @@ describe('RepairRegression money lifecycle', function (): void {
 
         $subscription->swap('price_monthly');
 
-        expect($subscription->fresh()?->calculateSubscriptionAmount())->toBe(1000);
+        expect($subscription->fresh()?->calculateSubscriptionAmount())->toBe(1000)
+            ->and($subscription->items()->firstOrFail()->chip_product)->toBe('prod');
 
         $subscription->swap(['price_new' => ['unit_amount' => 1500]]);
 
@@ -143,6 +144,25 @@ describe('RepairRegression money lifecycle', function (): void {
         $checkout = Checkout::create($user, 1000, ['currency' => 'myr']);
 
         expect($checkout->asChipPurchase()->getCurrency())->toBe('MYR');
+    });
+
+    it('charges a subscription using its explicit recurring token', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_subscription_token']);
+        $subscription = $user->newSubscription('default', 'price_monthly')
+            ->create('tok_subscription_specific');
+
+        $payment = $subscription->charge(1000);
+        $purchases = $this->fakeChip->getFakeClient()->getPurchases();
+
+        expect(collect($purchases)->last()['recurring_token'])->toBe('tok_subscription_specific')
+            ->and($payment)->toBeInstanceOf(\AIArmada\CashierChip\Payment\Payment::class);
+    });
+
+    it('rejects a subscription charge without a recurring payment token', function (): void {
+        $user = $this->createUser(['chip_id' => 'cli_subscription_no_token']);
+        $subscription = $user->newSubscription('default', 'price_monthly')->create();
+
+        expect(fn () => $subscription->charge(1000))->toThrow(InvalidArgumentException::class);
     });
 
     it('charging an orphaned subscription throws InvalidCustomer', function (): void {
