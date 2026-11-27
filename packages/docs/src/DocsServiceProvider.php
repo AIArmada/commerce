@@ -6,13 +6,13 @@ namespace AIArmada\Docs;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Contracts\RichContentRendererInterface;
+use AIArmada\Docs\Platform\ExtensionRegistry;
+use AIArmada\Docs\Platform\FeatureCatalog;
+use AIArmada\Docs\Platform\FeatureModule;
 use AIArmada\Docs\Rendering\TiptapJsonRenderer;
 use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\SequenceManager;
-use AIArmada\Docs\Platform\ExtensionRegistry;
-use AIArmada\Docs\Platform\FeatureCatalog;
-use AIArmada\Docs\Platform\FeatureModule;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;

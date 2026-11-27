@@ -27,6 +27,7 @@ final class SweepOrderOutboxCommand extends Command
         if ($result['dead'] > 0) {
             $this->warn(sprintf('%d dead outbox message(s) need operator review.', $result['dead']));
         }
+
         return self::SUCCESS;
     }
 }

@@ -21,6 +21,7 @@ $data = DocData::from(['doc_type' => 'invoice', 'items' => [['quantity' => 1, 'u
 From the commerce monorepo root:
 
 ```sh
+composer --working-dir=packages/docs arch:check
 ./vendor/bin/pint --test packages/docs
 ./vendor/bin/pest tests/src/Docs
 ```

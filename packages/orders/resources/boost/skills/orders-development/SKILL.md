@@ -21,6 +21,7 @@ $number = app(AssignOrderInvoiceNumber::class)->execute($order);
 From the commerce monorepo root:
 
 ```sh
+composer --working-dir=packages/orders arch:check
 ./vendor/bin/pint --test packages/orders
 ./vendor/bin/pest tests/src/Orders
 ```

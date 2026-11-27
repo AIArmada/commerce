@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Data\ShareLinkData;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Enums\RenderAudience;
-use AIArmada\Docs\Data\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocRenderService;
@@ -135,4 +135,13 @@ it('rejects expired share links', function (): void {
         $shareLink->plainToken(),
         ShareLinkAction::View,
     ))->toThrow(NotFoundHttpException::class);
+});
+
+it('captures immutable share expiration dates', function (): void {
+    $date = new DateTime('2026-11-28T00:00:00+00:00');
+    $data = new ShareLinkData(expiresAt: $date);
+
+    $date->modify('+1 day');
+
+    expect($data->expiresAt?->format('Y-m-d'))->toBe('2026-11-28');
 });

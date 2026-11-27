@@ -33,6 +33,7 @@ final class RelayOrderOutboxCommand extends Command
             $result['skipped'],
             $result['suppressed'],
         ));
+
         return self::SUCCESS;
     }
 }

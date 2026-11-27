@@ -92,3 +92,13 @@ it('applies discounts without overflowing an intermediate gross total', function
         ['unit_price_minor' => PHP_INT_MAX, 'tax_amount_minor' => 1],
     ], 1)['total_minor'])->toBe(PHP_INT_MAX);
 });
+
+it('captures immutable document dates rather than retaining mutable caller objects', function (): void {
+    $date = new DateTime('2026-11-28T00:00:00+00:00');
+    $data = new DocData(issueDate: $date, dueDate: $date);
+
+    $date->modify('+1 day');
+
+    expect($data->issueDate?->format('Y-m-d'))->toBe('2026-11-28')
+        ->and($data->dueDate?->format('Y-m-d'))->toBe('2026-11-28');
+});
