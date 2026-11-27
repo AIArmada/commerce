@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Products\Support;
+namespace AIArmada\Products\Data;
 
 /**
  * Canonical, immutable composition snapshot for a composite package.
@@ -13,9 +13,9 @@ namespace AIArmada\Products\Support;
  * Nested packages are recursively flattened to leaf entries. The optional
  * composition_path on each nested entry preserves the original ancestry.
  */
-final class CompositeSnapshot
+final readonly class CompositeSnapshot
 {
-    public readonly string $fingerprint;
+    public string $fingerprint;
 
     /**
      * @param  list<array{
@@ -36,15 +36,15 @@ final class CompositeSnapshot
      * }>  $entries
      */
     public function __construct(
-        public readonly string $productId,
-        public readonly ?string $variantId,
-        public readonly string $sku,
-        public readonly string $name,
-        public readonly int $price,
-        public readonly string $currency,
-        public readonly string $priceMode,
-        public readonly array $entries,
-        public readonly int $discountBasisPoints = 0,
+        public string $productId,
+        public ?string $variantId,
+        public string $sku,
+        public string $name,
+        public int $price,
+        public string $currency,
+        public string $priceMode,
+        public array $entries,
+        public int $discountBasisPoints = 0,
     ) {
         $this->fingerprint = hash('sha256', json_encode($this->canonicalPayload(), JSON_THROW_ON_ERROR));
     }

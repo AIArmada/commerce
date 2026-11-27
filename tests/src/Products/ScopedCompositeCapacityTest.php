@@ -9,7 +9,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Products\Support\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityDemand;
 use Illuminate\Support\Str;
 
 final class ScopedTestCapacityResolver implements CompositeCapacityDemandResolverInterface

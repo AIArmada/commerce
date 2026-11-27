@@ -105,7 +105,7 @@ implementations remain valid.
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Products\Support\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityDemand;
 
 final class ScopedCapacityResolver implements CompositeCapacityDemandResolverInterface
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Products\Support;
+namespace AIArmada\Products\Data;
 
 use InvalidArgumentException;
 

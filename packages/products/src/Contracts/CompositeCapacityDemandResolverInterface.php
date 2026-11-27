@@ -6,7 +6,7 @@ namespace AIArmada\Products\Contracts;
 
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Products\Support\CompositeCapacityDemand;
+use AIArmada\Products\Data\CompositeCapacityDemand;
 
 /**
  * Optional richer capacity seam for scoped, shared or weighted resources.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Products\Support;
+namespace AIArmada\Products\Data;
 
-final class CompositeAvailability
+final readonly class CompositeAvailability
 {
     /**
      * @param  list<array{
@@ -19,10 +19,10 @@ final class CompositeAvailability
      * }>  $components
      */
     public function __construct(
-        public readonly ?int $packages,
-        public readonly ?string $limitingSku,
-        public readonly ?int $limitingAvailableQuantity,
-        public readonly array $components,
+        public ?int $packages,
+        public ?string $limitingSku,
+        public ?int $limitingAvailableQuantity,
+        public array $components,
     ) {}
 
     /**
