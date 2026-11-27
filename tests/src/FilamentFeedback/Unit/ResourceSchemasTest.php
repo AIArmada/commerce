@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackResponseResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackTemplateResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackTestimonialResource;
+use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Resources\FeedbackResponseResource;
+use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackTemplateResource;
+use AIArmada\FilamentFeedback\Features\Testimonials\EntryPoints\Filament\Resources\FeedbackTestimonialResource;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;

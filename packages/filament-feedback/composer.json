@@ -24,5 +24,12 @@
         "sort-packages": true
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts": {
+        "arch:check": "php tools/package-check.php",
+        "arch:writes": "phpstan analyse -c tools/package-phpstan.neon --no-progress"
+    },
+    "require-dev": {
+        "nikic/php-parser": "^5.0"
+    }
 }

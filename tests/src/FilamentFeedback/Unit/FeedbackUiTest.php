@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentFeedback\FilamentFeedbackTestCase;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentFeedback\Exports\FeedbackResponsesExport;
-use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackInvitationResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackResponseResource;
-use AIArmada\FilamentFeedback\Support\FeedbackDashboardMemo;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Exports\FeedbackResponsesExport;
+use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
+use AIArmada\FilamentFeedback\Features\Invitations\EntryPoints\Filament\Resources\FeedbackInvitationResource;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Resources\FeedbackResponseResource;
+use AIArmada\FilamentFeedback\Features\Analytics\Queries\FeedbackDashboardMemo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 

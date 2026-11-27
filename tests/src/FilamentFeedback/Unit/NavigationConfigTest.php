@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\FilamentFeedback\Pages\FeedbackDashboard;
-use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackInvitationResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackResponseResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackTemplateResource;
-use AIArmada\FilamentFeedback\Resources\FeedbackTestimonialResource;
+use AIArmada\FilamentFeedback\Features\Analytics\EntryPoints\Filament\Pages\FeedbackDashboard;
+use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackFormResource;
+use AIArmada\FilamentFeedback\Features\Invitations\EntryPoints\Filament\Resources\FeedbackInvitationResource;
+use AIArmada\FilamentFeedback\Features\Responses\EntryPoints\Filament\Resources\FeedbackResponseResource;
+use AIArmada\FilamentFeedback\Features\Forms\EntryPoints\Filament\Resources\FeedbackTemplateResource;
+use AIArmada\FilamentFeedback\Features\Testimonials\EntryPoints\Filament\Resources\FeedbackTestimonialResource;
 
 uses(TestCase::class);
 
