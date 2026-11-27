@@ -7,8 +7,8 @@ namespace AIArmada\Chip\Webhooks\Handlers;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Features\Collect\Api\PurchaseWebhookState;
 
 /**
  * Handles purchase.paid webhook events.
@@ -17,9 +17,9 @@ class PurchasePaidHandler implements WebhookHandler
 {
     public function handle(EnrichedWebhookPayload $payload): WebhookResult
     {
-        $localPurchase = $payload->localPurchase;
+        $localPurchaseId = $payload->localPurchaseId;
 
-        if ($localPurchase === null) {
+        if ($localPurchaseId === null) {
             return WebhookResult::skipped('Purchase not found locally');
         }
 
@@ -27,15 +27,14 @@ class PurchasePaidHandler implements WebhookHandler
         $paymentMethod = $payload->get('transaction_data.payment_method');
         $updatedOn = $payload->get('updated_on');
 
-        // Update local status plus the denormalized analytics columns; the
-        // payment-level paid_on timestamp lives on the Payment row stored by
-        // the webhook persistence listener.
-        $localPurchase->forceFill([
-            'status' => PurchaseStatus::PAID->value,
-            'total_minor' => is_numeric($total) ? (int) $total : $localPurchase->total_minor,
-            'payment_method' => is_string($paymentMethod) && $paymentMethod !== '' ? $paymentMethod : $localPurchase->payment_method,
-            'updated_on' => is_numeric($updatedOn) ? (int) $updatedOn : $localPurchase->getRawOriginal('updated_on'),
-        ])->save();
+        if (! app(PurchaseWebhookState::class)->markPaid(
+            $localPurchaseId,
+            is_numeric($total) ? (int) $total : null,
+            is_string($paymentMethod) && $paymentMethod !== '' ? $paymentMethod : null,
+            is_numeric($updatedOn) ? (int) $updatedOn : null,
+        )) {
+            return WebhookResult::skipped('Purchase is not eligible for a paid update');
+        }
 
         // Dispatch Laravel event
         PurchasePaid::dispatch(
@@ -43,6 +42,6 @@ class PurchasePaidHandler implements WebhookHandler
             $payload->rawPayload,
         );
 
-        return WebhookResult::handled("Purchase {$localPurchase->id} marked as paid");
+        return WebhookResult::handled("Purchase {$localPurchaseId} marked as paid");
     }
 }

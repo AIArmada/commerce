@@ -6,11 +6,11 @@ namespace AIArmada\Links\Support;
 
 use AIArmada\Links\Contracts\FallbackRedirectGateInterface;
 use AIArmada\Links\Contracts\LinkGateInterface;
-use AIArmada\Links\Models\Link;
+use AIArmada\Links\Data\LinkGateContext;
 
 final class DefaultLinkGate implements FallbackRedirectGateInterface, LinkGateInterface
 {
-    public function blockedReason(Link $link): ?string
+    public function blockedReason(LinkGateContext $link): ?string
     {
         foreach (app()->tagged(LinkGateInterface::class) as $gate) {
             if (! $gate instanceof LinkGateInterface) {
@@ -27,7 +27,7 @@ final class DefaultLinkGate implements FallbackRedirectGateInterface, LinkGateIn
         return null;
     }
 
-    public function fallbackUrl(Link $link, string $reason): ?string
+    public function fallbackUrl(LinkGateContext $link, string $reason): ?string
     {
         foreach (app()->tagged(LinkGateInterface::class) as $gate) {
             if (! $gate instanceof FallbackRedirectGateInterface) {

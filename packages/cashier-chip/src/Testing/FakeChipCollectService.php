@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Testing;
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
@@ -31,8 +31,8 @@ class FakeChipCollectService extends ChipCollectService
     {
         $this->fakeClient = $fakeClient ?? new FakeChipClient;
 
-        /** @var Mockery\MockInterface&ChipCollectClient $dummyClient */
-        $dummyClient = Mockery::mock(ChipCollectClient::class);
+        /** @var Mockery\MockInterface&ChipCollectTransport $dummyClient */
+        $dummyClient = Mockery::mock(ChipCollectTransport::class);
         $dummyClient->shouldIgnoreMissing();
 
         parent::__construct($dummyClient);

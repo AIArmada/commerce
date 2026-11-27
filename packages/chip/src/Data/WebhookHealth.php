@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Spatie\LaravelData\Data;
-
 /**
  * Webhook processing health metrics.
  */
-final class WebhookHealth extends Data
+final readonly class WebhookHealth
 {
     public function __construct(
-        public readonly int $total,
-        public readonly int $processed,
-        public readonly int $failed,
-        public readonly int $pending,
-        public readonly float $successRate,
-        public readonly float $avgProcessingTimeMs,
-        public readonly bool $isHealthy,
+        public int $total,
+        public int $processed,
+        public int $failed,
+        public int $pending,
+        public float $successRate,
+        public float $avgProcessingTimeMs,
+        public bool $isHealthy,
     ) {}
 
     /**

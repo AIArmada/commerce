@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
-use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
@@ -36,6 +35,7 @@ use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\PurchaseReleaseFailure;
 use AIArmada\Chip\Events\PurchaseSettled;
 use AIArmada\Chip\Events\PurchaseViewed;
+use AIArmada\Chip\Features\Collect\Api\RefundStateSynchronizer;
 use AIArmada\CommerceSupport\Events\PaymentRefunded as CommercePaymentRefunded;
 use Illuminate\Support\Facades\Log;
 
@@ -47,11 +47,11 @@ use Illuminate\Support\Facades\Log;
  */
 class WebhookEventDispatcher
 {
-    private readonly SyncPurchaseRefundState $syncPurchaseRefundState;
+    private readonly RefundStateSynchronizer $syncPurchaseRefundState;
 
-    public function __construct(?SyncPurchaseRefundState $syncPurchaseRefundState = null)
+    public function __construct(?RefundStateSynchronizer $syncPurchaseRefundState = null)
     {
-        $this->syncPurchaseRefundState = $syncPurchaseRefundState ?? app(SyncPurchaseRefundState::class);
+        $this->syncPurchaseRefundState = $syncPurchaseRefundState ?? app(RefundStateSynchronizer::class);
     }
 
     /**

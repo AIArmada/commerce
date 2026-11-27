@@ -1,0 +1,139 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Chip\Features\Collect\Actions;
+
+use AIArmada\Chip\Data\ClientData;
+use AIArmada\Chip\Features\Collect\Api\ClientOperations;
+use AIArmada\Chip\Support\CollectApi;
+
+final class ClientsApi extends CollectApi implements ClientOperations
+{
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function create(array $data): ClientData
+    {
+        $response = $this->attempt(
+            fn () => $this->client->post('clients/', $data),
+            'Failed to create CHIP client',
+            ['data' => $data]
+        );
+
+        return ClientData::from($response);
+    }
+
+    public function find(string $clientId): ClientData
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
+        $response = $this->attempt(
+            fn () => $this->client->get("clients/{$clientId}/"),
+            'Failed to retrieve CHIP client',
+            ['client_id' => $clientId]
+        );
+
+        return ClientData::from($response);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function list(array $filters = []): array
+    {
+        $queryString = http_build_query($filters);
+        $endpoint = 'clients/' . ($queryString ? '?' . $queryString : '');
+
+        return $this->attempt(
+            fn () => $this->client->get($endpoint),
+            'Failed to list CHIP clients',
+            ['filters' => $filters]
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update(string $clientId, array $data): ClientData
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
+        $response = $this->attempt(
+            fn () => $this->client->put("clients/{$clientId}/", $data),
+            'Failed to update CHIP client',
+            ['client_id' => $clientId, 'data' => $data]
+        );
+
+        return ClientData::from($response);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function partialUpdate(string $clientId, array $data): ClientData
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
+        $response = $this->attempt(
+            fn () => $this->client->patch("clients/{$clientId}/", $data),
+            'Failed to partially update CHIP client',
+            ['client_id' => $clientId, 'data' => $data]
+        );
+
+        return ClientData::from($response);
+    }
+
+    public function delete(string $clientId): void
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
+        $this->attempt(
+            fn () => $this->client->delete("clients/{$clientId}/"),
+            'Failed to delete CHIP client',
+            ['client_id' => $clientId]
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function recurringTokens(string $clientId): array
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+
+        return $this->attempt(
+            fn () => $this->client->get("clients/{$clientId}/recurring_tokens/"),
+            'Failed to list CHIP client recurring tokens',
+            ['client_id' => $clientId]
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function recurringToken(string $clientId, string $tokenId): array
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+        $this->assertSafePathSegment($tokenId, 'Token id');
+
+        return $this->attempt(
+            fn () => $this->client->get("clients/{$clientId}/recurring_tokens/{$tokenId}/"),
+            'Failed to retrieve CHIP client recurring token',
+            ['client_id' => $clientId, 'token_id' => $tokenId]
+        );
+    }
+
+    public function deleteRecurringToken(string $clientId, string $tokenId): void
+    {
+        $this->assertSafePathSegment($clientId, 'Client id');
+        $this->assertSafePathSegment($tokenId, 'Token id');
+
+        $this->attempt(
+            fn () => $this->client->delete("clients/{$clientId}/recurring_tokens/{$tokenId}/"),
+            'Failed to delete CHIP client recurring token',
+            ['client_id' => $clientId, 'token_id' => $tokenId]
+        );
+    }
+}

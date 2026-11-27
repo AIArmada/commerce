@@ -309,7 +309,7 @@ When enabled:
 
 Billable customer models usually carry no owner tuple. Point
 `cashier-chip.features.owner.customer_resolver` at a custom
-`AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface` implementation
+`AIArmada\CashierChip\Billing\CustomerOwnerResolver` implementation
 when the default link/subscription mapping does not fit your tenancy model.
 
 ## Next Steps

@@ -8,10 +8,9 @@ use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
 uses(CashierChipTestCase::class);
 
@@ -36,10 +35,7 @@ it('can create payment failed event', function (): void {
 });
 
 it('can create subscription created event', function (): void {
-    $subscription = $this->makeTrustedSubscription([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-    ]);
+    $subscription = new RecordReference('subscription', 'test-sub-id');
 
     $event = new SubscriptionCreated($subscription);
 
@@ -47,10 +43,7 @@ it('can create subscription created event', function (): void {
 });
 
 it('can create subscription canceled event', function (): void {
-    $subscription = $this->makeTrustedSubscription([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-    ]);
+    $subscription = new RecordReference('subscription', 'test-sub-id');
 
     $event = new SubscriptionCanceled($subscription);
 
@@ -58,10 +51,7 @@ it('can create subscription canceled event', function (): void {
 });
 
 it('can create subscription renewal failed event', function (): void {
-    $subscription = $this->makeTrustedSubscription([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-    ]);
+    $subscription = new RecordReference('subscription', 'test-sub-id');
     $event = new SubscriptionRenewalFailed($subscription, 'Payment declined');
 
     expect($event->subscription)->toBe($subscription);
@@ -69,17 +59,11 @@ it('can create subscription renewal failed event', function (): void {
 });
 
 it('can create subscription renewed event', function (): void {
-    $subscription = $this->makeTrustedSubscription([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-    ]);
-    $payment = new Payment(PurchaseData::from([
-        'id' => 'test-purchase',
-        'purchase' => ['total' => 1000],
-    ]));
+    $subscription = new RecordReference('subscription', 'test-sub-id');
+    $purchaseId = 'test-purchase';
 
-    $event = new SubscriptionRenewed($subscription, $payment);
+    $event = new SubscriptionRenewed($subscription, $purchaseId);
 
     expect($event->subscription)->toBe($subscription);
-    expect($event->payment)->toBe($payment);
+    expect($event->purchaseId)->toBe($purchaseId);
 });

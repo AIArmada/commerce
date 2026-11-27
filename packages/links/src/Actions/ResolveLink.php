@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Links\Actions;
 
 use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Data\LinkGateContext;
 use AIArmada\Links\Models\Link;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -16,11 +17,11 @@ final class ResolveLink
     {
         $link = $this->findBySlug($slug);
 
-        if (! $link instanceof Link || ! $link->isActive()) {
+        if (! $link instanceof Link) {
             return null;
         }
 
-        if (app(LinkGateInterface::class)->blockedReason($link) !== null) {
+        if ($this->blockedReasonFor($link) !== null) {
             return null;
         }
 
@@ -41,6 +42,11 @@ final class ResolveLink
             return null;
         }
 
+        return $this->blockedReasonFor($link);
+    }
+
+    public function blockedReasonFor(Link $link): ?string
+    {
         if ($link->deactivated_at !== null) {
             return 'deactivated';
         }
@@ -53,7 +59,7 @@ final class ResolveLink
             return 'limit_reached';
         }
 
-        return app(LinkGateInterface::class)->blockedReason($link);
+        return app(LinkGateInterface::class)->blockedReason(new LinkGateContext((string) $link->getKey(), $link->slug, $link->subject_type, $link->subject_id));
     }
 
     private function findBySlug(string $slug): ?Link

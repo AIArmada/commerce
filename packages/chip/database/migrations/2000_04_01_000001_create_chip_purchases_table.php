@@ -46,7 +46,7 @@ return new class extends Migration
             // Status and workflow - All official CHIP purchase statuses
             $table->string('status', 32)
                 ->default('created')
-                ->comment('Backed by AIArmada\\Chip\\Enums\\PurchaseStatus enum.');
+                ->comment('Backed by AIArmada\\Chip\\Contracts\\PurchaseStatus enum.');
 
             // Analytics denormalized columns for efficient querying
             $table->string('payment_method', 32)->nullable()
@@ -117,6 +117,7 @@ return new class extends Migration
 
             // Metadata for additional application-specific data
             $table->{$jsonType}('metadata')->nullable();
+            $table->char('idempotency_scope_hash', 64)->nullable()->unique();
 
             // Owner scoping
             $table->nullableMorphs('owner');

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier;
-use AIArmada\CashierChip\Payment\StoredPaymentMethod;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\PaymentMethods\Models\StoredPaymentMethod;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -195,7 +195,7 @@ it('blocks cross-tenant payment method writes for billables in owner mode', func
     bindCashierChipOwner($owner);
 
     expect(fn () => Cashier::paymentMethodStore()->saveForBillable(
-        $customer,
+        new RecordReference($customer->getMorphClass(), (string) $customer->getKey()),
         'tok_cross_tenant',
         ['type' => 'card'],
     ))->toThrow(AuthorizationException::class);

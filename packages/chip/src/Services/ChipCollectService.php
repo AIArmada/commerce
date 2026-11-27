@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
-use AIArmada\Chip\Clients\ChipCollectClient;
+use AIArmada\Chip\Contracts\ChipCollectTransport;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
@@ -13,32 +13,32 @@ use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Services\Collect\AccountApi;
-use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
-use AIArmada\Chip\Services\Collect\WebhooksApi;
+use AIArmada\Chip\Features\Collect\Api\ClientOperations;
+use AIArmada\Chip\Features\Collect\Api\PurchaseOperations;
+use AIArmada\Chip\Features\Statements\Api\AccountOperations;
+use AIArmada\Chip\Features\WebhookDelivery\Api\WebhookRegistrationOperations;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 class ChipCollectService
 {
-    private PurchasesApi $purchases;
+    private PurchaseOperations $purchases;
 
-    private ClientsApi $clients;
+    private ClientOperations $clients;
 
-    private AccountApi $account;
+    private AccountOperations $account;
 
-    private WebhooksApi $webhooks;
+    private WebhookRegistrationOperations $webhooks;
 
     private ?SubscriptionService $subscriptionService = null;
 
     public function __construct(
-        private ChipCollectClient $client,
+        private ChipCollectTransport $client,
         ?CacheRepository $cache = null,
     ) {
-        $this->purchases = new PurchasesApi($cache, $client);
-        $this->clients = new ClientsApi($client);
-        $this->account = new AccountApi($client);
-        $this->webhooks = new WebhooksApi($client);
+        $this->purchases = app(PurchaseOperations::class, ['cache' => $cache, 'client' => $client]);
+        $this->clients = app(ClientOperations::class, ['client' => $client]);
+        $this->account = app(AccountOperations::class, ['client' => $client]);
+        $this->webhooks = app(WebhookRegistrationOperations::class, ['client' => $client]);
     }
 
     public function purchase(): PurchaseBuilder

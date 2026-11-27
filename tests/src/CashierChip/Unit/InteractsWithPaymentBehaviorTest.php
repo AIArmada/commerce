@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 uses(CashierChipTestCase::class);

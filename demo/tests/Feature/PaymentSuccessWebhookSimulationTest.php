@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Chip\Facades\Chip;
-use AIArmada\Chip\Models\Payment as ChipPayment;
-use AIArmada\Chip\Models\Purchase as ChipPurchase;
+use AIArmada\Chip\Features\Collect\Models\Payment as ChipPayment;
+use AIArmada\Chip\Features\Collect\Models\Purchase as ChipPurchase;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Jnt\Features\Orders\Models\JntOrder;
 use AIArmada\Orders\Actions\CreateOrder;

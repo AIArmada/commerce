@@ -6,6 +6,7 @@ namespace AIArmada\Links\Actions;
 
 use AIArmada\Links\Events\LinkReactivated;
 use AIArmada\Links\Models\Link;
+use AIArmada\Links\Persistence\LockOwnedLink;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class ReactivateLink
@@ -14,14 +15,24 @@ final class ReactivateLink
 
     public function handle(Link $link): Link
     {
-        if ($link->deactivated_at === null) {
-            return $link;
+        [$resolved, $changed] = $link->getConnection()->transaction(function () use ($link): array {
+            $resolved = app(LockOwnedLink::class)->handle($link);
+
+            if ($resolved->deactivated_at === null) {
+                return [$resolved, false];
+            }
+
+            $resolved->update(['deactivated_at' => null]);
+
+            return [$resolved, true];
+        });
+
+        $link->setRawAttributes($resolved->getAttributes(), true);
+
+        if ($changed) {
+            event(new LinkReactivated($resolved));
         }
 
-        $link->update(['deactivated_at' => null]);
-
-        event(new LinkReactivated($link));
-
-        return $link->refresh();
+        return $resolved;
     }
 }

@@ -6,8 +6,8 @@ namespace AIArmada\Commerce\Tests\CashierChip;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
@@ -188,7 +188,7 @@ abstract class CashierChipTestCase extends Orchestra
         });
 
         if (is_string($chipCustomerId) && $chipCustomerId !== '') {
-            Cashier::chipCustomerDirectory()->link($user, $chipCustomerId);
+            Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), $chipCustomerId);
         }
 
         return $user;
@@ -196,7 +196,7 @@ abstract class CashierChipTestCase extends Orchestra
 
     protected function linkChipCustomer(User $user, string $chipCustomerId): void
     {
-        Cashier::chipCustomerDirectory()->link($user, $chipCustomerId);
+        Cashier::chipCustomerDirectory()->link(new RecordReference($user->getMorphClass(), (string) $user->getKey()), $chipCustomerId);
     }
 
     /**

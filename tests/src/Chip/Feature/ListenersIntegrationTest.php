@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\EntryPoints\Listeners\StoreWebhookData;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Listeners\StoreWebhookData;
-use AIArmada\Chip\Models\Client;
-use AIArmada\Chip\Models\Payment;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Payment;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 
 describe('StoreWebhookData Listener', function (): void {
     beforeEach(function (): void {
-        $this->listener = new StoreWebhookData;
+        $this->listener = app(StoreWebhookData::class);
         Config::set('chip.webhooks.store_webhooks', true);
     });
 
@@ -112,6 +112,29 @@ describe('StoreWebhookData Listener', function (): void {
 
             expect($purchase)->not->toBeNull()
                 ->and($purchase?->refund_availability)->toBe('all');
+        });
+
+        it('does not regress a newer paid purchase or its client from an older snapshot', function (): void {
+            $paid = WebhookFactory::purchasePaid([
+                'id' => 'purchase-stale-snapshot',
+                'client_id' => 'client-stale-snapshot',
+                'updated_on' => 1704070800,
+                'client' => ['email' => 'new@example.com', 'full_name' => 'New Name'],
+            ]);
+
+            $stale = array_replace($paid, [
+                'status' => 'created',
+                'updated_on' => 1704067200,
+                'client' => ['email' => 'old@example.com', 'full_name' => 'Old Name'],
+            ]);
+
+            $this->listener->handle(WebhookReceived::fromPayload($paid));
+            $this->listener->handle(WebhookReceived::fromPayload($stale));
+
+            $purchase = Purchase::findOrFail('purchase-stale-snapshot');
+            expect($purchase->status)->toBe('paid')
+                ->and($purchase->getRawOriginal('updated_on'))->toBe(1704070800)
+                ->and(Client::findOrFail('client-stale-snapshot')->email)->toBe('new@example.com');
         });
 
         it('does not create duplicate payment rows when the same webhook is stored twice', function (): void {

@@ -21,14 +21,14 @@ use Throwable;
  *
  * IMPORTANT: This trait should be used ALONGSIDE the gateway-specific traits:
  * - \Laravel\Cashier\Billable for Stripe
- * - \AIArmada\CashierChip\Billable for CHIP
+ * - \AIArmada\CashierChip\Billing\Billable for CHIP
  *
  * Add this trait to your User model (or any billable model):
  *
  * ```php
  * use AIArmada\Cashier\Concerns\Billable as CashierBillable;
  * use Laravel\Cashier\Billable as StripeBillable;
- * use AIArmada\CashierChip\Billable as ChipBillable;
+ * use AIArmada\CashierChip\Billing\Billable as ChipBillable;
  *
  * class User extends Authenticatable
  * {

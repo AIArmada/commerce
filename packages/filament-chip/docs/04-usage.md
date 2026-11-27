@@ -135,7 +135,7 @@ Filament v5 — build the column list explicitly:
 namespace App\Filament\Resources;
 
 use AIArmada\FilamentChip\Resources\BaseChipResource;
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 

@@ -199,8 +199,9 @@ class CheckoutBuilder
      */
     public function create(int $amount, array $options = []): Checkout
     {
-        // Apply coupon discount if present
         $couponId = $this->couponId ?? $this->promotionCodeId;
+        $products = $this->products;
+        $metadata = $this->metadata;
 
         if ($couponId) {
             $this->validateCouponForCheckout($couponId);
@@ -209,19 +210,17 @@ class CheckoutBuilder
 
             if ($coupon) {
                 $discount = $coupon->calculateDiscount($amount);
-                $amount = max(0, $amount - $discount);
+                $metadata['coupon_id'] = $couponId;
+                $metadata['coupon_discount'] = $discount;
 
-                // Store coupon in metadata for tracking
-                $this->metadata['coupon_id'] = $couponId;
-                $this->metadata['coupon_discount'] = $discount;
-
-                if ($discount > 0 && ! empty($this->products)) {
-                    $firstQuantity = (int) ($this->products[0]['quantity'] ?? 1);
-                    $firstPrice = (int) ($this->products[0]['price'] ?? 0);
-                    $firstTotal = max(0, $firstPrice * max(1, $firstQuantity));
-
-                    $applied = min($discount, $firstTotal);
-                    $this->products[0]['discount'] = (int) ($this->products[0]['discount'] ?? 0) + $applied;
+                if ($products === []) {
+                    $amount = max(0, $amount - $discount);
+                } else {
+                    $products = $this->distributeDiscount($products, $discount);
+                    $amount = array_sum(array_map(
+                        fn (array $product): int => max(0, ((int) $product['price'] * max(1, (int) $product['quantity'])) - (int) ($product['discount'] ?? 0)),
+                        $products,
+                    ));
                 }
             }
         }
@@ -231,8 +230,8 @@ class CheckoutBuilder
             'success_url' => $this->successUrl,
             'cancel_url' => $this->cancelUrl,
             'webhook_url' => $this->webhookUrl,
-            'metadata' => $this->metadata,
-            'products' => $this->products ?: null,
+            'metadata' => $metadata,
+            'products' => $products ?: null,
             'currency' => $this->currency,
             'allow_promotion_codes' => $this->allowPromotionCodes,
         ], $options);
@@ -241,6 +240,35 @@ class CheckoutBuilder
         $options = array_filter($options, fn ($value) => ! is_null($value));
 
         return Checkout::create($this->owner, $amount, $options);
+    }
+
+    /**
+     * @param  array<int, array{name: string, price: int, quantity: int, discount?: int}>  $products
+     * @return array<int, array{name: string, price: int, quantity: int, discount?: int}>
+     */
+    private function distributeDiscount(array $products, int $discount): array
+    {
+        $remaining = max(0, $discount);
+
+        foreach ($products as $index => $product) {
+            if ($remaining === 0) {
+                break;
+            }
+
+            $lineGross = max(0, (int) $product['price'] * max(1, (int) $product['quantity']));
+            $currentDiscount = max(0, (int) ($product['discount'] ?? 0));
+            $available = max(0, $lineGross - $currentDiscount);
+            $applied = min($remaining, $available);
+
+            if ($applied === 0) {
+                continue;
+            }
+
+            $products[$index]['discount'] = $currentDiscount + $applied;
+            $remaining -= $applied;
+        }
+
+        return $products;
     }
 
     /**

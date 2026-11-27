@@ -2,51 +2,55 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
-use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
-use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Drivers\ChipCollectClient;
+use AIArmada\Chip\Drivers\ChipSendClient;
+use AIArmada\Chip\EntryPoints\Http\Controllers\SendWebhookController;
+use AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController;
+use AIArmada\Chip\EntryPoints\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\SendWebhookReceived;
 use AIArmada\Chip\Exceptions\ChipRateLimitException;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Facades\Chip;
-use AIArmada\Chip\Http\Controllers\SendWebhookController;
-use AIArmada\Chip\Http\Controllers\WebhookController;
-use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\Chip\Listeners\StoreWebhookData;
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Models\ChipCustomerLink;
-use AIArmada\Chip\Models\Client;
-use AIArmada\Chip\Models\CompanyStatement;
-use AIArmada\Chip\Models\Payment;
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Models\SendInstruction;
-use AIArmada\Chip\Models\SendLimit;
-use AIArmada\Chip\Models\SendWebhook;
-use AIArmada\Chip\Models\Webhook;
-use AIArmada\Chip\Services\ChipCustomerDirectory;
+use AIArmada\Chip\Features\Collect\Actions\ClientsApi;
+use AIArmada\Chip\Features\Collect\Actions\PurchasesApi;
+use AIArmada\Chip\Features\Collect\Actions\StoreChipWebhookPayload;
+use AIArmada\Chip\Features\Collect\Actions\SyncChipRecordsFromApiAction;
+use AIArmada\Chip\Features\Collect\Actions\SyncPurchaseRefundState;
+use AIArmada\Chip\Features\Collect\Models\ChipCustomerLink;
+use AIArmada\Chip\Features\Collect\Models\Client;
+use AIArmada\Chip\Features\Collect\Models\Payment;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Persistence\ChipCustomerDirectory;
+use AIArmada\Chip\Features\Collect\Persistence\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Features\Collect\Queries\LocalAnalyticsService;
+use AIArmada\Chip\Features\Payouts\Models\BankAccount;
+use AIArmada\Chip\Features\Payouts\Models\SendInstruction;
+use AIArmada\Chip\Features\Payouts\Models\SendLimit;
+use AIArmada\Chip\Features\Payouts\Models\SendWebhook;
+use AIArmada\Chip\Features\Statements\Models\CompanyStatement;
+use AIArmada\Chip\Features\WebhookDelivery\Actions\WebhookRetryManager;
+use AIArmada\Chip\Features\WebhookDelivery\EntryPoints\Jobs\ProcessChipWebhook;
+use AIArmada\Chip\Features\WebhookDelivery\Models\Webhook;
+use AIArmada\Chip\Features\WebhookDelivery\Queries\WebhookMonitor;
 use AIArmada\Chip\Services\ChipSendService;
-use AIArmada\Chip\Services\Collect\ClientsApi;
-use AIArmada\Chip\Services\Collect\PurchasesApi;
-use AIArmada\Chip\Services\LocalAnalyticsService;
-use AIArmada\Chip\Support\PurchaseIdempotencyLedger;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
-use AIArmada\Chip\Webhooks\ProcessChipWebhook;
-use AIArmada\Chip\Webhooks\WebhookMonitor;
-use AIArmada\Chip\Webhooks\WebhookRetryManager;
+use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -223,7 +227,7 @@ describe('signature verified before owner resolution', function (): void {
 });
 
 describe('idempotency reservations expire', function (): void {
-    it('releases an expired reservation instead of bricking the key', function (): void {
+    it('keeps an expired reservation blocked until remote reconciliation', function (): void {
         $ledger = new PurchaseIdempotencyLedger;
         $fingerprint = hash('sha256', 'payload');
 
@@ -236,17 +240,20 @@ describe('idempotency reservations expire', function (): void {
         $metadata['chip_idempotency']['reserved_at'] = time() - 90000;
         $stub->forceFill(['metadata' => $metadata])->save();
 
-        expect($ledger->find('brand-1', 'repair-key-1', $fingerprint))->toBeNull();
+        expect(fn () => $ledger->find('brand-1', 'repair-key-1', $fingerprint))
+            ->toThrow(ChipValidationException::class, 'requires reconciliation');
 
-        $fresh = $ledger->reserve('brand-1', 'repair-key-1', $fingerprint, [
-            'client' => ['email' => 'a@example.com'],
-            'purchase' => ['total' => 100],
-        ]);
+        expect(fn () => $ledger->reserve('brand-1', 'repair-key-1', $fingerprint, []))
+            ->toThrow(ChipValidationException::class, 'requires reconciliation');
+
+        expect($ledger->releaseReconciledReservation((string) $stub->getKey()))->toBeTrue();
+
+        $fresh = $ledger->reserve('brand-1', 'repair-key-1', $fingerprint, []);
 
         expect($fresh->exists)->toBeTrue();
     });
 
-    it('prunes only expired stubs', function (): void {
+    it('releases only a specifically confirmed expired reservation', function (): void {
         $ledger = new PurchaseIdempotencyLedger;
 
         $expired = $ledger->reserve('brand-1', 'repair-prune-old', hash('sha256', 'a'), []);
@@ -256,7 +263,12 @@ describe('idempotency reservations expire', function (): void {
 
         $fresh = $ledger->reserve('brand-1', 'repair-prune-new', hash('sha256', 'b'), []);
 
-        $this->artisan('chip:prune-idempotency-stubs')->assertExitCode(0);
+        $this->artisan('chip:prune-idempotency-stubs')->assertFailed();
+        $this->artisan('chip:prune-idempotency-stubs', ['--dry-run' => true])->assertSuccessful();
+        $this->artisan('chip:prune-idempotency-stubs', [
+            '--reservation-id' => (string) $expired->getKey(),
+            '--confirmed-not-created' => true,
+        ])->assertSuccessful();
 
         expect(Purchase::query()->whereKey($expired->getKey())->exists())->toBeFalse()
             ->and(Purchase::query()->whereKey($fresh->getKey())->exists())->toBeTrue();
@@ -278,15 +290,15 @@ describe('idempotency reservations expire', function (): void {
 });
 
 describe('sync runs under explicit context when scoped', function (): void {
-    it('records per-id failures instead of fataling without a console owner', function (): void {
+    it('records per-id failures under explicitly selected global console context', function (): void {
         config()->set('chip.owner.enabled', true);
         app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
         Chip::shouldReceive('getPurchase')->andThrow(new Exception('api down'));
 
-        $action = new SyncChipRecordsFromApiAction(new StoreWebhookData);
+        $action = new SyncChipRecordsFromApiAction(new StoreChipWebhookPayload);
 
-        $summary = $action->handle(['purchase-missing-1']);
+        $summary = OwnerContext::withOwner(null, fn () => $action->handle(['purchase-missing-1']));
 
         expect($summary['processed'])->toBe(1)
             ->and($summary['failed'])->toBe(1);
@@ -455,10 +467,11 @@ describe('refund sync accumulates without double counting', function (): void {
             'updated_on' => time(),
         ])->save();
 
-        $result = app(SyncPurchaseRefundState::class)->handle($refund, $purchase);
+        app(SyncPurchaseRefundState::class)->handle($refund, (string) $purchase->getKey());
+        $result = $purchase->refresh();
 
-        expect($result?->refund_amount_minor)->toBe(3000)
-            ->and($result?->refundable_amount)->toBe(7000);
+        expect($result->refund_amount_minor)->toBe(3000)
+            ->and($result->refundable_amount)->toBe(7000);
     });
 });
 
@@ -702,10 +715,11 @@ describe('paid handler refreshes denormalized columns', function (): void {
 
         $purchase = regressionPurchase([
             'status' => 'pending_execute',
+            'updated_on' => 1704067200,
             'purchase' => ['total' => 10000, 'currency' => 'MYR'],
         ]);
 
-        $enriched = EnrichedWebhookPayload::fromPayload('purchase.paid', [
+        $enriched = app(WebhookEnricher::class)->enrich('purchase.paid', [
             'id' => $purchase->id,
             'type' => 'purchase',
             'status' => 'paid',
@@ -754,8 +768,8 @@ describe('directory lookup scopes the ambient owner', function (): void {
         /** @var ChipCustomerDirectory $directory */
         $directory = app(ChipCustomerDirectoryInterface::class);
 
-        OwnerContext::withOwner($ownerOne, fn () => $directory->link($subjectOne, 'chip_customer_repair_1'));
-        OwnerContext::withOwner($ownerTwo, fn () => $directory->link($subjectTwo, 'chip_customer_repair_2'));
+        OwnerContext::withOwner($ownerOne, fn () => $directory->link(new RecordReference($subjectOne->getMorphClass(), (string) $subjectOne->getKey()), 'chip_customer_repair_1'));
+        OwnerContext::withOwner($ownerTwo, fn () => $directory->link(new RecordReference($subjectTwo->getMorphClass(), (string) $subjectTwo->getKey()), 'chip_customer_repair_2'));
 
         $found = OwnerContext::withOwner($ownerOne, fn () => $directory->findByChipCustomerId('chip_customer_repair_1'));
         $hidden = OwnerContext::withOwner($ownerOne, fn () => $directory->findByChipCustomerId('chip_customer_repair_2'));
@@ -763,4 +777,70 @@ describe('directory lookup scopes the ambient owner', function (): void {
         expect($found?->chip_customer_id)->toBe('chip_customer_repair_1')
             ->and($hidden)->toBeNull();
     });
+});
+
+it('enforces a unique durable purchase reservation even without a shared cache lock', function (): void {
+    $ledger = app(PurchaseIdempotencyLedger::class);
+    $reservation = $ledger->reserve((string) Str::uuid(), 'unique-reservation-regression', hash('sha256', 'payload'), []);
+
+    expect($reservation->getAttribute('idempotency_scope_hash'))->toBeString();
+
+    $duplicate = $reservation->replicate();
+    $duplicate->setAttribute('id', (string) Str::uuid());
+
+    expect(fn () => DB::transaction(fn () => Purchase::withoutEvents(fn () => $duplicate->save())))
+        ->toThrow(UniqueConstraintViolationException::class);
+});
+
+it('persists a refund identity and prevents duplicate increments even without the webhook mirror listener', function (): void {
+    $purchase = regressionPurchase(['purchase' => ['total' => 10000, 'currency' => 'MYR']]);
+    $refundId = (string) Str::uuid();
+    $refund = PaymentData::from([
+        'id' => $refundId,
+        'type' => 'payment',
+        'related_to' => ['type' => 'purchase', 'id' => $purchase->id],
+        'payment' => [
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+            'amount' => 3000,
+            'currency' => 'MYR',
+        ],
+    ]);
+
+    $action = app(SyncPurchaseRefundState::class);
+    $action->handle($refund);
+    $action->handle($refund);
+
+    expect($purchase->refresh()->refund_amount_minor)->toBe(3000)
+        ->and($purchase->refundable_amount)->toBe(7000)
+        ->and($purchase->payments()->whereKey($refundId)->count())->toBe(1);
+});
+
+it('rejects reuse of a remote payment identifier for a different purchase', function (): void {
+    $first = regressionPurchase();
+    $second = regressionPurchase();
+    $paymentId = (string) Str::uuid();
+    $payload = [
+        'id' => $paymentId,
+        'type' => 'payment',
+        'related_to' => ['type' => 'purchase', 'id' => $first->id],
+        'created_on' => time(),
+        'updated_on' => time(),
+        'payment' => [
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+            'amount' => 3000,
+            'currency' => 'MYR',
+            'net_amount' => 3000,
+            'fee_amount' => 0,
+        ],
+    ];
+
+    $mirror = app(StoreChipWebhookPayload::class);
+    $mirror->storePayment($payload);
+    $payload['related_to']['id'] = $second->id;
+
+    expect(fn () => $mirror->storePayment($payload))->toThrow(ChipValidationException::class)
+        ->and(Payment::query()->findOrFail($paymentId)->purchase_id)->toBe($first->id)
+        ->and($second->payments()->count())->toBe(0);
 });

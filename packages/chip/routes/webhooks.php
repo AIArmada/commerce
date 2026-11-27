@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Http\Controllers\WebhookController;
+use AIArmada\Chip\EntryPoints\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::post(config('chip.webhooks.route', '/chip/webhooks'), [WebhookController::class, 'handle'])

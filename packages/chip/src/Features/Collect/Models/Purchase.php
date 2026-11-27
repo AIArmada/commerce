@@ -1,0 +1,271 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Chip\Features\Collect\Models;
+
+use AIArmada\Chip\Features\Collect\Actions\DeletePurchasePayments;
+use AIArmada\Chip\Models\ChipModel;
+use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
+
+/**
+ * @property string|null $status
+ * @property array<string, mixed>|null $purchase
+ * @property array<string, mixed>|null $client
+ * @property array<string, mixed>|null $payment
+ * @property array<string, mixed>|null $issuer_details
+ * @property array<string, mixed>|null $transaction_data
+ * @property array<array<string, mixed>>|null $status_history
+ * @property array<string, mixed>|null $currency_conversion
+ * @property array<string>|null $payment_method_whitelist
+ * @property string|null $checkout_url
+ * @property string|null $payment_method
+ * @property int $total_minor
+ * @property int $refund_amount_minor
+ * @property int $refundable_amount
+ * @property string|null $failure_reason
+ * @property bool $send_receipt
+ * @property bool $is_test
+ * @property bool $is_recurring_token
+ * @property bool $skip_capture
+ * @property bool $force_recurring
+ * @property bool $marked_as_paid
+ * @property int|null $created_on
+ * @property int|null $updated_on
+ * @property int|null $due
+ * @property int|null $viewed_on
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property CarbonImmutable|null $failed_at
+ * @property CarbonImmutable|null $refunded_at
+ * @property-read string|null $currency
+ * @property-read Money|null $totalMoney
+ * @property-read array<int, array{status: string, timestamp: CarbonImmutable|null, translated: string}> $timeline
+ */
+class Purchase extends ChipModel
+{
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'type',
+        'created_on',
+        'updated_on',
+        'client',
+        'purchase',
+        'brand_id',
+        'company_id',
+        'user_id',
+        'billing_template_id',
+        'client_id',
+        'payment',
+        'issuer_details',
+        'transaction_data',
+        'status_history',
+        'viewed_on',
+        'send_receipt',
+        'is_test',
+        'is_recurring_token',
+        'recurring_token',
+        'skip_capture',
+        'force_recurring',
+        'reference',
+        'reference_generated',
+        'notes',
+        'issued',
+        'due',
+        'refund_availability',
+        'currency_conversion',
+        'payment_method_whitelist',
+        'success_redirect',
+        'failure_redirect',
+        'cancel_redirect',
+        'success_callback',
+        'invoice_url',
+        'checkout_url',
+        'direct_post_url',
+        'creator_agent',
+        'platform',
+        'product',
+        'created_from_ip',
+        'marked_as_paid',
+        'order_id',
+        'metadata',
+    ];
+
+    /** @var list<string> */
+    protected $hidden = ['recurring_token', 'idempotency_scope_hash'];
+
+    public function amount(): Attribute
+    {
+        return Attribute::get(function (): ?int {
+            $amount = Arr::get($this->purchase, 'total');
+
+            return is_numeric($amount) ? (int) $amount : null;
+        });
+    }
+
+    public function currency(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            $currency = Arr::get($this->purchase, 'currency');
+
+            return is_string($currency) ? $currency : null;
+        });
+    }
+
+    public function createdOn(): Attribute
+    {
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['created_on'] ?? null));
+    }
+
+    public function updatedOn(): Attribute
+    {
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['updated_on'] ?? null));
+    }
+
+    public function dueOn(): Attribute
+    {
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['due'] ?? null));
+    }
+
+    public function viewedOn(): Attribute
+    {
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['viewed_on'] ?? null));
+    }
+
+    public function clientEmail(): Attribute
+    {
+        return Attribute::get(fn (): ?string => Arr::get($this->client, 'email'));
+    }
+
+    public function totalMoney(): Attribute
+    {
+        return Attribute::get(function (): ?Money {
+            $currency = Arr::get($this->purchase, 'currency');
+            $total = Arr::get($this->purchase, 'total');
+
+            if (! is_string($currency) || $currency === '' || ! is_numeric($total)) {
+                return null;
+            }
+
+            return $this->toMoney((int) $total, mb_strtoupper($currency));
+        });
+    }
+
+    public function formattedTotal(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            $money = $this->totalMoney;
+
+            if ($money === null) {
+                return null;
+            }
+
+            return $money->format();
+        });
+    }
+
+    public function statusColor(): string
+    {
+        $status = (string) ($this->status ?? '');
+
+        return match ($status) {
+            'paid', 'cleared', 'settled' => 'success',
+            'hold', 'preauthorized', 'pending_execute', 'pending_charge',
+            'pending_capture', 'pending_release', 'pending_refund', 'overdue' => 'warning',
+            'error', 'blocked', 'cancelled', 'released', 'expired', 'chargeback' => 'danger',
+            'refunded' => 'info',
+            default => 'secondary',
+        };
+    }
+
+    public function statusBadge(): string
+    {
+        return (string) str($this->status ?? 'unknown')->headline();
+    }
+
+    public function timeline(): Attribute
+    {
+        return Attribute::get(function (): array {
+            $history = $this->status_history ?? [];
+
+            /** @var array<int, array<string, mixed>> $history */
+            return collect($history)
+                ->map(fn (array $entry): array => [
+                    'status' => (string) ($entry['status'] ?? 'unknown'),
+                    'timestamp' => isset($entry['timestamp']) ? CarbonImmutable::createFromTimestampUTC((int) $entry['timestamp']) : null,
+                    'translated' => (string) str((string) ($entry['status'] ?? 'unknown'))->headline(),
+                ])
+                ->all();
+        });
+    }
+
+    /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'purchase_id');
+    }
+
+    /**
+     * Exclude unrecorded idempotency reservations (crash stubs) from reads.
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeWithoutIdempotencyStubs(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->whereNull('metadata')
+                ->orWhereNull('metadata->chip_idempotency->idempotency_key')
+                ->orWhereNotNull('metadata->chip_idempotency->response');
+        });
+    }
+
+    public function getTable(): string
+    {
+        return (string) config('chip.database.table_prefix', 'chip_') . 'purchases';
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $purchase): void {
+            app(DeletePurchasePayments::class)->handle($purchase);
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'client' => 'array',
+            'purchase' => 'array',
+            'payment' => 'array',
+            'issuer_details' => 'array',
+            'transaction_data' => 'array',
+            'status_history' => 'array',
+            'currency_conversion' => 'array',
+            'payment_method_whitelist' => 'array',
+            'metadata' => 'array',
+            'send_receipt' => 'boolean',
+            'is_test' => 'boolean',
+            'is_recurring_token' => 'boolean',
+            'skip_capture' => 'boolean',
+            'force_recurring' => 'boolean',
+            'marked_as_paid' => 'boolean',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+            'failed_at' => 'immutable_datetime',
+            'refunded_at' => 'immutable_datetime',
+        ];
+    }
+}

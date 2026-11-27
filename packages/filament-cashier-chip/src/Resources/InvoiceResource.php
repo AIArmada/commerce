@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages\ListInvoices;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages\ViewInvoice;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Schemas\InvoiceInfolist;

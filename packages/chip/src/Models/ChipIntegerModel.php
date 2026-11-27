@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use LogicException;
 use Override;
 
 /**
@@ -50,10 +51,13 @@ abstract class ChipIntegerModel extends Model
      */
     protected $keyType = 'int';
 
-    abstract protected static function tableSuffix(): string;
+    protected static function tableSuffix(): string
+    {
+        throw new LogicException('CHIP models must declare a table.');
+    }
 
     #[Override]
-    final public function getTable(): string
+    public function getTable(): string
     {
         $prefix = (string) config('chip.database.table_prefix', 'chip_');
 

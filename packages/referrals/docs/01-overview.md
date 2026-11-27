@@ -14,7 +14,7 @@ title: Referrals Overview
 - Immutable, two-sided reward intents copied from the program when qualification succeeds.
 - Fulfilment and reversal orchestration with idempotency keys, external references, events, and an expiry command.
 
-`ReferralProgram` is the tenant boundary. Invites and rewards have no owner columns; all access resolves through their program.
+`ReferralProgram` is the tenant boundary. Invites and rewards have no owner columns; all access resolves through their program. Deleting a program removes its invites and rewards, and deleting an invite removes its rewards, through the package persistence boundary rather than a database cascade. Every referral write transaction runs on the referral models' shared connection; a mixed-connection install fails closed.
 
 ## What it does not own
 

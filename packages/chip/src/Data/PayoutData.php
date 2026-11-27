@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use AIArmada\Chip\Data\Casts\MoneyCast;
-use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Attributes\WithTransformer;
 
 /**
  * Value object for CHIP's Payout resource.
@@ -18,41 +14,39 @@ use Spatie\LaravelData\Attributes\WithTransformer;
  * CHIP puts payout money in the nested `payment` object and the beneficiary
  * details in the nested `client` object.
  */
-final class PayoutData extends ChipData
+final readonly class PayoutData
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $type,
-        public readonly int $created_on,
-        public readonly int $updated_on,
-        public readonly string $status,
-        #[WithCast(MoneyCast::class)]
-        #[WithTransformer(MoneyTransformer::class)]
-        public readonly Money $amount,
-        public readonly string $currency,
-        public readonly ClientDetailsData $client,
-        public readonly PaymentData $payment,
+        public string $id,
+        public string $type,
+        public int $created_on,
+        public int $updated_on,
+        public string $status,
+        public Money $amount,
+        public string $currency,
+        public ClientDetailsData $client,
+        public PaymentData $payment,
         /** @var array<string, mixed> */
-        public readonly array $transaction_data,
-        public readonly ?string $reference_generated,
-        public readonly ?string $reference,
-        public readonly ?string $sender_name,
-        public readonly ?string $recipient_card_country,
-        public readonly ?string $recipient_card_brand,
-        public readonly ?string $execution_url,
-        public readonly string $brand_id,
-        public readonly ?string $company_id,
-        public readonly bool $is_test,
-        public readonly ?string $user_id,
+        public array $transaction_data,
+        public ?string $reference_generated,
+        public ?string $reference,
+        public ?string $sender_name,
+        public ?string $recipient_card_country,
+        public ?string $recipient_card_brand,
+        public ?string $execution_url,
+        public string $brand_id,
+        public ?string $company_id,
+        public bool $is_test,
+        public ?string $user_id,
         /** @var array<int, mixed> */
-        public readonly array $status_history,
+        public array $status_history,
         /** @var array<string, mixed> */
-        public readonly array $error,
+        public array $error,
     ) {}
 
-    public static function from(mixed ...$payloads): static
+    /** @param array<string, mixed> $data */
+    public static function from(array $data): self
     {
-        $data = self::resolvePayload(...$payloads);
         $payment = $data['payment'] ?? null;
         $client = $data['client'] ?? null;
 

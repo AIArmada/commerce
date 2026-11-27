@@ -47,7 +47,8 @@ describe('PerformsCharges', function (): void {
     });
 
     it('it can refund charge', function (): void {
-        $payment = $this->user->charge(1000);
+        $token = $this->fakeChip->getFakeClient()->addRecurringToken($this->user->chip_id);
+        $payment = $this->user->charge(1000, $token['id']);
         $purchaseId = $payment->id();
 
         $refundData = $this->user->refund($purchaseId, 500);

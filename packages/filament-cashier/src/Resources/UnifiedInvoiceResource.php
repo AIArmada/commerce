@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Tables\InvoicesTable;
 use BackedEnum;

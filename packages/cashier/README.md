@@ -106,7 +106,7 @@ Add **all** billable traits to your User model:
 ```php
 use AIArmada\Cashier\Concerns\Billable as CashierBillable;
 use Laravel\Cashier\Billable as StripeBillable;
-use AIArmada\CashierChip\Billable as ChipBillable;
+use AIArmada\CashierChip\Billing\Billable as ChipBillable;
 
 class User extends Authenticatable
 {

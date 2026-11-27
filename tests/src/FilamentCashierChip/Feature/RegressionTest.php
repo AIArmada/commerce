@@ -2,20 +2,22 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Actions\SyncCustomersToChip;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CashierChip\Features\Subscriptions\Models\Subscription;
+use AIArmada\CashierChip\Features\Subscriptions\Models\SubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Invoices;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions;
-use AIArmada\FilamentCashierChip\Jobs\SyncCustomersToChipJob;
+use AIArmada\FilamentCashierChip\EntryPoints\Jobs\SyncCustomersToChipJob;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages\ListCustomers;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers\SubscriptionsRelationManager;
@@ -355,6 +357,59 @@ it('mrr chart is cached per owner after the first computation', function (): voi
     expect($secondQueries)->toBe(0);
 });
 
+it('does not multiply tier item quantities by the subscription quantity', function (): void {
+    $owner = User::query()->create(['name' => 'A', 'email' => 'repair-r1-5-qty@example.com']);
+    $subscription = regression_createSubscription(
+        $owner,
+        ['quantity' => 3],
+        ['quantity' => 2, 'unit_amount' => 1000],
+    );
+
+    $widget = app(MRRWidget::class);
+    $method = new ReflectionMethod(MRRWidget::class, 'monthlyNetAmount');
+
+    expect($method->invoke($widget, $subscription->refresh()))->toBe(2000);
+
+    $revenue = app(RevenueChartWidget::class);
+    $grossMethod = new ReflectionMethod(RevenueChartWidget::class, 'monthlyGrossAmount');
+
+    expect($grossMethod->invoke($revenue, $subscription->refresh()))->toBe(2000);
+});
+
+it('does not double count trialing subscriptions as active subscribers', function (): void {
+    $owner = User::query()->create(['name' => 'A', 'email' => 'repair-r1-5-trial@example.com']);
+    regression_createSubscription($owner);
+    regression_createSubscription($owner, [
+        'chip_status' => SubscriptionStatus::Trialing,
+        'trial_ends_at' => now()->addDays(5),
+    ]);
+
+    $widget = app(ActiveSubscribersWidget::class);
+    $active = new ReflectionMethod(ActiveSubscribersWidget::class, 'getActiveSubscribersCount');
+    $trialing = new ReflectionMethod(ActiveSubscribersWidget::class, 'getTrialingCount');
+
+    expect($active->invoke($widget))->toBe(1)
+        ->and($trialing->invoke($widget))->toBe(1);
+});
+
+it('consolidates revenue chart monthly work into one dataset query per series', function (): void {
+    $owner = User::query()->create(['name' => 'A', 'email' => 'repair-r1-5-revenue@example.com']);
+    regression_createSubscription($owner, [], ['quantity' => 1, 'unit_amount' => 2400]);
+
+    $widget = app(RevenueChartWidget::class);
+    $method = new ReflectionMethod(RevenueChartWidget::class, 'getRevenueData');
+
+    DB::enableQueryLog();
+    $data = $method->invoke($widget);
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($queries)->toBeLessThanOrEqual(4)
+        ->and($data['labels'])->toHaveCount(12)
+        ->and(array_sum($data['new_revenue']))->toBe(24)
+        ->and(end($data['mrr']))->toBe(24);
+});
+
 it('distribution widget uses a single grouped query', function (): void {
     $owner = User::query()->create(['name' => 'A', 'email' => 'repair-r1-5-dist@example.com']);
     regression_createSubscription($owner);
@@ -408,10 +463,18 @@ it('sync action refuses models without CHIP support', function (): void {
     }
 });
 
+it('rejects an ownerless sync job instead of escalating it to global access', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    regression_bindOwner(null);
+
+    expect(fn () => (new SyncCustomersToChipJob)->handle(app(SyncCustomersToChip::class)))
+        ->toThrow(NoCurrentOwnerException::class);
+});
+
 it('sync job links unlinked customers and skips unsupported models', function (): void {
     $user = User::query()->create(['name' => 'A', 'email' => 'repair-r1-6@example.com']);
 
-    (new SyncCustomersToChipJob)->handle();
+    (new SyncCustomersToChipJob)->handle(app(SyncCustomersToChip::class));
 
     expect($user->refresh()->hasChipId())->toBeTrue();
 
@@ -422,7 +485,7 @@ it('sync job links unlinked customers and skips unsupported models', function ()
         $thrown = null;
 
         try {
-            (new SyncCustomersToChipJob)->handle();
+            (new SyncCustomersToChipJob)->handle(app(SyncCustomersToChip::class));
         } catch (Throwable $e) {
             $thrown = $e;
         }

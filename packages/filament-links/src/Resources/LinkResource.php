@@ -43,12 +43,13 @@ final class LinkResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return self::hasStaffAccess();
+        return self::hasStaffAccess() && parent::canEdit($record);
     }
 
     public static function canDelete(Model $record): bool
     {
         return self::hasStaffAccess()
+            && parent::canDelete($record)
             && $record instanceof Link
             && ! LinkForm::isProtectedSubject($record);
     }

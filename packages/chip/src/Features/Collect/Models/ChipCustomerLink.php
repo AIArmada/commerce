@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Chip\Features\Collect\Models;
+
+use AIArmada\Chip\Models\ChipModel;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+
+/**
+ * @property string $id
+ * @property string $subject_type
+ * @property string $subject_id
+ * @property string $chip_customer_id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property array<string, mixed>|null $metadata
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Model|null $subject
+ */
+class ChipCustomerLink extends ChipModel
+{
+    public $timestamps = true;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'subject_type',
+        'subject_id',
+        'chip_customer_id',
+        'metadata',
+    ];
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function subject(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function getTable(): string
+    {
+        return (string) config('chip.database.table_prefix', 'chip_') . 'customers';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
+        ];
+    }
+}

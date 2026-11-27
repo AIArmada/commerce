@@ -20,7 +20,7 @@ The Links resource provides full CRUD:
 
 - **Open** — visits the shareable URL in a new tab (signed automatically when the link requires it; records a real click).
 - **Deactivate / Reactivate** — toggles the link without deleting its history.
-- **Edit / Delete** — deleting a link also deletes its clicks.
+- **Edit / Delete** — deleting a link also deletes its clicks. Edit and delete actions honour the host's Filament policy checks in addition to the configured staff roles; define a `LinkPolicy` when record-level authorization is required.
 
 ## Click history
 

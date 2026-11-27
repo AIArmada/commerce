@@ -69,7 +69,7 @@ Package widgets are `final`, so build your own widget for custom metrics:
 
 namespace App\Filament\Widgets;
 
-use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Features\Collect\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
 use Filament\Widgets\StatsOverviewWidget;
@@ -113,7 +113,7 @@ Line/area chart showing revenue over the last 30 days.
 Revenue numbers, payment-method breakdowns, navigation badges, and
 distinct filter options are cached per owner (60–300 seconds), so
 dashboard renders stay constant-time as purchase volume grows.
-Purchase exports are owner-scoped and exclude the signed checkout URL.
+Purchase and send-instruction exports are owner-scoped; the purchase export excludes the signed checkout URL.
 
 ### RecentTransactionsWidget
 
@@ -133,6 +133,19 @@ These widgets are available but not registered by default. Add them to your pane
 | PayoutStatsWidget | Payout statistics overview |
 | RecentPayoutsWidget | Latest payouts table |
 | TokenStatsWidget | Saved token statistics |
+
+### AccountTurnoverWidget Scope And Cache
+
+`AccountBalanceWidget` and `AccountTurnoverWidget` read company-wide CHIP values, not
+tenant-owned rows. When
+`chip.owner.enabled=true`, it is visible only under explicit global owner context
+(`OwnerContext::withOwner(null, ...)`); a tenant owner context hides it and performs no remote
+calls. Balance is cached for `filament-chip.widgets.balance_cache_ttl` (default 60 seconds).
+
+Day buckets are cached per owner scope. Completed days use
+`filament-chip.widgets.turnover_cache_ttl` (default 3600 seconds); the current day uses
+`filament-chip.widgets.turnover_current_bucket_ttl` (default 60 seconds). A warm render makes no
+CHIP API calls. A failed day renders zeros without discarding successful neighbouring days.
 
 ### Adding Optional Widgets
 
