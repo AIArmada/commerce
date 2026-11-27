@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Reminders;
 
+use AIArmada\Engagement\Features\Reminders\Actions\ManageRemindersAction;
+use AIArmada\Engagement\Features\Reminders\Api\WritesReminderRecords;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Features\Reminders\Api\ReadsReminderState;
@@ -17,6 +19,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(WritesReminderRecords::class, ManageRemindersAction::class);
         $app->bind(ReadsReminderState::class, ReadReminderStateQuery::class);
 
         if (class_exists(CommunicationsServiceProvider::class)) {

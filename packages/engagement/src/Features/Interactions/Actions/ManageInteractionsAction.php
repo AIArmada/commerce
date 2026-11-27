@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Interactions\Actions;
 
+use AIArmada\Engagement\Features\Interactions\Api\WritesInteractionRecords;
 use AIArmada\Engagement\Contracts\Bookmarkable;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\Followable;
@@ -17,7 +18,7 @@ use AIArmada\Engagement\Features\Interactions\Models\Reaction;
 use AIArmada\Engagement\Features\Interactions\Models\Response;
 use AIArmada\Engagement\Features\Interactions\Models\Share;
 
-final readonly class ManageInteractionsAction
+final readonly class ManageInteractionsAction implements WritesInteractionRecords
 {
     public function __construct(
         private ManageFollowsAction $manageFollows,
@@ -96,5 +97,25 @@ final readonly class ManageInteractionsAction
     public function removeBookmarkFromCollection(CanInteract $actor, Bookmark $bookmark, BookmarkCollection $collection, array $options = []): void
     {
         $this->manageBookmarkCollectionItems->removeBookmarkFromCollection($actor, $bookmark, $collection, $options);
+    }
+
+    public function recordFollow(CanInteract $actor, Followable $subject, array $options = []): array
+    {
+        return $this->follow($actor, $subject, $options)->toArray();
+    }
+
+    public function recordBookmark(CanInteract $actor, Bookmarkable $subject, array $options = []): array
+    {
+        return $this->bookmark($actor, $subject, $options)->toArray();
+    }
+
+    public function recordResponse(CanInteract $actor, Respondable $subject, string $responseType, array $options = []): array
+    {
+        return $this->respond($actor, $subject, $responseType, $options)->toArray();
+    }
+
+    public function recordShare(CanInteract $actor, Shareable $subject, array $options = []): array
+    {
+        return $this->share($actor, $subject, $options)->toArray();
     }
 }

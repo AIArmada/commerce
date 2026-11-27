@@ -411,3 +411,5 @@ Free-form inputs (types, channels, notes, messages, destinations, metadata) are
 length-validated at the manager boundaries: 255 characters for `string` columns,
 65,535 for `text` columns. Overlong or mistyped values throw
 `InvalidArgumentException` before any policy check or write.
+
+The Events engagement adapter returns detached record arrays for successful writes (including `id` and persisted attributes), or `null` from the null driver. It does not expose Eloquent models across the package boundary.

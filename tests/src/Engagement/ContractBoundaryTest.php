@@ -46,3 +46,29 @@ it('rejects non-model state inputs at the events adapter boundary', function ():
     expect(fn (): array => $adapter->stateFor(new EngagementActor, 'not-a-model'))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('returns detached records from the event engagement integration', function (): void {
+    $adapter = app(EventEngagementManager::class);
+    $actor = new EngagementActor;
+    $subject = new EngagementSubject;
+
+    $follow = $adapter->follow($actor, $subject);
+    $repeat = $adapter->follow($actor, $subject);
+    $bookmark = $adapter->bookmark($actor, $subject);
+    $response = $adapter->respond($actor, $subject, 'going');
+    $subscription = $adapter->subscribe($actor, $subject);
+    $reminder = $adapter->remind($actor, $subject, [
+        'reminder_type' => 'before_start',
+        'remind_at' => now()->addHour(),
+    ]);
+    $share = $adapter->share($actor, $subject);
+
+    expect($follow)->toBeArray()
+        ->and($repeat['id'])->toBe($follow['id'])
+        ->and($bookmark['id'])->toBeString()
+        ->and($response['response_type'])->toBe('going')
+        ->and($subscription['id'])->toBeString()
+        ->and($reminder['id'])->toBeString()
+        ->and($share['share_url'])->toBeString()
+        ->and($adapter->stateFor($actor, $subject)['is_following'])->toBeTrue();
+});

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Subscriptions\Actions;
 
+use AIArmada\Engagement\Features\Subscriptions\Api\WritesSubscriptionRecords;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 
-final readonly class ManageSubscriptionsAction
+final readonly class ManageSubscriptionsAction implements WritesSubscriptionRecords
 {
     public function __construct(
         private readonly EngagementPolicyResolver $policy,
@@ -300,5 +301,10 @@ final readonly class ManageSubscriptionsAction
     private function isUniqueConstraintViolation(QueryException $exception): bool
     {
         return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
+    }
+
+    public function recordSubscription(CanInteract $subscriber, ?Subscribable $subject = null, string $subscriptionType = 'updates', array $criteria = [], array $options = []): array
+    {
+        return $this->subscribe($subscriber, $subject, $subscriptionType, $criteria, $options)->toArray();
     }
 }

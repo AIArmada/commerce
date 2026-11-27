@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Features\Reminders\Actions;
 
+use AIArmada\Engagement\Features\Reminders\Api\WritesReminderRecords;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\CanInteract;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
 
-final readonly class ManageRemindersAction
+final readonly class ManageRemindersAction implements WritesReminderRecords
 {
     public function __construct(
         private readonly EngagementPolicyResolver $policy,
@@ -292,5 +293,10 @@ final readonly class ManageRemindersAction
         }
 
         return $value;
+    }
+
+    public function recordReminder(CanInteract $recipient, Remindable $subject, string $reminderType, array $options = []): array
+    {
+        return $this->setReminder($recipient, $subject, $reminderType, $options)->toArray();
     }
 }
