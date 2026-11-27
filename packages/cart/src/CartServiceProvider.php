@@ -213,24 +213,38 @@ final class CartServiceProvider extends PackageServiceProvider
         };
         $this->app['events']->listen(Looping::class, $restorePresets);
 
-        foreach ([RequestReceived::class, TaskReceived::class, TickReceived::class] as $eventClass) {
-            if (class_exists($eventClass)) {
-                $this->app['events']->listen($eventClass, static function (object $event) use ($restorePresets): void {
-                    $application = $event->sandbox ?? app();
-                    $application->forgetInstance('cart.storage');
-                    $application->forgetInstance('cart');
-                    $application->forgetInstance(CartFactory::class);
-                    $application->forgetInstance(CartMigrationService::class);
-                    Facades\Cart::clearResolvedInstance('cart');
-                    $restorePresets();
-                });
-            }
+        $resetCartScope = static function (object $event) use ($restorePresets): void {
+            $application = $event->sandbox ?? app();
+            $application->forgetInstance('cart.storage');
+            $application->forgetInstance('cart');
+            $application->forgetInstance(CartFactory::class);
+            $application->forgetInstance(CartMigrationService::class);
+            Facades\Cart::clearResolvedInstance('cart');
+            $restorePresets();
+        };
+
+        if (class_exists(RequestReceived::class)) {
+            $this->app['events']->listen(RequestReceived::class, $resetCartScope);
         }
 
-        foreach ([RequestTerminated::class, TaskTerminated::class, TickTerminated::class] as $eventClass) {
-            if (class_exists($eventClass)) {
-                $this->app['events']->listen($eventClass, $restorePresets);
-            }
+        if (class_exists(TaskReceived::class)) {
+            $this->app['events']->listen(TaskReceived::class, $resetCartScope);
+        }
+
+        if (class_exists(TickReceived::class)) {
+            $this->app['events']->listen(TickReceived::class, $resetCartScope);
+        }
+
+        if (class_exists(RequestTerminated::class)) {
+            $this->app['events']->listen(RequestTerminated::class, $restorePresets);
+        }
+
+        if (class_exists(TaskTerminated::class)) {
+            $this->app['events']->listen(TaskTerminated::class, $restorePresets);
+        }
+
+        if (class_exists(TickTerminated::class)) {
+            $this->app['events']->listen(TickTerminated::class, $restorePresets);
         }
     }
 }
