@@ -8,6 +8,9 @@
     "table:inventory_operations": [
       "AIArmada\\Inventory\\Features\\Reservations\\Actions\\DeductOrderInventory",
       "AIArmada\\Inventory\\Features\\Reservations\\Actions\\ReleaseOrderInventory"
+    ],
+    "table:inventory_allocations": [
+      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService"
     ]
   },
   "extensions": {}

@@ -18,6 +18,7 @@ final class ReleaseAllocationAction
             ->label('Release')
             ->icon(Heroicon::OutlinedArrowUturnLeft)
             ->color('danger')
+            ->visible(fn (InventoryAllocation $record): bool => $record->reservation_group_id === null)
             ->requiresConfirmation()
             ->modalHeading('Release Allocation')
             ->modalDescription('This will release the allocated inventory back to available stock.')

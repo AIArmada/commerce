@@ -11,7 +11,7 @@ use AIArmada\Inventory\EntryPoints\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);

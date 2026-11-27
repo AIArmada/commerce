@@ -8,6 +8,7 @@ use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\DeductInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReleaseInventoryFromOrder;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
@@ -18,6 +19,8 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(InventoryAllocationService::class);
+        $app->alias(InventoryAllocationService::class, 'inventory.allocations');
         $app->singleton(CheckoutReservationService::class);
         $app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Facades;
 
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Illuminate\Support\Facades\Facade;
 
 /**

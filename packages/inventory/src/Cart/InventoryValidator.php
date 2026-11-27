@@ -8,7 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Runtime\CartValidatorInterface;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
 /**
  * Validates cart items against inventory availability.

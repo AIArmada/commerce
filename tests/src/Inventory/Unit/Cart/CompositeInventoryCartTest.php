@@ -16,7 +16,7 @@ use AIArmada\Inventory\Features\Reservations\EntryPoints\Listeners\ReserveStockO
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Model;
 
 it('recognizes only typed catalog composites under strict Eloquent attribute access', function (): void {

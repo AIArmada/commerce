@@ -13,13 +13,15 @@
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\UpdateInventoryLevel",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\BootstrapInventory",
-      "AIArmada\\Inventory\\Features\\Stock\\Actions\\SetDefaultInventoryQuantity"
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\SetDefaultInventoryQuantity",
+      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService"
     ],
     "table:inventory_movements": [
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\ReceiveInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\ShipInventory",
       "AIArmada\\Inventory\\Features\\Stock\\Actions\\TransferInventory",
-      "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory"
+      "AIArmada\\Inventory\\Features\\Stock\\Actions\\AdjustInventory",
+      "AIArmada\\Inventory\\Features\\Reservations\\Persistence\\InventoryAllocationService"
     ]
   },
   "extensions": {}

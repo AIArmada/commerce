@@ -35,7 +35,7 @@ use AIArmada\Inventory\Features\Traceability\Persistence\SerialService;
 use AIArmada\Inventory\Features\Backorders\Persistence\BackorderService;
 use AIArmada\Inventory\Features\Reservations\Persistence\CheckoutReservationService;
 use AIArmada\Inventory\Features\Replenishment\Persistence\DemandForecastService;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use AIArmada\Inventory\Features\Replenishment\Persistence\ReplenishmentService;
 use AIArmada\Inventory\Platform\ExtensionRegistry;
 use AIArmada\Inventory\Platform\FeatureCatalog;
@@ -121,8 +121,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
         $this->app->singleton(InventoryService::class);
         $this->app->alias(InventoryService::class, 'inventory');
 
-        $this->app->singleton(InventoryAllocationService::class);
-        $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
     }
 
     /**

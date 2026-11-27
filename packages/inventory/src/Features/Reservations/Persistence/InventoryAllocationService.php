@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Inventory\Services\Stock;
+namespace AIArmada\Inventory\Features\Reservations\Persistence;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Features\Reservations\Models\InventoryReservation;

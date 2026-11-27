@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\Actions;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Inventory\Cart\InventoryDemandResolver;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

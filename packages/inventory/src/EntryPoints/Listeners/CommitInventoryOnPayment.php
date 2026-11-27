@@ -7,7 +7,7 @@ namespace AIArmada\Inventory\EntryPoints\Listeners;
 use AIArmada\Cashier\Events\PaymentSucceeded as CashierPaymentSucceeded;
 use AIArmada\CashierChip\Events\PaymentSucceeded as CashierChipPaymentSucceeded;
 use AIArmada\Inventory\Contracts\ProvidesInventoryCommitContext;
-use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
+use AIArmada\Inventory\Features\Reservations\Persistence\InventoryAllocationService;
 
 final class CommitInventoryOnPayment
 {
